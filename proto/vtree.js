@@ -1,23 +1,22 @@
+class Node {
+    constructor(tag, props, id, content) {
+        this.tag = tag
+        this.props = props
+        this.id = id
+        this.content = content
+    }
+}
+
 class VTree {
     constructor() {
         this.idCounter = 0
         this.out = []
         this.childTrees = []
     }
-    e(tag, props, children) {
-        this.out.push({tag, props, id: this.idCounter, children})
+    e(tag, props, content) {
+        this.out.unshift(new Node(tag, props, this.idCounter, content))
         this.idCounter++
-        return this.idCounter - 1
-    }
-    done() {
-        this.out = this.out.reverse()
-        const reverseId = this.out.length - 1
-        for (let node of this.out) {
-            if (!Array.isArray(node.children)) continue
-            node.children = node.children.map(val =>
-                typeof val == 'number' ? this.out[reverseId - val] : val
-            )
-        }
+        return this.out[0]
     }
     getChildTrees() {
         return this.childTrees
@@ -38,8 +37,8 @@ class VTree {
     traverse(branch, fn, parentNode = null, includeChildTrees = false) {
         for (let node of branch) {
             fn(node, parentNode)
-            if (Array.isArray(node.children) && node.children.length) {
-                this.traverse(node.children, fn, node)
+            if (Array.isArray(node.content) && node.content.length) {
+                this.traverse(node.content, fn, node)
             }
         }
         if (includeChildTrees) {
@@ -59,10 +58,10 @@ function render(branch, level = 0) {
             continue
         }
         out += indent + '<' + node.tag + '>\n'
-        if (typeof node.children == 'string') {
-            out += node.children
-        } else if (node.children.length) {
-            out += render(node.children, level + 1)
+        if (typeof node.content == 'string') {
+            out += node.content
+        } else if (node.content.length) {
+            out += render(node.content, level + 1)
         }
         out += '\n' + indent + '</' + node.tag + '>\n'
     }

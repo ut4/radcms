@@ -29,7 +29,6 @@ function generate(vtree, ddc, out = new WebSite(), url = '/') {
         const templateFn = getTemplateFn(bc.renderUsing, tmplVtree)
         // Call it
         templateFn(data[i])
-        tmplVtree.done()
         vtree.getChildTrees().push(tmplVtree)
         // tmplVtree.out is now populated, render the batch
         return {batchId: bc.id, render: tmplVtree.toHtml()}
@@ -37,7 +36,7 @@ function generate(vtree, ddc, out = new WebSite(), url = '/') {
     // 3. Substitute each { renderAll(...) } with rendered strings
     vtree.traverse([vtree.out[0]], (node, parent) => {
         if (node.constructor.name == 'DataBatchConfig') {
-            parent.children[parent.children.indexOf(node)] = renderedTemplates
+            parent.content[parent.content.indexOf(node)] = renderedTemplates
                 .find(t => t.batchId == node.id).render
         }
     })
@@ -50,7 +49,6 @@ function generate(vtree, ddc, out = new WebSite(), url = '/') {
         const pageDataConfig = new DocumentDataConfig()
         const layoutTemplateFn = getLayoutFn(link.props.layout, pageVtree, pageDataConfig)
         layoutTemplateFn(link.props.href)
-        pageVtree.done()
         generate(pageVtree, pageDataConfig, out, link.props.href)
     }
     // 6. Done

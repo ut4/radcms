@@ -7,7 +7,6 @@ const homePageVTree = new VTree()
 const homePageDataConfig = new DocumentDataConfig()
 const layoutTemplateFn = getLayoutFn('default-layout.tmpl', homePageVTree, homePageDataConfig)
 layoutTemplateFn('/')
-homePageVTree.done()
 const webSite = generate(homePageVTree, homePageDataConfig)
 
 console.log('== Output ==')
