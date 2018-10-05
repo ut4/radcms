@@ -7,3 +7,11 @@ void *reallocate(void* previous, size_t oldSize, size_t newSize) {
     }
     return realloc(previous, newSize);
 }
+
+char *copyString(const char *luaManagedStr) {
+    int len = strlen(luaManagedStr);
+    char* out = ALLOCATE(char, len + 1);
+    memcpy(out, luaManagedStr, len);
+    out[len] = '\0';
+    return out;
+}

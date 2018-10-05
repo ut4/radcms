@@ -12,36 +12,36 @@ VTree *vTreeCreate() {
     out->approxMinRenderLength = 0;
     return out;
 }
-void vTreeDestruct(VTree *vTree) {
-    vNodeArrayDestruct(&vTree->nodes);
-    FREE(vTree->render);
-    FREE(vTree);
+void vTreeDestruct(VTree *this) {
+    vNodeArrayDestruct(&this->nodes);
+    FREE(this->render);
+    FREE(this);
 }
 VNode *vTreeRegisterNode(
-    VTree *vTree,
+    VTree *this,
     char *tag,
     Props *props,
     NodeContent *content
 ) {
     VNode newNode;
-    vNodeInit(&newNode, (char*)tag, props, content, vTree->idCounter);
-    vNodeArrayPush(&vTree->nodes, newNode);
+    vNodeInit(&newNode, (char*)tag, props, content, this->idCounter);
+    vNodeArrayPush(&this->nodes, newNode);
     //
-    vTree->approxMinRenderLength += strlen(tag)*2 + strlen("<>") + strlen("</>");
+    this->approxMinRenderLength += strlen(tag)*2 + strlen("<>") + strlen("</>");
     if (content->type == NODE_CONTENT_STRING) {
-        vTree->approxMinRenderLength += strlen(content->v.str);
+        this->approxMinRenderLength += strlen(content->v.str);
     }
     //
-    vTree->idCounter++;
-    return &vTree->nodes.values[vTree->nodes.length - 1];
+    this->idCounter++;
+    return &this->nodes.values[this->nodes.length - 1];
 }
-void vTreeGetChildTrees(VTree *vTree) {
+void vTreeGetChildTrees(VTree *this) {
 
 }
-void vTreeGetNodeByTagName(VTree *vTree, const char *tagname) {
+void vTreeGetNodeByTagName(VTree *this, const char *tagname) {
 
 }
-static void writeNode(VNode *node, VNodeArray *tree, int level, char *out) {
+static void vTreeWriteNode(VNode *node, VNodeArray *tree, int level, char *out) {
     strcat(out, "<");
     strcat(out, node->tagName);
     strcat(out, ">");
@@ -52,138 +52,133 @@ static void writeNode(VNode *node, VNodeArray *tree, int level, char *out) {
         case NODE_CONTENT_NODE_REF_ARR: {
             VNodeRefArray *refs = node->content->v.nodeRefArr;
             for (int i = 0; i < refs->length; ++i) {
-                writeNode(&tree->values[refs->values[i] - 1], tree, level + 1, out);
+                vTreeWriteNode(&tree->values[refs->values[i] - 1], tree, level + 1, out);
             }
             break;
         } case NODE_CONTENT_NODE_REF:
-            writeNode(&tree->values[node->content->v.nodeRef - 1], tree, level + 1, out);
+            vTreeWriteNode(&tree->values[node->content->v.nodeRef - 1], tree, level + 1, out);
             break;
         case NODE_CONTENT_DATA_BATCH_CONFIG:
-            // pass
+        case NODE_CONTENT_DATA_BATCH_CONFIG_ARR:
+            // todo
             break;
     }
     strcat(out, "</");
     strcat(out, node->tagName);
     strcat(out, ">");
 }
-char *vTreeToHtml(VTree *vTree) {
-    if (vTree->nodes.length == 0 || vTree->approxMinRenderLength == 0) {
+char *vTreeToHtml(VTree *this, int rootNodeIndex) {
+    if (this->nodes.length == 0 || this->approxMinRenderLength == 0) {
         return NULL;
     }
-    vTree->render = ALLOCATE(char, vTree->approxMinRenderLength);
-    vTree->render[0] = '\0';
-    VNode *rootNode = &vTree->nodes.values[vTree->nodes.length - 1];
-    writeNode(rootNode, &vTree->nodes, 0, vTree->render);
-    return vTree->render;
+    this->render = ALLOCATE(char, this->approxMinRenderLength);
+    this->render[0] = '\0';
+    VNode *rootNode = &this->nodes.values[rootNodeIndex];
+    vTreeWriteNode(rootNode, &this->nodes, 0, this->render);
+    return this->render;
 }
 
 // == VNode ====
 // =============================================================================
 void vNodeInit(
-    VNode *vNode,
+    VNode *this,
     char *tagName,
     Props *props,
     NodeContent *content,
     int id
 ) {
-    vNode->tagName = tagName;
-    vNode->props = props;
-    vNode->content = content;
-    vNode->id = id;
+    this->tagName = tagName;
+    this->props = props;
+    this->content = content;
+    this->id = id;
 }
-void vNodeDestruct(VNode *vNode) {
-    FREE(vNode->tagName);
-    FREE(vNode->props);
-    nodeContentDestruct(vNode->content);
+void vNodeDestruct(VNode *this) {
+    FREE(this->tagName);
+    FREE(this->props);
+    nodeContentDestruct(this->content);
 }
 
 // == VNodeArray ====
 // =============================================================================
-void vNodeArrayInit(VNodeArray *array) {
-    array->values = NULL;
-    array->capacity = 0;
-    array->length = 0;
+void vNodeArrayInit(VNodeArray *this) {
+    this->values = NULL;
+    this->capacity = 0;
+    this->length = 0;
 }
-void vNodeArrayPush(VNodeArray *array, VNode value) {
-    if (array->capacity < array->length + 1) {
-        int oldCapacity = array->capacity;
-        array->capacity = ARRAY_INCREASE_CAPACITY(oldCapacity);
-        array->values = ARRAY_GROW(array->values, VNode,
-                                   oldCapacity, array->capacity);
+void vNodeArrayPush(VNodeArray *this, VNode value) {
+    if (this->capacity < this->length + 1) {
+        int oldCapacity = this->capacity;
+        this->capacity = ARRAY_INCREASE_CAPACITY(oldCapacity);
+        this->values = ARRAY_GROW(this->values, VNode,
+                                   oldCapacity, this->capacity);
     }
-    array->values[array->length] = value;
-    array->length++;
+    this->values[this->length] = value;
+    this->length++;
 }
-void vNodeArrayDestruct(VNodeArray *array) {
-    for (int i = 0; i < array->length; ++i) vNodeDestruct(&array->values[i]);
-    ARRAY_FREE(VNode, array->values, array->capacity);
-    array->values = NULL;
-    array->capacity = 0;
-    array->length = 0;
+void vNodeArrayDestruct(VNodeArray *this) {
+    for (int i = 0; i < this->length; ++i) vNodeDestruct(&this->values[i]);
+    ARRAY_FREE(VNode, this->values, this->capacity);
+    this->values = NULL;
+    this->capacity = 0;
+    this->length = 0;
 }
 
 // == VNodeRefArray ====
 // =============================================================================
-void vNodeRefArrayInit(VNodeRefArray *array) {
-    array->capacity = 1;
-    array->values = NULL;
-    array->values = ARRAY_GROW(array->values, int, 0, array->capacity);
-    array->length = 0;
+void vNodeRefArrayInit(VNodeRefArray *this) {
+    this->capacity = 1;
+    this->values = NULL;
+    this->values = ARRAY_GROW(this->values, int, 0, this->capacity);
+    this->length = 0;
 }
-void vNodeRefArrayPush(VNodeRefArray *array, int value) {
-    if (array->capacity < array->length + 1) {
-        int oldCapacity = array->capacity;
-        array->capacity = ARRAY_INCREASE_CAPACITY(oldCapacity);
-        array->values = ARRAY_GROW(array->values, int,
-                                   oldCapacity, array->capacity);
+void vNodeRefArrayPush(VNodeRefArray *this, int value) {
+    if (this->capacity < this->length + 1) {
+        int oldCapacity = this->capacity;
+        this->capacity = ARRAY_INCREASE_CAPACITY(oldCapacity);
+        this->values = ARRAY_GROW(this->values, int,
+                                   oldCapacity, this->capacity);
     }
-    array->values[array->length] = value;
-    array->length++;
+    this->values[this->length] = value;
+    this->length++;
 }
-void vNodeRefArrayDestruct(VNodeRefArray *array) {
-    ARRAY_FREE(int, array->values, array->capacity);
-    array->values = NULL;
-    array->capacity = 0;
-    array->length = 0;
+void vNodeRefArrayDestruct(VNodeRefArray *this) {
+    ARRAY_FREE(int, this->values, this->capacity);
+    this->values = NULL;
+    this->capacity = 0;
+    this->length = 0;
 }
 
 // == NodeContent ====
 // =============================================================================
-void nodeContentInit(
-    NodeContent *content,
-    NodeContentType type,
-    void *val
-) {
-    content->type = type;
-    switch (type) {
-        case NODE_CONTENT_NODE_REF_ARR:
-            content->v.nodeRefArr = (VNodeRefArray*)val;
-            break;
-        case NODE_CONTENT_NODE_REF:
-            content->v.nodeRef = (int)val;
-            break;
-        case NODE_CONTENT_DATA_BATCH_CONFIG:
-            content->v.dbc = (DataBatchConfig*)val;
-            break;
-        case NODE_CONTENT_STRING:
-            content->v.str = (char*)val;
-            break;
-    }
+void nodeContentInitWithNodeRef(NodeContent *this, int nodeRef) {
+    this->type = NODE_CONTENT_NODE_REF;
+    this->v.nodeRef = nodeRef;
 }
-void nodeContentDestruct(NodeContent *content) {
-    switch (content->type) {
-        case NODE_CONTENT_NODE_REF_ARR:
-            vNodeRefArrayDestruct(content->v.nodeRefArr);
-            break;
-        case NODE_CONTENT_NODE_REF:
-            // pass
-            break;
-        case NODE_CONTENT_DATA_BATCH_CONFIG:
-            dataBatchConfigDestruct(content->v.dbc);
-            break;
-        case NODE_CONTENT_STRING:
-            FREE(content->v.str);
-            break;
+void nodeContentInitWithNodeRefArr(NodeContent *this, VNodeRefArray *nra) {
+    this->type = NODE_CONTENT_NODE_REF_ARR;
+    this->v.nodeRefArr = nra;
+}
+void nodeContentInitWithStr(NodeContent *this, char *str) {
+    this->type = NODE_CONTENT_STRING;
+    this->v.str = str;
+}
+void nodeContentInitWithDbc(NodeContent *this, DataBatchConfig *dbc) {
+    this->type = NODE_CONTENT_DATA_BATCH_CONFIG;
+    this->v.dbc = dbc;
+}
+void nodeContentInitWithDbcArr(NodeContent *this, DataBatchConfigRefListNode *rootNode) {
+    this->type = NODE_CONTENT_DATA_BATCH_CONFIG_ARR;
+    this->v.dbcRef = rootNode;
+}
+void nodeContentDestruct(NodeContent *this) {
+    if (this->type == NODE_CONTENT_NODE_REF_ARR) {
+        vNodeRefArrayDestruct(this->v.nodeRefArr);
+    } else if (this->type == NODE_CONTENT_STRING) {
+        FREE(this->v.str);
+    } else if (this->type == NODE_CONTENT_DATA_BATCH_CONFIG) {
+        dataBatchConfigDestruct(this->v.dbc);
+    } else if (this->type == NODE_CONTENT_DATA_BATCH_CONFIG_ARR) {
+        FREE(this->v.dbcRef);
     }
-    FREE(content);
+    FREE(this);
 }

@@ -20,7 +20,7 @@ void templateProviderInit(TemplateProvider *this, lua_State *L);
  * Reads $fileName from disc, compiles it, and leaves the compiled function at
  * the top of the lua stack. Returns NULL if the file wasn't found.
  */
-bool templateProviderLoadLayout(
+bool templateProviderLoadFnFromFile(
     TemplateProvider *this,
     const char *fileName,
     char *err

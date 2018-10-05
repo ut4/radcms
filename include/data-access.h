@@ -7,40 +7,52 @@
 
 // == DataBatchConfig ====
 // =============================================================================
-typedef struct {
-    const char *contentType;
-    const char *renderUsing;
+struct DataBatchConfig;
+typedef struct DataBatchConfig DataBatchConfig;
+struct DataBatchConfig{
+    char *contentType;
+    char *renderUsing;
+    char *where;
     bool orderIsAsc;
     bool doFetchAll;
     int id;
-} DataBatchConfig;
+    DataBatchConfig* next;
+};
 
 DataBatchConfig *dataBatchConfigCreate(const char *contentType, bool doFetchAll, int id);
-void dataBatchConfigDestruct(DataBatchConfig *dbc);
-void dataBatchConfigUsing(DataBatchConfig *dbc, const char *renderUsing);
-void dataBatchConfigOrderBy(DataBatchConfig *dbc, const char *order);
-void dataBatchConfigWhere(DataBatchConfig *dbc);
+void dataBatchConfigDestruct(DataBatchConfig *this);
+void dataBatchConfigUsing(DataBatchConfig *this, const char *renderUsing);
+void dataBatchConfigOrderBy(DataBatchConfig *this, const char *order);
+void dataBatchConfigWhere(DataBatchConfig *this, const char *where);
+DataBatchConfig *dataBatchConfigLinkedListAdd(DataBatchConfig *root,
+                                              DataBatchConfig *itemToAdd);
 
-// == DataBatchConfigArray ====
-// =============================================================================
-typedef struct {
-    int capacity;
-    int length;
-    DataBatchConfig* values;
-} DataBatchConfigArray;
-
-void dataBatchConfigArrayInit(DataBatchConfigArray *array);
-void dataBatchConfigArrayPush(DataBatchConfigArray *array, DataBatchConfig value);
-void dataBatchConfigArrayDestruct(DataBatchConfigArray *array);
+struct DataBatchConfigRefListNode;
+typedef struct DataBatchConfigRefListNode DataBatchConfigRefListNode;
+struct DataBatchConfigRefListNode {
+    DataBatchConfig *ref;
+    DataBatchConfigRefListNode *next;
+};
 
 // == DocumentDataConfig ====
 // =============================================================================
 typedef struct {
     int batchIdCounter;
-    DataBatchConfigArray batches;
+    DataBatchConfig *batches;
 } DocumentDataConfig;
 
-void documentDataConfigInit(DocumentDataConfig *ddc);
-void documentDataConfigDestruct(DocumentDataConfig *ddc);
+void documentDataConfigInit(DocumentDataConfig *this);
+void documentDataConfigDestruct(DocumentDataConfig *this);
+DataBatchConfig *documentDataConfigAddBatch(DocumentDataConfig *this,
+                                            const char *contentType,
+                                            bool isFetchAll);
+#define documentDataConfigRenderAll(this, contentType) \
+    documentDataConfigAddBatch(this, contentType, true)
+#define documentDataConfigRenderOne(this, contentType) \
+    documentDataConfigAddBatch(this, contentType, false)
+
+// == DataRepository ====
+// =============================================================================
+void dataRepositoryFetchAll();
 
 #endif

@@ -9,6 +9,7 @@ include_directories(pike ${RAD3_DEP_INCLUDES})
 # == gen.exe ===================================================================
 set(SOURCE_FILES
     include/data-access.h src/data-access.c
+    include/generating.h src/generating.c
     include/lua.h src/lua.c
     include/lualib.h src/lualib.c
     include/memory.h src/memory.c

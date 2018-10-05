@@ -6,9 +6,10 @@
 #endif
 #include <microhttpd.h>
 #include "include/data-access.h" // DocumentDataConfig, DataBatchConfig
-#include "include/lua.h" // createLuaState() etc.
+#include "include/generating.h" // generatorGenerate(), WebSite
+#include "include/lua.h" // createLuaState()
 #include "include/lualib.h" // luaLibLoad()
-#include "include/templating.h" // TemplateProvider etc.
+#include "include/templating.h" // TemplateProvider
 #include "include/vtree.h" // vtreeCreate()
 
 char *tempHack;
@@ -45,26 +46,30 @@ static bool callLayoutTmplFn(
     DocumentDataConfig *ddc,
     char *err
 ) {
-    pushVTree(L, vTree);                     // [fn, userdata]
-    pushDocumentDataConfig(L, ddc);          // [fn, userdata, userdata]
-    int r = lua_pcall(L, 2, 0, 0);
-    if (r != LUA_OK) {                       // []
-        sprintf(err, lua_tostring(L, -1));
-        return false;
+    luaPushVTree(L, vTree);                // [fn, userdata]
+    luaPushDocumentDataConfig(L, ddc);     // [fn, userdata, userdata]
+    if (lua_pcall(L, 2, 0, 0) == LUA_OK) { // []
+        return true;
     }
-    return true;
+    sprintf(err, getLuaErrorDetails(L));
+    return false;
 }
+
 int main(int argc, const char* argv[]) {
     char errBuf[512];
     errBuf[0] = '\0';
-    // 1. Validate arguments
+    /*
+     * 1. Validate arguments
+     */
     if (argc < 3) {
         fprintf(stderr, "Usage gen.exe path/to/my/workspace main-layout-file.lua\n");
         return EXIT_FAILURE;
         // todo if (!argv[1].endswith('/')) -> validation err
         // todo if (!argv[2].isDir()) -> validation err
     }
-    // 2. Initialize the application
+    /*
+     * 2. Initialize the application
+     */
     lua_State *L = createLuaState(true);
     if (L) {
         configureLua(L, argv[1]);
@@ -75,45 +80,47 @@ int main(int argc, const char* argv[]) {
     }
     TemplateProvider tp;
     templateProviderInit(&tp, L);
-    const char *mainLayoutFileName = argv[2];
     DocumentDataConfig ddc;
     documentDataConfigInit(&ddc);
     VTree *vTree = vTreeCreate();
-    if (templateProviderLoadLayout(&tp, mainLayoutFileName, errBuf)) {
-        if (callLayoutTmplFn(L, vTree, &ddc, errBuf)) {
-            tempHack = vTreeToHtml(vTree);
-        } else {
-            fprintf(stderr, errBuf);
-            documentDataConfigDestruct(&ddc);
-            vTreeDestruct(vTree);
-            lua_close(L);
-            return EXIT_FAILURE;
-        }
-    } else {
-        fprintf(stderr, errBuf);
-        documentDataConfigDestruct(&ddc);
-        vTreeDestruct(vTree);
-        lua_close(L);
-        return EXIT_FAILURE;
+    /*
+     * 3. Generate the main page/layout
+     */
+    const char *mainLayoutFileName = argv[2];
+    if (!templateProviderLoadFnFromFile(&tp, mainLayoutFileName, errBuf)) {
+        goto fail;
     }
-    //
+    if (!callLayoutTmplFn(L, vTree, &ddc, errBuf)) {
+        goto fail;
+    }
+    WebPage page;
+    Generator generator;
+    generatorInit(&generator, &tp, vTree, &ddc);
+    if (!generatorGeneratePage(&generator, &page, "/", errBuf)) {
+        goto fail;
+    }
+    tempHack = page.html;
+    /*
+     * 4. Start the web ui
+     */
     struct MHD_Daemon *daemon = MHD_start_daemon(
         MHD_USE_INTERNAL_POLLING_THREAD|MHD_OPTION_STRICT_FOR_CLIENT, 3000,
         NULL, NULL, &mainRequestHandler, NULL, MHD_OPTION_END
     );
-    if (daemon == NULL) {
-        fprintf(stderr, "Failed to start the server.\n");
-        documentDataConfigDestruct(&ddc);
-        vTreeDestruct(vTree);
-        lua_close(L);
-        return EXIT_FAILURE;
-    } else {
+    if (daemon) {
         printf("Started server at localhost:3000. Hit Ctrl+C to stop it...\n");
+    } else {
+        sprintf(errBuf, "Failed to start the server.\n");
+        goto fail;
     }
     getchar();
     MHD_stop_daemon(daemon);
-    documentDataConfigDestruct(&ddc);
     vTreeDestruct(vTree);
     lua_close(L);
     return EXIT_SUCCESS;
+    fail:
+        fprintf(stderr, errBuf);
+        vTreeDestruct(vTree);
+        lua_close(L);
+        return EXIT_FAILURE;
 }

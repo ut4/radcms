@@ -5,8 +5,17 @@
 #include "lua.h"
 #include "vtree.h" // VTree
 
+/*
+ * Loads all lua bindings into $L.
+ */
 void luaLibLoad(lua_State *L);
-void pushDocumentDataConfig(lua_State *L, DocumentDataConfig *entityCollection);
-void pushVTree(lua_State *L, VTree *vTree);
+/*
+ * Pushes DocumentDataConfig userdata to the lua stack.
+ */
+void luaPushDocumentDataConfig(lua_State *L, DocumentDataConfig *ddc);
+/*
+ * Pushes VTree userdata to the lua stack.
+ */
+void luaPushVTree(lua_State *L, VTree *vTree);
 
 #endif

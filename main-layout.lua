@@ -11,12 +11,8 @@ end
 vtree:e("html", nil, {
     vtree:e("title", nil, "My page"),
     vtree:e("body", nil, {
-        vtree:e("h1", nil, "Hello world"),
-        vtree:e("div", nil,
-            vtree:e("ul", nil, map({"A", "B", "C"}, function (str)
-                return vtree:e("li", nil, "Todo item " .. str)
-            end))
-        )
+        dc:renderAll("Article"):using("articles.lua"),
+        dc:renderOne("Generic"):where("name=\"Footer\""):using("footer.lua")
     })
 })
 

@@ -1,55 +1,58 @@
 #include "../include/data-access.h"
+#include <stdio.h>
 
 // == DataBatchConfig ====
 // =============================================================================
 DataBatchConfig *dataBatchConfigCreate(const char *contentType, bool doFetchAll, int id) {
     DataBatchConfig *out = ALLOCATE(DataBatchConfig, 1);
-    out->contentType = contentType;
+    out->contentType = copyString(contentType);
+    out->renderUsing = NULL;
+    out->where = NULL;
+    out->orderIsAsc = false;
     out->doFetchAll = doFetchAll;
     out->id = id;
+    out->next = NULL;
     return out;
 }
-void dataBatchConfigDestruct(DataBatchConfig *dbc) {
-    FREE(dbc);
+void dataBatchConfigDestruct(DataBatchConfig *this) {
+    FREE(this->contentType);
+    FREE(this->renderUsing);
+    FREE(this);
 }
-void dataBatchConfigUsing(DataBatchConfig *dbc, const char *renderUsing) {
-    dbc->renderUsing = renderUsing;
+void dataBatchConfigUsing(DataBatchConfig *this, const char *renderUsing) {
+    this->renderUsing = copyString(renderUsing);
 }
-void dataBatchConfigOrderBy(DataBatchConfig *dbc, const char *order) {
-    dbc->orderIsAsc = strcmp(order, "Asc") == 0;
+void dataBatchConfigOrderBy(DataBatchConfig *this, const char *order) {
+    this->orderIsAsc = strcmp(order, "Asc") == 0;
 }
-void dataBatchConfigWhere(DataBatchConfig *dbc) {
+void dataBatchConfigWhere(DataBatchConfig *this, const char *where) {
     // todo
-}
-
-// == DataBatchConfigArray ====
-// =============================================================================
-void dataBatchConfigArrayInit(DataBatchConfigArray *array) {
-    array->values = NULL;
-    array->capacity = 0;
-    array->length = 0;
-}
-void dataBatchConfigArrayPush(DataBatchConfigArray *array, DataBatchConfig value) {
-    if (array->capacity < array->length + 1) {
-        int oldCapacity = array->capacity;
-        array->capacity = ARRAY_INCREASE_CAPACITY(oldCapacity);
-        array->values = ARRAY_GROW(array->values, DataBatchConfig,
-                                   oldCapacity, array->capacity);
-    }
-    array->values[array->length] = value;
-    array->length++;
-}
-void dataBatchConfigArrayDestruct(DataBatchConfigArray *array) {
-    ARRAY_FREE(DataBatchConfig, array->values, array->capacity);
-    dataBatchConfigArrayInit(array);
 }
 
 // == DocumentDataConfig ====
 // =============================================================================
-void documentDataConfigInit(DocumentDataConfig *ddc) {
-    ddc->batchIdCounter = 0;
-    dataBatchConfigArrayInit(&ddc->batches);
+void documentDataConfigInit(DocumentDataConfig *this) {
+    this->batchIdCounter = 0;
+    this->batches = NULL;
 }
-void documentDataConfigDestruct(DocumentDataConfig *ddc) {
-    dataBatchConfigArrayDestruct(&ddc->batches);
+void documentDataConfigDestruct(DocumentDataConfig *this) {
+    //
+}
+DataBatchConfig *documentDataConfigAddBatch(DocumentDataConfig *this,
+                                            const char *contentType,
+                                            bool isFetchAll) {
+    DataBatchConfig *newBatchConfig = dataBatchConfigCreate(
+        contentType, isFetchAll, this->batchIdCounter);
+    DataBatchConfig *ret;
+    if (!this->batches) {
+        this->batches = newBatchConfig;
+        ret = this->batches;
+    } else {
+        DataBatchConfig *cur = this->batches;
+        while (cur->next) cur = cur->next;
+        cur->next = newBatchConfig;
+        ret = cur->next;
+    }
+    this->batchIdCounter++;
+    return ret;
 }

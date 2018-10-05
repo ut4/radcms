@@ -45,8 +45,7 @@ void dumpLuaStack(lua_State *L) {
 
 const char *getLuaErrorDetails(lua_State *L) {
     if (lua_isstring(L, lua_gettop(L))) {
-        const char *err = lua_tostring(L, lua_gettop(L));
-        return err;
+        return lua_tostring(L, lua_gettop(L));
     }
     return "";
 }

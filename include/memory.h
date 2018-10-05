@@ -6,6 +6,7 @@
 #include <stddef.h> // size_t
 
 void *reallocate(void *previous, size_t oldSize, size_t newSize);
+char *copyString(const char *luaManagedString);
 
 #define ALLOCATE(type, howMany) \
     (type*)reallocate(NULL, 0, sizeof(type) * (howMany))
