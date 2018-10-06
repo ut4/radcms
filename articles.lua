@@ -18,3 +18,13 @@ vtree:e("div", nil, map(data, function (article)
         }--]], "Click here man")
     })
 end))
+
+--[[ luax equivalent
+<div>{ map(data, function (article)
+    return <article>
+        <h2>{ article.title }</h2>
+        <p>{ string.sub(article.body, 0, 6) }...</p>
+        <link>Click here man</link>
+    </article>
+end }</div>
+--]]

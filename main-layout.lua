@@ -20,12 +20,8 @@ vtree:e("html", nil, {
 <html>
     <title>My page</title>
     <body>
-        <h1>Hello world</h1>
-        <div>
-            <ul>{ map({"A", "B", "C"}, function (str)
-                return <li>Todo item { str }</li>
-            end }<ul>
-        </div>
+        { renderAll("Article"):using("articles.lua") }
+        { renderOne("Generic"):where("name=\"Footer\""):using("footer.lua") }
     <body>
 </html>
 --]]

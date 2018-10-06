@@ -15,10 +15,10 @@ set(SOURCE_FILES
     include/memory.h src/memory.c
     include/templating.h src/templating.c
     include/vtree.h src/vtree.c
+    include/web-common.h src/web-common.c
+    include/web.h src/web.c
+    include/api/component.h src/api/component.c
 )
-#add_executable(gen ${SOURCE_FILES} main.c)
-#target_compile_options(gen PUBLIC ${RAD3_COMPILE_OPTIONS})
-
 add_executable(gen ${SOURCE_FILES} main.c)
 target_compile_options(gen PUBLIC ${RAD3_COMPILE_OPTIONS})
 target_link_libraries(gen ${RAD3_DEP_LIBS})

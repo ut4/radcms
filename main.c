@@ -1,43 +1,11 @@
 #include <stdio.h>
-#if defined(_WIN32) && !defined(__CYGWIN__)
-#include <winsock2.h>
-#else
-#include <sys/select.h>
-#endif
-#include <microhttpd.h>
 #include "include/data-access.h" // DocumentDataConfig, DataBatchConfig
 #include "include/generating.h" // generatorGenerate(), WebSite
 #include "include/lua.h" // createLuaState()
 #include "include/lualib.h" // luaLibLoad()
 #include "include/templating.h" // TemplateProvider
 #include "include/vtree.h" // vtreeCreate()
-
-char *tempHack;
-
-int mainRequestHandler(
-    void *cls,
-    struct MHD_Connection *connection,
-    const char *url,
-    const char *method,
-    const char *version,
-    const char *uploadData,
-    size_t *uploadDataSize,
-    void **conCls
-) {
-    const char *noContent = "<html><body>404</body></html>";
-    struct MHD_Response *response;
-    unsigned statusCode = MHD_HTTP_OK;
-    int ret;
-    if (strcmp(method, "GET") == 0) {
-        response = MHD_create_response_from_buffer(strlen(tempHack), (void*)tempHack, MHD_RESPMEM_PERSISTENT);
-    } else {
-        response = MHD_create_response_from_buffer(strlen(noContent), (void*)noContent, MHD_RESPMEM_PERSISTENT);
-        statusCode = MHD_HTTP_NOT_FOUND;
-    }
-    ret = MHD_queue_response(connection, statusCode, response);
-    MHD_destroy_response(response);
-    return ret;
-}
+#include "include/web.h" // global "app" variable, appStart(), appShutdown()
 
 // TODO move this to somewhere else
 static bool callLayoutTmplFn(
@@ -55,6 +23,26 @@ static bool callLayoutTmplFn(
     return false;
 }
 
+static void injectCPanel(char *html) {
+    const char *injection = "<iframe src=\"/int/cpanel\"></iframe>";
+    char *tmp = ARRAY_GROW(html, char, strlen(html),
+                           strlen(html) + strlen(injection) + 1);
+    char *startOfBody = strstr(tmp, "<body>");
+    if (startOfBody) {
+        startOfBody += strlen("<body>");
+    } else {
+        fprintf(stderr, "Failed to inject the ui-panel into the main layout.");
+        ARRAY_FREE(char, tmp, strlen(tmp));
+        return;
+    }
+    size_t injlen = strlen(injection);
+    // Appends <html><body>ROOMFORINJECTIONabcd</body>
+    memmove(startOfBody + injlen, startOfBody, strlen(startOfBody));
+    // Replaces ROOMFORINJECTION
+    memmove(startOfBody, injection, injlen);
+    html = tmp;
+}
+
 int main(int argc, const char* argv[]) {
     char errBuf[512];
     errBuf[0] = '\0';
@@ -62,10 +50,10 @@ int main(int argc, const char* argv[]) {
      * 1. Validate arguments
      */
     if (argc < 3) {
-        fprintf(stderr, "Usage gen.exe path/to/my/workspace main-layout-file.lua\n");
+        fprintf(stderr, "Usage gen.exe path/to/my/workspace/ main-layout-file.lua\n");
         return EXIT_FAILURE;
-        // todo if (!argv[1].endswith('/')) -> validation err
-        // todo if (!argv[2].isDir()) -> validation err
+        // todo if (!argv[1].endswith('/') or isNotDir) -> validation err
+        // todo if (!argv[2].isFile()) -> validation err
     }
     /*
      * 2. Initialize the application
@@ -99,22 +87,22 @@ int main(int argc, const char* argv[]) {
     if (!generatorGeneratePage(&generator, &page, "/", errBuf)) {
         goto fail;
     }
-    tempHack = page.html;
+    injectCPanel(page.html);
     /*
      * 4. Start the web ui
      */
-    struct MHD_Daemon *daemon = MHD_start_daemon(
-        MHD_USE_INTERNAL_POLLING_THREAD|MHD_OPTION_STRICT_FOR_CLIENT, 3000,
-        NULL, NULL, &mainRequestHandler, NULL, MHD_OPTION_END
-    );
-    if (daemon) {
+    appInit(argv[1], page.html);
+    if (appStart()) {
         printf("Started server at localhost:3000. Hit Ctrl+C to stop it...\n");
     } else {
         sprintf(errBuf, "Failed to start the server.\n");
         goto fail;
     }
+    /*
+     * 5. Wait
+     */
     getchar();
-    MHD_stop_daemon(daemon);
+    appShutdown();
     vTreeDestruct(vTree);
     lua_close(L);
     return EXIT_SUCCESS;
