@@ -1,27 +1,41 @@
-#ifndef rad3_memory_h
-#define rad3_memory_h
+#ifndef insn_memory_h
+#define insn_memory_h
 
-#include <stdlib.h> // free, realloc
-#include <string.h> // memcpy
-#include <stddef.h> // size_t
+#define DEBUG_COUNT_ALLOC // comment to disable memory counting
+#include <stdio.h> // NULL
+#include <stdlib.h> // realloc, free
+#include <string.h> // strdup
+#include "common.h"
 
-void *reallocate(void *previous, size_t oldSize, size_t newSize);
-char *copyString(const char *luaManagedString);
+#define ALLOCATE(type) \
+    (type*)reallocate(NULL, 0, sizeof(type))
 
-#define ALLOCATE(type, howMany) \
-    (type*)reallocate(NULL, 0, sizeof(type) * (howMany))
+#define ALLOCATE_ARR(type, count) \
+    (type*)reallocate(NULL, 0, sizeof(type) * (count))
 
-#define FREE(pointer) \
-    reallocate(pointer, 0, 0)
+#define FREE(type, pointer) \
+    reallocate(pointer, sizeof(type), 0)
 
-#define ARRAY_INCREASE_CAPACITY(capacity) \
-    ((capacity) < 8 ? 8 : (capacity) * 2)
+#define FREE_STR(nullTerminatedStr) \
+    reallocate(nullTerminatedStr, strlen(nullTerminatedStr) + 1, 0)
 
-#define ARRAY_GROW(previous, type, oldCount, count) \
-    (type*)reallocate(previous, sizeof(type) * (oldCount), \
-        sizeof(type) * (count))
+/**
+ * Because valgrind is linux-only and App Verifier (or i am) is shit.
+ */
+void*
+reallocate(void* previous, size_t oldSize, size_t newSize);
 
-#define ARRAY_FREE(type, pointer, oldCount) \
-    reallocate(pointer, sizeof(type) * (oldCount), 0)
+/**
+ * Returns a copy of $str. The caller is responsible of freeing the return value.
+ */
+char*
+copyString(const char *str);
+
+/**
+ * Prints the number of bytes that's still in use, or does nothing if
+ * DEBUG_COUNT_ALLOC is not defined.
+ */
+void
+printMemoryReport();
 
 #endif

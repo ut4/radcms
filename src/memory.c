@@ -1,6 +1,13 @@
 #include "../include/memory.h"
 
-void *reallocate(void* previous, size_t oldSize, size_t newSize) {
+#ifdef DEBUG_COUNT_ALLOC
+static size_t bytesAllocated = 0;
+#endif
+
+void* reallocate(void* previous, size_t oldSize, size_t newSize) {
+#ifdef DEBUG_COUNT_ALLOC
+    bytesAllocated += newSize - oldSize; // note: >0 on ALLOCATE, <0 on FREE
+#endif
     if (newSize == 0) {
         free(previous);
         return NULL;
@@ -8,10 +15,16 @@ void *reallocate(void* previous, size_t oldSize, size_t newSize) {
     return realloc(previous, newSize);
 }
 
-char *copyString(const char *luaManagedStr) {
-    int len = strlen(luaManagedStr);
-    char* out = ALLOCATE(char, len + 1);
-    memcpy(out, luaManagedStr, len);
-    out[len] = '\0';
-    return out;
+char *copyString(const char *str) {
+#ifdef DEBUG_COUNT_ALLOC
+    bytesAllocated += strlen(str) + 1;
+#endif
+    return strdup(str);
+}
+
+void
+printMemoryReport() {
+#ifdef DEBUG_COUNT_ALLOC
+    printToStdErr("Program exited, unfreed bytes: %d.\n", bytesAllocated);
+#endif
 }
