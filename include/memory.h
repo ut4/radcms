@@ -16,6 +16,9 @@
 #define FREE(type, pointer) \
     reallocate(pointer, sizeof(type), 0)
 
+#define FREE_ARR(type, pointer, count) \
+    reallocate(pointer, sizeof(type) * (count), 0)
+
 #define FREE_STR(nullTerminatedStr) \
     reallocate(nullTerminatedStr, strlen(nullTerminatedStr) + 1, 0)
 

@@ -13,6 +13,7 @@ set(SOURCE_FILES
     include/memory.h src/memory.c
     include/site-ini.h src/site-ini.c
     include/web-app.h src/web-app.c
+    include/website.h src/website.c
 )
 add_executable(insane ${SOURCE_FILES} main.c)
 target_compile_options(insane PUBLIC ${INSN_COMPILE_OPTIONS})
