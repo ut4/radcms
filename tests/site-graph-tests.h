@@ -2,7 +2,7 @@
 #define site_graph_tests_h
 
 #include "testlib.h" // assertThat
-#include "../include/website.h" // PageArray, siteGraph*()
+#include "../include/web/website.h" // PageArray, siteGraph*()
 
 void siteGraphTestsRun();
 

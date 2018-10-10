@@ -1,13 +1,36 @@
-#include "../include/website.h"
+#include "../../include/web/website.h"
 
 #define END_OF_VAL '|'
 
-static unsigned readInt();
+static unsigned readInt(); // TODO move to ParseUtils..
 static char* readUrl();
 static bool isDigit(char c);
 static char advance();
 
 static char *current;
+
+bool
+webSiteInit(Website *this, char *err) {
+    const char *serialized = "5|24/|0|5/foo|0|8/f/b|5|6/b/z|8|2/baz|0";
+    return siteGraphParse((char*)serialized, &this->siteGraph, err);
+}
+
+void
+websiteDestruct(Website *this) {
+    pageArrayDestruct(&this->siteGraph);
+}
+
+unsigned
+websiteHandlersHandlePageRequest(void *this, const char *method, const char *url,
+                                 struct MHD_Response **response) {
+    Page *p = siteGraphFindPage(&((Website*)this)->siteGraph, url);
+    if (!p) {
+        return MHD_HTTP_NOT_FOUND;
+    }
+    *response = MHD_create_response_from_buffer(strlen(p->url), (void*)p->url,
+                                                MHD_RESPMEM_PERSISTENT);
+    return MHD_HTTP_OK;
+}
 
 bool
 siteGraphParse(char *str, PageArray *out, char *err) {
@@ -38,6 +61,16 @@ siteGraphParse(char *str, PageArray *out, char *err) {
 void
 siteGraphSerialize(PageArray *siteGraph, char *to) {
 
+}
+
+Page*
+siteGraphFindPage(PageArray *siteGraph, const char *url) {
+    for (unsigned i = 0; i < siteGraph->length; ++i) {
+        if (strcmp(siteGraph->values[i].url, url) == 0) {
+            return &siteGraph->values[i];
+        }
+    }
+    return NULL;
 }
 
 static unsigned
@@ -82,7 +115,6 @@ static char advance() {
     return current[-1];
 }
 
-// -- PageArray --
 void
 pageArrayInit(PageArray *this, unsigned capacity) {
     this->capacity = capacity;

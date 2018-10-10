@@ -16,14 +16,14 @@ receiveIniVal(void* myPtr, const char* section, const char* key,
 }
 
 static bool
-validateFields(SiteIni *this, char *rootDir, char *err) {
+validateFields(SiteIni *this, char *err) {
     if (!this->mainLayoutFileName || strlen(this->mainLayoutFileName) == 0) {
         putError("Config err: [Site]mainLayoutFileName missing from site.ini\n");
         return false;
     }
-    size_t l = strlen(rootDir) + strlen(this->mainLayoutFileName) + 1;
+    size_t l = strlen(this->rootDir) + strlen(this->mainLayoutFileName) + 1;
     char layoutFilePath[l];
-    snprintf(layoutFilePath, l, "%s%s", rootDir, this->mainLayoutFileName);
+    snprintf(layoutFilePath, l, "%s%s", this->rootDir, this->mainLayoutFileName);
     if (!fileIOIsWritable(layoutFilePath)) {
         putError("Config err: main layout file '%s' is not writable.\n",
                  layoutFilePath);
@@ -35,6 +35,7 @@ validateFields(SiteIni *this, char *rootDir, char *err) {
 void
 siteIniInit(SiteIni *this) {
     this->mainLayoutFileName = NULL;
+    this->rootDir = NULL;
 }
 
 void
@@ -45,12 +46,12 @@ siteIniDestruct(SiteIni *this) {
 }
 
 bool
-siteIniReadAndValidate(SiteIni *this, char *filePath, char *rootDir, char *err) {
+siteIniReadAndValidate(SiteIni *this, char *filePath, char *err) {
     // -1 == file open error, -2 == mem error
     if (ini_parse(filePath, receiveIniVal, this) < 0) {
         putError("Config err: Failed to read site.ini '%s'.\n", filePath);
         return false;
     }
     // this->* are now populated, check that all required fields are set
-    return validateFields(this, rootDir, err);
+    return validateFields(this, err);
 }

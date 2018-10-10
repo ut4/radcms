@@ -9,6 +9,7 @@
 
 typedef struct {
     char *mainLayoutFileName;
+    char *rootDir; // borrowed from WebApp
 } SiteIni;
 
 void
@@ -21,6 +22,6 @@ siteIniDestruct(SiteIni *this);
  * Reads and parses $filePath, and return true if it was valid.
  */
 bool
-siteIniReadAndValidate(SiteIni *this, char *filePath, char *rootDir, char *err);
+siteIniReadAndValidate(SiteIni *this, char *filePath, char *err);
 
 #endif

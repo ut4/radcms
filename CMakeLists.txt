@@ -8,12 +8,13 @@ include_directories(pike ${INSN_DEP_INCLUDES})
 
 # == insane.exe ================================================================
 set(SOURCE_FILES
+    include/web/website.h src/web/website.c
     include/common.h
     include/file-io.h src/file-io.c
     include/memory.h src/memory.c
     include/site-ini.h src/site-ini.c
+    include/web-app-common.h
     include/web-app.h src/web-app.c
-    include/website.h src/website.c
 )
 add_executable(insane ${SOURCE_FILES} main.c)
 target_compile_options(insane PUBLIC ${INSN_COMPILE_OPTIONS})
@@ -26,4 +27,4 @@ set(TESTS_FILES
 )
 add_executable(tests ${SOURCE_FILES} ${TESTS_FILES} tests-main.c)
 target_compile_options(tests PUBLIC ${INSN_COMPILE_OPTIONS})
-target_link_libraries(tests inih)
+target_link_libraries(tests ${INSN_DEP_LIBS})
