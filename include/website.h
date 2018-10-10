@@ -8,28 +8,33 @@ typedef struct PageArray PageArray;
 
 typedef struct {
     unsigned id;
-    unsigned level;
+    char *url; // eg. "/" or "/foo/bar"
+    unsigned parentId;
 } Page;
 
 typedef struct {
-    PageArray *pageGraph;
+    PageArray *siteGraph;
 } Website;
 
 /**
- * Creates a page graph $out from a serialized array $str.
- *
- * @param {char} *str Array to parse
- * @param {unsigned} strLen Number of characters in $str
- * @param {PageArray} *out
+ * Creates a page graph $out from a serialized array $str. $str should be null-
+ * terminated.
  */
 bool
-pageGraphParse(char *str, unsigned strLen, PageArray *out);
+siteGraphParse(char *str, PageArray *out, char *err);
 
 /**
- * Converts $pageGraph to a compact representation $to.
+ * Converts $siteGraph to a storable string $to. Example:
+ *
+ * "3|" +               // 3 pages total
+ * "24/|0|" +           // id=24, url=/, parentId=0
+ *     "5/foo|24|" +    // id=5, url=/foo, parentId=24
+ *         "8/f/b|5|" + // id=8, url=/f/b, parentId=5
+ *  "2/baz|0";          // id=2, url=/baz, parentId=0
+ *  // \0 should always contain null byte
  */
 void
-pageGraphSerialize(PageArray *pageGraph, char *to);
+siteGraphSerialize(PageArray *siteGraph, char *to);
 
 struct PageArray {
     unsigned capacity;

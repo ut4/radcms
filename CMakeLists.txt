@@ -18,3 +18,12 @@ set(SOURCE_FILES
 add_executable(insane ${SOURCE_FILES} main.c)
 target_compile_options(insane PUBLIC ${INSN_COMPILE_OPTIONS})
 target_link_libraries(insane ${INSN_DEP_LIBS})
+
+# == tests.exe =================================================================
+set(TESTS_FILES
+    tests/testlib.h
+    tests/site-graph-tests.h tests/site-graph-tests.c
+)
+add_executable(tests ${SOURCE_FILES} ${TESTS_FILES} tests-main.c)
+target_compile_options(tests PUBLIC ${INSN_COMPILE_OPTIONS})
+target_link_libraries(tests inih)

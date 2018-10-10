@@ -19,12 +19,16 @@ int main(int argc, const char* argv[]) {
     } else { // init
         printToStdErr("insane init not implemented.\n"); goto fail;
     }
-    const char *c="4e24en5e12en<2en<";
-    if (!pageGraphParse((char*)c, strlen(c), &siteGraph)) goto fail;
+    const char *c = "5|24/|0|5/foo|0|8/f/b|5|6/b/z|8|2/baz|0";
+    if (!siteGraphParse((char*)c, &siteGraph, errBuf)) goto fail;
     printf("Ok: ");
-    printf("pageGraph: ");
+    printf("siteGraph: ");
     for (unsigned i = 0; i < siteGraph.length; ++i) {
-        printf("id: %d, level: %d\n", siteGraph.values[i].id, siteGraph.values[i].level);
+        printf("id: %d, url: %s, parentId: %d\n",
+            siteGraph.values[i].id,
+            siteGraph.values[i].url,
+            siteGraph.values[i].parentId
+        );
     }
     webAppDestruct(&app);
     pageArrayDestruct(&siteGraph);

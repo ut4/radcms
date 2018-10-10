@@ -1,49 +1,85 @@
 #include "../include/website.h"
 
-static unsigned readInt(char *str, unsigned *iptr);
+#define END_OF_VAL '|'
+
+static unsigned readInt();
+static char* readUrl();
+static bool isDigit(char c);
+static char advance();
+
+static char *current;
 
 bool
-pageGraphParse(char *str, unsigned strLen, PageArray *out) {
-    unsigned i = 0;
-    unsigned level = 0;
-    unsigned totalPageCount = readInt(str, &i);
+siteGraphParse(char *str, PageArray *out, char *err) {
+    if (!isDigit(str[0])) {
+        putError("ParseError: Expected a digit but got '%c'", str[0]);
+        return false;
+    }
+    current = str;
+    unsigned totalPageCount = readInt();
     pageArrayInit(out, totalPageCount);
-    while (i < strLen) {
-        // '<' == end of branch
-        if (str[i] == '<') {
-            level--;
-        // page id, consume until 'e'
-        } else if (str[i] != 'n') {
-            unsigned pageId = readInt(str, &i);
-            Page newPage = {.id = pageId, .level = level};
+    while (*current != '\0') {
+        if (isDigit(*current)) {
+            Page newPage = {
+                .id = readInt(),
+                .url = readUrl(),
+                .parentId = readInt()
+            };
             pageArrayPush(out, &newPage);
-            if (str[i] - '0' < 58) { // '0'(48)-'9'(57)
-                level++;
-            }
             continue;
+        } else {
+            putError("Unpexted character '%c'", *current);
+            return false;
         }
-        i++;
     }
     return true;
 }
 
 void
-pageGraphSerialize(PageArray *pageGraph, char *to) {
+siteGraphSerialize(PageArray *siteGraph, char *to) {
 
 }
 
-static unsigned readInt(char *str, unsigned *iptr) {
+static unsigned
+readInt() {
     char uintBuf[10]; // strlen("4294967295")
-    unsigned bufI = 0;
-    unsigned i = *iptr;
-    while (str[i] != 'e') {
-        uintBuf[bufI] = str[i];
-        i++;
-        bufI++;
+    unsigned n = 0;
+    while (isDigit(*current)) {
+        uintBuf[n] = advance();
+        n++;
     }
-    i++; // consume 'e'
-    *iptr = i;
+    if (*current == END_OF_VAL) (void)advance();
     return (unsigned)atoi(uintBuf);
+}
+
+static char*
+readUrl() {
+    char *start = current;
+    char c = *current;
+    while (
+        (c >= '-' && c <= '9') || // - someweirdcharacter / and 0-9
+        (c >= 'A' && c <= 'Z') ||
+        (c >= 'a' && c <= 'z') ||
+        c == '_'
+    ) {
+        (void)advance();
+        c = *current;
+    }
+    int urlLen = (int)(current - start); // not including space for \0
+    char *out = ALLOCATE_ARR(char, urlLen + 1);
+    memcpy(out, start, urlLen);
+    out[urlLen] = '\0';
+    if (c == END_OF_VAL) (void)advance();
+    return out;
+}
+
+static bool isDigit(char c) {
+    return c >= '0' && c <= '9';
+}
+
+static char advance() {
+    current++;
+    return current[-1];
 }
 
 // -- PageArray --
@@ -60,7 +96,8 @@ pageArrayPush(PageArray *this, Page *page) {
 }
 void
 pageArrayDestruct(PageArray *this) {
-    FREE_ARR(Page, this->values, this->length);
+    for (unsigned i = 0; i < this->capacity; ++i) FREE_STR(this->values[i].url);
+    FREE_ARR(Page, this->values, this->capacity);
     this->values = NULL;
     this->length = 0;
 }
