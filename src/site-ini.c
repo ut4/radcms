@@ -21,9 +21,7 @@ validateFields(SiteIni *this, char *err) {
         putError("Config err: [Site]mainLayoutFileName missing from site.ini\n");
         return false;
     }
-    size_t l = strlen(this->rootDir) + strlen(this->mainLayoutFileName) + 1;
-    char layoutFilePath[l];
-    snprintf(layoutFilePath, l, "%s%s", this->rootDir, this->mainLayoutFileName);
+    STR_CONCAT(layoutFilePath, this->rootDir, this->mainLayoutFileName);
     if (!fileIOIsWritable(layoutFilePath)) {
         putError("Config err: main layout file '%s' is not writable.\n",
                  layoutFilePath);

@@ -2,8 +2,9 @@
 #define insn_website_h
 
 #include <stdbool.h>
+#include "../db.h"
 #include "../memory.h"
-#include "../web-app-common.h" // microhttpd
+#include "../str-reader.h" // strReaderRead*() etc.
 
 struct Page;
 typedef struct Page Page;
@@ -17,40 +18,38 @@ struct Page {
     unsigned id;
     char *url; // eg. "/" or "/foo/bar"
     unsigned parentId;
+    char *layoutFileName;
 };
 
 typedef struct {
     PageArray siteGraph;
+    StrReader strReader;
 } Website;
 
-bool
-webSiteInit(Website *this, char *err);
+void
+websiteInit(Website *this);
 
 void
 websiteDestruct(Website *this);
 
-/**
- * Responds to GET /<any> eg "/" or "/foo" or "/foo/bar/baz".
- */
-unsigned
-websiteHandlersHandlePageRequest(void *this, const char *method, const char *url,
-                                 struct MHD_Response **response);
+bool
+websiteFetchAndParseSiteGraph(Website *this, Db *db, char *err);
 
 /**
  * Creates a page graph $out from a serialized array $str. $str should be null-
  * terminated.
  */
 bool
-siteGraphParse(char *str, PageArray *out, char *err);
+siteGraphParse(char *str, PageArray *out, StrReader *sr, char *err);
 
 /**
  * Converts $siteGraph to a storable string $to. Example:
  *
- * "3|" +               // 3 pages total
- * "24/|0|" +           // id=24, url=/, parentId=0
- *     "5/foo|24|" +    // id=5, url=/foo, parentId=24
- *         "8/f/b|5|" + // id=8, url=/f/b, parentId=5
- *  "2/baz|0";          // id=2, url=/baz, parentId=0
+ * "4|" +                 // 4 pages total
+ * "24/|0|a.b|" +         // id=24, url=/,    parentId=0,  layoutFileName=a.b
+ *     "5/foo|24|b|" +    // id=5,  url=/foo, parentId=24, layoutFileName=b
+ *         "8/f/b|5|c|" + // id=8,  url=/f/b, parentId=5,  layoutFileName=c
+ *  "2/baz|0|d|";         // id=2,  url=/baz, parentId=0,  layoutFileName=d
  *  // \0 should always contain null byte
  */
 void

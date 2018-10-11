@@ -2,7 +2,6 @@
 #define insn_memory_h
 
 #define DEBUG_COUNT_ALLOC // comment to disable memory counting
-#include <stdio.h> // NULL
 #include <stdlib.h> // realloc, free
 #include <string.h> // strdup
 #include "common.h"
@@ -21,6 +20,11 @@
 
 #define FREE_STR(nullTerminatedStr) \
     reallocate(nullTerminatedStr, strlen(nullTerminatedStr) + 1, 0)
+
+#define STR_CONCAT(toVarName, a, b) \
+    size_t l = strlen(a) + strlen(b) + 1; \
+    char toVarName[l]; \
+    snprintf(toVarName, l, "%s%s", a, b)
 
 /**
  * Because valgrind is linux-only and App Verifier (or i am) is shit.

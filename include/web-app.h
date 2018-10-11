@@ -6,7 +6,7 @@
 #include "memory.h" // ALLOCATE etc.
 #include "site-ini.h" // SiteIni etc.
 #include "web-app-common.h" // handlerFn, microhttpd etc.
-#include "web/website.h" // websiteHandlersHandle*()
+#include "web/website-handlers.h" // websiteHandlersHandle*()
 
 typedef struct {
     char *rootDir; // Normalized, always ends with "/"

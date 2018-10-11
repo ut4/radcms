@@ -2,6 +2,7 @@
 #define insn_common_h
 
 #include <stdbool.h>
+#include <stdio.h>
 
 #define ERR_BUF_LEN 512
 
