@@ -4,6 +4,7 @@
 #include "testlib.h" // assertThat
 #include "../include/web/website.h" // PageArray, siteGraph*()
 
-void siteGraphTestsRun();
+void
+siteGraphTestsRun();
 
 #endif

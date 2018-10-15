@@ -45,12 +45,12 @@ siteGraphParse(char *str, PageArray *out, StrReader *sr, char *err);
 /**
  * Converts $siteGraph to a storable string $to. Example:
  *
- * "4|" +                 // 4 pages total
- * "24/|0|a.b|" +         // id=24, url=/,    parentId=0,  layoutFileName=a.b
- *     "5/foo|24|b|" +    // id=5,  url=/foo, parentId=24, layoutFileName=b
- *         "8/f/b|5|c|" + // id=8,  url=/f/b, parentId=5,  layoutFileName=c
- *  "2/baz|0|d|";         // id=2,  url=/baz, parentId=0,  layoutFileName=d
- *  // \0 should always contain null byte
+ * "4|"                      // 4 pages total
+ * "24/|0|a.tmpl|"           // id=24, url=/,    parentId=0,  layoutFileName=a.tmpl
+ *     "5/foo|24|b.tmpl|"    // id=5,  url=/foo, parentId=24, layoutFileName=b.tmpl
+ *         "8/f/b|5|c.tmpl|" // id=8,  url=/f/b, parentId=5,  layoutFileName=c.tmpl
+ * "2/baz|0|a.tmpl"          // id=2,  url=/baz, parentId=0,  layoutFileName=a.tmpl
+ * // \0 should always contain null byte
  */
 void
 siteGraphSerialize(PageArray *siteGraph, char *to);

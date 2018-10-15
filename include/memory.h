@@ -26,6 +26,12 @@
     char toVarName[l]; \
     snprintf(toVarName, l, "%s%s", a, b)
 
+#define ARRAY_GROW(previous, type, oldCount, count) \
+    (type*)reallocate(previous, sizeof(type) * oldCount, sizeof(type) * count)
+
+#define ARRAY_INCREASE_CAPACITY(capacity) \
+    (capacity < 8 ? 8 : capacity * 2)
+
 /**
  * Because valgrind is linux-only and App Verifier (or i am) is shit.
  */

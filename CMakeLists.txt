@@ -14,6 +14,7 @@ set(SOURCE_FILES_COMMON
     include/file-io.h src/file-io.c
     include/memory.h src/memory.c
     include/site-ini.h src/site-ini.c
+    include/v-tree.h src/v-tree.c
     include/str-reader.h src/str-reader.c
 )
 set(SOURCE_FILES_WEB
@@ -30,6 +31,7 @@ set(TESTS_FILES
     tests/test-utils.h tests/test-utils.c
     tests/testlib.h
     tests/site-graph-tests.h tests/site-graph-tests.c
+    tests/v-tree-tests.h tests/v-tree-tests.c
     tests/website-mapper-tests.h tests/website-mapper-tests.c
 )
 add_executable(tests ${SOURCE_FILES_COMMON} ${TESTS_FILES} tests-main.c)

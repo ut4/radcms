@@ -20,15 +20,13 @@ testSiteGraphParseParsesTheInput() {
     PageArray testGraph;
     StrReader strReader;
     char errBuf[ERR_BUF_LEN];
-    char serialized[] = {
-        '5','|',                                         // 5 pages total
-        '2','4','/','|','0','|','a','.','b','|',         // id=24, url=/, parentId=0, layoutFileName=a.b
-        '5','/','f','o','o','|','0','|','a','|',         // id=5, url=/foo, parentId=0, layoutFileName=a
-            '8','/','f','/','b','|','5','|','b','|',     // id=8, url=/f/b, parentId=5, layoutFileName=b
-                '6','/','b','/','z','|','8','|','c','|', // id=8, url=/f/b, parentId=8, layoutFileName=c
-        '2','/','b','a','z','|','0','|','d',             // id=2, url=/baz, parentId=0, layoutFileName=d
-        '\0'
-    };
+    char *serialized =
+        "5|"                 // 5 pages total
+        "24/|0|a.b|"         // id=24, url=/, parentId=0, layoutFileName=a.b
+        "5/foo|0|a|"         // id=5, url=/foo, parentId=0, layoutFileName=a
+            "8/f/b|5|b|"     // id=8, url=/f/b, parentId=5, layoutFileName=b
+                "6/b/z|8|c|" // id=8, url=/f/b, parentId=8, layoutFileName=c
+        "2/baz|0|d";         // id=2, url=/baz, parentId=0, layoutFileName=d
     // 2. Call
     bool ok = siteGraphParse(serialized, &testGraph, &strReader, errBuf);
     // 3. Assert

@@ -5,6 +5,7 @@
 #include "test-utils.h" // testUtilsSetupTestDb()
 #include "../include/web/website.h" // PageArray, siteGraph*()
 
-void websiteMapperTestsRun();
+void
+websiteMapperTestsRun();
 
 #endif
