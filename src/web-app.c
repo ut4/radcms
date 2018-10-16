@@ -19,9 +19,10 @@ static RequestHandler*
 getHandler(WebApp *app, const char *method, const char *url);
 
 void
-webAppInit(WebApp *this) {
+webAppInit(WebApp *this, char *errBuf) {
     siteIniInit(&this->ini);
     this->handlerCount = sizeof(this->handlers) / sizeof(RequestHandler);
+    this->errBuf = errBuf;
 }
 
 void
@@ -60,7 +61,10 @@ webAppRespond(void *myPtr, struct MHD_Connection *connection, const char *url,
     WebApp *app = (WebApp*)myPtr;
     RequestHandler *h = getHandler(app, method, url);
     if (h) {
-        statusCode = h->handlerFn(h->this, method, url, &response);
+        statusCode = h->handlerFn(h->this, method, url, &response, app->errBuf);
+    }
+    if (strlen(app->errBuf) > 0) {
+        printToStdErr("Error in handler: '%s'", app->errBuf);
     }
     if (!h || statusCode == MHD_HTTP_NOT_FOUND) {
         response = MHD_create_response_from_buffer(strlen(notFoundMessage),
@@ -68,7 +72,7 @@ webAppRespond(void *myPtr, struct MHD_Connection *connection, const char *url,
                                                    MHD_RESPMEM_PERSISTENT);
         statusCode = MHD_HTTP_NOT_FOUND;
     }
-    if (!response) {
+    if (!response || statusCode == MHD_HTTP_INTERNAL_SERVER_ERROR) {
         response = MHD_create_response_from_buffer(strlen(internalErrorMessage),
                                                    (void*)internalErrorMessage,
                                                    MHD_RESPMEM_PERSISTENT);

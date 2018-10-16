@@ -24,6 +24,7 @@ struct Page {
 typedef struct {
     PageArray siteGraph;
     StrReader strReader;
+    char *rootDir; // borrowed from WebApp
 } Website;
 
 void

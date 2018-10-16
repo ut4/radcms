@@ -96,7 +96,7 @@ doRender(VTree *this, ElemNode *node) {
 char*
 vTreeToHtml(VTree *this, char *err) {
     if (this->elemNodes.length == 0) {
-        putError("Cannot render an empty vTree.");
+        putError("Cannot render an empty vTree.\n");
         return NULL;
     }
     this->renderedHtml = ALLOCATE_ARR(char, this->calculatedRenderCharCount + 1);
@@ -105,7 +105,7 @@ vTreeToHtml(VTree *this, char *err) {
     doRender(this, root);
     if (strlen(this->renderedHtml) > this->calculatedRenderCharCount) {
         printToStdErr("calculatedRenderCharCount was %d, but actually wrote "
-                      "%d chars! Exiting.", this->calculatedRenderCharCount,
+                      "%d chars! Exiting.\n", this->calculatedRenderCharCount,
                       strlen(this->renderedHtml));
         exit(EXIT_FAILURE);
     }

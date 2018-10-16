@@ -1,8 +1,6 @@
 #ifndef insn_webAppCommon_h
 #define insn_webAppCommon_h
 
-#include <sys/stat.h> // fstat
-#include <fcntl.h> // O_RDONLY
 #if defined(_WIN32) && !defined(__CYGWIN__)
 #include <winsock2.h>
 #else
@@ -15,7 +13,7 @@
  * MHD_HTTP_OK.
  */
 typedef unsigned (*handlerFn)(void* this, const char *method, const char *url,
-                              struct MHD_Response **response);
+                              struct MHD_Response **response, char *err);
 
 /**
  * Stores a route, see main.c (app.handlers).

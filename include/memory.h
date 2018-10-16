@@ -51,4 +51,9 @@ copyString(const char *str);
 void
 printMemoryReport();
 
+#ifdef DEBUG_COUNT_ALLOC
+void
+memoryAddToByteCount(int amount);
+#endif
+
 #endif

@@ -13,11 +13,12 @@ typedef struct {
     SiteIni ini;
     struct MHD_Daemon *daemon;
     unsigned handlerCount;
+    char *errBuf;
     RequestHandler handlers[1];
 } WebApp;
 
 void
-webAppInit(WebApp *this);
+webAppInit(WebApp *this, char *errBuf);
 
 void
 webAppDestruct(WebApp *this);

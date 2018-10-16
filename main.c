@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <signal.h>
+#include <time.h>
 #include "include/db.h"
 #include "include/web-app.h"
 
@@ -39,34 +40,39 @@ int main(int argc, const char* argv[]) {
             .handlerFn=websiteHandlersHandlePageRequest, .this=(void*)&website}
         }
     };
-    webAppInit(&app);
+    webAppInit(&app, errBuf);
     /*
      * 2. Parse site.ini
      */
     if (!webAppMakeSiteIni(&app, argv[2], true, errBuf)) goto fail;
+    /*
+     * 3. Configure third party libs
+     */
     {
         STR_CONCAT(dbFilePath, app.rootDir, "data.db");
         if (!dbOpen(&db, dbFilePath, errBuf)) goto fail;
     }
     /*
-     * 3. Configure request handlers
+     * 4. Configure request handlers
      */
+    website.rootDir = app.rootDir;
     if (!websiteFetchAndParseSiteGraph(&website, &db, errBuf)) goto fail;
     /*
-     * 4. Start the server
+     * 5. Start the server
      */
     if (!webAppStart(&app)) {
         sprintf(errBuf, "Failed to start the server.\n");
         goto fail;
     }
     /*
-     * 5. Wait
+     * 6. Wait
      */
     printf("Started server at localhost:3000. Hit Ctrl+C to stop it...\n");
     signal(SIGINT, onCtrlC);
-    while (!isCtrlCTyped);
+    struct timespec t = {.tv_sec=0, .tv_nsec=50000000L}; // 50ms / 0.05s
+    while (!isCtrlCTyped) nanosleep(&t, NULL);
     /*
-     * 6. Clean up after succesful waiting
+     * 7. Clean up after succesful waiting
      */
     webAppShutdown(&app);
     webAppDestruct(&app);

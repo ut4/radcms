@@ -41,6 +41,7 @@ siteIniDestruct(SiteIni *this) {
     if (this->mainLayoutFileName) {
         FREE_STR(this->mainLayoutFileName);
     }
+    siteIniInit(this);
 }
 
 bool

@@ -7,11 +7,13 @@ websiteInit(Website *this) {
     this->siteGraph.capacity = 0;
     this->siteGraph.length = 0;
     this->siteGraph.values = NULL;
+    this->rootDir = NULL;
 }
 
 void
 websiteDestruct(Website *this) {
     if (this->siteGraph.values) pageArrayDestruct(&this->siteGraph);
+    this->rootDir = NULL;
 }
 
 bool
@@ -36,7 +38,7 @@ mapSiteGraphResultRow(sqlite3_stmt *stmt, void **ctx) {
 bool
 siteGraphParse(char *str, PageArray *out, StrReader *sr, char *err) {
     if (!strReaderIsDigit(str[0])) {
-        putError("ParseError: Expected a digit but got '%c'", str[0]);
+        putError("ParseError: Expected a digit but got '%c'.\n", str[0]);
         return false;
     }
     strReaderInit(sr, str, '|');
@@ -52,7 +54,7 @@ siteGraphParse(char *str, PageArray *out, StrReader *sr, char *err) {
             };
             pageArrayPush(out, &newPage);
         } else {
-            putError("Unpexted character '%c'", *sr->current);
+            putError("Unpexted character '%c'.\n", *sr->current);
             return false;
         }
     }

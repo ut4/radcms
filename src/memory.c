@@ -28,3 +28,10 @@ printMemoryReport() {
     printToStdErr("Program exited, unfreed bytes: %d.\n", bytesAllocated);
 #endif
 }
+
+#ifdef DEBUG_COUNT_ALLOC
+void
+memoryAddToByteCount(int amount) {
+    bytesAllocated += amount;
+}
+#endif
