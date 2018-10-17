@@ -3,6 +3,7 @@
 
 #include "../file-io.h" // fileIO*()
 #include "../web-app-common.h" // microhttpd
+#include "../v-tree-script-bindings.h" // vTreeScriptBindings*()
 #include "website.h"
 
 /**

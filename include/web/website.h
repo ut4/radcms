@@ -3,6 +3,7 @@
 
 #include <stdbool.h>
 #include "../db.h"
+#include "../duk.h" // duk_context
 #include "../memory.h"
 #include "../str-reader.h" // strReaderRead*() etc.
 
@@ -25,6 +26,7 @@ typedef struct {
     PageArray siteGraph;
     StrReader strReader;
     char *rootDir; // borrowed from WebApp
+    duk_context *dukCtx; // borrowed from main.c
 } Website;
 
 void

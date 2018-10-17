@@ -3,6 +3,8 @@
 #include <signal.h>
 #include <time.h>
 #include "include/db.h"
+#include "include/duk.h"
+#include "include/v-tree-script-bindings.h"
 #include "include/web-app.h"
 
 static volatile int isCtrlCTyped = 0;
@@ -28,8 +30,6 @@ int main(int argc, const char* argv[]) {
      */
     Website website;
     websiteInit(&website);
-    Db db;
-    dbInit(&db);
     WebApp app = {
         .rootDir = NULL,
         .ini = {.mainLayoutFileName = NULL},
@@ -41,6 +41,8 @@ int main(int argc, const char* argv[]) {
         }
     };
     webAppInit(&app, errBuf);
+    Db db;
+    duk_context *dukCtx;
     /*
      * 2. Parse site.ini
      */
@@ -49,6 +51,11 @@ int main(int argc, const char* argv[]) {
      * 3. Configure third party libs
      */
     {
+        dukCtx = myDukCreate(errBuf);
+        vTreeScriptBindingsRegister(dukCtx); // <global>.vTree object
+        if (!dukCtx) goto fail;
+        //
+        dbInit(&db);
         STR_CONCAT(dbFilePath, app.rootDir, "data.db");
         if (!dbOpen(&db, dbFilePath, errBuf)) goto fail;
     }
@@ -56,6 +63,7 @@ int main(int argc, const char* argv[]) {
      * 4. Configure request handlers
      */
     website.rootDir = app.rootDir;
+    website.dukCtx = dukCtx;
     if (!websiteFetchAndParseSiteGraph(&website, &db, errBuf)) goto fail;
     /*
      * 5. Start the server
@@ -78,11 +86,13 @@ int main(int argc, const char* argv[]) {
     webAppDestruct(&app);
     websiteDestruct(&website);
     dbDestruct(&db);
+    if (dukCtx) duk_destroy_heap(dukCtx);
     exit(EXIT_SUCCESS);
     fail:
         printToStdErr(errBuf);
         websiteDestruct(&website);
         webAppDestruct(&app);
         dbDestruct(&db);
+        if (dukCtx) duk_destroy_heap(dukCtx);
         exit(EXIT_FAILURE);
 }

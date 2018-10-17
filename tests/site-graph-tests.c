@@ -5,7 +5,7 @@ testSiteGraphParseFailsOnEmptyInput() {
     // 1. Setup
     PageArray testGraph;
     StrReader strReader;
-    char errBuf[ERR_BUF_LEN];
+    char errBuf[ERR_BUF_LEN]; errBuf[0] = '\0';
     char empty[1] = {'\0'};
     // 2. Call
     bool ok = siteGraphParse(empty, &testGraph, &strReader, errBuf);
@@ -19,7 +19,7 @@ testSiteGraphParseParsesTheInput() {
     // 1. Setup
     PageArray testGraph;
     StrReader strReader;
-    char errBuf[ERR_BUF_LEN];
+    char errBuf[ERR_BUF_LEN]; errBuf[0] = '\0';
     char *serialized =
         "5|"                 // 5 pages total
         "24/|0|a.b|"         // id=24, url=/, parentId=0, layoutFileName=a.b

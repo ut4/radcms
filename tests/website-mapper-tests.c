@@ -3,7 +3,7 @@
 static void
 testWebsiteFetchAndParseSiteGraphDoesWhatIsSays() {
     // 1. Setup
-    char errBuf[ERR_BUF_LEN];
+    char errBuf[ERR_BUF_LEN]; errBuf[0] = '\0';
     Website website;
     websiteInit(&website);
     Db db;

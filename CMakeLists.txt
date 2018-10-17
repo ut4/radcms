@@ -11,9 +11,11 @@ set(SOURCE_FILES_COMMON
     include/web/website.h src/web/website.c
     include/common.h
     include/db.h src/db.c
+    include/duk.h src/duk.c
     include/file-io.h src/file-io.c
     include/memory.h src/memory.c
     include/site-ini.h src/site-ini.c
+    include/v-tree-script-bindings.h src/v-tree-script-bindings.c
     include/v-tree.h src/v-tree.c
     include/str-reader.h src/str-reader.c
 )
@@ -31,9 +33,10 @@ set(TESTS_FILES
     tests/test-utils.h tests/test-utils.c
     tests/testlib.h
     tests/site-graph-tests.h tests/site-graph-tests.c
+    tests/v-tree-script-bindings-tests.h tests/v-tree-script-bindings-tests.c
     tests/v-tree-tests.h tests/v-tree-tests.c
     tests/website-mapper-tests.h tests/website-mapper-tests.c
 )
 add_executable(tests ${SOURCE_FILES_COMMON} ${TESTS_FILES} tests-main.c)
 target_compile_options(tests PUBLIC ${INSN_COMPILE_OPTIONS})
-target_link_libraries(tests lua inih sqlite3)
+target_link_libraries(tests duktape inih sqlite3)

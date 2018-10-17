@@ -24,9 +24,8 @@ void
 webAppDestruct(WebApp *this);
 
 /**
- * Reads and validates site.ini under $rootDir-directory. expectExist == true
- * checks that site.ini exists, expectExist == false checks that site.ini does
- * NOT exist.
+ * Reads and validates $rootDir/site.ini. expectExist == true checks that
+ * site.ini exists, expectExist == false checks that site.ini does NOT exist.
  */
 bool
 webAppMakeSiteIni(WebApp *this, const char *rootDir, bool expectExists, char *err);

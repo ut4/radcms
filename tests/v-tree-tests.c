@@ -7,12 +7,13 @@ testVtreeRenderRendersNodesWithNoChildren() {
     vTreeInit(&tree);
     vTreeCreateElemNode(&tree, "article", NULL);
     // 2. Call
-    char errBuf[ERR_BUF_LEN];
+    char errBuf[ERR_BUF_LEN]; errBuf[0] = '\0';
     char *out = vTreeToHtml(&tree, errBuf);
     // 3. Assert
     assertStrEquals(out, "<article></article>");
     //
     vTreeDestruct(&tree);
+    FREE_STR(out);
 }
 
 static void
@@ -42,6 +43,7 @@ testVtreeRenderRendersNodes() {
     assertStrEquals(out, "<article><h2>Hello</h2><p>Some text</p></article>");
     //
     vTreeDestruct(&tree);
+    FREE_STR(out);
 }
 
 void

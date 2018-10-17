@@ -9,13 +9,14 @@ typedef struct {
     unsigned *values;
 } NodeRefArray;
 void nodeRefArrayInit(NodeRefArray *this);
+void nodeRefArrayReset(NodeRefArray *this);
 void nodeRefArrayPush(NodeRefArray *this, unsigned value);
 void nodeRefArrayDestruct(NodeRefArray *this);
 
 typedef struct {
     unsigned id;
     char *tagName;
-    NodeRefArray *children;
+    NodeRefArray children;
 } ElemNode;
 void elemNodeDestruct(ElemNode *this);
 
@@ -53,7 +54,6 @@ typedef struct {
     unsigned elemNodeCounter;
     TextNodeArray textNodes;
     unsigned textNodeCounter;
-    char *renderedHtml;
     unsigned calculatedRenderCharCount;
 } VTree;
 
@@ -70,6 +70,8 @@ vTreeDestruct(VTree *this);
  * unsigned type = GET_NODETYPE(ref); // NodeType.TYPE_ELEM
  * unsigned id = GET_NODEID(ref); // 1+
  * ElemNode *o = &t.elemNodes.values[id - 1];
+ *   or
+ * ElemNode *o = vTreeFindElemNode(ref);
  */
 unsigned
 vTreeCreateElemNode(VTree *this, const char *tagName, NodeRefArray *children);
@@ -82,13 +84,13 @@ vTreeCreateElemNode(VTree *this, const char *tagName, NodeRefArray *children);
  * unsigned id = GET_NODEID(ref); // 1+
  * TextNode *o = &t.textNodes.values[id - 1];
  *   or
- * TextNode *0 = vTreeFindTextNode(ref);
+ * TextNode *o = vTreeFindTextNode(ref);
  */
 unsigned
 vTreeCreateTextNode(VTree *this, const char *text);
 
 /**
- * The caller shouldn't free the return value.
+ * Renders $vTree. The caller is responsible of freeing the return value.
  */
 char*
 vTreeToHtml(VTree *this, char *err);
@@ -98,6 +100,8 @@ vTreeToHtml(VTree *this, char *err);
  */
 ElemNode*
 vTreeFindElemNode(VTree *this, unsigned ref);
+ElemNode*
+vTreeFindElemNodeByTagName(VTree *this, const char *tagName);
 
 /**
  * Returns TextNode* or NULL.

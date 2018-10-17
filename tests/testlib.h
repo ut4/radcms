@@ -5,17 +5,17 @@
 #include <stdio.h>
 
 #define assertThat(what, details) \
-    if (!what) fprintf(stderr, "%s at %s line %d\n", details, __FILE__, __LINE__)
+    if (!(what)) fprintf(stderr, "%s at %s line %d\n", details, __FILE__, __LINE__)
 
 #define assertThatOrStop(what, details) \
-    if (!what) { \
+    if (!(what)) { \
         fprintf(stderr, "%s at %s line %d\n", details, __FILE__, __LINE__); \
         fprintf(stderr, "returning from this function..\n"); \
         return; \
     }
 
 #define assertThatOrGoto(what, goWhere, details) \
-    if (!what) { \
+    if (!(what)) { \
         fprintf(stderr, "%s at %s line %d\n", details, __FILE__, __LINE__); \
         fprintf(stderr, "jumping..\n"); \
         goto goWhere; \
@@ -34,7 +34,9 @@
     }
 
 #define assertStrEquals(act, exp) \
-    if (strcmp(act, exp) != 0) fprintf(stderr, "expected %s but was actually %s \
-                                       at %s line %d\n", exp, act, __FILE__, __LINE__)
+    if (strcmp(act, exp) != 0) { \
+        fprintf(stderr, "expected \"%s\" but was actually \"%s\" at %s line %d\n", \
+                exp, act, __FILE__, __LINE__); \
+    }
 
 #endif

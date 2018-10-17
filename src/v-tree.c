@@ -37,27 +37,37 @@ vTreeInit(VTree *this) {
     this->elemNodeCounter = 1;
     textNodeArrayInit(&this->textNodes);
     this->textNodeCounter = 1;
-    this->renderedHtml = NULL;
     this->calculatedRenderCharCount = 0;
 }
 
 void
 vTreeDestruct(VTree *this) {
     elemNodeArrayDestruct(&this->elemNodes);
+    this->elemNodeCounter = 1;
     textNodeArrayDestruct(&this->textNodes);
-    if (this->renderedHtml) FREE_STR(this->renderedHtml);
+    this->textNodeCounter = 1;
+    this->calculatedRenderCharCount = 0;
 }
 
 unsigned
 vTreeCreateElemNode(VTree *this, const char *tagName, NodeRefArray *children) {
-    ElemNode newNode = {.id = this->elemNodeCounter, .tagName=copyString(tagName),
-                        .children=children};
+    unsigned newId;
+    if (children) {
+        ElemNode newNode = {.id = this->elemNodeCounter, .tagName=copyString(tagName),
+                            .children = *children};
+        elemNodeArrayPush(&this->elemNodes, &newNode);
+        newId = newNode.id;
+    } else {
+        ElemNode newNode = {.id = this->elemNodeCounter, .tagName=copyString(tagName)};
+        nodeRefArrayReset(&newNode.children);
+        elemNodeArrayPush(&this->elemNodes, &newNode);
+        newId = newNode.id;
+    }
     this->elemNodeCounter++;
-    elemNodeArrayPush(&this->elemNodes, &newNode);
     this->calculatedRenderCharCount += strlen(tagName)*2 + strlen("<></>");
     unsigned out = 0;
     SET_NODETYPE(out, TYPE_ELEM);
-    SET_NODEID(out, newNode.id);
+    SET_NODEID(out, newId);
     return out;
 }
 
@@ -74,23 +84,23 @@ vTreeCreateTextNode(VTree *this, const char *text) {
 }
 
 static void
-doRender(VTree *this, ElemNode *node) {
-    strcat(this->renderedHtml, "<");
-    strcat(this->renderedHtml, node->tagName);
-    strcat(this->renderedHtml, ">");
-    if (node->children) {
-        for (unsigned i = 0; i < node->children->length; ++i) {
-            unsigned ref = node->children->values[i];
+doRender(VTree *this, ElemNode *node, char *out) {
+    strcat(out, "<");
+    strcat(out, node->tagName);
+    strcat(out, ">");
+    if (node->children.length) {
+        for (unsigned i = 0; i < node->children.length; ++i) {
+            unsigned ref = node->children.values[i];
             if (GET_NODETYPE(ref) == TYPE_ELEM) {
-                doRender(this, vTreeFindElemNode(this, ref));
+                doRender(this, vTreeFindElemNode(this, ref), out);
             } else {
-                strcat(this->renderedHtml, vTreeFindTextNode(this, ref)->chars);
+                strcat(out, vTreeFindTextNode(this, ref)->chars);
             }
         }
     }
-    strcat(this->renderedHtml, "</");
-    strcat(this->renderedHtml, node->tagName);
-    strcat(this->renderedHtml, ">");
+    strcat(out, "</");
+    strcat(out, node->tagName);
+    strcat(out, ">");
 }
 
 char*
@@ -99,23 +109,33 @@ vTreeToHtml(VTree *this, char *err) {
         putError("Cannot render an empty vTree.\n");
         return NULL;
     }
-    this->renderedHtml = ALLOCATE_ARR(char, this->calculatedRenderCharCount + 1);
-    this->renderedHtml[0] = '\0';
+    char *out = ALLOCATE_ARR(char, this->calculatedRenderCharCount + 1);
+    out[0] = '\0';
     ElemNode *root = &this->elemNodes.values[this->elemNodes.length - 1];
-    doRender(this, root);
-    if (strlen(this->renderedHtml) > this->calculatedRenderCharCount) {
+    doRender(this, root, out);
+    if (strlen(out) > this->calculatedRenderCharCount) {
         printToStdErr("calculatedRenderCharCount was %d, but actually wrote "
                       "%d chars! Exiting.\n", this->calculatedRenderCharCount,
-                      strlen(this->renderedHtml));
+                      strlen(out));
         exit(EXIT_FAILURE);
     }
-    return this->renderedHtml;
+    return out;
 }
 
 ElemNode*
 vTreeFindElemNode(VTree *this, unsigned ref) {
     unsigned idx = GET_NODEID(ref) - 1;
     return idx < this->elemNodes.length ? &this->elemNodes.values[idx] : NULL;
+}
+
+ElemNode*
+vTreeFindElemNodeByTagName(VTree *this, const char *tagName) {
+    if (this->elemNodes.length == 0) return NULL;
+    for (unsigned i = 0; i < this->elemNodes.length; ++i) {
+        if (strcmp(this->elemNodes.values[i].tagName, tagName) == 0)
+            return &this->elemNodes.values[i];
+    }
+    return NULL;
 }
 
 TextNode*
@@ -125,7 +145,7 @@ vTreeFindTextNode(VTree *this, unsigned ref) {
 }
 
 void elemNodeDestruct(ElemNode *this) {
-    if (this->children) nodeRefArrayDestruct(this->children);
+    if (this->children.length) nodeRefArrayDestruct(&this->children);
     FREE_STR(this->tagName);
 }
 
@@ -152,7 +172,7 @@ void elemNodeArrayDestruct(ElemNodeArray *this) {
     for (unsigned i = 0; i < this->length; ++i) {
         elemNodeDestruct(&this->values[i]);
     }
-    FREE_ARR(ElemNode, this->values, this->capacity);
+    if (this->values) FREE_ARR(ElemNode, this->values, this->capacity);
     elemNodeArrayInit(this);
 }
 
@@ -176,7 +196,7 @@ void textNodeArrayDestruct(TextNodeArray *this) {
     for (unsigned i = 0; i < this->length; ++i) textNodeDestruct(&this->values[i]);
     FREE_ARR(TextNode, this->values, this->capacity);
     this->length = 0;
-    this->capacity = 1;
+    this->capacity = 0;
     this->values = NULL;
 }
 
@@ -196,9 +216,12 @@ void nodeRefArrayPush(NodeRefArray *this, unsigned value) {
     this->values[this->length] = value;
     this->length++;
 }
-void nodeRefArrayDestruct(NodeRefArray *this) {
-    FREE_ARR(unsigned, this->values, this->capacity);
+void nodeRefArrayReset(NodeRefArray *this) {
     this->length = 0;
     this->capacity = 0;
     this->values = NULL;
+}
+void nodeRefArrayDestruct(NodeRefArray *this) {
+    FREE_ARR(unsigned, this->values, this->capacity);
+    nodeRefArrayReset(this);
 }
