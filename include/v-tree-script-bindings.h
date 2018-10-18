@@ -2,12 +2,10 @@
 #define insn_vTreeScriptBindings_h
 
 #include <stdbool.h>
+#include "data-queries.h" // DocumentDataConfig
 #include "duk.h"
 #include "v-tree.h"
 
-/**
- * Makes vTree.registerElement() etc. accessible to? scripts.
- */
 void
 vTreeScriptBindingsRegister(duk_context *ctx);
 
@@ -16,6 +14,6 @@ vTreeScriptBindingsRegister(duk_context *ctx);
  */
 bool
 vTreeScriptBindingsExecLayout(duk_context *ctx, char *layoutCode, VTree *vTree,
-                              char *err);
+                              DocumentDataConfig *ddc, char *err);
 
 #endif

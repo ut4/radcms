@@ -44,8 +44,8 @@ dukUtilsDumpStack(duk_context *ctx) {
                 break;
             case DUK_TYPE_OBJECT:
                 if (duk_is_array(ctx, i)) printf("[Array]");
-                else if (duk_is_function(ctx, i)) printf("[Function]");
                 else if (duk_is_c_function(ctx, i)) printf("[CFunction]");
+                else if (duk_is_function(ctx, i)) printf("[Function]");
                 else if (duk_is_thread(ctx, i)) printf("[Thread]");
                 else printf("[Object]");
                 break;

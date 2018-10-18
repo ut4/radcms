@@ -47,6 +47,7 @@ void textNodeArrayDestruct(TextNodeArray *this);
 typedef enum {
     TYPE_ELEM,
     TYPE_TEXT,
+    TYPE_DATA_BATCH_CONFIG
 } NodeType;
 
 typedef struct {
@@ -108,5 +109,8 @@ vTreeFindElemNodeByTagName(VTree *this, const char *tagName);
  */
 TextNode*
 vTreeFindTextNode(VTree *this, unsigned ref);
+
+unsigned
+vTreeUtilsMakeNodeRef(NodeType type, unsigned id);
 
 #endif

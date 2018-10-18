@@ -65,10 +65,7 @@ vTreeCreateElemNode(VTree *this, const char *tagName, NodeRefArray *children) {
     }
     this->elemNodeCounter++;
     this->calculatedRenderCharCount += strlen(tagName)*2 + strlen("<></>");
-    unsigned out = 0;
-    SET_NODETYPE(out, TYPE_ELEM);
-    SET_NODEID(out, newId);
-    return out;
+    return vTreeUtilsMakeNodeRef(TYPE_ELEM, newId);
 }
 
 unsigned
@@ -77,10 +74,7 @@ vTreeCreateTextNode(VTree *this, const char *text) {
     this->textNodeCounter++;
     textNodeArrayPush(&this->textNodes, &newStr);
     this->calculatedRenderCharCount += strlen(text);
-    unsigned out = 0;
-    SET_NODETYPE(out, TYPE_TEXT);
-    SET_NODEID(out, newStr.id);
-    return out;
+    return vTreeUtilsMakeNodeRef(TYPE_TEXT, newStr.id);
 }
 
 static void
@@ -144,6 +138,14 @@ vTreeFindTextNode(VTree *this, unsigned ref) {
     return idx < this->textNodes.length ? &this->textNodes.values[idx] : NULL;
 }
 
+unsigned
+vTreeUtilsMakeNodeRef(NodeType type, unsigned id) {
+    unsigned out = 0;
+    SET_NODETYPE(out, type);
+    SET_NODEID(out, id);
+    return out;
+}
+
 void elemNodeDestruct(ElemNode *this) {
     if (this->children.length) nodeRefArrayDestruct(&this->children);
     FREE_STR(this->tagName);
@@ -169,10 +171,12 @@ void elemNodeArrayPush(ElemNodeArray *this, ElemNode *value) {
     this->length++;
 }
 void elemNodeArrayDestruct(ElemNodeArray *this) {
-    for (unsigned i = 0; i < this->length; ++i) {
-        elemNodeDestruct(&this->values[i]);
+    if (this->length) {
+        for (unsigned i = 0; i < this->length; ++i) {
+            elemNodeDestruct(&this->values[i]);
+        }
+        FREE_ARR(ElemNode, this->values, this->capacity);
     }
-    if (this->values) FREE_ARR(ElemNode, this->values, this->capacity);
     elemNodeArrayInit(this);
 }
 

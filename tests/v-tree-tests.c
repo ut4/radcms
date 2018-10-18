@@ -1,7 +1,7 @@
 #include "v-tree-tests.h"
 
 static void
-testVtreeRenderRendersNodesWithNoChildren() {
+testvTreeRenderRendersNodesWithNoChildren() {
     // 1. Setup
     VTree tree;
     vTreeInit(&tree);
@@ -17,7 +17,7 @@ testVtreeRenderRendersNodesWithNoChildren() {
 }
 
 static void
-testVtreeRenderRendersNodes() {
+testvTreeRenderRendersNodes() {
     // 1. Setup
     VTree tree;
     vTreeInit(&tree);
@@ -48,6 +48,6 @@ testVtreeRenderRendersNodes() {
 
 void
 vTreeTestsRun() {
-    testVtreeRenderRendersNodesWithNoChildren();
-    testVtreeRenderRendersNodes();
+    testvTreeRenderRendersNodesWithNoChildren();
+    testvTreeRenderRendersNodes();
 }

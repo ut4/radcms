@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <signal.h>
 #include <time.h>
+#include "include/data-query-script-bindings.h"
 #include "include/db.h"
 #include "include/duk.h"
 #include "include/v-tree-script-bindings.h"
@@ -52,7 +53,8 @@ int main(int argc, const char* argv[]) {
      */
     {
         dukCtx = myDukCreate(errBuf);
-        vTreeScriptBindingsRegister(dukCtx); // <global>.vTree object
+        vTreeScriptBindingsRegister(dukCtx); // $global.vTree object
+        dataQueryScriptBindingsRegister(dukCtx); // $global.documentDataConfig object
         if (!dukCtx) goto fail;
         //
         dbInit(&db);

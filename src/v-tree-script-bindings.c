@@ -2,47 +2,51 @@
 
 #define V_TREE_STASH_KEY "_VTree"
 
+/** Puts $vTree to the duktape thread/ctx stash */
 static void
-vTreeScriptBindingsPushVtree(duk_context *ctx, VTree *vTree);
+vTreeSBSetStashedVTree(duk_context *ctx, VTree *vTree);
 
+/** Implements global.vTree.registerElement($tagName, $props, $children) */
 static duk_ret_t
-vTreeRegisterElement(duk_context *ctx);
+vTreeSBRegisterElement(duk_context *ctx);
 
 void
 vTreeScriptBindingsRegister(duk_context *ctx) {
-    duk_push_object(ctx);                              // [... object]
-    duk_push_c_lightfunc(ctx, vTreeRegisterElement, 3, 3, 0); // [... object lightfn]
-                                                              // 3 == tagName, props, children
-    duk_put_prop_string(ctx, -2, "registerElement");   // [... object]
-    duk_put_global_string(ctx, "vTree");               // [...]
+    duk_push_bare_object(ctx);                       // [... object]
+    duk_push_c_lightfunc(ctx, vTreeSBRegisterElement, 3, 3, 0); // [... object lightfn]
+                                                     // 3 == tagName, props, children
+    duk_put_prop_string(ctx, -2, "registerElement"); // [... object]
+    duk_put_global_string(ctx, "vTree");             // [...]
 }
 
 bool
 vTreeScriptBindingsExecLayout(duk_context *ctx, char *layoutCode, VTree *vTree,
-                              char *err) {
+                              DocumentDataConfig *ddc, char *err) {
     vTreeInit(vTree);
-    vTreeScriptBindingsPushVtree(ctx, vTree);
+    vTreeSBSetStashedVTree(ctx, vTree);
+    documentDataConfigInit(ddc);
+    dataQuerySBSetStashedDocumentDataConfig(ctx, ddc);
     if (duk_peval_string(ctx, layoutCode) != 0) {
         putError(duk_safe_to_string(ctx, -1));
-        duk_pop(ctx);
+        duk_pop(ctx); // peval result
         return false;
     }
-    duk_pop(ctx);
+    duk_pop(ctx); // peval result
     return true;
 }
 
 static void
-vTreeScriptBindingsPushVtree(duk_context *ctx, VTree *vTree) {
-    duk_push_heap_stash(ctx);                          // [... stash]
-    duk_push_pointer(ctx, (void*)vTree);               // [... stash pointer]
-    duk_put_prop_string(ctx, -2, V_TREE_STASH_KEY);    // [... stash]
-    duk_pop(ctx);                                      // [...]
+vTreeSBSetStashedVTree(duk_context *ctx, VTree *vTree) {
+    duk_push_thread_stash(ctx, ctx);                // [... stash]
+    duk_push_pointer(ctx, (void*)vTree);            // [... stash pointer]
+    duk_put_prop_string(ctx, -2, V_TREE_STASH_KEY); // [... stash]
+    duk_pop(ctx);                                   // [...]
 }
 
 static duk_ret_t
-vTreeRegisterElement(duk_context *ctx) {
+vTreeSBRegisterElement(duk_context *ctx) {
     // Note: duk_get_top() is always 3 (same as the 3rd arg of duk_push_c_lightfunc())
-    duk_push_heap_stash(ctx);
+    duk_push_thread_stash(ctx, ctx);
     duk_get_prop_string(ctx, -1, V_TREE_STASH_KEY);
     VTree *vTree = (VTree*)duk_to_pointer(ctx, -1);
     const char *tagName = duk_require_string(ctx, 0); // 1st argument (tag name)
@@ -66,10 +70,16 @@ vTreeRegisterElement(duk_context *ctx) {
             nodeRefArrayPush(&children, (unsigned)duk_require_uint(ctx, -1));
         }
         duk_pop_n(ctx, l); // each array value
+    } else if (duk_is_object(ctx, 2)) {
+        duk_get_prop_string(ctx, 2, "id");
+        unsigned dbcId = duk_require_uint(ctx, -1);
+        nodeRefArrayPush(&children, vTreeUtilsMakeNodeRef(TYPE_DATA_BATCH_CONFIG,
+                                                          dbcId));
+        duk_pop(ctx); // uint
     } else {
         nodeRefArrayDestruct(&children);
-        duk_error(ctx, DUK_ERR_TYPE_ERROR, "3rd arg must be a string, a number,"
-                  " or an array of numbers.\n");
+        duk_error(ctx, DUK_ERR_TYPE_ERROR, "3rd arg must be \"str\", <nodeRef>"
+            ", [<nodeRef>..], <dataConfig> or [<dataConfig>...].\n");
     }
     unsigned newId = vTreeCreateElemNode(vTree, tagName, &children);
     duk_push_number(ctx, (double)newId);

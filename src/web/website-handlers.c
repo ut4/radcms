@@ -14,12 +14,15 @@ websiteHandlersHandlePageRequest(void *this, const char *method, const char *url
         return MHD_HTTP_INTERNAL_SERVER_ERROR;
     }
     VTree vTree;
+    DocumentDataConfig ddc;
     char *renderedHtml = NULL;
-    if (vTreeScriptBindingsExecLayout(site->dukCtx, layoutCode, &vTree, err)) {
+    if (vTreeScriptBindingsExecLayout(site->dukCtx, layoutCode, &vTree, &ddc,
+                                      err)) {
         renderedHtml = vTreeToHtml(&vTree, err);
     }
     FREE_STR(layoutCode);
     vTreeDestruct(&vTree);
+    documentDataConfigDestruct(&ddc);
     if (!renderedHtml) {
         return MHD_HTTP_INTERNAL_SERVER_ERROR;
     }

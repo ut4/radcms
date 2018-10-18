@@ -10,6 +10,8 @@ include_directories(pike ${INSN_DEP_INCLUDES})
 set(SOURCE_FILES_COMMON
     include/web/website.h src/web/website.c
     include/common.h
+    include/data-queries.h src/data-queries.c
+    include/data-query-script-bindings.h src/data-query-script-bindings.c
     include/db.h src/db.c
     include/duk.h src/duk.c
     include/file-io.h src/file-io.c
@@ -32,6 +34,7 @@ target_link_libraries(insane ${INSN_DEP_LIBS})
 set(TESTS_FILES
     tests/test-utils.h tests/test-utils.c
     tests/testlib.h
+    tests/data-query-tests.h tests/data-query-tests.c
     tests/site-graph-tests.h tests/site-graph-tests.c
     tests/v-tree-script-bindings-tests.h tests/v-tree-script-bindings-tests.c
     tests/v-tree-tests.h tests/v-tree-tests.c

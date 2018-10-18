@@ -27,9 +27,7 @@ webAppInit(WebApp *this, char *errBuf) {
 
 void
 webAppDestruct(WebApp *this) {
-    if (this->rootDir) {
-        FREE_STR(this->rootDir);
-    }
+    if (this->rootDir) FREE_STR(this->rootDir);
     siteIniDestruct(&this->ini);
 }
 

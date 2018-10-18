@@ -1,3 +1,4 @@
+#include "tests/data-query-tests.h"
 #include "tests/site-graph-tests.h"
 #include "tests/v-tree-script-bindings-tests.h"
 #include "tests/v-tree-tests.h"
@@ -15,12 +16,13 @@ runIf(const char *arg, const char *match, void (*suite)()) {
 
 int main(int argc, const char* argv[]) {
     if (argc < 2) {
-        printToStdErr("Usage: tests testname\n");
+        printToStdErr("Usage: tests testname|all\n");
         exit(EXIT_FAILURE);
     }
     atexit(printMemoryReport);
     const char *testSuiteName = argv[1];
     int testSuitesRan = 0;
+    testSuitesRan += runIf(testSuiteName, "dataQueries", dataQueryTestsRun);
     testSuitesRan += runIf(testSuiteName, "siteGraph", siteGraphTestsRun);
     testSuitesRan += runIf(testSuiteName, "websiteMapper", websiteMapperTestsRun);
     testSuitesRan += runIf(testSuiteName, "vTreeScriptBindings", vTreeScriptBindingsTestsRun);
