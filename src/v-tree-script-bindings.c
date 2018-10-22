@@ -56,9 +56,35 @@ pushComponent(duk_context *ctx, Component *data) {
     duk_put_prop_string(ctx, -2, "data"); // [... obj]
 }
 
+static void
+findAndPushSingleComponent(duk_context *ctx, ComponentArray *allComponents,
+                           unsigned dataBatchConfigId) {
+    for (unsigned i = 0; i < allComponents->length; ++i) {
+        if (allComponents->values[i].dataBatchConfigId == dataBatchConfigId) {
+            pushComponent(ctx, &allComponents->values[i]);
+            return;
+        }
+    }
+}
+
+static void
+findAndPushComponentArray(duk_context *ctx, ComponentArray *allComponents,
+                          unsigned dataBatchConfigId) {
+    duk_idx_t arrIdx = duk_push_array(ctx);
+    for (unsigned i = 0, nth = 0; i < allComponents->length; ++i) {
+        if (allComponents->values[i].dataBatchConfigId == dataBatchConfigId) {
+            pushComponent(ctx, &allComponents->values[i]);
+            duk_put_prop_index(ctx, arrIdx, nth);
+            nth += 1;
+        }
+    }
+}
+
 unsigned
 vTreeScriptBindingsExecTemplate(duk_context *ctx, char *templateCode,
-                                VTree *vTree, Component *data, char *err) {
+                                VTree *vTree, unsigned dataBatchConfigId,
+                                ComponentArray *allComponents, bool isRenderAll,
+                                char *err) {
     vTreeSBSetStashedVTree(ctx, vTree);
     duk_pcompile_string(ctx, DUK_COMPILE_FUNCTION, templateCode);
     if (!duk_is_function(ctx, -1)) {
@@ -67,7 +93,11 @@ vTreeScriptBindingsExecTemplate(duk_context *ctx, char *templateCode,
         return 0;
     }
     duk_get_global_string(ctx, "vTree"); // arg1
-    pushComponent(ctx, data);            // arg2
+    if (!isRenderAll) {                  // arg2
+        findAndPushSingleComponent(ctx, allComponents, dataBatchConfigId);
+    } else {
+        findAndPushComponentArray(ctx, allComponents, dataBatchConfigId);
+    }
     if (duk_pcall(ctx, 2) != 0) {
         putError(duk_safe_to_string(ctx, -1));
         duk_pop(ctx); // pcall result

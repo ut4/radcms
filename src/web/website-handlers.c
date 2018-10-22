@@ -3,40 +3,43 @@
 static bool
 fetchAndRenderBatches(Website *site, VTree *vTree, DocumentDataConfig *ddc,
                       char *err) {
-    Component newComponent;
+    ComponentArray components;
     bool success = false;
-    if (!websiteFetchBatches(site, &newComponent, ddc, err)) {
+    if (!websiteFetchBatches(site, ddc, &components, err)) {
         goto done;
     }
-    DataBatchConfig *dbc = documentDataConfigFindBatch(ddc,
-        newComponent.dataBatchConfigId);
-    if (!dbc || !dbc->renderWith) {
-        putError("Invalid DataBatchConfig.\n");
-        goto done;
-    }
-    //
-    {
-        STR_CONCAT(templateFilePath, site->rootDir, dbc->renderWith);
-        char *templateCode = fileIOReadFile(templateFilePath, err);
-        unsigned templateRootNodeId = 0;
-        if (!templateCode) {
+    DataBatchConfig *cur = &ddc->batches;
+    while (cur) {
+        if (!cur->renderWith) {
+            putError("Invalid DataBatchConfig.\n");
             goto done;
         }
-        if ((templateRootNodeId = vTreeScriptBindingsExecTemplate(site->dukCtx,
-            templateCode, vTree, &newComponent, err)) < 1) {
+        //
+        {
+            STR_CONCAT(templateFilePath, site->rootDir, cur->renderWith);
+            char *templateCode = fileIOReadFile(templateFilePath, err);
+            unsigned templateRootNodeId = 0;
+            if (!templateCode) {
+                goto done;
+            }
+            if ((templateRootNodeId = vTreeScriptBindingsExecTemplate(site->dukCtx,
+                templateCode, vTree, cur->id, &components, cur->isFetchAll,
+                err)) < 1) {
+                FREE_STR(templateCode);
+                goto done;
+            }
             FREE_STR(templateCode);
-            goto done;
+            if (!vTreeReplaceRef(vTree, TYPE_DATA_BATCH_CONFIG,
+                                 cur->id,
+                                 vTreeUtilsMakeNodeRef(TYPE_ELEM, templateRootNodeId))) {
+                goto done;
+            }
         }
-        FREE_STR(templateCode);
-        if (!vTreeReplaceRef(vTree, TYPE_DATA_BATCH_CONFIG,
-                             newComponent.dataBatchConfigId,
-                             vTreeUtilsMakeNodeRef(TYPE_ELEM, templateRootNodeId))) {
-            goto done;
-        }
+        cur = cur->next;
     }
     success = true;
     done:
-    componentFreeProps(&newComponent);
+    componentArrayDestruct(&components);
     return success;
 }
 

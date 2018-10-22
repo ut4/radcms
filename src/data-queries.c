@@ -57,10 +57,13 @@ documentDataConfigToSql(DocumentDataConfig *this, char *err) {
     #define BATCH_SELECT_TMPL "select * from (" \
                                 "select `id`,`name`,`json`,%u as `dbcId` " \
                                 "from components where %s" \
-                            ")"
+                              ")"
+    #define TYPE_FILTER_TMPL "`componentTypeId` = (select `id` from " \
+                             "componentTypes where `name` = \"%s\")"
     #define BATCH_SELECT_TMPL_N " union all "BATCH_SELECT_TMPL
-    const unsigned batchWrapStrLen = strlen(BATCH_SELECT_TMPL) - 4; // 4 == %u%s
+    const unsigned batchWrapTmplStrLen = strlen(BATCH_SELECT_TMPL) - 4; // 4 == %u%s
     const unsigned unionAllStrLen = strlen(" union all ");
+    const unsigned typeFilterTmplStrLen = strlen(TYPE_FILTER_TMPL) - 2; // 2 == %s
     /*
      * Collect each batch, and calculate their total character count
      */
@@ -72,11 +75,16 @@ documentDataConfigToSql(DocumentDataConfig *this, char *err) {
         unsigned varying = 0;
         if (cur->where && !cur->isFetchAll) {
             varying += strlen(cur->where);
+        } else if (cur->isFetchAll) {
+            unsigned l = typeFilterTmplStrLen + strlen(cur->componentTypeName);
+            varying += l;
+            cur->where = ALLOCATE_ARR(char, l + 1);
+            sprintf(cur->where, TYPE_FILTER_TMPL, cur->componentTypeName);
         } else {
             printToStdErr("Not implemented yet.");
             exit(EXIT_FAILURE);
         }
-        batchLengths[i] = batchWrapStrLen +              // select * from (select `id`...
+        batchLengths[i] = batchWrapTmplStrLen +          // select * from (select `id`...
                           (i > 0 ? unionAllStrLen : 0) + // union all
                           (log10(cur->id) + 1) +         // 1 or 452 (as `dbcId`)
                           varying;                       // foo="bar"

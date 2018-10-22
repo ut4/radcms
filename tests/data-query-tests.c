@@ -53,7 +53,8 @@ testDocumentDataToSqlGeneratesQueryForSingleRenderOne() {
     documentDataConfigInit(&ddc);
     char errBuf[ERR_BUF_LEN]; errBuf[0] = '\0';
     //
-    DataBatchConfig *dbc = documentDataConfigAddBatch(&ddc, "Generic", false);
+    const bool isRenderAll = false;
+    DataBatchConfig *dbc = documentDataConfigAddBatch(&ddc, "Generic", isRenderAll);
     dataBatchConfigSetWhere(dbc, "name=\"Foo\"");
     char *sql = documentDataConfigToSql(&ddc, errBuf);
     assertThatOrGoto(sql != NULL, done, "Should return the sql");
@@ -72,11 +73,12 @@ testDocumentDataToSqlGeneratesQueryForMultipleRenderOnes() {
     documentDataConfigInit(&ddc);
     char errBuf[ERR_BUF_LEN]; errBuf[0] = '\0';
     //
-    DataBatchConfig *dbc1 = documentDataConfigAddBatch(&ddc, "Generic", false);
+    const bool isRenderAll = false;
+    DataBatchConfig *dbc1 = documentDataConfigAddBatch(&ddc, "Generic", isRenderAll);
     dataBatchConfigSetWhere(dbc1, "name=\"Foo\"");
-    DataBatchConfig *dbc2 = documentDataConfigAddBatch(&ddc, "Generic", false);
+    DataBatchConfig *dbc2 = documentDataConfigAddBatch(&ddc, "Generic", isRenderAll);
     dataBatchConfigSetWhere(dbc2, "name=\"Bar\"");
-    DataBatchConfig *dbc3 = documentDataConfigAddBatch(&ddc, "Article", false);
+    DataBatchConfig *dbc3 = documentDataConfigAddBatch(&ddc, "Article", isRenderAll);
     dataBatchConfigSetWhere(dbc3, "name=\"Naz\"");
     char *sql = documentDataConfigToSql(&ddc, errBuf);
     assertThatOrGoto(sql != NULL, done, "Should return the sql");
@@ -90,9 +92,63 @@ testDocumentDataToSqlGeneratesQueryForMultipleRenderOnes() {
         documentDataConfigDestruct(&ddc);
 }
 
+static void
+testDocumentDataToSqlGeneratesQueryForSingleRenderAll() {
+    //
+    DocumentDataConfig ddc;
+    documentDataConfigInit(&ddc);
+    char errBuf[ERR_BUF_LEN]; errBuf[0] = '\0';
+    //
+    const bool isRenderAll = true;
+    documentDataConfigAddBatch(&ddc, "Article", isRenderAll);
+    char *sql = documentDataConfigToSql(&ddc, errBuf);
+    assertThatOrGoto(sql != NULL, done, "Should return the sql");
+    assertStrEquals(sql, "select `id`,`name`,`json`,`dbcId` from ("
+        "select * from ("
+            "select `id`,`name`,`json`,1 as `dbcId` from components where "
+            "`componentTypeId` = (select `id` from componentTypes where `name` "
+            "= \"Article\")"
+        ")"\
+    ")");
+    //
+    done:
+        documentDataConfigDestruct(&ddc);
+}
+
+static void
+testDocumentDataToSqlGeneratesQueryForMultipleRenderAlls() {
+    //
+    DocumentDataConfig ddc;
+    documentDataConfigInit(&ddc);
+    char errBuf[ERR_BUF_LEN]; errBuf[0] = '\0';
+    //
+    const bool isRenderAll = true;
+    documentDataConfigAddBatch(&ddc, "Article", isRenderAll);
+    documentDataConfigAddBatch(&ddc, "Other", isRenderAll);
+    char *sql = documentDataConfigToSql(&ddc, errBuf);
+    assertThatOrGoto(sql != NULL, done, "Should return the sql");
+    assertStrEquals(sql, "select `id`,`name`,`json`,`dbcId` from ("
+        "select * from ("
+            "select `id`,`name`,`json`,1 as `dbcId` from components where "
+            "`componentTypeId` = (select `id` from componentTypes where `name` "
+            "= \"Article\")"
+        ") union all "
+        "select * from ("
+            "select `id`,`name`,`json`,2 as `dbcId` from components where "
+            "`componentTypeId` = (select `id` from componentTypes where `name` "
+            "= \"Other\")"
+        ")"
+    ")");
+    //
+    done:
+        documentDataConfigDestruct(&ddc);
+}
+
 void
 dataQueryTestsRun() {
     testDocumentDataConfigAddsBatches();
     testDocumentDataToSqlGeneratesQueryForSingleRenderOne();
     testDocumentDataToSqlGeneratesQueryForMultipleRenderOnes();
+    testDocumentDataToSqlGeneratesQueryForSingleRenderAll();
+    testDocumentDataToSqlGeneratesQueryForMultipleRenderAlls();
 }

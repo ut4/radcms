@@ -41,9 +41,12 @@ websiteDestruct(Website *this);
 bool
 websiteFetchAndParseSiteGraph(Website *this, char *err);
 
+/**
+ * Fetches data for renderOne|All() configurations (*ddc) from the database.
+ */
 bool
-websiteFetchBatches(Website *this, Component *to, DocumentDataConfig *ddc,
-                      char *err);
+websiteFetchBatches(Website *this, DocumentDataConfig *ddc, ComponentArray *to,
+                    char *err);
 
 /**
  * Creates a page graph $out from a serialized array $str. $str should be null-

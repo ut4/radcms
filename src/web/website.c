@@ -36,13 +36,13 @@ websiteFetchAndParseSiteGraph(Website *this, char *err) {
 }
 
 bool
-websiteFetchBatches(Website *this, Component *to, DocumentDataConfig *ddc,
-                      char *err) {
-    componentInit(to);
+websiteFetchBatches(Website *this, DocumentDataConfig *ddc, ComponentArray *to,
+                    char *err) {
+    componentArrayInit(to);
     char *sql = documentDataConfigToSql(ddc, err);
     return sql &&
            dbSelect(this->db, sql, mapDataBatchesRow, (void*)&to, err) &&
-           to->id > 0;
+           to->length > 0;
 }
 
 static void
@@ -52,11 +52,14 @@ mapSiteGraphResultRow(sqlite3_stmt *stmt, void **myPtr) {
 
 static void
 mapDataBatchesRow(sqlite3_stmt *stmt, void **myPtr) {
-    Component *newC = (Component*)*myPtr;
-    newC->id = (unsigned)sqlite3_column_int(stmt, 0);
-    newC->name = copyString((const char*)sqlite3_column_text(stmt, 1));
-    newC->json = copyString((const char*)sqlite3_column_text(stmt, 2));
-    newC->dataBatchConfigId = (unsigned)sqlite3_column_int(stmt, 3);
+    ComponentArray *arr = (ComponentArray*)*myPtr;
+    Component newComponent;
+    componentInit(&newComponent);
+    newComponent.id = (unsigned)sqlite3_column_int(stmt, 0);
+    newComponent.name = copyString((const char*)sqlite3_column_text(stmt, 1));
+    newComponent.json = copyString((const char*)sqlite3_column_text(stmt, 2));
+    newComponent.dataBatchConfigId = (unsigned)sqlite3_column_int(stmt, 3);
+    componentArrayPush(arr, &newComponent);
 }
 
 bool

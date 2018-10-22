@@ -66,6 +66,7 @@ documentDataConfigToSql(DocumentDataConfig *this, char *err);
 /**
  * Returns DataBatchConfig*|NULL.
  */
+// TAG not-used
 DataBatchConfig*
 documentDataConfigFindBatch(DocumentDataConfig *this, unsigned id);
 

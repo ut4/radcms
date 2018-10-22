@@ -8,6 +8,10 @@
 static duk_ret_t
 documentDataConfigSBRenderOne(duk_context *ctx);
 
+/** Implements global.documentDataConfig.renderAll($componentTypeName) */
+static duk_ret_t
+documentDataConfigSBRenderAll(duk_context *ctx);
+
 /** Implements $dataBatchConfig.using($templateName) */
 static duk_ret_t
 dataBatchConfigSBSetRenderWith(duk_context *ctx);
@@ -24,6 +28,8 @@ dataQueryScriptBindingsRegister(duk_context *ctx) {
     duk_push_bare_object(ctx);                        // [... obj]
     duk_push_c_lightfunc(ctx, documentDataConfigSBRenderOne, 1, 1, 0); // [... obj lightfn]
     duk_put_prop_string(ctx, -2, "renderOne");        // [... obj]
+    duk_push_c_lightfunc(ctx, documentDataConfigSBRenderAll, 1, 1, 0); // [... obj lightfn]
+    duk_put_prop_string(ctx, -2, "renderAll");        // [... obj]
     duk_put_global_string(ctx, "documentDataConfig"); // [...]
     /*
      * stashed DataBatchConfig object prototype
@@ -62,14 +68,25 @@ dataQuerySBPushDbc(duk_context *ctx, DataBatchConfig *dbc) {
 }
 
 static duk_ret_t
-documentDataConfigSBRenderOne(duk_context *ctx) {
+handleRenderOneOrRenderAll(duk_context *ctx, bool isRenderAll) {
     duk_push_thread_stash(ctx, ctx);
     duk_get_prop_string(ctx, -1, DDC_STASH_KEY);
     DocumentDataConfig *ddc = (DocumentDataConfig*)duk_to_pointer(ctx, -1);
     const char *componentTypeName = duk_require_string(ctx, 0); // 1. arg
-    DataBatchConfig *dbc = documentDataConfigAddBatch(ddc, componentTypeName, false);
+    DataBatchConfig *dbc = documentDataConfigAddBatch(ddc, componentTypeName,
+                                                      isRenderAll);
     dataQuerySBPushDbc(ctx, dbc);
     return 1;
+}
+
+static duk_ret_t
+documentDataConfigSBRenderOne(duk_context *ctx) {
+    return handleRenderOneOrRenderAll(ctx, false);
+}
+
+static duk_ret_t
+documentDataConfigSBRenderAll(duk_context *ctx) {
+    return handleRenderOneOrRenderAll(ctx, true);
 }
 
 static duk_ret_t

@@ -31,17 +31,16 @@ dbSelect(Db *this, const char *sql, mapRowFn onRow, void **onRowCtx, char *err) 
     }
     // 2. Bind values to the smtm
     // 3. Execute the smtm
-    status = sqlite3_step(stmt);
-    if (status == SQLITE_ROW) {
+    while ((status = sqlite3_step(stmt)) == SQLITE_ROW) {
         onRow(stmt, onRowCtx);
-    } else {
+    }
+    if (status != SQLITE_DONE) {
         putError("Failed to exec the prepared statement: %s\n", sqlite3_errmsg(this->conn));
         sqlite3_finalize(stmt);
         return false;
     }
     // 4. Clean
-    status = sqlite3_finalize(stmt);
-    if (status != SQLITE_OK) {
+    if (sqlite3_finalize(stmt) != SQLITE_OK) {
         printToStdErr("Failed to finalize stmt: %s\n", sqlite3_errmsg(this->conn));
     }
     return true;

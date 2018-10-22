@@ -1,5 +1,9 @@
 #include "v-tree-script-bindings-tests.h"
 
+static void
+populateComponent(unsigned id, const char *name, const char *json,
+                  unsigned dbcId, Component *out);
+
 #define beforeEach() \
     char errBuf[ERR_BUF_LEN]; errBuf[0] = '\0'; \
     duk_context *ctx = myDukCreate(errBuf); \
@@ -147,6 +151,34 @@ testDocumentDataConfigRenderOneChains() {
         documentDataConfigDestruct(&ddc);
 }
 
+void
+testDocumentDataConfigRenderAllChains() {
+    //
+    beforeEach();
+    VTree vTree;
+    DocumentDataConfig ddc;
+    char *layout = "function (vTree) {"
+        "vTree.registerElement('div', null, "
+            "documentDataConfig.renderAll('Bar').using('b.tmpl')"
+        ");"
+    "}";
+    //
+    bool success = vTreeScriptBindingsExecLayout(ctx, layout, &vTree, &ddc, errBuf);
+    assertThatOrGoto(success, done, "Should return succesfully");
+    DataBatchConfig *actualBatch = &ddc.batches;
+    assertThatOrGoto(actualBatch->componentTypeName != NULL, done,
+                     "componentTypeName != NULL");
+    assertStrEquals(actualBatch->componentTypeName, "Bar");
+    assertThatOrGoto(actualBatch->renderWith != NULL, done,
+                     "renderWith != NULL");
+    assertStrEquals(actualBatch->renderWith, "b.tmpl");
+    //
+    done:
+        duk_destroy_heap(ctx);
+        vTreeDestruct(&vTree);
+        documentDataConfigDestruct(&ddc);
+}
+
 static void
 testExecLayoutRunsMultipleLayoutsWithoutConflict() {
     // 1. Setup
@@ -239,26 +271,31 @@ testVTreeRegisterElementValidatesItsArguments() {
 }
 
 static void
-testExecTemplatePassesCorrectArguments() {
+testExecRenderOneTemplatePassesCorrectArguments() {
     // 1. Setup
     beforeEach();
     VTree vTree;
     vTreeInit(&vTree);
-    Component cmp;
-    componentInit(&cmp);
-    cmp.id = 1;
-    cmp.name = ALLOCATE_ARR(char, 4);
-    sprintf(cmp.name, "foo");
-    cmp.json = ALLOCATE_ARR(char, 11);
-    sprintf(cmp.json, "{\"prop\":2}");
+    ComponentArray cmps;
+    componentArrayInit(&cmps);
+    unsigned dbcIdOfThisTemplate = 3;
+    unsigned dbcIdOfSomeOtherBatch = 453;
+    Component tmplComponent;
+    Component someOtherComponent;
+    populateComponent(1, "foo", "{\"prop\":2}", dbcIdOfThisTemplate, &tmplComponent);
+    populateComponent(2, "bar", "{\"fus\":45}", dbcIdOfSomeOtherBatch, &someOtherComponent);
+    componentArrayPush(&cmps, &tmplComponent);
+    componentArrayPush(&cmps, &someOtherComponent);
     // 2. Call
     char *myTemplate = "function (vTree, cmp) {"
                            "vTree.registerElement(\"fos\", null, "
                                "cmp.id + ' ' + cmp.name + ' ' + cmp.data.prop"
                            ")"
                        "}";
+    bool isRenderAll = false;
     unsigned nodeId = vTreeScriptBindingsExecTemplate(ctx, myTemplate, &vTree,
-                                                   &cmp, errBuf);
+                                                      dbcIdOfThisTemplate, &cmps,
+                                                      isRenderAll, errBuf);
     // 3. Assert
     assertThatOrGoto(nodeId == 1, done, "Should return the id of the root node");
     assertStrEquals(vTree.textNodes.values[0].chars, "1 foo 2");
@@ -266,7 +303,49 @@ testExecTemplatePassesCorrectArguments() {
     done:
     duk_destroy_heap(ctx);
     vTreeDestruct(&vTree);
-    componentFreeProps(&cmp);
+    componentArrayDestruct(&cmps);
+}
+
+static void
+testExecRenderAllTemplatePassesCorrectArguments() {
+    // 1. Setup
+    beforeEach();
+    VTree vTree;
+    vTreeInit(&vTree);
+    ComponentArray cmps;
+    componentArrayInit(&cmps);
+    unsigned dbcIdOfThisTemplate = 3;
+    unsigned dbcIdOfSomeOtherBatch = 453;
+    Component tmplComponent1;
+    Component tmplComponent2;
+    Component someOtherComponent;
+    populateComponent(1, "foo", "{\"prop\":2}", dbcIdOfThisTemplate, &tmplComponent1);
+    populateComponent(2, "bar", "{\"prop\":3}", dbcIdOfThisTemplate, &tmplComponent2);
+    populateComponent(3, "baz", "{\"fus\":45}", dbcIdOfSomeOtherBatch, &someOtherComponent);
+    componentArrayPush(&cmps, &tmplComponent1);
+    componentArrayPush(&cmps, &someOtherComponent);
+    componentArrayPush(&cmps, &tmplComponent2);
+    // 2. Call
+    char *myTemplate = "function (vTree, cmps) {"
+                           "vTree.registerElement(\"fos\", null, "
+                               "cmps.map(function (cmp) {"
+                                  "return cmp.id + ' ' + cmp.name + ' ' + "
+                                          "cmp.data.prop"
+                               "}).join(', ')"
+                           ")"
+                       "}";
+    bool isRenderAll = true;
+    unsigned nodeId = vTreeScriptBindingsExecTemplate(ctx, myTemplate, &vTree,
+                                                      dbcIdOfThisTemplate, &cmps,
+                                                      isRenderAll, errBuf);
+    // 3. Assert
+    assertThatOrGoto(nodeId == 1, done, "Should return the id of the root node");
+    assertStrEquals(vTree.textNodes.values[0].chars, "1 foo 2, 2 bar 3");
+    //
+    done:
+    duk_destroy_heap(ctx);
+    vTreeDestruct(&vTree);
+    componentArrayDestruct(&cmps);
 }
 
 void
@@ -275,7 +354,19 @@ vTreeScriptBindingsTestsRun() {
     testVTreeRegisterElementWithElemAndTextChildren();
     testVTreeRegisterElementWithDataConfigChildren();
     testDocumentDataConfigRenderOneChains();
+    testDocumentDataConfigRenderAllChains();
     testExecLayoutRunsMultipleLayoutsWithoutConflict();
     testVTreeRegisterElementValidatesItsArguments();
-    testExecTemplatePassesCorrectArguments();
+    testExecRenderOneTemplatePassesCorrectArguments();
+    testExecRenderAllTemplatePassesCorrectArguments();
+}
+
+static void
+populateComponent(unsigned id, const char *name, const char *json,
+                  unsigned dbcId, Component *out) {
+    componentInit(out);
+    out->id = id;
+    out->name = copyString(name);
+    out->json = copyString(json);
+    out->dataBatchConfigId = dbcId;
 }
