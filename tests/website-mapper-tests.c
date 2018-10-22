@@ -17,7 +17,7 @@ testWebsiteFetchAndParseSiteGraphDoesWhatItSays(Db *db, char *err) {
     assertIntEquals(website.siteGraph.values[0].id, 1);
     assertIntEquals(website.siteGraph.values[1].id, 2);
     done:
-        websiteDestruct(&website);
+        websiteFreeProps(&website);
 }
 
 static void
@@ -46,9 +46,9 @@ testWebsiteFetchBatchesFetchesDataForDDCWithOneBatch(Db *db, char *err) {
     assertIntEquals(cmp->dataBatchConfigId, 1);
     //
     done:
-        websiteDestruct(&website);
-        documentDataConfigDestruct(&ddc);
-        componentArrayDestruct(&cmps);
+        websiteFreeProps(&website);
+        documentDataConfigFreeProps(&ddc);
+        componentArrayFreeProps(&cmps);
         testUtilsExecSql(db,
             "delete from components;"
             "delete from componentTypes"
@@ -85,9 +85,9 @@ testWebsiteFetchBatchesFetchesDataForDDCWithMultipleBatches(Db *db, char *err) {
     assertIntEquals(art2->dataBatchConfigId, 1);
     //
     done:
-        websiteDestruct(&website);
-        documentDataConfigDestruct(&ddc);
-        componentArrayDestruct(&cmps);
+        websiteFreeProps(&website);
+        documentDataConfigFreeProps(&ddc);
+        componentArrayFreeProps(&cmps);
         testUtilsExecSql(db,
             "delete from components;"
             "delete from componentTypes"

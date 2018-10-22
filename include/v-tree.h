@@ -39,41 +39,31 @@ typedef struct {
     unsigned length;
     unsigned *values;
 } NodeRefArray;
-void nodeRefArrayInit(NodeRefArray *this);
-void nodeRefArrayReset(NodeRefArray *this);
-void nodeRefArrayPush(NodeRefArray *this, unsigned value);
-void nodeRefArrayDestruct(NodeRefArray *this);
 
 typedef struct {
     unsigned id;
     char *tagName;
     NodeRefArray children;
 } ElemNode;
-void elemNodeDestruct(ElemNode *this);
+void elemNodeFreeProps(ElemNode *this);
 
 typedef struct {
     unsigned capacity;
     unsigned length;
     ElemNode *values;
 } ElemNodeArray;
-void elemNodeArrayInit(ElemNodeArray *this);
-void elemNodeArrayPush(ElemNodeArray *this, ElemNode *value);
-void elemNodeArrayDestruct(ElemNodeArray *this);
 
 typedef struct {
     unsigned id;
     char *chars;
 } TextNode;
-void textNodeDestruct(TextNode *this);
+void textNodeFreeProps(TextNode *this);
 
 typedef struct  {
     unsigned capacity;
     unsigned length;
     TextNode *values;
 } TextNodeArray;
-void textNodeArrayInit(TextNodeArray *this);
-void textNodeArrayPush(TextNodeArray *this, TextNode *value);
-void textNodeArrayDestruct(TextNodeArray *this);
 
 typedef enum {
     TYPE_ELEM,
@@ -94,7 +84,7 @@ void
 vTreeInit(VTree *this);
 
 void
-vTreeDestruct(VTree *this);
+vTreeFreeProps(VTree *this);
 
 /**
  * Appends a new ElemNode to $this->elemNodes, and returns a reference to it.
@@ -147,5 +137,16 @@ vTreeReplaceRef(VTree *this, NodeType nodeType, unsigned nodeId, unsigned with);
 
 unsigned
 vTreeUtilsMakeNodeRef(NodeType type, unsigned id);
+
+void nodeRefArrayInit(NodeRefArray *this);
+void nodeRefArrayReset(NodeRefArray *this);
+void nodeRefArrayPush(NodeRefArray *this, unsigned value);
+void nodeRefArrayFreeProps(NodeRefArray *this);
+void elemNodeArrayInit(ElemNodeArray *this);
+void elemNodeArrayPush(ElemNodeArray *this, ElemNode *value);
+void elemNodeArrayFreeProps(ElemNodeArray *this);
+void textNodeArrayInit(TextNodeArray *this);
+void textNodeArrayPush(TextNodeArray *this, TextNode *value);
+void textNodeArrayFreeProps(TextNodeArray *this);
 
 #endif

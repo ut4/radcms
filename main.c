@@ -86,15 +86,15 @@ int main(int argc, const char* argv[]) {
      * 7. Clean up after succesful waiting
      */
     webAppShutdown(&app);
-    webAppDestruct(&app);
-    websiteDestruct(&website);
+    webAppFreeProps(&app);
+    websiteFreeProps(&website);
     dbDestruct(&db);
     if (dukCtx) duk_destroy_heap(dukCtx);
     exit(EXIT_SUCCESS);
     fail:
         printToStdErr(errBuf);
-        websiteDestruct(&website);
-        webAppDestruct(&app);
+        websiteFreeProps(&website);
+        webAppFreeProps(&app);
         dbDestruct(&db);
         if (dukCtx) duk_destroy_heap(dukCtx);
         exit(EXIT_FAILURE);

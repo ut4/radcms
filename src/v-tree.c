@@ -11,10 +11,10 @@ vTreeInit(VTree *this) {
 }
 
 void
-vTreeDestruct(VTree *this) {
-    elemNodeArrayDestruct(&this->elemNodes);
+vTreeFreeProps(VTree *this) {
+    elemNodeArrayFreeProps(&this->elemNodes);
     this->elemNodeCounter = 1;
-    textNodeArrayDestruct(&this->textNodes);
+    textNodeArrayFreeProps(&this->textNodes);
     this->textNodeCounter = 1;
     this->calculatedRenderCharCount = 0;
     this->rootElemIndex = 0;
@@ -140,12 +140,12 @@ vTreeUtilsMakeNodeRef(NodeType type, unsigned id) {
     return out;
 }
 
-void elemNodeDestruct(ElemNode *this) {
-    if (this->children.length) nodeRefArrayDestruct(&this->children);
+void elemNodeFreeProps(ElemNode *this) {
+    if (this->children.length) nodeRefArrayFreeProps(&this->children);
     FREE_STR(this->tagName);
 }
 
-void textNodeDestruct(TextNode *this) {
+void textNodeFreeProps(TextNode *this) {
     FREE_STR(this->chars);
 }
 
@@ -164,10 +164,10 @@ void elemNodeArrayPush(ElemNodeArray *this, ElemNode *value) {
     this->values[this->length] = *value;
     this->length++;
 }
-void elemNodeArrayDestruct(ElemNodeArray *this) {
+void elemNodeArrayFreeProps(ElemNodeArray *this) {
     if (this->length) {
         for (unsigned i = 0; i < this->length; ++i) {
-            elemNodeDestruct(&this->values[i]);
+            elemNodeFreeProps(&this->values[i]);
         }
         FREE_ARR(ElemNode, this->values, this->capacity);
     }
@@ -190,8 +190,8 @@ void textNodeArrayPush(TextNodeArray *this, TextNode *value) {
     this->values[this->length] = *value;
     this->length++;
 }
-void textNodeArrayDestruct(TextNodeArray *this) {
-    for (unsigned i = 0; i < this->length; ++i) textNodeDestruct(&this->values[i]);
+void textNodeArrayFreeProps(TextNodeArray *this) {
+    for (unsigned i = 0; i < this->length; ++i) textNodeFreeProps(&this->values[i]);
     FREE_ARR(TextNode, this->values, this->capacity);
     this->length = 0;
     this->capacity = 0;
@@ -219,7 +219,7 @@ void nodeRefArrayReset(NodeRefArray *this) {
     this->capacity = 0;
     this->values = NULL;
 }
-void nodeRefArrayDestruct(NodeRefArray *this) {
+void nodeRefArrayFreeProps(NodeRefArray *this) {
     FREE_ARR(unsigned, this->values, this->capacity);
     nodeRefArrayReset(this);
 }

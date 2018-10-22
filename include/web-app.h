@@ -21,7 +21,7 @@ void
 webAppInit(WebApp *this, char *errBuf);
 
 void
-webAppDestruct(WebApp *this);
+webAppFreeProps(WebApp *this);
 
 /**
  * Reads and validates $rootDir/site.ini. expectExist == true checks that

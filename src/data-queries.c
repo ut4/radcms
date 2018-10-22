@@ -15,16 +15,16 @@ documentDataConfigInit(DocumentDataConfig *this) {
 }
 
 void
-documentDataConfigDestruct(DocumentDataConfig *this) {
+documentDataConfigFreeProps(DocumentDataConfig *this) {
     if (this->finalSql) FREE_STR(this->finalSql);
-    if (this->batches.componentTypeName) dataBatchConfigDestruct(&this->batches);
+    if (this->batches.componentTypeName) dataBatchConfigFreeProps(&this->batches);
     if (!this->batches.next) return;
     DataBatchConfig *head = this->batches.next;
     DataBatchConfig *tmp;
     while (head != NULL) {
         tmp = head;
         head = head->next;
-        dataBatchConfigDestruct(tmp);
+        dataBatchConfigFreeProps(tmp);
         FREE(DataBatchConfig, tmp);
     }
 }
@@ -140,7 +140,7 @@ dataBatchConfigInit(DataBatchConfig *this, const char *componentTypeName,
 }
 
 void
-dataBatchConfigDestruct(DataBatchConfig *this) {
+dataBatchConfigFreeProps(DataBatchConfig *this) {
     FREE_STR(this->componentTypeName);
     if (this->renderWith) FREE_STR(this->renderWith);
     if (this->where) FREE_STR(this->where);

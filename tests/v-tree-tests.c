@@ -13,7 +13,7 @@ testVTreeRenderRendersNodesWithNoChildren() {
     // 3. Assert
     assertStrEquals(out, "<article></article>");
     //
-    vTreeDestruct(&vTree);
+    vTreeFreeProps(&vTree);
     FREE_STR(out);
 }
 
@@ -44,7 +44,7 @@ testVTreeRenderRendersNodes() {
     // 3. Assert
     assertStrEquals(out, "<article><h2>Hello</h2><p>Some text</p></article>");
     //
-    vTreeDestruct(&vTree);
+    vTreeFreeProps(&vTree);
     FREE_STR(out);
 }
 
@@ -74,7 +74,7 @@ testVTreeReplaceRefReplacesRootLevelRef() {
     assertIntEquals(GET_NODEID(refAfter), 1);
     //
     done:
-    vTreeDestruct(&vTree);
+    vTreeFreeProps(&vTree);
 }
 
 void

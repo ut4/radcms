@@ -26,8 +26,8 @@ testExecLayoutPassesCorrectArguments() {
     assertThat(success, "Should return succesfully");
     //
     duk_destroy_heap(ctx);
-    vTreeDestruct(&vTree);
-    documentDataConfigDestruct(&ddc);
+    vTreeFreeProps(&vTree);
+    documentDataConfigFreeProps(&ddc);
 }
 
 static void
@@ -81,8 +81,8 @@ testVTreeRegisterElementWithElemAndTextChildren() {
     //
     done:
         duk_destroy_heap(ctx);
-        vTreeDestruct(&vTree);
-        documentDataConfigDestruct(&ddc);
+        vTreeFreeProps(&vTree);
+        documentDataConfigFreeProps(&ddc);
 }
 
 void
@@ -116,8 +116,8 @@ testVTreeRegisterElementWithDataConfigChildren() {
     //
     done:
         duk_destroy_heap(ctx);
-        vTreeDestruct(&vTree);
-        documentDataConfigDestruct(&ddc);
+        vTreeFreeProps(&vTree);
+        documentDataConfigFreeProps(&ddc);
 }
 
 void
@@ -147,8 +147,8 @@ testDocumentDataConfigRenderOneChains() {
     //
     done:
         duk_destroy_heap(ctx);
-        vTreeDestruct(&vTree);
-        documentDataConfigDestruct(&ddc);
+        vTreeFreeProps(&vTree);
+        documentDataConfigFreeProps(&ddc);
 }
 
 void
@@ -175,8 +175,8 @@ testDocumentDataConfigRenderAllChains() {
     //
     done:
         duk_destroy_heap(ctx);
-        vTreeDestruct(&vTree);
-        documentDataConfigDestruct(&ddc);
+        vTreeFreeProps(&vTree);
+        documentDataConfigFreeProps(&ddc);
 }
 
 static void
@@ -220,10 +220,10 @@ testExecLayoutRunsMultipleLayoutsWithoutConflict() {
     //
     done:
         duk_destroy_heap(ctx);
-        vTreeDestruct(&vTree1);
-        vTreeDestruct(&vTree2);
-        documentDataConfigDestruct(&ddc1);
-        documentDataConfigDestruct(&ddc2);
+        vTreeFreeProps(&vTree1);
+        vTreeFreeProps(&vTree2);
+        documentDataConfigFreeProps(&ddc1);
+        documentDataConfigFreeProps(&ddc2);
 }
 
 void
@@ -262,12 +262,12 @@ testVTreeRegisterElementValidatesItsArguments() {
     //
     done:
         duk_destroy_heap(ctx);
-        vTreeDestruct(&vTree1);
-        vTreeDestruct(&vTree2);
-        vTreeDestruct(&vTree3);
-        documentDataConfigDestruct(&ddc1);
-        documentDataConfigDestruct(&ddc2);
-        documentDataConfigDestruct(&ddc3);
+        vTreeFreeProps(&vTree1);
+        vTreeFreeProps(&vTree2);
+        vTreeFreeProps(&vTree3);
+        documentDataConfigFreeProps(&ddc1);
+        documentDataConfigFreeProps(&ddc2);
+        documentDataConfigFreeProps(&ddc3);
 }
 
 static void
@@ -302,8 +302,8 @@ testExecRenderOneTemplatePassesCorrectArguments() {
     //
     done:
     duk_destroy_heap(ctx);
-    vTreeDestruct(&vTree);
-    componentArrayDestruct(&cmps);
+    vTreeFreeProps(&vTree);
+    componentArrayFreeProps(&cmps);
 }
 
 static void
@@ -344,8 +344,8 @@ testExecRenderAllTemplatePassesCorrectArguments() {
     //
     done:
     duk_destroy_heap(ctx);
-    vTreeDestruct(&vTree);
-    componentArrayDestruct(&cmps);
+    vTreeFreeProps(&vTree);
+    componentArrayFreeProps(&cmps);
 }
 
 void

@@ -16,7 +16,7 @@ void
 siteIniInit(SiteIni *this);
 
 void
-siteIniDestruct(SiteIni *this);
+siteIniFreeProps(SiteIni *this);
 
 /**
  * Reads and parses $filePath, and return true if it was valid.

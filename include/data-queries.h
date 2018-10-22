@@ -21,7 +21,7 @@ dataBatchConfigInit(DataBatchConfig *this, const char *componentTypeName,
                     bool isFetchAll, unsigned id);
 
 void
-dataBatchConfigDestruct(DataBatchConfig *this);
+dataBatchConfigFreeProps(DataBatchConfig *this);
 
 void
 dataBatchConfigSetRenderWith(DataBatchConfig *this, const char *renderWith);
@@ -41,7 +41,7 @@ void
 documentDataConfigInit(DocumentDataConfig *this);
 
 void
-documentDataConfigDestruct(DocumentDataConfig *this);
+documentDataConfigFreeProps(DocumentDataConfig *this);
 
 /**
  * Appends a new DataBatchConfig to $this->batches, and returns a pointer to it.

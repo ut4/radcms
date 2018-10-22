@@ -134,7 +134,7 @@ vTreeSBRegisterElement(duk_context *ctx) {
     } else if (duk_is_array(ctx, 2)) {
         unsigned l = (unsigned)duk_get_length(ctx, 2);
         if (l == 0) {
-            nodeRefArrayDestruct(&children);
+            nodeRefArrayFreeProps(&children);
             duk_error(ctx, DUK_ERR_TYPE_ERROR, "Child-array can't be empty.\n");
         }
         for (unsigned i = 0; i < l; ++i) {
@@ -149,7 +149,7 @@ vTreeSBRegisterElement(duk_context *ctx) {
                                                           dbcId));
         duk_pop(ctx); // uint
     } else {
-        nodeRefArrayDestruct(&children);
+        nodeRefArrayFreeProps(&children);
         duk_error(ctx, DUK_ERR_TYPE_ERROR, "3rd arg must be \"str\", <nodeRef>"
             ", [<nodeRef>..], <dataConfig> or [<dataConfig>...].\n");
     }

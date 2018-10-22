@@ -24,6 +24,6 @@ componentFreeProps(Component *this);
 
 void componentArrayInit(ComponentArray *this);
 void componentArrayPush(ComponentArray *this, Component *value);
-void componentArrayDestruct(ComponentArray *this);
+void componentArrayFreeProps(ComponentArray *this);
 
 #endif

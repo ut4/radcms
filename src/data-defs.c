@@ -32,7 +32,7 @@ void componentArrayPush(ComponentArray *this, Component *value) {
     this->values[this->length] = *value;
     this->length++;
 }
-void componentArrayDestruct(ComponentArray *this) {
+void componentArrayFreeProps(ComponentArray *this) {
     for (unsigned i = 0; i < this->length; ++i) componentFreeProps(&this->values[i]);
     FREE_ARR(Component, this->values, this->capacity);
     componentArrayInit(this);

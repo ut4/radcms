@@ -53,7 +53,7 @@ testSiteGraphParseParsesTheInput() {
     assertIntEquals(testGraph.values[4].parentId, 0);
     assertStrEquals(testGraph.values[4].layoutFileName, "d");
     done:
-        pageArrayDestruct(&testGraph);
+        pageArrayFreeProps(&testGraph);
 }
 
 static void testSiteGraphSerializeSerializesTheInput() {

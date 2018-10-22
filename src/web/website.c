@@ -14,8 +14,8 @@ websiteInit(Website *this) {
 }
 
 void
-websiteDestruct(Website *this) {
-    if (this->siteGraph.values) pageArrayDestruct(&this->siteGraph);
+websiteFreeProps(Website *this) {
+    if (this->siteGraph.values) pageArrayFreeProps(&this->siteGraph);
     this->rootDir = NULL;
     this->dukCtx = NULL;
     this->db = NULL;
@@ -115,7 +115,7 @@ pageArrayPush(PageArray *this, Page *page) {
     this->length++;
 }
 void
-pageArrayDestruct(PageArray *this) {
+pageArrayFreeProps(PageArray *this) {
     for (unsigned i = 0; i < this->capacity; ++i) {
         FREE_STR(this->values[i].url);
         FREE_STR(this->values[i].layoutFileName);

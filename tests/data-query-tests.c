@@ -43,7 +43,7 @@ testDocumentDataConfigAddsBatches() {
     assertThatOrGoto(ddc.batchHead == third, done, "ddc.batchHead == thirdBatch");
     //
     done:
-        documentDataConfigDestruct(&ddc);
+        documentDataConfigFreeProps(&ddc);
 }
 
 static void
@@ -63,7 +63,7 @@ testDocumentDataToSqlGeneratesQueryForSingleRenderOne() {
     ")");
     //
     done:
-        documentDataConfigDestruct(&ddc);
+        documentDataConfigFreeProps(&ddc);
 }
 
 static void
@@ -89,7 +89,7 @@ testDocumentDataToSqlGeneratesQueryForMultipleRenderOnes() {
     ")");
     //
     done:
-        documentDataConfigDestruct(&ddc);
+        documentDataConfigFreeProps(&ddc);
 }
 
 static void
@@ -112,7 +112,7 @@ testDocumentDataToSqlGeneratesQueryForSingleRenderAll() {
     ")");
     //
     done:
-        documentDataConfigDestruct(&ddc);
+        documentDataConfigFreeProps(&ddc);
 }
 
 static void
@@ -141,7 +141,7 @@ testDocumentDataToSqlGeneratesQueryForMultipleRenderAlls() {
     ")");
     //
     done:
-        documentDataConfigDestruct(&ddc);
+        documentDataConfigFreeProps(&ddc);
 }
 
 void

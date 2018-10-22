@@ -39,7 +39,7 @@ fetchAndRenderBatches(Website *site, VTree *vTree, DocumentDataConfig *ddc,
     }
     success = true;
     done:
-    componentArrayDestruct(&components);
+    componentArrayFreeProps(&components);
     return success;
 }
 
@@ -69,8 +69,8 @@ websiteHandlersHandlePageRequest(void *this, const char *method, const char *url
     renderedHtml = vTreeToHtml(&vTree, err);
     done:
     FREE_STR(layoutCode);
-    vTreeDestruct(&vTree);
-    documentDataConfigDestruct(&ddc);
+    vTreeFreeProps(&vTree);
+    documentDataConfigFreeProps(&ddc);
     if (!renderedHtml) {
         return MHD_HTTP_INTERNAL_SERVER_ERROR;
     }

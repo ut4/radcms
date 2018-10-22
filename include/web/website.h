@@ -36,7 +36,7 @@ void
 websiteInit(Website *this);
 
 void
-websiteDestruct(Website *this);
+websiteFreeProps(Website *this);
 
 bool
 websiteFetchAndParseSiteGraph(Website *this, char *err);
@@ -76,6 +76,6 @@ siteGraphFindPage(PageArray *siteGraph, const char *url);
 
 void pageArrayInit(PageArray *this, unsigned capacity);
 void pageArrayPush(PageArray *this, Page *page);
-void pageArrayDestruct(PageArray *this);
+void pageArrayFreeProps(PageArray *this);
 
 #endif
