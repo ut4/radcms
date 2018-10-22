@@ -1,6 +1,7 @@
 #include "../include/data-query-script-bindings.h"
 
 #define DDC_STASH_KEY "_DocumentDataConfig"
+#define DBC_STASH_KEY "_DataBatchConfig"
 #define DBC_PROTO_KEY "_DataBatchConfigPrototype"
 
 /** Implements global.documentDataConfig.renderOne($componentTypeName) */
@@ -51,8 +52,12 @@ dataQuerySBPushDbc(duk_context *ctx, DataBatchConfig *dbc) {
     duk_push_uint(ctx, dbc->id);                 // [... obj, uint]
     duk_put_prop_string(ctx, -2, "id");          // [... obj]
     duk_push_thread_stash(ctx, ctx);             // [... obj stash]
+    // set obj.prototype = stash.dbcPrototypeObject
     duk_get_prop_string(ctx, -1, DBC_PROTO_KEY); // [... obj stash proto]
     duk_set_prototype(ctx, -3);                  // [... obj stash]
+    // set stash.currentDbcPtr = dbc
+    duk_push_pointer(ctx, (void*)dbc);           // [... stash ptr]
+    duk_put_prop_string(ctx, -2, DBC_STASH_KEY); // [... stash]
     duk_pop(ctx);                                // [... obj]
 }
 
@@ -69,10 +74,22 @@ documentDataConfigSBRenderOne(duk_context *ctx) {
 
 static duk_ret_t
 dataBatchConfigSBSetRenderWith(duk_context *ctx) {
+    duk_push_thread_stash(ctx, ctx);
+    duk_get_prop_string(ctx, -1, DBC_STASH_KEY);
+    DataBatchConfig *dbc = (DataBatchConfig*)duk_to_pointer(ctx, -1);
+    const char *templateName = duk_require_string(ctx, 0); // 1. arg
+    dataBatchConfigSetRenderWith(dbc, templateName);
+    duk_push_this(ctx);
     return 1;
 }
 
 static duk_ret_t
 dataBatchConfigSBSetWhere(duk_context *ctx) {
+    duk_push_thread_stash(ctx, ctx);
+    duk_get_prop_string(ctx, -1, DBC_STASH_KEY);
+    DataBatchConfig *dbc = (DataBatchConfig*)duk_to_pointer(ctx, -1);
+    const char *where = duk_require_string(ctx, 0); // 1. arg
+    dataBatchConfigSetWhere(dbc, where);
+    duk_push_this(ctx);
     return 1;
 }

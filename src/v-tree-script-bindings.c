@@ -23,16 +23,58 @@ bool
 vTreeScriptBindingsExecLayout(duk_context *ctx, char *layoutCode, VTree *vTree,
                               DocumentDataConfig *ddc, char *err) {
     vTreeInit(vTree);
-    vTreeSBSetStashedVTree(ctx, vTree);
     documentDataConfigInit(ddc);
+    vTreeSBSetStashedVTree(ctx, vTree);
     dataQuerySBSetStashedDocumentDataConfig(ctx, ddc);
-    if (duk_peval_string(ctx, layoutCode) != 0) {
+    duk_pcompile_string(ctx, DUK_COMPILE_FUNCTION, layoutCode);
+    if (!duk_is_function(ctx, -1)) {
+        putError(duk_safe_to_string(ctx, -1));
+        duk_pop(ctx); // error
+        return false;
+    }
+    duk_get_global_string(ctx, "vTree");              // arg1
+    duk_get_global_string(ctx, "documentDataConfig"); // arg2
+    if (duk_pcall(ctx, 2) != 0) {
         putError(duk_safe_to_string(ctx, -1));
         duk_pop(ctx); // peval result
         return false;
     }
+    vTree->rootElemIndex = vTree->elemNodes.length - 1;
     duk_pop(ctx); // peval result
     return true;
+}
+
+static void
+pushComponent(duk_context *ctx, Component *data) {
+    duk_push_object(ctx);                 // [... obj]
+    duk_push_uint(ctx, data->id);         // [... obj uint]
+    duk_put_prop_string(ctx, -2, "id");   // [... obj]
+    duk_push_string(ctx, data->name);     // [... obj string]
+    duk_put_prop_string(ctx, -2, "name"); // [... obj]
+    duk_push_string(ctx, data->json);     // [... obj string]
+    duk_json_decode(ctx, -1);             // [... obj obj]
+    duk_put_prop_string(ctx, -2, "data"); // [... obj]
+}
+
+unsigned
+vTreeScriptBindingsExecTemplate(duk_context *ctx, char *templateCode,
+                                VTree *vTree, Component *data, char *err) {
+    vTreeSBSetStashedVTree(ctx, vTree);
+    duk_pcompile_string(ctx, DUK_COMPILE_FUNCTION, templateCode);
+    if (!duk_is_function(ctx, -1)) {
+        putError(duk_safe_to_string(ctx, -1));
+        duk_pop(ctx); // error
+        return 0;
+    }
+    duk_get_global_string(ctx, "vTree"); // arg1
+    pushComponent(ctx, data);            // arg2
+    if (duk_pcall(ctx, 2) != 0) {
+        putError(duk_safe_to_string(ctx, -1));
+        duk_pop(ctx); // pcall result
+        return 0;
+    }
+    duk_pop(ctx); // pcall result
+    return vTree->elemNodes.values[vTree->elemNodes.length - 1].id;
 }
 
 static void

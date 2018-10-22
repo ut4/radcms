@@ -36,7 +36,7 @@ create unique index componentNameIdx on components(`name`);
 
 -- Default data
 insert into websites values
-    (1, "4|1/|0|main-layout.js|2/art1|0|article-single.js|3/art2|0|article-single.js|4/art3|article-single.js|0");
+    (1, "4|1/|0|main-layout.js|2/art1|0|article-single.js|3/art2|0|article-single.js|4/art3|0|article-single.js");
 
 insert into componentTypes values
     (1, "Generic"),

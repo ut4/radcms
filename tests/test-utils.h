@@ -6,4 +6,7 @@
 bool
 testUtilsSetupTestDb(Db *db, char *err);
 
+bool
+testUtilsExecSql(Db *db, const char *sql);
+
 #endif

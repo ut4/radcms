@@ -63,6 +63,7 @@ webAppRespond(void *myPtr, struct MHD_Connection *connection, const char *url,
     }
     if (strlen(app->errBuf) > 0) {
         printToStdErr("Error in handler: '%s'", app->errBuf);
+        app->errBuf[0] = '\0';
     }
     if (!h || statusCode == MHD_HTTP_NOT_FOUND) {
         response = MHD_create_response_from_buffer(strlen(notFoundMessage),

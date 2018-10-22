@@ -8,13 +8,15 @@
     dataQueryScriptBindingsRegister(ctx)
 
 static void
-testExecLayoutConfiguresGlobalScope() {
+testExecLayoutPassesCorrectArguments() {
     // 1. Setup
     beforeEach();
     VTree vTree;
     DocumentDataConfig ddc;
     // 2. Call
-    char *myLayout = "vTree !== undefined; documentDataConfig !== undefined;";
+    char *myLayout = "function (vTree, documentDataConfig) {"
+                         "vTree !== undefined; documentDataConfig !== undefined;"
+                     "}";
     bool success = vTreeScriptBindingsExecLayout(ctx, myLayout, &vTree, &ddc, errBuf);
     // 3. Assert
     assertThat(success, "Should return succesfully");
@@ -31,12 +33,14 @@ testVTreeRegisterElementWithElemAndTextChildren() {
     VTree vTree;
     DocumentDataConfig ddc;
     // 2. Call
-    char *myLayout = "vTree.registerElement(\"div\", null, [" // multiple nodes as children
-        "vTree.registerElement(\"h2\", null,"                 // single node as a children
-            "vTree.registerElement(\"span\", null, \"foo\")"  // text as a children
-        "),"
-        "vTree.registerElement(\"p\", null, \"bar\")"
-    "])";
+    char *myLayout = "function (vTree, _) {"
+            "vTree.registerElement('div', null, [" // multiple nodes as children
+                "vTree.registerElement('h2', null,"                 // single node as a children
+                    "vTree.registerElement('span', null, 'foo')"  // text as a children
+                "),"
+                "vTree.registerElement('p', null, 'bar')"
+            "]);"
+        "}";
     bool success = vTreeScriptBindingsExecLayout(ctx, myLayout, &vTree, &ddc, errBuf);
     // 3. Assert
     assertThatOrGoto(success, done, "Should return succesfully");
@@ -83,14 +87,16 @@ testVTreeRegisterElementWithDataConfigChildren() {
     beforeEach();
     VTree vTree;
     DocumentDataConfig ddc;
-    char *layout = "vTree.registerElement(\"div\", null, ["
-        "vTree.registerElement(\"div\", null, "
-            "documentDataConfig.renderOne(\"Article\")"
-        "),"
-        "vTree.registerElement(\"div\", null, "
-            "documentDataConfig.renderOne(\"Generic\")"
-        "),"
-    "])";
+    char *layout = "function (vTree, documentDataConfig) {"
+        "vTree.registerElement('div', null, ["
+            "vTree.registerElement('div', null, "
+                "documentDataConfig.renderOne('Article')"
+            "),"
+            "vTree.registerElement('div', null, "
+                "documentDataConfig.renderOne('Generic')"
+            "),"
+        "]);"
+    "}";
     //
     bool success = vTreeScriptBindingsExecLayout(ctx, layout, &vTree, &ddc, errBuf);
     assertThatOrGoto(success, done, "Should return succesfully");
@@ -110,6 +116,37 @@ testVTreeRegisterElementWithDataConfigChildren() {
         documentDataConfigDestruct(&ddc);
 }
 
+void
+testDocumentDataConfigRenderOneChains() {
+    //
+    beforeEach();
+    VTree vTree;
+    DocumentDataConfig ddc;
+    char *layout = "function (vTree) {"
+        "vTree.registerElement('div', null, "
+            "documentDataConfig.renderOne('Foo').using('a.tmpl').where('bar=1')"
+        ");"
+    "}";
+    //
+    bool success = vTreeScriptBindingsExecLayout(ctx, layout, &vTree, &ddc, errBuf);
+    assertThatOrGoto(success, done, "Should return succesfully");
+    DataBatchConfig *actualBatch = &ddc.batches;
+    assertThatOrGoto(actualBatch->componentTypeName != NULL, done,
+                     "componentTypeName != NULL");
+    assertStrEquals(actualBatch->componentTypeName, "Foo");
+    assertThatOrGoto(actualBatch->renderWith != NULL, done,
+                     "renderWith != NULL");
+    assertStrEquals(actualBatch->renderWith, "a.tmpl");
+    assertThatOrGoto(actualBatch->where != NULL, done,
+                     "where != NULL");
+    assertStrEquals(actualBatch->where, "bar=1");
+    //
+    done:
+        duk_destroy_heap(ctx);
+        vTreeDestruct(&vTree);
+        documentDataConfigDestruct(&ddc);
+}
+
 static void
 testExecLayoutRunsMultipleLayoutsWithoutConflict() {
     // 1. Setup
@@ -118,8 +155,12 @@ testExecLayoutRunsMultipleLayoutsWithoutConflict() {
     VTree vTree2;
     DocumentDataConfig ddc1;
     DocumentDataConfig ddc2;
-    char *layout1 = "vTree.registerElement(\"div\", null, \"foo\")";
-    char *layout2 = "vTree.registerElement(\"span\", null, \"bar\")";
+    char *layout1 = "function (vTree, _) {"
+        " vTree.registerElement('div', null, 'foo');"
+    "}";
+    char *layout2 = "function (vTree, _) {"
+        " vTree.registerElement('span', null, 'bar');"
+    "}";
     // 2. Evaluate two layouts and vTrees
     bool success1 = vTreeScriptBindingsExecLayout(ctx, layout1, &vTree1, &ddc1, errBuf);
     assertThatOrGoto(success1, done, "Should return successfully on layout1");
@@ -164,9 +205,15 @@ testVTreeRegisterElementValidatesItsArguments() {
     DocumentDataConfig ddc1;
     DocumentDataConfig ddc2;
     DocumentDataConfig ddc3;
-    char *layout = "vTree.registerElement()";
-    char *layout2 = "vTree.registerElement(\"p\", null, true)";
-    char *layout3 = "vTree.registerElement(\"p\", null, [])";
+    char *layout = "function (vTree, _) {"
+        " vTree.registerElement();"
+    "}";
+    char *layout2 = "function (vTree, _) {"
+        " vTree.registerElement('p', null, true);"
+    "}";
+    char *layout3 = "function (vTree, _) {"
+        " vTree.registerElement('p', null, []);"
+    "}";
     //
     bool success1 = vTreeScriptBindingsExecLayout(ctx, layout, &vTree1, &ddc1, errBuf);
     assertThatOrGoto(!success1, done, "Should return false");
@@ -191,11 +238,44 @@ testVTreeRegisterElementValidatesItsArguments() {
         documentDataConfigDestruct(&ddc3);
 }
 
+static void
+testExecTemplatePassesCorrectArguments() {
+    // 1. Setup
+    beforeEach();
+    VTree vTree;
+    vTreeInit(&vTree);
+    Component cmp;
+    componentInit(&cmp);
+    cmp.id = 1;
+    cmp.name = ALLOCATE_ARR(char, 4);
+    sprintf(cmp.name, "foo");
+    cmp.json = ALLOCATE_ARR(char, 11);
+    sprintf(cmp.json, "{\"prop\":2}");
+    // 2. Call
+    char *myTemplate = "function (vTree, cmp) {"
+                           "vTree.registerElement(\"fos\", null, "
+                               "cmp.id + ' ' + cmp.name + ' ' + cmp.data.prop"
+                           ")"
+                       "}";
+    unsigned nodeId = vTreeScriptBindingsExecTemplate(ctx, myTemplate, &vTree,
+                                                   &cmp, errBuf);
+    // 3. Assert
+    assertThatOrGoto(nodeId == 1, done, "Should return the id of the root node");
+    assertStrEquals(vTree.textNodes.values[0].chars, "1 foo 2");
+    //
+    done:
+    duk_destroy_heap(ctx);
+    vTreeDestruct(&vTree);
+    componentFreeProps(&cmp);
+}
+
 void
 vTreeScriptBindingsTestsRun() {
-    testExecLayoutConfiguresGlobalScope();
+    testExecLayoutPassesCorrectArguments();
     testVTreeRegisterElementWithElemAndTextChildren();
     testVTreeRegisterElementWithDataConfigChildren();
+    testDocumentDataConfigRenderOneChains();
     testExecLayoutRunsMultipleLayoutsWithoutConflict();
     testVTreeRegisterElementValidatesItsArguments();
+    testExecTemplatePassesCorrectArguments();
 }

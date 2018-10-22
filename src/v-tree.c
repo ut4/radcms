@@ -1,36 +1,5 @@
 #include "../include/v-tree.h"
 
-/*
- * https://www.lua.org/source/5.3/lopcodes.h.html#MASK_WITH_1
- *
- * creates a mask with $howMany 1 bits at position $startingAt
- */
-#define MASK_WITH_1(howMany, startingAt) ((~((~0)<<howMany))<<startingAt)
-/*
- * creates a mask with $howMany 0 bits at position $startingAt
- */
-#define MASK_WITH_0(howMany, startingAt) (~MASK_WITH_1(howMany, startingAt))
-/*
- * Stores $nodeType (>=0 and <= 15) to 0000000000000000000000000000xxxx bits of
- * an unsigned int $to.
- */
-#define SET_NODETYPE(to, nodeType) to = (to & MASK_WITH_0(4, 0)) | \
-                                        (nodeType & MASK_WITH_1(4, 0))
-/*
- * Extracts 0000000000000000000000000000xxxx bits from $from as an integer.
- */
-#define GET_NODETYPE(from) (from & MASK_WITH_1(4, 0))
-/*
- * Stores $nodeVal (>= 0 and <= 268435455) to xxxxxxxxxxxxxxxxxxxxxxxxxxxx0000
- * bits of an unsigned int $to.
- */
-#define SET_NODEID(to, nodeVal) to = (to & MASK_WITH_0(28, 4)) | \
-                                 ((nodeVal << 4) & MASK_WITH_1(28, 4))
-/*
- * Extracts xxxxxxxxxxxxxxxxxxxxxxxxxxxx0000 bits from $from as an integer.
- */
-#define GET_NODEID(from) ((from >> 4) & MASK_WITH_1(28, 0))
-
 void
 vTreeInit(VTree *this) {
     elemNodeArrayInit(&this->elemNodes);
@@ -38,6 +7,7 @@ vTreeInit(VTree *this) {
     textNodeArrayInit(&this->textNodes);
     this->textNodeCounter = 1;
     this->calculatedRenderCharCount = 0;
+    this->rootElemIndex = 0;
 }
 
 void
@@ -47,6 +17,7 @@ vTreeDestruct(VTree *this) {
     textNodeArrayDestruct(&this->textNodes);
     this->textNodeCounter = 1;
     this->calculatedRenderCharCount = 0;
+    this->rootElemIndex = 0;
 }
 
 unsigned
@@ -105,8 +76,7 @@ vTreeToHtml(VTree *this, char *err) {
     }
     char *out = ALLOCATE_ARR(char, this->calculatedRenderCharCount + 1);
     out[0] = '\0';
-    ElemNode *root = &this->elemNodes.values[this->elemNodes.length - 1];
-    doRender(this, root, out);
+    doRender(this, &this->elemNodes.values[this->rootElemIndex], out);
     if (strlen(out) > this->calculatedRenderCharCount) {
         printToStdErr("calculatedRenderCharCount was %d, but actually wrote "
                       "%d chars! Exiting.\n", this->calculatedRenderCharCount,
@@ -136,6 +106,30 @@ TextNode*
 vTreeFindTextNode(VTree *this, unsigned ref) {
     unsigned idx = GET_NODEID(ref) - 1;
     return idx < this->textNodes.length ? &this->textNodes.values[idx] : NULL;
+}
+
+static bool
+doReplaceRef(VTree *this, ElemNode *elem, NodeType nodeType, unsigned nodeId,
+             unsigned with) {
+    for (unsigned i = 0; i < elem->children.length; ++i) {
+        unsigned ref = elem->children.values[i];
+        NodeType t = GET_NODETYPE(ref);
+        if (t == nodeType && GET_NODEID(ref) == nodeId) {
+            elem->children.values[i] = with;
+            return true;
+        }
+        if (t == TYPE_ELEM && doReplaceRef(this, vTreeFindElemNode(this, ref),
+                                           nodeType, nodeId, with)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool
+vTreeReplaceRef(VTree *this, NodeType nodeType, unsigned nodeId, unsigned with) {
+    return doReplaceRef(this, &this->elemNodes.values[this->rootElemIndex],
+                        nodeType, nodeId, with);
 }
 
 unsigned

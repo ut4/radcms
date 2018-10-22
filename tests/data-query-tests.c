@@ -57,8 +57,8 @@ testDocumentDataToSqlGeneratesQueryForSingleRenderOne() {
     dataBatchConfigSetWhere(dbc, "name=\"Foo\"");
     char *sql = documentDataConfigToSql(&ddc, errBuf);
     assertThatOrGoto(sql != NULL, done, "Should return the sql");
-    assertStrEquals(sql, "select `id`,`name`,`json` from ("
-        "select * from (select `id`,`name`,`json` from components where name=\"Foo\")"
+    assertStrEquals(sql, "select `id`,`name`,`json`,`dbcId` from ("
+        "select * from (select `id`,`name`,`json`,1 as `dbcId` from components where name=\"Foo\")"
     ")");
     //
     done:
@@ -80,10 +80,10 @@ testDocumentDataToSqlGeneratesQueryForMultipleRenderOnes() {
     dataBatchConfigSetWhere(dbc3, "name=\"Naz\"");
     char *sql = documentDataConfigToSql(&ddc, errBuf);
     assertThatOrGoto(sql != NULL, done, "Should return the sql");
-    assertStrEquals(sql, "select `id`,`name`,`json` from ("
-        "select * from (select `id`,`name`,`json` from components where name=\"Foo\") union all "
-        "select * from (select `id`,`name`,`json` from components where name=\"Bar\") union all "
-        "select * from (select `id`,`name`,`json` from components where name=\"Naz\")"
+    assertStrEquals(sql, "select `id`,`name`,`json`,`dbcId` from ("
+        "select * from (select `id`,`name`,`json`,1 as `dbcId` from components where name=\"Foo\") union all "
+        "select * from (select `id`,`name`,`json`,2 as `dbcId` from components where name=\"Bar\") union all "
+        "select * from (select `id`,`name`,`json`,3 as `dbcId` from components where name=\"Naz\")"
     ")");
     //
     done:

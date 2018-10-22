@@ -4,12 +4,13 @@ project(insanecms VERSION 0.0.0 LANGUAGES C)
 set(INSN_COMPILE_OPTIONS -Wall -pedantic)
 set(VENDOR_ROOT ${PROJECT_SOURCE_DIR}/vendor)
 include(deps.cmake)
-include_directories(pike ${INSN_DEP_INCLUDES})
+include_directories(insane ${INSN_DEP_INCLUDES})
 
 # == insane.exe ================================================================
 set(SOURCE_FILES_COMMON
     include/web/website.h src/web/website.c
     include/common.h
+    include/data-defs.h src/data-defs.c
     include/data-queries.h src/data-queries.c
     include/data-query-script-bindings.h src/data-query-script-bindings.c
     include/db.h src/db.c

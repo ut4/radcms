@@ -3,6 +3,37 @@
 
 #include "memory.h"
 
+/*
+ * https://www.lua.org/source/5.3/lopcodes.h.html#MASK_WITH_1
+ *
+ * creates a mask with $howMany 1 bits at position $startingAt
+ */
+#define MASK_WITH_1(howMany, startingAt) ((~((~0)<<howMany))<<startingAt)
+/*
+ * creates a mask with $howMany 0 bits at position $startingAt
+ */
+#define MASK_WITH_0(howMany, startingAt) (~MASK_WITH_1(howMany, startingAt))
+/*
+ * Stores $nodeType (>=0 and <= 15) to 0000000000000000000000000000xxxx bits of
+ * an unsigned int $to.
+ */
+#define SET_NODETYPE(to, nodeType) to = (to & MASK_WITH_0(4, 0)) | \
+                                        (nodeType & MASK_WITH_1(4, 0))
+/*
+ * Extracts 0000000000000000000000000000xxxx bits from $from as an integer.
+ */
+#define GET_NODETYPE(from) (from & MASK_WITH_1(4, 0))
+/*
+ * Stores $nodeVal (>= 0 and <= 268435455) to xxxxxxxxxxxxxxxxxxxxxxxxxxxx0000
+ * bits of an unsigned int $to.
+ */
+#define SET_NODEID(to, nodeVal) to = (to & MASK_WITH_0(28, 4)) | \
+                                ((nodeVal << 4) & MASK_WITH_1(28, 4))
+/*
+ * Extracts xxxxxxxxxxxxxxxxxxxxxxxxxxxx0000 bits from $from as an integer.
+ */
+#define GET_NODEID(from) ((from >> 4) & MASK_WITH_1(28, 0))
+
 typedef struct {
     unsigned capacity;
     unsigned length;
@@ -56,6 +87,7 @@ typedef struct {
     TextNodeArray textNodes;
     unsigned textNodeCounter;
     unsigned calculatedRenderCharCount;
+    unsigned rootElemIndex;
 } VTree;
 
 void
@@ -109,6 +141,9 @@ vTreeFindElemNodeByTagName(VTree *this, const char *tagName);
  */
 TextNode*
 vTreeFindTextNode(VTree *this, unsigned ref);
+
+bool
+vTreeReplaceRef(VTree *this, NodeType nodeType, unsigned nodeId, unsigned with);
 
 unsigned
 vTreeUtilsMakeNodeRef(NodeType type, unsigned id);

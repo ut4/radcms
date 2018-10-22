@@ -1,6 +1,7 @@
 #ifndef insn_dataQueries_h
 #define insn_dataQueries_h
 
+#include <math.h> // log10
 #include "memory.h"
 
 struct DataBatchConfig;
@@ -61,5 +62,11 @@ documentDataConfigAddBatch(DocumentDataConfig *this, const char *componentTypeNa
  */
 char*
 documentDataConfigToSql(DocumentDataConfig *this, char *err);
+
+/**
+ * Returns DataBatchConfig*|NULL.
+ */
+DataBatchConfig*
+documentDataConfigFindBatch(DocumentDataConfig *this, unsigned id);
 
 #endif

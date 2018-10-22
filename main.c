@@ -66,7 +66,8 @@ int main(int argc, const char* argv[]) {
      */
     website.rootDir = app.rootDir;
     website.dukCtx = dukCtx;
-    if (!websiteFetchAndParseSiteGraph(&website, &db, errBuf)) goto fail;
+    website.db = &db;
+    if (!websiteFetchAndParseSiteGraph(&website, errBuf)) goto fail;
     /*
      * 5. Start the server
      */

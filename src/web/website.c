@@ -1,6 +1,7 @@
 #include "../../include/web/website.h"
 
-static void mapSiteGraphResultRow(sqlite3_stmt *stmt, void **ctx);
+static void mapDataBatchesRow(sqlite3_stmt *stmt, void **myPtr);
+static void mapSiteGraphResultRow(sqlite3_stmt *stmt, void **myPtr);
 
 void
 websiteInit(Website *this) {
@@ -8,19 +9,23 @@ websiteInit(Website *this) {
     this->siteGraph.length = 0;
     this->siteGraph.values = NULL;
     this->rootDir = NULL;
+    this->dukCtx = NULL;
+    this->db = NULL;
 }
 
 void
 websiteDestruct(Website *this) {
     if (this->siteGraph.values) pageArrayDestruct(&this->siteGraph);
     this->rootDir = NULL;
+    this->dukCtx = NULL;
+    this->db = NULL;
 }
 
 bool
-websiteFetchAndParseSiteGraph(Website *this, Db *db, char *err) {
+websiteFetchAndParseSiteGraph(Website *this, char *err) {
     char *serializedGraphFromDb = NULL;
-    if (dbSelect(db, "SELECT graph FROM websites LIMIT 1", mapSiteGraphResultRow,
-                 (void*)&serializedGraphFromDb, err)) {
+    if (dbSelect(this->db, "SELECT graph FROM websites LIMIT 1",
+                 mapSiteGraphResultRow, (void*)&serializedGraphFromDb, err)) {
         if (!serializedGraphFromDb) return false;
         bool ok = siteGraphParse(serializedGraphFromDb, &this->siteGraph,
                                  &this->strReader, err);
@@ -30,9 +35,28 @@ websiteFetchAndParseSiteGraph(Website *this, Db *db, char *err) {
     return false;
 }
 
+bool
+websiteFetchBatches(Website *this, Component *to, DocumentDataConfig *ddc,
+                      char *err) {
+    componentInit(to);
+    char *sql = documentDataConfigToSql(ddc, err);
+    return sql &&
+           dbSelect(this->db, sql, mapDataBatchesRow, (void*)&to, err) &&
+           to->id > 0;
+}
+
 static void
-mapSiteGraphResultRow(sqlite3_stmt *stmt, void **ctx) {
-    *ctx = copyString((const char*)sqlite3_column_text(stmt, 0));
+mapSiteGraphResultRow(sqlite3_stmt *stmt, void **myPtr) {
+    *myPtr = copyString((const char*)sqlite3_column_text(stmt, 0));
+}
+
+static void
+mapDataBatchesRow(sqlite3_stmt *stmt, void **myPtr) {
+    Component *newC = (Component*)*myPtr;
+    newC->id = (unsigned)sqlite3_column_int(stmt, 0);
+    newC->name = copyString((const char*)sqlite3_column_text(stmt, 1));
+    newC->json = copyString((const char*)sqlite3_column_text(stmt, 2));
+    newC->dataBatchConfigId = (unsigned)sqlite3_column_int(stmt, 3);
 }
 
 bool

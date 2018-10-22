@@ -2,6 +2,8 @@
 #define insn_website_h
 
 #include <stdbool.h>
+#include "../data-defs.h" // Component
+#include "../data-queries.h" // DocumentDataConfig
 #include "../db.h"
 #include "../duk.h" // duk_context
 #include "../memory.h"
@@ -27,6 +29,7 @@ typedef struct {
     StrReader strReader;
     char *rootDir; // borrowed from WebApp
     duk_context *dukCtx; // borrowed from main.c
+    Db *db; // borrowed from main.c
 } Website;
 
 void
@@ -36,7 +39,11 @@ void
 websiteDestruct(Website *this);
 
 bool
-websiteFetchAndParseSiteGraph(Website *this, Db *db, char *err);
+websiteFetchAndParseSiteGraph(Website *this, char *err);
+
+bool
+websiteFetchBatches(Website *this, Component *to, DocumentDataConfig *ddc,
+                      char *err);
 
 /**
  * Creates a page graph $out from a serialized array $str. $str should be null-

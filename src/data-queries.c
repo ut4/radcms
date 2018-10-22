@@ -47,39 +47,40 @@ documentDataConfigAddBatch(DocumentDataConfig *this, const char *componentTypeNa
     return this->batchHead;
 }
 
-static size_t
-doSingle(DataBatchConfig *cur, char **wheres, unsigned i) {
-    wheres[i] = cur->where;
-    return strlen(cur->where);
-}
-
 char*
 documentDataConfigToSql(DocumentDataConfig *this, char *err) {
     if (!this->batchHead) {
         putError("Can't generate from empty config.\n");
         return NULL;
     }
-    #define MAIN_SELECT_TMPL "select `id`,`name`,`json` from (%s)"
+    #define MAIN_SELECT_TMPL "select `id`,`name`,`json`,`dbcId` from (%s)"
     #define BATCH_SELECT_TMPL "select * from (" \
-                                "select `id`,`name`,`json` from components where %s" \
+                                "select `id`,`name`,`json`,%u as `dbcId` " \
+                                "from components where %s" \
                             ")"
     #define BATCH_SELECT_TMPL_N " union all "BATCH_SELECT_TMPL
-    const unsigned batchWrapStrLen = strlen(BATCH_SELECT_TMPL) - 2; // 2 == %s
+    const unsigned batchWrapStrLen = strlen(BATCH_SELECT_TMPL) - 4; // 4 == %u%s
     const unsigned unionAllStrLen = strlen(" union all ");
     /*
      * Collect each batch, and calculate their total character count
      */
-    char* wheres[this->batchCount];
+    unsigned totalBatchesLength = 0;
+    unsigned batchLengths[this->batchCount];
     DataBatchConfig *cur = &this->batches;
-    unsigned wrappedBatchesStrLen = unionAllStrLen * (this->batchCount - 1);
     unsigned i = 0;
     while (cur) {
+        unsigned varying = 0;
         if (cur->where && !cur->isFetchAll) {
-            wrappedBatchesStrLen += batchWrapStrLen + doSingle(cur, wheres, i);
+            varying += strlen(cur->where);
         } else {
             printToStdErr("Not implemented yet.");
             exit(EXIT_FAILURE);
         }
+        batchLengths[i] = batchWrapStrLen +              // select * from (select `id`...
+                          (i > 0 ? unionAllStrLen : 0) + // union all
+                          (log10(cur->id) + 1) +         // 1 or 452 (as `dbcId`)
+                          varying;                       // foo="bar"
+        totalBatchesLength += batchLengths[i];
         i += 1;
         cur = cur->next;
     }
@@ -87,29 +88,36 @@ documentDataConfigToSql(DocumentDataConfig *this, char *err) {
      * Concatenate each batch eg. select * from (<first batch>) union all
      *                            select * from (<second batch>) ...
      */
-    char wrappedBatches[wrappedBatchesStrLen + 1];
+    char wrappedBatches[totalBatchesLength + 1];
     wrappedBatches[0] = '\0';
-    unsigned nthWhere = 0;
-    for (i = 0; i < this->batchCount; ++i) {
-        if (!wheres[i]) continue;
-        if (nthWhere > 0) {
-            char wrappedBatch[unionAllStrLen + batchWrapStrLen + strlen(wheres[i]) + 1];
-            sprintf(wrappedBatch, BATCH_SELECT_TMPL_N, wheres[i]);
-            strcat(wrappedBatches, wrappedBatch);
-        } else {
-            char wrappedBatch[batchWrapStrLen + strlen(wheres[i]) + 1];
-            sprintf(wrappedBatch, BATCH_SELECT_TMPL, wheres[i]);
-            strcat(wrappedBatches, wrappedBatch);
-        }
-        nthWhere += 1;
+    cur = &this->batches;
+    i = 0;
+    while (cur) {
+        char *tmpl = i > 0 ? BATCH_SELECT_TMPL_N : BATCH_SELECT_TMPL;
+        char wrappedBatch[batchLengths[i] + 1];
+        sprintf(wrappedBatch, tmpl, cur->id, cur->where);
+        strcat(wrappedBatches, wrappedBatch);
+        cur = cur->next;
+        i += 1;
     }
     /*
      * Wrap the batches inside the main query and return
      */
     this->finalSql = ALLOCATE_ARR(char, strlen(MAIN_SELECT_TMPL) - 2 + // 2 == %s
-                                  wrappedBatchesStrLen + 1);
+                                  totalBatchesLength + 1);
     sprintf(this->finalSql, MAIN_SELECT_TMPL, wrappedBatches);
     return this->finalSql;
+}
+
+DataBatchConfig*
+documentDataConfigFindBatch(DocumentDataConfig *this, unsigned id) {
+    if (!this->batches.componentTypeName) { return NULL; }
+    DataBatchConfig *cur = &this->batches;
+    while (cur) {
+        if (cur->id == id) { return cur; }
+        cur = cur->next;
+    }
+    return NULL;
 }
 
 void

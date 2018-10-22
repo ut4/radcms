@@ -8,12 +8,35 @@ testUtilsSetupTestDb(Db *db, char *err) {
     }
     char *sqliteErr = NULL;
     if (sqlite3_exec(db->conn,
-"CREATE TABLE websites \
-(`id` INTEGER PRIMARY KEY AUTOINCREMENT,\
-`graph` TEXT);\
-INSERT INTO websites VALUES\
-(1, \"2|1/a|0|a.lua|2/b|0|b.lua|\");", NULL, NULL, &sqliteErr) != SQLITE_OK) {
+"create table websites ("
+"    `id` INTEGER PRIMARY KEY AUTOINCREMENT,"
+"    `graph` text"
+");"
+"create table componentTypes ("
+"    `id` integer primary key autoincrement,"
+"    `name` varchar(64)"
+");"
+"create table components ("
+"    `id` integer primary key autoincrement,"
+"    `name` varchar(32) not null,"
+"    `json` json,"
+"    componentTypeId integer not null,"
+"    foreign key (componentTypeId) references componentTypes(id)"
+");"
+"INSERT INTO websites VALUES"
+"(1, \"2|1/a|0|a.lua|2/b|0|b.lua|\");", NULL, NULL, &sqliteErr) != SQLITE_OK) {
         printToStdErr("Failed to create the test database: %s.\n", sqliteErr);
+        sqlite3_free(sqliteErr);
+        return false;
+    }
+    return true;
+}
+
+bool
+testUtilsExecSql(Db *db, const char *sql) {
+    char *sqliteErr = NULL;
+    if (sqlite3_exec(db->conn, sql, NULL, NULL, &sqliteErr) != SQLITE_OK) {
+        printToStdErr("Failed to run sql: %s.\n", sqliteErr);
         sqlite3_free(sqliteErr);
         return false;
     }
