@@ -155,3 +155,29 @@ void
 dataBatchConfigSetWhere(DataBatchConfig *this, const char *where) {
     this->where = copyString(where);
 }
+
+size_t
+dataBatchConfigGetToStringLen(DataBatchConfig *this) {
+    return strlen("render(\"\")") +
+           3 + // All|One
+           strlen(this->componentTypeName) +
+           (this->where ? strlen(".where(\"\")") + strlen(this->where) : 0) +
+           1; // \0
+}
+
+void
+dataBatchConfigToString(DataBatchConfig *this, char *to) {
+    to[0] = '\0';
+    sprintf(to, "render%s(\"%s\")",
+        this->isFetchAll ? "All" : "One",
+        this->componentTypeName
+    );
+    if (this->where) {
+        strcat(to, ".where(\"");
+        strcat(to, this->where);
+        strcat(to, "\")");
+    }
+    strcat(to, ".using(\"");
+    strcat(to, this->renderWith);
+    strcat(to, "\")");
+}

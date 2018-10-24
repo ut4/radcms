@@ -48,7 +48,7 @@ insert into componentTypeProps values
     (3, "body", "richtext", 2);
 
 insert into components values
-    (1, "Footer", '{"content":"(c) 2034 MySite"}', 1),
-    (2, "Art1", '{"title":"Article 1","body":"Hello from article 1"}', 2),
-    (3, "Art2", '{"title":"Article 2","body":"Hello from article 2"}', 2),
-    (4, "Art3", '{"title":"Article 3","body":"Hello from article 3"}', 2);
+    (1, "footer", '{"content":"(c) 2034 MySite"}', 1),
+    (2, "art1", '{"title":"Article 1","body":"Hello from article 1"}', 2),
+    (3, "art2", '{"title":"Article 2","body":"Hello from article 2"}', 2),
+    (4, "art3", '{"title":"Article 3","body":"Hello from article 3"}', 2);

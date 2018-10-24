@@ -6,8 +6,11 @@
 #include "../data-queries.h" // DocumentDataConfig
 #include "../db.h"
 #include "../duk.h" // duk_context
+#include "../file-io.h"
 #include "../memory.h"
 #include "../str-reader.h" // strReaderRead*() etc.
+#include "../v-tree-script-bindings.h" // vTreeScriptBindingsExecLayout|Template()
+#include "../v-tree.h" // VTree, DocumentDataConfig
 
 struct Page;
 typedef struct Page Page;
@@ -47,6 +50,18 @@ websiteFetchAndParseSiteGraph(Website *this, char *err);
 bool
 websiteFetchBatches(Website *this, DocumentDataConfig *ddc, ComponentArray *to,
                     char *err);
+
+typedef bool (*pageExportWriteFn)(char *renderedHtml, Page *page, Website *site,
+                                  char *err);
+
+bool
+websiteGenerate(Website *this, pageExportWriteFn writeFn, char *err);
+
+/**
+ * Returns char*|NULL. The caller frees.
+ */
+char*
+pageRender(Website *this, Page *page, const char *url, char *err);
 
 /**
  * Creates a page graph $out from a serialized array $str. $str should be null-

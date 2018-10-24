@@ -1,47 +1,8 @@
 #include "../../include/web/website-handlers.h"
 
-static bool
-fetchAndRenderBatches(Website *site, VTree *vTree, DocumentDataConfig *ddc,
-                      char *err) {
-    ComponentArray components;
-    bool success = false;
-    if (!websiteFetchBatches(site, ddc, &components, err)) {
-        goto done;
-    }
-    DataBatchConfig *cur = &ddc->batches;
-    while (cur) {
-        if (!cur->renderWith) {
-            putError("Invalid DataBatchConfig.\n");
-            goto done;
-        }
-        //
-        {
-            STR_CONCAT(templateFilePath, site->rootDir, cur->renderWith);
-            char *templateCode = fileIOReadFile(templateFilePath, err);
-            unsigned templateRootNodeId = 0;
-            if (!templateCode) {
-                goto done;
-            }
-            if ((templateRootNodeId = vTreeScriptBindingsExecTemplate(site->dukCtx,
-                templateCode, vTree, cur->id, &components, cur->isFetchAll,
-                err)) < 1) {
-                FREE_STR(templateCode);
-                goto done;
-            }
-            FREE_STR(templateCode);
-            if (!vTreeReplaceRef(vTree, TYPE_DATA_BATCH_CONFIG,
-                                 cur->id,
-                                 vTreeUtilsMakeNodeRef(TYPE_ELEM, templateRootNodeId))) {
-                goto done;
-            }
-        }
-        cur = cur->next;
-    }
-    success = true;
-    done:
-    componentArrayFreeProps(&components);
-    return success;
-}
+static void injectCPanelIframe(char *html);
+
+const char *cPanelIframeContent = "<html><title></title><body style=\"margin:6px;background-color:rgba(255,255,255,0.85);\"><button onclick=\"document.location.href='/api/website/generate'\">Generate</button></body></html>";
 
 unsigned
 websiteHandlersHandlePageRequest(void *this, const char *method, const char *url,
@@ -51,27 +12,10 @@ websiteHandlersHandlePageRequest(void *this, const char *method, const char *url
     if (!p) {
         return MHD_HTTP_NOT_FOUND;
     }
-    STR_CONCAT(layoutFilePath, site->rootDir, p->layoutFileName);
-    char *layoutCode = fileIOReadFile(layoutFilePath, err);
-    if (!layoutCode) {
-        return MHD_HTTP_INTERNAL_SERVER_ERROR;
-    }
-    VTree vTree;
-    DocumentDataConfig ddc;
-    char *renderedHtml = NULL;
-    if (!vTreeScriptBindingsExecLayout(site->dukCtx, layoutCode, &vTree, &ddc,
-                                       err)) {
-        goto done;
-    }
-    if (ddc.batchCount > 0 && !fetchAndRenderBatches(site, &vTree, &ddc, err)) {
-        goto done;
-    }
-    renderedHtml = vTreeToHtml(&vTree, err);
-    done:
-    FREE_STR(layoutCode);
-    vTreeFreeProps(&vTree);
-    documentDataConfigFreeProps(&ddc);
-    if (!renderedHtml) {
+    char *renderedHtml = pageRender(site, p, url, err);
+    if (renderedHtml) {
+        injectCPanelIframe(renderedHtml);
+    } else {
         return MHD_HTTP_INTERNAL_SERVER_ERROR;
     }
 #ifdef DEBUG_COUNT_ALLOC
@@ -82,4 +26,76 @@ websiteHandlersHandlePageRequest(void *this, const char *method, const char *url
                                                 (void*)renderedHtml,
                                                 MHD_RESPMEM_MUST_FREE);
     return MHD_HTTP_OK;
+}
+
+unsigned
+websiteHandlersHandleCPanelIframeRequest(void *this, const char *method, const char *url,
+                                         struct MHD_Response **response, char *err) {
+    *response = MHD_create_response_from_buffer(strlen(cPanelIframeContent),
+                                                (void*)cPanelIframeContent,
+                                                MHD_RESPMEM_PERSISTENT);
+    return MHD_HTTP_OK;
+}
+
+static bool
+writePageToFile(char *renderedHtml, Page *page, Website *site, char *err) {
+    STR_CONCAT(outDirPath, site->rootDir, "out"); // -> c:/foo/bar/out
+    const char* indexPart = "/index.html";
+    //
+    const size_t urlStrLen = strlen(page->url);
+    const size_t l2 = strlen(outDirPath) + urlStrLen + strlen(indexPart) + 1;
+    char filePath[l2];
+    // 'c:/foo/bar/out' + '/foo'
+    // 'c:/foo/bar/out' + '/'
+    snprintf(filePath, l2, "%s%s", outDirPath, page->url);
+    if (!fileIOMakeDirs(filePath, strlen(site->rootDir), site->rootDir, err)) {
+        return false;
+    }
+    // 'c:/foo/bar/out/foo + '/index.html'
+    // 'c:/foo/bar/out/'   + 'index.html'
+    strcat(filePath, indexPart + (urlStrLen > 1 ? 0 : 1));
+    return fileIOWriteFile(filePath, renderedHtml, err);
+}
+
+unsigned
+websiteHandlersHandleGenerateRequest(void *this, const char *method, const char *url,
+                                     struct MHD_Response **response, char *err) {
+    Website *site = (Website*)this;
+    if (!websiteGenerate(site, writePageToFile, err)) {
+        return MHD_HTTP_INTERNAL_SERVER_ERROR;
+    }
+    const char *t = "Generated %u pages to '%sout'.";
+    char *ret = ALLOCATE_ARR(char, strlen(t) - 4 +
+                                   (log10(site->siteGraph.length) + 1) +
+                                   strlen(site->rootDir) +
+                                   1);
+    sprintf(ret, t, site->siteGraph.length, site->rootDir);
+#ifdef DEBUG_COUNT_ALLOC
+    memoryAddToByteCount(-(strlen(ret) + 1));
+#endif
+    *response = MHD_create_response_from_buffer(strlen(ret),
+                                                (void*)ret,
+                                                MHD_RESPMEM_MUST_FREE);
+    return MHD_HTTP_OK;
+}
+
+static void
+injectCPanelIframe(char *html) {
+    const char *injection = "<iframe src=\"/int/cpanel\" style=\"position:fixed;border:none;height:100%;width:120px;right:0;top:0;\"></iframe>";
+    char *tmp = ARRAY_GROW(html, char, strlen(html) + 1,
+                           strlen(html) + strlen(injection) + 1);
+    char *startOfBody = strstr(tmp, "<body>");
+    if (startOfBody && startOfBody != html) {
+        startOfBody += strlen("<body>");
+    } else {
+        printToStdErr("Warn: failed to injectCPanelIframe().\n");
+        FREE_ARR(char, tmp, strlen(html) + strlen(injection) + 1);
+        return;
+    }
+    const size_t injlen = strlen(injection);
+    // Appends <html><body>__ROOMFORINJECTION__abcd</body>
+    memmove(startOfBody + injlen, startOfBody, strlen(startOfBody) + 1);
+    // Replaces __ROOMFORINJECTION__
+    memmove(startOfBody, injection, injlen);
+    html = tmp;
 }

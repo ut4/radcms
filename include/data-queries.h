@@ -29,6 +29,12 @@ dataBatchConfigSetRenderWith(DataBatchConfig *this, const char *renderWith);
 void
 dataBatchConfigSetWhere(DataBatchConfig *this, const char *where);
 
+size_t
+dataBatchConfigGetToStringLen(DataBatchConfig *this);
+
+void
+dataBatchConfigToString(DataBatchConfig *this, char *to);
+
 // Holds the renderOne|All() configurations of a single document/layout/vTree.
 typedef struct {
     DataBatchConfig batches; // Linked list

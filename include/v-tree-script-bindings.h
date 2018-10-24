@@ -15,7 +15,8 @@ vTreeScriptBindingsRegister(duk_context *ctx);
  */
 bool
 vTreeScriptBindingsExecLayout(duk_context *ctx, char *layoutCode, VTree *vTree,
-                              DocumentDataConfig *ddc, char *err);
+                              DocumentDataConfig *ddc, const char *url,
+                              char *err);
 
 /**
  * Runs $templateCode. Returns the id of the root element of the template on
@@ -23,8 +24,8 @@ vTreeScriptBindingsExecLayout(duk_context *ctx, char *layoutCode, VTree *vTree,
  */
 unsigned
 vTreeScriptBindingsExecTemplate(duk_context *ctx, char *templateCode,
-                                VTree *vTree, unsigned dataBatchConfigId,
+                                VTree *vTree, DataBatchConfig *dbc,
                                 ComponentArray *allComponents, bool isRenderAll,
-                                char *err);
+                                const char *url, char *err);
 
 #endif

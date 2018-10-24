@@ -45,6 +45,93 @@ websiteFetchBatches(Website *this, DocumentDataConfig *ddc, ComponentArray *to,
            to->length > 0;
 }
 
+bool
+websiteGenerate(Website *this, pageExportWriteFn writeFn, char *err) {
+    for (unsigned i = 0; i < this->siteGraph.length; ++i) {
+        Page *p = &this->siteGraph.values[i];
+        char *rendered = pageRender(this, p, p->url, err);
+        if (rendered) {
+            if (!writeFn(rendered, p, this, err)) {
+                FREE_STR(rendered);
+                return false;
+            }
+            FREE_STR(rendered);
+        } else {
+            return false;
+        }
+    }
+    return true;
+}
+
+static bool
+fetchAndRenderBatches(Website *this, VTree *vTree, DocumentDataConfig *ddc,
+                      const char *url, char *err) {
+    ComponentArray components;
+    bool success = false;
+    if (!websiteFetchBatches(this, ddc, &components, err)) {
+        goto done;
+    }
+    DataBatchConfig *cur = &ddc->batches;
+    while (cur) {
+        if (!cur->renderWith) {
+            putError("Invalid DataBatchConfig.\n");
+            goto done;
+        }
+        //
+        {
+            STR_CONCAT(templateFilePath, this->rootDir, cur->renderWith);
+            char *templateCode = fileIOReadFile(templateFilePath, err);
+            if (!templateCode) {
+                goto done;
+            }
+            unsigned templateRootNodeId = 0;
+            if ((templateRootNodeId = vTreeScriptBindingsExecTemplate(this->dukCtx,
+                templateCode, vTree, cur, &components, cur->isFetchAll, url,
+                err)) < 1) {
+                FREE_STR(templateCode);
+                goto done;
+            }
+            FREE_STR(templateCode);
+            if (!vTreeReplaceRef(vTree, TYPE_DATA_BATCH_CONFIG,
+                                 cur->id,
+                                 vTreeUtilsMakeNodeRef(TYPE_ELEM, templateRootNodeId))) {
+                goto done;
+            }
+        }
+        cur = cur->next;
+    }
+    success = true;
+    done:
+    componentArrayFreeProps(&components);
+    return success;
+}
+
+char*
+pageRender(Website *this, Page *page, const char *url, char *err) {
+    STR_CONCAT(layoutFilePath, this->rootDir, page->layoutFileName);
+    char *layoutCode = fileIOReadFile(layoutFilePath, err);
+    if (!layoutCode) {
+        return NULL;
+    }
+    VTree vTree;
+    DocumentDataConfig ddc;
+    char *renderedHtml = NULL;
+    if (!vTreeScriptBindingsExecLayout(this->dukCtx, layoutCode, &vTree, &ddc,
+                                       url, err)) {
+        goto done;
+    }
+    if (ddc.batchCount > 0 && !fetchAndRenderBatches(this, &vTree, &ddc, url,
+                                                     err)) {
+        goto done;
+    }
+    renderedHtml = vTreeToHtml(&vTree, err);
+    done:
+    FREE_STR(layoutCode);
+    vTreeFreeProps(&vTree);
+    documentDataConfigFreeProps(&ddc);
+    return renderedHtml;
+}
+
 static void
 mapSiteGraphResultRow(sqlite3_stmt *stmt, void **myPtr) {
     *myPtr = copyString((const char*)sqlite3_column_text(stmt, 0));

@@ -37,6 +37,10 @@ int main(int argc, const char* argv[]) {
         .daemon = NULL,
         .handlerCount = 0,
         .handlers = {
+            {.methodPattern="GET", .urlPattern="/int/cpanel",
+            .handlerFn=websiteHandlersHandleCPanelIframeRequest, .this=NULL},
+            {.methodPattern="GET", .urlPattern="/api/website/generate",
+            .handlerFn=websiteHandlersHandleGenerateRequest, .this=(void*)&website},
             {.methodPattern="GET", .urlPattern="/*",
             .handlerFn=websiteHandlersHandlePageRequest, .this=(void*)&website}
         }

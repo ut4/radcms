@@ -13,4 +13,18 @@ unsigned
 websiteHandlersHandlePageRequest(void *this, const char *method, const char *url,
                                  struct MHD_Response **response, char *err);
 
+/**
+ * Responds to GET /int/cpanel.
+ */
+unsigned
+websiteHandlersHandleCPanelIframeRequest(void *this, const char *method, const char *url,
+                                         struct MHD_Response **response, char *err);
+
+/**
+ * Responds to /api/website/generate.
+ */
+unsigned
+websiteHandlersHandleGenerateRequest(void *this, const char *method, const char *url,
+                                     struct MHD_Response **response, char *err);
+
 #endif

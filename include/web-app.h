@@ -14,7 +14,7 @@ typedef struct {
     struct MHD_Daemon *daemon;
     unsigned handlerCount;
     char *errBuf;
-    RequestHandler handlers[1];
+    RequestHandler handlers[3];
 } WebApp;
 
 void

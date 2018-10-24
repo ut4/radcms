@@ -41,7 +41,8 @@ dbSelect(Db *this, const char *sql, mapRowFn onRow, void **onRowCtx, char *err) 
     }
     // 4. Clean
     if (sqlite3_finalize(stmt) != SQLITE_OK) {
-        printToStdErr("Failed to finalize stmt: %s\n", sqlite3_errmsg(this->conn));
+        printToStdErr("Warn: Failed to finalize stmt: %s\n",
+                      sqlite3_errmsg(this->conn));
     }
     return true;
 }

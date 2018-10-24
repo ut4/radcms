@@ -1,7 +1,5 @@
 #include "website-mapper-tests.h"
 
-#define beforeEach()
-
 static void
 testWebsiteFetchAndParseSiteGraphDoesWhatItSays(Db *db, char *err) {
     // 1. Setup
