@@ -47,6 +47,14 @@ fileIOWriteFile(const char *filePath, const char *data, char *err) {
 }
 
 bool
+fileIODeleteFile(const char *filePath, char *err) {
+    if (remove(filePath) != 0) {
+        putError("Failed to delete file '%s'.\n", filePath);
+    }
+    return true;
+}
+
+bool
 fileIOMakeDirs(const char *path, unsigned ignoreNChars, const char *rootPath,
                char *err) {
     if (ignoreNChars < strlen(rootPath)) {

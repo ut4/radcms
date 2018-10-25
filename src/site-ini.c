@@ -5,8 +5,8 @@ receiveIniVal(void* myPtr, const char* section, const char* key,
               const char* value) {
     #define MATCH(s, n) strcmp(section, s) == 0 && strcmp(key, n) == 0
     SiteIni* siteIni = (SiteIni*)myPtr;
-    if (MATCH("Site", "mainLayoutFileName")) {
-        siteIni->mainLayoutFileName = copyString(value);
+    if (MATCH("Site", "foo")) {
+        siteIni->foo = copyString(value);
     } else {
         printToStdErr("Warn: Unknown site.ini setting [%s]%s.\n", section, key);
         return 0;
@@ -16,14 +16,8 @@ receiveIniVal(void* myPtr, const char* section, const char* key,
 
 static bool
 validateFields(SiteIni *this, char *err) {
-    if (!this->mainLayoutFileName || strlen(this->mainLayoutFileName) == 0) {
-        putError("Error: [Site]mainLayoutFileName missing from site.ini\n");
-        return false;
-    }
-    STR_CONCAT(layoutFilePath, this->rootDir, this->mainLayoutFileName);
-    if (!fileIOIsWritable(layoutFilePath)) {
-        putError("Error: main layout file '%s' is not writable.\n",
-                 layoutFilePath);
+    if (!this->foo || strlen(this->foo) == 0) {
+        putError("Error: [Site]foo missing from site.ini\n");
         return false;
     }
     return true;
@@ -31,15 +25,13 @@ validateFields(SiteIni *this, char *err) {
 
 void
 siteIniInit(SiteIni *this) {
-    this->mainLayoutFileName = NULL;
+    this->foo = NULL;
     this->rootDir = NULL;
 }
 
 void
 siteIniFreeProps(SiteIni *this) {
-    if (this->mainLayoutFileName) {
-        FREE_STR(this->mainLayoutFileName);
-    }
+    if (this->foo) FREE_STR(this->foo);
     siteIniInit(this);
 }
 

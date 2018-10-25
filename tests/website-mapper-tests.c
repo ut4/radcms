@@ -92,6 +92,60 @@ testWebsiteFetchBatchesFetchesDataForDDCWithMultipleBatches(Db *db, char *err) {
         );
 }
 
+static void
+mapTestDataRow(sqlite3_stmt *stmt, void **myPtr) {
+    *myPtr = copyString((const char*)sqlite3_column_text(stmt, 0));
+}
+
+static void
+testWebsiteInstallWritesAllData(Db *db, char *err) {
+    char dir[PATH_MAX];
+    if (!getcwd(dir, sizeof(dir))) {
+        perror("getcwd() error");
+        return;
+    }
+    for (unsigned i = 0; i < strlen(dir); ++i) { if (dir[i] == '\\') dir[i] = '/'; }
+    if (dir[strlen(dir) - 1] != '/') strcat(dir, "/");
+    //
+    Website site;
+    websiteInit(&site);
+    site.db = db;
+    site.rootDir = dir;
+    const char* mockSchemaSql = "create table foo ( bar text );";
+    SampleData data = {
+        .name="test",
+        .numFiles=1,
+        .files=(SampleDataFile[1]){{.name="text.txt", .contents="foo"}},
+        .installSql="insert into foo values ('atest');",
+        .siteIniContents=""
+    };
+    STR_CONCAT(testTmplFilePath, site.rootDir, data.files[0].name);
+    bool success = websiteInstall(&site, &data, mockSchemaSql, err);
+    assertThatOrGoto(success, done, "Should return succesfully");
+    // Assert that ran mockSchemaSql
+    char *tableName = NULL;
+    if (dbSelect(db, "select name FROM sqlite_master WHERE type='table' "
+                 "and name='foo'", mapTestDataRow, (void*)&tableName, err)) {
+        assertThatOrGoto(tableName != NULL, done, "Should run $mockSchemaSql");
+        FREE_STR(tableName);
+    }
+    // Assert that ran data->installSql
+    char *installRow = NULL;
+    if (dbSelect(db, "select bar from foo", mapTestDataRow, (void*)&installRow, err)) {
+        assertThatOrGoto(installRow != NULL, done, "Should run $data->installSql");
+        assertStrEquals(installRow, "atest");
+        FREE_STR(installRow);
+    }
+    // Assert that wrote a template-file
+    char *actualTmplFileContents = fileIOReadFile(testTmplFilePath, err);
+    assertThatOrGoto(actualTmplFileContents != NULL, done, "Should write tmpl file");
+    assertStrEquals(actualTmplFileContents, data.files[0].contents);
+    FREE_STR(actualTmplFileContents);
+    done:
+    if (!fileIODeleteFile(testTmplFilePath, err)) printToStdErr(err);
+    websiteFreeProps(&site);
+}
+
 void
 websiteMapperTestsRun() {
     char errBuf[ERR_BUF_LEN]; errBuf[0] = '\0';
@@ -104,5 +158,6 @@ websiteMapperTestsRun() {
     testWebsiteFetchAndParseSiteGraphDoesWhatItSays(&db, errBuf);
     testWebsiteFetchBatchesFetchesDataForDDCWithOneBatch(&db, errBuf);
     testWebsiteFetchBatchesFetchesDataForDDCWithMultipleBatches(&db, errBuf);
+    testWebsiteInstallWritesAllData(&db, errBuf);
     dbDestruct(&db);
 }

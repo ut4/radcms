@@ -63,6 +63,32 @@ websiteGenerate(Website *this, pageExportWriteFn writeFn, char *err) {
     return true;
 }
 
+bool
+websiteInstall(Website *this, SampleData *data, const char *schemaSql,
+               char *err) {
+    printf("Starting to write sample data '%s' to '%s'...\n", data->name,
+           this->rootDir);
+    /**
+     * 1. Create db schema
+     */
+    if (!dbRunInTransaction(this->db, schemaSql, err)) return false;
+    /**
+     * 2. Insert sample data
+     */
+    if (!dbRunInTransaction(this->db, data->installSql, err)) return false;
+    /**
+     * 3. Write the layout-files & template-files.
+     */
+    for (unsigned i = 0; i < data->numFiles; ++i) {
+        STR_CONCAT(filePath, this->rootDir, data->files[i].name);
+        if (!fileIOWriteFile(filePath, data->files[i].contents, err)) {
+            return false;
+        }
+    }
+    printf("All done.\n");
+    return true;
+}
+
 static bool
 fetchAndRenderBatches(Website *this, VTree *vTree, DocumentDataConfig *ddc,
                       const char *url, char *err) {
@@ -208,6 +234,7 @@ pageArrayFreeProps(PageArray *this) {
         FREE_STR(this->values[i].layoutFileName);
     }
     FREE_ARR(Page, this->values, this->capacity);
-    this->values = NULL;
+    this->capacity = 0;
     this->length = 0;
+    this->values = NULL;
 }

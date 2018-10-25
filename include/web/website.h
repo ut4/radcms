@@ -8,6 +8,7 @@
 #include "../duk.h" // duk_context
 #include "../file-io.h"
 #include "../memory.h"
+#include "../static-data.h"
 #include "../str-reader.h" // strReaderRead*() etc.
 #include "../v-tree-script-bindings.h" // vTreeScriptBindingsExecLayout|Template()
 #include "../v-tree.h" // VTree, DocumentDataConfig
@@ -56,6 +57,13 @@ typedef bool (*pageExportWriteFn)(char *renderedHtml, Page *page, Website *site,
 
 bool
 websiteGenerate(Website *this, pageExportWriteFn writeFn, char *err);
+
+/**
+ * Writes site.ini + data.db + $data->files to $this->rootDir.
+ */
+bool
+websiteInstall(Website *this, SampleData *data, const char *schemaSql,
+               char *err);
 
 /**
  * Returns char*|NULL. The caller frees.

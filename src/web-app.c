@@ -19,8 +19,17 @@ static RequestHandler*
 getHandler(WebApp *app, const char *method, const char *url);
 
 void
-webAppInit(WebApp *this, char *errBuf) {
+webAppInit(WebApp *this, const char *rootDir, char *errBuf) {
+    size_t l = strlen(rootDir) + 1;
+    if (rootDir[l - 2] != '/') {
+        this->rootDir = ALLOCATE_ARR(char, l + 1);
+        snprintf(this->rootDir, l + 1, "%s%c", rootDir, '/');
+    } else {
+        this->rootDir = copyString(rootDir);
+    }
     siteIniInit(&this->ini);
+    this->ini.rootDir = this->rootDir;
+    this->daemon = NULL;
     this->handlerCount = sizeof(this->handlers) / sizeof(RequestHandler);
     this->errBuf = errBuf;
 }
@@ -47,7 +56,7 @@ webAppStart(WebApp *this) {
 
 void
 webAppShutdown(WebApp *this) {
-    MHD_stop_daemon(this->daemon);
+    if (this->daemon) MHD_stop_daemon(this->daemon);
 }
 
 static int
@@ -86,23 +95,19 @@ webAppRespond(void *myPtr, struct MHD_Connection *connection, const char *url,
 }
 
 bool
-webAppMakeSiteIni(WebApp *this, const char *rootDir, bool expectExists, char *err) {
-    // 1. Normalize $rootDir
-    size_t l1 = strlen(rootDir) + 1;
-    if (rootDir[l1 - 2] != '/') { // add trailing /
-        this->rootDir = ALLOCATE_ARR(char, l1 + 1);
-        snprintf(this->rootDir, l1 + 1, "%s%c", rootDir, '/');
-    } else {
-        this->rootDir = copyString(rootDir);
-    }
-    // 2. Check site.ini
-    this->ini.rootDir = this->rootDir;
+webAppReadOrCreateSiteIni(WebApp *this, const char *contents, char *err) {
     STR_CONCAT(iniFilePath, this->rootDir, "site.ini");
-    if (expectExists) {
+    // Read
+    if (strlen(contents) == 0) {
         return siteIniReadAndValidate(&this->ini, iniFilePath, err);
-    } else {
-        return !fileIOIsWritable(iniFilePath);
     }
+    // Create
+    bool exists = fileIOIsWritable(iniFilePath);
+    if (exists) {
+        putError("%s already exists.\n", iniFilePath);
+        return false;
+    }
+    return fileIOWriteFile(iniFilePath, contents, err);
 }
 
 static RequestHandler*

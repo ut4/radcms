@@ -20,6 +20,9 @@ fileIOReadFile(const char *filePath, char *err);
 bool
 fileIOWriteFile(const char *filePath, const char *data, char *err);
 
+bool
+fileIODeleteFile(const char *filePath, char *err);
+
 /**
  * Example: makeDir("c:/root/bar/baz/", strlen("c:/root/"), "c:/root/", errBuf)
  * creates 'c:/root/bar' and 'c:/root/bar/baz' -directories.

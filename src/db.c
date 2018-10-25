@@ -46,3 +46,21 @@ dbSelect(Db *this, const char *sql, mapRowFn onRow, void **onRowCtx, char *err) 
     }
     return true;
 }
+
+bool
+dbRunInTransaction(Db *db, const char *statements, char *err) {
+    if (statements[strlen(statements) - 1] != ';') {
+        putError("statements[strlen(statements) - 1] != ';'.\n");
+        return false;
+    }
+    const char *wrapTmpl = "BEGIN;%sCOMMIT;";
+    char sql[strlen(statements) + (strlen(wrapTmpl) - 2) + 1];
+    sprintf(sql, wrapTmpl, statements);
+    char *sqliteErr = NULL;
+    if (sqlite3_exec(db->conn, sql, NULL, NULL, &sqliteErr) != SQLITE_OK) {
+        putError("Failed during transaction: %s.\n", sqliteErr);
+        sqlite3_free(sqliteErr);
+        return false;
+    }
+    return true;
+}

@@ -1,6 +1,6 @@
 #include "../../include/web/website-handlers.h"
 
-static void injectCPanelIframe(char *html);
+static void injectCPanelIframe(char **html);
 
 const char *cPanelIframeContent = "<html><title></title><body style=\"margin:6px;background-color:rgba(255,255,255,0.85);\"><button onclick=\"document.location.href='/api/website/generate'\">Generate</button></body></html>";
 
@@ -14,7 +14,7 @@ websiteHandlersHandlePageRequest(void *this, const char *method, const char *url
     }
     char *renderedHtml = pageRender(site, p, url, err);
     if (renderedHtml) {
-        injectCPanelIframe(renderedHtml);
+        injectCPanelIframe(&renderedHtml);
     } else {
         return MHD_HTTP_INTERNAL_SERVER_ERROR;
     }
@@ -80,22 +80,23 @@ websiteHandlersHandleGenerateRequest(void *this, const char *method, const char 
 }
 
 static void
-injectCPanelIframe(char *html) {
+injectCPanelIframe(char **ptrToHtml) {
     const char *injection = "<iframe src=\"/int/cpanel\" style=\"position:fixed;border:none;height:100%;width:120px;right:0;top:0;\"></iframe>";
-    char *tmp = ARRAY_GROW(html, char, strlen(html) + 1,
-                           strlen(html) + strlen(injection) + 1);
+    char *html = *ptrToHtml;
+    const size_t injlen = strlen(injection);
+    const size_t oldLen = strlen(html);
+    char *tmp = ARRAY_GROW(html, char, oldLen + 1, oldLen + injlen + 1);
     char *startOfBody = strstr(tmp, "<body>");
     if (startOfBody && startOfBody != html) {
         startOfBody += strlen("<body>");
     } else {
         printToStdErr("Warn: failed to injectCPanelIframe().\n");
-        FREE_ARR(char, tmp, strlen(html) + strlen(injection) + 1);
+        FREE_ARR(char, tmp, oldLen + injlen + 1);
         return;
     }
-    const size_t injlen = strlen(injection);
     // Appends <html><body>__ROOMFORINJECTION__abcd</body>
     memmove(startOfBody + injlen, startOfBody, strlen(startOfBody) + 1);
     // Replaces __ROOMFORINJECTION__
-    memmove(startOfBody, injection, injlen);
-    html = tmp;
+    memcpy(startOfBody, injection, injlen);
+    *ptrToHtml = tmp;
 }

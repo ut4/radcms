@@ -8,7 +8,7 @@
 #include "memory.h" // copyString
 
 typedef struct {
-    char *mainLayoutFileName;
+    char *foo;
     char *rootDir; // borrowed from WebApp
 } SiteIni;
 

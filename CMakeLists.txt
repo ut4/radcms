@@ -20,6 +20,7 @@ set(SOURCE_FILES_COMMON
     include/site-ini.h src/site-ini.c
     include/v-tree-script-bindings.h src/v-tree-script-bindings.c
     include/v-tree.h src/v-tree.c
+    include/static-data.h src/static-data.c
     include/str-reader.h src/str-reader.c
 )
 set(SOURCE_FILES_WEB

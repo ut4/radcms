@@ -59,7 +59,7 @@ documentDataConfigToSql(DocumentDataConfig *this, char *err) {
                                 "from components where %s" \
                               ")"
     #define TYPE_FILTER_TMPL "`componentTypeId` = (select `id` from " \
-                             "componentTypes where `name` = \"%s\")"
+                             "componentTypes where `name` = '%s')"
     #define BATCH_SELECT_TMPL_N " union all "BATCH_SELECT_TMPL
     const unsigned batchWrapTmplStrLen = strlen(BATCH_SELECT_TMPL) - 4; // 4 == %u%s
     const unsigned unionAllStrLen = strlen(" union all ");

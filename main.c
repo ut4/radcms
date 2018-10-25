@@ -10,96 +10,88 @@
 
 static volatile int isCtrlCTyped = 0;
 
-void onCtrlC(int _) {
+static void onCtrlC(int _) {
     isCtrlCTyped = 1;
+}
+
+static void printCmdInstructionsAndExit() {
+    printToStdErr("Usage: insane run /path/to/your/project/\n"
+                  "       insane init minimal|blog /path/to/your/project/\n");
+    exit(EXIT_FAILURE);
 }
 
 int main(int argc, const char* argv[]) {
     char errBuf[ERR_BUF_LEN];
     errBuf[0] = '\0';
-    if (argc < 3) {
-        printToStdErr("Usage: insane init|run /path/to/your/project/\n");
-        exit(EXIT_FAILURE);
-    }
-    if (strcmp(argv[1], "init") == 0) {
-        printToStdErr("insane init not implemented.\n");
-        exit(EXIT_FAILURE);
-    }
+    if (argc < 3) printCmdInstructionsAndExit();
+    bool doInit = strcmp(argv[1], "init") == 0;
+    if (doInit && argc < 4) printCmdInstructionsAndExit();
+    //
     atexit(printMemoryReport);
-    /*
-     * 1. Initialize the web-application
-     */
+    int exitStatus = EXIT_FAILURE;
     Website website;
     websiteInit(&website);
-    WebApp app = {
-        .rootDir = NULL,
-        .ini = {.mainLayoutFileName = NULL},
-        .daemon = NULL,
-        .handlerCount = 0,
-        .handlers = {
-            {.methodPattern="GET", .urlPattern="/int/cpanel",
-            .handlerFn=websiteHandlersHandleCPanelIframeRequest, .this=NULL},
-            {.methodPattern="GET", .urlPattern="/api/website/generate",
-            .handlerFn=websiteHandlersHandleGenerateRequest, .this=(void*)&website},
-            {.methodPattern="GET", .urlPattern="/*",
-            .handlerFn=websiteHandlersHandlePageRequest, .this=(void*)&website}
-        }
-    };
-    webAppInit(&app, errBuf);
+    WebApp app;
+    webAppInit(&app, argv[2 + (int)doInit], errBuf);
+    duk_context *dukCtx = NULL;
     Db db;
-    duk_context *dukCtx;
     /*
-     * 2. Parse site.ini
-     */
-    if (!webAppMakeSiteIni(&app, argv[2], true, errBuf)) goto fail;
-    /*
-     * 3. Configure third party libs
+     * Configure third party libs
      */
     {
         dukCtx = myDukCreate(errBuf);
-        vTreeScriptBindingsRegister(dukCtx); // $global.vTree object
-        dataQueryScriptBindingsRegister(dukCtx); // $global.documentDataConfig object
-        if (!dukCtx) goto fail;
+        if (!dukCtx) goto done;
+        vTreeScriptBindingsRegister(dukCtx); // vTree object
+        dataQueryScriptBindingsRegister(dukCtx); // documentDataConfig object
         //
         dbInit(&db);
         STR_CONCAT(dbFilePath, app.rootDir, "data.db");
-        if (!dbOpen(&db, dbFilePath, errBuf)) goto fail;
+        if (!dbOpen(&db, dbFilePath, errBuf)) goto done;
     }
-    /*
-     * 4. Configure request handlers
-     */
     website.rootDir = app.rootDir;
     website.dukCtx = dukCtx;
     website.db = &db;
-    if (!websiteFetchAndParseSiteGraph(&website, errBuf)) goto fail;
     /*
-     * 5. Start the server
+     * Handle `insane init`
      */
-    if (!webAppStart(&app)) {
-        sprintf(errBuf, "Failed to start the server.\n");
-        goto fail;
+    if (doInit) {
+        unsigned sampleDataIndex = strcmp(argv[2], "blog") == 0 ? 1 : 0;
+        SampleData *installData = getSampleData(sampleDataIndex);
+        if (!webAppReadOrCreateSiteIni(&app, installData->siteIniContents,
+                                       errBuf)) {
+            goto done;
+        }
+        if (websiteInstall(&website, installData, getDbSchemaSql(), errBuf)) {
+            exitStatus = EXIT_SUCCESS;
+        }
+        goto done;
     }
     /*
-     * 6. Wait
+     * Handle `insane run`
      */
-    printf("Started server at localhost:3000. Hit Ctrl+C to stop it...\n");
+    app.handlers[0] = (RequestHandler){.methodPattern="GET", .urlPattern="/int/cpanel",
+        .handlerFn=websiteHandlersHandleCPanelIframeRequest, .this=NULL};
+    app.handlers[1] = (RequestHandler){.methodPattern="GET", .urlPattern="/api/website/generate",
+        .handlerFn=websiteHandlersHandleGenerateRequest, .this=(void*)&website};
+    app.handlers[2] = (RequestHandler){.methodPattern="GET", .urlPattern="/*",
+        .handlerFn=websiteHandlersHandlePageRequest, .this=(void*)&website};
+    if (!webAppReadOrCreateSiteIni(&app, "", errBuf) ||
+        !websiteFetchAndParseSiteGraph(&website, errBuf)) goto done;
+    if (!webAppStart(&app)) {
+        sprintf(errBuf, "Failed to start the server.\n");
+        goto done;
+    }
     signal(SIGINT, onCtrlC);
     struct timespec t = {.tv_sec=0, .tv_nsec=50000000L}; // 50ms / 0.05s
+    printf("Started server at localhost:3000. Hit Ctrl+C to stop it...\n");
     while (!isCtrlCTyped) nanosleep(&t, NULL);
-    /*
-     * 7. Clean up after succesful waiting
-     */
-    webAppShutdown(&app);
-    webAppFreeProps(&app);
-    websiteFreeProps(&website);
-    dbDestruct(&db);
-    if (dukCtx) duk_destroy_heap(dukCtx);
-    exit(EXIT_SUCCESS);
-    fail:
-        printToStdErr(errBuf);
+    exitStatus = EXIT_SUCCESS;
+    //
+    done:
+        if (exitStatus == EXIT_FAILURE) printToStdErr(errBuf);
         websiteFreeProps(&website);
         webAppFreeProps(&app);
-        dbDestruct(&db);
         if (dukCtx) duk_destroy_heap(dukCtx);
-        exit(EXIT_FAILURE);
+        dbDestruct(&db);
+        exit(exitStatus);
 }

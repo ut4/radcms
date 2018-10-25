@@ -18,17 +18,16 @@ typedef struct {
 } WebApp;
 
 void
-webAppInit(WebApp *this, char *errBuf);
+webAppInit(WebApp *this, const char *rootDir, char *errBuf);
 
 void
 webAppFreeProps(WebApp *this);
 
 /**
- * Reads and validates $rootDir/site.ini. expectExist == true checks that
- * site.ini exists, expectExist == false checks that site.ini does NOT exist.
+ * strlen(contents) == 0 -> read, strlen(contents) > 0 -> create.
  */
 bool
-webAppMakeSiteIni(WebApp *this, const char *rootDir, bool expectExists, char *err);
+webAppReadOrCreateSiteIni(WebApp *this, const char *contents, char *err);
 
 /**
  * Allocates and starts a microhttpd-server.

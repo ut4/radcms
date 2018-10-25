@@ -1,6 +1,7 @@
 #ifndef insn_db_h
 #define insn_db_h
 
+#include <string.h> // strlen
 #include <sqlite3.h>
 #include "common.h"
 
@@ -42,5 +43,15 @@ typedef void (*mapRowFn)(sqlite3_stmt *stmt, void **myPtr);
  */
 bool
 dbSelect(Db *this, const char *sql, mapRowFn onRow, void **onRowCtx, char *err);
+
+/**
+ * Example: dbRunInTransaction(db,
+ *   "drop table if exists foo; "
+ *   "create table foo ( prop text );",
+ *   errBuf
+ * );
+ */
+bool
+dbRunInTransaction(Db *db, const char *statements, char *err);
 
 #endif
