@@ -1,4 +1,5 @@
 #include "tests/data-query-tests.h"
+#include "tests/file-io-tests.h"
 #include "tests/site-graph-tests.h"
 #include "tests/v-tree-script-bindings-tests.h"
 #include "tests/v-tree-tests.h"
@@ -23,6 +24,7 @@ int main(int argc, const char* argv[]) {
     const char *testSuiteName = argv[1];
     int testSuitesRan = 0;
     testSuitesRan += runIf(testSuiteName, "dataQueries", dataQueryTestsRun);
+    testSuitesRan += runIf(testSuiteName, "fileIO", fileIOTestsRun);
     testSuitesRan += runIf(testSuiteName, "siteGraph", siteGraphTestsRun);
     testSuitesRan += runIf(testSuiteName, "websiteMapper", websiteMapperTestsRun);
     testSuitesRan += runIf(testSuiteName, "vTreeScriptBindings", vTreeScriptBindingsTestsRun);

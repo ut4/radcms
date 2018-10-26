@@ -55,40 +55,50 @@ fileIODeleteFile(const char *filePath, char *err) {
 }
 
 bool
-fileIOMakeDirs(const char *path, unsigned ignoreNChars, const char *rootPath,
-               char *err) {
-    if (ignoreNChars < strlen(rootPath)) {
-        putError("ignoreNChars %u < strlen(rootPath) %d.\n", ignoreNChars,
-                 strlen(rootPath));
-        return false;
-    }
-    const size_t pathLen = strlen(path);
-    const bool hasTrailingSlash = path[pathLen - 1] == '/';
-    const size_t adjustedPathArrLen = pathLen + !hasTrailingSlash + 1;
-    if (adjustedPathArrLen > PATH_MAX) {
+fileIOMakeDirs(const char *path, char *err) {
+    size_t l = strlen(path) + 1;
+    if (l > PATH_MAX) {
         putError("Directory path '%s' too long.\n", path);
         return false;
     }
-    char ref[adjustedPathArrLen];
+    char ref[l];
     strcpy(ref, path);
-    if (!hasTrailingSlash) strcat(ref, "/");
-    //
-    char *head = ref + ignoreNChars;
-    char *slash;
-    while ((slash = strstr(head, "/")) != NULL && slash != head) {
-        unsigned pos = (unsigned)(slash - ref);
-        ref[pos] = '\0'; // Truncate at nth slash (1st round foo/bar/baz/ -> foo\0,
-                         //                        2st round foo/bar/baz/ -> foo/bar\0
-                         //                        3st round foo/bar/baz/ -> foo/bar/baz\0
-                         //                        done
-        if (!fileIOIsReadable(ref)) { // skip if already exists
-            if (mkdir(ref) != 0) {
-                putError("Failed to create directory '%s'", ref);
-                return false;
-            }
+    if (ref[l - 2] == '/') ref[l - 2] = '\0';
+    bool isReadable = fileIOIsReadable(ref);
+    if (isReadable) {
+        return true;
+    }
+    #define maxNewDirs 16
+    unsigned levels[maxNewDirs];
+    unsigned numNewDirs = 0;
+    // Find the first directory that doesn't exist, starting at the end.
+    // 1. round: dirExist('a/b/c/d') false -> 'a/b/c\0d'
+    // 2. round: dirExist('a/b/c') false -> 'a/b\0c\0d'
+    // 3. round: dirExist('a/b') true
+    while (!isReadable) {
+        char *slash = strrchr(ref, '/');
+        if (!slash) break;
+        levels[numNewDirs] = (unsigned)(slash - ref);
+        ref[levels[numNewDirs]] = '\0'; // stub
+        if (++numNewDirs > maxNewDirs) {
+            putError("Too many directories %u > %u", numNewDirs, maxNewDirs);
+            return false;
         }
-        ref[pos] = '/'; // undo truncation
-        head = slash + 1;
+        isReadable = fileIOIsReadable(ref);
+    }
+    if (numNewDirs == 0) {
+        putError("numNewDirs == 0\n");
+        return false;
+    }
+    // levels = [5, 3]
+    // 1. round: undo 3 'a/b\0c\0d' -> 'a/b/c\0d'
+    // 2. round: undo 5 'a/b/c\0d' -> 'a/b/c/d'
+    for (unsigned i = numNewDirs - 1; i >= 0; --i) {
+        ref[levels[i]] = '/'; // unstub
+        if (mkdir(ref) != 0) {
+            putError("Failed to create directory '%s'", ref);
+            return false;
+        }
     }
     return true;
 }
@@ -105,4 +115,21 @@ fileIOGetFileSize(const char *filePath) {
         return fileInfo.st_size;
     }
     return -1;
+}
+
+char*
+fileIOGetNormalizedPath(const char *path) {
+    size_t l = strlen(path);
+    char *out;
+    if (path[l - 1] != '/') {
+        out = ALLOCATE_ARR(char, l + 2);
+        snprintf(out, l + 2, "%s%c", path, '/');
+    } else {
+        out = copyString(path);
+    }
+    unsigned l2 = strlen(out);
+    for (unsigned i = 0; i < l2; ++i) {
+        if (out[i] == '\\') out[i] = '/';
+    }
+    return out;
 }

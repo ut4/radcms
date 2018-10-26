@@ -99,13 +99,12 @@ mapTestDataRow(sqlite3_stmt *stmt, void **myPtr) {
 
 static void
 testWebsiteInstallWritesAllData(Db *db, char *err) {
-    char dir[PATH_MAX];
-    if (!getcwd(dir, sizeof(dir))) {
+    char cwd[PATH_MAX];
+    if (!getcwd(cwd, sizeof(cwd))) {
         perror("getcwd() error");
         return;
     }
-    for (unsigned i = 0; i < strlen(dir); ++i) { if (dir[i] == '\\') dir[i] = '/'; }
-    if (dir[strlen(dir) - 1] != '/') strcat(dir, "/");
+    char *dir = fileIOGetNormalizedPath(cwd);
     //
     Website site;
     websiteInit(&site);
@@ -144,6 +143,7 @@ testWebsiteInstallWritesAllData(Db *db, char *err) {
     done:
     if (!fileIODeleteFile(testTmplFilePath, err)) printToStdErr(err);
     websiteFreeProps(&site);
+    FREE_STR(dir);
 }
 
 void

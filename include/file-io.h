@@ -23,13 +23,8 @@ fileIOWriteFile(const char *filePath, const char *data, char *err);
 bool
 fileIODeleteFile(const char *filePath, char *err);
 
-/**
- * Example: makeDir("c:/root/bar/baz/", strlen("c:/root/"), "c:/root/", errBuf)
- * creates 'c:/root/bar' and 'c:/root/bar/baz' -directories.
- */
 bool
-fileIOMakeDirs(const char *path, unsigned ignoreNChars, const char *rootPath,
-               char *err);
+fileIOMakeDirs(const char *path, char *err);
 
 /**
  * Used by fileIOIs*() macros.
@@ -39,6 +34,12 @@ fileIOCheckAccess(const char *path, int mode);
 
 long
 fileIOGetFileSize(const char *filePath);
+
+/**
+ * "c:\foo\bar" -> "c:/foo/bar/". The caller frees.
+ */
+char*
+fileIOGetNormalizedPath(const char *path);
 
 /**
  * Returns true if $path is a writable directory? or file.

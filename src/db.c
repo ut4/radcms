@@ -9,7 +9,7 @@ bool
 dbOpen(Db *this, const char *filePath, char *err) {
     int status = sqlite3_open(filePath, &this->conn);
     if (status != SQLITE_OK) {
-        putError("Could't open the database: %s\n", sqlite3_errmsg(this->conn));
+        putError("Could't open '%s': %s\n", filePath, sqlite3_errmsg(this->conn));
         return false;
     }
     return true;
@@ -35,7 +35,8 @@ dbSelect(Db *this, const char *sql, mapRowFn onRow, void **onRowCtx, char *err) 
         onRow(stmt, onRowCtx);
     }
     if (status != SQLITE_DONE) {
-        putError("Failed to exec the prepared statement: %s\n", sqlite3_errmsg(this->conn));
+        putError("Failed to execute the prepared statement: %s\n",
+                 sqlite3_errmsg(this->conn));
         sqlite3_finalize(stmt);
         return false;
     }

@@ -42,8 +42,8 @@ SampleData sampleData[] = {
                                "        ),\n"
                                "        e('body', null, [\n"
                                "            e('h1', null, 'Hello'),\n"
-                               "            e('div', null, ddc.renderAll('Article').using('articles-listing.js')),\n"
-                               "            e('div', null, ddc.renderOne('Generic').where('name=\\'footer\\'').using('footer.js'))\n"
+                               "            ddc.renderAll('Article').using('articles-listing.js'),\n"
+                               "            ddc.renderOne('Generic').where('name=\\'footer\\'').using('footer.js')\n"
                                "        ])\n"
                                "    ]);\n"
                                "}"},
@@ -55,8 +55,8 @@ SampleData sampleData[] = {
                                "        ),\n"
                                "        e('body', null, [\n"
                                "            e('h1', null, 'Hello article'),\n"
-                               "            e('div', null, ddc.renderOne('Article').where('name=\\''+url.substr(1)+'\\'').using('article-single.js')),\n"
-                               "            e('div', null, ddc.renderOne('Generic').where('name=\\'footer\\'').using('footer.js'))\n"
+                               "            ddc.renderOne('Article').where('name=\\''+url.substr(1)+'\\'').using('article-single.js'),\n"
+                               "            ddc.renderOne('Generic').where('name=\\'footer\\'').using('footer.js')\n"
                                "        ])\n"
                                "    ]);\n"
                                "}"},

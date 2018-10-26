@@ -39,9 +39,9 @@ testVTreeRegisterElementWithElemAndTextChildren() {
     DocumentDataConfig ddc;
     // 2. Call
     char *myLayout = "function (vTree, _) {"
-            "vTree.registerElement('div', null, [" // multiple nodes as children
-                "vTree.registerElement('h2', null,"                 // single node as a children
-                    "vTree.registerElement('span', null, 'foo')"  // text as a children
+            "vTree.registerElement('div', null, ["               // multiple nodes as children
+                "vTree.registerElement('h2', null,"              // single node as a children
+                    "vTree.registerElement('span', null, 'foo')" // text as a children
                 "),"
                 "vTree.registerElement('p', null, 'bar')"
             "]);"
@@ -96,11 +96,12 @@ testVTreeRegisterElementWithDataConfigChildren() {
     char *layout = "function (vTree, documentDataConfig) {"
         "vTree.registerElement('div', null, ["
             "vTree.registerElement('div', null, "
-                "documentDataConfig.renderOne('Article')"
+                "documentDataConfig.renderOne('Article')" // single dbc as a children
             "),"
-            "vTree.registerElement('div', null, "
-                "documentDataConfig.renderOne('Generic')"
-            "),"
+            "vTree.registerElement('div', null, ["        // multiple dbc's as children
+                "documentDataConfig.renderOne('Aa'),"
+                "documentDataConfig.renderOne('Bb')"
+            "]),"
         "]);"
     "}";
     //
@@ -115,7 +116,46 @@ testVTreeRegisterElementWithDataConfigChildren() {
     assertThatOrGoto(actualBatch2 != NULL, done, "Should add the second batch");
     assertThatOrGoto(actualBatch2->componentTypeName != NULL, done,
                      "Should populate the 2nd batch");
-    assertStrEquals(actualBatch2->componentTypeName, "Generic");
+    assertStrEquals(actualBatch2->componentTypeName, "Aa");
+    DataBatchConfig *actualBatch3 = actualBatch2->next;
+    assertThatOrGoto(actualBatch3 != NULL, done, "Should add the third batch");
+    assertThatOrGoto(actualBatch3->componentTypeName != NULL, done,
+                     "Should populate the 3nd batch");
+    assertStrEquals(actualBatch3->componentTypeName, "Bb");
+    //
+    done:
+        duk_destroy_heap(ctx);
+        vTreeFreeProps(&vTree);
+        documentDataConfigFreeProps(&ddc);
+}
+
+void
+testVTreeRegisterElementWithMixedChildren() {
+    //
+    beforeEach();
+    VTree vTree;
+    DocumentDataConfig ddc;
+    char *layout = "function (vTree, documentDataConfig) {"
+        "vTree.registerElement('div', null, ["
+            "documentDataConfig.renderOne('Aa'),"
+            "vTree.registerElement('p', null, 'foo')"
+        "]);"
+    "}";
+    //
+    bool success = vTreeScriptBindingsExecLayout(ctx, layout, &vTree, &ddc, "/",
+                                                 errBuf);
+    assertThatOrGoto(success, done, "Should return succesfully");
+    DataBatchConfig *actualBatch = &ddc.batches;
+    assertThatOrGoto(actualBatch->componentTypeName != NULL, done,
+                     "Should populate the 1st batch");
+    assertStrEquals(actualBatch->componentTypeName, "Aa");
+    //
+    ElemNode *p = vTreeFindElemNodeByTagName(&vTree, "p");
+    assertThatOrGoto(p != NULL, done, "Should register [..., <p>]");
+    assertIntEqualsOrGoto(p->children.length, 1, done);
+    TextNode *pText = vTreeFindTextNode(&vTree, p->children.values[0]);
+    assertThatOrGoto(pText != NULL, done, "Should register <p>'s textNode");
+    assertStrEquals(pText->chars, "foo");
     //
     done:
         duk_destroy_heap(ctx);
@@ -262,8 +302,8 @@ testVTreeRegisterElementValidatesItsArguments() {
     bool success2 = vTreeScriptBindingsExecLayout(ctx, layout2, &vTree2, &ddc2,
                                                   "/", errBuf);
     assertThatOrGoto(!success2, done, "Should return false");
-    assertStrEquals(errBuf, "TypeError: 3rd arg must be \"str\", <nodeRef>, [<n"
-                            "odeRef>..], <dataConfig> or [<dataConfig>...].\n");
+    assertStrEquals(errBuf, "TypeError: 3rd arg must be \"str\", <nodeRef>, "
+                    "<dataConfig>, or [<nodeRef>|<dataConfig>...].\n");
     //
     bool success3 = vTreeScriptBindingsExecLayout(ctx, layout3, &vTree3, &ddc3,
                                                   "/", errBuf);
@@ -365,6 +405,7 @@ vTreeScriptBindingsTestsRun() {
     testExecLayoutPassesCorrectArguments();
     testVTreeRegisterElementWithElemAndTextChildren();
     testVTreeRegisterElementWithDataConfigChildren();
+    testVTreeRegisterElementWithMixedChildren();
     testDocumentDataConfigRenderOneChains();
     testDocumentDataConfigRenderAllChains();
     testExecLayoutRunsMultipleLayoutsWithoutConflict();

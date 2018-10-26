@@ -37,6 +37,7 @@ set(TESTS_FILES
     tests/test-utils.h tests/test-utils.c
     tests/testlib.h
     tests/data-query-tests.h tests/data-query-tests.c
+    tests/file-io-tests.h tests/file-io-tests.c
     tests/site-graph-tests.h tests/site-graph-tests.c
     tests/v-tree-script-bindings-tests.h tests/v-tree-script-bindings-tests.c
     tests/v-tree-tests.h tests/v-tree-tests.c

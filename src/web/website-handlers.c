@@ -48,7 +48,7 @@ writePageToFile(char *renderedHtml, Page *page, Website *site, char *err) {
     // 'c:/foo/bar/out' + '/foo'
     // 'c:/foo/bar/out' + '/'
     snprintf(filePath, l2, "%s%s", outDirPath, page->url);
-    if (!fileIOMakeDirs(filePath, strlen(site->rootDir), site->rootDir, err)) {
+    if (!fileIOMakeDirs(filePath, err)) {
         return false;
     }
     // 'c:/foo/bar/out/foo + '/index.html'

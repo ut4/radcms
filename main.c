@@ -46,6 +46,7 @@ int main(int argc, const char* argv[]) {
         //
         dbInit(&db);
         STR_CONCAT(dbFilePath, app.rootDir, "data.db");
+        if (doInit && !fileIOMakeDirs(app.rootDir, errBuf)) goto done;
         if (!dbOpen(&db, dbFilePath, errBuf)) goto done;
     }
     website.rootDir = app.rootDir;
@@ -69,14 +70,14 @@ int main(int argc, const char* argv[]) {
     /*
      * Handle `insane run`
      */
+    if (!webAppReadOrCreateSiteIni(&app, "", errBuf) ||
+        !websiteFetchAndParseSiteGraph(&website, errBuf)) goto done;
     app.handlers[0] = (RequestHandler){.methodPattern="GET", .urlPattern="/int/cpanel",
         .handlerFn=websiteHandlersHandleCPanelIframeRequest, .this=NULL};
     app.handlers[1] = (RequestHandler){.methodPattern="GET", .urlPattern="/api/website/generate",
         .handlerFn=websiteHandlersHandleGenerateRequest, .this=(void*)&website};
     app.handlers[2] = (RequestHandler){.methodPattern="GET", .urlPattern="/*",
         .handlerFn=websiteHandlersHandlePageRequest, .this=(void*)&website};
-    if (!webAppReadOrCreateSiteIni(&app, "", errBuf) ||
-        !websiteFetchAndParseSiteGraph(&website, errBuf)) goto done;
     if (!webAppStart(&app)) {
         sprintf(errBuf, "Failed to start the server.\n");
         goto done;

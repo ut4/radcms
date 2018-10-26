@@ -20,13 +20,7 @@ getHandler(WebApp *app, const char *method, const char *url);
 
 void
 webAppInit(WebApp *this, const char *rootDir, char *errBuf) {
-    size_t l = strlen(rootDir) + 1;
-    if (rootDir[l - 2] != '/') {
-        this->rootDir = ALLOCATE_ARR(char, l + 1);
-        snprintf(this->rootDir, l + 1, "%s%c", rootDir, '/');
-    } else {
-        this->rootDir = copyString(rootDir);
-    }
+    this->rootDir = fileIOGetNormalizedPath(rootDir);
     siteIniInit(&this->ini);
     this->ini.rootDir = this->rootDir;
     this->daemon = NULL;

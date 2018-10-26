@@ -143,12 +143,27 @@ vTreeSBRegisterElement(duk_context *ctx) {
     // ignore the 2nd argument (props)
     NodeRefArray children;
     nodeRefArrayInit(&children);
+    #define registerAndPushDataBatchConfig(dbcObjIsAt) \
+        duk_get_prop_string(ctx, dbcObjIsAt, "id"); \
+        unsigned dbcId = duk_require_uint(ctx, -1); \
+        nodeRefArrayPush(&children, vTreeUtilsMakeNodeRef(TYPE_DATA_BATCH_CONFIG, \
+                                                          dbcId)); \
+        duk_pop(ctx)
     // 3rd argument (children)
+    /*
+     * Single elemNode (e(..., e("child" ...))
+     */
     if (duk_is_number(ctx, 2)) {
         nodeRefArrayPush(&children, (unsigned)duk_to_uint(ctx, 2));
+    /*
+     * Single textNode (e(..., "Text here")
+     */
     } else if (duk_is_string(ctx, 2)) {
         unsigned ref = vTreeCreateTextNode(vTree, duk_to_string(ctx, 2));
         nodeRefArrayPush(&children, ref);
+    /*
+     * Array of elemNodes or&and dbc's (e(..., [e("child"...), ddc.renderOne(...)...])
+     */
     } else if (duk_is_array(ctx, 2)) {
         unsigned l = (unsigned)duk_get_length(ctx, 2);
         if (l == 0) {
@@ -157,19 +172,27 @@ vTreeSBRegisterElement(duk_context *ctx) {
         }
         for (unsigned i = 0; i < l; ++i) {
             duk_get_prop_index(ctx, 2, i);
-            nodeRefArrayPush(&children, (unsigned)duk_require_uint(ctx, -1));
+            duk_int_t a = duk_get_type(ctx, -1);
+            if (a == DUK_TYPE_NUMBER) {
+                nodeRefArrayPush(&children, (unsigned)duk_require_uint(ctx, -1));
+            } else if (a == DUK_TYPE_OBJECT) {
+                registerAndPushDataBatchConfig(-1);
+            } else {
+                nodeRefArrayFreeProps(&children);
+                duk_error(ctx, DUK_ERR_TYPE_ERROR, "Child-array value must be a"
+                          " <nodeRef> or <dataConfig>.\n");
+            }
         }
         duk_pop_n(ctx, l); // each array value
+    /*
+     * Single dbc (e(..., ddc.renderOne(...))
+     */
     } else if (duk_is_object(ctx, 2)) {
-        duk_get_prop_string(ctx, 2, "id");
-        unsigned dbcId = duk_require_uint(ctx, -1);
-        nodeRefArrayPush(&children, vTreeUtilsMakeNodeRef(TYPE_DATA_BATCH_CONFIG,
-                                                          dbcId));
-        duk_pop(ctx); // uint
+        registerAndPushDataBatchConfig(2);
     } else {
         nodeRefArrayFreeProps(&children);
         duk_error(ctx, DUK_ERR_TYPE_ERROR, "3rd arg must be \"str\", <nodeRef>"
-            ", [<nodeRef>..], <dataConfig> or [<dataConfig>...].\n");
+            ", <dataConfig>, or [<nodeRef>|<dataConfig>...].\n");
     }
     unsigned newId = vTreeCreateElemNode(vTree, tagName, &children);
     duk_push_number(ctx, (double)newId);
