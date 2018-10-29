@@ -11,21 +11,42 @@ void
 vTreeScriptBindingsRegister(duk_context *ctx);
 
 /**
- * Runs $layoutCode.
+ * Compiles and runs $layoutCode.
  */
 bool
-vTreeScriptBindingsExecLayout(duk_context *ctx, char *layoutCode, VTree *vTree,
-                              DocumentDataConfig *ddc, const char *url,
-                              char *err);
+vTreeScriptBindingsCompileAndExecLayout(duk_context *ctx, char *layoutCode,
+                                        VTree *vTree, DocumentDataConfig *ddc,
+                                        const char *url, char *err);
 
 /**
- * Runs $templateCode. Returns the id of the root element of the template on
- * success, or 0 on failure.
+ * Same as vTreeScriptBindingsCompileAndExecLayout, but retrieves the layout
+ * -function from the duktape thread stash, using $layoutName as a key. Note:
+ * assumes that duk_push_thread_stash is already called. */
+bool
+vTreeScriptBindingsExecLayoutFromCache(duk_context *ctx, char *layoutName,
+                                       VTree *vTree, DocumentDataConfig *ddc,
+                                       const char *url, char *err);
+
+/**
+ * Compiles and runs $templateCode. Returns the id of the root element of the
+ * template on success, or 0 on failure.
  */
 unsigned
-vTreeScriptBindingsExecTemplate(duk_context *ctx, char *templateCode,
-                                VTree *vTree, DataBatchConfig *dbc,
-                                ComponentArray *allComponents, bool isRenderAll,
-                                const char *url, char *err);
+vTreeScriptBindingsCompileAndExecTemplate(duk_context *ctx, char *templateCode,
+                                          VTree *vTree, DataBatchConfig *dbc,
+                                          ComponentArray *allComponents,
+                                          bool isRenderAll, const char *url,
+                                          char *err);
+
+/**
+ * Same as vTreeScriptBindingsCompileAndExecTemplate, but retrieves the template
+ * -function from the duktape thread stash, using $dbc->renderWith as a key.
+ * Note: assumes that duk_push_thread_stash is already called. */
+unsigned
+vTreeScriptBindingsExecTemplateFromCache(duk_context *ctx, VTree *vTree,
+                                         DataBatchConfig *dbc,
+                                         ComponentArray *allComponents,
+                                         bool isRenderAll, const char *url,
+                                         char *err);
 
 #endif

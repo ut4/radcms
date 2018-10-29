@@ -21,8 +21,8 @@ testExecLayoutPassesCorrectArguments() {
     char *myLayout = "function (vTree, documentDataConfig) {"
                          "vTree !== undefined; documentDataConfig !== undefined;"
                      "}";
-    bool success = vTreeScriptBindingsExecLayout(ctx, myLayout, &vTree, &ddc,
-                                                 "/", errBuf);
+    bool success = vTreeScriptBindingsCompileAndExecLayout(ctx, myLayout,
+        &vTree, &ddc, "/", errBuf);
     // 3. Assert
     assertThat(success, "Should return succesfully");
     //
@@ -46,8 +46,8 @@ testVTreeRegisterElementWithElemAndTextChildren() {
                 "vTree.registerElement('p', null, 'bar')"
             "]);"
         "}";
-    bool success = vTreeScriptBindingsExecLayout(ctx, myLayout, &vTree, &ddc,
-                                                 "/", errBuf);
+    bool success = vTreeScriptBindingsCompileAndExecLayout(ctx, myLayout,
+        &vTree, &ddc, "/", errBuf);
     // 3. Assert
     assertThatOrGoto(success, done, "Should return succesfully");
     assertIntEqualsOrGoto(vTree.elemNodes.length, 4, done);
@@ -105,8 +105,8 @@ testVTreeRegisterElementWithDataConfigChildren() {
         "]);"
     "}";
     //
-    bool success = vTreeScriptBindingsExecLayout(ctx, layout, &vTree, &ddc, "/",
-                                                 errBuf);
+    bool success = vTreeScriptBindingsCompileAndExecLayout(ctx, layout, &vTree,
+        &ddc, "/", errBuf);
     assertThatOrGoto(success, done, "Should return succesfully");
     DataBatchConfig *actualBatch1 = &ddc.batches;
     assertThatOrGoto(actualBatch1->componentTypeName != NULL, done,
@@ -142,8 +142,8 @@ testVTreeRegisterElementWithMixedChildren() {
         "]);"
     "}";
     //
-    bool success = vTreeScriptBindingsExecLayout(ctx, layout, &vTree, &ddc, "/",
-                                                 errBuf);
+    bool success = vTreeScriptBindingsCompileAndExecLayout(ctx, layout, &vTree,
+        &ddc, "/", errBuf);
     assertThatOrGoto(success, done, "Should return succesfully");
     DataBatchConfig *actualBatch = &ddc.batches;
     assertThatOrGoto(actualBatch->componentTypeName != NULL, done,
@@ -175,8 +175,8 @@ testDocumentDataConfigRenderOneChains() {
         ");"
     "}";
     //
-    bool success = vTreeScriptBindingsExecLayout(ctx, layout, &vTree, &ddc, "/",
-                                                 errBuf);
+    bool success = vTreeScriptBindingsCompileAndExecLayout(ctx, layout, &vTree,
+        &ddc, "/", errBuf);
     assertThatOrGoto(success, done, "Should return succesfully");
     DataBatchConfig *actualBatch = &ddc.batches;
     assertThatOrGoto(actualBatch->componentTypeName != NULL, done,
@@ -207,8 +207,8 @@ testDocumentDataConfigRenderAllChains() {
         ");"
     "}";
     //
-    bool success = vTreeScriptBindingsExecLayout(ctx, layout, &vTree, &ddc, "/",
-                                                 errBuf);
+    bool success = vTreeScriptBindingsCompileAndExecLayout(ctx, layout, &vTree,
+        &ddc, "/", errBuf);
     assertThatOrGoto(success, done, "Should return succesfully");
     DataBatchConfig *actualBatch = &ddc.batches;
     assertThatOrGoto(actualBatch->componentTypeName != NULL, done,
@@ -239,11 +239,11 @@ testExecLayoutRunsMultipleLayoutsWithoutConflict() {
         " vTree.registerElement('span', null, 'bar');"
     "}";
     // 2. Evaluate two layouts and vTrees
-    bool success1 = vTreeScriptBindingsExecLayout(ctx, layout1, &vTree1, &ddc1,
-                                                  "/", errBuf);
+    bool success1 = vTreeScriptBindingsCompileAndExecLayout(ctx, layout1,
+        &vTree1, &ddc1, "/", errBuf);
     assertThatOrGoto(success1, done, "Should return successfully on layout1");
-    bool success2 = vTreeScriptBindingsExecLayout(ctx, layout2, &vTree2, &ddc2,
-                                                  "/", errBuf);
+    bool success2 = vTreeScriptBindingsCompileAndExecLayout(ctx, layout2,
+        &vTree2, &ddc2, "/", errBuf);
     assertThatOrGoto(success2, done, "Should return successfully on layout2");
     // 3. Assert that vTrees contain their own nodes only
     assertIntEqualsOrGoto(vTree1.elemNodes.length, 1, done);
@@ -294,19 +294,19 @@ testVTreeRegisterElementValidatesItsArguments() {
         " vTree.registerElement('p', null, []);"
     "}";
     //
-    bool success1 = vTreeScriptBindingsExecLayout(ctx, layout, &vTree1, &ddc1,
-                                                  "/", errBuf);
+    bool success1 = vTreeScriptBindingsCompileAndExecLayout(ctx, layout,
+        &vTree1, &ddc1, "/", errBuf);
     assertThatOrGoto(!success1, done, "Should return false");
     assertStrEquals(errBuf, "TypeError: string required, found undefined (stack index 0)");
     //
-    bool success2 = vTreeScriptBindingsExecLayout(ctx, layout2, &vTree2, &ddc2,
-                                                  "/", errBuf);
+    bool success2 = vTreeScriptBindingsCompileAndExecLayout(ctx, layout2,
+        &vTree2, &ddc2, "/", errBuf);
     assertThatOrGoto(!success2, done, "Should return false");
     assertStrEquals(errBuf, "TypeError: 3rd arg must be \"str\", <nodeRef>, "
                     "<dataConfig>, or [<nodeRef>|<dataConfig>...].\n");
     //
-    bool success3 = vTreeScriptBindingsExecLayout(ctx, layout3, &vTree3, &ddc3,
-                                                  "/", errBuf);
+    bool success3 = vTreeScriptBindingsCompileAndExecLayout(ctx, layout3,
+        &vTree3, &ddc3, "/", errBuf);
     assertThatOrGoto(!success3, done, "Should return false");
     assertStrEquals(errBuf, "TypeError: Child-array can't be empty.\n");
     //
@@ -344,9 +344,8 @@ testExecRenderOneTemplatePassesCorrectArguments() {
                            ")"
                        "}";
     bool isRenderAll = false;
-    unsigned nodeId = vTreeScriptBindingsExecTemplate(ctx, myTemplate, &vTree,
-                                                      &dbcOfThisTemplate, &cmps,
-                                                      isRenderAll, "/", errBuf);
+    unsigned nodeId = vTreeScriptBindingsCompileAndExecTemplate(ctx, myTemplate,
+        &vTree, &dbcOfThisTemplate, &cmps, isRenderAll, "/", errBuf);
     // 3. Assert
     assertThatOrGoto(nodeId == 1, done, "Should return the id of the root node");
     assertStrEquals(vTree.textNodes.values[0].chars, "1 foo 2");
@@ -387,9 +386,8 @@ testExecRenderAllTemplatePassesCorrectArguments() {
                            ")"
                        "}";
     bool isRenderAll = true;
-    unsigned nodeId = vTreeScriptBindingsExecTemplate(ctx, myTemplate, &vTree,
-                                                      &dbcOfThisTemplate, &cmps,
-                                                      isRenderAll, "/", errBuf);
+    unsigned nodeId = vTreeScriptBindingsCompileAndExecTemplate(ctx, myTemplate,
+        &vTree, &dbcOfThisTemplate, &cmps, isRenderAll, "/", errBuf);
     // 3. Assert
     assertThatOrGoto(nodeId == 1, done, "Should return the id of the root node");
     assertStrEquals(vTree.textNodes.values[0].chars, "1 foo 2, 2 bar 3");

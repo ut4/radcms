@@ -10,6 +10,12 @@
 duk_context*
 myDukCreate(char *errBuf);
 
+/**
+ * Compiles $code, and leaves the result on the top of the duktape stack.
+ */
+bool
+dukUtilsCompileStrToFn(duk_context *ctx, const char *code, char *err);
+
 void
 dukUtilsDumpStack(duk_context *ctx);
 

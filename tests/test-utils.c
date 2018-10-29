@@ -22,9 +22,7 @@ testUtilsSetupTestDb(Db *db, char *err) {
 "    `json` json,"
 "    componentTypeId integer not null,"
 "    foreign key (componentTypeId) references componentTypes(id)"
-");"
-"INSERT INTO websites VALUES"
-"(1, \"2|1/a|0|a.lua|2/b|0|b.lua|\");", NULL, NULL, &sqliteErr) != SQLITE_OK) {
+");", NULL, NULL, &sqliteErr) != SQLITE_OK) {
         printToStdErr("Failed to create the test database: %s.\n", sqliteErr);
         sqlite3_free(sqliteErr);
         return false;

@@ -71,7 +71,8 @@ int main(int argc, const char* argv[]) {
      * Handle `insane run`
      */
     if (!webAppReadOrCreateSiteIni(&app, "", errBuf) ||
-        !websiteFetchAndParseSiteGraph(&website, errBuf)) goto done;
+        !websiteFetchAndParseSiteGraph(&website, errBuf) ||
+        !websitePopulateTemplateCaches(&website, errBuf)) goto done;
     app.handlers[0] = (RequestHandler){.methodPattern="GET", .urlPattern="/int/cpanel",
         .handlerFn=websiteHandlersHandleCPanelIframeRequest, .this=NULL};
     app.handlers[1] = (RequestHandler){.methodPattern="GET", .urlPattern="/api/website/generate",

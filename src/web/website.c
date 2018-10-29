@@ -5,9 +5,7 @@ static void mapSiteGraphResultRow(sqlite3_stmt *stmt, void **myPtr);
 
 void
 websiteInit(Website *this) {
-    this->siteGraph.capacity = 0;
-    this->siteGraph.length = 0;
-    this->siteGraph.values = NULL;
+    siteGraphInit(&this->siteGraph);
     this->rootDir = NULL;
     this->dukCtx = NULL;
     this->db = NULL;
@@ -15,7 +13,7 @@ websiteInit(Website *this) {
 
 void
 websiteFreeProps(Website *this) {
-    if (this->siteGraph.values) pageArrayFreeProps(&this->siteGraph);
+    siteGraphFreeProps(&this->siteGraph);
     this->rootDir = NULL;
     this->dukCtx = NULL;
     this->db = NULL;
@@ -36,6 +34,49 @@ websiteFetchAndParseSiteGraph(Website *this, char *err) {
 }
 
 bool
+websitePopulateTemplateCaches(Website *this, char *err) {
+    TextNodeArray *tmpls = &this->siteGraph.tmplFiles;
+    duk_push_thread_stash(this->dukCtx, this->dukCtx);         // [... stash]
+    for (unsigned i = 0; i < tmpls->length; ++i) {
+        /*
+         * Read contents from disk
+         */
+        STR_CONCAT(tmplFilePath, this->rootDir, tmpls->values[i].chars);
+        char *code = fileIOReadFile(tmplFilePath, err);
+        if (!code) return false;
+        /*
+         * Compile string -> function
+         */
+        if (dukUtilsCompileStrToFn(this->dukCtx, code, err)) { // [... stash fn]
+            /*
+             * Convert function -> bytecode
+             */
+            duk_dump_function(this->dukCtx);                   // [... stash bytecode]
+            duk_size_t bytecodeSize = 0;
+            (void)duk_get_buffer(this->dukCtx, -1, &bytecodeSize);
+            /*
+             * Store the bytecode to the thread stash
+             */
+            if (bytecodeSize > 0) {
+                duk_put_prop_string(this->dukCtx, -2, tmpls->values[i].chars); // [... stash]
+            } else {
+                printToStdErr("Failed to cache '%s'. Rage quitting.\n",
+                              tmplFilePath);
+                exit(EXIT_FAILURE);
+            }
+            FREE_STR(code);
+        } else {
+            duk_pop(this->dukCtx);
+            FREE_STR(code);
+            return false;
+        }
+    }
+    duk_pop(this->dukCtx);                                   // [...]
+    textNodeArrayFreeProps(&this->siteGraph.tmplFiles);
+    return true;
+}
+
+bool
 websiteFetchBatches(Website *this, DocumentDataConfig *ddc, ComponentArray *to,
                     char *err) {
     componentArrayInit(to);
@@ -46,12 +87,12 @@ websiteFetchBatches(Website *this, DocumentDataConfig *ddc, ComponentArray *to,
 }
 
 bool
-websiteGenerate(Website *this, pageExportWriteFn writeFn, char *err) {
-    for (unsigned i = 0; i < this->siteGraph.length; ++i) {
-        Page *p = &this->siteGraph.values[i];
+websiteGenerate(Website *this, pageExportWriteFn writeFn, void *myPtr, char *err) {
+    for (unsigned i = 0; i < this->siteGraph.pages.length; ++i) {
+        Page *p = &this->siteGraph.pages.values[i];
         char *rendered = pageRender(this, p, p->url, err);
         if (rendered) {
-            if (!writeFn(rendered, p, this, err)) {
+            if (!writeFn(rendered, p, this, myPtr, err)) {
                 FREE_STR(rendered);
                 return false;
             }
@@ -103,26 +144,14 @@ fetchAndRenderBatches(Website *this, VTree *vTree, DocumentDataConfig *ddc,
             putError("Invalid DataBatchConfig.\n");
             goto done;
         }
-        //
-        {
-            STR_CONCAT(templateFilePath, this->rootDir, cur->renderWith);
-            char *templateCode = fileIOReadFile(templateFilePath, err);
-            if (!templateCode) {
-                goto done;
-            }
-            unsigned templateRootNodeId = 0;
-            if ((templateRootNodeId = vTreeScriptBindingsExecTemplate(this->dukCtx,
-                templateCode, vTree, cur, &components, cur->isFetchAll, url,
-                err)) < 1) {
-                FREE_STR(templateCode);
-                goto done;
-            }
-            FREE_STR(templateCode);
-            if (!vTreeReplaceRef(vTree, TYPE_DATA_BATCH_CONFIG,
-                                 cur->id,
-                                 vTreeUtilsMakeNodeRef(TYPE_ELEM, templateRootNodeId))) {
-                goto done;
-            }
+        unsigned templateRootNodeId = vTreeScriptBindingsExecTemplateFromCache(
+            this->dukCtx, vTree, cur, &components, cur->isFetchAll, url, err);
+        if (templateRootNodeId < 1) {
+            goto done;
+        }
+        if (!vTreeReplaceRef(vTree, TYPE_DATA_BATCH_CONFIG, cur->id,
+                             vTreeUtilsMakeNodeRef(TYPE_ELEM, templateRootNodeId))) {
+            goto done;
         }
         cur = cur->next;
     }
@@ -134,16 +163,12 @@ fetchAndRenderBatches(Website *this, VTree *vTree, DocumentDataConfig *ddc,
 
 char*
 pageRender(Website *this, Page *page, const char *url, char *err) {
-    STR_CONCAT(layoutFilePath, this->rootDir, page->layoutFileName);
-    char *layoutCode = fileIOReadFile(layoutFilePath, err);
-    if (!layoutCode) {
-        return NULL;
-    }
+    duk_push_thread_stash(this->dukCtx, this->dukCtx);
     VTree vTree;
     DocumentDataConfig ddc;
     char *renderedHtml = NULL;
-    if (!vTreeScriptBindingsExecLayout(this->dukCtx, layoutCode, &vTree, &ddc,
-                                       url, err)) {
+    if (!vTreeScriptBindingsExecLayoutFromCache(this->dukCtx,
+        page->layoutFileName, &vTree, &ddc, url, err)) {
         goto done;
     }
     if (ddc.batchCount > 0 && !fetchAndRenderBatches(this, &vTree, &ddc, url,
@@ -152,7 +177,7 @@ pageRender(Website *this, Page *page, const char *url, char *err) {
     }
     renderedHtml = vTreeToHtml(&vTree, err);
     done:
-    FREE_STR(layoutCode);
+    duk_pop(this->dukCtx); // thread stash
     vTreeFreeProps(&vTree);
     documentDataConfigFreeProps(&ddc);
     return renderedHtml;
@@ -175,42 +200,76 @@ mapDataBatchesRow(sqlite3_stmt *stmt, void **myPtr) {
     componentArrayPush(arr, &newComponent);
 }
 
+void
+siteGraphInit(SiteGraph *this) {
+    this->pages.capacity = 0;
+    this->pages.length = 0;
+    this->pages.values = NULL;
+    this->tmplFiles.capacity = 0;
+    this->tmplFiles.length = 0;
+    this->tmplFiles.values = NULL;
+}
+
+void
+siteGraphFreeProps(SiteGraph *this) {
+    if (this->pages.values) pageArrayFreeProps(&this->pages);
+    if (this->tmplFiles.values) textNodeArrayFreeProps(&this->tmplFiles);
+}
+
 bool
-siteGraphParse(char *str, PageArray *out, StrReader *sr, char *err) {
+siteGraphParse(char *str, SiteGraph *out, StrReader *sr, char *err) {
     if (!strReaderIsDigit(str[0])) {
         putError("ParseError: Expected a digit but got '%c'.\n", str[0]);
         return false;
     }
     strReaderInit(sr, str, '|');
     unsigned totalPageCount = strReaderReadInt(sr);
-    pageArrayInit(out, totalPageCount);
+    pageArrayInit(&out->pages, totalPageCount);
+    unsigned templateCount = strReaderReadInt(sr);
+    if (templateCount == 0) return false;
+    textNodeArrayInit(&out->tmplFiles);
     while (*sr->current != '\0') {
         if (strReaderIsDigit(*sr->current)) {
+            if (out->pages.length == totalPageCount) {
+                printToStdErr("Critical: siteGraph->pages.values overflow. Exiting.\n");
+                exit(EXIT_FAILURE);
+            }
             Page newPage = {
                 .id = strReaderReadInt(sr),
                 .url = strReaderReadStr(sr),
                 .parentId = strReaderReadInt(sr),
                 .layoutFileName = strReaderReadStr(sr)
             };
-            pageArrayPush(out, &newPage);
+            pageArrayPush(&out->pages, &newPage);
+        } else if (out->pages.length > 0) {
+            TextNode text;
+            text.id = 0;
+            text.chars = strReaderReadStr(sr);
+            textNodeArrayPush(&out->tmplFiles, &text);
         } else {
             putError("Unpexted character '%c'.\n", *sr->current);
             return false;
         }
     }
+    if (out->pages.length != totalPageCount) {
+        printToStdErr("siteGraph->pages.length != definedTotalPageCount");
+    }
+    if (out->tmplFiles.length != templateCount) {
+        printToStdErr("siteGraph->tmplFiles.length != definedTemplateCount");
+    }
     return true;
 }
 
 void
-siteGraphSerialize(PageArray *siteGraph, char *to) {
+siteGraphSerialize(SiteGraph *siteGraph, char *to) {
 
 }
 
 Page*
-siteGraphFindPage(PageArray *siteGraph, const char *url) {
-    for (unsigned i = 0; i < siteGraph->length; ++i) {
-        if (strcmp(siteGraph->values[i].url, url) == 0) {
-            return &siteGraph->values[i];
+siteGraphFindPage(SiteGraph *siteGraph, const char *url) {
+    for (unsigned i = 0; i < siteGraph->pages.length; ++i) {
+        if (strcmp(siteGraph->pages.values[i].url, url) == 0) {
+            return &siteGraph->pages.values[i];
         }
     }
     return NULL;

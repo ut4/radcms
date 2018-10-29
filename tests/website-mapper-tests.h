@@ -6,6 +6,8 @@
 #include "testlib.h" // assertThat
 #include "test-utils.h" // testUtilsSetupTestDb()
 #include "../include/web/website.h" // PageArray, siteGraph*()
+#include "../../include/data-query-script-bindings.h"
+#include "../../include/v-tree-script-bindings.h"
 
 void
 websiteMapperTestsRun();

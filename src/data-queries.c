@@ -21,7 +21,7 @@ documentDataConfigFreeProps(DocumentDataConfig *this) {
     if (!this->batches.next) return;
     DataBatchConfig *head = this->batches.next;
     DataBatchConfig *tmp;
-    while (head != NULL) {
+    while (head) {
         tmp = head;
         head = head->next;
         dataBatchConfigFreeProps(tmp);

@@ -24,7 +24,7 @@ SampleData sampleData[] = {
                                "}"},
             {"footer.js", FOOTER_TMPL}
         },
-        .installSql="insert into websites values (1, '1|1/|0|main-layout.js');"
+        .installSql="insert into websites values (1, '1|2|1/|0|main-layout.js|main-layout.js|footer.js');"
                     "insert into componentTypes values (1, 'Generic');"
                     "insert into componentTypeProps values (1, 'content', 'richtext', 1);"
                     "insert into components values (1, 'footer', '{\"content\":\"(c) 2034 MySite\"}', 1);",
@@ -82,7 +82,7 @@ SampleData sampleData[] = {
             {"footer.js", FOOTER_TMPL}
         },
         .installSql="insert into websites values"
-                    "  (1, '4|1/|0|main-layout.js|2/art1|0|article-layout.js|3/art2|0|article-layout.js|4/art3|0|article-layout.js');"
+                    "  (1, '4|5|1/|0|main-layout.js|2/art1|0|article-layout.js|3/art2|0|article-layout.js|4/art3|0|article-layout.js|main-layout.js|article-layout.js|article-single.js|articles-listing.js|footer.js');"
                     "insert into componentTypes values"
                     "  (1, 'Generic'),"
                     "  (2, 'Article');"

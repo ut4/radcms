@@ -2,13 +2,22 @@
 
 #define V_TREE_STASH_KEY "_VTree"
 
-/** Puts $vTree to the duktape thread/ctx stash */
-static void
-vTreeSBSetStashedVTree(duk_context *ctx, VTree *vTree);
-
 /** Implements global.vTree.registerElement($tagName, $props, $children) */
 static duk_ret_t
 vTreeSBRegisterElement(duk_context *ctx);
+
+/** Private funcs */
+static void setStashedTree(duk_context *ctx, VTree *vTree);
+static bool execLayout(duk_context *ctx, VTree *vTree, DocumentDataConfig *ddc,
+                       const char *url, char *err);
+static void pushComponent(duk_context *ctx, Component *data);
+static bool findAndPushSingleComponent(duk_context *ctx, ComponentArray *allComponents,
+                                       unsigned dataBatchConfigId);
+static bool findAndPushComponentArray(duk_context *ctx, ComponentArray *allComponents,
+                                      unsigned dataBatchConfigId);
+static unsigned execTemplate(duk_context *ctx, VTree *vTree, DataBatchConfig *dbc,
+                             ComponentArray *allComponents, bool isRenderAll,
+                             const char *url, char *err);
 
 void
 vTreeScriptBindingsRegister(duk_context *ctx) {
@@ -20,117 +29,48 @@ vTreeScriptBindingsRegister(duk_context *ctx) {
 }
 
 bool
-vTreeScriptBindingsExecLayout(duk_context *ctx, char *layoutCode, VTree *vTree,
-                              DocumentDataConfig *ddc, const char *url,
-                              char *err) {
-    vTreeInit(vTree);
-    documentDataConfigInit(ddc);
-    vTreeSBSetStashedVTree(ctx, vTree);
-    dataQuerySBSetStashedDocumentDataConfig(ctx, ddc);
-    duk_pcompile_string(ctx, DUK_COMPILE_FUNCTION, layoutCode);
+vTreeScriptBindingsCompileAndExecLayout(duk_context *ctx, char *layoutCode,
+                                        VTree *vTree, DocumentDataConfig *ddc,
+                                        const char *url, char *err) {
+    if (!dukUtilsCompileStrToFn(ctx, layoutCode, err)) return false;
+    return execLayout(ctx, vTree, ddc, url, err);
+}
+
+bool
+vTreeScriptBindingsExecLayoutFromCache(duk_context *ctx, char *layoutName,
+                               VTree *vTree, DocumentDataConfig *ddc,
+                               const char *url, char *err) {
+    duk_get_prop_string(ctx, -1, layoutName);
+    duk_load_function(ctx);
     if (!duk_is_function(ctx, -1)) {
-        putError(duk_safe_to_string(ctx, -1));
-        duk_pop(ctx); // error
-        return false;
+        putError("Failed to load bytecode.\n");
+        return 0;
     }
-    duk_get_global_string(ctx, "vTree");              // arg1
-    duk_get_global_string(ctx, "documentDataConfig"); // arg2
-    duk_push_string(ctx, url);                        // arg3
-    if (duk_pcall(ctx, 3) != 0) {
-        putError(duk_safe_to_string(ctx, -1));
-        duk_pop(ctx); // pcall result
-        return false;
-    }
-    vTree->rootElemIndex = vTree->elemNodes.length - 1;
-    duk_pop(ctx); // pcall result
-    return true;
-}
-
-static void
-pushComponent(duk_context *ctx, Component *data) {
-    duk_push_object(ctx);                 // [... obj]
-    duk_push_uint(ctx, data->id);         // [... obj uint]
-    duk_put_prop_string(ctx, -2, "id");   // [... obj]
-    duk_push_string(ctx, data->name);     // [... obj string]
-    duk_put_prop_string(ctx, -2, "name"); // [... obj]
-    duk_push_string(ctx, data->json);     // [... obj string]
-    duk_json_decode(ctx, -1);             // [... obj obj]
-    duk_put_prop_string(ctx, -2, "data"); // [... obj]
-}
-
-static bool
-findAndPushSingleComponent(duk_context *ctx, ComponentArray *allComponents,
-                           unsigned dataBatchConfigId) {
-    for (unsigned i = 0; i < allComponents->length; ++i) {
-        if (allComponents->values[i].dataBatchConfigId == dataBatchConfigId) {
-            pushComponent(ctx, &allComponents->values[i]);
-            return true;
-        }
-    }
-    return false;
-}
-
-static bool
-findAndPushComponentArray(duk_context *ctx, ComponentArray *allComponents,
-                          unsigned dataBatchConfigId) {
-    duk_idx_t arrIdx = duk_push_array(ctx);
-    unsigned nth = 0;
-    for (unsigned i = 0; i < allComponents->length; ++i) {
-        if (allComponents->values[i].dataBatchConfigId == dataBatchConfigId) {
-            pushComponent(ctx, &allComponents->values[i]);
-            duk_put_prop_index(ctx, arrIdx, nth);
-            nth += 1;
-        }
-    }
-    return nth > 0;
+    return execLayout(ctx, vTree, ddc, url, err);
 }
 
 unsigned
-vTreeScriptBindingsExecTemplate(duk_context *ctx, char *templateCode,
-                                VTree *vTree, DataBatchConfig *dbc,
-                                ComponentArray *allComponents, bool isRenderAll,
-                                const char *url, char *err) {
-    vTreeSBSetStashedVTree(ctx, vTree);
-    duk_pcompile_string(ctx, DUK_COMPILE_FUNCTION, templateCode);
-    if (!duk_is_function(ctx, -1)) {
-        putError(duk_safe_to_string(ctx, -1));
-        duk_pop(ctx); // error
-        return 0;
-    }
-    duk_get_global_string(ctx, "vTree"); // arg1
-    const bool found = !isRenderAll       // arg2
-        ? findAndPushSingleComponent(ctx, allComponents, dbc->id)
-        : findAndPushComponentArray(ctx, allComponents, dbc->id);
-    if (!found) { // abort rendering, put <pre>$messageToDev</pre> instead
-        duk_pop_n(ctx, 2); // arg1, function
-        char asStr[dataBatchConfigGetToStringLen(dbc)];
-        dataBatchConfigToString(dbc, asStr);
-        const char *messageTmpl = "'%s' didn't return any data from the database.";
-        const size_t l = strlen(messageTmpl) - 2 + strlen(asStr) + 1;
-        char messageToDev[l];
-        snprintf(messageToDev, l, messageTmpl, asStr);
-        unsigned textRef = vTreeCreateTextNode(vTree, messageToDev);
-        NodeRefArray children;
-        nodeRefArrayInit(&children);
-        nodeRefArrayPush(&children, textRef);
-        return GET_NODEID(vTreeCreateElemNode(vTree, "pre", &children));
-    }
-    duk_push_string(ctx, url);           // arg3
-    if (duk_pcall(ctx, 3) != 0) {
-        putError(duk_safe_to_string(ctx, -1));
-        duk_pop(ctx); // pcall result
-        return 0;
-    }
-    duk_pop(ctx); // pcall result
-    return vTree->elemNodes.values[vTree->elemNodes.length - 1].id;
+vTreeScriptBindingsCompileAndExecTemplate(duk_context *ctx, char *templateCode,
+                                          VTree *vTree, DataBatchConfig *dbc,
+                                          ComponentArray *allComponents,
+                                          bool isRenderAll, const char *url,
+                                          char *err) {
+    if (!dukUtilsCompileStrToFn(ctx, templateCode, err)) return 0;
+    return execTemplate(ctx, vTree, dbc, allComponents, isRenderAll, url, err);
 }
 
-static void
-vTreeSBSetStashedVTree(duk_context *ctx, VTree *vTree) {
-    duk_push_thread_stash(ctx, ctx);                // [... stash]
-    duk_push_pointer(ctx, (void*)vTree);            // [... stash pointer]
-    duk_put_prop_string(ctx, -2, V_TREE_STASH_KEY); // [... stash]
-    duk_pop(ctx);                                   // [...]
+unsigned
+vTreeScriptBindingsExecTemplateFromCache(duk_context *ctx, VTree *vTree,
+                                DataBatchConfig *dbc,
+                                ComponentArray *allComponents, bool isRenderAll,
+                                const char *url, char *err) {
+    duk_get_prop_string(ctx, -1, dbc->renderWith);
+    duk_load_function(ctx);
+    if (!duk_is_function(ctx, -1)) {
+        putError("Failed to load bytecode.\n");
+        return 0;
+    }
+    return execTemplate(ctx, vTree, dbc, allComponents, isRenderAll, url, err);
 }
 
 static duk_ret_t
@@ -197,4 +137,104 @@ vTreeSBRegisterElement(duk_context *ctx) {
     unsigned newId = vTreeCreateElemNode(vTree, tagName, &children);
     duk_push_number(ctx, (double)newId);
     return 1;
+}
+
+static void
+setStashedTree(duk_context *ctx, VTree *vTree) {
+    duk_push_thread_stash(ctx, ctx);                // [... stash]
+    duk_push_pointer(ctx, (void*)vTree);            // [... stash pointer]
+    duk_put_prop_string(ctx, -2, V_TREE_STASH_KEY); // [... stash]
+    duk_pop(ctx);                                   // [...]
+}
+
+static bool
+execLayout(duk_context *ctx, VTree *vTree, DocumentDataConfig *ddc,
+           const char *url, char *err) {
+    vTreeInit(vTree);
+    documentDataConfigInit(ddc);
+    setStashedTree(ctx, vTree);
+    dataQuerySBSetStashedDocumentDataConfig(ctx, ddc);
+    duk_get_global_string(ctx, "vTree");              // arg1
+    duk_get_global_string(ctx, "documentDataConfig"); // arg2
+    duk_push_string(ctx, url);                        // arg3
+    if (duk_pcall(ctx, 3) != 0) {
+        putError(duk_safe_to_string(ctx, -1));
+        duk_pop(ctx); // pcall result
+        return false;
+    }
+    vTree->rootElemIndex = vTree->elemNodes.length - 1;
+    duk_pop(ctx); // pcall result
+    return true;
+}
+
+static void
+pushComponent(duk_context *ctx, Component *data) {
+    duk_push_object(ctx);                 // [... obj]
+    duk_push_uint(ctx, data->id);         // [... obj uint]
+    duk_put_prop_string(ctx, -2, "id");   // [... obj]
+    duk_push_string(ctx, data->name);     // [... obj string]
+    duk_put_prop_string(ctx, -2, "name"); // [... obj]
+    duk_push_string(ctx, data->json);     // [... obj string]
+    duk_json_decode(ctx, -1);             // [... obj obj]
+    duk_put_prop_string(ctx, -2, "data"); // [... obj]
+}
+
+static bool
+findAndPushSingleComponent(duk_context *ctx, ComponentArray *allComponents,
+                           unsigned dataBatchConfigId) {
+    for (unsigned i = 0; i < allComponents->length; ++i) {
+        if (allComponents->values[i].dataBatchConfigId == dataBatchConfigId) {
+            pushComponent(ctx, &allComponents->values[i]);
+            return true;
+        }
+    }
+    return false;
+}
+
+static bool
+findAndPushComponentArray(duk_context *ctx, ComponentArray *allComponents,
+                          unsigned dataBatchConfigId) {
+    duk_idx_t arrIdx = duk_push_array(ctx);
+    unsigned nth = 0;
+    for (unsigned i = 0; i < allComponents->length; ++i) {
+        if (allComponents->values[i].dataBatchConfigId == dataBatchConfigId) {
+            pushComponent(ctx, &allComponents->values[i]);
+            duk_put_prop_index(ctx, arrIdx, nth);
+            nth += 1;
+        }
+    }
+    return nth > 0;
+}
+
+static unsigned
+execTemplate(duk_context *ctx, VTree *vTree, DataBatchConfig *dbc,
+             ComponentArray *allComponents, bool isRenderAll,
+             const char *url, char *err) {
+    setStashedTree(ctx, vTree);
+    duk_get_global_string(ctx, "vTree"); // arg1
+    const bool found = !isRenderAll      // arg2
+        ? findAndPushSingleComponent(ctx, allComponents, dbc->id)
+        : findAndPushComponentArray(ctx, allComponents, dbc->id);
+    if (!found) { // abort rendering, put <pre>$messageToDev</pre> instead
+        duk_pop_n(ctx, 2); // arg1, function
+        char asStr[dataBatchConfigGetToStringLen(dbc)];
+        dataBatchConfigToString(dbc, asStr);
+        const char *messageTmpl = "'%s' didn't return any data from the database.";
+        const size_t l = strlen(messageTmpl) - 2 + strlen(asStr) + 1;
+        char messageToDev[l];
+        snprintf(messageToDev, l, messageTmpl, asStr);
+        unsigned textRef = vTreeCreateTextNode(vTree, messageToDev);
+        NodeRefArray children;
+        nodeRefArrayInit(&children);
+        nodeRefArrayPush(&children, textRef);
+        return GET_NODEID(vTreeCreateElemNode(vTree, "pre", &children));
+    }
+    duk_push_string(ctx, url);           // arg3
+    if (duk_pcall(ctx, 3) != 0) {
+        putError(duk_safe_to_string(ctx, -1));
+        duk_pop(ctx); // pcall result
+        return 0;
+    }
+    duk_pop(ctx); // pcall result
+    return vTree->elemNodes.values[vTree->elemNodes.length - 1].id;
 }

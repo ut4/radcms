@@ -38,7 +38,8 @@ websiteHandlersHandleCPanelIframeRequest(void *this, const char *method, const c
 }
 
 static bool
-writePageToFile(char *renderedHtml, Page *page, Website *site, char *err) {
+writePageToFile(char *renderedHtml, Page *page, Website *site, void *myPtr,
+                char *err) {
     STR_CONCAT(outDirPath, site->rootDir, "out"); // -> c:/foo/bar/out
     const char* indexPart = "/index.html";
     //
@@ -66,10 +67,10 @@ websiteHandlersHandleGenerateRequest(void *this, const char *method, const char 
     }
     const char *t = "Generated %u pages to '%sout'.";
     char *ret = ALLOCATE_ARR(char, strlen(t) - 4 +
-                                   (log10(site->siteGraph.length) + 1) +
+                                   (log10(site->siteGraph.pages.length) + 1) +
                                    strlen(site->rootDir) +
                                    1);
-    sprintf(ret, t, site->siteGraph.length, site->rootDir);
+    sprintf(ret, t, site->siteGraph.pages.length, site->rootDir);
 #ifdef DEBUG_COUNT_ALLOC
     memoryAddToByteCount(-(strlen(ret) + 1));
 #endif

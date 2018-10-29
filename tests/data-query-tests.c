@@ -55,11 +55,11 @@ testDocumentDataToSqlGeneratesQueryForSingleRenderOne() {
     //
     const bool isRenderAll = false;
     DataBatchConfig *dbc = documentDataConfigAddBatch(&ddc, "Generic", isRenderAll);
-    dataBatchConfigSetWhere(dbc, "name=\"Foo\"");
+    dataBatchConfigSetWhere(dbc, "name='Foo'");
     char *sql = documentDataConfigToSql(&ddc, errBuf);
     assertThatOrGoto(sql != NULL, done, "Should return the sql");
     assertStrEquals(sql, "select `id`,`name`,`json`,`dbcId` from ("
-        "select * from (select `id`,`name`,`json`,1 as `dbcId` from components where name=\"Foo\")"
+        "select * from (select `id`,`name`,`json`,1 as `dbcId` from components where name='Foo')"
     ")");
     //
     done:
@@ -75,17 +75,17 @@ testDocumentDataToSqlGeneratesQueryForMultipleRenderOnes() {
     //
     const bool isRenderAll = false;
     DataBatchConfig *dbc1 = documentDataConfigAddBatch(&ddc, "Generic", isRenderAll);
-    dataBatchConfigSetWhere(dbc1, "name=\"Foo\"");
+    dataBatchConfigSetWhere(dbc1, "name='Foo'");
     DataBatchConfig *dbc2 = documentDataConfigAddBatch(&ddc, "Generic", isRenderAll);
-    dataBatchConfigSetWhere(dbc2, "name=\"Bar\"");
+    dataBatchConfigSetWhere(dbc2, "name='Bar'");
     DataBatchConfig *dbc3 = documentDataConfigAddBatch(&ddc, "Article", isRenderAll);
-    dataBatchConfigSetWhere(dbc3, "name=\"Naz\"");
+    dataBatchConfigSetWhere(dbc3, "name='Naz'");
     char *sql = documentDataConfigToSql(&ddc, errBuf);
     assertThatOrGoto(sql != NULL, done, "Should return the sql");
     assertStrEquals(sql, "select `id`,`name`,`json`,`dbcId` from ("
-        "select * from (select `id`,`name`,`json`,1 as `dbcId` from components where name=\"Foo\") union all "
-        "select * from (select `id`,`name`,`json`,2 as `dbcId` from components where name=\"Bar\") union all "
-        "select * from (select `id`,`name`,`json`,3 as `dbcId` from components where name=\"Naz\")"
+        "select * from (select `id`,`name`,`json`,1 as `dbcId` from components where name='Foo') union all "
+        "select * from (select `id`,`name`,`json`,2 as `dbcId` from components where name='Bar') union all "
+        "select * from (select `id`,`name`,`json`,3 as `dbcId` from components where name='Naz')"
     ")");
     //
     done:
@@ -107,7 +107,7 @@ testDocumentDataToSqlGeneratesQueryForSingleRenderAll() {
         "select * from ("
             "select `id`,`name`,`json`,1 as `dbcId` from components where "
             "`componentTypeId` = (select `id` from componentTypes where `name` "
-            "= \"Article\")"
+            "= 'Article')"
         ")"\
     ")");
     //
@@ -131,12 +131,12 @@ testDocumentDataToSqlGeneratesQueryForMultipleRenderAlls() {
         "select * from ("
             "select `id`,`name`,`json`,1 as `dbcId` from components where "
             "`componentTypeId` = (select `id` from componentTypes where `name` "
-            "= \"Article\")"
+            "= 'Article')"
         ") union all "
         "select * from ("
             "select `id`,`name`,`json`,2 as `dbcId` from components where "
             "`componentTypeId` = (select `id` from componentTypes where `name` "
-            "= \"Other\")"
+            "= 'Other')"
         ")"
     ")");
     //
