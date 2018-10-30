@@ -7,7 +7,7 @@ vTreeInit(VTree *this) {
     textNodeArrayInit(&this->textNodes);
     this->textNodeCounter = 1;
     this->calculatedRenderCharCount = 0;
-    this->rootElemIndex = 0;
+    this->rootElemIndex = -1;
 }
 
 void
@@ -17,7 +17,7 @@ vTreeFreeProps(VTree *this) {
     textNodeArrayFreeProps(&this->textNodes);
     this->textNodeCounter = 1;
     this->calculatedRenderCharCount = 0;
-    this->rootElemIndex = 0;
+    this->rootElemIndex = -1;
 }
 
 unsigned
@@ -70,7 +70,7 @@ doRender(VTree *this, ElemNode *node, char *out) {
 
 char*
 vTreeToHtml(VTree *this, char *err) {
-    if (this->elemNodes.length == 0) {
+    if (this->elemNodes.length == 0 || this->rootElemIndex < 0) {
         putError("Cannot render an empty vTree.\n");
         return NULL;
     }
@@ -126,6 +126,7 @@ doReplaceRef(VTree *this, ElemNode *elem, NodeType nodeType, unsigned nodeId,
     return false;
 }
 
+// @unused
 bool
 vTreeReplaceRef(VTree *this, NodeType nodeType, unsigned nodeId, unsigned with) {
     return doReplaceRef(this, &this->elemNodes.values[this->rootElemIndex],

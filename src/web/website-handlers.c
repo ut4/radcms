@@ -62,7 +62,7 @@ unsigned
 websiteHandlersHandleGenerateRequest(void *this, const char *method, const char *url,
                                      struct MHD_Response **response, char *err) {
     Website *site = (Website*)this;
-    if (!websiteGenerate(site, writePageToFile, err)) {
+    if (!websiteGenerate(site, writePageToFile, NULL, err)) {
         return MHD_HTTP_INTERNAL_SERVER_ERROR;
     }
     const char *t = "Generated %u pages to '%sout'.";

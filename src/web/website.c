@@ -130,49 +130,25 @@ websiteInstall(Website *this, SampleData *data, const char *schemaSql,
     return true;
 }
 
-static bool
-fetchAndRenderBatches(Website *this, VTree *vTree, DocumentDataConfig *ddc,
-                      const char *url, char *err) {
-    ComponentArray components;
-    bool success = false;
-    if (!websiteFetchBatches(this, ddc, &components, err)) {
-        goto done;
-    }
-    DataBatchConfig *cur = &ddc->batches;
-    while (cur) {
-        if (!cur->renderWith) {
-            putError("Invalid DataBatchConfig.\n");
-            goto done;
-        }
-        unsigned templateRootNodeId = vTreeScriptBindingsExecTemplateFromCache(
-            this->dukCtx, vTree, cur, &components, cur->isFetchAll, url, err);
-        if (templateRootNodeId < 1) {
-            goto done;
-        }
-        if (!vTreeReplaceRef(vTree, TYPE_DATA_BATCH_CONFIG, cur->id,
-                             vTreeUtilsMakeNodeRef(TYPE_ELEM, templateRootNodeId))) {
-            goto done;
-        }
-        cur = cur->next;
-    }
-    success = true;
-    done:
-    componentArrayFreeProps(&components);
-    return success;
-}
-
 char*
 pageRender(Website *this, Page *page, const char *url, char *err) {
     duk_push_thread_stash(this->dukCtx, this->dukCtx);
     VTree vTree;
+    vTreeInit(&vTree);
     DocumentDataConfig ddc;
+    documentDataConfigInit(&ddc);
+    ComponentArray components;
+    componentArrayInit(&components);
     char *renderedHtml = NULL;
-    if (!vTreeScriptBindingsExecLayoutFromCache(this->dukCtx,
-        page->layoutFileName, &vTree, &ddc, url, err)) {
+    if (!vTreeScriptBindingsExecLayoutWrapFromCache(this->dukCtx,
+        page->layoutFileName, &ddc, url, err)) {
         goto done;
     }
-    if (ddc.batchCount > 0 && !fetchAndRenderBatches(this, &vTree, &ddc, url,
-                                                     err)) {
+    if (ddc.batchCount > 0 && !websiteFetchBatches(this, &ddc, &components, err)) {
+        goto done;
+    }
+    if (!vTreeScriptBindingsExecLayoutTmpl(this->dukCtx, &vTree,
+        ddc.batchCount > 0 ? &ddc.batches : NULL, &components, err)) {
         goto done;
     }
     renderedHtml = vTreeToHtml(&vTree, err);
@@ -180,6 +156,7 @@ pageRender(Website *this, Page *page, const char *url, char *err) {
     duk_pop(this->dukCtx); // thread stash
     vTreeFreeProps(&vTree);
     documentDataConfigFreeProps(&ddc);
+    componentArrayFreeProps(&components);
     return renderedHtml;
 }
 

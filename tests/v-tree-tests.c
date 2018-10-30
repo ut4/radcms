@@ -55,23 +55,23 @@ testVTreeReplaceRefReplacesRootLevelRef() {
     vTreeInit(&vTree);
     NodeRefArray divContent;
     nodeRefArrayInit(&divContent);
-    unsigned dbcRef = vTreeUtilsMakeNodeRef(TYPE_DATA_BATCH_CONFIG, 1);
-    nodeRefArrayPush(&divContent, dbcRef);
+    unsigned attachedTextRef = vTreeCreateTextNode(&vTree, "foo");
+    unsigned attachedTextId = GET_NODEID(attachedTextRef);
+    nodeRefArrayPush(&divContent, attachedTextRef);
     vTreeCreateElemNode(&vTree, "div", &divContent);
     vTree.rootElemIndex = 0;
     unsigned detachedTextRef = vTreeCreateTextNode(&vTree, "Hello");
     NodeRefArray actualDivsChildren = vTree.elemNodes.values[0].children;
     unsigned refBefore = actualDivsChildren.values[0];
     // 2. Call
-    bool success = vTreeReplaceRef(&vTree, TYPE_DATA_BATCH_CONFIG, 1,
-                                   detachedTextRef);
+    bool success = vTreeReplaceRef(&vTree, TYPE_TEXT, attachedTextId, detachedTextRef);
     assertThatOrGoto(success, done, "Should return succesfully");
     // 3. Assert
     NodeRefArray actualDivsChildrenAfter = vTree.elemNodes.values[0].children;
     unsigned refAfter = actualDivsChildrenAfter.values[0];
     assertThat(refAfter != refBefore, "Should update $oldRef -> $newTextRef");
     assertIntEquals(GET_NODETYPE(refAfter), TYPE_TEXT);
-    assertIntEquals(GET_NODEID(refAfter), 1);
+    assertIntEquals(GET_NODEID(refAfter), GET_NODEID(detachedTextRef));
     //
     done:
     vTreeFreeProps(&vTree);

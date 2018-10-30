@@ -6,12 +6,12 @@
 
 struct DataBatchConfig;
 typedef struct DataBatchConfig DataBatchConfig;
-// Holds a single renderOne|All() configuration.
+// Holds a single fetchOne|All() configuration.
 struct DataBatchConfig {
     char *componentTypeName; // select from components where type = $componentTypeName
     bool isFetchAll;         // true = select multiple records, false = select one record only
     unsigned id;
-    char *renderWith;        // Name of the (JSX-)template file
+    char *tmplVarName;       // Name of the result variable
     char *where;             // WHERE-portion of the query
     DataBatchConfig *next;
 };
@@ -24,7 +24,7 @@ void
 dataBatchConfigFreeProps(DataBatchConfig *this);
 
 void
-dataBatchConfigSetRenderWith(DataBatchConfig *this, const char *renderWith);
+dataBatchConfigSetTmplVarName(DataBatchConfig *this, const char *varName);
 
 void
 dataBatchConfigSetWhere(DataBatchConfig *this, const char *where);
@@ -35,7 +35,7 @@ dataBatchConfigGetToStringLen(DataBatchConfig *this);
 void
 dataBatchConfigToString(DataBatchConfig *this, char *to);
 
-// Holds the renderOne|All() configurations of a single document/layout/vTree.
+// Holds the fetchOne|All() configurations of a single document/layout/vTree.
 typedef struct {
     DataBatchConfig batches; // Linked list
     DataBatchConfig *batchHead;

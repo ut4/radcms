@@ -12,33 +12,13 @@ populateComponent(unsigned id, const char *name, const char *json,
     dataQueryScriptBindingsRegister(ctx)
 
 static void
-testExecLayoutPassesCorrectArguments() {
-    // 1. Setup
-    beforeEach();
-    VTree vTree;
-    DocumentDataConfig ddc;
-    // 2. Call
-    char *myLayout = "function (vTree, documentDataConfig) {"
-                         "vTree !== undefined; documentDataConfig !== undefined;"
-                     "}";
-    bool success = vTreeScriptBindingsCompileAndExecLayout(ctx, myLayout,
-        &vTree, &ddc, "/", errBuf);
-    // 3. Assert
-    assertThat(success, "Should return succesfully");
-    //
-    duk_destroy_heap(ctx);
-    vTreeFreeProps(&vTree);
-    documentDataConfigFreeProps(&ddc);
-}
-
-static void
 testVTreeRegisterElementWithElemAndTextChildren() {
     // 1. Setup
     beforeEach();
     VTree vTree;
-    DocumentDataConfig ddc;
+    vTreeInit(&vTree);
     // 2. Call
-    char *myLayout = "function (vTree, _) {"
+    char *layoutTmpl = "function (vTree) {"
             "vTree.registerElement('div', null, ["               // multiple nodes as children
                 "vTree.registerElement('h2', null,"              // single node as a children
                     "vTree.registerElement('span', null, 'foo')" // text as a children
@@ -46,8 +26,9 @@ testVTreeRegisterElementWithElemAndTextChildren() {
                 "vTree.registerElement('p', null, 'bar')"
             "]);"
         "}";
-    bool success = vTreeScriptBindingsCompileAndExecLayout(ctx, myLayout,
-        &vTree, &ddc, "/", errBuf);
+    if (!dukUtilsCompileStrToFn(ctx, layoutTmpl, errBuf)) {
+        printToStdErr("Failed to compile test script: %s", errBuf); goto done; }
+    bool success = vTreeScriptBindingsExecLayoutTmpl(ctx, &vTree, NULL, NULL, errBuf);
     // 3. Assert
     assertThatOrGoto(success, done, "Should return succesfully");
     assertIntEqualsOrGoto(vTree.elemNodes.length, 4, done);
@@ -84,143 +65,63 @@ testVTreeRegisterElementWithElemAndTextChildren() {
     done:
         duk_destroy_heap(ctx);
         vTreeFreeProps(&vTree);
-        documentDataConfigFreeProps(&ddc);
 }
 
-void
-testVTreeRegisterElementWithDataConfigChildren() {
+static void
+testDocumentDataConfigFetchOneChains() {
     //
     beforeEach();
-    VTree vTree;
     DocumentDataConfig ddc;
-    char *layout = "function (vTree, documentDataConfig) {"
-        "vTree.registerElement('div', null, ["
-            "vTree.registerElement('div', null, "
-                "documentDataConfig.renderOne('Article')" // single dbc as a children
-            "),"
-            "vTree.registerElement('div', null, ["        // multiple dbc's as children
-                "documentDataConfig.renderOne('Aa'),"
-                "documentDataConfig.renderOne('Bb')"
-            "]),"
-        "]);"
+    documentDataConfigInit(&ddc);
+    char *layoutWrap = "function (documentDataConfig) {"
+        "documentDataConfig.fetchOne('Foo').where('bar=1').to('varname');"
+        "return function(){};"
     "}";
     //
-    bool success = vTreeScriptBindingsCompileAndExecLayout(ctx, layout, &vTree,
+    bool success = vTreeScriptBindingsCompileAndExecLayoutWrap(ctx, layoutWrap,
         &ddc, "/", errBuf);
-    assertThatOrGoto(success, done, "Should return succesfully");
-    DataBatchConfig *actualBatch1 = &ddc.batches;
-    assertThatOrGoto(actualBatch1->componentTypeName != NULL, done,
-                     "Should populate the 1st batch");
-    assertStrEquals(actualBatch1->componentTypeName, "Article");
-    DataBatchConfig *actualBatch2 = actualBatch1->next;
-    assertThatOrGoto(actualBatch2 != NULL, done, "Should add the second batch");
-    assertThatOrGoto(actualBatch2->componentTypeName != NULL, done,
-                     "Should populate the 2nd batch");
-    assertStrEquals(actualBatch2->componentTypeName, "Aa");
-    DataBatchConfig *actualBatch3 = actualBatch2->next;
-    assertThatOrGoto(actualBatch3 != NULL, done, "Should add the third batch");
-    assertThatOrGoto(actualBatch3->componentTypeName != NULL, done,
-                     "Should populate the 3nd batch");
-    assertStrEquals(actualBatch3->componentTypeName, "Bb");
-    //
-    done:
-        duk_destroy_heap(ctx);
-        vTreeFreeProps(&vTree);
-        documentDataConfigFreeProps(&ddc);
-}
-
-void
-testVTreeRegisterElementWithMixedChildren() {
-    //
-    beforeEach();
-    VTree vTree;
-    DocumentDataConfig ddc;
-    char *layout = "function (vTree, documentDataConfig) {"
-        "vTree.registerElement('div', null, ["
-            "documentDataConfig.renderOne('Aa'),"
-            "vTree.registerElement('p', null, 'foo')"
-        "]);"
-    "}";
-    //
-    bool success = vTreeScriptBindingsCompileAndExecLayout(ctx, layout, &vTree,
-        &ddc, "/", errBuf);
-    assertThatOrGoto(success, done, "Should return succesfully");
-    DataBatchConfig *actualBatch = &ddc.batches;
-    assertThatOrGoto(actualBatch->componentTypeName != NULL, done,
-                     "Should populate the 1st batch");
-    assertStrEquals(actualBatch->componentTypeName, "Aa");
-    //
-    ElemNode *p = vTreeFindElemNodeByTagName(&vTree, "p");
-    assertThatOrGoto(p != NULL, done, "Should register [..., <p>]");
-    assertIntEqualsOrGoto(p->children.length, 1, done);
-    TextNode *pText = vTreeFindTextNode(&vTree, p->children.values[0]);
-    assertThatOrGoto(pText != NULL, done, "Should register <p>'s textNode");
-    assertStrEquals(pText->chars, "foo");
-    //
-    done:
-        duk_destroy_heap(ctx);
-        vTreeFreeProps(&vTree);
-        documentDataConfigFreeProps(&ddc);
-}
-
-void
-testDocumentDataConfigRenderOneChains() {
-    //
-    beforeEach();
-    VTree vTree;
-    DocumentDataConfig ddc;
-    char *layout = "function (vTree) {"
-        "vTree.registerElement('div', null, "
-            "documentDataConfig.renderOne('Foo').using('a.tmpl').where('bar=1')"
-        ");"
-    "}";
-    //
-    bool success = vTreeScriptBindingsCompileAndExecLayout(ctx, layout, &vTree,
-        &ddc, "/", errBuf);
+        if (!success) { printf("err "); printf(errBuf); }
     assertThatOrGoto(success, done, "Should return succesfully");
     DataBatchConfig *actualBatch = &ddc.batches;
     assertThatOrGoto(actualBatch->componentTypeName != NULL, done,
                      "componentTypeName != NULL");
     assertStrEquals(actualBatch->componentTypeName, "Foo");
-    assertThatOrGoto(actualBatch->renderWith != NULL, done,
-                     "renderWith != NULL");
-    assertStrEquals(actualBatch->renderWith, "a.tmpl");
+    assertThatOrGoto(actualBatch->tmplVarName != NULL, done,
+                     "tmplVarName != NULL");
+    assertStrEquals(actualBatch->tmplVarName, "varname");
     assertThatOrGoto(actualBatch->where != NULL, done,
                      "where != NULL");
     assertStrEquals(actualBatch->where, "bar=1");
     //
     done:
         duk_destroy_heap(ctx);
-        vTreeFreeProps(&vTree);
         documentDataConfigFreeProps(&ddc);
 }
 
-void
-testDocumentDataConfigRenderAllChains() {
+static void
+testDocumentDataConfigFetchAllChains() {
     //
     beforeEach();
-    VTree vTree;
     DocumentDataConfig ddc;
-    char *layout = "function (vTree) {"
-        "vTree.registerElement('div', null, "
-            "documentDataConfig.renderAll('Bar').using('b.tmpl')"
-        ");"
+    documentDataConfigInit(&ddc);
+    char *layoutWrap = "function (documentDataConfig) {"
+        "documentDataConfig.fetchAll('Bar').to('myVar');"
+        "return function(){};"
     "}";
     //
-    bool success = vTreeScriptBindingsCompileAndExecLayout(ctx, layout, &vTree,
+    bool success = vTreeScriptBindingsCompileAndExecLayoutWrap(ctx, layoutWrap,
         &ddc, "/", errBuf);
     assertThatOrGoto(success, done, "Should return succesfully");
     DataBatchConfig *actualBatch = &ddc.batches;
     assertThatOrGoto(actualBatch->componentTypeName != NULL, done,
                      "componentTypeName != NULL");
     assertStrEquals(actualBatch->componentTypeName, "Bar");
-    assertThatOrGoto(actualBatch->renderWith != NULL, done,
-                     "renderWith != NULL");
-    assertStrEquals(actualBatch->renderWith, "b.tmpl");
+    assertThatOrGoto(actualBatch->tmplVarName != NULL, done,
+                     "tmplVarName != NULL");
+    assertStrEquals(actualBatch->tmplVarName, "myVar");
     //
     done:
         duk_destroy_heap(ctx);
-        vTreeFreeProps(&vTree);
         documentDataConfigFreeProps(&ddc);
 }
 
@@ -229,21 +130,23 @@ testExecLayoutRunsMultipleLayoutsWithoutConflict() {
     // 1. Setup
     beforeEach();
     VTree vTree1;
+    vTreeInit(&vTree1);
     VTree vTree2;
-    DocumentDataConfig ddc1;
-    DocumentDataConfig ddc2;
-    char *layout1 = "function (vTree, _) {"
+    vTreeInit(&vTree2);
+    char *layoutTmpl1 = "function (vTree) {"
         " vTree.registerElement('div', null, 'foo');"
     "}";
-    char *layout2 = "function (vTree, _) {"
+    char *layoutTmpl2 = "function (vTree) {"
         " vTree.registerElement('span', null, 'bar');"
     "}";
     // 2. Evaluate two layouts and vTrees
-    bool success1 = vTreeScriptBindingsCompileAndExecLayout(ctx, layout1,
-        &vTree1, &ddc1, "/", errBuf);
+    if (!dukUtilsCompileStrToFn(ctx, layoutTmpl1, errBuf)) {
+        printToStdErr("Failed to compile test script: %s", errBuf); goto done; }
+    bool success1 = vTreeScriptBindingsExecLayoutTmpl(ctx, &vTree1, NULL, NULL, errBuf);
     assertThatOrGoto(success1, done, "Should return successfully on layout1");
-    bool success2 = vTreeScriptBindingsCompileAndExecLayout(ctx, layout2,
-        &vTree2, &ddc2, "/", errBuf);
+    if (!dukUtilsCompileStrToFn(ctx, layoutTmpl2, errBuf)) {
+        printToStdErr("Failed to compile test script: %s", errBuf); goto done; }
+    bool success2 = vTreeScriptBindingsExecLayoutTmpl(ctx, &vTree2, NULL, NULL, errBuf);
     assertThatOrGoto(success2, done, "Should return successfully on layout2");
     // 3. Assert that vTrees contain their own nodes only
     assertIntEqualsOrGoto(vTree1.elemNodes.length, 1, done);
@@ -269,44 +172,45 @@ testExecLayoutRunsMultipleLayoutsWithoutConflict() {
         duk_destroy_heap(ctx);
         vTreeFreeProps(&vTree1);
         vTreeFreeProps(&vTree2);
-        documentDataConfigFreeProps(&ddc1);
-        documentDataConfigFreeProps(&ddc2);
 }
 
-void
+static void
 testVTreeRegisterElementValidatesItsArguments() {
     //
     beforeEach();
     vTreeScriptBindingsRegister(ctx);
     VTree vTree1;
+    vTreeInit(&vTree1);
     VTree vTree2;
+    vTreeInit(&vTree2);
     VTree vTree3;
-    DocumentDataConfig ddc1;
-    DocumentDataConfig ddc2;
-    DocumentDataConfig ddc3;
-    char *layout = "function (vTree, _) {"
+    vTreeInit(&vTree3);
+    char *layoutTmpl1 = "function (vTree, _) {"
         " vTree.registerElement();"
     "}";
-    char *layout2 = "function (vTree, _) {"
+    char *layoutTmpl2 = "function (vTree, _) {"
         " vTree.registerElement('p', null, true);"
     "}";
-    char *layout3 = "function (vTree, _) {"
+    char *layoutTmpl3 = "function (vTree, _) {"
         " vTree.registerElement('p', null, []);"
     "}";
     //
-    bool success1 = vTreeScriptBindingsCompileAndExecLayout(ctx, layout,
-        &vTree1, &ddc1, "/", errBuf);
+    if (!dukUtilsCompileStrToFn(ctx, layoutTmpl1, errBuf)) {
+        printToStdErr("Failed to compile test script: %s", errBuf); goto done; }
+    bool success1 = vTreeScriptBindingsExecLayoutTmpl(ctx, &vTree1, NULL, NULL, errBuf);
     assertThatOrGoto(!success1, done, "Should return false");
     assertStrEquals(errBuf, "TypeError: string required, found undefined (stack index 0)");
     //
-    bool success2 = vTreeScriptBindingsCompileAndExecLayout(ctx, layout2,
-        &vTree2, &ddc2, "/", errBuf);
+    if (!dukUtilsCompileStrToFn(ctx, layoutTmpl2, errBuf)) {
+        printToStdErr("Failed to compile test script: %s", errBuf); goto done; }
+    bool success2 = vTreeScriptBindingsExecLayoutTmpl(ctx, &vTree2, NULL, NULL, errBuf);
     assertThatOrGoto(!success2, done, "Should return false");
     assertStrEquals(errBuf, "TypeError: 3rd arg must be \"str\", <nodeRef>, "
                     "<dataConfig>, or [<nodeRef>|<dataConfig>...].\n");
     //
-    bool success3 = vTreeScriptBindingsCompileAndExecLayout(ctx, layout3,
-        &vTree3, &ddc3, "/", errBuf);
+    if (!dukUtilsCompileStrToFn(ctx, layoutTmpl3, errBuf)) {
+        printToStdErr("Failed to compile test script: %s", errBuf); goto done; }
+    bool success3 = vTreeScriptBindingsExecLayoutTmpl(ctx, &vTree3, NULL, NULL, errBuf);
     assertThatOrGoto(!success3, done, "Should return false");
     assertStrEquals(errBuf, "TypeError: Child-array can't be empty.\n");
     //
@@ -315,101 +219,128 @@ testVTreeRegisterElementValidatesItsArguments() {
         vTreeFreeProps(&vTree1);
         vTreeFreeProps(&vTree2);
         vTreeFreeProps(&vTree3);
-        documentDataConfigFreeProps(&ddc1);
-        documentDataConfigFreeProps(&ddc2);
-        documentDataConfigFreeProps(&ddc3);
 }
 
 static void
-testExecRenderOneTemplatePassesCorrectArguments() {
+testExecLayoutTmplProvidesFetchOnesInVariables() {
     // 1. Setup
     beforeEach();
     VTree vTree;
     vTreeInit(&vTree);
+    DocumentDataConfig ddc;
+    documentDataConfigInit(&ddc);
     ComponentArray cmps;
     componentArrayInit(&cmps);
-    DataBatchConfig dbcOfThisTemplate;
-    dbcOfThisTemplate.id = 3;
-    unsigned dbcIdOfSomeOtherBatch = 453;
-    Component tmplComponent;
-    Component someOtherComponent;
-    populateComponent(1, "foo", "{\"prop\":2}", dbcOfThisTemplate.id, &tmplComponent);
-    populateComponent(2, "bar", "{\"fus\":45}", dbcIdOfSomeOtherBatch, &someOtherComponent);
-    componentArrayPush(&cmps, &tmplComponent);
-    componentArrayPush(&cmps, &someOtherComponent);
+    bool isFetchAll = false;
+    DataBatchConfig *dbc1 = documentDataConfigAddBatch(&ddc, "Foo", isFetchAll);
+    dataBatchConfigSetWhere(dbc1, "gos=foo");
+    dataBatchConfigSetTmplVarName(dbc1, "var1");
+    DataBatchConfig *dbc2 = documentDataConfigAddBatch(&ddc, "Foo", isFetchAll);
+    dataBatchConfigSetWhere(dbc2, "gos=bar");
+    dataBatchConfigSetTmplVarName(dbc2, "var2");
+    //
+    Component component1;
+    Component component2;
+    populateComponent(1, "foo", "{\"prop\":2.5}", dbc1->id, &component1);
+    populateComponent(2, "bar", "{\"fus\":4.5}", dbc2->id, &component2);
+    componentArrayPush(&cmps, &component1);
+    componentArrayPush(&cmps, &component2);
     // 2. Call
-    char *myTemplate = "function (vTree, cmp) {"
+    char *layoutTmpl = "function (vTree, var1, var2) {"
                            "vTree.registerElement(\"fos\", null, "
-                               "cmp.id + ' ' + cmp.name + ' ' + cmp.data.prop"
+                               "var1.prop + ' ' + var1.cmp.id + ' ' + var1.cmp.name + ' | ' +"
+                               "var2.fus + ' ' + var2.cmp.id + ' ' + var2.cmp.name"
                            ")"
                        "}";
-    bool isRenderAll = false;
-    unsigned nodeId = vTreeScriptBindingsCompileAndExecTemplate(ctx, myTemplate,
-        &vTree, &dbcOfThisTemplate, &cmps, isRenderAll, "/", errBuf);
+    if (!dukUtilsCompileStrToFn(ctx, layoutTmpl, errBuf)) {
+        printToStdErr("Failed to compile test script: %s", errBuf); goto done; }
+    bool success = vTreeScriptBindingsExecLayoutTmpl(ctx, &vTree, &ddc.batches,
+                                                     &cmps, errBuf);
     // 3. Assert
-    assertThatOrGoto(nodeId == 1, done, "Should return the id of the root node");
-    assertStrEquals(vTree.textNodes.values[0].chars, "1 foo 2");
+    assertThatOrGoto(success, done, "Should return succesfully");
+    assertThatOrGoto(vTree.textNodes.length == 1, done,
+        "Sanity textNodes.length==1");
+    assertThatOrGoto(vTree.textNodes.values[0].chars!=NULL, done,
+        "Sanity textNodes[0].chars!=NULL");
+    assertStrEquals(vTree.textNodes.values[0].chars, "2.5 1 foo | 4.5 2 bar");
     //
     done:
     duk_destroy_heap(ctx);
     vTreeFreeProps(&vTree);
+    documentDataConfigFreeProps(&ddc);
     componentArrayFreeProps(&cmps);
 }
 
 static void
-testExecRenderAllTemplatePassesCorrectArguments() {
+testExecLayoutTmplProvidesFetchAllsInVariables() {
     // 1. Setup
     beforeEach();
     VTree vTree;
     vTreeInit(&vTree);
+    DocumentDataConfig ddc;
+    documentDataConfigInit(&ddc);
     ComponentArray cmps;
     componentArrayInit(&cmps);
-    DataBatchConfig dbcOfThisTemplate;
-    dbcOfThisTemplate.id = 3;
-    unsigned dbcIdOfSomeOtherBatch = 453;
-    Component tmplComponent1;
-    Component tmplComponent2;
-    Component someOtherComponent;
-    populateComponent(1, "foo", "{\"prop\":2}", dbcOfThisTemplate.id, &tmplComponent1);
-    populateComponent(2, "bar", "{\"prop\":3}", dbcOfThisTemplate.id, &tmplComponent2);
-    populateComponent(3, "baz", "{\"fus\":45}", dbcIdOfSomeOtherBatch, &someOtherComponent);
-    componentArrayPush(&cmps, &tmplComponent1);
-    componentArrayPush(&cmps, &someOtherComponent);
-    componentArrayPush(&cmps, &tmplComponent2);
+    bool isFetchAll = true;
+    DataBatchConfig *dbc1 = documentDataConfigAddBatch(&ddc, "Foo", isFetchAll);
+    dataBatchConfigSetTmplVarName(dbc1, "foos");
+    DataBatchConfig *dbc2 = documentDataConfigAddBatch(&ddc, "Bar", isFetchAll);
+    dataBatchConfigSetTmplVarName(dbc1, "bars");
+    //
+    Component foo1;
+    Component foo2;
+    Component bar1;
+    Component bar2;
+    populateComponent(1, "foo", "{\"prop\":5.5}", dbc1->id, &foo1);
+    populateComponent(2, "bar", "{\"prop\":6.6}", dbc1->id, &foo2);
+    populateComponent(3, "baz", "{\"fus\":7.7}", dbc2->id, &bar1);
+    populateComponent(4, "naz", "{\"fus\":8.8}", dbc2->id, &bar2);
+    componentArrayPush(&cmps, &foo1);
+    componentArrayPush(&cmps, &foo2);
+    componentArrayPush(&cmps, &bar1);
+    componentArrayPush(&cmps, &bar2);
     // 2. Call
-    char *myTemplate = "function (vTree, cmps) {"
+    char *layoutTmpl = "function (vTree, foos, bars) {"
                            "vTree.registerElement(\"fos\", null, "
-                               "cmps.map(function (cmp) {"
-                                  "return cmp.id + ' ' + cmp.name + ' ' + "
-                                          "cmp.data.prop"
+                               "foos.map(function (foo) {"
+                                  "return foo.prop + ' ' + foo.cmp.id + ' ' + "
+                                          "foo.cmp.name"
+                               "}).join(', ') + ' | ' +"
+                               "bars.map(function (bar) {"
+                                  "return bar.fus + ' ' + bar.cmp.id + ' ' + "
+                                          "bar.cmp.name"
                                "}).join(', ')"
                            ")"
                        "}";
-    bool isRenderAll = true;
-    unsigned nodeId = vTreeScriptBindingsCompileAndExecTemplate(ctx, myTemplate,
-        &vTree, &dbcOfThisTemplate, &cmps, isRenderAll, "/", errBuf);
+    if (!dukUtilsCompileStrToFn(ctx, layoutTmpl, errBuf)) {
+        printToStdErr("Failed to compile test script: %s", errBuf); goto done; }
+    bool success = vTreeScriptBindingsExecLayoutTmpl(ctx, &vTree, &ddc.batches,
+                                                     &cmps, errBuf);
     // 3. Assert
-    assertThatOrGoto(nodeId == 1, done, "Should return the id of the root node");
-    assertStrEquals(vTree.textNodes.values[0].chars, "1 foo 2, 2 bar 3");
+    assertThatOrGoto(success, done, "Should return succesfully");
+    assertThatOrGoto(vTree.textNodes.length == 1, done,
+        "Sanity textNodes.length==1");
+    assertThatOrGoto(vTree.textNodes.values[0].chars!=NULL, done,
+        "Sanity textNodes[0].chars!=NULL");
+    assertStrEquals(vTree.textNodes.values[0].chars,
+        "5.5 1 foo, 6.6 2 bar | 7.7 3 baz, 8.8 4 naz");
     //
     done:
     duk_destroy_heap(ctx);
     vTreeFreeProps(&vTree);
+    documentDataConfigFreeProps(&ddc);
     componentArrayFreeProps(&cmps);
 }
 
 void
 vTreeScriptBindingsTestsRun() {
-    testExecLayoutPassesCorrectArguments();
     testVTreeRegisterElementWithElemAndTextChildren();
-    testVTreeRegisterElementWithDataConfigChildren();
-    testVTreeRegisterElementWithMixedChildren();
-    testDocumentDataConfigRenderOneChains();
-    testDocumentDataConfigRenderAllChains();
+    testDocumentDataConfigFetchOneChains();
+    testDocumentDataConfigFetchAllChains();
     testExecLayoutRunsMultipleLayoutsWithoutConflict();
     testVTreeRegisterElementValidatesItsArguments();
-    testExecRenderOneTemplatePassesCorrectArguments();
-    testExecRenderAllTemplatePassesCorrectArguments();
+    testExecLayoutTmplProvidesFetchOnesInVariables();
+    testExecLayoutTmplProvidesFetchAllsInInVariables();
 }
 
 static void

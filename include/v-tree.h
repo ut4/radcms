@@ -77,7 +77,7 @@ typedef struct {
     TextNodeArray textNodes;
     unsigned textNodeCounter;
     unsigned calculatedRenderCharCount;
-    unsigned rootElemIndex;
+    int rootElemIndex;
 } VTree;
 
 void

@@ -47,14 +47,14 @@ testDocumentDataConfigAddsBatches() {
 }
 
 static void
-testDocumentDataToSqlGeneratesQueryForSingleRenderOne() {
+testDocumentDataToSqlGeneratesQueryForSingleFetchOne() {
     //
     DocumentDataConfig ddc;
     documentDataConfigInit(&ddc);
     char errBuf[ERR_BUF_LEN]; errBuf[0] = '\0';
     //
-    const bool isRenderAll = false;
-    DataBatchConfig *dbc = documentDataConfigAddBatch(&ddc, "Generic", isRenderAll);
+    const bool isFetchAll = false;
+    DataBatchConfig *dbc = documentDataConfigAddBatch(&ddc, "Generic", isFetchAll);
     dataBatchConfigSetWhere(dbc, "name='Foo'");
     char *sql = documentDataConfigToSql(&ddc, errBuf);
     assertThatOrGoto(sql != NULL, done, "Should return the sql");
@@ -67,18 +67,18 @@ testDocumentDataToSqlGeneratesQueryForSingleRenderOne() {
 }
 
 static void
-testDocumentDataToSqlGeneratesQueryForMultipleRenderOnes() {
+testDocumentDataToSqlGeneratesQueryForMultipleFetchOnes() {
     //
     DocumentDataConfig ddc;
     documentDataConfigInit(&ddc);
     char errBuf[ERR_BUF_LEN]; errBuf[0] = '\0';
     //
-    const bool isRenderAll = false;
-    DataBatchConfig *dbc1 = documentDataConfigAddBatch(&ddc, "Generic", isRenderAll);
+    const bool isFetchAll = false;
+    DataBatchConfig *dbc1 = documentDataConfigAddBatch(&ddc, "Generic", isFetchAll);
     dataBatchConfigSetWhere(dbc1, "name='Foo'");
-    DataBatchConfig *dbc2 = documentDataConfigAddBatch(&ddc, "Generic", isRenderAll);
+    DataBatchConfig *dbc2 = documentDataConfigAddBatch(&ddc, "Generic", isFetchAll);
     dataBatchConfigSetWhere(dbc2, "name='Bar'");
-    DataBatchConfig *dbc3 = documentDataConfigAddBatch(&ddc, "Article", isRenderAll);
+    DataBatchConfig *dbc3 = documentDataConfigAddBatch(&ddc, "Article", isFetchAll);
     dataBatchConfigSetWhere(dbc3, "name='Naz'");
     char *sql = documentDataConfigToSql(&ddc, errBuf);
     assertThatOrGoto(sql != NULL, done, "Should return the sql");
@@ -93,14 +93,14 @@ testDocumentDataToSqlGeneratesQueryForMultipleRenderOnes() {
 }
 
 static void
-testDocumentDataToSqlGeneratesQueryForSingleRenderAll() {
+testDocumentDataToSqlGeneratesQueryForSingleFetchAll() {
     //
     DocumentDataConfig ddc;
     documentDataConfigInit(&ddc);
     char errBuf[ERR_BUF_LEN]; errBuf[0] = '\0';
     //
-    const bool isRenderAll = true;
-    documentDataConfigAddBatch(&ddc, "Article", isRenderAll);
+    const bool isFetchAll = true;
+    documentDataConfigAddBatch(&ddc, "Article", isFetchAll);
     char *sql = documentDataConfigToSql(&ddc, errBuf);
     assertThatOrGoto(sql != NULL, done, "Should return the sql");
     assertStrEquals(sql, "select `id`,`name`,`json`,`dbcId` from ("
@@ -116,15 +116,15 @@ testDocumentDataToSqlGeneratesQueryForSingleRenderAll() {
 }
 
 static void
-testDocumentDataToSqlGeneratesQueryForMultipleRenderAlls() {
+testDocumentDataToSqlGeneratesQueryForMultipleFetchAlls() {
     //
     DocumentDataConfig ddc;
     documentDataConfigInit(&ddc);
     char errBuf[ERR_BUF_LEN]; errBuf[0] = '\0';
     //
-    const bool isRenderAll = true;
-    documentDataConfigAddBatch(&ddc, "Article", isRenderAll);
-    documentDataConfigAddBatch(&ddc, "Other", isRenderAll);
+    const bool isFetchAll = true;
+    documentDataConfigAddBatch(&ddc, "Article", isFetchAll);
+    documentDataConfigAddBatch(&ddc, "Other", isFetchAll);
     char *sql = documentDataConfigToSql(&ddc, errBuf);
     assertThatOrGoto(sql != NULL, done, "Should return the sql");
     assertStrEquals(sql, "select `id`,`name`,`json`,`dbcId` from ("
@@ -147,8 +147,8 @@ testDocumentDataToSqlGeneratesQueryForMultipleRenderAlls() {
 void
 dataQueryTestsRun() {
     testDocumentDataConfigAddsBatches();
-    testDocumentDataToSqlGeneratesQueryForSingleRenderOne();
-    testDocumentDataToSqlGeneratesQueryForMultipleRenderOnes();
-    testDocumentDataToSqlGeneratesQueryForSingleRenderAll();
-    testDocumentDataToSqlGeneratesQueryForMultipleRenderAlls();
+    testDocumentDataToSqlGeneratesQueryForSingleFetchOne();
+    testDocumentDataToSqlGeneratesQueryForMultipleFetchOnes();
+    testDocumentDataToSqlGeneratesQueryForSingleFetchAll();
+    testDocumentDataToSqlGeneratesQueryForMultipleFetchAlls();
 }

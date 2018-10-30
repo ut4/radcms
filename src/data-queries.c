@@ -5,7 +5,7 @@ documentDataConfigInit(DocumentDataConfig *this) {
     this->batches.componentTypeName = NULL;
     this->batches.isFetchAll = false;
     this->batches.id = 0;
-    this->batches.renderWith = NULL;
+    this->batches.tmplVarName = NULL;
     this->batches.where = NULL;
     this->batches.next = NULL;
     this->batchHead = NULL;
@@ -134,7 +134,7 @@ dataBatchConfigInit(DataBatchConfig *this, const char *componentTypeName,
     this->componentTypeName = copyString(componentTypeName);
     this->isFetchAll = isFetchAll;
     this->id = id;
-    this->renderWith = NULL;
+    this->tmplVarName = NULL;
     this->where = NULL;
     this->next = NULL;
 }
@@ -142,13 +142,13 @@ dataBatchConfigInit(DataBatchConfig *this, const char *componentTypeName,
 void
 dataBatchConfigFreeProps(DataBatchConfig *this) {
     FREE_STR(this->componentTypeName);
-    if (this->renderWith) FREE_STR(this->renderWith);
+    if (this->tmplVarName) FREE_STR(this->tmplVarName);
     if (this->where) FREE_STR(this->where);
 }
 
 void
-dataBatchConfigSetRenderWith(DataBatchConfig *this, const char *renderWith) {
-    this->renderWith = copyString(renderWith);
+dataBatchConfigSetTmplVarName(DataBatchConfig *this, const char *varName) {
+    this->tmplVarName = copyString(varName);
 }
 
 void
@@ -158,17 +158,18 @@ dataBatchConfigSetWhere(DataBatchConfig *this, const char *where) {
 
 size_t
 dataBatchConfigGetToStringLen(DataBatchConfig *this) {
-    return strlen("render(\"\")") +
+    return strlen("fetch(\"\")") +
            3 + // All|One
            strlen(this->componentTypeName) +
            (this->where ? strlen(".where(\"\")") + strlen(this->where) : 0) +
+           (this->tmplVarName ? strlen(".to(\"\")") + strlen(this->tmplVarName) : 0) +
            1; // \0
 }
 
 void
 dataBatchConfigToString(DataBatchConfig *this, char *to) {
     to[0] = '\0';
-    sprintf(to, "render%s(\"%s\")",
+    sprintf(to, "fetch%s(\"%s\")",
         this->isFetchAll ? "All" : "One",
         this->componentTypeName
     );
@@ -177,7 +178,9 @@ dataBatchConfigToString(DataBatchConfig *this, char *to) {
         strcat(to, this->where);
         strcat(to, "\")");
     }
-    strcat(to, ".using(\"");
-    strcat(to, this->renderWith);
-    strcat(to, "\")");
+    if (this->tmplVarName) {
+        strcat(to, ".to(\"");
+        strcat(to, this->tmplVarName);
+        strcat(to, "\")");
+    }
 }

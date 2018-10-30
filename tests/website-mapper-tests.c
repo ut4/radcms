@@ -125,10 +125,11 @@ testWebsiteGenerateProcessesPagesWithNoDbcs(Db *db, char *err) {
     textNodeArrayInit(&log);
     Page *p1 = wmtUtilsPutPage(&site.siteGraph.pages, 1, "/", "a.js", 0);
     Page *p2 = wmtUtilsPutPage(&site.siteGraph.pages, 2, "/foo", "b.js", 0);
-    if (!wmtUtilsPutToCache(ctx, "function(v){v.registerElement('p',null,'a')}",
+    if (!wmtUtilsPutToCache(ctx, "function(){return function(v){v.registerElement('p',null,'a'); };}",
                             p1->layoutFileName, err)) { printToStdErr(err); goto done; }
-    if (!wmtUtilsPutToCache(ctx, "function(v){v.registerElement('p',null,'b')}",
+    if (!wmtUtilsPutToCache(ctx, "function(){return function(v){v.registerElement('p',null,'b'); };}",
                             p2->layoutFileName, err)) { printToStdErr(err); goto done; }
+                            printf("generating\n");
     //
     websiteGenerate(&site, logPageWriteCall, (void*)&log, err);
     //
