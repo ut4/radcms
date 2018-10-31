@@ -1,10 +1,5 @@
 #include "../include/static-data.h"
 
-#define FOOTER_TMPL "function (vTree, cmp, url) {\n" \
-                    "    var e = vTree.registerElement;\n" \
-                    "    e('footer', null, cmp.data.content);\n" \
-                    "}"
-
 SampleData sampleData[] = {
     {
         .name="minimal",
@@ -34,8 +29,8 @@ SampleData sampleData[] = {
     },
     {
         .name="blog",
-        .numFiles=2,
-        .files=(SampleDataFile[2]){
+        .numFiles=3,
+        .files=(SampleDataFile[3]){
             {"main-layout.js", "function (ddc, url) {\n"
                                "    ddc.fetchAll('Article').to('arts');\n"
                                "    ddc.fetchOne('Generic').where('name=\\'footer\\'').to('footer');\n"
@@ -46,20 +41,24 @@ SampleData sampleData[] = {
                                "                e('title', null, 'Hello')\n"
                                "            ),\n"
                                "            e('body', null, [\n"
-                               "                e('div', null, arts.map(function (art) {\n"
-                               "                    return e('article', null, [\n"
-                               "                        e('h2', null, art.title),\n"
-                               "                        e('p', null,\n"
-                               "                            art.body.substr(0, 6) + '... ' +\n"
-                               "                            '<a href=\"' + art.cmp.name + '\">Click here man</a>'\n"
-                               "                        )\n"
-                               "                    ]);\n"
-                               "                })),\n"
+                               "                e('div', null, vTree.partial('articles-listing.js', arts)),\n"
                                "                e('footer', null, footer.content)\n"
                                "            ])\n"
                                "        ]);\n"
                                "    };\n"
                                "}"},
+            {"articles-listing.js", "function (vTree, articles) {\n"
+                                   "    var e = vTree.registerElement;\n"
+                                   "    return e('div', null, articles.map(function (article) {\n"
+                                   "        return e('article', null, [\n"
+                                   "            e('h2', null, article.title),\n"
+                                   "            e('p', null,\n"
+                                   "                article.body.substr(0, 6) + '... ' +\n"
+                                   "                '<a href=\"' + article.cmp.name + '\">Click here man</a>'\n"
+                                   "            )\n"
+                                   "        ]);\n"
+                                   "    }));\n"
+                                   "}"},
             {"article-layout.js", "function (ddc, url) {\n"
                                "    ddc.fetchOne('Article').where('name=\\''+url.substr(1)+'\\'').to('art');\n"
                                "    ddc.fetchOne('Generic').where('name=\\'footer\\'').to('footer');\n"
@@ -81,7 +80,7 @@ SampleData sampleData[] = {
                                "}"}
         },
         .installSql="insert into websites values"
-                    "  (1, '4|2|1/|0|main-layout.js|2/art1|0|article-layout.js|3/art2|0|article-layout.js|4/art3|0|article-layout.js|main-layout.js|article-layout.js');"
+                    "  (1, '4|3|1/|0|main-layout.js|2/art1|0|article-layout.js|3/art2|0|article-layout.js|4/art3|0|article-layout.js|main-layout.js|articles-listing.js|article-layout.js');"
                     "insert into componentTypes values"
                     "  (1, 'Generic'),"
                     "  (2, 'Article');"

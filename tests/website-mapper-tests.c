@@ -2,7 +2,6 @@
 
 static Page *wmtUtilsPutPage(PageArray *to, unsigned id, const char *url,
                             const char *layoutFileName, unsigned parentId);
-static bool wmtUtilsPutToCache(duk_context *ctx, char *code, char *key, char *err);
 
 static void
 testWebsiteFetchAndParseSiteGraphDoesWhatItSays(Db *db, char *err) {
@@ -125,11 +124,12 @@ testWebsiteGenerateProcessesPagesWithNoDbcs(Db *db, char *err) {
     textNodeArrayInit(&log);
     Page *p1 = wmtUtilsPutPage(&site.siteGraph.pages, 1, "/", "a.js", 0);
     Page *p2 = wmtUtilsPutPage(&site.siteGraph.pages, 2, "/foo", "b.js", 0);
-    if (!wmtUtilsPutToCache(ctx, "function(){return function(v){v.registerElement('p',null,'a'); };}",
-                            p1->layoutFileName, err)) { printToStdErr(err); goto done; }
-    if (!wmtUtilsPutToCache(ctx, "function(){return function(v){v.registerElement('p',null,'b'); };}",
-                            p2->layoutFileName, err)) { printToStdErr(err); goto done; }
-                            printf("generating\n");
+    if (!testUtilsCompileAndCache(ctx,
+        "function(){return function(v){v.registerElement('p',null,'a'); };}",
+        p1->layoutFileName, err)) { printToStdErr(err); goto done; }
+    if (!testUtilsCompileAndCache(ctx,
+        "function(){return function(v){v.registerElement('p',null,'b'); };}",
+        p2->layoutFileName, err)) { printToStdErr(err); goto done; }
     //
     websiteGenerate(&site, logPageWriteCall, (void*)&log, err);
     //
@@ -223,16 +223,4 @@ static Page *wmtUtilsPutPage(PageArray *to, unsigned id, const char *url,
     p.parentId = parentId;
     pageArrayPush(to, &p);
     return &to->values[to->length - 1];
-}
-
-static bool wmtUtilsPutToCache(duk_context *ctx, char *code, char *key, char *err) {
-    duk_push_thread_stash(ctx, ctx);
-    if (!dukUtilsCompileStrToFn(ctx, code, err)) return false;
-    duk_dump_function(ctx);
-    duk_size_t bytecodeSize = 0;
-    (void)duk_get_buffer(ctx, -1, &bytecodeSize);
-    if (bytecodeSize == 0) { putError("Failed to dump fn\n"); return false; }
-    duk_put_prop_string(ctx, -2, key);
-    duk_pop(ctx); // thread stash
-    return true;
 }

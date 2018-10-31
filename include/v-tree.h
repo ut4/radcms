@@ -67,8 +67,7 @@ typedef struct  {
 
 typedef enum {
     TYPE_ELEM,
-    TYPE_TEXT,
-    TYPE_DATA_BATCH_CONFIG
+    TYPE_TEXT
 } NodeType;
 
 typedef struct {

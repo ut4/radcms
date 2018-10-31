@@ -36,9 +36,9 @@ dataQueryScriptBindingsRegister(duk_context *ctx) {
      */
     duk_push_thread_stash(ctx, ctx);                        // [... stash]
     duk_push_bare_object(ctx);                              // [... stash obj]
-    duk_push_c_function(ctx, dataBatchConfigSBSetWhere, 1); // [... stash obj lighfn]
+    duk_push_c_lightfunc(ctx, dataBatchConfigSBSetWhere, 1, 1, 0); // [... stash obj lightfn]
     duk_put_prop_string(ctx, -2, "where");                  // [... stash obj]
-    duk_push_c_function(ctx, dataBatchConfigSBSetTmplVarName, 1); // [... stash obj lighfn]
+    duk_push_c_lightfunc(ctx, dataBatchConfigSBSetTmplVarName, 1, 1, 0); // [... stash obj lightfn]
     duk_put_prop_string(ctx, -2, "to");                     // [... stash obj]
     duk_put_prop_string(ctx, -2, DBC_PROTO_KEY);            // [... stash]
     duk_pop(ctx);                                           // [...]

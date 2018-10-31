@@ -40,3 +40,16 @@ testUtilsExecSql(Db *db, const char *sql) {
     }
     return true;
 }
+
+bool
+testUtilsCompileAndCache(duk_context *ctx, const char *code, char *key, char *err) {
+    duk_push_thread_stash(ctx, ctx);
+    if (!dukUtilsCompileStrToFn(ctx, code, err)) return false;
+    duk_dump_function(ctx);
+    duk_size_t bytecodeSize = 0;
+    (void)duk_get_buffer(ctx, -1, &bytecodeSize);
+    if (bytecodeSize == 0) { putError("Failed to dump fn\n"); return false; }
+    duk_put_prop_string(ctx, -2, key);
+    duk_pop(ctx); // thread stash
+    return true;
+}

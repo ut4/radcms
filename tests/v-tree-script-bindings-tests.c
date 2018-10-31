@@ -68,6 +68,41 @@ testVTreeRegisterElementWithElemAndTextChildren() {
 }
 
 static void
+testVTreePartialRunsCachedPartial() {
+    beforeEach();
+    VTree vTree;
+    vTreeInit(&vTree);
+    const char *testPartial = "function(vTree,d) {"
+        "return vTree.registerElement('div', null, d.foo)"
+    "}";
+    if (!testUtilsCompileAndCache(ctx, testPartial, "foo.js", errBuf)) {
+        printToStdErr(errBuf); goto done;
+    };
+    //
+    char *layoutTmpl = "function (vTree) {"
+        "vTree.registerElement('div', null, vTree.partial('foo.js', {foo:'bar'}));"
+    "}";
+    if (!dukUtilsCompileStrToFn(ctx, layoutTmpl, errBuf)) {
+        printToStdErr("Failed to compile test script: %s", errBuf); goto done; }
+    bool success = vTreeScriptBindingsExecLayoutTmpl(ctx, &vTree, NULL, NULL, errBuf);
+    assertThatOrGoto(success, done, "Should return succesfully.");
+    assertIntEqualsOrGoto(vTree.elemNodes.length, 2, done);
+    ElemNode *partialRoot = &vTree.elemNodes.values[0];
+    assertIntEqualsOrGoto(partialRoot->children.length, 1, done);
+    TextNode *partialRootText = vTreeFindTextNode(&vTree, partialRoot->children.values[0]);
+    assertThatOrGoto(partialRootText != NULL && partialRootText->chars != NULL,
+                     done, "Sanity partialRoot.text != NULL");
+    assertStrEquals(partialRootText->chars, "bar");
+    assertThatOrGoto(vTree.elemNodes.values[1].children.length == 1, done,
+        "Sanity elems[1].children.length == 1");
+    assertIntEquals(vTree.elemNodes.values[1].children.values[0],
+        vTreeUtilsMakeNodeRef(TYPE_ELEM, partialRoot->id));
+    done:
+        duk_destroy_heap(ctx);
+        vTreeFreeProps(&vTree);
+}
+
+static void
 testDocumentDataConfigFetchOneChains() {
     //
     beforeEach();
@@ -80,7 +115,6 @@ testDocumentDataConfigFetchOneChains() {
     //
     bool success = vTreeScriptBindingsCompileAndExecLayoutWrap(ctx, layoutWrap,
         &ddc, "/", errBuf);
-        if (!success) { printf("err "); printf(errBuf); }
     assertThatOrGoto(success, done, "Should return succesfully");
     DataBatchConfig *actualBatch = &ddc.batches;
     assertThatOrGoto(actualBatch->componentTypeName != NULL, done,
@@ -130,8 +164,8 @@ testExecLayoutRunsMultipleLayoutsWithoutConflict() {
     // 1. Setup
     beforeEach();
     VTree vTree1;
-    vTreeInit(&vTree1);
     VTree vTree2;
+    vTreeInit(&vTree1);
     vTreeInit(&vTree2);
     char *layoutTmpl1 = "function (vTree) {"
         " vTree.registerElement('div', null, 'foo');"
@@ -178,12 +212,11 @@ static void
 testVTreeRegisterElementValidatesItsArguments() {
     //
     beforeEach();
-    vTreeScriptBindingsRegister(ctx);
     VTree vTree1;
-    vTreeInit(&vTree1);
     VTree vTree2;
-    vTreeInit(&vTree2);
     VTree vTree3;
+    vTreeInit(&vTree1);
+    vTreeInit(&vTree2);
     vTreeInit(&vTree3);
     char *layoutTmpl1 = "function (vTree, _) {"
         " vTree.registerElement();"
@@ -205,8 +238,8 @@ testVTreeRegisterElementValidatesItsArguments() {
         printToStdErr("Failed to compile test script: %s", errBuf); goto done; }
     bool success2 = vTreeScriptBindingsExecLayoutTmpl(ctx, &vTree2, NULL, NULL, errBuf);
     assertThatOrGoto(!success2, done, "Should return false");
-    assertStrEquals(errBuf, "TypeError: 3rd arg must be \"str\", <nodeRef>, "
-                    "<dataConfig>, or [<nodeRef>|<dataConfig>...].\n");
+    assertStrEquals(errBuf, "TypeError: 3rd arg must be \"str\", <nodeRef>, or "
+        "[<nodeRef>...].\n");
     //
     if (!dukUtilsCompileStrToFn(ctx, layoutTmpl3, errBuf)) {
         printToStdErr("Failed to compile test script: %s", errBuf); goto done; }
@@ -285,7 +318,7 @@ testExecLayoutTmplProvidesFetchAllsInVariables() {
     DataBatchConfig *dbc1 = documentDataConfigAddBatch(&ddc, "Foo", isFetchAll);
     dataBatchConfigSetTmplVarName(dbc1, "foos");
     DataBatchConfig *dbc2 = documentDataConfigAddBatch(&ddc, "Bar", isFetchAll);
-    dataBatchConfigSetTmplVarName(dbc1, "bars");
+    dataBatchConfigSetTmplVarName(dbc2, "bars");
     //
     Component foo1;
     Component foo2;
@@ -335,12 +368,13 @@ testExecLayoutTmplProvidesFetchAllsInVariables() {
 void
 vTreeScriptBindingsTestsRun() {
     testVTreeRegisterElementWithElemAndTextChildren();
+    testVTreePartialRunsCachedPartial();
     testDocumentDataConfigFetchOneChains();
     testDocumentDataConfigFetchAllChains();
     testExecLayoutRunsMultipleLayoutsWithoutConflict();
     testVTreeRegisterElementValidatesItsArguments();
     testExecLayoutTmplProvidesFetchOnesInVariables();
-    testExecLayoutTmplProvidesFetchAllsInInVariables();
+    testExecLayoutTmplProvidesFetchAllsInVariables();
 }
 
 static void
