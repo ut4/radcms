@@ -1,18 +1,11 @@
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <signal.h>
-#include <time.h>
 #include "include/data-query-script-bindings.h"
 #include "include/db.h"
 #include "include/duk.h"
 #include "include/v-tree-script-bindings.h"
 #include "include/web-app.h"
-
-static volatile int isCtrlCTyped = 0;
-
-static void onCtrlC(int _) {
-    isCtrlCTyped = 1;
-}
 
 static void printCmdInstructionsAndExit() {
     printToStdErr("Usage: insane run /path/to/your/project/\n"
@@ -79,14 +72,21 @@ int main(int argc, const char* argv[]) {
         .handlerFn=websiteHandlersHandleGenerateRequest, .this=(void*)&website};
     app.handlers[2] = (RequestHandler){.methodPattern="GET", .urlPattern="/*",
         .handlerFn=websiteHandlersHandlePageRequest, .this=(void*)&website};
+    pthread_t fileWatcherThread;
+    if (pthread_create(&fileWatcherThread, NULL, webAppStartFileWatcher,
+                       (void*)&app)) {
+        sprintf(errBuf, "Failed to create the fileWatcher thread.\n");
+        goto done;
+    }
+    if (strlen(app.errBuf)) { // webAppStartFileWatcher failed
+        goto done;
+    }
     if (!webAppStart(&app)) {
         sprintf(errBuf, "Failed to start the server.\n");
         goto done;
     }
-    signal(SIGINT, onCtrlC);
-    struct timespec t = {.tv_sec=0, .tv_nsec=50000000L}; // 50ms / 0.05s
     printf("Started server at localhost:3000. Hit Ctrl+C to stop it...\n");
-    while (!isCtrlCTyped) nanosleep(&t, NULL);
+    (void)getchar();
     exitStatus = EXIT_SUCCESS;
     //
     done:

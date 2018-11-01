@@ -6,11 +6,13 @@
 #include "memory.h" // ALLOCATE etc.
 #include "site-ini.h" // SiteIni etc.
 #include "web-app-common.h" // handlerFn, microhttpd etc.
+#include "file-watcher.h"
 #include "web/website-handlers.h" // websiteHandlersHandle*()
 
 typedef struct {
     char *rootDir; // Normalized, always ends with "/"
     SiteIni ini;
+    FileWatcher fileWatcher;
     struct MHD_Daemon *daemon;
     unsigned handlerCount;
     char *errBuf;
@@ -34,6 +36,9 @@ webAppReadOrCreateSiteIni(WebApp *this, const char *contents, char *err);
  */
 bool
 webAppStart(WebApp *this);
+
+void*
+webAppStartFileWatcher(void *myPtr);
 
 /**
  * Closes and frees the microhttpd-server.
