@@ -6,6 +6,7 @@
 #define F_WATCHER_IS_WIN 1
 #include <stdlib.h>  // wcstombs, wchar_t
 #include <windows.h> // ReadDirectoryChangesW()
+#include <time.h> // struct timespec
 #endif
 #include "memory.h"
 #include "timer.h" // timerStart() etc.
@@ -16,7 +17,7 @@ typedef enum {
     FW_ACTION_DELETED,
 } FWEventType;
 
-typedef void (*onFWEvent)(FWEventType type, char *fileName);
+typedef void (*onFWEvent)(FWEventType type, char *fileName, void *myPtr);
 
 typedef struct {
     onFWEvent onEventFn;
@@ -29,6 +30,6 @@ void
 fileWatcherFreeProps(FileWatcher *this);
 
 bool
-fileWatcherWatch(FileWatcher *this, const char *dir, char *err);
+fileWatcherWatch(FileWatcher *this, const char *dir, void *myPtr, char *err);
 
 #endif

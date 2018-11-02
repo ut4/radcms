@@ -7,6 +7,7 @@
 #include "../db.h"
 #include "../duk.h" // duk_context
 #include "../file-io.h"
+#include "../file-watcher.h"
 #include "../memory.h"
 #include "../static-data.h" // getSampleData()
 #include "../str-reader.h" // strReaderRead*() etc.
@@ -39,6 +40,7 @@ typedef struct {
     char *rootDir; // borrowed from WebApp
     duk_context *dukCtx; // borrowed from main.c
     Db *db; // borrowed from main.c
+    char *errBuf; // borrowed from main.c
 } Website;
 
 void
@@ -69,6 +71,9 @@ websiteGenerate(Website *this, pageExportWriteFn writeFn, void *myPtr, char *err
 bool
 websiteInstall(Website *this, SampleData *data, const char *schemaSql,
                char *err);
+
+void
+websiteHandleFWEvent(FWEventType type, char *fileName, void *myPtr);
 
 /**
  * Returns char*|NULL. The caller frees.

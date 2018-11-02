@@ -16,7 +16,6 @@ set(SOURCE_FILES_COMMON
     include/db.h src/db.c
     include/duk.h src/duk.c
     include/file-io.h src/file-io.c
-    include/file-watcher.h src/file-watcher.c
     include/memory.h src/memory.c
     include/site-ini.h src/site-ini.c
     include/v-tree-script-bindings.h src/v-tree-script-bindings.c
@@ -26,6 +25,7 @@ set(SOURCE_FILES_COMMON
     include/timer.h
 )
 set(SOURCE_FILES_WEB
+    include/file-watcher.h src/file-watcher.c
     include/web/website-handlers.h src/web/website-handlers.c
     include/web-app-common.h
     include/web-app.h src/web-app.c

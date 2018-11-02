@@ -13,9 +13,10 @@ fileWatcherFreeProps(FileWatcher *this) {
 }
 
 bool
-fileWatcherWatch(FileWatcher *this, const char *dir, char *err) {
+fileWatcherWatch(FileWatcher *this, const char *dir, void *myPtr, char *err) {
     #define MIN_TIME_BETWEEN_EVENTS 0.12 // 120ms
-    #define NOTIFY_BUFFER_ELEM_COUNT 32
+    #define FILE_LOCK_WAIT_TIME 100000000L // 100ms
+    #define NOTIFY_BUFFER_ELEM_COUNT 8
     HANDLE handle = CreateFile(
         dir,
         FILE_LIST_DIRECTORY,                                    // dwDesiredAccess
@@ -31,8 +32,9 @@ fileWatcherWatch(FileWatcher *this, const char *dir, char *err) {
         return false;
     }
     DWORD bytesReturned = 0;
-    DWORD lastAction = 0;
+    DWORD lastIncomingAction = 0;
     char fileName[MAX_PATH + 1];
+    const struct timespec fileLockWaitTime = {0, FILE_LOCK_WAIT_TIME};
     timerInit();
     while (true) {
         if (ReadDirectoryChangesW(
@@ -45,30 +47,42 @@ fileWatcherWatch(FileWatcher *this, const char *dir, char *err) {
             NULL,                 // lpOverlapped
             NULL                  // lpCompletionRoutine
         ) != 0 && bytesReturned != 0) {
-            DWORD action = notifyBuffer[0].Action;
-            if (action == lastAction && timerGetTime() < MIN_TIME_BETWEEN_EVENTS) {
-                lastAction = notifyBuffer[0].Action;
+            DWORD incomingAction = notifyBuffer[0].Action;
+            /*
+             * Wait 100ms before doing anything (you can't use the file at this
+             * point).
+             */
+            nanosleep(&fileLockWaitTime, NULL);
+            /*
+             * Done waiting, check that at least 120ms has passed since the last
+             * identical event.
+             */
+            if (incomingAction == lastIncomingAction &&
+                timerGetTime() < MIN_TIME_BETWEEN_EVENTS) {
+                lastIncomingAction = incomingAction;
                 timerStart();
                 continue;
             }
-            switch (action) {
+            unsigned action = 0;
+            switch (incomingAction) {
                 case FILE_ACTION_ADDED:
-                    this->onEventFn(FW_ACTION_ADDED, unicodeFileNameToMb(
-                        &notifyBuffer[0], fileName));
+                    action = FW_ACTION_ADDED;
                     break;
                 case FILE_ACTION_MODIFIED:
-                    this->onEventFn(FW_ACTION_MODIFIED, unicodeFileNameToMb(
-                        &notifyBuffer[0], fileName));
+                    action = FW_ACTION_MODIFIED;
                     break;
                 case FILE_ACTION_REMOVED:
-                    this->onEventFn(FW_ACTION_DELETED, unicodeFileNameToMb(
-                        &notifyBuffer[0], fileName));
+                    action = FW_ACTION_DELETED;
                     break;
                 default:
-                    printToStdErr("Unsupported fw event type %lu.\n", action);
+                    printToStdErr("Unsupported fw event type %lu.\n", incomingAction);
             }
-            lastAction = notifyBuffer[0].Action;
+            lastIncomingAction = incomingAction;
             timerStart();
+            if (action != 0) {
+                this->onEventFn(action, unicodeFileNameToMb(
+                    &notifyBuffer[0], fileName), myPtr);
+            }
         } else {
             putError("Failed to ReadDirectoryChangesW(): %lu.\n", GetLastError());
             return false;

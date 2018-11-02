@@ -25,7 +25,7 @@ int main(int argc, const char* argv[]) {
     Website website;
     websiteInit(&website);
     WebApp app;
-    webAppInit(&app, argv[2 + (int)doInit], errBuf);
+    webAppInit(&app, argv[2 + (int)doInit], &website, errBuf);
     duk_context *dukCtx = NULL;
     Db db;
     /*
@@ -45,6 +45,7 @@ int main(int argc, const char* argv[]) {
     website.rootDir = app.rootDir;
     website.dukCtx = dukCtx;
     website.db = &db;
+    website.errBuf = errBuf;
     /*
      * Handle `insane init`
      */

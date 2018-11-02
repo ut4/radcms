@@ -2,6 +2,7 @@
 
 static void mapDataBatchesRow(sqlite3_stmt *stmt, void **myPtr);
 static void mapSiteGraphResultRow(sqlite3_stmt *stmt, void **myPtr);
+static bool doCacheTemplate(Website *this, const char *fileName, char *err);
 
 void
 websiteInit(Website *this) {
@@ -9,14 +10,12 @@ websiteInit(Website *this) {
     this->rootDir = NULL;
     this->dukCtx = NULL;
     this->db = NULL;
+    this->errBuf = NULL;
 }
 
 void
 websiteFreeProps(Website *this) {
     siteGraphFreeProps(&this->siteGraph);
-    this->rootDir = NULL;
-    this->dukCtx = NULL;
-    this->db = NULL;
 }
 
 bool
@@ -38,37 +37,9 @@ websitePopulateTemplateCaches(Website *this, char *err) {
     TextNodeArray *tmpls = &this->siteGraph.tmplFiles;
     duk_push_thread_stash(this->dukCtx, this->dukCtx);         // [... stash]
     for (unsigned i = 0; i < tmpls->length; ++i) {
-        /*
-         * Read contents from disk
-         */
-        STR_CONCAT(tmplFilePath, this->rootDir, tmpls->values[i].chars);
-        char *code = fileIOReadFile(tmplFilePath, err);
-        if (!code) return false;
-        /*
-         * Compile string -> function
-         */
-        if (dukUtilsCompileStrToFn(this->dukCtx, code, err)) { // [... stash fn]
-            /*
-             * Convert function -> bytecode
-             */
-            duk_dump_function(this->dukCtx);                   // [... stash bytecode]
-            duk_size_t bytecodeSize = 0;
-            (void)duk_get_buffer(this->dukCtx, -1, &bytecodeSize);
-            /*
-             * Store the bytecode to the thread stash
-             */
-            if (bytecodeSize > 0) {
-                duk_put_prop_string(this->dukCtx, -2, tmpls->values[i].chars); // [... stash]
-            } else {
-                printToStdErr("Failed to cache '%s'. Rage quitting.\n",
-                              tmplFilePath);
-                exit(EXIT_FAILURE);
-            }
-            FREE_STR(code);
-        } else {
-            duk_pop(this->dukCtx);
-            FREE_STR(code);
-            return false;
+        if (!doCacheTemplate(this, tmpls->values[i].chars, err)) {
+            printToStdErr("%s. Rage quitting.\n", err);
+            exit(EXIT_FAILURE);
         }
     }
     duk_pop(this->dukCtx);                                   // [...]
@@ -130,6 +101,22 @@ websiteInstall(Website *this, SampleData *data, const char *schemaSql,
     return true;
 }
 
+void
+websiteHandleFWEvent(FWEventType type, char *fileName, void *myPtr) {
+    Website *this = (Website*)myPtr;
+    if (type == FW_ACTION_ADDED) {
+        //
+    } else if (type == FW_ACTION_MODIFIED) {
+        duk_push_thread_stash(this->dukCtx, this->dukCtx);
+        if (!doCacheTemplate(this, fileName, this->errBuf)) {
+            printToStdErr(this->errBuf);
+        }
+        duk_pop(this->dukCtx);
+    } else if (type == FW_ACTION_DELETED) {
+        //
+    }
+}
+
 char*
 pageRender(Website *this, Page *page, const char *url, char *err) {
     duk_push_thread_stash(this->dukCtx, this->dukCtx);
@@ -175,6 +162,40 @@ mapDataBatchesRow(sqlite3_stmt *stmt, void **myPtr) {
     newComponent.json = copyString((const char*)sqlite3_column_text(stmt, 2));
     newComponent.dataBatchConfigId = (unsigned)sqlite3_column_int(stmt, 3);
     componentArrayPush(arr, &newComponent);
+}
+
+static bool
+doCacheTemplate(Website *this, const char *fileName, char *err) {
+    /*
+     * Read contents from disk
+     */
+    STR_CONCAT(tmplFilePath, this->rootDir, fileName);
+    char *code = fileIOReadFile(tmplFilePath, err);
+    if (!code) return false;
+    bool success = false;
+    /*
+     * Compile string -> function
+     */
+    if (dukUtilsCompileStrToFn(this->dukCtx, code, err)) { // [... stash fn]
+        /*
+         * Convert function -> bytecode
+         */
+        duk_dump_function(this->dukCtx);                   // [... stash bytecode]
+        duk_size_t bytecodeSize = 0;
+        (void)duk_get_buffer(this->dukCtx, -1, &bytecodeSize);
+        /*
+         * Store the bytecode to the thread stash
+         */
+        if (bytecodeSize > 0) {
+            duk_put_prop_string(this->dukCtx, -2, fileName); // [... stash]
+            success = true;
+        } else {
+            putError("Failed to cache %s.\n", tmplFilePath);
+            duk_pop(this->dukCtx); // [... stash]
+        }
+    }
+    FREE_STR(code);
+    return success;
 }
 
 void

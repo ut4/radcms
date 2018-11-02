@@ -18,15 +18,13 @@ webAppRespond(void *myPtr, struct MHD_Connection *connection, const char *url,
 static RequestHandler*
 getHandler(WebApp *app, const char *method, const char *url);
 
-static void
-onFileChangeEvent(FWEventType type, char *fileName);
-
 void
-webAppInit(WebApp *this, const char *rootDir, char *errBuf) {
+webAppInit(WebApp *this, const char *rootDir, Website *site, char *errBuf) {
     this->rootDir = fileIOGetNormalizedPath(rootDir);
     siteIniInit(&this->ini);
     this->ini.rootDir = this->rootDir;
     this->daemon = NULL;
+    this->site = site;
     this->handlerCount = sizeof(this->handlers) / sizeof(RequestHandler);
     this->errBuf = errBuf;
 }
@@ -55,8 +53,8 @@ webAppStart(WebApp *this) {
 void*
 webAppStartFileWatcher(void *myPtr) {
     WebApp *app = (WebApp*)myPtr;
-    fileWatcherInit(&app->fileWatcher, onFileChangeEvent);
-    fileWatcherWatch(&app->fileWatcher, app->rootDir, app->errBuf);
+    fileWatcherInit(&app->fileWatcher, websiteHandleFWEvent);
+    fileWatcherWatch(&app->fileWatcher, app->rootDir, (void*)app->site, app->errBuf);
     return NULL;
 }
 
@@ -127,18 +125,4 @@ getHandler(WebApp *app, const char *method, const char *url) {
         }
     }
     return NULL;
-}
-
-static void
-onFileChangeEvent(FWEventType type, char *fileName) {
-    if (type == FW_ACTION_ADDED) {
-        printf("added file: ");
-        printf("%s\n", fileName);
-    } else if (type == FW_ACTION_MODIFIED) {
-        printf("modified file: ");
-        printf("%s\n", fileName);
-    } else if (type == FW_ACTION_DELETED) {
-        printf("deleted file: ");
-        printf("%s\n", fileName);
-    }
 }

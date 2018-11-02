@@ -14,13 +14,14 @@ typedef struct {
     SiteIni ini;
     FileWatcher fileWatcher;
     struct MHD_Daemon *daemon;
+    Website *site;
     unsigned handlerCount;
     char *errBuf;
     RequestHandler handlers[3];
 } WebApp;
 
 void
-webAppInit(WebApp *this, const char *rootDir, char *errBuf);
+webAppInit(WebApp *this, const char *rootDir, Website *site, char *errBuf);
 
 void
 webAppFreeProps(WebApp *this);
