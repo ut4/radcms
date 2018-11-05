@@ -3,7 +3,7 @@
 bool
 testUtilsSetupTestDb(Db *db, char *err) {
     if (!dbOpen(db, ":memory:", err)) {
-        printToStdErr(err);
+        printToStdErr("%s", err);
         return false;
     }
     char *sqliteErr = NULL;

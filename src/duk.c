@@ -25,7 +25,7 @@ bool
 dukUtilsCompileStrToFn(duk_context *ctx, const char *code, char *err) {
     duk_pcompile_string(ctx, DUK_COMPILE_FUNCTION, code);
     if (!duk_is_function(ctx, -1)) {
-        putError(duk_safe_to_string(ctx, -1));
+        putError("%s", duk_safe_to_string(ctx, -1));
         duk_pop(ctx); // error
         return false;
     }

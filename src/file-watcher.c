@@ -1,5 +1,7 @@
 #include "../include/file-watcher.h"
 
-#ifdef F_WATCHER_IS_WIN
+#ifdef INSN_IS_WIN
 #include "file-watcher-win-impl.c"
+#elif defined(INSN_IS_LINUX)
+#include "file-watcher-linux-impl.c"
 #endif

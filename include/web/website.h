@@ -73,7 +73,7 @@ websiteInstall(Website *this, SampleData *data, const char *schemaSql,
                char *err);
 
 void
-websiteHandleFWEvent(FWEventType type, char *fileName, void *myPtr);
+websiteHandleFWEvent(FWEventType type, const char *fileName, void *myPtr);
 
 /**
  * Returns char*|NULL. The caller frees.

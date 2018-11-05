@@ -25,7 +25,7 @@ char *copyString(const char *str) {
 void
 printMemoryReport() {
 #ifdef DEBUG_COUNT_ALLOC
-    printf("Program exited, unfreed bytes: %d.\n", bytesAllocated);
+    printf("Program exited, unfreed bytes: %ld.\n", bytesAllocated);
 #endif
 }
 

@@ -1,11 +1,19 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <signal.h>
+#include <time.h>
 #include "include/data-query-script-bindings.h"
 #include "include/db.h"
 #include "include/duk.h"
 #include "include/v-tree-script-bindings.h"
 #include "include/web-app.h"
+
+static volatile int isCtrlCTyped = 0;
+
+static void onCtrlC(int _) {
+    isCtrlCTyped = 1;
+}
 
 static void printCmdInstructionsAndExit() {
     printToStdErr("Usage: insane run /path/to/your/project/\n"
@@ -86,12 +94,14 @@ int main(int argc, const char* argv[]) {
         sprintf(errBuf, "Failed to start the server.\n");
         goto done;
     }
+    signal(SIGINT, onCtrlC);
+    struct timespec t = {.tv_sec=0, .tv_nsec=80000000L}; // 80ms
     printf("Started server at localhost:3000. Hit Ctrl+C to stop it...\n");
-    (void)getchar();
+    while (!isCtrlCTyped) nanosleep(&t, NULL);
     exitStatus = EXIT_SUCCESS;
     //
     done:
-        if (exitStatus == EXIT_FAILURE) printToStdErr(errBuf);
+        if (exitStatus == EXIT_FAILURE) printToStdErr("%s", errBuf);
         websiteFreeProps(&website);
         webAppFreeProps(&app);
         if (dukCtx) duk_destroy_heap(dukCtx);

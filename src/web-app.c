@@ -39,7 +39,7 @@ webAppFreeProps(WebApp *this) {
 bool
 webAppStart(WebApp *this) {
     this->daemon = MHD_start_daemon(
-        MHD_USE_INTERNAL_POLLING_THREAD | MHD_USE_AUTO | MHD_OPTION_STRICT_FOR_CLIENT,
+        MHD_USE_INTERNAL_POLLING_THREAD | MHD_USE_AUTO,
         3000,           // Port number
         NULL,           // Before-request callback, can be used to reject requests
         NULL,           // Before-request *myPtr

@@ -2,11 +2,13 @@
 #define insn_fileWatcher_h
 
 #include <stdbool.h>
-#if defined(_WIN32) && !defined(__CYGWIN__)
-#define F_WATCHER_IS_WIN 1
+#include <time.h> // struct timespec
+#if defined(INSN_IS_WIN)
 #include <stdlib.h>  // wcstombs, wchar_t
 #include <windows.h> // ReadDirectoryChangesW()
-#include <time.h> // struct timespec
+#elif defined(INSN_IS_LINUX)
+#include <unistd.h> // close()
+#include <sys/inotify.h>
 #endif
 #include "memory.h"
 #include "timer.h" // timerStart() etc.
@@ -15,9 +17,10 @@ typedef enum {
     FW_ACTION_ADDED,
     FW_ACTION_MODIFIED,
     FW_ACTION_DELETED,
+    FW_ACTION_OTHER,
 } FWEventType;
 
-typedef void (*onFWEvent)(FWEventType type, char *fileName, void *myPtr);
+typedef void (*onFWEvent)(FWEventType type, const char *fileName, void *myPtr);
 
 typedef struct {
     onFWEvent onEventFn;

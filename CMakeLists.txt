@@ -1,7 +1,14 @@
 cmake_minimum_required(VERSION 3.9.4)
 project(insanecms VERSION 0.0.0 LANGUAGES C)
 
-set(INSN_COMPILE_OPTIONS -Wall -pedantic)
+if (WIN32)
+    set(INSN_COMPILE_OPTIONS -Wall -pedantic -D INSN_IS_WIN)
+    set(INSN_IS_WIN "yesItIs")
+elseif(UNIX)
+    set(INSN_COMPILE_OPTIONS -Wall -pedantic -D INSN_IS_LINUX)
+    set(INSN_IS_LINUX "yesItIs")
+endif()
+
 set(VENDOR_ROOT ${PROJECT_SOURCE_DIR}/vendor)
 include(deps.cmake)
 include_directories(insane ${INSN_DEP_INCLUDES})

@@ -3,6 +3,19 @@
 
 #define MAX_FILE_SIZE 2000000 // 2MB
 
+#if defined(INSN_IS_WIN)
+#define DEFAULT_DIR_PERMS 0
+int mkdirp(const char *path, unsigned mode) {
+    (void)mode;
+    return mkdir(path);
+}
+#elif defined(INSN_IS_LINUX)
+#define DEFAULT_DIR_PERMS S_IRWXU | S_IXGRP | S_IXOTH // 755
+int mkdirp(const char *path, unsigned mode) {
+    return mkdir(path, mode);
+}
+#endif
+
 char*
 fileIOReadFile(const char *filePath, char *err) {
     size_t s = (size_t)fileIOGetFileSize(filePath);
@@ -95,7 +108,7 @@ fileIOMakeDirs(const char *path, char *err) {
     // 2. round: undo 5 'a/b/c\0d' -> 'a/b/c/d'
     for (unsigned i = numNewDirs - 1; i >= 0; --i) {
         ref[levels[i]] = '/'; // unstub
-        if (mkdir(ref) != 0) {
+        if (mkdirp(ref, DEFAULT_DIR_PERMS) != 0) {
             putError("Failed to create directory '%s'", ref);
             return false;
         }

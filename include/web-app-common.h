@@ -1,9 +1,9 @@
 #ifndef insn_webAppCommon_h
 #define insn_webAppCommon_h
 
-#if defined(_WIN32) && !defined(__CYGWIN__)
+#if defined(INSN_IS_WIN)
 #include <winsock2.h>
-#else
+#elif defined(INSN_IS_LINUX)
 #include <sys/select.h>
 #endif
 #include <microhttpd.h>

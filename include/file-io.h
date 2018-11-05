@@ -1,11 +1,17 @@
 #ifndef insn_fileIO_h
 #define insn_fileIO_h
 
+#if defined(INSN_IS_WIN)
 #include <limits.h> // PATH_MAX
+#elif defined(INSN_IS_LINUX)
+#include <linux/limits.h> // PATH_MAX
+#endif
 #include <sys/stat.h> // fstat
 #include <unistd.h> // access
 #include "common.h" // stdbool etc.
 #include "memory.h"
+
+int mkdirp(const char *path, unsigned mode);
 
 /**
  * Reads the contents of $filePath. The caller is responsible of freeing the

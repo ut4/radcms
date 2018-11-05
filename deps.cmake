@@ -1,33 +1,61 @@
-# Requires VENDOR_ROOT
+# Requires VENDOR_ROOT, INSN_IS_WIN|INSN_IS_LINUX
 # Defines INSN_DEP_INCLUDES, INSN_DEP_LIBS
 
-# -- microhttpd ----
-add_library(microhttpd SHARED IMPORTED)
-set_target_properties(microhttpd PROPERTIES
-    IMPORTED_IMPLIB ${CMAKE_BINARY_DIR}/libmicrohttpd-12.dll
-)
+if (INSN_IS_WIN)
+    # -- microhttpd ----
+    add_library(microhttpd SHARED IMPORTED)
+    set_target_properties(microhttpd PROPERTIES
+        IMPORTED_IMPLIB ${CMAKE_BINARY_DIR}/libmicrohttpd-12.dll
+    )
 
-# -- duktape ----
-add_library(duktape SHARED ${VENDOR_ROOT}/duktape/duktape.c)
+    # -- duktape ----
+    add_library(duktape SHARED ${VENDOR_ROOT}/duktape/duktape.c)
 
-# -- inih ----
-add_library(inih STATIC ${VENDOR_ROOT}/inih/ini.c)
+    # -- inih ----
+    add_library(inih STATIC ${VENDOR_ROOT}/inih/ini.c)
 
-# -- sqlite ----
-add_library(sqlite3 SHARED IMPORTED)
-set_target_properties(sqlite3 PROPERTIES
-    IMPORTED_IMPLIB ${CMAKE_BINARY_DIR}/sqlite3.dll
-)
+    # -- sqlite ----
+    add_library(sqlite3 SHARED IMPORTED)
+    set_target_properties(sqlite3 PROPERTIES
+        IMPORTED_IMPLIB ${CMAKE_BINARY_DIR}/sqlite3.dll
+    )
 
-set(INSN_DEP_INCLUDES
-    ${VENDOR_ROOT}/microhttpd/include
-    ${VENDOR_ROOT}/duktape
-    ${VENDOR_ROOT}/inih
-    ${VENDOR_ROOT}/sqlite3
-)
-set(INSN_DEP_LIBS
-    microhttpd
-    duktape
-    inih
-    sqlite3
-)
+    set(INSN_DEP_INCLUDES
+        ${VENDOR_ROOT}/microhttpd/include
+        ${VENDOR_ROOT}/duktape
+        ${VENDOR_ROOT}/inih
+        ${VENDOR_ROOT}/sqlite3
+    )
+    set(INSN_DEP_LIBS
+        microhttpd
+        duktape
+        inih
+        sqlite3
+    )
+elseif(INSN_IS_LINUX)
+    # -- microhttpd provided by libmicrohttpd-dev ----
+
+    # -- duktape ----
+    add_library(duktape SHARED ${VENDOR_ROOT}/duktape/duktape.c)
+    target_link_libraries(duktape m) # m = math
+
+    # -- inih ----
+    add_library(inih STATIC ${VENDOR_ROOT}/inih/ini.c)
+
+    # -- sqlite provided by libsqlite3-dev ----
+
+    set(INSN_DEP_INCLUDES
+        ${VENDOR_ROOT}/duktape
+        ${VENDOR_ROOT}/inih
+    )
+    set(INSN_DEP_LIBS
+        m
+        pthread
+        microhttpd
+        duktape
+        inih
+        sqlite3
+    )
+else()
+    message(FATAL_ERROR "INSN_IS_WIN or INSN_IS_LINUX must be SET() before including deps.cmake.")
+endif()

@@ -126,10 +126,10 @@ testWebsiteGenerateProcessesPagesWithNoDbcs(Db *db, char *err) {
     Page *p2 = wmtUtilsPutPage(&site.siteGraph.pages, 2, "/foo", "b.js", 0);
     if (!testUtilsCompileAndCache(ctx,
         "function(){return function(v){v.registerElement('p',null,'a'); };}",
-        p1->layoutFileName, err)) { printToStdErr(err); goto done; }
+        p1->layoutFileName, err)) { printToStdErr("%s", err); goto done; }
     if (!testUtilsCompileAndCache(ctx,
         "function(){return function(v){v.registerElement('p',null,'b'); };}",
-        p2->layoutFileName, err)) { printToStdErr(err); goto done; }
+        p2->layoutFileName, err)) { printToStdErr("%s", err); goto done; }
     //
     websiteGenerate(&site, logPageWriteCall, (void*)&log, err);
     //
@@ -192,7 +192,7 @@ testWebsiteInstallWritesAllData(Db *db, char *err) {
     assertStrEquals(actualTmplFileContents, data.files[0].contents);
     FREE_STR(actualTmplFileContents);
     done:
-    if (!fileIODeleteFile(testTmplFilePath, err)) printToStdErr(err);
+    if (!fileIODeleteFile(testTmplFilePath, err)) printToStdErr("%s", err);
     websiteFreeProps(&site);
     FREE_STR(dir);
 }

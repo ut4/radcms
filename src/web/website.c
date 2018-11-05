@@ -102,14 +102,14 @@ websiteInstall(Website *this, SampleData *data, const char *schemaSql,
 }
 
 void
-websiteHandleFWEvent(FWEventType type, char *fileName, void *myPtr) {
+websiteHandleFWEvent(FWEventType type, const char *fileName, void *myPtr) {
     Website *this = (Website*)myPtr;
     if (type == FW_ACTION_ADDED) {
         //
     } else if (type == FW_ACTION_MODIFIED) {
         duk_push_thread_stash(this->dukCtx, this->dukCtx);
         if (!doCacheTemplate(this, fileName, this->errBuf)) {
-            printToStdErr(this->errBuf);
+            printToStdErr("%s", this->errBuf);
         }
         duk_pop(this->dukCtx);
     } else if (type == FW_ACTION_DELETED) {
