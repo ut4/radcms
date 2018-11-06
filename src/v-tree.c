@@ -21,21 +21,28 @@ vTreeFreeProps(VTree *this) {
 }
 
 unsigned
-vTreeCreateElemNode(VTree *this, const char *tagName, NodeRefArray *children) {
+vTreeCreateElemNode(VTree *this, const char *tagName, ElemProp *props,
+                    NodeRefArray *children) {
     unsigned newId;
     if (children) {
         ElemNode newNode = {.id = this->elemNodeCounter, .tagName=copyString(tagName),
-                            .children = *children};
+                            .props = props, .children = *children};
         elemNodeArrayPush(&this->elemNodes, &newNode);
         newId = newNode.id;
     } else {
-        ElemNode newNode = {.id = this->elemNodeCounter, .tagName=copyString(tagName)};
+        ElemNode newNode = {.id = this->elemNodeCounter, .tagName=copyString(tagName),
+                            .props = props};
         nodeRefArrayReset(&newNode.children);
         elemNodeArrayPush(&this->elemNodes, &newNode);
         newId = newNode.id;
     }
     this->elemNodeCounter++;
     this->calculatedRenderCharCount += strlen(tagName)*2 + strlen("<></>");
+    ElemProp *cur = props;
+    while (cur) {
+        this->calculatedRenderCharCount += strlen(cur->key) + strlen(cur->val) + strlen(" =\"\"");
+        cur = cur->next;
+    }
     return vTreeUtilsMakeNodeRef(TYPE_ELEM, newId);
 }
 
@@ -48,24 +55,35 @@ vTreeCreateTextNode(VTree *this, const char *text) {
     return vTreeUtilsMakeNodeRef(TYPE_TEXT, newStr.id);
 }
 
-static void
+static char*
 doRender(VTree *this, ElemNode *node, char *out) {
-    strcat(out, "<");
-    strcat(out, node->tagName);
+    //
+    out += sprintf(out, "<%s", node->tagName);
+    //
+    ElemProp *cur = node->props;
+    while (cur) {
+        out += sprintf(out, " %s=\"%s\"", cur->key, cur->val);
+        cur = cur->next;
+    }
+    //
     strcat(out, ">");
+    out += 1;
+    //
     if (node->children.length) {
         for (unsigned i = 0; i < node->children.length; ++i) {
             unsigned ref = node->children.values[i];
             if (GET_NODETYPE(ref) == TYPE_ELEM) {
-                doRender(this, vTreeFindElemNode(this, ref), out);
+                out = doRender(this, vTreeFindElemNode(this, ref), out);
             } else {
-                strcat(out, vTreeFindTextNode(this, ref)->chars);
+                const char *text = vTreeFindTextNode(this, ref)->chars;
+                strcat(out, text);
+                out += strlen(text);
             }
         }
     }
-    strcat(out, "</");
-    strcat(out, node->tagName);
-    strcat(out, ">");
+    //
+    out += sprintf(out, "</%s>", node->tagName);
+    return out;
 }
 
 char*
@@ -79,7 +97,7 @@ vTreeToHtml(VTree *this, char *err) {
     doRender(this, &this->elemNodes.values[this->rootElemIndex], out);
     if (strlen(out) > this->calculatedRenderCharCount) {
         printToStdErr("calculatedRenderCharCount was %d, but actually wrote "
-                      "%d chars! Exiting.\n", this->calculatedRenderCharCount,
+                      "%ld chars! Exiting.\n", this->calculatedRenderCharCount,
                       strlen(out));
         exit(EXIT_FAILURE);
     }
@@ -141,12 +159,42 @@ vTreeUtilsMakeNodeRef(NodeType type, unsigned id) {
     return out;
 }
 
-void elemNodeFreeProps(ElemNode *this) {
+void
+elemNodeFreeProps(ElemNode *this) {
     if (this->children.length) nodeRefArrayFreeProps(&this->children);
     FREE_STR(this->tagName);
+    ElemProp *cur = this->props;
+    ElemProp *tmp;
+    while (cur) {
+        tmp = cur;
+        cur = cur->next;
+        FREE_STR(tmp->key);
+        FREE_STR(tmp->val);
+        FREE(ElemProp, tmp);
+    }
 }
 
-void textNodeFreeProps(TextNode *this) {
+ElemProp*
+elemNodeGetProp(ElemNode *this, const char *key) {
+    ElemProp *cur = this->props;
+    while (cur) {
+        if (strcmp(cur->key, key) == 0) return cur;
+        cur = cur->next;
+    }
+    return NULL;
+}
+
+ElemProp*
+elemPropCreate(const char *key, const char *value) {
+    ElemProp *out = ALLOCATE(ElemProp);
+    out->key = copyString(key);
+    out->val = copyString(value);
+    out->next = NULL;
+    return out;
+}
+
+void
+textNodeFreeProps(TextNode *this) {
     FREE_STR(this->chars);
 }
 

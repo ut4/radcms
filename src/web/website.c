@@ -35,14 +35,14 @@ websiteFetchAndParseSiteGraph(Website *this, char *err) {
 bool
 websitePopulateTemplateCaches(Website *this, char *err) {
     TextNodeArray *tmpls = &this->siteGraph.tmplFiles;
-    duk_push_thread_stash(this->dukCtx, this->dukCtx);         // [... stash]
+    duk_push_thread_stash(this->dukCtx, this->dukCtx);
     for (unsigned i = 0; i < tmpls->length; ++i) {
         if (!doCacheTemplate(this, tmpls->values[i].chars, err)) {
             printToStdErr("%s. Rage quitting.\n", err);
             exit(EXIT_FAILURE);
         }
     }
-    duk_pop(this->dukCtx);                                   // [...]
+    duk_pop(this->dukCtx);
     textNodeArrayFreeProps(&this->siteGraph.tmplFiles);
     return true;
 }
@@ -104,12 +104,13 @@ websiteInstall(Website *this, SampleData *data, const char *schemaSql,
 void
 websiteHandleFWEvent(FWEventType type, const char *fileName, void *myPtr) {
     Website *this = (Website*)myPtr;
+    char *err = this->errBuf;
     if (type == FW_ACTION_ADDED) {
         //
     } else if (type == FW_ACTION_MODIFIED) {
         duk_push_thread_stash(this->dukCtx, this->dukCtx);
-        if (!doCacheTemplate(this, fileName, this->errBuf)) {
-            printToStdErr("%s", this->errBuf);
+        if (!doCacheTemplate(this, fileName, err)) {
+            printToStdErr("%s", err);
         }
         duk_pop(this->dukCtx);
     } else if (type == FW_ACTION_DELETED) {
@@ -196,102 +197,4 @@ doCacheTemplate(Website *this, const char *fileName, char *err) {
     }
     FREE_STR(code);
     return success;
-}
-
-void
-siteGraphInit(SiteGraph *this) {
-    this->pages.capacity = 0;
-    this->pages.length = 0;
-    this->pages.values = NULL;
-    this->tmplFiles.capacity = 0;
-    this->tmplFiles.length = 0;
-    this->tmplFiles.values = NULL;
-}
-
-void
-siteGraphFreeProps(SiteGraph *this) {
-    if (this->pages.values) pageArrayFreeProps(&this->pages);
-    if (this->tmplFiles.values) textNodeArrayFreeProps(&this->tmplFiles);
-}
-
-bool
-siteGraphParse(char *str, SiteGraph *out, StrReader *sr, char *err) {
-    if (!strReaderIsDigit(str[0])) {
-        putError("ParseError: Expected a digit but got '%c'.\n", str[0]);
-        return false;
-    }
-    strReaderInit(sr, str, '|');
-    unsigned totalPageCount = strReaderReadInt(sr);
-    pageArrayInit(&out->pages, totalPageCount);
-    unsigned templateCount = strReaderReadInt(sr);
-    if (templateCount == 0) return false;
-    textNodeArrayInit(&out->tmplFiles);
-    while (*sr->current != '\0') {
-        if (strReaderIsDigit(*sr->current)) {
-            if (out->pages.length == totalPageCount) {
-                printToStdErr("Critical: siteGraph->pages.values overflow. Exiting.\n");
-                exit(EXIT_FAILURE);
-            }
-            Page newPage = {
-                .id = strReaderReadInt(sr),
-                .url = strReaderReadStr(sr),
-                .parentId = strReaderReadInt(sr),
-                .layoutFileName = strReaderReadStr(sr)
-            };
-            pageArrayPush(&out->pages, &newPage);
-        } else if (out->pages.length > 0) {
-            TextNode text;
-            text.id = 0;
-            text.chars = strReaderReadStr(sr);
-            textNodeArrayPush(&out->tmplFiles, &text);
-        } else {
-            putError("Unpexted character '%c'.\n", *sr->current);
-            return false;
-        }
-    }
-    if (out->pages.length != totalPageCount) {
-        printToStdErr("siteGraph->pages.length != definedTotalPageCount");
-    }
-    if (out->tmplFiles.length != templateCount) {
-        printToStdErr("siteGraph->tmplFiles.length != definedTemplateCount");
-    }
-    return true;
-}
-
-void
-siteGraphSerialize(SiteGraph *siteGraph, char *to) {
-
-}
-
-Page*
-siteGraphFindPage(SiteGraph *siteGraph, const char *url) {
-    for (unsigned i = 0; i < siteGraph->pages.length; ++i) {
-        if (strcmp(siteGraph->pages.values[i].url, url) == 0) {
-            return &siteGraph->pages.values[i];
-        }
-    }
-    return NULL;
-}
-
-void
-pageArrayInit(PageArray *this, unsigned capacity) {
-    this->capacity = capacity;
-    this->length = 0;
-    this->values = ALLOCATE_ARR(Page, capacity);
-}
-void
-pageArrayPush(PageArray *this, Page *page) {
-    this->values[this->length] = *page;
-    this->length++;
-}
-void
-pageArrayFreeProps(PageArray *this) {
-    for (unsigned i = 0; i < this->capacity; ++i) {
-        FREE_STR(this->values[i].url);
-        FREE_STR(this->values[i].layoutFileName);
-    }
-    FREE_ARR(Page, this->values, this->capacity);
-    this->capacity = 0;
-    this->length = 0;
-    this->values = NULL;
 }

@@ -68,6 +68,52 @@ testVTreeRegisterElementWithElemAndTextChildren() {
 }
 
 static void
+testVTreeRegisterElementAttributes() {
+    // 1. Setup
+    beforeEach();
+    VTree vTree;
+    vTreeInit(&vTree);
+    // 2. Call
+    char *layoutTmpl = "function (vTree) {"
+            "vTree.registerElement('div', {foo: 'bar'}, "
+                "vTree.registerElement('div', {baz: 'naz', gas: 'maz foo'}, 'Foo')"
+            ")"
+        "}";
+    if (!dukUtilsCompileStrToFn(ctx, layoutTmpl, errBuf)) {
+        printToStdErr("Failed to compile test script: %s", errBuf); goto done; }
+    bool success = vTreeScriptBindingsExecLayoutTmpl(ctx, &vTree, NULL, NULL, errBuf);
+    // 3. Assert
+    assertThatOrGoto(success, done, "Should return succesfully");
+    assertThatOrGoto(vTree.elemNodes.length==2, done, "Sanity elemNodes.length==2");
+    // inner div (2 attrs)
+    ElemNode *innerDiv = &vTree.elemNodes.values[0];
+    assertThatOrGoto(innerDiv != NULL, done, "Sanity innerDiv != NULL");
+    assertThatOrGoto(innerDiv->props != NULL, done, "Should set inner's first attribute");
+    assertThatOrGoto(innerDiv->props->key != NULL, done, "Should set innerDiv.props[0].key");
+    assertStrEquals(innerDiv->props->key, "baz");
+    assertThatOrGoto(innerDiv->props->val != NULL, done, "Should set innerDiv.props[0].val");
+    assertStrEquals(innerDiv->props->val, "naz");
+    ElemProp *secondProp = innerDiv->props->next;
+    assertThatOrGoto(secondProp != NULL, done, "Should set inner's second attribute");
+    assertThatOrGoto(secondProp->key != NULL, done, "Should set innerDiv.props[1].key");
+    assertStrEquals(secondProp->key, "gas");
+    assertThatOrGoto(secondProp->val != NULL, done, "Should set innerDiv.props[1].val");
+    assertStrEquals(secondProp->val, "maz foo");
+    // outer div (1 attr)
+    ElemNode *outerDiv = &vTree.elemNodes.values[1];
+    assertThatOrGoto(outerDiv != NULL, done, "Sanity outerDiv != NULL");
+    assertThatOrGoto(outerDiv->props != NULL, done, "Should set outer's attribute");
+    assertThatOrGoto(outerDiv->props->key != NULL, done, "Should set outerDiv.props[0].key");
+    assertStrEquals(outerDiv->props->key, "foo");
+    assertThatOrGoto(outerDiv->props->val != NULL, done, "Should set outerDiv.props[0].val");
+    assertStrEquals(outerDiv->props->val, "bar");
+    //
+    done:
+        duk_destroy_heap(ctx);
+        vTreeFreeProps(&vTree);
+}
+
+static void
 testVTreePartialRunsCachedPartial() {
     beforeEach();
     VTree vTree;
@@ -76,7 +122,7 @@ testVTreePartialRunsCachedPartial() {
         "return vTree.registerElement('div', null, d.foo)"
     "}";
     if (!testUtilsCompileAndCache(ctx, testPartial, "foo.js", errBuf)) {
-        printToStdErr(errBuf); goto done;
+        printToStdErr("%s", errBuf); goto done;
     };
     //
     char *layoutTmpl = "function (vTree) {"
@@ -280,7 +326,7 @@ testExecLayoutTmplProvidesFetchOnesInVariables() {
     componentArrayPush(&cmps, &component2);
     // 2. Call
     char *layoutTmpl = "function (vTree, var1, var2) {"
-                           "vTree.registerElement(\"fos\", null, "
+                           "vTree.registerElement('fos', null, "
                                "var1.prop + ' ' + var1.cmp.id + ' ' + var1.cmp.name + ' | ' +"
                                "var2.fus + ' ' + var2.cmp.id + ' ' + var2.cmp.name"
                            ")"
@@ -334,7 +380,7 @@ testExecLayoutTmplProvidesFetchAllsInVariables() {
     componentArrayPush(&cmps, &bar2);
     // 2. Call
     char *layoutTmpl = "function (vTree, foos, bars) {"
-                           "vTree.registerElement(\"fos\", null, "
+                           "vTree.registerElement('fos', null, "
                                "foos.map(function (foo) {"
                                   "return foo.prop + ' ' + foo.cmp.id + ' ' + "
                                           "foo.cmp.name"
@@ -368,6 +414,7 @@ testExecLayoutTmplProvidesFetchAllsInVariables() {
 void
 vTreeScriptBindingsTestsRun() {
     testVTreeRegisterElementWithElemAndTextChildren();
+    testVTreeRegisterElementAttributes();
     testVTreePartialRunsCachedPartial();
     testDocumentDataConfigFetchOneChains();
     testDocumentDataConfigFetchAllChains();

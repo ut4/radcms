@@ -75,7 +75,7 @@ vTreeScriptBindingsExecLayoutTmpl(duk_context *ctx, VTree *vTree,
         argCount += 1;
     }
     if (duk_pcall(ctx, argCount) != 0) {
-        putError(duk_safe_to_string(ctx, -1));
+        putError("%s", duk_safe_to_string(ctx, -1));
         duk_pop(ctx); // error
         return false;
     }
@@ -84,18 +84,41 @@ vTreeScriptBindingsExecLayoutTmpl(duk_context *ctx, VTree *vTree,
     return true;
 }
 
+static ElemProp*
+collectElemProps(duk_context *ctx) {// [str obj str] (arguments of vTree.registerElement()
+    if (!duk_is_object_coercible(ctx, 1)) {
+        return NULL;
+    }
+    duk_enum(ctx, 1, DUK_ENUM_OWN_PROPERTIES_ONLY); // [str obj str enum]
+    ElemProp *out = NULL;
+    unsigned numPushed = 0;
+    if (duk_next(ctx, 3, true)) {
+        out = elemPropCreate(duk_require_string(ctx, -2),// [str obj str enum key val]
+                             duk_require_string(ctx, -1));
+        ElemProp *prev = out;
+        numPushed += 2;
+        while (duk_next(ctx, 3, true)) {
+            prev->next = elemPropCreate(duk_require_string(ctx, -2),
+                                        duk_require_string(ctx, -1));
+            prev = prev->next;
+            numPushed += 2;
+        }
+    }
+    duk_pop_n(ctx, numPushed + 1);                  // [str obj str]
+    return out;
+}
+
 static duk_ret_t
 vTreeSBRegisterElement(duk_context *ctx) {
     // Note: duk_get_top() is always 3 (same as the 3rd arg of duk_push_c_lightfunc())
+    const char *tagName = duk_require_string(ctx, 0); // 1st argument
+    ElemProp *props = collectElemProps(ctx);          // 2nd argument (props)
     duk_push_thread_stash(ctx, ctx);
     duk_get_prop_string(ctx, -1, V_TREE_STASH_KEY);
     VTree *vTree = (VTree*)duk_to_pointer(ctx, -1);
-    const char *tagName = duk_require_string(ctx, 0); // 1st argument
-    // ignore the 2nd argument (props)
     NodeRefArray children;
     nodeRefArrayInit(&children);
-    // 3rd argument (children)
-    /*
+    /*                                                // 3rd argument (children)
      * Single elemNode (e(..., e("child" ...))
      */
     if (duk_is_number(ctx, 2)) {
@@ -132,7 +155,7 @@ vTreeSBRegisterElement(duk_context *ctx) {
         duk_error(ctx, DUK_ERR_TYPE_ERROR, "3rd arg must be \"str\", <nodeRef>,"
             " or [<nodeRef>...].\n");
     }
-    unsigned newId = vTreeCreateElemNode(vTree, tagName, &children);
+    unsigned newId = vTreeCreateElemNode(vTree, tagName, props, &children);
     duk_push_uint(ctx, newId);
     return 1;
 }
@@ -176,7 +199,7 @@ execLayoutWrap(duk_context *ctx, DocumentDataConfig *ddc, const char *url,
     duk_get_global_string(ctx, "documentDataConfig"); // arg1
     duk_push_string(ctx, url);                        // arg2
     if (duk_pcall(ctx, 2) != 0) {
-        putError(duk_safe_to_string(ctx, -1));
+        putError("%s", duk_safe_to_string(ctx, -1));
         duk_pop(ctx); // error
         return false;
     }

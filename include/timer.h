@@ -35,7 +35,7 @@
 #define timerGetTime() \
     (timerIsRunning \
         ? (void)clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end), \
-          (double)(end.tv_sec - start.tv_sec) * 1000000 + (end.tv_nsec - start.tv_nsec) / 100000 \
+          (double)(end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9 \
         : 0)
 
 #endif

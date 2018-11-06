@@ -40,12 +40,20 @@ typedef struct {
     unsigned *values;
 } NodeRefArray;
 
+struct ElemProp;
+typedef struct ElemProp ElemProp;
+struct ElemProp {
+    char *key;
+    char *val;
+    ElemProp *next;
+};
+
 typedef struct {
     unsigned id;
     char *tagName;
+    ElemProp *props;
     NodeRefArray children;
 } ElemNode;
-void elemNodeFreeProps(ElemNode *this);
 
 typedef struct {
     unsigned capacity;
@@ -87,6 +95,7 @@ vTreeFreeProps(VTree *this);
 
 /**
  * Appends a new ElemNode to $this->elemNodes, and returns a reference to it.
+ * Takes ownership of $props.
  *
  * unsigned ref = vTreeCreateElemNode(&t, "h2", NULL);
  * unsigned type = GET_NODETYPE(ref); // NodeType.TYPE_ELEM
@@ -96,7 +105,8 @@ vTreeFreeProps(VTree *this);
  * ElemNode *o = vTreeFindElemNode(ref);
  */
 unsigned
-vTreeCreateElemNode(VTree *this, const char *tagName, NodeRefArray *children);
+vTreeCreateElemNode(VTree *this, const char *tagName, ElemProp *props,
+                    NodeRefArray *children);
 
 /**
  * Appends a new TextNode to $this->textNodes, and returns a reference to it.
@@ -136,6 +146,13 @@ vTreeReplaceRef(VTree *this, NodeType nodeType, unsigned nodeId, unsigned with);
 
 unsigned
 vTreeUtilsMakeNodeRef(NodeType type, unsigned id);
+
+void
+elemNodeFreeProps(ElemNode *this);
+ElemProp*
+elemNodeGetProp(ElemNode *this, const char *key);
+
+ElemProp *elemPropCreate(const char *key, const char *value);
 
 void nodeRefArrayInit(NodeRefArray *this);
 void nodeRefArrayReset(NodeRefArray *this);

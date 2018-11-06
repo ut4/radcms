@@ -15,6 +15,7 @@ include_directories(insane ${INSN_DEP_INCLUDES})
 
 # == insane.exe ================================================================
 set(SOURCE_FILES_COMMON
+    include/web/site-graph.h src/web/site-graph.c
     include/web/website.h src/web/website.c
     include/common.h
     include/data-defs.h src/data-defs.c
