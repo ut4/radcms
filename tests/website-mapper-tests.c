@@ -1,8 +1,5 @@
 #include "website-mapper-tests.h"
 
-static Page *wmtUtilsPutPage(PageArray *to, unsigned id, const char *url,
-                            const char *layoutFileName, unsigned parentId);
-
 static void
 testWebsiteFetchAndParseSiteGraphDoesWhatItSays(Db *db, char *err) {
     // 1. Setup
@@ -17,7 +14,7 @@ testWebsiteFetchAndParseSiteGraphDoesWhatItSays(Db *db, char *err) {
         assertThatOrGoto(false, done, "Should fetch and parse the sitegraph");
     }
     // 3. Assert
-    assertIntEqualsOrGoto(website.siteGraph.pages.length, 2, done);
+    assertIntEqualsOrGoto(website.siteGraph.pages.size, 2, done);
     assertIntEquals(website.siteGraph.tmplFiles.length, 1);
     done:
         websiteFreeProps(&website);
@@ -117,13 +114,14 @@ testWebsiteGenerateProcessesPagesWithNoDbcs(Db *db, char *err) {
     //
     Website site;
     websiteInit(&site);
-    pageArrayInit(&site.siteGraph.pages, 2);
     site.db = db;
     site.dukCtx = ctx;
     TextNodeArray log;
     textNodeArrayInit(&log);
-    Page *p1 = wmtUtilsPutPage(&site.siteGraph.pages, 1, "/", "a.js", 0);
-    Page *p2 = wmtUtilsPutPage(&site.siteGraph.pages, 2, "/foo", "b.js", 0);
+    Page *p1 = siteGraphAddPage(&site.siteGraph, 1, copyString("/"), 0,
+                                copyString("a.js"));
+    Page *p2 = siteGraphAddPage(&site.siteGraph, 2, copyString("/foo"), 0,
+                                copyString("b.js"));
     if (!testUtilsCompileAndCache(ctx,
         "function(){return function(v){v.registerElement('p',null,'a'); };}",
         p1->layoutFileName, err)) { printToStdErr("%s", err); goto done; }
@@ -214,13 +212,3 @@ websiteMapperTestsRun() {
     dbDestruct(&db);
 }
 
-static Page *wmtUtilsPutPage(PageArray *to, unsigned id, const char *url,
-                             const char *layoutFileName, unsigned parentId) {
-    Page p;
-    p.id = id;
-    p.url = copyString(url);
-    p.layoutFileName = copyString(layoutFileName);
-    p.parentId = parentId;
-    pageArrayPush(to, &p);
-    return &to->values[to->length - 1];
-}

@@ -1,26 +1,19 @@
 #ifndef insn_siteGraph_h
 #define insn_siteGraph_h
 
+#include "../hashmap.h"
 #include "../str-reader.h" // strReaderRead*() etc.
 #include "../v-tree.h" // TextNodeArray
 
-struct Page;
-typedef struct Page Page;
 typedef struct {
-    unsigned capacity;
-    unsigned length;
-    Page *values;
-} PageArray;
-
-struct Page {
     unsigned id;
     char *url; // eg. "/" or "/foo/bar"
     unsigned parentId;
     char *layoutFileName;
-};
+} Page;
 
 typedef struct {
-    PageArray pages;
+    HashMap pages;
     TextNodeArray tmplFiles;
 } SiteGraph;
 
@@ -42,7 +35,7 @@ bool
 siteGraphParse(char *str, SiteGraph *out, StrReader *sr, char *err);
 
 /**
- * Converts $siteGraph to a storable string $to. Example:
+ * Converts $this to a storable string $to. Example:
  *
  * "4|"                      // 4 pages total
  * "2|"                      // 2 templates total
@@ -55,16 +48,22 @@ siteGraphParse(char *str, SiteGraph *out, StrReader *sr, char *err);
  * // \0 should always contain null byte
  */
 void
-siteGraphSerialize(SiteGraph *siteGraph, char *to);
+siteGraphSerialize(SiteGraph *this, char *to);
 
 /**
  * Returns Page|NULL.
  */
 Page*
-siteGraphFindPage(SiteGraph *siteGraph, const char *url);
+siteGraphFindPage(SiteGraph *this, char *url);
 
-void pageArrayInit(PageArray *this, unsigned capacity);
-void pageArrayPush(PageArray *this, Page *page);
-void pageArrayFreeProps(PageArray *this);
+/**
+ * Takes ownership of $url, and $layoutFileName
+ */
+Page*
+siteGraphAddPage(SiteGraph *this, unsigned id, char *url, unsigned parentId,
+                 char *layoutFileName);
+
+void
+siteGraphDiffMake(SiteGraph *this, VTree *vTree, void *toMyPtr, char *err);
 
 #endif

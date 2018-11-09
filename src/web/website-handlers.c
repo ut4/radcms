@@ -8,11 +8,11 @@ unsigned
 websiteHandlersHandlePageRequest(void *this, const char *method, const char *url,
                                  struct MHD_Response **response, char *err) {
     Website *site = (Website*)this;
-    Page *p = siteGraphFindPage(&site->siteGraph, url);
+    Page *p = siteGraphFindPage(&site->siteGraph, (char*)url);
     if (!p) {
         return MHD_HTTP_NOT_FOUND;
     }
-    char *renderedHtml = pageRender(site, p, url, err);
+    char *renderedHtml = pageRender(site, p->layoutFileName, url, NULL, NULL, err);
     if (renderedHtml) {
         injectCPanelIframe(&renderedHtml);
     } else {
@@ -65,12 +65,12 @@ websiteHandlersHandleGenerateRequest(void *this, const char *method, const char 
     if (!websiteGenerate(site, writePageToFile, NULL, err)) {
         return MHD_HTTP_INTERNAL_SERVER_ERROR;
     }
-    const char *t = "Generated %u pages to '%sout'.";
+    const char *t = "Generated %d pages to '%sout'.";
     char *ret = ALLOCATE_ARR(char, strlen(t) - 4 +
-                                   (log10(site->siteGraph.pages.length) + 1) +
+                                   (log10(site->siteGraph.pages.size) + 1) +
                                    strlen(site->rootDir) +
                                    1);
-    sprintf(ret, t, site->siteGraph.pages.length, site->rootDir);
+    sprintf(ret, t, site->siteGraph.pages.size, site->rootDir);
 #ifdef DEBUG_COUNT_ALLOC
     memoryAddToByteCount(-(strlen(ret) + 1));
 #endif

@@ -59,9 +59,10 @@ websiteFetchBatches(Website *this, DocumentDataConfig *ddc, ComponentArray *to,
 
 bool
 websiteGenerate(Website *this, pageExportWriteFn writeFn, void *myPtr, char *err) {
-    for (unsigned i = 0; i < this->siteGraph.pages.length; ++i) {
-        Page *p = &this->siteGraph.pages.values[i];
-        char *rendered = pageRender(this, p, p->url, err);
+    HashMapElPtr *ptr = this->siteGraph.pages.orderedAccess;
+    while (ptr) {
+        Page *p = (Page*)ptr->data;
+        char *rendered = pageRender(this, p->layoutFileName, p->url, NULL, NULL, err);
         if (rendered) {
             if (!writeFn(rendered, p, this, myPtr, err)) {
                 FREE_STR(rendered);
@@ -71,6 +72,7 @@ websiteGenerate(Website *this, pageExportWriteFn writeFn, void *myPtr, char *err
         } else {
             return false;
         }
+        ptr = ptr->next;
     }
     return true;
 }
@@ -111,6 +113,24 @@ websiteHandleFWEvent(FWEventType type, const char *fileName, void *myPtr) {
         duk_push_thread_stash(this->dukCtx, this->dukCtx);
         if (!doCacheTemplate(this, fileName, err)) {
             printToStdErr("%s", err);
+            duk_pop(this->dukCtx);
+            return;
+        }
+        //
+        struct SiteGraphDiff diff;
+        char *rendered = pageRender(this, fileName, "?", siteGraphDiffMake,
+                                    (void*)&diff, err);
+        if (rendered) {
+            FREE_STR(rendered);
+            bool hadChanges = false;
+            if (diff.newPages) {
+                hadChanges = true;
+            }
+            if (hadChanges) {
+                // "update websites set siteGraph = siteGraphSerialize()" here...
+            }
+        } else {
+            printToStdErr("Failed to rebuild the site-graph: %s", err);
         }
         duk_pop(this->dukCtx);
     } else if (type == FW_ACTION_DELETED) {
@@ -119,7 +139,9 @@ websiteHandleFWEvent(FWEventType type, const char *fileName, void *myPtr) {
 }
 
 char*
-pageRender(Website *this, Page *page, const char *url, char *err) {
+pageRender(Website *this, const char *layoutFileName, const char *url,
+           renderInspectFn inspectFn, void *myPtr, char *err) {
+    #define NO_LAYOUT_PAGE "<html><body>Layout file '%s' not found.</body></html>"
     duk_push_thread_stash(this->dukCtx, this->dukCtx);
     VTree vTree;
     vTreeInit(&vTree);
@@ -128,8 +150,13 @@ pageRender(Website *this, Page *page, const char *url, char *err) {
     ComponentArray components;
     componentArrayInit(&components);
     char *renderedHtml = NULL;
-    if (!vTreeScriptBindingsExecLayoutWrapFromCache(this->dukCtx,
-        page->layoutFileName, &ddc, url, err)) {
+    if (!vTreeScriptBindingsExecLayoutWrapFromCache(this->dukCtx, layoutFileName,
+                                                    &ddc, url, err)) {
+        renderedHtml = ALLOCATE_ARR(char, strlen(NO_LAYOUT_PAGE) -
+                                          2 + // %s
+                                          strlen(layoutFileName) +
+                                          1); // \0
+        sprintf(renderedHtml, NO_LAYOUT_PAGE, layoutFileName);
         goto done;
     }
     if (ddc.batchCount > 0 && !websiteFetchBatches(this, &ddc, &components, err)) {
@@ -140,6 +167,7 @@ pageRender(Website *this, Page *page, const char *url, char *err) {
         goto done;
     }
     renderedHtml = vTreeToHtml(&vTree, err);
+    if (inspectFn) inspectFn(&this->siteGraph, &vTree, myPtr, err);
     done:
     duk_pop(this->dukCtx); // thread stash
     vTreeFreeProps(&vTree);

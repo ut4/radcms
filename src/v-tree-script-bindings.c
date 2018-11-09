@@ -33,7 +33,7 @@ vTreeScriptBindingsRegister(duk_context *ctx) {
 }
 
 bool
-vTreeScriptBindingsCompileAndExecLayoutWrap(duk_context *ctx, char *layoutCode,
+vTreeScriptBindingsCompileAndExecLayoutWrap(duk_context *ctx, const char *layoutCode,
                                             DocumentDataConfig *ddc,
                                             const char *url, char *err) {
     if (!dukUtilsCompileStrToFn(ctx, layoutCode, err)) return false;
@@ -41,15 +41,12 @@ vTreeScriptBindingsCompileAndExecLayoutWrap(duk_context *ctx, char *layoutCode,
 }
 
 bool
-vTreeScriptBindingsExecLayoutWrapFromCache(duk_context *ctx, char *layoutName,
+vTreeScriptBindingsExecLayoutWrapFromCache(duk_context *ctx, const char *layoutName,
                                            DocumentDataConfig *ddc,
                                            const char *url, char *err) {
     duk_get_prop_string(ctx, -1, layoutName);
+    if (!duk_is_buffer(ctx, -1)) return false;
     duk_load_function(ctx);
-    if (!duk_is_function(ctx, -1)) {
-        putError("Failed to load cached bytecode.\n");
-        return 0;
-    }
     return execLayoutWrap(ctx, ddc, url, err);
 }
 
@@ -136,7 +133,7 @@ vTreeSBRegisterElement(duk_context *ctx) {
         unsigned l = (unsigned)duk_get_length(ctx, 2);
         if (l == 0) {
             nodeRefArrayFreeProps(&children);
-            duk_error(ctx, DUK_ERR_TYPE_ERROR, "Child-array can't be empty.\n");
+            (void)duk_error(ctx, DUK_ERR_TYPE_ERROR, "Child-array can't be empty.\n");
         }
         for (unsigned i = 0; i < l; ++i) {
             duk_get_prop_index(ctx, 2, i);
@@ -145,14 +142,14 @@ vTreeSBRegisterElement(duk_context *ctx) {
                 nodeRefArrayPush(&children, (unsigned)duk_require_uint(ctx, -1));
             } else {
                 nodeRefArrayFreeProps(&children);
-                duk_error(ctx, DUK_ERR_TYPE_ERROR, "Child-array value must be a"
+                (void)duk_error(ctx, DUK_ERR_TYPE_ERROR, "Child-array value must be a"
                           " <nodeRef>.\n");
             }
         }
         duk_pop_n(ctx, l); // each array value
     } else {
         nodeRefArrayFreeProps(&children);
-        duk_error(ctx, DUK_ERR_TYPE_ERROR, "3rd arg must be \"str\", <nodeRef>,"
+        (void)duk_error(ctx, DUK_ERR_TYPE_ERROR, "3rd arg must be \"str\", <nodeRef>,"
             " or [<nodeRef>...].\n");
     }
     unsigned newId = vTreeCreateElemNode(vTree, tagName, props, &children);
@@ -167,13 +164,13 @@ vTreeSBPartial(duk_context *ctx) {
     duk_get_prop_string(ctx, -1, tmplFileName);// [... str, data, stash, bytecode]
     duk_load_function(ctx);                    // [... str, data, stash, fn]
     if (!duk_is_function(ctx, -1)) {
-        duk_error(ctx, DUK_ERR_ERROR, "Failed to load cached bytecode.\n");
+        (void)duk_error(ctx, DUK_ERR_ERROR, "Failed to load cached bytecode.\n");
         return 0;
     }
     duk_get_global_string(ctx, "vTree"); // arg1, [... str, data, stash, fn, vTree]
     duk_dup(ctx, 1);                     // arg2, [... str, data, stash, fn, vTree, data]
     if (duk_pcall(ctx, 2) != 0) {        //       [... str, data, stash, err]
-        duk_error(ctx, DUK_ERR_ERROR, duk_safe_to_string(ctx, -1));
+        (void)duk_error(ctx, DUK_ERR_ERROR, duk_safe_to_string(ctx, -1));
         duk_pop(ctx); // error
         return 0;
     }                                    //       [... str, data, stash, number]

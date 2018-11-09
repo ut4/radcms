@@ -1,10 +1,10 @@
 #include "../../include/web/site-graph.h"
 
+static void pageFreeProps(Page *this);
+
 void
 siteGraphInit(SiteGraph *this) {
-    this->pages.capacity = 0;
-    this->pages.length = 0;
-    this->pages.values = NULL;
+    hashmap_init(&this->pages);
     this->tmplFiles.capacity = 0;
     this->tmplFiles.length = 0;
     this->tmplFiles.values = NULL;
@@ -12,7 +12,13 @@ siteGraphInit(SiteGraph *this) {
 
 void
 siteGraphFreeProps(SiteGraph *this) {
-    if (this->pages.values) pageArrayFreeProps(&this->pages);
+    HashMapElPtr *ptr = this->pages.orderedAccess;
+    while (ptr) {
+        pageFreeProps((Page*)ptr->data);
+        FREE(Page, ptr->data);
+        ptr = ptr->next;
+    }
+    hashmap_free_props(&this->pages);
     if (this->tmplFiles.values) textNodeArrayFreeProps(&this->tmplFiles);
 }
 
@@ -24,24 +30,17 @@ siteGraphParse(char *str, SiteGraph *out, StrReader *sr, char *err) {
     }
     strReaderInit(sr, str, '|');
     unsigned totalPageCount = strReaderReadInt(sr);
-    pageArrayInit(&out->pages, totalPageCount);
     unsigned templateCount = strReaderReadInt(sr);
     if (templateCount == 0) return false;
     textNodeArrayInit(&out->tmplFiles);
     while (*sr->current != '\0') {
         if (strReaderIsDigit(*sr->current)) {
-            if (out->pages.length == totalPageCount) {
-                printToStdErr("Critical: siteGraph->pages.values overflow. Exiting.\n");
-                exit(EXIT_FAILURE);
-            }
-            siteGraphAddPage(
-                out,
-                strReaderReadInt(sr), // id
-                strReaderReadStr(sr), // url
-                strReaderReadInt(sr), // parentId
-                strReaderReadStr(sr) // layoutFileName
-            );
-        } else if (out->pages.length > 0) {
+            unsigned id = strReaderReadInt(sr);
+            char *url = strReaderReadStr(sr);
+            unsigned parentId = strReaderReadInt(sr);
+            char *layoutFileName = strReaderReadStr(sr);
+            (void)siteGraphAddPage(out, id, url, parentId, layoutFileName);
+        } else if (out->pages.size > 0) {
             TextNode text;
             text.id = 0;
             text.chars = strReaderReadStr(sr);
@@ -51,8 +50,8 @@ siteGraphParse(char *str, SiteGraph *out, StrReader *sr, char *err) {
             return false;
         }
     }
-    if (out->pages.length != totalPageCount) {
-        printToStdErr("siteGraph->pages.length != definedTotalPageCount");
+    if (out->pages.size != totalPageCount) {
+        printToStdErr("siteGraph->pages.size != definedTotalPageCount");
     }
     if (out->tmplFiles.length != templateCount) {
         printToStdErr("siteGraph->tmplFiles.length != definedTemplateCount");
@@ -66,45 +65,45 @@ siteGraphSerialize(SiteGraph *this, char *to) {
 }
 
 Page*
-siteGraphFindPage(SiteGraph *this, const char *url) {
-    for (unsigned i = 0; i < this->pages.length; ++i) {
-        if (strcmp(this->pages.values[i].url, url) == 0) {
-            return &this->pages.values[i];
-        }
-    }
-    return NULL;
+siteGraphFindPage(SiteGraph *this, char *url) {
+    Page *page;
+    hashmap_get(&this->pages, url, (void*)&page);
+    return page;
+}
+
+Page*
+siteGraphAddPage(SiteGraph *this, unsigned id, char *url, unsigned parentId,
+                 char *layoutFileName) {
+    Page *newPage = ALLOCATE(Page);
+    newPage->id = id;
+    newPage->url = url;
+    newPage->parentId = parentId;
+    newPage->layoutFileName = layoutFileName;
+    hashmap_put(&this->pages, url, (void*)newPage);
+    return newPage;
 }
 
 void
-siteGraphAddPage(SiteGraph *this, unsigned id, char *url, unsigned parentId,
-                 char *layoutFileName) {
-    Page newPage = {
-        .id = id,
-        .url = url,
-        .parentId = parentId,
-        .layoutFileName = layoutFileName
-    };
-    pageArrayPush(&this->pages, &newPage);
-}
-void
-pageArrayInit(PageArray *this, unsigned capacity) {
-    this->capacity = capacity;
-    this->length = 0;
-    this->values = ALLOCATE_ARR(Page, capacity);
-}
-void
-pageArrayPush(PageArray *this, Page *page) {
-    this->values[this->length] = *page;
-    this->length++;
-}
-void
-pageArrayFreeProps(PageArray *this) {
-    for (unsigned i = 0; i < this->capacity; ++i) {
-        FREE_STR(this->values[i].url);
-        FREE_STR(this->values[i].layoutFileName);
+siteGraphDiffMake(SiteGraph *this, VTree *vTree, void *toMyPtr, char *err) {
+    for (unsigned i = 0; i < vTree->elemNodes.length; ++i) {
+        if (strcmp(vTree->elemNodes.values[i].tagName, "a") == 0) {
+            ElemProp *lfn = elemNodeGetProp(&vTree->elemNodes.values[i], "layoutFileName");
+            if (!lfn) continue;
+            ElemProp *href = elemNodeGetProp(&vTree->elemNodes.values[i], "href");
+            if (!href) {
+                printToStdErr("Can't follow a link without href.\n");
+                return;
+            }
+            if (!siteGraphFindPage(this, href->val)) {
+                ((struct SiteGraphDiff*)toMyPtr)->newPages = siteGraphAddPage(
+                    this, 99, copyString(href->val), 0, copyString(lfn->val));
+            }
+        }
     }
-    FREE_ARR(Page, this->values, this->capacity);
-    this->capacity = 0;
-    this->length = 0;
-    this->values = NULL;
+}
+
+static void
+pageFreeProps(Page *this) {
+    FREE_STR(this->url);
+    FREE_STR(this->layoutFileName);
 }

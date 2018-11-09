@@ -3,6 +3,7 @@
 #include "tests/site-graph-tests.h"
 #include "tests/v-tree-script-bindings-tests.h"
 #include "tests/v-tree-tests.h"
+#include "tests/website-diff-tests.h"
 #include "tests/website-mapper-tests.h"
 
 static unsigned
@@ -26,9 +27,10 @@ int main(int argc, const char* argv[]) {
     testSuitesRan += runIf(testSuiteName, "dataQueries", dataQueryTestsRun);
     testSuitesRan += runIf(testSuiteName, "fileIO", fileIOTestsRun);
     testSuitesRan += runIf(testSuiteName, "siteGraph", siteGraphTestsRun);
-    testSuitesRan += runIf(testSuiteName, "websiteMapper", websiteMapperTestsRun);
     testSuitesRan += runIf(testSuiteName, "vTreeScriptBindings", vTreeScriptBindingsTestsRun);
     testSuitesRan += runIf(testSuiteName, "vTree", vTreeTestsRun);
+    testSuitesRan += runIf(testSuiteName, "websiteDiff", websiteDiffTestsRun);
+    testSuitesRan += runIf(testSuiteName, "websiteMapper", websiteMapperTestsRun);
     if (testSuitesRan > 0) {
         printf("------------------------\nRan %d test suites.\n", testSuitesRan);
         exit(EXIT_SUCCESS);

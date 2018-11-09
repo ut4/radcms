@@ -14,7 +14,7 @@ vTreeScriptBindingsRegister(duk_context *ctx);
  * Compiles and runs $layoutCode.
  */
 bool
-vTreeScriptBindingsCompileAndExecLayoutWrap(duk_context *ctx, char *layoutCode,
+vTreeScriptBindingsCompileAndExecLayoutWrap(duk_context *ctx, const char *layoutCode,
                                         DocumentDataConfig *ddc,
                                         const char *url, char *err);
 
@@ -23,7 +23,7 @@ vTreeScriptBindingsCompileAndExecLayoutWrap(duk_context *ctx, char *layoutCode,
  * -function from the duktape thread stash, using $layoutName as a key. Note:
  * assumes that duk_push_thread_stash is already called. */
 bool
-vTreeScriptBindingsExecLayoutWrapFromCache(duk_context *ctx, char *layoutName,
+vTreeScriptBindingsExecLayoutWrapFromCache(duk_context *ctx, const char *layoutName,
                                            DocumentDataConfig *ddc,
                                            const char *url, char *err);
 

@@ -24,6 +24,7 @@ set(SOURCE_FILES_COMMON
     include/db.h src/db.c
     include/duk.h src/duk.c
     include/file-io.h src/file-io.c
+    include/hashmap.h src/hashmap.c
     include/memory.h src/memory.c
     include/site-ini.h src/site-ini.c
     include/v-tree-script-bindings.h src/v-tree-script-bindings.c
@@ -51,6 +52,7 @@ set(TESTS_FILES
     tests/site-graph-tests.h tests/site-graph-tests.c
     tests/v-tree-script-bindings-tests.h tests/v-tree-script-bindings-tests.c
     tests/v-tree-tests.h tests/v-tree-tests.c
+    tests/website-diff-tests.h tests/website-diff-tests.c
     tests/website-mapper-tests.h tests/website-mapper-tests.c
 )
 add_executable(tests ${SOURCE_FILES_COMMON} ${TESTS_FILES} tests-main.c)

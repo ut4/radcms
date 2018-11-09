@@ -18,6 +18,7 @@ static void
 testSiteGraphParseParsesTheInput() {
     // 1. Setup
     SiteGraph testGraph;
+    siteGraphInit(&testGraph);
     StrReader strReader;
     char errBuf[ERR_BUF_LEN]; errBuf[0] = '\0';
     char *serialized =
@@ -35,27 +36,37 @@ testSiteGraphParseParsesTheInput() {
     bool ok = siteGraphParse(serialized, &testGraph, &strReader, errBuf);
     // 3. Assert
     assertThatOrGoto(ok, done, "parse() should return true");
-    assertIntEquals(testGraph.pages.length, 5);
-    assertIntEquals(testGraph.pages.values[0].id, 24);
-    assertStrEquals(testGraph.pages.values[0].url, "/");
-    assertIntEquals(testGraph.pages.values[0].parentId, 0);
-    assertStrEquals(testGraph.pages.values[0].layoutFileName, "a.b");
-    assertIntEquals(testGraph.pages.values[1].id, 5);
-    assertStrEquals(testGraph.pages.values[1].url, "/foo");
-    assertIntEquals(testGraph.pages.values[1].parentId, 0);
-    assertStrEquals(testGraph.pages.values[1].layoutFileName, "a");
-    assertIntEquals(testGraph.pages.values[2].id, 8);
-    assertStrEquals(testGraph.pages.values[2].url, "/f/b");
-    assertIntEquals(testGraph.pages.values[2].parentId, 5);
-    assertStrEquals(testGraph.pages.values[2].layoutFileName, "b");
-    assertIntEquals(testGraph.pages.values[3].id, 6);
-    assertStrEquals(testGraph.pages.values[3].url, "/b/z");
-    assertIntEquals(testGraph.pages.values[3].parentId, 8);
-    assertStrEquals(testGraph.pages.values[3].layoutFileName, "c");
-    assertIntEquals(testGraph.pages.values[4].id, 2);
-    assertStrEquals(testGraph.pages.values[4].url, "/baz");
-    assertIntEquals(testGraph.pages.values[4].parentId, 0);
-    assertStrEquals(testGraph.pages.values[4].layoutFileName, "d");
+    assertIntEquals(testGraph.pages.size, 5);
+    Page *p1 = siteGraphFindPage(&testGraph, "/");
+    assertThatOrGoto(p1 != NULL, done, "Sanity *p1 != NULL");
+    assertIntEquals(p1->id, 24);
+    assertStrEquals(p1->url, "/");
+    assertIntEquals(p1->parentId, 0);
+    assertStrEquals(p1->layoutFileName, "a.b");
+    Page *p2 = siteGraphFindPage(&testGraph, "/foo");
+    assertThatOrGoto(p2 != NULL, done, "Sanity *p2 != NULL");
+    assertIntEquals(p2->id, 5);
+    assertStrEquals(p2->url, "/foo");
+    assertIntEquals(p2->parentId, 0);
+    assertStrEquals(p2->layoutFileName, "a");
+    Page *p3 = siteGraphFindPage(&testGraph, "/f/b");
+    assertThatOrGoto(p3 != NULL, done, "Sanity *p3 != NULL");
+    assertIntEquals(p3->id, 8);
+    assertStrEquals(p3->url, "/f/b");
+    assertIntEquals(p3->parentId, 5);
+    assertStrEquals(p3->layoutFileName, "b");
+    Page *p4 = siteGraphFindPage(&testGraph, "/b/z");
+    assertThatOrGoto(p4 != NULL, done, "Sanity *p4 != NULL");
+    assertIntEquals(p4->id, 6);
+    assertStrEquals(p4->url, "/b/z");
+    assertIntEquals(p4->parentId, 8);
+    assertStrEquals(p4->layoutFileName, "c");
+    Page *p5 = siteGraphFindPage(&testGraph, "/baz");
+    assertThatOrGoto(p5 != NULL, done, "Sanity *p5 != NULL");
+    assertIntEquals(p5->id, 2);
+    assertStrEquals(p5->url, "/baz");
+    assertIntEquals(p5->parentId, 0);
+    assertStrEquals(p5->layoutFileName, "d");
     //
     assertIntEquals(testGraph.tmplFiles.length, 2);
     assertStrEquals(testGraph.tmplFiles.values[0].chars, "foo.bar");

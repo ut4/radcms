@@ -55,10 +55,14 @@ websiteInstall(Website *this, SampleData *data, const char *schemaSql,
 void
 websiteHandleFWEvent(FWEventType type, const char *fileName, void *myPtr);
 
+typedef void (*renderInspectFn)(SiteGraph *siteGraph, VTree *vTree, void *myPtr,
+                                char *err);
+
 /**
  * Returns char*|NULL. The caller frees.
  */
 char*
-pageRender(Website *this, Page *page, const char *url, char *err);
+pageRender(Website *this, const char *layoutFileName, const char *url,
+           renderInspectFn inspectFn, void *myPtr, char *err);
 
 #endif

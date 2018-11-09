@@ -116,6 +116,7 @@ webAppReadOrCreateSiteIni(WebApp *this, const char *contents, char *err) {
 
 static RequestHandler*
 getHandler(WebApp *app, const char *method, const char *url) {
+    if (strchr(url, '.')) return NULL; // All api-routes are a-z1-9 only
     for (unsigned i = 0; i < app->handlerCount; ++i) {
         RequestHandler *h = &app->handlers[i];
         if (strcmp(h->methodPattern, method) != 0) continue;

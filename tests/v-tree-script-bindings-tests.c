@@ -123,7 +123,7 @@ testVTreePartialRunsCachedPartial() {
     "}";
     if (!testUtilsCompileAndCache(ctx, testPartial, "foo.js", errBuf)) {
         printToStdErr("%s", errBuf); goto done;
-    };
+    }
     //
     char *layoutTmpl = "function (vTree) {"
         "vTree.registerElement('div', null, vTree.partial('foo.js', {foo:'bar'}));"
