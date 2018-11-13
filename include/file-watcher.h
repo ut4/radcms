@@ -32,7 +32,14 @@ fileWatcherInit(FileWatcher *this, onFWEvent onEventFn);
 void
 fileWatcherFreeProps(FileWatcher *this);
 
+/**
+ * A function that returns false if the changes of $fileName should be ignored,
+ * or true if accepted.
+ */
+typedef bool (*fileNameMatcher)(const char *fileName);
+
 bool
-fileWatcherWatch(FileWatcher *this, const char *dir, void *myPtr, char *err);
+fileWatcherWatch(FileWatcher *this, const char *path, fileNameMatcher matcherFn,
+                 void *myPtr, char *err);
 
 #endif

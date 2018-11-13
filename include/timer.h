@@ -29,12 +29,12 @@
     bool timerIsRunning = false
 
 #define timerStart() \
-    (void)clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start); \
+    (void)clock_gettime(CLOCK_MONOTONIC, &start); \
     timerIsRunning = true
 
 #define timerGetTime() \
     (timerIsRunning \
-        ? (void)clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end), \
+        ? (void)clock_gettime(CLOCK_MONOTONIC, &end), \
           (double)(end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9 \
         : 0)
 

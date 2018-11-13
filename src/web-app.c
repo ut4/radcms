@@ -54,7 +54,8 @@ void*
 webAppStartFileWatcher(void *myPtr) {
     WebApp *app = (WebApp*)myPtr;
     fileWatcherInit(&app->fileWatcher, websiteHandleFWEvent);
-    fileWatcherWatch(&app->fileWatcher, app->rootDir, (void*)app->site, app->errBuf);
+    fileWatcherWatch(&app->fileWatcher, app->rootDir, websiteCheckIsFWFileAcceptable,
+                     (void*)app->site, app->errBuf);
     return NULL;
 }
 

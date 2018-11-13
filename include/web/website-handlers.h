@@ -2,6 +2,7 @@
 #define insn_websiteHandlers_h
 
 #include "../file-io.h" // fileIO*()
+#include "../../include/timer.h"
 #include "../web-app-common.h" // microhttpd
 #include "../v-tree-script-bindings.h" // vTreeScriptBindings*()
 #include "website.h"

@@ -62,17 +62,24 @@ unsigned
 websiteHandlersHandleGenerateRequest(void *this, const char *method, const char *url,
                                      struct MHD_Response **response, char *err) {
     Website *site = (Website*)this;
+    timerInit();
+    timerStart();
     if (!websiteGenerate(site, writePageToFile, NULL, err)) {
         return MHD_HTTP_INTERNAL_SERVER_ERROR;
     }
-    const char *t = "Generated %d pages to '%sout'.";
-    char *ret = ALLOCATE_ARR(char, strlen(t) - 4 +
-                                   (log10(site->siteGraph.pages.size) + 1) +
-                                   strlen(site->rootDir) +
-                                   1);
-    sprintf(ret, t, site->siteGraph.pages.size, site->rootDir);
+    double secsElapsed = timerGetTime();
+    double roundSecs = round(secsElapsed);
+    const char *tmpl = "Generated %d pages to '%sout' in %.6f secs.";
+    size_t messageLen = strlen(tmpl) - strlen("%d%s%.6f") +
+                        (log10(site->siteGraph.pages.size) + 1) +
+                        strlen(site->rootDir) +
+                        (roundSecs > 0.1 ? (int)log10(round(secsElapsed)) + 1: 1) + 6 +
+                        1;
+    char *ret = ALLOCATE_ARR(char, messageLen);
+    snprintf(ret, messageLen, tmpl, site->siteGraph.pages.size, site->rootDir,
+             secsElapsed);
 #ifdef DEBUG_COUNT_ALLOC
-    memoryAddToByteCount(-(strlen(ret) + 1));
+    memoryAddToByteCount(-(messageLen));
 #endif
     *response = MHD_create_response_from_buffer(strlen(ret),
                                                 (void*)ret,

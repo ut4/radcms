@@ -11,13 +11,14 @@ fileWatcherFreeProps(FileWatcher *this) {
 }
 
 bool
-fileWatcherWatch(FileWatcher *this, const char *dir, void *myPtr, char *err) {
+fileWatcherWatch(FileWatcher *this, const char *path, fileNameMatcher matcherFn,
+                 void *myPtr, char *err) {
     int fd = inotify_init();
     if (fd < 0) {
         putError("Failed to inotify_init().\n");
         return false;
     }
-    int wd = inotify_add_watch(fd, dir, IN_MODIFY | IN_CREATE | IN_DELETE);
+    int wd = inotify_add_watch(fd, path, IN_MODIFY | IN_CREATE | IN_DELETE);
     if (wd == -1) {
         putError("LinuxFileWatcher: inotify_add_watch().\n");
         return false;
@@ -37,13 +38,11 @@ fileWatcherWatch(FileWatcher *this, const char *dir, void *myPtr, char *err) {
     while (true) {
         int len = read(fd, buf, BUF_LEN);
         if (len < 0) {
-            putError("LinuxFileWatcher: Failed to read '%s'.\n", dir);
+            putError("LinuxFileWatcher: Failed to read '%s'.\n", path);
             return false;
         }
         for (char *ptr = buf; ptr < buf + len; ptr += EVENT_SIZE + event->len) {
             event = (const struct inotify_event*)ptr;
-            nanosleep(&fileLockWaitTime, NULL);
-            //
             unsigned incomingAction = FW_ACTION_OTHER;
             if (event->mask & IN_CREATE) {
                 incomingAction = FW_ACTION_ADDED;
@@ -51,6 +50,9 @@ fileWatcherWatch(FileWatcher *this, const char *dir, void *myPtr, char *err) {
                 incomingAction = FW_ACTION_MODIFIED;
             } else if (event->mask & IN_DELETE) {
                 incomingAction = FW_ACTION_DELETED;
+            } else {
+                printToStdErr("Unsupported fw event type.\n");
+                continue;
             }
             //
             if (incomingAction == lastAction &&
@@ -60,13 +62,11 @@ fileWatcherWatch(FileWatcher *this, const char *dir, void *myPtr, char *err) {
                 continue;
             }
             //
+            if (matcherFn && !matcherFn(event->name)) continue;
+            nanosleep(&fileLockWaitTime, NULL);
             lastAction = incomingAction;
             timerStart();
-            if (incomingAction != FW_ACTION_OTHER) {
-                this->onEventFn(incomingAction, event->name, myPtr);
-            } else {
-                printToStdErr("Unsupported fw event type.\n");
-            }
+            this->onEventFn(incomingAction, event->name, myPtr);
         }
     }
     //

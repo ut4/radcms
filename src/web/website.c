@@ -103,6 +103,11 @@ websiteInstall(Website *this, SampleData *data, const char *schemaSql,
     return true;
 }
 
+bool
+websiteCheckIsFWFileAcceptable(const char *fileName) {
+    return strstr(fileName, ".js") != NULL;
+}
+
 void
 websiteHandleFWEvent(FWEventType type, const char *fileName, void *myPtr) {
     Website *this = (Website*)myPtr;
@@ -118,7 +123,7 @@ websiteHandleFWEvent(FWEventType type, const char *fileName, void *myPtr) {
         }
         //
         struct SiteGraphDiff diff;
-        char *rendered = pageRender(this, fileName, "?", siteGraphDiffMake,
+        char *rendered = pageRender(this, fileName, "/", siteGraphDiffMake,
                                     (void*)&diff, err);
         if (rendered) {
             FREE_STR(rendered);
@@ -152,11 +157,12 @@ pageRender(Website *this, const char *layoutFileName, const char *url,
     char *renderedHtml = NULL;
     if (!vTreeScriptBindingsExecLayoutWrapFromCache(this->dukCtx, layoutFileName,
                                                     &ddc, url, err)) {
-        renderedHtml = ALLOCATE_ARR(char, strlen(NO_LAYOUT_PAGE) -
-                                          2 + // %s
-                                          strlen(layoutFileName) +
-                                          1); // \0
-        sprintf(renderedHtml, NO_LAYOUT_PAGE, layoutFileName);
+        size_t messageLen = strlen(NO_LAYOUT_PAGE) -
+                            2 + // %s
+                            strlen(layoutFileName) +
+                            1; // \0
+        renderedHtml = ALLOCATE_ARR(char, messageLen);
+        snprintf(renderedHtml, messageLen, NO_LAYOUT_PAGE, layoutFileName);
         goto done;
     }
     if (ddc.batchCount > 0 && !websiteFetchBatches(this, &ddc, &components, err)) {

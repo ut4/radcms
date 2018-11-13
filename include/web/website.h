@@ -52,6 +52,9 @@ bool
 websiteInstall(Website *this, SampleData *data, const char *schemaSql,
                char *err);
 
+bool
+websiteCheckIsFWFileAcceptable(const char *fileName);
+
 void
 websiteHandleFWEvent(FWEventType type, const char *fileName, void *myPtr);
 

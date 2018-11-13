@@ -13,7 +13,8 @@ fileWatcherFreeProps(FileWatcher *this) {
 }
 
 bool
-fileWatcherWatch(FileWatcher *this, const char *dir, void *myPtr, char *err) {
+fileWatcherWatch(FileWatcher *this, const char *path, fileNameMatcher matcherFn,
+                 void *myPtr, char *err) {
     #define MIN_TIME_BETWEEN_EVENTS 0.12 // 120ms
     #define FILE_LOCK_WAIT_TIME 100000000L // 100ms
     #define NOTIFY_BUFFER_ELEM_COUNT 8
@@ -79,7 +80,7 @@ fileWatcherWatch(FileWatcher *this, const char *dir, void *myPtr, char *err) {
             }
             lastIncomingAction = incomingAction;
             timerStart();
-            if (action != 0) {
+            if (action != 0 && (!matcherFn || matcherFn(fileName))) {
                 this->onEventFn(action, unicodeFileNameToMb(
                     &notifyBuffer[0], fileName), myPtr);
             }
