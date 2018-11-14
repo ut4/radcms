@@ -1,4 +1,5 @@
 #include "../../include/web/website.h"
+#include <assert.h>
 
 static void mapDataBatchesRow(sqlite3_stmt *stmt, void **myPtr);
 static void mapSiteGraphResultRow(sqlite3_stmt *stmt, void **myPtr);
@@ -34,16 +35,15 @@ websiteFetchAndParseSiteGraph(Website *this, char *err) {
 
 bool
 websitePopulateTemplateCaches(Website *this, char *err) {
-    TextNodeArray *tmpls = &this->siteGraph.tmplFiles;
+    TemplateArray *tmpls = &this->siteGraph.templates;
     duk_push_thread_stash(this->dukCtx, this->dukCtx);
     for (unsigned i = 0; i < tmpls->length; ++i) {
-        if (!doCacheTemplate(this, tmpls->values[i].chars, err)) {
+        if (!doCacheTemplate(this, tmpls->values[i].fileName, err)) {
             printToStdErr("%s. Rage quitting.\n", err);
             exit(EXIT_FAILURE);
         }
     }
     duk_pop(this->dukCtx);
-    textNodeArrayFreeProps(&this->siteGraph.tmplFiles);
     return true;
 }
 
@@ -62,7 +62,7 @@ websiteGenerate(Website *this, pageExportWriteFn writeFn, void *myPtr, char *err
     HashMapElPtr *ptr = this->siteGraph.pages.orderedAccess;
     while (ptr) {
         Page *p = (Page*)ptr->data;
-        char *rendered = pageRender(this, p->layoutFileName, p->url, NULL, NULL, err);
+        char *rendered = pageRender(this, p->layoutIdx, p->url, NULL, NULL, err);
         if (rendered) {
             if (!writeFn(rendered, p, this, myPtr, err)) {
                 FREE_STR(rendered);
@@ -115,6 +115,10 @@ websiteHandleFWEvent(FWEventType type, const char *fileName, void *myPtr) {
     if (type == FW_ACTION_ADDED) {
         //
     } else if (type == FW_ACTION_MODIFIED) {
+        int layoutIdx = -1;
+        Template *layout = siteGraphFindTemplate(&this->siteGraph,
+                                                 (char*)fileName, &layoutIdx);
+        assert(layout != NULL && "An unknown file was modified.");
         duk_push_thread_stash(this->dukCtx, this->dukCtx);
         if (!doCacheTemplate(this, fileName, err)) {
             printToStdErr("%s", err);
@@ -123,7 +127,8 @@ websiteHandleFWEvent(FWEventType type, const char *fileName, void *myPtr) {
         }
         //
         struct SiteGraphDiff diff;
-        char *rendered = pageRender(this, fileName, "/", siteGraphDiffMake,
+        diff.newPages = NULL;
+        char *rendered = pageRender(this, layoutIdx, "/", siteGraphDiffMake,
                                     (void*)&diff, err);
         if (rendered) {
             FREE_STR(rendered);
@@ -144,9 +149,30 @@ websiteHandleFWEvent(FWEventType type, const char *fileName, void *myPtr) {
 }
 
 char*
-pageRender(Website *this, const char *layoutFileName, const char *url,
+pageRender(Website *this, int layoutIdx, const char *url,
            renderInspectFn inspectFn, void *myPtr, char *err) {
-    #define NO_LAYOUT_PAGE "<html><body>Layout file '%s' not found.</body></html>"
+    #define NO_LAYOUT_PAGE "<html><body>Layout file '%s' doesn't exists yet.</body></html>"
+    #define HAS_UNFIXED_ERRORS_PAGE "<html><body>Layout '%s' contains errors and can't be rendered.</body></html>"
+    Template *layout = siteGraphGetTemplate(&this->siteGraph, layoutIdx);
+    assert(layout != NULL && "Unknown layout.");
+    // User has added a link, but hasn't had time to create a layout for it yet
+    if (!layout->exists) {
+        size_t messageLen = strlen(NO_LAYOUT_PAGE) -
+                            2 + // %s
+                            strlen(layout->fileName) +
+                            1; // \0
+        char *renderedHtml = ALLOCATE_ARR(char, messageLen);
+        snprintf(renderedHtml, messageLen, NO_LAYOUT_PAGE, layout->fileName);
+        return renderedHtml;
+    }
+    // Last modification had errors -> don't even bother rendering
+    if (!inspectFn && layout->hasErrors) {
+        size_t messageLen = strlen(HAS_UNFIXED_ERRORS_PAGE) - 2 +
+                            strlen(layout->fileName) + 1;
+        char *renderedHtml = ALLOCATE_ARR(char, messageLen);
+        snprintf(renderedHtml, messageLen, HAS_UNFIXED_ERRORS_PAGE, layout->fileName);
+        return renderedHtml;
+    }
     duk_push_thread_stash(this->dukCtx, this->dukCtx);
     VTree vTree;
     vTreeInit(&vTree);
@@ -155,15 +181,12 @@ pageRender(Website *this, const char *layoutFileName, const char *url,
     ComponentArray components;
     componentArrayInit(&components);
     char *renderedHtml = NULL;
-    if (!vTreeScriptBindingsExecLayoutWrapFromCache(this->dukCtx, layoutFileName,
+    if (!vTreeScriptBindingsExecLayoutWrapFromCache(this->dukCtx, layout->fileName,
                                                     &ddc, url, err)) {
-        size_t messageLen = strlen(NO_LAYOUT_PAGE) -
-                            2 + // %s
-                            strlen(layoutFileName) +
-                            1; // \0
-        renderedHtml = ALLOCATE_ARR(char, messageLen);
-        snprintf(renderedHtml, messageLen, NO_LAYOUT_PAGE, layoutFileName);
+        if (inspectFn) layout->hasErrors = true;
         goto done;
+    } else if (layout->hasErrors) {
+        layout->hasErrors = false;
     }
     if (ddc.batchCount > 0 && !websiteFetchBatches(this, &ddc, &components, err)) {
         goto done;

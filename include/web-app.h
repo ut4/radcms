@@ -21,7 +21,7 @@ typedef struct {
 } WebApp;
 
 void
-webAppInit(WebApp *this, const char *rootDir, Website *site, char *errBuf);
+webAppInit(WebApp *this, const char *rootDir, Website *site, char *err);
 
 void
 webAppFreeProps(WebApp *this);

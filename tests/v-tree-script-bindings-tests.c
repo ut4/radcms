@@ -206,6 +206,48 @@ testDocumentDataConfigFetchAllChains() {
 }
 
 static void
+testDocumentDataConfigFetchOneValidatesItsArguments() {
+    //
+    beforeEach();
+    DocumentDataConfig ddc;
+    documentDataConfigInit(&ddc);
+    char *tooLongCmpTypeName = "function (documentDataConfig) {"
+        "documentDataConfig.fetchOne('-'.repeat(65));"
+        "return function(){};"
+    "}";
+    //
+    bool success1 = vTreeScriptBindingsCompileAndExecLayoutWrap(ctx,
+        tooLongCmpTypeName, &ddc, "/", errBuf);
+    assertThatOrGoto(!success1, done, "Should fail");
+    assertIntEquals(ddc.errors.typeNameTooLong, 1);
+    //
+    done:
+        duk_destroy_heap(ctx);
+        documentDataConfigFreeProps(&ddc);
+}
+
+static void
+testDocumentDataConfigFetchAllValidatesItsArguments() {
+    //
+    beforeEach();
+    DocumentDataConfig ddc;
+    documentDataConfigInit(&ddc);
+    char *tooLongCmpTypeName = "function (documentDataConfig) {"
+        "documentDataConfig.fetchAll('-'.repeat(65));"
+        "return function(){};"
+    "}";
+    //
+    bool success1 = vTreeScriptBindingsCompileAndExecLayoutWrap(ctx,
+        tooLongCmpTypeName, &ddc, "/", errBuf);
+    assertThatOrGoto(!success1, done, "Should fail");
+    assertIntEquals(ddc.errors.typeNameTooLong, 1);
+    //
+    done:
+        duk_destroy_heap(ctx);
+        documentDataConfigFreeProps(&ddc);
+}
+
+static void
 testExecLayoutRunsMultipleLayoutsWithoutConflict() {
     // 1. Setup
     beforeEach();
@@ -418,6 +460,8 @@ vTreeScriptBindingsTestsRun() {
     testVTreePartialRunsCachedPartial();
     testDocumentDataConfigFetchOneChains();
     testDocumentDataConfigFetchAllChains();
+    testDocumentDataConfigFetchOneValidatesItsArguments();
+    testDocumentDataConfigFetchAllValidatesItsArguments();
     testExecLayoutRunsMultipleLayoutsWithoutConflict();
     testVTreeRegisterElementValidatesItsArguments();
     testExecLayoutTmplProvidesFetchOnesInVariables();

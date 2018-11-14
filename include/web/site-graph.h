@@ -9,12 +9,24 @@ typedef struct {
     unsigned id;
     char *url; // eg. "/" or "/foo/bar"
     unsigned parentId;
-    char *layoutFileName;
+    int layoutIdx;
 } Page;
 
 typedef struct {
+    char *fileName;
+    bool exists;
+    bool hasErrors;
+} Template;
+
+typedef struct  {
+    unsigned capacity;
+    unsigned length;
+    Template *values;
+} TemplateArray;
+
+typedef struct {
     HashMap pages;
-    TextNodeArray tmplFiles;
+    TemplateArray templates;
 } SiteGraph;
 
 struct SiteGraphDiff {
@@ -37,15 +49,16 @@ siteGraphParse(char *str, SiteGraph *out, StrReader *sr, char *err);
 /**
  * Converts $this to a storable string $to. Example:
  *
- * "4|"                      // 4 pages total
- * "2|"                      // 2 templates total
- * "24/|0|a.tmpl|"           // id=24, url=/,    parentId=0,  layoutFileName=a.tmpl
- *     "5/foo|24|b.tmpl|"    // id=5,  url=/foo, parentId=24, layoutFileName=b.tmpl
- *         "8/f/b|5|c.tmpl|" // id=8,  url=/f/b, parentId=5,  layoutFileName=c.tmpl
- * "2/baz|0|a.tmpl|"         // id=2,  url=/baz, parentId=0,  layoutFileName=a.tmpl
- * "a.tmpl|"                 // 1. template name
- * "b.tmpl"                  // 2. template name
- * // \0 should always contain null byte
+ * "4|"                 // 4 pages total
+ * "3|"                 // 3 templates total
+ * "24/|0|0|"           // id=24, url=/,    parentId=0,  layoutIdx=0
+ *     "5/foo|24|1|"    // id=5,  url=/foo, parentId=24, layoutIdx=1
+ *         "8/f/b|5|2|" // id=8,  url=/f/b, parentId=5,  layoutIdx=2
+ * "2/baz|0|0|"         // id=2,  url=/baz, parentId=0,  layoutIdx=0
+ * "a.tmpl|"            // 1. template name
+ * "b.tmpl|"            // 2. template name
+ * "c.tmpl"             // 3. template name
+ * // \0 Always contains null byte
  */
 void
 siteGraphSerialize(SiteGraph *this, char *to);
@@ -57,13 +70,29 @@ Page*
 siteGraphFindPage(SiteGraph *this, char *url);
 
 /**
- * Takes ownership of $url, and $layoutFileName
+ * Takes ownership of $url
  */
 Page*
 siteGraphAddPage(SiteGraph *this, unsigned id, char *url, unsigned parentId,
-                 char *layoutFileName);
+                 int layoutIdx);
 
 void
 siteGraphDiffMake(SiteGraph *this, VTree *vTree, void *toMyPtr, char *err);
+
+Template*
+siteGraphFindTemplate(SiteGraph *this, char *fileName, int *idxOut);
+
+Template*
+siteGraphGetTemplate(SiteGraph *this, int idx);
+
+/**
+ * Takes ownership of $fileName
+ */
+Template*
+siteGraphAddTemplate(SiteGraph *this, char *fileName);
+
+void templateArrayInit(TemplateArray *this);
+void templateArrayPush(TemplateArray *this, Template *value);
+void templateArrayFreeProps(TemplateArray *this);
 
 #endif

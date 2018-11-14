@@ -7,7 +7,7 @@ testWebsiteFetchAndParseSiteGraphDoesWhatItSays(Db *db, char *err) {
     websiteInit(&website);
     website.db = db;
     if (!testUtilsExecSql(db,
-        "insert into websites values (1,'2|1|1/a|0|a.tmpl|2/b|0|a.tmpl|a.tmpl')"
+        "insert into websites values (1,'2|1|1/a|0|0|2/b|0|0|a.tmpl')"
     )) return;
     // 2. Call
     if (!websiteFetchAndParseSiteGraph(&website, err)) {
@@ -15,7 +15,7 @@ testWebsiteFetchAndParseSiteGraphDoesWhatItSays(Db *db, char *err) {
     }
     // 3. Assert
     assertIntEqualsOrGoto(website.siteGraph.pages.size, 2, done);
-    assertIntEquals(website.siteGraph.tmplFiles.length, 1);
+    assertIntEquals(website.siteGraph.templates.length, 1);
     done:
         websiteFreeProps(&website);
         testUtilsExecSql(db, "delete from websites");
@@ -118,16 +118,18 @@ testWebsiteGenerateProcessesPagesWithNoDbcs(Db *db, char *err) {
     site.dukCtx = ctx;
     TextNodeArray log;
     textNodeArrayInit(&log);
-    Page *p1 = siteGraphAddPage(&site.siteGraph, 1, copyString("/"), 0,
-                                copyString("a.js"));
-    Page *p2 = siteGraphAddPage(&site.siteGraph, 2, copyString("/foo"), 0,
-                                copyString("b.js"));
+    Template *l1 = siteGraphAddTemplate(&site.siteGraph, copyString("a.js"));
+    l1->exists = true;
+    Template *l2 = siteGraphAddTemplate(&site.siteGraph, copyString("b.js"));
+    l2->exists = true;
+    (void)siteGraphAddPage(&site.siteGraph, 1, copyString("/"), 0, 0);
+    (void)siteGraphAddPage(&site.siteGraph, 2, copyString("/foo"), 0, 1);
     if (!testUtilsCompileAndCache(ctx,
         "function(){return function(v){v.registerElement('p',null,'a'); };}",
-        p1->layoutFileName, err)) { printToStdErr("%s", err); goto done; }
+        l1->fileName, err)) { printToStdErr("%s", err); goto done; }
     if (!testUtilsCompileAndCache(ctx,
         "function(){return function(v){v.registerElement('p',null,'b'); };}",
-        p2->layoutFileName, err)) { printToStdErr("%s", err); goto done; }
+        l2->fileName, err)) { printToStdErr("%s", err); goto done; }
     //
     websiteGenerate(&site, logPageWriteCall, (void*)&log, err);
     //

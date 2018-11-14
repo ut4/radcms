@@ -73,6 +73,11 @@ handleFetchOneOrFetchAll(duk_context *ctx, bool isFetchAll) {
     duk_get_prop_string(ctx, -1, DDC_STASH_KEY);
     DocumentDataConfig *ddc = (DocumentDataConfig*)duk_to_pointer(ctx, -1);
     const char *componentTypeName = duk_require_string(ctx, 0); // 1. arg
+    if (strlen(componentTypeName) > DDC_MAX_CMP_TYPE_NAME_LEN) {
+        ddc->errors.typeNameTooLong = 1;
+        printToStdErr("Too long component type name (max %u, was %lu).\n",
+                      DDC_MAX_CMP_TYPE_NAME_LEN, strlen(componentTypeName));
+    }
     DataBatchConfig *dbc = documentDataConfigAddBatch(ddc, componentTypeName,
                                                       isFetchAll);
     dataQuerySBPushDbc(ctx, dbc);
@@ -95,6 +100,12 @@ dataBatchConfigSBSetWhere(duk_context *ctx) {
     duk_get_prop_string(ctx, -1, DBC_STASH_KEY);
     DataBatchConfig *dbc = (DataBatchConfig*)duk_to_pointer(ctx, -1);
     const char *where = duk_require_string(ctx, 0); // 1. arg
+    if (strlen(where) > DDC_MAX_WHERE_LEN) {
+        duk_get_prop_string(ctx, -1, DDC_STASH_KEY);
+        ((DocumentDataConfig*)duk_to_pointer(ctx, -1))->errors.whereTooLong = 1;
+        printToStdErr("Too long where() (max %u, was %lu.\n", DDC_MAX_WHERE_LEN,
+                      strlen(where));
+    }
     dataBatchConfigSetWhere(dbc, where);
     duk_push_this(ctx);
     return 1;
@@ -106,6 +117,12 @@ dataBatchConfigSBSetTmplVarName(duk_context *ctx) {
     duk_get_prop_string(ctx, -1, DBC_STASH_KEY);
     DataBatchConfig *dbc = (DataBatchConfig*)duk_to_pointer(ctx, -1);
     const char *varName = duk_require_string(ctx, 0); // 1. arg
+    if (strlen(varName) > DDC_MAX_TMPL_VAR_NAME_LEN) {
+        duk_get_prop_string(ctx, -1, DDC_STASH_KEY);
+        ((DocumentDataConfig*)duk_to_pointer(ctx, -1))->errors.tmplVarNameTooLong = 1;
+        printToStdErr("Too long to() variable name (max %d, was %lu).",
+                      DDC_MAX_TMPL_VAR_NAME_LEN, strlen(varName));
+    }
     dataBatchConfigSetTmplVarName(dbc, varName);
     duk_push_this(ctx);
     return 1;

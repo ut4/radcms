@@ -34,6 +34,7 @@ int main(int argc, const char* argv[]) {
     websiteInit(&website);
     WebApp app;
     webAppInit(&app, argv[2 + (int)doInit], &website, errBuf);
+    if (strlen(errBuf)) { goto done; }
     duk_context *dukCtx = NULL;
     Db db;
     /*

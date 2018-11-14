@@ -10,7 +10,7 @@ int mkdirp(const char *path, unsigned mode) {
     return mkdir(path);
 }
 #elif defined(INSN_IS_LINUX)
-#define DEFAULT_DIR_PERMS S_IRWXU | S_IXGRP | S_IXOTH // 755
+#define DEFAULT_DIR_PERMS S_IRWXU | (S_IXGRP|S_IRGRP) | (S_IXOTH|S_IROTH) // 755
 int mkdirp(const char *path, unsigned mode) {
     return mkdir(path, mode);
 }
@@ -106,7 +106,7 @@ fileIOMakeDirs(const char *path, char *err) {
     // levels = [5, 3]
     // 1. round: undo 3 'a/b\0c\0d' -> 'a/b/c\0d'
     // 2. round: undo 5 'a/b/c\0d' -> 'a/b/c/d'
-    for (unsigned i = numNewDirs - 1; i >= 0; --i) {
+    for (int i = numNewDirs - 1; i >= 0; --i) {
         ref[levels[i]] = '/'; // unstub
         if (mkdirp(ref, DEFAULT_DIR_PERMS) != 0) {
             putError("Failed to create directory '%s'", ref);

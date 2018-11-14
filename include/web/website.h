@@ -65,7 +65,7 @@ typedef void (*renderInspectFn)(SiteGraph *siteGraph, VTree *vTree, void *myPtr,
  * Returns char*|NULL. The caller frees.
  */
 char*
-pageRender(Website *this, const char *layoutFileName, const char *url,
+pageRender(Website *this, int layoutIdx, const char *url,
            renderInspectFn inspectFn, void *myPtr, char *err);
 
 #endif

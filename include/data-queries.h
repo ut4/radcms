@@ -4,6 +4,10 @@
 #include <math.h> // log10
 #include "memory.h"
 
+#define DDC_MAX_CMP_TYPE_NAME_LEN 64
+#define DDC_MAX_WHERE_LEN 2048
+#define DDC_MAX_TMPL_VAR_NAME_LEN 256
+
 struct DataBatchConfig;
 typedef struct DataBatchConfig DataBatchConfig;
 // Holds a single fetchOne|All() configuration.
@@ -35,11 +39,18 @@ dataBatchConfigGetToStringLen(DataBatchConfig *this);
 void
 dataBatchConfigToString(DataBatchConfig *this, char *to);
 
+typedef struct {
+    unsigned typeNameTooLong: 1;
+    unsigned whereTooLong: 1;
+    unsigned tmplVarNameTooLong: 1;
+} DocumentDataConfigErrors;
+
 // Holds the fetchOne|All() configurations of a single document/layout/vTree.
 typedef struct {
     DataBatchConfig batches; // Linked list
     DataBatchConfig *batchHead;
     unsigned batchCount;
+    DocumentDataConfigErrors errors;
     char *finalSql;
 } DocumentDataConfig;
 
@@ -75,5 +86,8 @@ documentDataConfigToSql(DocumentDataConfig *this, char *err);
 // TAG not-used
 DataBatchConfig*
 documentDataConfigFindBatch(DocumentDataConfig *this, unsigned id);
+
+bool
+documentDataConfigHasErrors(DocumentDataConfig *this);
 
 #endif

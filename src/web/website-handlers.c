@@ -12,7 +12,7 @@ websiteHandlersHandlePageRequest(void *this, const char *method, const char *url
     if (!p) {
         return MHD_HTTP_NOT_FOUND;
     }
-    char *renderedHtml = pageRender(site, p->layoutFileName, url, NULL, NULL, err);
+    char *renderedHtml = pageRender(site, p->layoutIdx, url, NULL, NULL, err);
     if (renderedHtml) {
         injectCPanelIframe(&renderedHtml);
     } else {

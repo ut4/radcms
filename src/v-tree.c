@@ -66,7 +66,7 @@ doRender(VTree *this, ElemNode *node, char *out) {
         cur = cur->next;
     }
     //
-    strcat(out, ">");
+    *out = '>';
     out += 1;
     //
     if (node->children.length) {
@@ -75,9 +75,7 @@ doRender(VTree *this, ElemNode *node, char *out) {
             if (GET_NODETYPE(ref) == TYPE_ELEM) {
                 out = doRender(this, vTreeFindElemNode(this, ref), out);
             } else {
-                const char *text = vTreeFindTextNode(this, ref)->chars;
-                strcat(out, text);
-                out += strlen(text);
+                out += sprintf(out, "%s", vTreeFindTextNode(this, ref)->chars);
             }
         }
     }

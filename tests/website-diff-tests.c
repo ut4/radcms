@@ -10,7 +10,9 @@ testSiteGraphDiffMakeSpotsNewLinks() {
     Website site;
     websiteInit(&site);
     site.dukCtx = ctx;
-    Page *p = siteGraphAddPage(&site.siteGraph, 1, copyString("/"), 0, copyString("foo.js"));
+    Template *l = siteGraphAddTemplate(&site.siteGraph, copyString("foo.js"));
+    l->exists = true;
+    Page *p = siteGraphAddPage(&site.siteGraph, 1, copyString("/"), 0, 0);
     #define newLinkUrl "/foo"
     char *updatedLayoutTmpl = "function (ddc, url) {"
         "return function(vTree) {"
@@ -20,12 +22,13 @@ testSiteGraphDiffMakeSpotsNewLinks() {
         "}"
     "}";
     char *rendered = NULL;
-    if (!testUtilsCompileAndCache(ctx, updatedLayoutTmpl, p->layoutFileName, errBuf)) {
+    if (!testUtilsCompileAndCache(ctx, updatedLayoutTmpl, l->fileName, errBuf)) {
         printToStdErr("%s", errBuf); goto done;
     }
     //
     struct SiteGraphDiff diff;
-    rendered = pageRender(&site, p->layoutFileName, "?", siteGraphDiffMake,
+    diff.newPages = NULL;
+    rendered = pageRender(&site, p->layoutIdx, "/", siteGraphDiffMake,
                           (void*)&diff, errBuf);
     if (!rendered) { printToStdErr("Failed to render the test layout.\n"); goto done; }
     assertThatOrGoto(diff.newPages != NULL, done, "Should add new page to diff");

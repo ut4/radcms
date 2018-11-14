@@ -1,5 +1,6 @@
 #include "../include/str-reader.h"
 
+// Note: all of these functions assume that $strToRead is valid.
 void
 strReaderInit(StrReader *this, char *strToRead, char END_OF_VAL) {
     this->current = strToRead;
@@ -8,7 +9,7 @@ strReaderInit(StrReader *this, char *strToRead, char END_OF_VAL) {
 
 unsigned
 strReaderReadInt(StrReader *this) {
-    char uintBuf[10]; // strlen("4294967295")
+    char uintBuf[10]; // strlen("4294967295") uint max
     unsigned n = 0;
     while (strReaderIsDigit(*this->current)) {
         uintBuf[n] = strReaderAdvance(this);

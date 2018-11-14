@@ -19,14 +19,19 @@ static RequestHandler*
 getHandler(WebApp *app, const char *method, const char *url);
 
 void
-webAppInit(WebApp *this, const char *rootDir, Website *site, char *errBuf) {
+webAppInit(WebApp *this, const char *rootDir, Website *site, char *err) {
     this->rootDir = fileIOGetNormalizedPath(rootDir);
+    #define MAX_FILENAME_LEN 40
+    if (strlen(this->rootDir) + MAX_FILENAME_LEN > PATH_MAX) {
+        putError("Rootdir too long.\n");
+        return;
+    }
     siteIniInit(&this->ini);
     this->ini.rootDir = this->rootDir;
     this->daemon = NULL;
     this->site = site;
     this->handlerCount = sizeof(this->handlers) / sizeof(RequestHandler);
-    this->errBuf = errBuf;
+    this->errBuf = err;
 }
 
 void
@@ -76,7 +81,7 @@ webAppRespond(void *myPtr, struct MHD_Connection *connection, const char *url,
         statusCode = h->handlerFn(h->this, method, url, &response, app->errBuf);
     }
     if (strlen(app->errBuf) > 0) {
-        printToStdErr("Error in handler: %s", app->errBuf);
+        printToStdErr("Error in handler: %s\n", app->errBuf);
         app->errBuf[0] = '\0';
     }
     if (!h || statusCode == MHD_HTTP_NOT_FOUND) {

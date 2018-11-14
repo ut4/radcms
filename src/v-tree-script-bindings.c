@@ -205,7 +205,7 @@ execLayoutWrap(duk_context *ctx, DocumentDataConfig *ddc, const char *url,
         return false;
     }
     // leave pcall result at the top
-    return true;
+    return !documentDataConfigHasErrors(ddc);
 }
 
 

@@ -11,6 +11,9 @@ documentDataConfigInit(DocumentDataConfig *this) {
     this->batchHead = NULL;
     //
     this->batchCount = 0;
+    this->errors.typeNameTooLong = 0;
+    this->errors.whereTooLong = 0;
+    this->errors.tmplVarNameTooLong = 0;
     this->finalSql = NULL;
 }
 
@@ -47,6 +50,9 @@ documentDataConfigAddBatch(DocumentDataConfig *this, const char *componentTypeNa
     return this->batchHead;
 }
 
+/**
+ * Note: assumes that $this->batches are valid.
+ */
 char*
 documentDataConfigToSql(DocumentDataConfig *this, char *err) {
     if (!this->batchHead) {
@@ -72,12 +78,12 @@ documentDataConfigToSql(DocumentDataConfig *this, char *err) {
     DataBatchConfig *cur = &this->batches;
     unsigned i = 0;
     while (cur) {
-        unsigned varying = 0;
+        unsigned varyingLen = 0;
         if (cur->where && !cur->isFetchAll) {
-            varying += strlen(cur->where);
+            varyingLen += strlen(cur->where);
         } else if (cur->isFetchAll) {
             unsigned l = typeFilterTmplStrLen + strlen(cur->componentTypeName);
-            varying += l;
+            varyingLen += l;
             cur->where = ALLOCATE_ARR(char, l + 1);
             sprintf(cur->where, TYPE_FILTER_TMPL, cur->componentTypeName);
         } else {
@@ -87,7 +93,7 @@ documentDataConfigToSql(DocumentDataConfig *this, char *err) {
         batchLengths[i] = batchWrapTmplStrLen +          // select * from (select `id`...
                           (i > 0 ? unionAllStrLen : 0) + // union all
                           (log10(cur->id) + 1) +         // 1 or 452 (as `dbcId`)
-                          varying;                       // foo="bar"
+                          varyingLen;                    // foo="bar"
         totalBatchesLength += batchLengths[i];
         i += 1;
         cur = cur->next;
@@ -126,6 +132,13 @@ documentDataConfigFindBatch(DocumentDataConfig *this, unsigned id) {
         cur = cur->next;
     }
     return NULL;
+}
+
+bool
+documentDataConfigHasErrors(DocumentDataConfig *this) {
+    return this->errors.typeNameTooLong ||
+           this->errors.whereTooLong ||
+           this->errors.tmplVarNameTooLong;
 }
 
 void
