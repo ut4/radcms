@@ -6,14 +6,13 @@ componentInit(Component *this) {
     this->name = NULL;
     this->json = NULL;
     this->dataBatchConfigId = 0;
+    this->componentTypeId = 0;
 }
 
 void
 componentFreeProps(Component *this) {
-    if (this->name) {
-        FREE_STR(this->name);
-        FREE_STR(this->json);
-    }
+    if (this->name) FREE_STR(this->name);
+    if (this->json) FREE_STR(this->json);
 }
 
 

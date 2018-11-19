@@ -28,6 +28,29 @@ void
 dbDestruct(Db *this);
 
 /**
+ * see dbInsert().
+ */
+typedef bool (*bindValsFn)(sqlite3_stmt *stmt, void *data);
+
+/**
+ * Usage:
+ * void myBindFn(sqlite3_stmt *stmt, void *data) {
+ *     MyData *d = (MyData*)data;
+ *     if (sqlite3_bind_text(stmt, 1, d->prop, -1, SQLITE_STATIC) != SQLITE_OK) return false;
+ *     if (sqlite3_bind_text(stmt, 2, d->prop2, -1, SQLITE_STATIC) != SQLITE_OK) return false;
+ *     if (sqlite3_bind_int(stmt, 3, d->another) != SQLITE_OK) return false;
+ *     return true;
+ * }
+ * MyData data;
+ * sqlite_int64 insertId = dbSelect(db, "insert into foo values(?, ?, ?)", myBindFn, (void*)&data, err);
+ * if (insertId > 0) {
+ *     // ok, each ? was bound and the query ran succesfully
+ * } // else if (insertId == -1) printf("Something went wrong %s", err);
+ */
+sqlite_int64
+dbInsert(Db *this, const char *sql, bindValsFn myBindFn, void *data, char *err);
+
+/**
  * see dbSelect().
  */
 typedef void (*mapRowFn)(sqlite3_stmt *stmt, void **myPtr);
@@ -35,14 +58,19 @@ typedef void (*mapRowFn)(sqlite3_stmt *stmt, void **myPtr);
 /**
  * Usage:
  * void myMapFn(sqlite3_stmt *stmt, void **myPtr) {
- *     // todo
+ *     myData *d = ALLOCATE(MyData);
+ *     d->prop = copyString((const char*)sqlite3_column_text(stmt, 0));
+ *     d->prop2 = copyString((const char*)sqlite3_column_text(stmt, 1));
+ *     d->another = sqlite3_column_int(stmt, 2);
+ *     *myPtr = d; // or pushToSomeArray(*myPtr, d);
  * }
- * if (dbSelect(db, "SELECT * FROM foo limit 1", myMapFn, (void*)&myData, err)) {
+ * MyData *data = NULL;
+ * if (dbSelect(db, "SELECT * FROM foo limit 1", myMapFn, (void*)&data, err)) {
  *     // ok, each row was passed to myMapFn
  * }
  */
 bool
-dbSelect(Db *this, const char *sql, mapRowFn onRow, void **onRowCtx, char *err);
+dbSelect(Db *this, const char *sql, mapRowFn onRow, void **ptrToMyPtr, char *err);
 
 /**
  * Example: dbRunInTransaction(db,

@@ -1,3 +1,4 @@
+#include "tests/component-mapper-tests.h"
 #include "tests/data-query-tests.h"
 #include "tests/file-io-tests.h"
 #include "tests/site-graph-tests.h"
@@ -24,6 +25,7 @@ int main(int argc, const char* argv[]) {
     atexit(printMemoryReport);
     const char *testSuiteName = argv[1];
     int testSuitesRan = 0;
+    testSuitesRan += runIf(testSuiteName, "componentMapper", componentMapperTestsRun);
     testSuitesRan += runIf(testSuiteName, "dataQueries", dataQueryTestsRun);
     testSuitesRan += runIf(testSuiteName, "fileIO", fileIOTestsRun);
     testSuitesRan += runIf(testSuiteName, "siteGraph", siteGraphTestsRun);

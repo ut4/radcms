@@ -18,6 +18,7 @@ set(SOURCE_FILES_COMMON
     include/web/site-graph.h src/web/site-graph.c
     include/web/website.h src/web/website.c
     include/common.h
+    include/component-mapper.h src/component-mapper.c
     include/data-defs.h src/data-defs.c
     include/data-queries.h src/data-queries.c
     include/data-query-script-bindings.h src/data-query-script-bindings.c
@@ -45,6 +46,7 @@ target_link_libraries(insane ${INSN_DEP_LIBS})
 
 # == tests.exe =================================================================
 set(TESTS_FILES
+    tests/component-mapper-tests.h tests/component-mapper-tests.c
     tests/test-utils.h tests/test-utils.c
     tests/testlib.h
     tests/data-query-tests.h tests/data-query-tests.c

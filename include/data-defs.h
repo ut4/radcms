@@ -8,6 +8,7 @@ typedef struct {
     char *name;
     char *json;
     unsigned dataBatchConfigId; // id of the DataBatchConfig that this data belongs to
+    unsigned componentTypeId;
 } Component;
 
 typedef struct  {
