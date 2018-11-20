@@ -29,7 +29,7 @@ testSiteGraphDiffMakeSpotsNewLinks() {
     struct SiteGraphDiff diff;
     diff.newPages = NULL;
     rendered = pageRender(&site, p->layoutIdx, "/", siteGraphDiffMake,
-                          (void*)&diff, errBuf);
+                          &diff, errBuf);
     if (!rendered) { printToStdErr("Failed to render the test layout.\n"); goto done; }
     assertThatOrGoto(diff.newPages != NULL, done, "Should add new page to diff");
     assertStrEquals(diff.newPages->url, newLinkUrl);

@@ -61,7 +61,7 @@ bool
 websiteGenerate(Website *this, pageExportWriteFn writeFn, void *myPtr, char *err) {
     HashMapElPtr *ptr = this->siteGraph.pages.orderedAccess;
     while (ptr) {
-        Page *p = (Page*)ptr->data;
+        Page *p = ptr->data;
         char *rendered = pageRender(this, p->layoutIdx, p->url, NULL, NULL, err);
         if (rendered) {
             if (!writeFn(rendered, p, this, myPtr, err)) {
@@ -110,7 +110,7 @@ websiteCheckIsFWFileAcceptable(const char *fileName) {
 
 void
 websiteHandleFWEvent(FWEventType type, const char *fileName, void *myPtr) {
-    Website *this = (Website*)myPtr;
+    Website *this = myPtr;
     char *err = this->errBuf;
     if (type == FW_ACTION_ADDED) {
         //
@@ -129,7 +129,7 @@ websiteHandleFWEvent(FWEventType type, const char *fileName, void *myPtr) {
         struct SiteGraphDiff diff;
         diff.newPages = NULL;
         char *rendered = pageRender(this, layoutIdx, "/", siteGraphDiffMake,
-                                    (void*)&diff, err);
+                                    &diff, err);
         if (rendered) {
             FREE_STR(rendered);
             bool hadChanges = false;
@@ -212,7 +212,7 @@ mapSiteGraphResultRow(sqlite3_stmt *stmt, void **myPtr) {
 
 static void
 mapDataBatchesRow(sqlite3_stmt *stmt, void **myPtr) {
-    ComponentArray *arr = (ComponentArray*)*myPtr;
+    ComponentArray *arr = *myPtr;
     Component newComponent;
     componentInit(&newComponent);
     newComponent.id = (unsigned)sqlite3_column_int(stmt, 0);

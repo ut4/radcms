@@ -47,7 +47,7 @@ dataQueryScriptBindingsRegister(duk_context *ctx) {
 void
 dataQuerySBSetStashedDocumentDataConfig(duk_context *ctx, DocumentDataConfig *ddc) {
     duk_push_thread_stash(ctx, ctx);             // [... stash]
-    duk_push_pointer(ctx, (void*)ddc);           // [... stash ptr]
+    duk_push_pointer(ctx, ddc);                  // [... stash ptr]
     duk_put_prop_string(ctx, -2, DDC_STASH_KEY); // [... stash]
     duk_pop(ctx);                                // [...]
 }
@@ -62,7 +62,7 @@ dataQuerySBPushDbc(duk_context *ctx, DataBatchConfig *dbc) {
     duk_get_prop_string(ctx, -1, DBC_PROTO_KEY); // [... obj stash proto]
     duk_set_prototype(ctx, -3);                  // [... obj stash]
     // set stash.currentDbcPtr = dbc
-    duk_push_pointer(ctx, (void*)dbc);           // [... stash ptr]
+    duk_push_pointer(ctx, dbc);                  // [... stash ptr]
     duk_put_prop_string(ctx, -2, DBC_STASH_KEY); // [... stash]
     duk_pop(ctx);                                // [... obj]
 }
@@ -71,7 +71,7 @@ static duk_ret_t
 handleFetchOneOrFetchAll(duk_context *ctx, bool isFetchAll) {
     duk_push_thread_stash(ctx, ctx);
     duk_get_prop_string(ctx, -1, DDC_STASH_KEY);
-    DocumentDataConfig *ddc = (DocumentDataConfig*)duk_to_pointer(ctx, -1);
+    DocumentDataConfig *ddc = duk_to_pointer(ctx, -1);
     const char *componentTypeName = duk_require_string(ctx, 0); // 1. arg
     if (strlen(componentTypeName) > DDC_MAX_CMP_TYPE_NAME_LEN) {
         ddc->errors.typeNameTooLong = 1;
@@ -98,7 +98,7 @@ static duk_ret_t
 dataBatchConfigSBSetWhere(duk_context *ctx) {
     duk_push_thread_stash(ctx, ctx);
     duk_get_prop_string(ctx, -1, DBC_STASH_KEY);
-    DataBatchConfig *dbc = (DataBatchConfig*)duk_to_pointer(ctx, -1);
+    DataBatchConfig *dbc = duk_to_pointer(ctx, -1);
     const char *where = duk_require_string(ctx, 0); // 1. arg
     if (strlen(where) > DDC_MAX_WHERE_LEN) {
         duk_get_prop_string(ctx, -1, DDC_STASH_KEY);
@@ -115,7 +115,7 @@ static duk_ret_t
 dataBatchConfigSBSetTmplVarName(duk_context *ctx) {
     duk_push_thread_stash(ctx, ctx);
     duk_get_prop_string(ctx, -1, DBC_STASH_KEY);
-    DataBatchConfig *dbc = (DataBatchConfig*)duk_to_pointer(ctx, -1);
+    DataBatchConfig *dbc = duk_to_pointer(ctx, -1);
     const char *varName = duk_require_string(ctx, 0); // 1. arg
     if (strlen(varName) > DDC_MAX_TMPL_VAR_NAME_LEN) {
         duk_get_prop_string(ctx, -1, DDC_STASH_KEY);

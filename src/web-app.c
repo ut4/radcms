@@ -96,7 +96,7 @@ webAppStart(WebApp *this) {
         NULL,           // Before-request callback, can be used to reject requests
         NULL,           // Before-request *myPtr
         &webAppRespond, // Request callback
-        (void*)this,    // Request callback *myPtr
+        this,           // Request callback *myPtr
         MHD_OPTION_NOTIFY_COMPLETED,
         webAppFinishRequest,
         NULL,
@@ -123,10 +123,10 @@ webAppReadOrCreateSiteIni(WebApp *this, const char *contents, char *err) {
 
 void*
 webAppStartFileWatcher(void *myPtr) {
-    WebApp *app = (WebApp*)myPtr;
+    WebApp *app = myPtr;
     fileWatcherInit(&app->fileWatcher, websiteHandleFWEvent);
     fileWatcherWatch(&app->fileWatcher, app->rootDir, websiteCheckIsFWFileAcceptable,
-                     (void*)app->site, app->errBuf);
+                     app->site, app->errBuf);
     return NULL;
 }
 
@@ -141,7 +141,7 @@ webAppRespond(void *myPtr, struct MHD_Connection *conn, const char *url,
               const char *method, const char *version, const char *uploadData,
               size_t *uploadDataSize, void **perConnPtr) {
     struct MHD_Response *response = NULL;
-    WebApp *app = (WebApp*)myPtr;
+    WebApp *app = myPtr;
     /*
      * First iteration
      */
@@ -164,7 +164,7 @@ webAppRespond(void *myPtr, struct MHD_Connection *conn, const char *url,
         }
         return respond(statusCode, conn, response);
     }
-    PerConnInfo *connInfo = (PerConnInfo*)*perConnPtr;
+    PerConnInfo *connInfo = *perConnPtr;
     /*
     * Second iteration of POST -> process the form data and set connInfo->statusCode
     */
@@ -238,7 +238,7 @@ preparePostRequest(struct MHD_Response **response, struct MHD_Connection *conn,
     //
     bool hasRightContentType = false;
     MHD_get_connection_values(conn, MHD_HEADER_KIND, validatePostReqHeaders,
-                              (void*)&hasRightContentType);
+                              &hasRightContentType);
     if (!hasRightContentType) return MHD_HTTP_BAD_REQUEST;
     //
     PerConnInfo *connInfo = ALLOCATE(PerConnInfo);
@@ -249,14 +249,14 @@ preparePostRequest(struct MHD_Response **response, struct MHD_Connection *conn,
     connInfo->reqHandler = h;
     connInfo->postProcessor = MHD_create_post_processor(
         conn, FORM_DATA_ITER_BUF_LEN, iterateFormDataBasic,
-        (void*)h->formDataHandlers);
+        h->formDataHandlers);
     if (!connInfo->postProcessor) {
         printToStdErr("preparePostRequest: Failed to MHD_create_post_processor().\n");
         FREE(PerConnInfo, connInfo);
         return MHD_HTTP_INTERNAL_SERVER_ERROR;
     }
     connInfo->statusCode = 0;
-    *perConnPtr = (void*)connInfo;
+    *perConnPtr = connInfo;
     return MHD_YES;
 }
 
@@ -266,7 +266,7 @@ processPostData(const char *uploadData, size_t *uploadDataSize,
     if (*uploadDataSize == 0 ||
         *uploadDataSize > MAX_POST_SIZE) return MHD_HTTP_BAD_REQUEST;
     //
-    PerConnInfo *connInfo = (PerConnInfo*)*perConnPtr;
+    PerConnInfo *connInfo = *perConnPtr;
     FormDataHandlers *formHandlers = connInfo->reqHandler->formDataHandlers;
     formHandlers->myPtr = formHandlers->formDataInitFn();
     if (!formHandlers->myPtr) {
@@ -286,7 +286,7 @@ iterateFormDataBasic(void *myPPPtr, enum MHD_ValueKind kind, const char *key,
                      uint64_t off, size_t size) {
     if (size == 0) return MHD_NO;
     if (size <= MAX_FIELD_KEY_LEN) {
-        FormDataHandlers *h = (FormDataHandlers*)myPPPtr;
+        FormDataHandlers *h = myPPPtr;
         return (int)h->formDataReceiverFn(key, data, h->myPtr);
     }
     printToStdErr("POST|PUT key length ouf or range (max %u, is %lu), ignoring.\n",

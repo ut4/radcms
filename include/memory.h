@@ -7,17 +7,17 @@
 #include "common.h"
 
 #define ALLOCATE(type) \
-    (type*)reallocate(NULL, 0, sizeof(type))
+    reallocate(NULL, 0, sizeof(type))
 
 #define ALLOCATE_ARR(type, count) \
-    (type*)reallocate(NULL, 0, sizeof(type) * count)
+    reallocate(NULL, 0, sizeof(type) * count)
 
 #ifndef DEBUG_COUNT_ALLOC
 #define ALLOCATE_ARR_NO_COUNT(type, size) \
     ALLOCATE_ARR(type, size)
 #else
 #define ALLOCATE_ARR_NO_COUNT(type, count) \
-    (type*)realloc(NULL, sizeof(type) * count)
+    realloc(NULL, sizeof(type) * count)
 #endif
 
 #define FREE(type, pointer) \
@@ -35,7 +35,7 @@
     snprintf(toVarName, l, "%s%s", a, b)
 
 #define ARRAY_GROW(previous, type, oldCount, count) \
-    (type*)reallocate(previous, sizeof(type) * oldCount, sizeof(type) * count)
+    reallocate(previous, sizeof(type) * oldCount, sizeof(type) * count)
 
 #define ARRAY_INCREASE_CAPACITY(capacity) \
     (capacity < 8 ? 8 : capacity * 2)

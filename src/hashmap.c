@@ -25,7 +25,7 @@ HashMap* hashmap_new() {
 }
 
 void hashmap_init(HashMap* m) {
-    m->elems = (HashMapElement*) calloc(INITIAL_SIZE, sizeof (HashMapElement));
+    m->elems = calloc(INITIAL_SIZE, sizeof (HashMapElement));
     if (!m->elems) return;
     m->orderedAccess = NULL;
     m->orderedAccessTail = NULL;
@@ -211,8 +211,7 @@ int hashmap_rehash(HashMap* m) {
     HashMapElement* curr;
 
     /* Setup the new elements */
-    HashMapElement* temp = (HashMapElement *)
-        calloc(2 * m->table_size, sizeof (HashMapElement));
+    HashMapElement* temp = calloc(2 * m->table_size, sizeof (HashMapElement));
     if (!temp) return MAP_OMEM;
 
     /* Update the array */

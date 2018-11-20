@@ -4,9 +4,8 @@ static int
 receiveIniVal(void* myPtr, const char* section, const char* key,
               const char* value) {
     #define MATCH(s, n) strcmp(section, s) == 0 && strcmp(key, n) == 0
-    SiteIni* siteIni = (SiteIni*)myPtr;
     if (MATCH("Site", "foo")) {
-        siteIni->foo = copyString(value);
+        ((SiteIni*)myPtr)->foo = copyString(value);
     } else {
         printToStdErr("Warn: Unknown site.ini setting [%s]%s.\n", section, key);
         return 0;

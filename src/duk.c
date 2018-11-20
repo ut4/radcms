@@ -9,10 +9,10 @@ myDukHandleFatalErr(void *udata, const char *msg);
 duk_context*
 myDukCreate(char *errBuf) {
     duk_context *out = duk_create_heap(
-        NULL,          // alloc, use default
-        NULL,          // realloc, use default
-        NULL,          // free, use default
-        (void*)errBuf, // myPtr to myDukHandleFatalErr
+        NULL,   // alloc, use default
+        NULL,   // realloc, use default
+        NULL,   // free, use default
+        errBuf, // myPtr to myDukHandleFatalErr
         myDukHandleFatalErr
     );
     if (!out) return NULL;
@@ -87,6 +87,6 @@ static duk_ret_t myPrint(duk_context *ctx) {
 
 static void
 myDukHandleFatalErr(void *myPtr, const char *msg) {
-    char *err = (char*)myPtr;
+    char *err = myPtr;
     putError("*** FATAL JS ERROR: %s\n", (msg ? msg : "no message"));
 }

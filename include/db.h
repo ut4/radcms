@@ -35,14 +35,14 @@ typedef bool (*bindValsFn)(sqlite3_stmt *stmt, void *data);
 /**
  * Usage:
  * void myBindFn(sqlite3_stmt *stmt, void *data) {
- *     MyData *d = (MyData*)data;
+ *     MyData *d = data;
  *     if (sqlite3_bind_text(stmt, 1, d->prop, -1, SQLITE_STATIC) != SQLITE_OK) return false;
  *     if (sqlite3_bind_text(stmt, 2, d->prop2, -1, SQLITE_STATIC) != SQLITE_OK) return false;
  *     if (sqlite3_bind_int(stmt, 3, d->another) != SQLITE_OK) return false;
  *     return true;
  * }
  * MyData data;
- * sqlite_int64 insertId = dbSelect(db, "insert into foo values(?, ?, ?)", myBindFn, (void*)&data, err);
+ * sqlite_int64 insertId = dbSelect(db, "insert into foo values(?, ?, ?)", myBindFn, &data, err);
  * if (insertId > 0) {
  *     // ok, each ? was bound and the query ran succesfully
  * } // else if (insertId == -1) printf("Something went wrong %s", err);

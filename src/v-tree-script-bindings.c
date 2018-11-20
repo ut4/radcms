@@ -112,7 +112,7 @@ vTreeSBRegisterElement(duk_context *ctx) {
     ElemProp *props = collectElemProps(ctx);          // 2nd argument (props)
     duk_push_thread_stash(ctx, ctx);
     duk_get_prop_string(ctx, -1, V_TREE_STASH_KEY);
-    VTree *vTree = (VTree*)duk_to_pointer(ctx, -1);
+    VTree *vTree = duk_to_pointer(ctx, -1);
     NodeRefArray children;
     nodeRefArrayInit(&children);
     /*                                                // 3rd argument (children)
@@ -175,7 +175,7 @@ vTreeSBPartial(duk_context *ctx) {
         return 0;
     }                                    //       [... str, data, stash, number]
     duk_get_prop_string(ctx, -2, V_TREE_STASH_KEY);
-    VTree *vTree = (VTree*)duk_to_pointer(ctx, -1);
+    VTree *vTree = duk_to_pointer(ctx, -1);
     duk_push_uint(ctx, vTreeUtilsMakeNodeRef(TYPE_ELEM,
         vTree->elemNodes.values[vTree->elemNodes.length - 1].id));
     return 1;
@@ -184,7 +184,7 @@ vTreeSBPartial(duk_context *ctx) {
 static void
 setStashedTree(duk_context *ctx, VTree *vTree) {
     duk_push_thread_stash(ctx, ctx);                // [... stash]
-    duk_push_pointer(ctx, (void*)vTree);            // [... stash pointer]
+    duk_push_pointer(ctx, vTree);                   // [... stash pointer]
     duk_put_prop_string(ctx, -2, V_TREE_STASH_KEY); // [... stash]
     duk_pop(ctx);                                   // [...]
 }

@@ -30,7 +30,7 @@ componentHandlersHandleComponentAddRequest(void *myPtr, void *myDataPtr, const c
     if (!myDataPtr) {
         return (unsigned)(strcmp(method, "POST") == 0 && strcmp(url, "/api/component") == 0);
     }
-    ComponentFormData *data = (ComponentFormData*)myDataPtr;
+    ComponentFormData *data = myDataPtr;
     int insertId = componentMapperInsertComponent(((Website*)myPtr)->db, data, err);
     if (insertId < 0) {
         if (hasErrors(data->errors)) {
@@ -45,7 +45,7 @@ componentHandlersHandleComponentAddRequest(void *myPtr, void *myDataPtr, const c
             if (c > 0) { memcpy(tail, ctidReqError, c); tail += c; }
             *tail = '\0';
             *response = MHD_create_response_from_buffer(
-                l - 1, (void*)message, MHD_RESPMEM_MUST_FREE);
+                l - 1, message, MHD_RESPMEM_MUST_FREE);
             return MHD_HTTP_BAD_REQUEST;
         }
         return MHD_HTTP_INTERNAL_SERVER_ERROR;
@@ -54,7 +54,7 @@ componentHandlersHandleComponentAddRequest(void *myPtr, void *myDataPtr, const c
     char *responseBody = ALLOCATE_ARR_NO_COUNT(char, l);
     snprintf(responseBody, l, "%i", insertId);
     *response = MHD_create_response_from_buffer(l - 1,
-                                                (void*)responseBody,
+                                                responseBody,
                                                 MHD_RESPMEM_MUST_FREE);
     return MHD_HTTP_OK;
 }
@@ -76,7 +76,7 @@ makeComponentFormData() {
     ComponentFormData *out = ALLOCATE(ComponentFormData);
     componentInit(&out->cmp);
     out->errors = 0;
-    return (void*)out;
+    return out;
 }
 
 static void

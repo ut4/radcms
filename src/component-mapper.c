@@ -19,12 +19,12 @@ componentMapperInsertComponent(Db *db, ComponentFormData *fdata, char *err) {
     }
     char *sql = "insert into components (`name`, `json`, `componentTypeId`) "
                 "values (?, ?, ?)";
-    return (int)dbInsert(db, sql, bindInsertStmtVals, (void*)&fdata->cmp, err);
+    return (int)dbInsert(db, sql, bindInsertStmtVals, &fdata->cmp, err);
 }
 
 static bool
 bindInsertStmtVals(sqlite3_stmt *stmt, void *data) {
-    Component *d = (Component*)data;
+    Component *d = data;
     if (sqlite3_bind_text(stmt, 1, d->name, -1, SQLITE_STATIC) != SQLITE_OK) return false;
     if (sqlite3_bind_text(stmt, 2, d->json, -1, SQLITE_STATIC) != SQLITE_OK) return false;
     if (sqlite3_bind_int(stmt, 3, d->componentTypeId) != SQLITE_OK) return false;

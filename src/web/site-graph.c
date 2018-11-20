@@ -12,7 +12,7 @@ void
 siteGraphFreeProps(SiteGraph *this) {
     HashMapElPtr *ptr = this->pages.orderedAccess;
     while (ptr) {
-        pageFreeProps((Page*)ptr->data);
+        pageFreeProps(ptr->data);
         FREE(Page, ptr->data);
         ptr = ptr->next;
     }
@@ -60,8 +60,8 @@ siteGraphSerialize(SiteGraph *this, char *to) {
 
 Page*
 siteGraphFindPage(SiteGraph *this, char *url) {
-    Page *page;
-    hashmap_get(&this->pages, url, (void*)&page);
+    void *page;
+    hashmap_get(&this->pages, url, &page);
     return page;
 }
 
@@ -73,7 +73,7 @@ siteGraphAddPage(SiteGraph *this, unsigned id, char *url, unsigned parentId,
     newPage->url = url;
     newPage->parentId = parentId;
     newPage->layoutIdx = layoutIdx;
-    hashmap_put(&this->pages, url, (void*)newPage);
+    hashmap_put(&this->pages, url, newPage);
     return newPage;
 }
 

@@ -79,16 +79,15 @@ int main(int argc, const char* argv[]) {
         !websiteFetchAndParseSiteGraph(&website, errBuf) ||
         !websitePopulateTemplateCaches(&website, errBuf)) goto done;
     app.handlers[0] = (RequestHandler){.handlerFn=websiteHandlersHandleStaticFileRequest,
-        .myPtr=(void*)app.appPath, .formDataHandlers=NULL};
+        .myPtr=app.appPath, .formDataHandlers=NULL};
     app.handlers[1] = (RequestHandler){.handlerFn=componentHandlersHandleComponentAddRequest,
-        .myPtr=(void*)&website, .formDataHandlers=componentHandlersGetComponentAddDataHandlers()};
+        .myPtr=&website, .formDataHandlers=componentHandlersGetComponentAddDataHandlers()};
     app.handlers[2] = (RequestHandler){.handlerFn=websiteHandlersHandleGenerateRequest,
-        .myPtr=(void*)&website, .formDataHandlers=NULL};
+        .myPtr=&website, .formDataHandlers=NULL};
     app.handlers[3] = (RequestHandler){.handlerFn=websiteHandlersHandlePageRequest,
-        .myPtr=(void*)&website, .formDataHandlers=NULL};
+        .myPtr=&website, .formDataHandlers=NULL};
     pthread_t fileWatcherThread;
-    if (pthread_create(&fileWatcherThread, NULL, webAppStartFileWatcher,
-                       (void*)&app)) {
+    if (pthread_create(&fileWatcherThread, NULL, webAppStartFileWatcher, &app)) {
         sprintf(errBuf, "Failed to create the fileWatcher thread.\n");
         goto done;
     }

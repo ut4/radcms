@@ -97,7 +97,7 @@ testWebsiteFetchBatchesFetchesDataForDDCWithMultipleBatches(Db *db, char *err) {
 
 static bool logPageWriteCall(char *renderedHtml, Page *page, Website *site,
                              void *myPtr, char *err) {
-    TextNodeArray *log = (TextNodeArray*)myPtr;
+    TextNodeArray *log = myPtr;
     TextNode stored;
     stored.id = 0;
     stored.chars = copyString(renderedHtml);
@@ -131,7 +131,7 @@ testWebsiteGenerateProcessesPagesWithNoDbcs(Db *db, char *err) {
         "function(){return function(v){v.registerElement('p',null,'b'); };}",
         l2->fileName, err)) { printToStdErr("%s", err); goto done; }
     //
-    websiteGenerate(&site, logPageWriteCall, (void*)&log, err);
+    websiteGenerate(&site, logPageWriteCall, &log, err);
     //
     assertThatOrGoto(log.length == 2, done, "Should pass each page to writeFn");
     assertThatOrGoto(log.values[0].chars != NULL, done, "renderedHtml #0 != NULL");

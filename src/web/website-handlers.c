@@ -8,7 +8,7 @@ websiteHandlersHandlePageRequest(void *myPtr, void *myDataPtr, const char *metho
                                  const char *url, struct MHD_Response **response,
                                  char *err) {
     if (strcmp(method, "GET") != 0) return MHD_HTTP_NOT_FOUND;
-    Website *site = (Website*)myPtr;
+    Website *site = myPtr;
     Page *p = siteGraphFindPage(&site->siteGraph, (char*)url);
     if (!p) {
         return MHD_HTTP_NOT_FOUND;
@@ -24,7 +24,7 @@ websiteHandlersHandlePageRequest(void *myPtr, void *myDataPtr, const char *metho
     memoryAddToByteCount(-(strlen(renderedHtml) + 1));
 #endif
     *response = MHD_create_response_from_buffer(strlen(renderedHtml),
-                                                (void*)renderedHtml,
+                                                renderedHtml,
                                                 MHD_RESPMEM_MUST_FREE);
     return MHD_HTTP_OK;
 }
@@ -43,7 +43,7 @@ websiteHandlersHandleStaticFileRequest(void *myPtr, void *myDataPtr, const char 
     }
     int fd;
     struct stat sbuf;
-    char *appPath = (char*)myPtr;
+    char *appPath = myPtr;
     STR_CONCAT(path, appPath, url);
     if ((fd = open(path, O_RDONLY)) == -1 || fstat(fd, &sbuf) != 0) {
         if (fd != -1) (void)close(fd);
@@ -81,7 +81,7 @@ websiteHandlersHandleGenerateRequest(void *myPtr, void *myDataPtr, const char *m
                                      const char *url, struct MHD_Response **response,
                                      char *err) {
     if (strcmp(method, "GET") != 0 || strcmp(url, "/api/website/generate") != 0) return 0;
-    Website *site = (Website*)myPtr;
+    Website *site = myPtr;
     timerInit();
     timerStart();
     if (!websiteGenerate(site, writePageToFile, NULL, err)) {
@@ -102,7 +102,7 @@ websiteHandlersHandleGenerateRequest(void *myPtr, void *myDataPtr, const char *m
     memoryAddToByteCount(-(messageLen));
 #endif
     *response = MHD_create_response_from_buffer(strlen(ret),
-                                                (void*)ret,
+                                                ret,
                                                 MHD_RESPMEM_MUST_FREE);
     return MHD_HTTP_OK;
 }
