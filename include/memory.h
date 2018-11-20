@@ -1,7 +1,7 @@
 #ifndef insn_memory_h
 #define insn_memory_h
 
-#define DEBUG_COUNT_ALLOC // comment to disable memory counting
+#define DEBUG_COUNT_ALLOC // comment out to disable memory counting
 #include <stdlib.h> // realloc, free
 #include <string.h> // strdup
 #include "common.h"
@@ -10,13 +10,21 @@
     (type*)reallocate(NULL, 0, sizeof(type))
 
 #define ALLOCATE_ARR(type, count) \
-    (type*)reallocate(NULL, 0, sizeof(type) * (count))
+    (type*)reallocate(NULL, 0, sizeof(type) * count)
+
+#ifndef DEBUG_COUNT_ALLOC
+#define ALLOCATE_ARR_NO_COUNT(type, size) \
+    ALLOCATE_ARR(type, size)
+#else
+#define ALLOCATE_ARR_NO_COUNT(type, count) \
+    (type*)realloc(NULL, sizeof(type) * count)
+#endif
 
 #define FREE(type, pointer) \
     reallocate(pointer, sizeof(type), 0)
 
 #define FREE_ARR(type, pointer, count) \
-    reallocate(pointer, sizeof(type) * (count), 0)
+    reallocate(pointer, sizeof(type) * count, 0)
 
 #define FREE_STR(nullTerminatedStr) \
     reallocate(nullTerminatedStr, strlen(nullTerminatedStr) + 1, 0)

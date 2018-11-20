@@ -1,7 +1,7 @@
 #ifndef insn_strReader_h
 #define insn_strReader_h
 
-#include "memory.h" // ALLOCATE, atoi(stdlib.h), memcpy(string.h)
+#include "memory.h" // ALLOCATE, atoi(stdlib.h), memcpy(string.h), bool
 
 typedef struct {
     char *current;

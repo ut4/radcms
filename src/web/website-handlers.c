@@ -1,13 +1,14 @@
+#include <fcntl.h> // O_RDONLY
 #include "../../include/web/website-handlers.h"
 
 static void injectCPanelIframe(char **html);
 
-const char *cPanelIframeContent = "<html><title></title><body style=\"margin:6px;background-color:rgba(255,255,255,0.85);\"><button onclick=\"document.location.href='/api/website/generate'\">Generate</button></body></html>";
-
 unsigned
-websiteHandlersHandlePageRequest(void *this, const char *method, const char *url,
-                                 struct MHD_Response **response, char *err) {
-    Website *site = (Website*)this;
+websiteHandlersHandlePageRequest(void *myPtr, void *myDataPtr, const char *method,
+                                 const char *url, struct MHD_Response **response,
+                                 char *err) {
+    if (strcmp(method, "GET") != 0) return MHD_HTTP_NOT_FOUND;
+    Website *site = (Website*)myPtr;
     Page *p = siteGraphFindPage(&site->siteGraph, (char*)url);
     if (!p) {
         return MHD_HTTP_NOT_FOUND;
@@ -29,11 +30,28 @@ websiteHandlersHandlePageRequest(void *this, const char *method, const char *url
 }
 
 unsigned
-websiteHandlersHandleCPanelIframeRequest(void *this, const char *method, const char *url,
-                                         struct MHD_Response **response, char *err) {
-    *response = MHD_create_response_from_buffer(strlen(cPanelIframeContent),
-                                                (void*)cPanelIframeContent,
-                                                MHD_RESPMEM_PERSISTENT);
+websiteHandlersHandleStaticFileRequest(void *myPtr, void *myDataPtr, const char *method,
+                                       const char *url, struct MHD_Response **response,
+                                       char *err) {
+    if (strcmp(method, "GET") != 0 || strstr(url, "/frontend/") != url) return 0;
+    if (strstr(url, "..")) return MHD_HTTP_NOT_FOUND;
+    char *ext = strrchr(url, '.');
+    if (!ext) return MHD_HTTP_NOT_FOUND;
+    bool isJs = strcmp(ext, ".js") == 0;
+    if (!isJs && strcmp(ext, ".html") != 0) {
+        return MHD_HTTP_NOT_FOUND;
+    }
+    int fd;
+    struct stat sbuf;
+    char *appPath = (char*)myPtr;
+    STR_CONCAT(path, appPath, url);
+    if ((fd = open(path, O_RDONLY)) == -1 || fstat(fd, &sbuf) != 0) {
+        if (fd != -1) (void)close(fd);
+        return MHD_HTTP_INTERNAL_SERVER_ERROR;
+    }
+    *response = MHD_create_response_from_fd_at_offset64(sbuf.st_size, fd, 0);
+    MHD_add_response_header(*response, "Content-Type", isJs?"application/javascript":"text/html");
+    MHD_add_response_header(*response, "Cache-Control", "public,max-age=86400");//24h
     return MHD_HTTP_OK;
 }
 
@@ -59,9 +77,11 @@ writePageToFile(char *renderedHtml, Page *page, Website *site, void *myPtr,
 }
 
 unsigned
-websiteHandlersHandleGenerateRequest(void *this, const char *method, const char *url,
-                                     struct MHD_Response **response, char *err) {
-    Website *site = (Website*)this;
+websiteHandlersHandleGenerateRequest(void *myPtr, void *myDataPtr, const char *method,
+                                     const char *url, struct MHD_Response **response,
+                                     char *err) {
+    if (strcmp(method, "GET") != 0 || strcmp(url, "/api/website/generate") != 0) return 0;
+    Website *site = (Website*)myPtr;
     timerInit();
     timerStart();
     if (!websiteGenerate(site, writePageToFile, NULL, err)) {
@@ -73,7 +93,7 @@ websiteHandlersHandleGenerateRequest(void *this, const char *method, const char 
     size_t messageLen = strlen(tmpl) - strlen("%d%s%.6f") +
                         (log10(site->siteGraph.pages.size) + 1) +
                         strlen(site->rootDir) +
-                        (roundSecs > 0.1 ? (int)log10(round(secsElapsed)) + 1: 1) + 6 +
+                        (roundSecs > 0.1 ? log10(roundSecs) + 1: 1) + 6 +
                         1;
     char *ret = ALLOCATE_ARR(char, messageLen);
     snprintf(ret, messageLen, tmpl, site->siteGraph.pages.size, site->rootDir,
@@ -89,7 +109,7 @@ websiteHandlersHandleGenerateRequest(void *this, const char *method, const char 
 
 static void
 injectCPanelIframe(char **ptrToHtml) {
-    const char *injection = "<iframe src=\"/int/cpanel\" style=\"position:fixed;border:none;height:100%;width:120px;right:0;top:0;\"></iframe>";
+    const char *injection = "<iframe src=\"/frontend/cpanel.html\" style=\"position:fixed;border:none;height:100%;width:120px;right:0;top:0;\"></iframe>";
     char *html = *ptrToHtml;
     const size_t injlen = strlen(injection);
     const size_t oldLen = strlen(html);

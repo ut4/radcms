@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <signal.h>
 #include <time.h>
+#include "include/web/component-handlers.h" // componentHandlersHandle*()
+#include "include/web/website-handlers.h" // websiteHandlersHandle*()
 #include "include/data-query-script-bindings.h"
 #include "include/db.h"
 #include "include/duk.h"
@@ -76,12 +78,14 @@ int main(int argc, const char* argv[]) {
     if (!webAppReadOrCreateSiteIni(&app, "", errBuf) ||
         !websiteFetchAndParseSiteGraph(&website, errBuf) ||
         !websitePopulateTemplateCaches(&website, errBuf)) goto done;
-    app.handlers[0] = (RequestHandler){.methodPattern="GET", .urlPattern="/int/cpanel",
-        .handlerFn=websiteHandlersHandleCPanelIframeRequest, .this=NULL};
-    app.handlers[1] = (RequestHandler){.methodPattern="GET", .urlPattern="/api/website/generate",
-        .handlerFn=websiteHandlersHandleGenerateRequest, .this=(void*)&website};
-    app.handlers[2] = (RequestHandler){.methodPattern="GET", .urlPattern="/*",
-        .handlerFn=websiteHandlersHandlePageRequest, .this=(void*)&website};
+    app.handlers[0] = (RequestHandler){.handlerFn=websiteHandlersHandleStaticFileRequest,
+        .myPtr=(void*)app.appPath, .formDataHandlers=NULL};
+    app.handlers[1] = (RequestHandler){.handlerFn=componentHandlersHandleComponentAddRequest,
+        .myPtr=(void*)&website, .formDataHandlers=componentHandlersGetComponentAddDataHandlers()};
+    app.handlers[2] = (RequestHandler){.handlerFn=websiteHandlersHandleGenerateRequest,
+        .myPtr=(void*)&website, .formDataHandlers=NULL};
+    app.handlers[3] = (RequestHandler){.handlerFn=websiteHandlersHandlePageRequest,
+        .myPtr=(void*)&website, .formDataHandlers=NULL};
     pthread_t fileWatcherThread;
     if (pthread_create(&fileWatcherThread, NULL, webAppStartFileWatcher,
                        (void*)&app)) {

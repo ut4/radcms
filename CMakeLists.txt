@@ -28,14 +28,15 @@ set(SOURCE_FILES_COMMON
     include/hashmap.h src/hashmap.c
     include/memory.h src/memory.c
     include/site-ini.h src/site-ini.c
-    include/v-tree-script-bindings.h src/v-tree-script-bindings.c
-    include/v-tree.h src/v-tree.c
     include/static-data.h src/static-data.c
     include/str-reader.h src/str-reader.c
+    include/v-tree-script-bindings.h src/v-tree-script-bindings.c
+    include/v-tree.h src/v-tree.c
     include/timer.h
 )
 set(SOURCE_FILES_WEB
     include/file-watcher.h src/file-watcher.c
+    include/web/component-handlers.h src/web/component-handlers.c
     include/web/website-handlers.h src/web/website-handlers.c
     include/web-app-common.h
     include/web-app.h src/web-app.c

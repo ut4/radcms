@@ -9,20 +9,53 @@
 #include <microhttpd.h>
 
 /**
- * A function that handles a single http-request. Returns a status code eg.
- * MHD_HTTP_OK.
+ * A function that handles a single http-request, or passes it to the next
+ * handler.
+ *
+ * @returns {unsigned} MHD_NO | 0      == pass,
+ *                     MHD_YES | 1     == accept, continue to the data processing,
+ *                     MHD_HTTP_* | >1 == accept, respond immediately
  */
-typedef unsigned (*handlerFn)(void* this, const char *method, const char *url,
-                              struct MHD_Response **response, char *err);
+typedef unsigned (*handlerFn)(void *myPtr, void *myDataPtr, const char *method,
+                              const char *url, struct MHD_Response **response,
+                              char *err);
+
+struct FormDataHandlers;
+typedef struct FormDataHandlers FormDataHandlers;
+
+/**
+ * A function that receives each key & val of POST|PUT-data.
+ *
+ * @returns {bool} true == continue iterating,
+ *                 false == abort the iteration
+ */
+typedef bool (*receiveFormFieldFn)(const char *key, const char *value,
+                                   void *myPtr);
+
+/**
+ * A function that creates *myPtr for receiveFormFieldFn().
+ */
+typedef void* (*makeMyFormDataPtrFn)();
+
+/**
+ * Destructor for makeMyFormDataPtrFn()'s ptr
+ */
+typedef void (*freeMyFormDataPtrFn)(void *myPtr);
+
+struct FormDataHandlers {
+    receiveFormFieldFn formDataReceiverFn;
+    makeMyFormDataPtrFn formDataInitFn;
+    freeMyFormDataPtrFn formDataFreeFn;
+    void *myPtr;
+};
 
 /**
  * Stores a route, see main.c (app.handlers).
  */
 typedef struct {
-    const char *methodPattern; // HTTP-method to match eg. "GET", "POST"
-    const char *urlPattern;    // url to match eg. "/home"
     handlerFn handlerFn;       // A function that processes this request
-    void *this;                // A value that gets passed to handerFn()
+    void *myPtr;               // A value that gets passed to handerFn()
+    FormDataHandlers *formDataHandlers;
 } RequestHandler;
 
 #endif
