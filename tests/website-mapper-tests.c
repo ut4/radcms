@@ -108,7 +108,7 @@ static bool logPageWriteCall(char *renderedHtml, Page *page, Website *site,
 static void
 testWebsiteGenerateProcessesPagesWithNoDbcs(Db *db, char *err) {
     duk_context *ctx = myDukCreate(err);
-    if (!ctx) { printToStdErr("Failed to create duk_context\n"); exit(EXIT_FAILURE); }
+    ASSERT(ctx != NULL, "Failed to create duk_context\n"); \
     vTreeScriptBindingsRegister(ctx);
     dataQueryScriptBindingsRegister(ctx);
     //

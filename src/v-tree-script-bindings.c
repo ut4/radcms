@@ -23,8 +23,7 @@ static bool findAndPushComponentArray(duk_context *ctx, ComponentArray *allCompo
 void
 vTreeScriptBindingsRegister(duk_context *ctx) {
     duk_push_bare_object(ctx);                          // [... object]
-    duk_push_c_lightfunc(ctx, vTreeSBRegisterElement, 3, 3, 0); // [... object lightfn]
-                                                                // 3 == tagName, props, children
+    duk_push_c_lightfunc(ctx, vTreeSBRegisterElement, DUK_VARARGS, 0, 0); // [... object lightfn]
     duk_put_prop_string(ctx, -2, "registerElement");    // [... object]
     duk_push_c_lightfunc(ctx, vTreeSBPartial, 2, 2, 0); // [... object lightfn]
                                                         // 2 == tmplFileName, data
@@ -107,7 +106,8 @@ collectElemProps(duk_context *ctx) {// [str obj str] (arguments of vTree.registe
 
 static duk_ret_t
 vTreeSBRegisterElement(duk_context *ctx) {
-    // Note: duk_get_top() is always 3 (same as the 3rd arg of duk_push_c_lightfunc())
+    if (duk_get_top(ctx) != 3) (void)duk_error(ctx, DUK_ERR_TYPE_ERROR,
+        "registerElement expects exactly 3 arguments");
     const char *tagName = duk_require_string(ctx, 0); // 1st argument
     ElemProp *props = collectElemProps(ctx);          // 2nd argument (props)
     duk_push_thread_stash(ctx, ctx);

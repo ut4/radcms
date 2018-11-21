@@ -2,13 +2,13 @@
 #define insn_webApp_h
 
 #include <unistd.h> // getcwd
-#include "file-io.h" // fileIO*()
-#include "common.h" // stdbool etc.
-#include "memory.h" // ALLOCATE etc.
-#include "site-ini.h" // SiteIni etc.
+#include "../file-io.h" // fileIO*()
+#include "../common.h" // stdbool etc.
+#include "../memory.h" // ALLOCATE etc.
+#include "../site-ini.h" // SiteIni etc.
 #include "web-app-common.h" // handlerFn, microhttpd etc.
-#include "web/website.h" // Website
-#include "website-fw-handlers.h" // file-watcher.h
+#include "../website.h" // Website
+#include "../website-fw-handlers.h" // file-watcher.h
 
 typedef struct {
     char *rootDir; // Normalized, always ends with "/"

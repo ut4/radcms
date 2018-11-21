@@ -1,4 +1,4 @@
-#include "../../include/web/site-graph.h"
+#include "../include/site-graph.h"
 
 static void pageFreeProps(Page *this);
 
@@ -122,29 +122,36 @@ siteGraphAddPage(SiteGraph *this, unsigned id, char *url, unsigned parentId,
 
 void
 siteGraphDiffMake(SiteGraph *this, VTree *vTree, void *toMyPtr, char *err) {
-    bool TEMPadded = false;
     for (unsigned i = 0; i < vTree->elemNodes.length; ++i) {
-        if (strcmp(vTree->elemNodes.values[i].tagName, "a") == 0 && !TEMPadded) {
-            ElemProp *lfn = elemNodeGetProp(&vTree->elemNodes.values[i], "layoutFileName");
-            // layoutFileName-attribute not defined -> skip
-            if (!lfn) continue;
-            ElemProp *href = elemNodeGetProp(&vTree->elemNodes.values[i], "href");
-            if (!href) {
-                printToStdErr("Can't follow a link without href.\n");
-                return;
-            }
-            // Page already in the site-graph -> skip
-            if (siteGraphFindPage(this, href->val)) continue;
-            // New page -> add it
-            int layoutIdx = -1;
-            (void)siteGraphFindTemplate(this, lfn->val, &layoutIdx);
-            if (layoutIdx == -1) {
-                (void)siteGraphAddTemplate(this, copyString(lfn->val));
-                layoutIdx = this->templates.length - 1;
-            }
-            ((struct SiteGraphDiff*)toMyPtr)->newPages = siteGraphAddPage(
-                this, 99, copyString(href->val), 0, layoutIdx);
-            TEMPadded = true;
+        if (strcmp(vTree->elemNodes.values[i].tagName, "a") != 0) continue;
+        ElemProp *lfn = elemNodeGetProp(&vTree->elemNodes.values[i], "layoutFileName");
+        // layoutFileName-attribute not defined -> skip
+        if (!lfn) continue;
+        ElemProp *href = elemNodeGetProp(&vTree->elemNodes.values[i], "href");
+        if (!href) {
+            printToStdErr("Can't follow a link without href.\n");
+            return;
+        }
+        // Page already in the site-graph -> skip
+        if (siteGraphFindPage(this, href->val)) continue;
+        // New page -> add it
+        int layoutIdx = -1;
+        (void)siteGraphFindTemplate(this, lfn->val, &layoutIdx);
+        if (layoutIdx == -1) {
+            (void)siteGraphAddTemplate(this, copyString(lfn->val));
+            layoutIdx = this->templates.length - 1;
+        }
+        PageRef *n = ALLOCATE(PageRef);
+        n->next = NULL;
+        n->ptr = siteGraphAddPage(this, 99, copyString(href->val), 0,
+                                  layoutIdx);
+        SiteGraphDiff *diff = toMyPtr;
+        if (diff->newPages) {
+            diff->newPagesTail->next = n;
+            diff->newPagesTail = n;
+        } else {
+            diff->newPages = n;
+            diff->newPagesTail = diff->newPages;
         }
     }
 }
@@ -173,6 +180,24 @@ siteGraphAddTemplate(SiteGraph *this, char *fileName) {
     newLayout.hasErrors = false;
     templateArrayPush(&this->templates, &newLayout);
     return &this->templates.values[this->templates.length - 1];
+}
+
+void
+siteGraphDiffInit(SiteGraphDiff *this) {
+    this->newPages = NULL;
+    this->newPagesTail = NULL;
+}
+
+void
+siteGraphDiffFreeProps(SiteGraphDiff *this) {
+    this->newPagesTail = NULL;
+    PageRef *cur = this->newPages;
+    PageRef *tmp;
+    while (cur) {
+        tmp = cur;
+        cur = cur->next;
+        FREE(PageRef, tmp);
+    }
 }
 
 static void

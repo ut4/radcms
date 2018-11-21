@@ -2,9 +2,9 @@
 #define insn_siteGraph_h
 
 #include <math.h> // log10
-#include "../hashmap.h"
-#include "../str-reader.h" // strReaderRead*() etc.
-#include "../v-tree.h" // TextNodeArray
+#include "hashmap.h"
+#include "str-reader.h" // strReaderRead*() etc.
+#include "v-tree.h" // TextNodeArray
 
 typedef struct {
     unsigned id;
@@ -30,9 +30,17 @@ typedef struct {
     TemplateArray templates;
 } SiteGraph;
 
-struct SiteGraphDiff {
-    Page *newPages;
+struct PageRef;
+typedef struct PageRef PageRef;
+struct PageRef {
+    Page *ptr; // borrowed from SiteGraph.pages
+    PageRef *next;
 };
+
+typedef struct {
+    PageRef *newPages;
+    PageRef *newPagesTail;
+} SiteGraphDiff;
 
 void
 siteGraphInit(SiteGraph *this);
@@ -93,6 +101,12 @@ siteGraphGetTemplate(SiteGraph *this, int idx);
  */
 Template*
 siteGraphAddTemplate(SiteGraph *this, char *fileName);
+
+void
+siteGraphDiffInit(SiteGraphDiff *this);
+
+void
+siteGraphDiffFreeProps(SiteGraphDiff *this);
 
 void templateArrayInit(TemplateArray *this);
 void templateArrayPush(TemplateArray *this, Template *value);

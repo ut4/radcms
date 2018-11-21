@@ -1,5 +1,4 @@
-#include "../../include/web/website.h"
-#include <assert.h>
+#include "../include/website.h"
 
 static void mapDataBatchesRow(sqlite3_stmt *stmt, void **myPtr);
 static void mapSiteGraphResultRow(sqlite3_stmt *stmt, void **myPtr);
@@ -153,7 +152,7 @@ pageRender(Website *this, int layoutIdx, const char *url,
     #define NO_LAYOUT_PAGE "<html><body>Layout file '%s' doesn't exists yet.</body></html>"
     #define HAS_UNFIXED_ERRORS_PAGE "<html><body>Layout '%s' contains errors and can't be rendered.</body></html>"
     Template *layout = siteGraphGetTemplate(&this->siteGraph, layoutIdx);
-    assert(layout != NULL && "Unknown layout.");
+    ASSERT(layout != NULL, "Unknown layoutIdx %u.\n", layoutIdx);
     // User has added a link, but hasn't had time to create a layout for it yet
     if (!layout->exists) {
         size_t messageLen = strlen(NO_LAYOUT_PAGE) -

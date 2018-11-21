@@ -2,10 +2,10 @@
 #define insn_websiteHandlers_h
 
 #include "../file-io.h" // fileIO*()
-#include "../web-app-common.h" // microhttpd
-#include "../../include/timer.h"
+#include "web-app-common.h" // microhttpd
+#include "../timer.h"
 #include "../v-tree-script-bindings.h" // vTreeScriptBindings*()
-#include "website.h"
+#include "../website.h"
 
 /**
  * Responds to GET /<any> eg "/" or "/foo" or "/foo/bar/baz".

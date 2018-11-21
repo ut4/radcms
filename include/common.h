@@ -12,4 +12,14 @@
 #define printToStdErr(...) \
     fprintf(stderr, ##__VA_ARGS__)
 
+#ifdef NDEBUG
+#define ASSERT(that, ...) ;
+#else
+#define ASSERT(that, ...) \
+    if (!(that)) { \
+        fprintf(stderr, ## __VA_ARGS__); \
+        exit(EXIT_FAILURE); \
+    }
+#endif
+
 #endif

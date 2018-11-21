@@ -2,7 +2,7 @@
 #define insn_siteGraphTests_h
 
 #include "testlib.h" // assertThat
-#include "../include/web/website.h" // siteGraph*()
+#include "../include/website.h" // siteGraph*()
 
 void
 siteGraphTestsRun();

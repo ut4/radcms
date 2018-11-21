@@ -7,7 +7,7 @@ populateComponent(unsigned id, const char *name, const char *json,
 #define beforeEach() \
     char errBuf[ERR_BUF_LEN]; errBuf[0] = '\0'; \
     duk_context *ctx = myDukCreate(errBuf); \
-    if (!ctx) { printToStdErr("Failed to create duk_context\n"); exit(EXIT_FAILURE); } \
+    ASSERT(ctx != NULL, "Failed to create duk_context\n"); \
     vTreeScriptBindingsRegister(ctx); \
     dataQueryScriptBindingsRegister(ctx)
 
@@ -111,6 +111,52 @@ testVTreeRegisterElementAttributes() {
     done:
         duk_destroy_heap(ctx);
         vTreeFreeProps(&vTree);
+}
+
+static void
+testVTreeRegisterElementValidatesItsArguments() {
+    //
+    beforeEach();
+    VTree vTree1;
+    VTree vTree2;
+    VTree vTree3;
+    vTreeInit(&vTree1);
+    vTreeInit(&vTree2);
+    vTreeInit(&vTree3);
+    char *layoutTmpl1 = "function (vTree, _) {"
+        " vTree.registerElement();"
+    "}";
+    char *layoutTmpl2 = "function (vTree, _) {"
+        " vTree.registerElement('p', null, true);"
+    "}";
+    char *layoutTmpl3 = "function (vTree, _) {"
+        " vTree.registerElement('p', null, []);"
+    "}";
+    //
+    if (!dukUtilsCompileStrToFn(ctx, layoutTmpl1, errBuf)) {
+        printToStdErr("Failed to compile test script: %s", errBuf); goto done; }
+    bool success1 = vTreeScriptBindingsExecLayoutTmpl(ctx, &vTree1, NULL, NULL, errBuf);
+    assertThatOrGoto(!success1, done, "Should return false");
+    assertStrEquals(errBuf, "TypeError: registerElement expects exactly 3 arguments");
+    //
+    if (!dukUtilsCompileStrToFn(ctx, layoutTmpl2, errBuf)) {
+        printToStdErr("Failed to compile test script: %s", errBuf); goto done; }
+    bool success2 = vTreeScriptBindingsExecLayoutTmpl(ctx, &vTree2, NULL, NULL, errBuf);
+    assertThatOrGoto(!success2, done, "Should return false");
+    assertStrEquals(errBuf, "TypeError: 3rd arg must be \"str\", <nodeRef>, or "
+        "[<nodeRef>...].\n");
+    //
+    if (!dukUtilsCompileStrToFn(ctx, layoutTmpl3, errBuf)) {
+        printToStdErr("Failed to compile test script: %s", errBuf); goto done; }
+    bool success3 = vTreeScriptBindingsExecLayoutTmpl(ctx, &vTree3, NULL, NULL, errBuf);
+    assertThatOrGoto(!success3, done, "Should return false");
+    assertStrEquals(errBuf, "TypeError: Child-array can't be empty.\n");
+    //
+    done:
+        duk_destroy_heap(ctx);
+        vTreeFreeProps(&vTree1);
+        vTreeFreeProps(&vTree2);
+        vTreeFreeProps(&vTree3);
 }
 
 static void
@@ -297,52 +343,6 @@ testExecLayoutRunsMultipleLayoutsWithoutConflict() {
 }
 
 static void
-testVTreeRegisterElementValidatesItsArguments() {
-    //
-    beforeEach();
-    VTree vTree1;
-    VTree vTree2;
-    VTree vTree3;
-    vTreeInit(&vTree1);
-    vTreeInit(&vTree2);
-    vTreeInit(&vTree3);
-    char *layoutTmpl1 = "function (vTree, _) {"
-        " vTree.registerElement();"
-    "}";
-    char *layoutTmpl2 = "function (vTree, _) {"
-        " vTree.registerElement('p', null, true);"
-    "}";
-    char *layoutTmpl3 = "function (vTree, _) {"
-        " vTree.registerElement('p', null, []);"
-    "}";
-    //
-    if (!dukUtilsCompileStrToFn(ctx, layoutTmpl1, errBuf)) {
-        printToStdErr("Failed to compile test script: %s", errBuf); goto done; }
-    bool success1 = vTreeScriptBindingsExecLayoutTmpl(ctx, &vTree1, NULL, NULL, errBuf);
-    assertThatOrGoto(!success1, done, "Should return false");
-    assertStrEquals(errBuf, "TypeError: string required, found undefined (stack index 0)");
-    //
-    if (!dukUtilsCompileStrToFn(ctx, layoutTmpl2, errBuf)) {
-        printToStdErr("Failed to compile test script: %s", errBuf); goto done; }
-    bool success2 = vTreeScriptBindingsExecLayoutTmpl(ctx, &vTree2, NULL, NULL, errBuf);
-    assertThatOrGoto(!success2, done, "Should return false");
-    assertStrEquals(errBuf, "TypeError: 3rd arg must be \"str\", <nodeRef>, or "
-        "[<nodeRef>...].\n");
-    //
-    if (!dukUtilsCompileStrToFn(ctx, layoutTmpl3, errBuf)) {
-        printToStdErr("Failed to compile test script: %s", errBuf); goto done; }
-    bool success3 = vTreeScriptBindingsExecLayoutTmpl(ctx, &vTree3, NULL, NULL, errBuf);
-    assertThatOrGoto(!success3, done, "Should return false");
-    assertStrEquals(errBuf, "TypeError: Child-array can't be empty.\n");
-    //
-    done:
-        duk_destroy_heap(ctx);
-        vTreeFreeProps(&vTree1);
-        vTreeFreeProps(&vTree2);
-        vTreeFreeProps(&vTree3);
-}
-
-static void
 testExecLayoutTmplProvidesFetchOnesInVariables() {
     // 1. Setup
     beforeEach();
@@ -457,13 +457,13 @@ void
 vTreeScriptBindingsTestsRun() {
     testVTreeRegisterElementWithElemAndTextChildren();
     testVTreeRegisterElementAttributes();
+    testVTreeRegisterElementValidatesItsArguments();
     testVTreePartialRunsCachedPartial();
     testDocumentDataConfigFetchOneChains();
     testDocumentDataConfigFetchAllChains();
     testDocumentDataConfigFetchOneValidatesItsArguments();
     testDocumentDataConfigFetchAllValidatesItsArguments();
     testExecLayoutRunsMultipleLayoutsWithoutConflict();
-    testVTreeRegisterElementValidatesItsArguments();
     testExecLayoutTmplProvidesFetchOnesInVariables();
     testExecLayoutTmplProvidesFetchAllsInVariables();
 }

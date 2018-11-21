@@ -1,9 +1,8 @@
 #ifndef insn_websiteFwHandlers_h
 #define insn_websiteFwHandlers_h
 
-#include <assert.h>
 #include "file-watcher.h"
-#include "web/website.h"
+#include "website.h"
 
 void
 websiteHandleFWEvent(FWEventType type, const char *fileName, void *myPtr);

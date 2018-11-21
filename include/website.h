@@ -2,17 +2,17 @@
 #define insn_website_h
 
 #include <stdbool.h>
-#include "../data-defs.h" // Component
-#include "../data-queries.h" // DocumentDataConfig
-#include "../db.h"
-#include "../duk.h" // duk_context
-#include "../file-io.h"
-#include "../file-watcher.h"
-#include "../memory.h"
-#include "../static-data.h" // getSampleData()
+#include "data-defs.h" // Component
+#include "data-queries.h" // DocumentDataConfig
+#include "db.h"
+#include "duk.h" // duk_context
+#include "file-io.h"
+#include "file-watcher.h"
+#include "memory.h"
+#include "static-data.h" // getSampleData()
 #include "site-graph.h"
-#include "../v-tree-script-bindings.h" // vTreeScriptBindingsExecLayout|Template()
-#include "../v-tree.h" // VTree, DocumentDataConfig
+#include "v-tree-script-bindings.h" // vTreeScriptBindingsExecLayout|Template()
+#include "v-tree.h" // VTree, DocumentDataConfig
 
 typedef struct {
     SiteGraph siteGraph;

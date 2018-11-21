@@ -1,4 +1,4 @@
-#include "../include/web-app.h"
+#include "../../include/web/web-app.h"
 
 const char *badReqMessage = "<html><title>400 Bad Request</title><body>400 Bad Request</body></html>";
 const char *notFoundMessage = "<html><title>404 Not Found</title><body>404 Not Found</body></html>";
@@ -71,7 +71,7 @@ webAppInit(WebApp *this, const char *rootDir, Website *site, char *err) {
     this->ini.rootDir = this->rootDir;
     this->daemon = NULL;
     this->site = site;
-    this->handlerCount = sizeof(this->handlers) / sizeof(RequestHandler);
+    this->handlerCount = 0;
     this->errBuf = err;
 }
 

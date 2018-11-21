@@ -15,8 +15,6 @@ include_directories(insane ${INSN_DEP_INCLUDES})
 
 # == insane.exe ================================================================
 set(SOURCE_FILES_COMMON
-    include/web/site-graph.h src/web/site-graph.c
-    include/web/website.h src/web/website.c
     include/common.h
     include/component-mapper.h src/component-mapper.c
     include/data-defs.h src/data-defs.c
@@ -27,6 +25,7 @@ set(SOURCE_FILES_COMMON
     include/file-io.h src/file-io.c
     include/hashmap.h src/hashmap.c
     include/memory.h src/memory.c
+    include/site-graph.h src/site-graph.c
     include/site-ini.h src/site-ini.c
     include/static-data.h src/static-data.c
     include/str-reader.h src/str-reader.c
@@ -34,13 +33,14 @@ set(SOURCE_FILES_COMMON
     include/v-tree-script-bindings.h src/v-tree-script-bindings.c
     include/v-tree.h src/v-tree.c
     include/website-fw-handlers.h src/website-fw-handlers.c
+    include/website.h src/website.c
 )
 set(SOURCE_FILES_WEB
     include/file-watcher.h src/file-watcher.c
     include/web/component-handlers.h src/web/component-handlers.c
+    include/web/web-app-common.h
+    include/web/web-app.h src/web/web-app.c
     include/web/website-handlers.h src/web/website-handlers.c
-    include/web-app-common.h
-    include/web-app.h src/web-app.c
 )
 add_executable(insane ${SOURCE_FILES_COMMON} ${SOURCE_FILES_WEB} main.c)
 target_compile_options(insane PUBLIC ${INSN_COMPILE_OPTIONS})

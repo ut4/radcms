@@ -27,7 +27,7 @@ handleFileModifyEvent(const char *fileName, Website *this, char *err) {
     int layoutIdx = -1;
     Template *layout = siteGraphFindTemplate(&this->siteGraph, (char*)fileName,
                                              &layoutIdx);
-    assert(layout != NULL && "An unknown file was modified.");
+    ASSERT(layout != NULL, "An unknown file was modified.");
     duk_push_thread_stash(this->dukCtx, this->dukCtx);
     if (!websiteCacheTemplate(this, fileName, err)) {
         printToStdErr("%s", err);
@@ -35,8 +35,8 @@ handleFileModifyEvent(const char *fileName, Website *this, char *err) {
         return;
     }
     //
-    struct SiteGraphDiff diff;
-    diff.newPages = NULL;
+    SiteGraphDiff diff;
+    siteGraphDiffInit(&diff);
     char *rendered = pageRender(this, layoutIdx, "/", siteGraphDiffMake,
                                 &diff, err);
     if (!rendered) goto done;
@@ -46,5 +46,6 @@ handleFileModifyEvent(const char *fileName, Website *this, char *err) {
         printToStdErr("Failed to save the site-graph: %s\n", err);
     }
     done:
+    siteGraphDiffFreeProps(&diff);
     duk_pop(this->dukCtx);
 }

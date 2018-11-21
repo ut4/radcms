@@ -93,12 +93,9 @@ vTreeToHtml(VTree *this, char *err) {
     char *out = ALLOCATE_ARR(char, this->calculatedRenderCharCount + 1);
     out[0] = '\0';
     doRender(this, &this->elemNodes.values[this->rootElemIndex], out);
-    if (strlen(out) > this->calculatedRenderCharCount) {
-        printToStdErr("calculatedRenderCharCount was %d, but actually wrote "
-                      "%ld chars! Exiting.\n", this->calculatedRenderCharCount,
-                      strlen(out));
-        exit(EXIT_FAILURE);
-    }
+    ASSERT(strlen(out) == this->calculatedRenderCharCount,
+        "calculatedRenderCharCount was %d, but actually wrote %lu chars! "
+        "Exiting.\n", this->calculatedRenderCharCount, strlen(out));
     return out;
 }
 

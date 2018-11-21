@@ -9,7 +9,7 @@
 #include "include/db.h"
 #include "include/duk.h"
 #include "include/v-tree-script-bindings.h"
-#include "include/web-app.h"
+#include "include/web/web-app.h"
 
 static volatile int isCtrlCTyped = 0;
 
@@ -78,6 +78,7 @@ int main(int argc, const char* argv[]) {
     if (!webAppReadOrCreateSiteIni(&app, "", errBuf) ||
         !websiteFetchAndParseSiteGraph(&website, errBuf) ||
         !websitePopulateTemplateCaches(&website, errBuf)) goto done;
+    app.handlerCount = sizeof(app.handlers) / sizeof(RequestHandler);
     app.handlers[0] = (RequestHandler){.handlerFn=websiteHandlersHandleStaticFileRequest,
         .myPtr=app.appPath, .formDataHandlers=NULL};
     app.handlers[1] = (RequestHandler){.handlerFn=componentHandlersHandleComponentAddRequest,
