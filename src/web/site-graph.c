@@ -53,9 +53,52 @@ siteGraphParse(char *str, SiteGraph *out, StrReader *sr, char *err) {
     return true;
 }
 
-void
-siteGraphSerialize(SiteGraph *this, char *to) {
-
+char*
+siteGraphSerialize(SiteGraph *this) {
+    #define intStrLen(int) (unsigned)(log10(int) + 1)
+    /*
+     * Calculate the length
+     */
+    unsigned len = (this->pages.size > 0 ? intStrLen(this->pages.size) : 1) +
+                   (this->templates.length > 0 ? intStrLen(this->templates.length) : 1) +
+                   2 + // '|' * 2
+                   1;  // '\0
+    HashMapElPtr *ptr = this->pages.orderedAccess;
+    while (ptr) {
+        Page *page = ptr->data;
+        len += intStrLen(page->id) +
+               strlen(page->url) +
+               (page->parentId > 0 ? intStrLen(page->parentId) : 1) +
+               (page->layoutIdx > 0 ? intStrLen(page->layoutIdx) : 1) +
+               3; // '|' * 3
+        ptr = ptr->next;
+    }
+    for (unsigned i = 0; i < this->templates.length; ++i) {
+        len += strlen(this->templates.values[i].fileName) +
+               1; // '|'
+    }
+    /*
+     * Build the string
+     */
+    char *out = ALLOCATE_ARR(char, len);
+    if (!out) {
+        printToStdErr("siteGraphSerialize: Failed to allocate $out.\n");
+        return NULL;
+    }
+    char *tail = out;
+    tail += snprintf(tail, len, "%u|%u|", this->pages.size, this->templates.length);
+    ptr = this->pages.orderedAccess;
+    while (ptr) {
+        Page *page = ptr->data;
+        tail += snprintf(tail, len, "%u%s|%u|%u|", page->id, page->url,
+                         page->parentId, page->layoutIdx);
+        ptr = ptr->next;
+    }
+    for (unsigned i = 0; i < this->templates.length; ++i) {
+        tail += snprintf(tail, len, "%s|", this->templates.values[i].fileName);
+    }
+    return out;
+    #undef intStrLen
 }
 
 Page*

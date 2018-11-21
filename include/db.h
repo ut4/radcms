@@ -30,7 +30,7 @@ dbDestruct(Db *this);
 /**
  * see dbInsert().
  */
-typedef bool (*bindValsFn)(sqlite3_stmt *stmt, void *data);
+typedef bool (*bindValsFn)(sqlite3_stmt *stmt, void *myPtr);
 
 /**
  * Usage:
@@ -42,7 +42,7 @@ typedef bool (*bindValsFn)(sqlite3_stmt *stmt, void *data);
  *     return true;
  * }
  * MyData data;
- * sqlite_int64 insertId = dbSelect(db, "insert into foo values(?, ?, ?)", myBindFn, &data, err);
+ * sqlite_int64 insertId = dbInsert(db, "insert into foo values(?, ?, ?)", myBindFn, &data, err);
  * if (insertId > 0) {
  *     // ok, each ? was bound and the query ran succesfully
  * } // else if (insertId == -1) printf("Something went wrong %s", err);
@@ -71,6 +71,27 @@ typedef void (*mapRowFn)(sqlite3_stmt *stmt, void **myPtr);
  */
 bool
 dbSelect(Db *this, const char *sql, mapRowFn onRow, void **ptrToMyPtr, char *err);
+
+/**
+ * Usage:
+ * void myBindFn(sqlite3_stmt *stmt, void *myPtr) {
+ *     MyFilter *filters = myPtr;
+ *     MyData *d = filters->data;
+ *     if (sqlite3_bind_text(stmt, 1, d->prop, -1, SQLITE_STATIC) != SQLITE_OK) return false;
+ *     if (sqlite3_bind_text(stmt, 2, d->prop2, -1, SQLITE_STATIC) != SQLITE_OK) return false;
+ *     if (sqlite3_bind_int(stmt, 3, d->another) != SQLITE_OK) return false;
+ *     if (sqlite3_bind_int(stmt, 4, filters->val) != SQLITE_OK) return false;
+ *     return true;
+ * }
+ * MyFilter filter;
+ * const char *sql = "update foo set prop = ?, prop2 = ?, another = ? where foo = ?";
+ * int numAffectedRows = dbUpdate(db, sql, myBindFn, &filter, err);
+ * if (numAffectedRows > -1) {
+ *     // ok, each ? was bound and the query ran succesfully
+ * } // else if (numAffectedRows == -1) printf("Something went wrong %s", err);
+ */
+int
+dbUpdate(Db *this, const char *sql, bindValsFn myBindFn, void *myPtr, char *err);
 
 /**
  * Example: dbRunInTransaction(db,

@@ -9,7 +9,7 @@ bool
 dbOpen(Db *this, const char *filePath, char *err) {
     int status = sqlite3_open(filePath, &this->conn);
     if (status != SQLITE_OK) {
-        putError("Could't open '%s': %s\n", filePath, sqlite3_errmsg(this->conn));
+        putError("Couldn't open '%s': %s\n", filePath, sqlite3_errmsg(this->conn));
         return false;
     }
     return true;
@@ -75,6 +75,35 @@ dbInsert(Db *this, const char *sql, bindValsFn myBindFn, void *data, char *err) 
                       sqlite3_errmsg(this->conn));
     }
     return insertId;
+}
+
+int
+dbUpdate(Db *this, const char *sql, bindValsFn myBindFn, void *myPtr, char *err) {
+    // 1. Create a prepared statement
+    sqlite3_stmt *stmt;
+    int updateRowCount = -1;
+    if (sqlite3_prepare_v2(this->conn, sql, -1, &stmt, NULL) != SQLITE_OK) {
+        putError("Failed to create stmt: %s\n", sqlite3_errmsg(this->conn));
+        return -1;
+    }
+    // 2. Call the binder function
+    if (!myBindFn(stmt, myPtr)) {
+        putError("myBindFn() failed: %s\n", sqlite3_errmsg(this->conn));
+        goto done;
+    }
+    // 3. Execute
+    if (sqlite3_step(stmt) != SQLITE_DONE) {
+        putError("Failed to execute update stmt: %s\n", sqlite3_errmsg(this->conn));
+        goto done;
+    }
+    updateRowCount = sqlite3_changes(this->conn);
+    // 4. Clean up
+    done:
+    if (sqlite3_finalize(stmt) != SQLITE_OK) {
+        printToStdErr("Warn: Failed to finalize stmt: %s\n",
+                      sqlite3_errmsg(this->conn));
+    }
+    return updateRowCount;
 }
 
 bool

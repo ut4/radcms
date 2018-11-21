@@ -197,6 +197,32 @@ testWebsiteInstallWritesAllData(Db *db, char *err) {
     FREE_STR(dir);
 }
 
+static void
+testWebsiteSaveToDbUpdatesTheDatabase(Db *db, char *err) {
+    if (!testUtilsExecSql(db,
+        "insert into websites values (1,'...')"
+    )) return;
+    //
+    Website site;
+    websiteInit(&site);
+    site.db = db;
+    siteGraphAddPage(&site.siteGraph, 1, copyString("/"), 0, 0);
+    siteGraphAddTemplate(&site.siteGraph, copyString("mytmpl.js"));
+    //
+    assertThatOrGoto(websiteSaveToDb(&site, err), done, "Should return succesfully");
+    char *actual = NULL;
+    if (dbSelect(db, "select `graph` from websites", mapTestDataRow, (void*)&actual, err)) {
+        assertThatOrGoto(actual != NULL, done, "Sanity updatedGraph != NULL");
+    }
+    assertStrEquals(actual, "1|1|1/|0|0|mytmpl.js|");
+    FREE_STR(actual);
+    done:
+        websiteFreeProps(&site);
+        testUtilsExecSql(db,
+            "delete from websites;"
+        );
+}
+
 void
 websiteMapperTestsRun() {
     char errBuf[ERR_BUF_LEN]; errBuf[0] = '\0';
@@ -211,6 +237,7 @@ websiteMapperTestsRun() {
     testWebsiteFetchBatchesFetchesDataForDDCWithMultipleBatches(&db, errBuf);
     testWebsiteGenerateProcessesPagesWithNoDbcs(&db, errBuf);
     testWebsiteInstallWritesAllData(&db, errBuf);
+    testWebsiteSaveToDbUpdatesTheDatabase(&db, errBuf);
     dbDestruct(&db);
 }
 

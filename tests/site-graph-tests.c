@@ -76,8 +76,31 @@ testSiteGraphParseParsesTheInput() {
         siteGraphFreeProps(&testGraph);
 }
 
-static void testSiteGraphSerializeSerializesTheInput() {
+static void
+testSiteGraphSerializeSerializesTheInput() {
+    SiteGraph testGraph;
+    siteGraphInit(&testGraph);
+    siteGraphAddPage(&testGraph, 1, copyString("/"), 0, 0);
+    siteGraphAddPage(&testGraph, 24, copyString("/fod"), 0, 1);
+    siteGraphAddPage(&testGraph, 5, copyString("/b/c"), 24, 0);
+    siteGraphAddTemplate(&testGraph, copyString("mytmpl.js"));
+    siteGraphAddTemplate(&testGraph, copyString("another.js"));
     //
+    char *serialized = siteGraphSerialize(&testGraph);
+    //
+    assertThatOrGoto(serialized != NULL, done, "Should return succesfully");
+    assertStrEquals(serialized,
+        "3|"          // Page count
+        "2|"          // Template count
+        "1/|0|0|"     // #1 Page
+        "24/fod|0|1|" // #2 Page
+        "5/b/c|24|0|" // #3 Page
+        "mytmpl.js|"  // #1 Template
+        "another.js|" // #2 Template
+    );
+    done:
+    siteGraphFreeProps(&testGraph);
+    if (serialized) FREE_STR(serialized);
 }
 
 void siteGraphTestsRun() {

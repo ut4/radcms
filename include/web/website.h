@@ -53,10 +53,10 @@ websiteInstall(Website *this, SampleData *data, const char *schemaSql,
                char *err);
 
 bool
-websiteCheckIsFWFileAcceptable(const char *fileName);
+websiteSaveToDb(Website *this, char *err);
 
-void
-websiteHandleFWEvent(FWEventType type, const char *fileName, void *myPtr);
+bool
+websiteCacheTemplate(Website *this, const char *fileName, char *err);
 
 typedef void (*renderInspectFn)(SiteGraph *siteGraph, VTree *vTree, void *myPtr,
                                 char *err);

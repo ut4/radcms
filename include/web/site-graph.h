@@ -1,6 +1,7 @@
 #ifndef insn_siteGraph_h
 #define insn_siteGraph_h
 
+#include <math.h> // log10
 #include "../hashmap.h"
 #include "../str-reader.h" // strReaderRead*() etc.
 #include "../v-tree.h" // TextNodeArray
@@ -59,9 +60,11 @@ siteGraphParse(char *str, SiteGraph *out, StrReader *sr, char *err);
  * "b.tmpl|"            // 2. template name
  * "c.tmpl"             // 3. template name
  * // \0 Always contains null byte
+ *
+ * The caller frees.
  */
-void
-siteGraphSerialize(SiteGraph *this, char *to);
+char*
+siteGraphSerialize(SiteGraph *this);
 
 /**
  * Returns Page|NULL.
