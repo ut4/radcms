@@ -26,9 +26,9 @@ testVTreeRegisterElementWithElemAndTextChildren() {
                 "vTree.registerElement('p', null, 'bar')"
             "]);"
         "}";
-    if (!dukUtilsCompileStrToFn(ctx, layoutTmpl, errBuf)) {
+    if (!dukUtilsCompileStrToFn(ctx, layoutTmpl, "l", errBuf)) {
         printToStdErr("Failed to compile test script: %s", errBuf); goto done; }
-    bool success = vTreeScriptBindingsExecLayoutTmpl(ctx, &vTree, NULL, NULL, errBuf);
+    bool success = vTreeScriptBindingsExecLayoutTmpl(ctx, &vTree, NULL, NULL, "", errBuf);
     // 3. Assert
     assertThatOrGoto(success, done, "Should return succesfully");
     assertIntEqualsOrGoto(vTree.elemNodes.length, 4, done);
@@ -79,9 +79,9 @@ testVTreeRegisterElementAttributes() {
                 "vTree.registerElement('div', {baz: 'naz', gas: 'maz foo'}, 'Foo')"
             ")"
         "}";
-    if (!dukUtilsCompileStrToFn(ctx, layoutTmpl, errBuf)) {
+    if (!dukUtilsCompileStrToFn(ctx, layoutTmpl, "l", errBuf)) {
         printToStdErr("Failed to compile test script: %s", errBuf); goto done; }
-    bool success = vTreeScriptBindingsExecLayoutTmpl(ctx, &vTree, NULL, NULL, errBuf);
+    bool success = vTreeScriptBindingsExecLayoutTmpl(ctx, &vTree, NULL, NULL, "", errBuf);
     // 3. Assert
     assertThatOrGoto(success, done, "Should return succesfully");
     assertThatOrGoto(vTree.elemNodes.length==2, done, "Sanity elemNodes.length==2");
@@ -133,24 +133,27 @@ testVTreeRegisterElementValidatesItsArguments() {
         " vTree.registerElement('p', null, []);"
     "}";
     //
-    if (!dukUtilsCompileStrToFn(ctx, layoutTmpl1, errBuf)) {
+    if (!dukUtilsCompileStrToFn(ctx, layoutTmpl1, "l", errBuf)) {
         printToStdErr("Failed to compile test script: %s", errBuf); goto done; }
-    bool success1 = vTreeScriptBindingsExecLayoutTmpl(ctx, &vTree1, NULL, NULL, errBuf);
+    bool success1 = vTreeScriptBindingsExecLayoutTmpl(ctx, &vTree1, NULL, NULL,
+                                                      "foo", errBuf);
     assertThatOrGoto(!success1, done, "Should return false");
-    assertStrEquals(errBuf, "TypeError: registerElement expects exactly 3 arguments");
+    assertThat(strstr(errBuf, "registerElement expects exactly 3 arguments") != NULL,
+                      "Should whine about wrong arg-count");
     //
-    if (!dukUtilsCompileStrToFn(ctx, layoutTmpl2, errBuf)) {
+    if (!dukUtilsCompileStrToFn(ctx, layoutTmpl2, "l", errBuf)) {
         printToStdErr("Failed to compile test script: %s", errBuf); goto done; }
-    bool success2 = vTreeScriptBindingsExecLayoutTmpl(ctx, &vTree2, NULL, NULL, errBuf);
+    bool success2 = vTreeScriptBindingsExecLayoutTmpl(ctx, &vTree2, NULL, NULL, "", errBuf);
     assertThatOrGoto(!success2, done, "Should return false");
-    assertStrEquals(errBuf, "TypeError: 3rd arg must be \"str\", <nodeRef>, or "
-        "[<nodeRef>...].\n");
+    assertThat(strstr(errBuf, "3rd arg must be \"str\", <nodeRef>, or [<nodeRef>...]") != NULL,
+                      "Should whine about wrong 3rd. arg");
     //
-    if (!dukUtilsCompileStrToFn(ctx, layoutTmpl3, errBuf)) {
+    if (!dukUtilsCompileStrToFn(ctx, layoutTmpl3, "l", errBuf)) {
         printToStdErr("Failed to compile test script: %s", errBuf); goto done; }
-    bool success3 = vTreeScriptBindingsExecLayoutTmpl(ctx, &vTree3, NULL, NULL, errBuf);
+    bool success3 = vTreeScriptBindingsExecLayoutTmpl(ctx, &vTree3, NULL, NULL, "", errBuf);
     assertThatOrGoto(!success3, done, "Should return false");
-    assertStrEquals(errBuf, "TypeError: Child-array can't be empty.\n");
+    assertThat(strstr(errBuf, "Child-array can't be empty") != NULL,
+                      "Should whine about empty child-array");
     //
     done:
         duk_destroy_heap(ctx);
@@ -174,9 +177,9 @@ testVTreePartialRunsCachedPartial() {
     char *layoutTmpl = "function (vTree) {"
         "vTree.registerElement('div', null, vTree.partial('foo.js', {foo:'bar'}));"
     "}";
-    if (!dukUtilsCompileStrToFn(ctx, layoutTmpl, errBuf)) {
+    if (!dukUtilsCompileStrToFn(ctx, layoutTmpl, "l", errBuf)) {
         printToStdErr("Failed to compile test script: %s", errBuf); goto done; }
-    bool success = vTreeScriptBindingsExecLayoutTmpl(ctx, &vTree, NULL, NULL, errBuf);
+    bool success = vTreeScriptBindingsExecLayoutTmpl(ctx, &vTree, NULL, NULL, "", errBuf);
     assertThatOrGoto(success, done, "Should return succesfully.");
     assertIntEqualsOrGoto(vTree.elemNodes.length, 2, done);
     ElemNode *partialRoot = &vTree.elemNodes.values[0];
@@ -206,7 +209,7 @@ testDocumentDataConfigFetchOneChains() {
     "}";
     //
     bool success = vTreeScriptBindingsCompileAndExecLayoutWrap(ctx, layoutWrap,
-        &ddc, "/", errBuf);
+        &ddc, "/", "", errBuf);
     assertThatOrGoto(success, done, "Should return succesfully");
     DataBatchConfig *actualBatch = &ddc.batches;
     assertThatOrGoto(actualBatch->componentTypeName != NULL, done,
@@ -236,7 +239,7 @@ testDocumentDataConfigFetchAllChains() {
     "}";
     //
     bool success = vTreeScriptBindingsCompileAndExecLayoutWrap(ctx, layoutWrap,
-        &ddc, "/", errBuf);
+        &ddc, "/", "", errBuf);
     assertThatOrGoto(success, done, "Should return succesfully");
     DataBatchConfig *actualBatch = &ddc.batches;
     assertThatOrGoto(actualBatch->componentTypeName != NULL, done,
@@ -257,15 +260,22 @@ testDocumentDataConfigFetchOneValidatesItsArguments() {
     beforeEach();
     DocumentDataConfig ddc;
     documentDataConfigInit(&ddc);
-    char *tooLongCmpTypeName = "function (documentDataConfig) {"
+    const char *bogusLayoutWrap = "function (documentDataConfig) {"
+        "try { documentDataConfig.fetchOne('foo')._validate(); } catch (e) {}"
         "documentDataConfig.fetchOne('-'.repeat(65));"
         "return function(){};"
     "}";
     //
     bool success1 = vTreeScriptBindingsCompileAndExecLayoutWrap(ctx,
-        tooLongCmpTypeName, &ddc, "/", errBuf);
+        bogusLayoutWrap, &ddc, "/", "", errBuf);
     assertThatOrGoto(!success1, done, "Should fail");
-    assertIntEquals(ddc.errors.typeNameTooLong, 1);
+    DataBatchConfig *firstBatch = &ddc.batches;
+    assertThat(hasFlag(firstBatch->errors, DBC_WHERE_REQUIRED),
+               "Should set DBC_WHERE_REQUIRED");
+    assertThatOrGoto(firstBatch->next != NULL, done, "Sanity firstBatch->next != NULL");
+    DataBatchConfig *secondBatch = firstBatch->next;
+    assertThat(hasFlag(secondBatch->errors, DBC_CMP_TYPE_NAME_TOO_LONG),
+               "Should set DBC_CMP_TYPE_NAME_TOO_LONG");
     //
     done:
         duk_destroy_heap(ctx);
@@ -284,9 +294,11 @@ testDocumentDataConfigFetchAllValidatesItsArguments() {
     "}";
     //
     bool success1 = vTreeScriptBindingsCompileAndExecLayoutWrap(ctx,
-        tooLongCmpTypeName, &ddc, "/", errBuf);
+        tooLongCmpTypeName, &ddc, "/", "", errBuf);
     assertThatOrGoto(!success1, done, "Should fail");
-    assertIntEquals(ddc.errors.typeNameTooLong, 1);
+    DataBatchConfig *firstBatch = &ddc.batches;
+    assertThat(hasFlag(firstBatch->errors, DBC_CMP_TYPE_NAME_TOO_LONG),
+               "Should set DBC_WHERE_REQUIRED");
     //
     done:
         duk_destroy_heap(ctx);
@@ -308,13 +320,13 @@ testExecLayoutRunsMultipleLayoutsWithoutConflict() {
         " vTree.registerElement('span', null, 'bar');"
     "}";
     // 2. Evaluate two layouts and vTrees
-    if (!dukUtilsCompileStrToFn(ctx, layoutTmpl1, errBuf)) {
+    if (!dukUtilsCompileStrToFn(ctx, layoutTmpl1, "l", errBuf)) {
         printToStdErr("Failed to compile test script: %s", errBuf); goto done; }
-    bool success1 = vTreeScriptBindingsExecLayoutTmpl(ctx, &vTree1, NULL, NULL, errBuf);
+    bool success1 = vTreeScriptBindingsExecLayoutTmpl(ctx, &vTree1, NULL, NULL, "", errBuf);
     assertThatOrGoto(success1, done, "Should return successfully on layout1");
-    if (!dukUtilsCompileStrToFn(ctx, layoutTmpl2, errBuf)) {
+    if (!dukUtilsCompileStrToFn(ctx, layoutTmpl2, "l", errBuf)) {
         printToStdErr("Failed to compile test script: %s", errBuf); goto done; }
-    bool success2 = vTreeScriptBindingsExecLayoutTmpl(ctx, &vTree2, NULL, NULL, errBuf);
+    bool success2 = vTreeScriptBindingsExecLayoutTmpl(ctx, &vTree2, NULL, NULL, "", errBuf);
     assertThatOrGoto(success2, done, "Should return successfully on layout2");
     // 3. Assert that vTrees contain their own nodes only
     assertIntEqualsOrGoto(vTree1.elemNodes.length, 1, done);
@@ -373,10 +385,10 @@ testExecLayoutTmplProvidesFetchOnesInVariables() {
                                "var2.fus + ' ' + var2.cmp.id + ' ' + var2.cmp.name"
                            ")"
                        "}";
-    if (!dukUtilsCompileStrToFn(ctx, layoutTmpl, errBuf)) {
+    if (!dukUtilsCompileStrToFn(ctx, layoutTmpl, "l", errBuf)) {
         printToStdErr("Failed to compile test script: %s", errBuf); goto done; }
     bool success = vTreeScriptBindingsExecLayoutTmpl(ctx, &vTree, &ddc.batches,
-                                                     &cmps, errBuf);
+                                                     &cmps, "", errBuf);
     // 3. Assert
     assertThatOrGoto(success, done, "Should return succesfully");
     assertThatOrGoto(vTree.textNodes.length == 1, done,
@@ -433,10 +445,10 @@ testExecLayoutTmplProvidesFetchAllsInVariables() {
                                "}).join(', ')"
                            ")"
                        "}";
-    if (!dukUtilsCompileStrToFn(ctx, layoutTmpl, errBuf)) {
+    if (!dukUtilsCompileStrToFn(ctx, layoutTmpl, "l", errBuf)) {
         printToStdErr("Failed to compile test script: %s", errBuf); goto done; }
     bool success = vTreeScriptBindingsExecLayoutTmpl(ctx, &vTree, &ddc.batches,
-                                                     &cmps, errBuf);
+                                                     &cmps, "", errBuf);
     // 3. Assert
     assertThatOrGoto(success, done, "Should return succesfully");
     assertThatOrGoto(vTree.textNodes.length == 1, done,

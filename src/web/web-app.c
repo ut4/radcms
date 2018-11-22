@@ -8,6 +8,8 @@ const char *notImplementedMessage = "<html><title>501 Not Implemented</title><bo
 #define FORM_DATA_ITER_BUF_LEN 256
 #define MAX_FIELD_KEY_LEN 128
 #define MAX_POST_SIZE 500000
+#define MAX_URL_LEN 2000
+#define SEND_TMPL_ERRORS_TO_BROWSER 1
 
 // Used on every POST-request.
 typedef struct {
@@ -33,7 +35,7 @@ webAppFinishRequest(void *cls, struct MHD_Connection *conn, void **perConnPtr,
 
 static int
 respond(unsigned statusCode, struct MHD_Connection *conn,
-        struct MHD_Response *response);
+        struct MHD_Response *response, char *err);
 
 static unsigned
 preparePostRequest(struct MHD_Response **response, struct MHD_Connection *conn,
@@ -142,6 +144,11 @@ webAppRespond(void *myPtr, struct MHD_Connection *conn, const char *url,
               size_t *uploadDataSize, void **perConnPtr) {
     struct MHD_Response *response = NULL;
     WebApp *app = myPtr;
+    if (strlen(url) > MAX_URL_LEN) {
+        printToStdErr("Error: Url too long (max %u, was %lu).", MAX_URL_LEN,
+                      strlen(url));
+        return MHD_NO;
+    }
     /*
      * First iteration
      */
@@ -162,7 +169,7 @@ webAppRespond(void *myPtr, struct MHD_Connection *conn, const char *url,
             statusCode = ret;
             break;
         }
-        return respond(statusCode, conn, response);
+        return respond(statusCode, conn, response, app->errBuf);
     }
     PerConnInfo *connInfo = *perConnPtr;
     /*
@@ -176,16 +183,12 @@ webAppRespond(void *myPtr, struct MHD_Connection *conn, const char *url,
     * Last iteration of POST -> respond
     */
     if (connInfo->statusCode > 1) { // had errors
-        return respond(connInfo->statusCode, conn, NULL);
+        return respond(connInfo->statusCode, conn, NULL, app->errBuf);
     }
     RequestHandler *h = connInfo->reqHandler;
     connInfo->statusCode = h->handlerFn(h->myPtr, h->formDataHandlers->myPtr,
                                         method, url, &response, app->errBuf);
-    if (strlen(app->errBuf) > 0) {
-        printToStdErr("Error in handler: %s\n", app->errBuf);
-        app->errBuf[0] = '\0';
-    }
-    return respond(connInfo->statusCode, conn, response);
+    return respond(connInfo->statusCode, conn, response, app->errBuf);
 }
 
 static void
@@ -204,8 +207,16 @@ webAppFinishRequest(void *cls, struct MHD_Connection *conn, void **perConnMyPtr,
 
 static int
 respond(unsigned statusCode, struct MHD_Connection *conn,
-        struct MHD_Response *response) {
-    if (!response) {
+        struct MHD_Response *response, char *err) {
+    if (strlen(err) > 0) {
+        if (SEND_TMPL_ERRORS_TO_BROWSER) {
+            response = MHD_create_response_from_buffer(strlen(err), err,
+                                                       MHD_RESPMEM_MUST_COPY);
+        } else {
+            printToStdErr("Error in handler: %s\n", err);
+        }
+        err[0] = '\0';
+    } else if (!response) {
         if (statusCode == MHD_HTTP_NOT_FOUND) {
             response = MHD_create_response_from_buffer(strlen(notFoundMessage),
                                                        (void*)notFoundMessage,
@@ -239,11 +250,14 @@ preparePostRequest(struct MHD_Response **response, struct MHD_Connection *conn,
     bool hasRightContentType = false;
     MHD_get_connection_values(conn, MHD_HEADER_KIND, validatePostReqHeaders,
                               &hasRightContentType);
-    if (!hasRightContentType) return MHD_HTTP_BAD_REQUEST;
+    if (!hasRightContentType) {
+        printToStdErr("Error: Expected Content-Type: \"application/x-www-form-urlencoded\".\n");
+        return MHD_HTTP_BAD_REQUEST;
+    }
     //
     PerConnInfo *connInfo = ALLOCATE(PerConnInfo);
     if (!connInfo) {
-        printToStdErr("preparePostRequest: Failed to ALLOCATE(PerConnInfo).\n");
+        printToStdErr("Error: preparePostRequest: Failed to ALLOCATE(PerConnInfo).\n");
         return MHD_HTTP_INTERNAL_SERVER_ERROR;
     }
     connInfo->reqHandler = h;
@@ -251,7 +265,7 @@ preparePostRequest(struct MHD_Response **response, struct MHD_Connection *conn,
         conn, FORM_DATA_ITER_BUF_LEN, iterateFormDataBasic,
         h->formDataHandlers);
     if (!connInfo->postProcessor) {
-        printToStdErr("preparePostRequest: Failed to MHD_create_post_processor().\n");
+        printToStdErr("Error: preparePostRequest: Failed to MHD_create_post_processor().\n");
         FREE(PerConnInfo, connInfo);
         return MHD_HTTP_INTERNAL_SERVER_ERROR;
     }
@@ -263,18 +277,22 @@ preparePostRequest(struct MHD_Response **response, struct MHD_Connection *conn,
 static unsigned
 processPostData(const char *uploadData, size_t *uploadDataSize,
                 void **perConnPtr) {
-    if (*uploadDataSize == 0 ||
-        *uploadDataSize > MAX_POST_SIZE) return MHD_HTTP_BAD_REQUEST;
+    size_t l = *uploadDataSize;
+    if (l == 0 || l > MAX_POST_SIZE) {
+        printToStdErr("Error: POST body length out of range (max %u, was %lu).\n",
+                      MAX_POST_SIZE, l);
+        return MHD_HTTP_BAD_REQUEST;
+    }
     //
     PerConnInfo *connInfo = *perConnPtr;
     FormDataHandlers *formHandlers = connInfo->reqHandler->formDataHandlers;
     formHandlers->myPtr = formHandlers->formDataInitFn();
     if (!formHandlers->myPtr) {
-        printToStdErr("preparePostRequest: formDataInitFn returned nullPtr.\n");
+        printToStdErr("Error: preparePostRequest: formDataInitFn returned nullPtr.\n");
         return MHD_HTTP_INTERNAL_SERVER_ERROR;
     }
     //
-    (void)MHD_post_process(connInfo->postProcessor, uploadData, *uploadDataSize);
+    (void)MHD_post_process(connInfo->postProcessor, uploadData, l);
     *uploadDataSize = 0;
     return MHD_YES;
 }
@@ -289,7 +307,7 @@ iterateFormDataBasic(void *myPPPtr, enum MHD_ValueKind kind, const char *key,
         FormDataHandlers *h = myPPPtr;
         return (int)h->formDataReceiverFn(key, data, h->myPtr);
     }
-    printToStdErr("POST|PUT key length ouf or range (max %u, is %lu), ignoring.\n",
+    printToStdErr("Error: POST|PUT key length ouf or range (max %u, is %lu), ignoring.\n",
                   MAX_FIELD_KEY_LEN, size);
     return MHD_YES;
 }

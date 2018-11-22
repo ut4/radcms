@@ -76,7 +76,7 @@ fileWatcherWatch(FileWatcher *this, const char *path, fileNameMatcher matcherFn,
                     action = FW_ACTION_DELETED;
                     break;
                 default:
-                    printToStdErr("Unsupported fw event type %lu.\n", incomingAction);
+                    printToStdErr("Warn: Unsupported fw event type %lu.\n", incomingAction);
             }
             lastIncomingAction = incomingAction;
             timerStart();

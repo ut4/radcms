@@ -33,10 +33,10 @@ componentHandlersHandleComponentAddRequest(void *myPtr, void *myDataPtr, const c
     ComponentFormData *data = myDataPtr;
     int insertId = componentMapperInsertComponent(((Website*)myPtr)->db, data, err);
     if (insertId < 0) {
-        if (hasErrors(data->errors)) {
-            const unsigned a = hasError(data->errors, CMP_NAME_REQUIRED) ? strlen(nameReqError) : 0;
-            const unsigned b = hasError(data->errors, CMP_JSON_REQUIRED) ? strlen(jsonReqError) : 0;
-            const unsigned c = hasError(data->errors, CMP_COMPONENT_TYPE_ID_REQUIRED) ? strlen(ctidReqError) : 0;
+        if (data->errors) {
+            const unsigned a = hasFlag(data->errors, CMP_NAME_REQUIRED) ? strlen(nameReqError) : 0;
+            const unsigned b = hasFlag(data->errors, CMP_JSON_REQUIRED) ? strlen(jsonReqError) : 0;
+            const unsigned c = hasFlag(data->errors, CMP_COMPONENT_TYPE_ID_REQUIRED) ? strlen(ctidReqError) : 0;
             const unsigned l = a + b + c + 1;
             char *message = ALLOCATE_ARR_NO_COUNT(char, l);
             char *tail = message;

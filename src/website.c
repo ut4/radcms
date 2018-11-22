@@ -124,7 +124,7 @@ websiteCacheTemplate(Website *this, const char *fileName, char *err) {
     /*
      * Compile string -> function
      */
-    if (dukUtilsCompileStrToFn(this->dukCtx, code, err)) { // [... stash fn]
+    if (dukUtilsCompileStrToFn(this->dukCtx, code, fileName, err)) { // [... stash fn]
         /*
          * Convert function -> bytecode
          */
@@ -153,7 +153,7 @@ pageRender(Website *this, int layoutIdx, const char *url,
     #define HAS_UNFIXED_ERRORS_PAGE "<html><body>Layout '%s' contains errors and can't be rendered.</body></html>"
     Template *layout = siteGraphGetTemplate(&this->siteGraph, layoutIdx);
     ASSERT(layout != NULL, "Unknown layoutIdx %u.\n", layoutIdx);
-    // User has added a link, but hasn't had time to create a layout for it yet
+    // User has added a link, but hasn't had the time to create a layout for it yet
     if (!layout->exists) {
         size_t messageLen = strlen(NO_LAYOUT_PAGE) -
                             2 + // %s
@@ -164,7 +164,7 @@ pageRender(Website *this, int layoutIdx, const char *url,
         return renderedHtml;
     }
     // Last modification had errors -> don't even bother rendering
-    if (!inspectFn && layout->hasErrors) {
+    if (!inspectFn && layout->hasUnfixedErrors) {
         size_t messageLen = strlen(HAS_UNFIXED_ERRORS_PAGE) - 2 +
                             strlen(layout->fileName) + 1;
         char *renderedHtml = ALLOCATE_ARR(char, messageLen);
@@ -181,16 +181,17 @@ pageRender(Website *this, int layoutIdx, const char *url,
     char *renderedHtml = NULL;
     if (!vTreeScriptBindingsExecLayoutWrapFromCache(this->dukCtx, layout->fileName,
                                                     &ddc, url, err)) {
-        if (inspectFn) layout->hasErrors = true;
+        if (inspectFn) layout->hasUnfixedErrors = true;
         goto done;
-    } else if (layout->hasErrors) {
-        layout->hasErrors = false;
+    } else if (layout->hasUnfixedErrors) {
+        layout->hasUnfixedErrors = false;
     }
     if (ddc.batchCount > 0 && !websiteFetchBatches(this, &ddc, &components, err)) {
         goto done;
     }
     if (!vTreeScriptBindingsExecLayoutTmpl(this->dukCtx, &vTree,
-        ddc.batchCount > 0 ? &ddc.batches : NULL, &components, err)) {
+        ddc.batchHead ? &ddc.batches : NULL, &components, layout->fileName,
+        err)) {
         goto done;
     }
     renderedHtml = vTreeToHtml(&vTree, err);

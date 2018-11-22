@@ -6,15 +6,15 @@ bindInsertStmtVals(sqlite3_stmt *stmt, void *data);
 int
 componentMapperInsertComponent(Db *db, ComponentFormData *fdata, char *err) {
     if (!fdata->cmp.name) {
-        setError(fdata->errors, CMP_NAME_REQUIRED);
+        setFlag(fdata->errors, CMP_NAME_REQUIRED);
     }
     if (!fdata->cmp.json) {
-        setError(fdata->errors, CMP_JSON_REQUIRED);
+        setFlag(fdata->errors, CMP_JSON_REQUIRED);
     }
     if (fdata->cmp.componentTypeId == 0) {
-        setError(fdata->errors, CMP_COMPONENT_TYPE_ID_REQUIRED);
+        setFlag(fdata->errors, CMP_COMPONENT_TYPE_ID_REQUIRED);
     }
-    if (hasErrors(fdata->errors)) {
+    if (fdata->errors) {
         return -1;
     }
     char *sql = "insert into components (`name`, `json`, `componentTypeId`) "

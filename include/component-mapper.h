@@ -10,10 +10,6 @@ typedef enum {
     CMP_COMPONENT_TYPE_ID_REQUIRED = 1 << 2,
 } FormDataErrors;
 
-#define setError(errors, error) errors |= (error)
-#define hasError(errors, error) (errors & (error))
-#define hasErrors(errors) (errors) > 0
-
 /*
  * Used on every POST /api/component.
  */

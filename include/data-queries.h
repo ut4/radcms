@@ -4,9 +4,16 @@
 #include <math.h> // log10
 #include "memory.h"
 
-#define DDC_MAX_CMP_TYPE_NAME_LEN 64
-#define DDC_MAX_WHERE_LEN 2048
-#define DDC_MAX_TMPL_VAR_NAME_LEN 256
+#define DBC_MAX_CMP_TYPE_NAME_LEN 64
+#define DBC_MAX_WHERE_LEN 2048
+#define DBC_MAX_TMPL_VAR_NAME_LEN 256
+
+typedef enum {
+    DBC_CMP_TYPE_NAME_TOO_LONG = 1 << 0,
+    DBC_WHERE_REQUIRED         = 1 << 1,
+    DBC_WHERE_TOO_LONG         = 1 << 2,
+    DBC_TMPL_VAR_NAME_TOO_LONG = 1 << 3,
+} DataBatchConfigErrors;
 
 struct DataBatchConfig;
 typedef struct DataBatchConfig DataBatchConfig;
@@ -15,6 +22,7 @@ struct DataBatchConfig {
     char *componentTypeName; // select from components where type = $componentTypeName
     bool isFetchAll;         // true = select multiple records, false = select one record only
     unsigned id;
+    unsigned errors;
     char *tmplVarName;       // Name of the result variable
     char *where;             // WHERE-portion of the query
     DataBatchConfig *next;
@@ -39,18 +47,11 @@ dataBatchConfigGetToStringLen(DataBatchConfig *this);
 void
 dataBatchConfigToString(DataBatchConfig *this, char *to);
 
-typedef struct {
-    unsigned typeNameTooLong: 1;
-    unsigned whereTooLong: 1;
-    unsigned tmplVarNameTooLong: 1;
-} DocumentDataConfigErrors;
-
 // Holds the fetchOne|All() configurations of a single document/layout/vTree.
 typedef struct {
     DataBatchConfig batches; // Linked list
     DataBatchConfig *batchHead;
     unsigned batchCount;
-    DocumentDataConfigErrors errors;
     char *finalSql;
 } DocumentDataConfig;
 
@@ -83,11 +84,8 @@ documentDataConfigToSql(DocumentDataConfig *this, char *err);
 /**
  * Returns DataBatchConfig*|NULL.
  */
-// TAG not-used
+// @unused
 DataBatchConfig*
 documentDataConfigFindBatch(DocumentDataConfig *this, unsigned id);
-
-bool
-documentDataConfigHasErrors(DocumentDataConfig *this);
 
 #endif

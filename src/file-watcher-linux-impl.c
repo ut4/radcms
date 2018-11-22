@@ -51,7 +51,7 @@ fileWatcherWatch(FileWatcher *this, const char *path, fileNameMatcher matcherFn,
             } else if (event->mask & IN_DELETE) {
                 incomingAction = FW_ACTION_DELETED;
             } else {
-                printToStdErr("Unsupported fw event type.\n");
+                printToStdErr("Warn: Unsupported fw event type.\n");
                 continue;
             }
             //

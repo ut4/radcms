@@ -9,11 +9,11 @@ testComponentInsertValidatesItsInput(Db *db, char *err) {
     cfd.errors = 0;
     int insertId = componentMapperInsertComponent(db, &cfd, err);
     assertThat(insertId == -1, "Should reject the data");
-    assertThat(hasError(cfd.errors, CMP_NAME_REQUIRED),
+    assertThat(hasFlag(cfd.errors, CMP_NAME_REQUIRED),
                "Should set CMP_NAME_REQUIRED");
-    assertThat(hasError(cfd.errors, CMP_JSON_REQUIRED),
+    assertThat(hasFlag(cfd.errors, CMP_JSON_REQUIRED),
                "Should set CMP_JSON_REQUIRED");
-    assertThat(hasError(cfd.errors, CMP_COMPONENT_TYPE_ID_REQUIRED),
+    assertThat(hasFlag(cfd.errors, CMP_COMPONENT_TYPE_ID_REQUIRED),
                "Should set CMP_COMPONENT_TYPE_ID_REQUIRED");
     componentFreeProps(&cfd.cmp);
 }

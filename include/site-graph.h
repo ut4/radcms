@@ -16,7 +16,7 @@ typedef struct {
 typedef struct {
     char *fileName;
     bool exists;
-    bool hasErrors;
+    bool hasUnfixedErrors;
 } Template;
 
 typedef struct  {

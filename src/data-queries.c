@@ -11,16 +11,13 @@ documentDataConfigInit(DocumentDataConfig *this) {
     this->batchHead = NULL;
     //
     this->batchCount = 0;
-    this->errors.typeNameTooLong = 0;
-    this->errors.whereTooLong = 0;
-    this->errors.tmplVarNameTooLong = 0;
     this->finalSql = NULL;
 }
 
 void
 documentDataConfigFreeProps(DocumentDataConfig *this) {
     if (this->finalSql) FREE_STR(this->finalSql);
-    if (this->batches.componentTypeName) dataBatchConfigFreeProps(&this->batches);
+    if (this->batchHead) dataBatchConfigFreeProps(&this->batches);
     if (!this->batches.next) return;
     DataBatchConfig *head = this->batches.next;
     DataBatchConfig *tmp;
@@ -134,19 +131,13 @@ documentDataConfigFindBatch(DocumentDataConfig *this, unsigned id) {
     return NULL;
 }
 
-bool
-documentDataConfigHasErrors(DocumentDataConfig *this) {
-    return this->errors.typeNameTooLong ||
-           this->errors.whereTooLong ||
-           this->errors.tmplVarNameTooLong;
-}
-
 void
 dataBatchConfigInit(DataBatchConfig *this, const char *componentTypeName,
                     bool isFetchAll, unsigned id) {
     this->componentTypeName = copyString(componentTypeName);
     this->isFetchAll = isFetchAll;
     this->id = id;
+    this->errors = 0;
     this->tmplVarName = NULL;
     this->where = NULL;
     this->next = NULL;

@@ -30,7 +30,7 @@ handleFileModifyEvent(const char *fileName, Website *this, char *err) {
     ASSERT(layout != NULL, "An unknown file was modified.");
     duk_push_thread_stash(this->dukCtx, this->dukCtx);
     if (!websiteCacheTemplate(this, fileName, err)) {
-        printToStdErr("%s", err);
+        printToStdErr("%s\n", err);
         duk_pop(this->dukCtx);
         return;
     }
@@ -43,7 +43,7 @@ handleFileModifyEvent(const char *fileName, Website *this, char *err) {
     FREE_STR(rendered);
     if (!diff.newPages) goto done;
     if (!websiteSaveToDb(this, err)) {
-        printToStdErr("Failed to save the site-graph: %s\n", err);
+        printToStdErr("Error: Failed to save the site-graph: %s\n", err);
     }
     done:
     siteGraphDiffFreeProps(&diff);

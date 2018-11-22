@@ -20,6 +20,10 @@ dataBatchConfigSBSetWhere(duk_context *ctx);
 static duk_ret_t
 dataBatchConfigSBSetTmplVarName(duk_context *ctx);
 
+/** Implements $dataBatchConfig._validate() */
+static duk_ret_t
+dataBatchConfigSBValidate(duk_context *ctx);
+
 void
 dataQueryScriptBindingsRegister(duk_context *ctx) {
     /*
@@ -40,6 +44,8 @@ dataQueryScriptBindingsRegister(duk_context *ctx) {
     duk_put_prop_string(ctx, -2, "where");                  // [... stash obj]
     duk_push_c_lightfunc(ctx, dataBatchConfigSBSetTmplVarName, 1, 1, 0); // [... stash obj lightfn]
     duk_put_prop_string(ctx, -2, "to");                     // [... stash obj]
+    duk_push_c_lightfunc(ctx, dataBatchConfigSBValidate, 1, 1, 0); // [... stash obj lightfn]
+    duk_put_prop_string(ctx, -2, "_validate");              // [... stash obj]
     duk_put_prop_string(ctx, -2, DBC_PROTO_KEY);            // [... stash]
     duk_pop(ctx);                                           // [...]
 }
@@ -73,13 +79,14 @@ handleFetchOneOrFetchAll(duk_context *ctx, bool isFetchAll) {
     duk_get_prop_string(ctx, -1, DDC_STASH_KEY);
     DocumentDataConfig *ddc = duk_to_pointer(ctx, -1);
     const char *componentTypeName = duk_require_string(ctx, 0); // 1. arg
-    if (strlen(componentTypeName) > DDC_MAX_CMP_TYPE_NAME_LEN) {
-        ddc->errors.typeNameTooLong = 1;
-        printToStdErr("Too long component type name (max %u, was %lu).\n",
-                      DDC_MAX_CMP_TYPE_NAME_LEN, strlen(componentTypeName));
-    }
     DataBatchConfig *dbc = documentDataConfigAddBatch(ddc, componentTypeName,
                                                       isFetchAll);
+    if (strlen(componentTypeName) > DBC_MAX_CMP_TYPE_NAME_LEN) {
+        setFlag(dbc->errors, DBC_CMP_TYPE_NAME_TOO_LONG);
+        return duk_error(ctx, DUK_ERR_TYPE_ERROR, "Component type name too long"
+            " (max %u, was %lu).\n", DBC_MAX_CMP_TYPE_NAME_LEN,
+            strlen(componentTypeName));
+    }
     dataQuerySBPushDbc(ctx, dbc);
     return 1;
 }
@@ -100,11 +107,10 @@ dataBatchConfigSBSetWhere(duk_context *ctx) {
     duk_get_prop_string(ctx, -1, DBC_STASH_KEY);
     DataBatchConfig *dbc = duk_to_pointer(ctx, -1);
     const char *where = duk_require_string(ctx, 0); // 1. arg
-    if (strlen(where) > DDC_MAX_WHERE_LEN) {
-        duk_get_prop_string(ctx, -1, DDC_STASH_KEY);
-        ((DocumentDataConfig*)duk_to_pointer(ctx, -1))->errors.whereTooLong = 1;
-        printToStdErr("Too long where() (max %u, was %lu.\n", DDC_MAX_WHERE_LEN,
-                      strlen(where));
+    if (strlen(where) > DBC_MAX_WHERE_LEN) {
+        setFlag(dbc->errors, DBC_WHERE_TOO_LONG);
+        return duk_error(ctx, DUK_ERR_TYPE_ERROR, "where() too long (max %u, "
+            "was %lu).\n", DBC_MAX_WHERE_LEN, strlen(where));
     }
     dataBatchConfigSetWhere(dbc, where);
     duk_push_this(ctx);
@@ -117,13 +123,28 @@ dataBatchConfigSBSetTmplVarName(duk_context *ctx) {
     duk_get_prop_string(ctx, -1, DBC_STASH_KEY);
     DataBatchConfig *dbc = duk_to_pointer(ctx, -1);
     const char *varName = duk_require_string(ctx, 0); // 1. arg
-    if (strlen(varName) > DDC_MAX_TMPL_VAR_NAME_LEN) {
-        duk_get_prop_string(ctx, -1, DDC_STASH_KEY);
-        ((DocumentDataConfig*)duk_to_pointer(ctx, -1))->errors.tmplVarNameTooLong = 1;
-        printToStdErr("Too long to() variable name (max %d, was %lu).",
-                      DDC_MAX_TMPL_VAR_NAME_LEN, strlen(varName));
+    if (strlen(varName) > DBC_MAX_TMPL_VAR_NAME_LEN) {
+        setFlag(dbc->errors, DBC_TMPL_VAR_NAME_TOO_LONG);
+        return duk_error(ctx, DUK_ERR_TYPE_ERROR, "to() variable name too long"
+            " (max %u, was %lu).\n", DBC_MAX_TMPL_VAR_NAME_LEN, strlen(varName));
     }
     dataBatchConfigSetTmplVarName(dbc, varName);
+    duk_push_this(ctx);
+    return 1;
+}
+
+static duk_ret_t
+dataBatchConfigSBValidate(duk_context *ctx) {
+    duk_push_thread_stash(ctx, ctx);
+    duk_get_prop_string(ctx, -1, DDC_STASH_KEY);
+    DataBatchConfig *cur = &((DocumentDataConfig*)duk_to_pointer(ctx, -1))->batches;
+    while (cur) {
+        if (!cur->isFetchAll && !cur->where) {
+            setFlag(cur->errors, DBC_WHERE_REQUIRED);
+            return duk_error(ctx, DUK_ERR_TYPE_ERROR, "fetchOne().where() is required.\n");
+        }
+        cur = cur->next;
+    }
     duk_push_this(ctx);
     return 1;
 }

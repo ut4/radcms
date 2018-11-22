@@ -15,8 +15,8 @@ vTreeScriptBindingsRegister(duk_context *ctx);
  */
 bool
 vTreeScriptBindingsCompileAndExecLayoutWrap(duk_context *ctx, const char *layoutCode,
-                                        DocumentDataConfig *ddc,
-                                        const char *url, char *err);
+                                        DocumentDataConfig *ddc, const char *url,
+                                        char *fileName, char *err);
 
 /**
  * Same as vTreeScriptBindingsCompileAndExecLayout, but retrieves the layout
@@ -24,12 +24,13 @@ vTreeScriptBindingsCompileAndExecLayoutWrap(duk_context *ctx, const char *layout
  * assumes that duk_push_thread_stash is already called. */
 bool
 vTreeScriptBindingsExecLayoutWrapFromCache(duk_context *ctx, const char *layoutName,
-                                           DocumentDataConfig *ddc,
-                                           const char *url, char *err);
+                                           DocumentDataConfig *ddc, const char *url,
+                                           char *err);
 
 bool
 vTreeScriptBindingsExecLayoutTmpl(duk_context *ctx, VTree *vTree,
                                   DataBatchConfig *batches,
-                                  ComponentArray *allComponents, char *err);
+                                  ComponentArray *allComponents, char *fileName,
+                                  char *err);
 
 #endif

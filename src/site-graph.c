@@ -45,10 +45,10 @@ siteGraphParse(char *str, SiteGraph *out, StrReader *sr, char *err) {
         }
     }
     if (out->pages.size != totalPageCount) {
-        printToStdErr("siteGraph->pages.size != definedTotalPageCount");
+        printToStdErr("Warn: siteGraph->pages.size != definedTotalPageCount");
     }
     if (out->templates.length != templateCount) {
-        printToStdErr("siteGraph->templates.length != definedTemplateCount");
+        printToStdErr("Warn: siteGraph->templates.length != definedTemplateCount");
     }
     return true;
 }
@@ -82,7 +82,7 @@ siteGraphSerialize(SiteGraph *this) {
      */
     char *out = ALLOCATE_ARR(char, len);
     if (!out) {
-        printToStdErr("siteGraphSerialize: Failed to allocate $out.\n");
+        printToStdErr("Error: siteGraphSerialize: Failed to allocate $out.\n");
         return NULL;
     }
     char *tail = out;
@@ -129,7 +129,7 @@ siteGraphDiffMake(SiteGraph *this, VTree *vTree, void *toMyPtr, char *err) {
         if (!lfn) continue;
         ElemProp *href = elemNodeGetProp(&vTree->elemNodes.values[i], "href");
         if (!href) {
-            printToStdErr("Can't follow a link without href.\n");
+            printToStdErr("Error: Can't follow a link without href.\n");
             return;
         }
         // Page already in the site-graph -> skip
@@ -177,7 +177,7 @@ siteGraphAddTemplate(SiteGraph *this, char *fileName) {
     Template newLayout;
     newLayout.fileName = fileName;
     newLayout.exists = false;
-    newLayout.hasErrors = false;
+    newLayout.hasUnfixedErrors = false;
     templateArrayPush(&this->templates, &newLayout);
     return &this->templates.values[this->templates.length - 1];
 }

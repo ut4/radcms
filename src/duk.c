@@ -22,11 +22,11 @@ myDukCreate(char *errBuf) {
 }
 
 bool
-dukUtilsCompileStrToFn(duk_context *ctx, const char *code, char *err) {
+dukUtilsCompileStrToFn(duk_context *ctx, const char *code, const char *fileName,
+                       char *err) {
     duk_pcompile_string(ctx, DUK_COMPILE_FUNCTION, code);
     if (!duk_is_function(ctx, -1)) {
-        putError("%s", duk_safe_to_string(ctx, -1));
-        duk_pop(ctx); // error
+        dukUtilsPutDetailedError(ctx, -1, fileName, err);
         return false;
     }
     return true;
@@ -75,6 +75,15 @@ dukUtilsDumpStack(duk_context *ctx) {
         }
         printf("\n");
     }
+}
+
+void
+dukUtilsPutDetailedError(duk_context *ctx, int errorObjIdAt,
+                         const char *fileName, char *err) {
+    if (duk_get_prop_string(ctx, errorObjIdAt, "stack")) {
+        putError("Problem at %s: %s", fileName, duk_safe_to_string(ctx, -1));
+    }
+    duk_pop_n(ctx, 2); // error, stacktrace|undefined
 }
 
 static duk_ret_t myPrint(duk_context *ctx) {

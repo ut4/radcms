@@ -12,6 +12,9 @@
 #define printToStdErr(...) \
     fprintf(stderr, ##__VA_ARGS__)
 
+#define setFlag(errors, error) errors |= (error)
+#define hasFlag(errors, error) (errors & (error))
+
 #ifdef NDEBUG
 #define ASSERT(that, ...) ;
 #else

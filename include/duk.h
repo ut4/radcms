@@ -14,9 +14,14 @@ myDukCreate(char *errBuf);
  * Compiles $code, and leaves the result on the top of the duktape stack.
  */
 bool
-dukUtilsCompileStrToFn(duk_context *ctx, const char *code, char *err);
+dukUtilsCompileStrToFn(duk_context *ctx, const char *code, const char *fileName,
+                       char *err);
 
 void
 dukUtilsDumpStack(duk_context *ctx);
+
+void
+dukUtilsPutDetailedError(duk_context *ctx, int errorObjIdAt,
+                         const char *fileName, char *err);
 
 #endif
