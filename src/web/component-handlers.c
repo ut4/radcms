@@ -56,6 +56,7 @@ componentHandlersHandleComponentAddRequest(void *myPtr, void *myDataPtr, const c
     *response = MHD_create_response_from_buffer(l - 1,
                                                 responseBody,
                                                 MHD_RESPMEM_MUST_FREE);
+    MHD_add_response_header(*response, "Content-Type", "text/html");
     return MHD_HTTP_OK;
 }
 

@@ -88,20 +88,22 @@ int main(int argc, const char* argv[]) {
     app.handlers[3] = (RequestHandler){.handlerFn=websiteHandlersHandlePageRequest,
         .myPtr=&website, .formDataHandlers=NULL};
     pthread_t fileWatcherThread;
-    if (pthread_create(&fileWatcherThread, NULL, webAppStartFileWatcher, &app)) {
-        sprintf(errBuf, "Failed to create the fileWatcher thread.\n");
+    if (pthread_create(&fileWatcherThread, NULL, webAppStartFileWatcher, &app) == 0) {
+        printf("Info: Started watching files at '%s'.\n", app.rootDir);
+    } else {
+        sprintf(errBuf, "Fatal: Failed to create the fileWatcher thread.\n");
         goto done;
     }
     if (strlen(app.errBuf)) { // webAppStartFileWatcher failed
         goto done;
     }
     if (!webAppStart(&app)) {
-        sprintf(errBuf, "Failed to start the server.\n");
+        sprintf(errBuf, "Fatal: Failed to start the server.\n");
         goto done;
     }
     signal(SIGINT, onCtrlC);
     struct timespec t = {.tv_sec=0, .tv_nsec=80000000L}; // 80ms
-    printf("Started server at localhost:3000. Hit Ctrl+C to stop it...\n");
+    printf("Info: Started server at localhost:3000. Hit Ctrl+C to stop it...\n");
     while (!isCtrlCTyped) nanosleep(&t, NULL);
     exitStatus = EXIT_SUCCESS;
     //

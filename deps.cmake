@@ -20,17 +20,22 @@ if (INSN_IS_WIN)
         IMPORTED_IMPLIB ${CMAKE_BINARY_DIR}/sqlite3.dll
     )
 
+    # -- cjson ----
+    add_library(cjson SHARED ${VENDOR_ROOT}/cjson/cJSON.c)
+
     set(INSN_DEP_INCLUDES
         ${VENDOR_ROOT}/microhttpd/include
         ${VENDOR_ROOT}/duktape
         ${VENDOR_ROOT}/inih
         ${VENDOR_ROOT}/sqlite3
+        ${VENDOR_ROOT}/cjson
     )
     set(INSN_DEP_LIBS
         microhttpd
         duktape
         inih
         sqlite3
+        cjson
     )
 elseif(INSN_IS_LINUX)
     # -- microhttpd provided by libmicrohttpd-dev ----
@@ -44,9 +49,13 @@ elseif(INSN_IS_LINUX)
 
     # -- sqlite provided by libsqlite3-dev ----
 
+    # -- cjson ----
+    add_library(cjson SHARED ${VENDOR_ROOT}/cjson/cJSON.c)
+
     set(INSN_DEP_INCLUDES
         ${VENDOR_ROOT}/duktape
         ${VENDOR_ROOT}/inih
+        ${VENDOR_ROOT}/cjson
     )
     set(INSN_DEP_LIBS
         m
@@ -55,6 +64,7 @@ elseif(INSN_IS_LINUX)
         duktape
         inih
         sqlite3
+        cjson
     )
 else()
     message(FATAL_ERROR "INSN_IS_WIN or INSN_IS_LINUX must be SET() before including deps.cmake.")

@@ -3,6 +3,10 @@
 static void mapTestDataRow(sqlite3_stmt *stmt, void **myPtr);
 
 static void
+populateComponent(unsigned id, const char *name, const char *json,
+                  unsigned componentTypeId, unsigned dbcId, Component *out);
+
+static void
 testComponentInsertValidatesItsInput(Db *db, char *err) {
     ComponentFormData cfd;
     componentInit(&cfd.cmp);
@@ -55,6 +59,39 @@ testComponentInsertInsertsTheData(Db *db, char *err) {
         );
 }
 
+static void
+testComponentArrayToJsonStringifiesComponentArray() {
+    ComponentArray cmps;
+    componentArrayInit(&cmps);
+    Component cmp1;
+    Component cmp2;
+    populateComponent(1, "foo", "[1]", 1, 2, &cmp1);
+    populateComponent(1, "bar", "{\"content\":\"(c) 2034 MySite\"}", 3, 4, &cmp2);
+    componentArrayPush(&cmps, &cmp1);
+    componentArrayPush(&cmps, &cmp2);
+    //
+    char *json = componentArrayToJson(&cmps);
+    assertThatOrGoto(json != NULL, done, "Should return json");
+    assertStrEquals(json,
+        "[{"
+            "\"id\":1,"
+            "\"name\":\"foo\","
+            "\"json\":\"[1]\","
+            "\"componentTypeId\":1,"
+            "\"dataBatchConfigId\":2"
+        "},{"
+            "\"id\":1,"
+            "\"name\":\"bar\","
+            "\"json\":\"{\\\"content\\\":\\\"(c) 2034 MySite\\\"}\","
+            "\"componentTypeId\":3,"
+            "\"dataBatchConfigId\":4"
+        "}]"
+    );
+    done:
+        free(json);
+        componentArrayFreeProps(&cmps);
+}
+
 void
 componentMapperTestsRun() {
     char errBuf[ERR_BUF_LEN]; errBuf[0] = '\0';
@@ -66,6 +103,7 @@ componentMapperTestsRun() {
     }
     testComponentInsertValidatesItsInput(&db, errBuf);
     testComponentInsertInsertsTheData(&db, errBuf);
+    testComponentArrayToJsonStringifiesComponentArray();
     dbDestruct(&db);
 }
 
@@ -78,3 +116,13 @@ static void mapTestDataRow(sqlite3_stmt *stmt, void **myPtr) {
     *myPtr = c;
 }
 
+static void
+populateComponent(unsigned id, const char *name, const char *json,
+                  unsigned componentTypeId, unsigned dbcId, Component *out) {
+    componentInit(out);
+    out->id = id;
+    out->name = copyString(name);
+    out->json = copyString(json);
+    out->componentTypeId = componentTypeId;
+    out->dataBatchConfigId = dbcId;
+}

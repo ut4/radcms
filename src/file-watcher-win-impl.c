@@ -13,7 +13,7 @@ fileWatcherFreeProps(FileWatcher *this) {
 }
 
 bool
-fileWatcherWatch(FileWatcher *this, const char *path, fileNameMatcher matcherFn,
+fileWatcherWatch(FileWatcher *this, const char *dir, fileNameMatcher matcherFn,
                  void *myPtr, char *err) {
     #define MIN_TIME_BETWEEN_EVENTS 0.12 // 120ms
     #define FILE_LOCK_WAIT_TIME 100000000L // 100ms
@@ -37,6 +37,7 @@ fileWatcherWatch(FileWatcher *this, const char *path, fileNameMatcher matcherFn,
     char fileName[MAX_PATH + 1];
     const struct timespec fileLockWaitTime = {0, FILE_LOCK_WAIT_TIME};
     timerInit();
+    unsigned lastAction = 0;
     while (true) {
         if (ReadDirectoryChangesW(
             handle,               // hDirectory
@@ -48,42 +49,32 @@ fileWatcherWatch(FileWatcher *this, const char *path, fileNameMatcher matcherFn,
             NULL,                 // lpOverlapped
             NULL                  // lpCompletionRoutine
         ) != 0 && bytesReturned != 0) {
-            DWORD incomingAction = notifyBuffer[0].Action;
-            /*
-             * Wait 100ms before doing anything (you can't use the file at this
-             * point).
-             */
-            nanosleep(&fileLockWaitTime, NULL);
-            /*
-             * Done waiting, check that at least 120ms has passed since the last
-             * identical event.
-             */
-            if (incomingAction == lastIncomingAction &&
+            unsigned incomingAction = FW_ACTION_OTHER;
+            DWORD incomingDword = notifyBuffer[0].Action;
+            if (incomingDword == FILE_ACTION_ADDED) {
+                incomingAction = FW_ACTION_ADDED;
+            } else if (incomingDword == FILE_ACTION_MODIFIED) {
+                incomingAction = FW_ACTION_MODIFIED;
+            } else if (incomingDword == FILE_ACTION_REMOVED) {
+                incomingAction = FW_ACTION_DELETED;
+            } else {
+                printToStdErr("Warn: Unsupported fw event type.\n");
+                continue;
+            }
+            //
+            if (incomingAction == lastAction &&
                 timerGetTime() < MIN_TIME_BETWEEN_EVENTS) {
-                lastIncomingAction = incomingAction;
+                lastAction = incomingAction;
                 timerStart();
                 continue;
             }
-            unsigned action = 0;
-            switch (incomingAction) {
-                case FILE_ACTION_ADDED:
-                    action = FW_ACTION_ADDED;
-                    break;
-                case FILE_ACTION_MODIFIED:
-                    action = FW_ACTION_MODIFIED;
-                    break;
-                case FILE_ACTION_REMOVED:
-                    action = FW_ACTION_DELETED;
-                    break;
-                default:
-                    printToStdErr("Warn: Unsupported fw event type %lu.\n", incomingAction);
-            }
-            lastIncomingAction = incomingAction;
+            //
+            unicodeFileNameToMb(&notifyBuffer[0], fileName);
+            if (matcherFn && !matcherFn(fileName)) continue;
+            nanosleep(&fileLockWaitTime, NULL);
+            lastAction = incomingAction;
             timerStart();
-            if (action != 0 && (!matcherFn || matcherFn(fileName))) {
-                this->onEventFn(action, unicodeFileNameToMb(
-                    &notifyBuffer[0], fileName), myPtr);
-            }
+            this->onEventFn(incomingAction, fileName, myPtr);
         } else {
             putError("Failed to ReadDirectoryChangesW(): %lu.\n", GetLastError());
             return false;

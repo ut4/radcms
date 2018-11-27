@@ -2,10 +2,10 @@ cmake_minimum_required(VERSION 3.9.4)
 project(insanecms VERSION 0.0.0 LANGUAGES C)
 
 if (WIN32)
-    set(INSN_COMPILE_OPTIONS -Wall -pedantic -D INSN_IS_WIN)
+    set(INSN_COMPILE_OPTIONS -Wall -pedantic -DINSN_IS_WIN -D__USE_MINGW_ANSI_STDIO)
     set(INSN_IS_WIN "yesItIs")
 elseif(UNIX)
-    set(INSN_COMPILE_OPTIONS -Wall -pedantic -D INSN_IS_LINUX)
+    set(INSN_COMPILE_OPTIONS -Wall -pedantic -DINSN_IS_LINUX)
     set(INSN_IS_LINUX "yesItIs")
 endif()
 
@@ -61,4 +61,4 @@ set(TESTS_FILES
 )
 add_executable(tests ${SOURCE_FILES_COMMON} ${TESTS_FILES} tests-main.c)
 target_compile_options(tests PUBLIC ${INSN_COMPILE_OPTIONS})
-target_link_libraries(tests duktape inih sqlite3)
+target_link_libraries(tests duktape inih sqlite3 cjson)

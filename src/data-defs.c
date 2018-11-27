@@ -5,8 +5,8 @@ componentInit(Component *this) {
     this->id = 0;
     this->name = NULL;
     this->json = NULL;
-    this->dataBatchConfigId = 0;
     this->componentTypeId = 0;
+    this->dataBatchConfigId = 0;
 }
 
 void
@@ -15,6 +15,31 @@ componentFreeProps(Component *this) {
     if (this->json) FREE_STR(this->json);
 }
 
+char*
+componentArrayToJson(ComponentArray *this) {
+    cJSON *json = cJSON_CreateArray();
+    char *out = NULL;
+    if (!json) goto done;
+    for (unsigned i = 0; i < this->length; ++i) {
+        Component *cmp = &this->values[i];
+        cJSON *obj = cJSON_CreateObject();
+        if (!obj ||
+            !cJSON_AddNumberToObject(obj, "id", cmp->id) ||
+            !cJSON_AddStringToObject(obj, "name", cmp->name) ||
+            !cJSON_AddStringToObject(obj, "json", cmp->json) ||
+            !cJSON_AddNumberToObject(obj, "componentTypeId",
+                                     cmp->componentTypeId) ||
+            !cJSON_AddNumberToObject(obj, "dataBatchConfigId",
+                                     cmp->dataBatchConfigId)) {
+            goto done;
+        }
+        cJSON_AddItemToArray(json, obj);
+    }
+    out = cJSON_PrintUnformatted(json);
+    done:
+        cJSON_Delete(json);
+        return out;
+}
 
 void componentArrayInit(ComponentArray *this) {
     this->length = 0;
