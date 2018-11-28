@@ -44,8 +44,7 @@ vTreeScriptBindingsExecLayoutWrapFromCache(duk_context *ctx, const char *layoutN
                                            DocumentDataConfig *ddc, const char *url,
                                            char *err) {
     duk_get_prop_string(ctx, -1, layoutName);
-    if (!duk_is_buffer(ctx, -1)) return false;
-    duk_load_function(ctx);
+    if (!duk_is_function(ctx, -1)) return false;
     return execLayoutWrap(ctx, ddc, url, layoutName, err);
 }
 
@@ -56,9 +55,10 @@ vTreeScriptBindingsExecLayoutTmpl(duk_context *ctx, VTree *vTree,
                                   char *err) {
     setStashedTree(ctx, vTree);
     duk_get_global_string(ctx, "vTree"); // Arg1
+    dataDefScriptBindingsSetStashedPageData(ctx); // Arg2
+    unsigned argCount = 2;
     DataBatchConfig *cur = batches;
-    unsigned argCount = 1;
-    while (cur) {                        // Arg2 ... Arg<n>
+    while (cur) {                        // Arg3 ... Arg<n>
         const bool found = !cur->isFetchAll
             ? findAndPushSingleComponent(ctx, allComponents, cur->id)
             : findAndPushComponentArray(ctx, allComponents, cur->id);
@@ -130,7 +130,7 @@ vTreeSBRegisterElement(duk_context *ctx) {
      * Array of elemNodes
      */
     } else if (duk_is_array(ctx, 2)) {
-        unsigned l = (unsigned)duk_get_length(ctx, 2);
+        unsigned l = duk_get_length(ctx, 2);
         if (l == 0) {
             nodeRefArrayFreeProps(&children);
             return duk_error(ctx, DUK_ERR_TYPE_ERROR, "Child-array can't be empty.\n");
@@ -161,17 +161,16 @@ static duk_ret_t
 vTreeSBPartial(duk_context *ctx) {
     duk_push_thread_stash(ctx, ctx);           // [... str, data, stash]
     const char *tmplFileName = duk_require_string(ctx, 0);
-    duk_get_prop_string(ctx, -1, tmplFileName);// [... str, data, stash, bytecode]
-    duk_load_function(ctx);                    // [... str, data, stash, fn]
+    duk_get_prop_string(ctx, -1, tmplFileName);// [... str, data, stash, fn]
     if (!duk_is_function(ctx, -1)) {
-        return duk_error(ctx, DUK_ERR_ERROR, "Failed to load cached bytecode.\n");
+        return duk_error(ctx, DUK_ERR_ERROR, "Failed to load cached fn.\n");
         return 0;
     }
     duk_get_global_string(ctx, "vTree"); // arg1, [... str, data, stash, fn, vTree]
     duk_dup(ctx, 1);                     // arg2, [... str, data, stash, fn, vTree, data]
     if (duk_pcall(ctx, 2) != 0) {        //       [... str, data, stash, err]
         return duk_error(ctx, DUK_ERR_ERROR, "(%s) %s", tmplFileName,
-                        duk_safe_to_string(ctx, -1));
+                         duk_safe_to_string(ctx, -1));
         duk_pop(ctx); // error
         return 0;
     }                                    //       [... str, data, stash, number]

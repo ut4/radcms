@@ -1,6 +1,8 @@
 #ifndef insn_staticData_h
 #define insn_staticData_h
 
+#include <string.h> // strcmp, NULL
+
 typedef struct {
     const char *name; // eg. "foo.js"
     const char *contents; // eg. "function (vTree...) { ... }"
@@ -19,5 +21,8 @@ getSampleData(unsigned index);
 
 const char*
 getDbSchemaSql();
+
+const char*
+getSampleFile(const char *name);
 
 #endif

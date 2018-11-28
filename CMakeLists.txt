@@ -18,9 +18,11 @@ set(SOURCE_FILES_COMMON
     include/common.h
     include/component-mapper.h src/component-mapper.c
     include/data-defs.h src/data-defs.c
+    include/data-def-script-bindings.h src/data-def-script-bindings.c
     include/data-queries.h src/data-queries.c
     include/data-query-script-bindings.h src/data-query-script-bindings.c
     include/db.h src/db.c
+    include/directive-script-bindings.h src/directive-script-bindings.c
     include/duk.h src/duk.c
     include/file-io.h src/file-io.c
     include/hashmap.h src/hashmap.c

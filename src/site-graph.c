@@ -121,7 +121,8 @@ siteGraphAddPage(SiteGraph *this, unsigned id, char *url, unsigned parentId,
 }
 
 void
-siteGraphDiffMake(SiteGraph *this, VTree *vTree, void *toMyPtr, char *err) {
+siteGraphDiffMake(SiteGraph *this, VTree *vTree, void *dukCtx, void *toMyPtr,
+                  char *err) {
     for (unsigned i = 0; i < vTree->elemNodes.length; ++i) {
         if (strcmp(vTree->elemNodes.values[i].tagName, "a") != 0) continue;
         ElemProp *lfn = elemNodeGetProp(&vTree->elemNodes.values[i], "layoutFileName");

@@ -33,17 +33,29 @@ websiteFetchAndParseSiteGraph(Website *this, char *err) {
 }
 
 bool
-websitePopulateTemplateCaches(Website *this, char *err) {
+websitePopulateDukCaches(Website *this, char *err) {
     TemplateArray *tmpls = &this->siteGraph.templates;
     duk_push_thread_stash(this->dukCtx, this->dukCtx);
+    //
     for (unsigned i = 0; i < tmpls->length; ++i) {
         if (!websiteCacheTemplate(this, tmpls->values[i].fileName, err)) {
-            printToStdErr("%s. Rage quitting.\n", err);
-            exit(EXIT_FAILURE);
+            goto failBadly;
         }
     }
+    //
+    const char *n = "article-list-directive.js";
+    if (dukUtilsCompileStrToFn(this->dukCtx, getSampleFile(n), n, err)) {
+        duk_put_prop_string(this->dukCtx, -2, n);
+    } else {
+        goto failBadly;
+    }
+    directiveFactoriesPutCachedFn(this->dukCtx, "ArticleList", n);
+    //
     duk_pop(this->dukCtx);
     return true;
+    failBadly:
+        printToStdErr("%s. Rage quitting.\n", err);
+        exit(EXIT_FAILURE);
 }
 
 bool
@@ -79,7 +91,7 @@ websiteGenerate(Website *this, pageExportWriteFn writeFn, void *myPtr, char *err
 bool
 websiteInstall(Website *this, SampleData *data, const char *schemaSql,
                char *err) {
-    printf("Starting to write sample data '%s' to '%s'...\n", data->name,
+    printf("Info: Starting to write sample data '%s' to '%s'...\n", data->name,
            this->rootDir);
     /**
      * 1. Create db schema
@@ -98,7 +110,7 @@ websiteInstall(Website *this, SampleData *data, const char *schemaSql,
             return false;
         }
     }
-    printf("All done.\n");
+    printf("Info: All done.\n");
     return true;
 }
 
@@ -114,33 +126,14 @@ websiteSaveToDb(Website *this, char *err) {
 
 bool
 websiteCacheTemplate(Website *this, const char *fileName, char *err) {
-    /*
-     * Read contents from disk
-     */
     STR_CONCAT(tmplFilePath, this->rootDir, fileName);
     char *code = fileIOReadFile(tmplFilePath, err);
     if (!code) return false;
     bool success = false;
-    /*
-     * Compile string -> function
-     */
-    if (dukUtilsCompileStrToFn(this->dukCtx, code, fileName, err)) { // [... stash fn]
-        /*
-         * Convert function -> bytecode
-         */
-        duk_dump_function(this->dukCtx);                   // [... stash bytecode]
-        duk_size_t bytecodeSize = 0;
-        (void)duk_get_buffer(this->dukCtx, -1, &bytecodeSize);
-        /*
-         * Store the bytecode to the thread stash
-         */
-        if (bytecodeSize > 0) {
-            duk_put_prop_string(this->dukCtx, -2, fileName); // [... stash]
-            success = true;
-        } else {
-            putError("Failed to cache %s.\n", tmplFilePath);
-            duk_pop(this->dukCtx); // [... stash]
-        }
+    //
+    if (dukUtilsCompileStrToFn(this->dukCtx, code, fileName, err)) { // [stash fn]
+        duk_put_prop_string(this->dukCtx, -2, fileName);             // [stash]
+        success = true;
     }
     FREE_STR(code);
     return success;
@@ -195,7 +188,7 @@ pageRender(Website *this, int layoutIdx, const char *url,
         goto done;
     }
     renderedHtml = vTreeToHtml(&vTree, err);
-    if (inspectFn) inspectFn(&this->siteGraph, &vTree, myPtr, err);
+    if (inspectFn) inspectFn(&this->siteGraph, &vTree, this->dukCtx, myPtr, err);
     done:
     duk_pop(this->dukCtx); // thread stash
     vTreeFreeProps(&vTree);

@@ -5,7 +5,9 @@
 #include <time.h>
 #include "include/web/component-handlers.h" // componentHandlersHandle*()
 #include "include/web/website-handlers.h" // websiteHandlersHandle*()
+#include "include/data-def-script-bindings.h"
 #include "include/data-query-script-bindings.h"
+#include "include/directive-script-bindings.h"
 #include "include/db.h"
 #include "include/duk.h"
 #include "include/v-tree-script-bindings.h"
@@ -47,6 +49,10 @@ int main(int argc, const char* argv[]) {
         if (!dukCtx) goto done;
         vTreeScriptBindingsRegister(dukCtx); // vTree object
         dataQueryScriptBindingsRegister(dukCtx); // documentDataConfig object
+        directiveScriptBindingsRegister(dukCtx, errBuf);
+        if (strlen(errBuf)) goto done;
+        dataDefScriptBindingsRegister(dukCtx, errBuf);
+        if (strlen(errBuf)) goto done;
         //
         dbInit(&db);
         STR_CONCAT(dbFilePath, app.rootDir, "data.db");
@@ -77,7 +83,7 @@ int main(int argc, const char* argv[]) {
      */
     if (!webAppReadOrCreateSiteIni(&app, "", errBuf) ||
         !websiteFetchAndParseSiteGraph(&website, errBuf) ||
-        !websitePopulateTemplateCaches(&website, errBuf)) goto done;
+        !websitePopulateDukCaches(&website, errBuf)) goto done;
     app.handlerCount = sizeof(app.handlers) / sizeof(RequestHandler);
     app.handlers[0] = (RequestHandler){.handlerFn=websiteHandlersHandleStaticFileRequest,
         .myPtr=app.appPath, .formDataHandlers=NULL};

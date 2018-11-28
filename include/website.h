@@ -2,6 +2,7 @@
 #define insn_website_h
 
 #include <stdbool.h>
+#include "directive-script-bindings.h" // directiveFactoriesPutCachedFn()
 #include "data-defs.h" // Component
 #include "data-queries.h" // DocumentDataConfig
 #include "db.h"
@@ -33,7 +34,7 @@ bool
 websiteFetchAndParseSiteGraph(Website *this, char *err);
 
 bool
-websitePopulateTemplateCaches(Website *this, char *err);
+websitePopulateDukCaches(Website *this, char *err);
 
 bool
 websiteFetchBatches(Website *this, DocumentDataConfig *ddc, ComponentArray *to,
@@ -58,8 +59,8 @@ websiteSaveToDb(Website *this, char *err);
 bool
 websiteCacheTemplate(Website *this, const char *fileName, char *err);
 
-typedef void (*renderInspectFn)(SiteGraph *siteGraph, VTree *vTree, void *myPtr,
-                                char *err);
+typedef void (*renderInspectFn)(SiteGraph *siteGraph, VTree *vTree, void *dukCtx,
+                                void *myPtr, char *err);
 
 /**
  * Returns char*|NULL. The caller frees.

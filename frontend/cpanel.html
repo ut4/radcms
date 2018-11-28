@@ -3,15 +3,50 @@
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
         <style>
-            body { margin:6px;background-color:rgba(255,255,255,0.85); }
+            body { margin: 6px }
+            .hidden { display: none }
+            .view { position: fixed; top: 0; left: 0; background-color: rgba(0,0,0,0.3);
+                width: 100%; height: 100%; }
+            .view > div:first-of-type, .view > form:first-of-type { margin: 15px;
+                border-radius: 2px; padding: 10px; }
+            .view h2 { margin-top: 0; }
+            /**/
+            .light { background-color: rgba(255,255,255,0.85); color: rgb(62,62,62); }
+            .light .view > div:first-of-type, .light .view > form:first-of-type {
+                background-color: #fff; }
         </style>
     </head>
-    <body>
+    <body class="light">
         <div id="app"></div>
         <script src="/frontend/vendor.bundle.min.js"></script>
-        <script>(function() {
-            const $el = preact.createElement;
-            // todo
-        }())</script>
+        <script type="module">
+            /*
+             * Store globals
+             */
+            window.$el = preact.createElement;
+            window.myRedirect = (to, doReload) => {
+                window.parent.location.hash = '#' + to;
+                if (doReload) window.parent.location.reload();
+            };
+            /*
+             * Require all components
+             */
+            import {InsaneControlPanel} from './app.js';
+            /*
+             * main()
+             */
+            preact.render($el(InsaneControlPanel, {
+                currentPageData: window.parent.getCurrentPageData()
+            }, null), document.getElementById("app"));
+            //
+            var parentUrlPcs = window.parent.location.href.split('#');
+            if (parentUrlPcs[1]) window.location.hash = parentUrlPcs[1];
+            //
+            window.parent.addEventListener('hashchange', e => {
+                if (e.newURL !== e.oldURL) window.location.replace(
+                    window.location.href.split('#')[0] + (window.parent.location.hash || '#/')
+                );
+            });
+        </script>
     </body>
 </html>

@@ -9,6 +9,7 @@ populateComponent(unsigned id, const char *name, const char *json,
     duk_context *ctx = myDukCreate(errBuf); \
     ASSERT(ctx != NULL, "Failed to create duk_context\n"); \
     vTreeScriptBindingsRegister(ctx); \
+    dataDefScriptBindingsRegister(ctx, errBuf); \
     dataQueryScriptBindingsRegister(ctx)
 
 static void
@@ -379,7 +380,7 @@ testExecLayoutTmplProvidesFetchOnesInVariables() {
     componentArrayPush(&cmps, &component1);
     componentArrayPush(&cmps, &component2);
     // 2. Call
-    char *layoutTmpl = "function (vTree, var1, var2) {"
+    char *layoutTmpl = "function (vTree, pageData, var1, var2) {"
                            "vTree.registerElement('fos', null, "
                                "var1.prop + ' ' + var1.cmp.id + ' ' + var1.cmp.name + ' | ' +"
                                "var2.fus + ' ' + var2.cmp.id + ' ' + var2.cmp.name"
@@ -433,7 +434,7 @@ testExecLayoutTmplProvidesFetchAllsInVariables() {
     componentArrayPush(&cmps, &bar1);
     componentArrayPush(&cmps, &bar2);
     // 2. Call
-    char *layoutTmpl = "function (vTree, foos, bars) {"
+    char *layoutTmpl = "function (vTree, pageData, foos, bars) {"
                            "vTree.registerElement('fos', null, "
                                "foos.map(function (foo) {"
                                   "return foo.prop + ' ' + foo.cmp.id + ' ' + "

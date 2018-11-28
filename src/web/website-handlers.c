@@ -1,7 +1,9 @@
 #include <fcntl.h> // O_RDONLY
 #include "../../include/web/website-handlers.h"
 
-static void injectCPanelIframe(char **html);
+static void injectCPanelIframe(char **html, const char *pageDataJson);
+static void makeCurrentPageDataJson(SiteGraph *siteGraph, VTree *vTree,
+                                    void *dukCtx, void *myPtr, char *err);
 
 unsigned
 websiteHandlersHandlePageRequest(void *myPtr, void *myDataPtr, const char *method,
@@ -13,9 +15,12 @@ websiteHandlersHandlePageRequest(void *myPtr, void *myDataPtr, const char *metho
     if (!p) {
         return MHD_HTTP_NOT_FOUND;
     }
-    char *renderedHtml = pageRender(site, p->layoutIdx, url, NULL, NULL, err);
+    const char *pageDataJson;
+    char *renderedHtml = pageRender(site, p->layoutIdx, url,
+                                    makeCurrentPageDataJson, &pageDataJson,
+                                    err);
     if (renderedHtml) {
-        injectCPanelIframe(&renderedHtml);
+        injectCPanelIframe(&renderedHtml, pageDataJson);
     } else {
         return MHD_HTTP_INTERNAL_SERVER_ERROR;
     }
@@ -80,7 +85,7 @@ unsigned
 websiteHandlersHandleGenerateRequest(void *myPtr, void *myDataPtr, const char *method,
                                      const char *url, struct MHD_Response **response,
                                      char *err) {
-    if (strcmp(method, "GET") != 0 || strcmp(url, "/api/website/generate") != 0) return 0;
+    if (strcmp(method, "POST") != 0 || strcmp(url, "/api/website/generate") != 0) return 0;
     Website *site = myPtr;
     timerInit();
     timerStart();
@@ -95,36 +100,59 @@ websiteHandlersHandleGenerateRequest(void *myPtr, void *myDataPtr, const char *m
                         strlen(site->rootDir) +
                         (roundSecs > 0.1 ? log10(roundSecs) + 1: 1) + 6 +
                         1;
-    char *ret = ALLOCATE_ARR(char, messageLen);
+    char *ret = ALLOCATE_ARR_NO_COUNT(char, messageLen);
     snprintf(ret, messageLen, tmpl, site->siteGraph.pages.size, site->rootDir,
              secsElapsed);
-#ifdef DEBUG_COUNT_ALLOC
-    memoryAddToByteCount(-(messageLen));
-#endif
-    *response = MHD_create_response_from_buffer(strlen(ret),
-                                                ret,
+    *response = MHD_create_response_from_buffer(strlen(ret), ret,
                                                 MHD_RESPMEM_MUST_FREE);
+    MHD_add_response_header(*response, "Content-Type", "text/html");
     return MHD_HTTP_OK;
 }
 
+static void makeCurrentPageDataJson(SiteGraph *siteGraph, VTree *vTree,
+                                    void *dukCtx, void *myPtr, char *err) {
+    const char **pt = myPtr;
+    *pt = dataDefScriptBindingsStrinfigyStashedPageData(dukCtx, err);
+}
+
+/*
+ * Injects a string into *ptrToHtml:
+ *
+ * Before: <html><body><p>Hello</p></html>
+ * After: <html><body><iframe ...></iframe><script>...</script><p>Hello</p></html>
+ */
 static void
-injectCPanelIframe(char **ptrToHtml) {
-    const char *injection = "<iframe src=\"/frontend/cpanel.html\" style=\"position:fixed;border:none;height:100%;width:120px;right:0;top:0;\"></iframe>";
+injectCPanelIframe(char **ptrToHtml, const char *pageDataJson) {
+    const char *a = "<iframe src=\"/frontend/cpanel.html\" id=\"insn-cpanel-iframe\" style=\"position:fixed;border:none;height:100%;width:180px;right:4px;top:4px;\"></iframe><script>function setIframeVisible(setVisible) { document.getElementById('insn-cpanel-iframe').style.width = setVisible ? '640px' : '180px'; } function getCurrentPageData() { return ";
+    const char *c = "; }</script>";
     char *html = *ptrToHtml;
-    const size_t injlen = strlen(injection);
-    const size_t oldLen = strlen(html);
-    char *tmp = ARRAY_GROW(html, char, oldLen + 1, oldLen + injlen + 1);
+    const size_t lenA = strlen(a);
+    const size_t lenB = pageDataJson ? strlen(pageDataJson) : 2; // 2 == '[' and ']'
+    const size_t lenC = strlen(c);
+    const size_t injlen = lenA + lenB + lenC;
+    const size_t oldLen = strlen(html) + 1;
+    char *tmp = ARRAY_GROW(html, char, oldLen, oldLen + injlen);
     char *startOfBody = strstr(tmp, "<body>");
     if (startOfBody && startOfBody != html) {
         startOfBody += strlen("<body>");
     } else {
         printToStdErr("Warn: failed to injectCPanelIframe().\n");
-        FREE_ARR(char, tmp, oldLen + injlen + 1);
+        FREE_ARR(char, tmp, oldLen + injlen);
         return;
     }
-    // Appends <html><body>__ROOMFORINJECTION__abcd</body>
+    // Inserts <html><body>?|?|?...</body>
     memmove(startOfBody + injlen, startOfBody, strlen(startOfBody) + 1);
-    // Replaces __ROOMFORINJECTION__
-    memcpy(startOfBody, injection, injlen);
+    // Replaces <body>?|?|?... -> <body>$a|?|?...
+    memcpy(startOfBody, a, lenA);
+    startOfBody += lenA;
+    // Replaces <body>$a|?|?... -> <body>$a|$b|?...
+    if (pageDataJson) {
+        memcpy(startOfBody, pageDataJson, lenB);
+    } else {
+        memcpy(startOfBody, (char[2]){'[', ']'}, lenB);
+    }
+    startOfBody += lenB;
+    // Replaces <body>$a|$b|?... -> <body>$a|$b|$c...
+    memcpy(startOfBody, c, lenC);
     *ptrToHtml = tmp;
 }

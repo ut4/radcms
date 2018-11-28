@@ -15,6 +15,7 @@ componentFreeProps(Component *this) {
     if (this->json) FREE_STR(this->json);
 }
 
+// @unused
 char*
 componentArrayToJson(ComponentArray *this) {
     cJSON *json = cJSON_CreateArray();

@@ -88,7 +88,8 @@ siteGraphAddPage(SiteGraph *this, unsigned id, char *url, unsigned parentId,
                  int layoutIdx);
 
 void
-siteGraphDiffMake(SiteGraph *this, VTree *vTree, void *toMyPtr, char *err);
+siteGraphDiffMake(SiteGraph *this, VTree *vTree, void *dukCtx, void *toMyPtr,
+                  char *err);
 
 Template*
 siteGraphFindTemplate(SiteGraph *this, char *fileName, int *idxOut);

@@ -3,6 +3,7 @@
 
 #include <stdbool.h>
 #include "data-defs.h" // Component
+#include "data-def-script-bindings.h" // dataDefScriptBindingsSetStashedPageData()
 #include "data-query-script-bindings.h" // DocumentDataConfig
 #include "duk.h"
 #include "v-tree.h" // VTree
