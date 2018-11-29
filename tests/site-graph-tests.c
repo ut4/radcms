@@ -70,8 +70,16 @@ testSiteGraphParseParsesTheInput() {
     assertIntEquals(p5->layoutIdx, 1);
     //
     assertIntEquals(testGraph.templates.length, 2);
-    assertStrEquals(testGraph.templates.values[0].fileName, "foo.bar");
-    assertStrEquals(testGraph.templates.values[1].fileName, "baz.bar");
+    Template *t1 = &testGraph.templates.values[0];
+    assertStrEquals(t1->fileName, "foo.bar");
+    Template *t2 = &testGraph.templates.values[1];
+    assertStrEquals(t2->fileName, "baz.bar");
+    //
+    assertThatOrGoto(t1->sampleUrl != NULL, done, "Should set t1->sampleUrl");
+    assertStrEquals(t1->sampleUrl, "/");
+    assertThatOrGoto(t2->sampleUrl != NULL, done, "Should set t2->sampleUrl");
+    assertStrEquals(t2->sampleUrl, "/foo");
+    //
     done:
         siteGraphFreeProps(&testGraph);
 }

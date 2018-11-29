@@ -10,13 +10,13 @@ typedef struct {
     unsigned id;
     char *url; // eg. "/" or "/foo/bar"
     unsigned parentId;
-    int layoutIdx;
+    int layoutIdx; // index of SiteGraph.templates
 } Page;
 
 typedef struct {
-    char *fileName;
+    char *fileName; // eg. "file.js"
+    char *sampleUrl; // borrowed from Page
     bool exists;
-    bool hasUnfixedErrors;
 } Template;
 
 typedef struct  {
@@ -87,10 +87,6 @@ Page*
 siteGraphAddPage(SiteGraph *this, unsigned id, char *url, unsigned parentId,
                  int layoutIdx);
 
-void
-siteGraphDiffMake(SiteGraph *this, VTree *vTree, void *dukCtx, void *toMyPtr,
-                  char *err);
-
 Template*
 siteGraphFindTemplate(SiteGraph *this, char *fileName, int *idxOut);
 
@@ -108,6 +104,10 @@ siteGraphDiffInit(SiteGraphDiff *this);
 
 void
 siteGraphDiffFreeProps(SiteGraphDiff *this);
+
+void
+siteGraphDiffMake(SiteGraph *this, VTree *vTree, void *dukCtx, void *toMyPtr,
+                  char *err);
 
 void templateArrayInit(TemplateArray *this);
 void templateArrayPush(TemplateArray *this, Template *value);

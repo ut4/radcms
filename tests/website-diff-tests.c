@@ -48,6 +48,8 @@ testSiteGraphDiffMakeSpotsNewLinks() {
         duk_destroy_heap(ctx);
         siteGraphDiffFreeProps(&diff);
         websiteFreeProps(&site);
+    #undef newLinkUrl1
+    #undef newLinkUrl2
 }
 
 void

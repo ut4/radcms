@@ -143,7 +143,6 @@ char*
 pageRender(Website *this, int layoutIdx, const char *url,
            renderInspectFn inspectFn, void *myPtr, char *err) {
     #define NO_LAYOUT_PAGE "<html><body>Layout file '%s' doesn't exists yet.</body></html>"
-    #define HAS_UNFIXED_ERRORS_PAGE "<html><body>Layout '%s' contains errors and can't be rendered.</body></html>"
     Template *layout = siteGraphGetTemplate(&this->siteGraph, layoutIdx);
     ASSERT(layout != NULL, "Unknown layoutIdx %u.\n", layoutIdx);
     // User has added a link, but hasn't had the time to create a layout for it yet
@@ -156,14 +155,6 @@ pageRender(Website *this, int layoutIdx, const char *url,
         snprintf(renderedHtml, messageLen, NO_LAYOUT_PAGE, layout->fileName);
         return renderedHtml;
     }
-    // Last modification had errors -> don't even bother rendering
-    if (!inspectFn && layout->hasUnfixedErrors) {
-        size_t messageLen = strlen(HAS_UNFIXED_ERRORS_PAGE) - 2 +
-                            strlen(layout->fileName) + 1;
-        char *renderedHtml = ALLOCATE_ARR(char, messageLen);
-        snprintf(renderedHtml, messageLen, HAS_UNFIXED_ERRORS_PAGE, layout->fileName);
-        return renderedHtml;
-    }
     duk_push_thread_stash(this->dukCtx, this->dukCtx);
     VTree vTree;
     vTreeInit(&vTree);
@@ -174,17 +165,13 @@ pageRender(Website *this, int layoutIdx, const char *url,
     char *renderedHtml = NULL;
     if (!vTreeScriptBindingsExecLayoutWrapFromCache(this->dukCtx, layout->fileName,
                                                     &ddc, url, err)) {
-        if (inspectFn) layout->hasUnfixedErrors = true;
         goto done;
-    } else if (layout->hasUnfixedErrors) {
-        layout->hasUnfixedErrors = false;
     }
     if (ddc.batchCount > 0 && !websiteFetchBatches(this, &ddc, &components, err)) {
         goto done;
     }
     if (!vTreeScriptBindingsExecLayoutTmpl(this->dukCtx, &vTree,
-        ddc.batchHead ? &ddc.batches : NULL, &components, layout->fileName,
-        err)) {
+        ddc.batchHead ? &ddc.batches : NULL, &components, layout->fileName, err)) {
         goto done;
     }
     renderedHtml = vTreeToHtml(&vTree, err);
@@ -195,6 +182,7 @@ pageRender(Website *this, int layoutIdx, const char *url,
     documentDataConfigFreeProps(&ddc);
     componentArrayFreeProps(&components);
     return renderedHtml;
+    #undef NO_LAYOUT_PAGE
 }
 
 static void

@@ -490,3 +490,5 @@ populateComponent(unsigned id, const char *name, const char *json,
     out->json = copyString(json);
     out->dataBatchConfigId = dbcId;
 }
+
+#undef beforeEach

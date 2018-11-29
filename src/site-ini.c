@@ -11,6 +11,7 @@ receiveIniVal(void* myPtr, const char* section, const char* key,
         return 0;
     }
     return 1;
+    #undef MATCH
 }
 
 static bool

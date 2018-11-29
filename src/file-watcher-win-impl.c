@@ -81,6 +81,9 @@ fileWatcherWatch(FileWatcher *this, const char *dir, fileNameMatcher matcherFn,
         }
     }
     return true;
+    #undef MIN_TIME_BETWEEN_EVENTS
+    #undef FILE_LOCK_WAIT_TIME
+    #undef NOTIFY_BUFFER_ELEM_COUNT
 }
 
 /** to = char[MAX_PATH + 1]*/

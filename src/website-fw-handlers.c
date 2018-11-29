@@ -34,11 +34,13 @@ handleFileModifyEvent(const char *fileName, Website *this, char *err) {
         duk_pop(this->dukCtx);
         return;
     }
+    printf("Info: Cached %s\n", fileName);
     //
     SiteGraphDiff diff;
     siteGraphDiffInit(&diff);
-    char *rendered = pageRender(this, layoutIdx, "/", siteGraphDiffMake,
-                                &diff, err);
+    char *rendered = pageRender(this, layoutIdx,
+                          layout->sampleUrl ? layout->sampleUrl : "/",
+                          siteGraphDiffMake, &diff, err);
     if (!rendered) goto done;
     FREE_STR(rendered);
     if (!diff.newPages) goto done;
@@ -47,5 +49,6 @@ handleFileModifyEvent(const char *fileName, Website *this, char *err) {
     }
     done:
     siteGraphDiffFreeProps(&diff);
+    printf("Info: Rebuilt.\n");
     duk_pop(this->dukCtx);
 }

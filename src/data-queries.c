@@ -118,6 +118,10 @@ documentDataConfigToSql(DocumentDataConfig *this, char *err) {
                                   totalBatchesLength + 1);
     sprintf(this->finalSql, MAIN_SELECT_TMPL, wrappedBatches);
     return this->finalSql;
+    #undef MAIN_SELECT_TMPL
+    #undef BATCH_SELECT_TMPL
+    #undef TYPE_FILTER_TMPL
+    #undef BATCH_SELECT_TMPL_N
 }
 
 DataBatchConfig*

@@ -100,7 +100,7 @@ class ArticleListDirective extends preact.Component {
         return [];
     }
     static getName() {
-        return 'Articlelist';
+        return 'Article list';
     }
     static getMenuItems(directive) {
         return directive.components.map(article => {
@@ -113,7 +113,7 @@ class ArticleListDirective extends preact.Component {
             ])
         }).concat([
             $el('a', {
-                href:'#add-component',
+                href:'#/add-component',
                 onClick: e => {
                     e.preventDefault();
                     myRedirect('/add-component');

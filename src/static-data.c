@@ -41,7 +41,7 @@ SampleData sampleData[] = {
                                "                e('title', null, 'Hello')\n"
                                "            ),\n"
                                "            e('body', null, [\n"
-                               "                e('div', null, pageData.callDirective('ArticleList', vTree, arts)),\n"
+                               "                pageData.callDirective('ArticleList', vTree, arts),\n"
                                "                e('footer', null, footer.content)\n"
                                "            ])\n"
                                "        ]);\n"

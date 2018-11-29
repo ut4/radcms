@@ -74,4 +74,8 @@ fileWatcherWatch(FileWatcher *this, const char *path, fileNameMatcher matcherFn,
         perror("LinuxFileWatcher: Failed to close handle(s).\n");
     }
     return true;
+    #undef MIN_TIME_BETWEEN_EVENTS
+    #undef FILE_LOCK_WAIT_TIME
+    #undef NOTIFY_BUFFER_ELEM_COUNT
+    #undef FLEXIBLE_STR_MAX
 }

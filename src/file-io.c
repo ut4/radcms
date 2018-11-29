@@ -114,6 +114,7 @@ fileIOMakeDirs(const char *path, char *err) {
         }
     }
     return true;
+    #undef maxNewDirs
 }
 
 bool
