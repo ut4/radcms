@@ -16,6 +16,7 @@ include_directories(insane ${INSN_DEP_INCLUDES})
 # == insane.exe ================================================================
 set(SOURCE_FILES_COMMON
     include/common.h
+    include/common-script-bindings.h src/common-script-bindings.c
     include/component-mapper.h src/component-mapper.c
     include/data-defs.h src/data-defs.c
     include/data-def-script-bindings.h src/data-def-script-bindings.c
@@ -50,6 +51,7 @@ target_link_libraries(insane ${INSN_DEP_LIBS})
 
 # == tests.exe =================================================================
 set(TESTS_FILES
+    tests/common-script-bindings-tests.h tests/common-script-bindings-tests.c
     tests/component-mapper-tests.h tests/component-mapper-tests.c
     tests/test-utils.h tests/test-utils.c
     tests/testlib.h

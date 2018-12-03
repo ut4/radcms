@@ -5,6 +5,7 @@
 #include <time.h>
 #include "include/web/component-handlers.h" // componentHandlersHandle*()
 #include "include/web/website-handlers.h" // websiteHandlersHandle*()
+#include "include/common-script-bindings.h"
 #include "include/data-def-script-bindings.h"
 #include "include/data-query-script-bindings.h"
 #include "include/directive-script-bindings.h"
@@ -47,6 +48,8 @@ int main(int argc, const char* argv[]) {
     {
         dukCtx = myDukCreate(errBuf);
         if (!dukCtx) goto done;
+        commonScriptBindingsRegister(dukCtx, &db, errBuf); // db, Response etc.
+        if (strlen(errBuf)) goto done;
         vTreeScriptBindingsRegister(dukCtx); // vTree object
         dataQueryScriptBindingsRegister(dukCtx); // documentDataConfig object
         directiveScriptBindingsRegister(dukCtx, errBuf);

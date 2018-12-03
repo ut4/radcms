@@ -11,4 +11,7 @@ void
 directiveFactoriesPutCachedFn(duk_context *ctx, const char *directiveName,
                               const char *cachedFnKey);
 
+void
+directiveScriptBindingsPushFactories(duk_context *ctx, unsigned threadStashItAt);
+
 #endif

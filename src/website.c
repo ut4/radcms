@@ -1,7 +1,7 @@
 #include "../include/website.h"
 
-static void mapDataBatchesRow(sqlite3_stmt *stmt, void **myPtr);
-static void mapSiteGraphResultRow(sqlite3_stmt *stmt, void **myPtr);
+static bool mapDataBatchesRow(sqlite3_stmt *stmt, void **myPtr);
+static bool mapSiteGraphResultRow(sqlite3_stmt *stmt, void **myPtr);
 static bool bindWebsiteQueryVals(sqlite3_stmt *stmt, void *data);
 
 void
@@ -185,12 +185,13 @@ pageRender(Website *this, int layoutIdx, const char *url,
     #undef NO_LAYOUT_PAGE
 }
 
-static void
+static bool
 mapSiteGraphResultRow(sqlite3_stmt *stmt, void **myPtr) {
     *myPtr = copyString((const char*)sqlite3_column_text(stmt, 0));
+    return true;
 }
 
-static void
+static bool
 mapDataBatchesRow(sqlite3_stmt *stmt, void **myPtr) {
     ComponentArray *arr = *myPtr;
     Component newComponent;
@@ -200,6 +201,7 @@ mapDataBatchesRow(sqlite3_stmt *stmt, void **myPtr) {
     newComponent.json = copyString((const char*)sqlite3_column_text(stmt, 2));
     newComponent.dataBatchConfigId = (unsigned)sqlite3_column_int(stmt, 3);
     componentArrayPush(arr, &newComponent);
+    return true;
 }
 
 static bool

@@ -34,7 +34,7 @@ typedef bool (*bindValsFn)(sqlite3_stmt *stmt, void *myPtr);
 
 /**
  * Usage:
- * void myBindFn(sqlite3_stmt *stmt, void *data) {
+ * bool myBindFn(sqlite3_stmt *stmt, void *data) {
  *     MyData *d = data;
  *     if (sqlite3_bind_text(stmt, 1, d->prop, -1, SQLITE_STATIC) != SQLITE_OK) return false;
  *     if (sqlite3_bind_text(stmt, 2, d->prop2, -1, SQLITE_STATIC) != SQLITE_OK) return false;
@@ -53,16 +53,17 @@ dbInsert(Db *this, const char *sql, bindValsFn myBindFn, void *data, char *err);
 /**
  * see dbSelect().
  */
-typedef void (*mapRowFn)(sqlite3_stmt *stmt, void **myPtr);
+typedef bool (*mapRowFn)(sqlite3_stmt *stmt, void **myPtr);
 
 /**
  * Usage:
- * void myMapFn(sqlite3_stmt *stmt, void **myPtr) {
+ * bool myMapFn(sqlite3_stmt *stmt, void **myPtr) {
  *     myData *d = ALLOCATE(MyData);
  *     d->prop = copyString((const char*)sqlite3_column_text(stmt, 0));
  *     d->prop2 = copyString((const char*)sqlite3_column_text(stmt, 1));
  *     d->another = sqlite3_column_int(stmt, 2);
  *     *myPtr = d; // or pushToSomeArray(*myPtr, d);
+ *     return true; // true == keep going, false == stop
  * }
  * MyData *data = NULL;
  * if (dbSelect(db, "SELECT * FROM foo limit 1", myMapFn, (void*)&data, err)) {
@@ -74,7 +75,7 @@ dbSelect(Db *this, const char *sql, mapRowFn onRow, void **ptrToMyPtr, char *err
 
 /**
  * Usage:
- * void myBindFn(sqlite3_stmt *stmt, void *myPtr) {
+ * bool myBindFn(sqlite3_stmt *stmt, void *myPtr) {
  *     MyFilter *filters = myPtr;
  *     MyData *d = filters->data;
  *     if (sqlite3_bind_text(stmt, 1, d->prop, -1, SQLITE_STATIC) != SQLITE_OK) return false;

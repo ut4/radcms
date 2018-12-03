@@ -29,23 +29,23 @@ dbSelect(Db *this, const char *sql, mapRowFn onRow, void **ptrToMyPtr, char *err
         putError("Failed to create stmt: %s\n", sqlite3_errmsg(this->conn));
         return false;
     }
+    bool ret = 1;
     // 2. Bind values to the smtm
     // 3. Execute the smtm
     while ((status = sqlite3_step(stmt)) == SQLITE_ROW) {
-        onRow(stmt, ptrToMyPtr);
+        if (!(ret = onRow(stmt, ptrToMyPtr))) { status = SQLITE_DONE; break; }
     }
     if (status != SQLITE_DONE) {
+        ret = false;
         putError("Failed to execute the prepared statement: %s\n",
-                 sqlite3_errmsg(this->conn));
-        sqlite3_finalize(stmt);
-        return false;
+                sqlite3_errmsg(this->conn));
     }
     // 4. Clean up
     if (sqlite3_finalize(stmt) != SQLITE_OK) {
         printToStdErr("Warn: Failed to finalize stmt: %s\n",
                       sqlite3_errmsg(this->conn));
     }
-    return true;
+    return ret;
 }
 
 sqlite_int64

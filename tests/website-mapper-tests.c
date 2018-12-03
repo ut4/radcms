@@ -144,8 +144,9 @@ testWebsiteGenerateProcessesPagesWithNoDbcs(Db *db, char *err) {
         textNodeArrayFreeProps(&log);
 }
 
-static void mapTestDataRow(sqlite3_stmt *stmt, void **myPtr) {
+static bool mapTestDataRow(sqlite3_stmt *stmt, void **myPtr) {
     *myPtr = copyString((const char*)sqlite3_column_text(stmt, 0));
+    return true;
 }
 
 static void

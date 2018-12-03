@@ -1,6 +1,6 @@
 #include "../include/v-tree-script-bindings.h"
 
-#define V_TREE_STASH_KEY "_VTree"
+#define KEY_VTREE_C_PTR "_vTreeCPtr"
 
 /** Implements global.vTree.registerElement($tagName, $props, $children) */
 static duk_ret_t
@@ -111,7 +111,7 @@ vTreeSBRegisterElement(duk_context *ctx) {
     const char *tagName = duk_require_string(ctx, 0); // 1st argument
     ElemProp *props = collectElemProps(ctx);          // 2nd argument (props)
     duk_push_thread_stash(ctx, ctx);
-    duk_get_prop_string(ctx, -1, V_TREE_STASH_KEY);
+    duk_get_prop_string(ctx, -1, KEY_VTREE_C_PTR);
     VTree *vTree = duk_to_pointer(ctx, -1);
     NodeRefArray children;
     nodeRefArrayInit(&children);
@@ -174,7 +174,7 @@ vTreeSBPartial(duk_context *ctx) {
         duk_pop(ctx); // error
         return 0;
     }                                    //       [... str, data, stash, number]
-    duk_get_prop_string(ctx, -2, V_TREE_STASH_KEY);
+    duk_get_prop_string(ctx, -2, KEY_VTREE_C_PTR);
     VTree *vTree = duk_to_pointer(ctx, -1);
     duk_push_uint(ctx, vTreeUtilsMakeNodeRef(TYPE_ELEM,
         vTree->elemNodes.values[vTree->elemNodes.length - 1].id));
@@ -185,7 +185,7 @@ static void
 setStashedTree(duk_context *ctx, VTree *vTree) {
     duk_push_thread_stash(ctx, ctx);                // [... stash]
     duk_push_pointer(ctx, vTree);                   // [... stash pointer]
-    duk_put_prop_string(ctx, -2, V_TREE_STASH_KEY); // [... stash]
+    duk_put_prop_string(ctx, -2, KEY_VTREE_C_PTR);  // [... stash]
     duk_pop(ctx);                                   // [...]
 }
 

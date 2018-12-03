@@ -1,6 +1,7 @@
 #ifndef insn_dataDefScriptBindings_h
 #define insn_dataDefScriptBindings_h
 
+#include "directive-script-bindings.h" // directiveScriptBindingsPushFactories()
 #include "duk.h"
 
 void
