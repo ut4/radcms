@@ -16,14 +16,6 @@ websiteHandlersHandlePageRequest(void *myPtr, void *myDataPtr, const char *metho
                                  char *err);
 
 /**
- * Responds to GET /frontend/<any>.html|js eg. "/frontend/cpanel.html"
- */
-unsigned
-websiteHandlersHandleStaticFileRequest(void *myPtr, void *myDataPtr, const char *method,
-                                       const char *url, struct MHD_Response **response,
-                                       char *err);
-
-/**
  * Responds to GET /api/website/generate.
  */
 unsigned

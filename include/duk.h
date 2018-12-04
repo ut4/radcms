@@ -2,6 +2,7 @@
 #define insn_duk_h
 
 #include <duktape.h>
+#include <duk_module_duktape.h>
 #include "common.h" // putError
 
 /**
@@ -16,6 +17,13 @@ myDukCreate(char *errBuf);
 bool
 dukUtilsCompileStrToFn(duk_context *ctx, const char *code, const char *fileName,
                        char *err);
+
+/**
+ * Compiles and runs $code in global scope.
+ */
+bool
+dukUtilsCompileAndRunStrGlobal(duk_context *ctx, const char *code,
+                               const char *fileName, char *err);
 
 void
 dukUtilsDumpStack(duk_context *ctx);

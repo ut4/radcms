@@ -91,6 +91,28 @@ webAppFreeProps(WebApp *this) {
 }
 
 bool
+webAppExecModuleScripts(WebApp *this, const char **scriptRouteFiles,
+                        duk_context *ctx, char *err) {
+    bool success = false;
+    unsigned l = sizeof(scriptRouteFiles) / sizeof(const char**);
+    ASSERT(l < 80, "Refusing to compile %u module files.\n", l);
+    for (unsigned i; i < l; ++i) {
+        const char *fName = scriptRouteFiles[i];
+        ASSERT(strlen(fName) < 64, "strlen(scriptRouteFileName) %lu", strlen(fName));
+        STR_CONCAT(filePath, this->appPath, fName);
+        char *code = fileIOReadFile(filePath, err);
+        if (!code) return false;
+        //
+        success = dukUtilsCompileAndRunStrGlobal(ctx, code, fName, err);
+        FREE_STR(code);
+        if (!success) {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool
 webAppStart(WebApp *this) {
     this->daemon = MHD_start_daemon(
         MHD_USE_AUTO | MHD_USE_INTERNAL_POLLING_THREAD,

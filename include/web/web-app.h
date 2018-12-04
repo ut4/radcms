@@ -4,6 +4,7 @@
 #include <unistd.h> // getcwd
 #include "../file-io.h" // fileIO*()
 #include "../common.h" // stdbool etc.
+#include "../duk.h" // dukUtilsCompileAndRunStrGlobal()
 #include "../memory.h" // ALLOCATE etc.
 #include "../site-ini.h" // SiteIni etc.
 #include "web-app-common.h" // handlerFn, microhttpd etc.
@@ -19,7 +20,7 @@ typedef struct {
     Website *site;
     unsigned handlerCount;
     char *errBuf;
-    RequestHandler handlers[4];
+    RequestHandler handlers[5];
 } WebApp;
 
 void
@@ -27,6 +28,10 @@ webAppInit(WebApp *this, const char *rootDir, Website *site, char *err);
 
 void
 webAppFreeProps(WebApp *this);
+
+bool
+webAppExecModuleScripts(WebApp *this, const char **scriptRouteFiles,
+                        duk_context *ctx, char *err);
 
 /**
  * Allocates and starts a microhttpd-server.

@@ -8,6 +8,9 @@ void
 commonScriptBindingsRegister(duk_context *ctx, Db *db, char *err);
 
 void
-commonScriptBindingsPushDbSingleton(duk_context *ctx, int threadStashIsAt);
+commonScriptBindingsPushDb(duk_context *ctx, int threadStashIsAt);
+
+void
+commonScriptBindingsPushApp(duk_context *ctx, int threadStashIsAt);
 
 #endif

@@ -16,6 +16,7 @@ myDukCreate(char *errBuf) {
         myDukHandleFatalErr
     );
     if (!out) return NULL;
+    duk_module_duktape_init(out);
     duk_push_c_function(out, myPrint, DUK_VARARGS);
     duk_put_global_string(out, "print");
     return out;
@@ -29,6 +30,19 @@ dukUtilsCompileStrToFn(duk_context *ctx, const char *code, const char *fileName,
         dukUtilsPutDetailedError(ctx, -1, fileName, err);
         return false;
     }
+    return true;
+}
+
+bool
+dukUtilsCompileAndRunStrGlobal(duk_context *ctx, const char *code,
+                               const char *fileName, char *err) {
+    duk_push_string(ctx, fileName);
+    if (duk_pcompile_string_filename(ctx, DUK_COMPILE_STRICT, code) != 0 ||
+        duk_pcall(ctx, 0) != 0) {
+        dukUtilsPutDetailedError(ctx, -1, fileName, err);
+        return false;
+    }
+    duk_pop(ctx);
     return true;
 }
 

@@ -41,6 +41,7 @@ set(SOURCE_FILES_COMMON
 set(SOURCE_FILES_WEB
     include/file-watcher.h src/file-watcher.c
     include/web/component-handlers.h src/web/component-handlers.c
+    include/web/core-handlers.h src/web/core-handlers.c
     include/web/web-app-common.h
     include/web/web-app.h src/web/web-app.c
     include/web/website-handlers.h src/web/website-handlers.c

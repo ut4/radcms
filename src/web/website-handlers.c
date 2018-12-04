@@ -1,4 +1,3 @@
-#include <fcntl.h> // O_RDONLY
 #include "../../include/web/website-handlers.h"
 
 static void injectCPanelIframe(char **html, const char *pageDataJson);
@@ -31,32 +30,6 @@ websiteHandlersHandlePageRequest(void *myPtr, void *myDataPtr, const char *metho
     *response = MHD_create_response_from_buffer(strlen(renderedHtml),
                                                 renderedHtml,
                                                 MHD_RESPMEM_MUST_FREE);
-    return MHD_HTTP_OK;
-}
-
-unsigned
-websiteHandlersHandleStaticFileRequest(void *myPtr, void *myDataPtr, const char *method,
-                                       const char *url, struct MHD_Response **response,
-                                       char *err) {
-    if (strcmp(method, "GET") != 0 || strstr(url, "/frontend/") != url) return 0;
-    if (strstr(url, "..")) return MHD_HTTP_NOT_FOUND;
-    char *ext = strrchr(url, '.');
-    if (!ext) return MHD_HTTP_NOT_FOUND;
-    bool isJs = strcmp(ext, ".js") == 0;
-    if (!isJs && strcmp(ext, ".html") != 0) {
-        return MHD_HTTP_NOT_FOUND;
-    }
-    int fd;
-    struct stat sbuf;
-    char *appPath = myPtr;
-    STR_CONCAT(path, appPath, url);
-    if ((fd = open(path, O_RDONLY)) == -1 || fstat(fd, &sbuf) != 0) {
-        if (fd != -1) (void)close(fd);
-        return MHD_HTTP_INTERNAL_SERVER_ERROR;
-    }
-    *response = MHD_create_response_from_fd_at_offset64(sbuf.st_size, fd, 0);
-    MHD_add_response_header(*response, "Content-Type", isJs?"application/javascript":"text/html");
-    MHD_add_response_header(*response, "Cache-Control", "public,max-age=86400");//24h
     return MHD_HTTP_OK;
 }
 
@@ -123,7 +96,7 @@ static void makeCurrentPageDataJson(SiteGraph *siteGraph, VTree *vTree,
  */
 static void
 injectCPanelIframe(char **ptrToHtml, const char *pageDataJson) {
-    const char *a = "<iframe src=\"/frontend/cpanel.html\" id=\"insn-cpanel-iframe\" style=\"position:fixed;border:none;height:100%;width:180px;right:4px;top:4px;\"></iframe><script>function setIframeVisible(setVisible) { document.getElementById('insn-cpanel-iframe').style.width = setVisible ? '640px' : '180px'; } function getCurrentPageData() { return ";
+    const char *a = "<iframe src=\"/frontend/cpanel.html\" id=\"insn-cpanel-iframe\" style=\"position:fixed;border:none;height:100%;width:200px;right:4px;top:4px;\"></iframe><script>function setIframeVisible(setVisible) { document.getElementById('insn-cpanel-iframe').style.width = setVisible ? '80%' : '200px'; } function getCurrentPageData() { return ";
     const char *c = "; }</script>";
     char *html = *ptrToHtml;
     const size_t lenA = strlen(a);

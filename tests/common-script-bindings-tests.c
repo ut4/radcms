@@ -1,6 +1,35 @@
 #include "common-script-bindings-tests.h"
 
 static void
+testAppAddRouteAddsFunctions(duk_context *ctx, char *err) {
+    duk_push_thread_stash(ctx, ctx);
+    char *testScript = "function(app) {"
+        "app.addRoute(function() { return 11; });"
+        "app.addRoute(function() { return 22; });"
+    "}";
+    if (!dukUtilsCompileStrToFn(ctx, testScript, "l", err)) {  // [stash err]
+        printToStdErr("Failed to compile test script: %s", err); goto done; }
+    commonScriptBindingsPushApp(ctx, -2);    // [stash fn app]
+    if (duk_pcall(ctx, 1) != 0) {            // [stash undef|err]
+        printToStdErr("Failed to exec test code.\n"); goto done; }
+    duk_pop(ctx); // [stash]
+    commonScriptBindingsPushApp(ctx, -1);    // [stash app]
+    duk_get_prop_string(ctx, -1, "_routes"); // [stash app routes]
+    assertIntEqualsOrGoto((int)duk_get_length(ctx, -1), 2, done);
+    duk_get_prop_index(ctx, -1, 1);          // [stash app routes hndlr2]
+    duk_get_prop_index(ctx, -2, 0);          // [stash app routes hndlr2 hndlr1]
+    assertThatOrGoto(duk_is_function(ctx, -1), done, "Should add 1st func");
+    assertThatOrGoto(duk_is_function(ctx, -2), done, "Should add 2nd func");
+    duk_call(ctx, 0);                        // [stash app routes hndlr2 ret1]
+    assertIntEqualsOrGoto(duk_to_int(ctx, -1), 11, done);
+    duk_pop(ctx);                            // [stash app routes hndlr2]
+    duk_call(ctx, 0);                        // [stash app routes ret2]
+    assertIntEqualsOrGoto(duk_to_int(ctx, -1), 22, done);
+    done:
+        duk_set_top(ctx, 0);
+}
+
+static void
 testDbSelectAllBindingsSelectsStuffFromDb(Db *db, duk_context *ctx, char *err) {
     //
     if (!testUtilsExecSql(db,
@@ -20,7 +49,7 @@ testDbSelectAllBindingsSelectsStuffFromDb(Db *db, duk_context *ctx, char *err) {
                         "}";
     if (!dukUtilsCompileStrToFn(ctx, myScript, "l", err)) {  // [stash err]
         printToStdErr("Failed to compile test script: %s", err); goto done; }
-    commonScriptBindingsPushDbSingleton(ctx, -2);            // [stash fn obj]
+    commonScriptBindingsPushDb(ctx, -2);                     // [stash fn obj]
     if (duk_pcall(ctx, 1) != 0) {                            // [stash arr|err]
         printToStdErr("Failed to exec test code.\n"); goto done; }
     //
@@ -65,7 +94,7 @@ testDbSelectAllBindingsHandlesErrors(Db *db, duk_context *ctx, char *err) {
                         "}";
     if (!dukUtilsCompileStrToFn(ctx, scriptError, "l", err)) { // [stash err]
         printToStdErr("Failed to compile test script: %s", err); goto done; }
-    commonScriptBindingsPushDbSingleton(ctx, -2);              // [stash fn obj]
+    commonScriptBindingsPushDb(ctx, -2);                       // [stash fn obj]
     int success1 = duk_pcall(ctx, 1);                          // [stash arr|err]
     assertThatOrGoto(success1 != 0, done, "Should fail");
     assertStrEquals(duk_safe_to_string(ctx, -1), "Error: TypeError: undefined"
@@ -77,7 +106,7 @@ testDbSelectAllBindingsHandlesErrors(Db *db, duk_context *ctx, char *err) {
                      "}";
     if (!dukUtilsCompileStrToFn(ctx, sqlError, "l", err)) {    // [stash err]
         printToStdErr("Failed to compile test script: %s", err); goto done; }
-    commonScriptBindingsPushDbSingleton(ctx, -2);              // [stash fn obj]
+    commonScriptBindingsPushDb(ctx, -2);                       // [stash fn obj]
     int success2 = duk_pcall(ctx, 1);                          // [stash arr|err]
     assertThatOrGoto(success2 != 0, done, "Should fail");
     assertStrEquals(duk_safe_to_string(ctx, -1), "Error: Failed to create stmt"
@@ -104,6 +133,7 @@ commonScriptBindingsTestsRun() {
     commonScriptBindingsRegister(ctx, &db, errBuf);
     ASSERT(strlen(errBuf) == 0, "%s", errBuf);
     //
+    testAppAddRouteAddsFunctions(ctx, errBuf);
     testDbSelectAllBindingsSelectsStuffFromDb(&db, ctx, errBuf);
     testDbSelectAllBindingsHandlesErrors(&db, ctx, errBuf);
     //

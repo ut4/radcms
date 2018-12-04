@@ -4,6 +4,7 @@
 #include <signal.h>
 #include <time.h>
 #include "include/web/component-handlers.h" // componentHandlersHandle*()
+#include "include/web/core-handlers.h" // coreHandlersHandle*()
 #include "include/web/website-handlers.h" // websiteHandlersHandle*()
 #include "include/common-script-bindings.h"
 #include "include/data-def-script-bindings.h"
@@ -86,15 +87,20 @@ int main(int argc, const char* argv[]) {
      */
     if (!webAppReadOrCreateSiteIni(&app, "", errBuf) ||
         !websiteFetchAndParseSiteGraph(&website, errBuf) ||
+        !webAppExecModuleScripts(&app, (const char*[1]){
+                                    "/src/web/component-handlers.mod.js",
+                                }, dukCtx, errBuf) ||
         !websitePopulateDukCaches(&website, errBuf)) goto done;
     app.handlerCount = sizeof(app.handlers) / sizeof(RequestHandler);
-    app.handlers[0] = (RequestHandler){.handlerFn=websiteHandlersHandleStaticFileRequest,
-        .myPtr=app.appPath, .formDataHandlers=NULL};
-    app.handlers[1] = (RequestHandler){.handlerFn=componentHandlersHandleComponentAddRequest,
+    app.handlers[0] = (RequestHandler){.handlerFn=componentHandlersHandleComponentAddRequest,
         .myPtr=&website, .formDataHandlers=componentHandlersGetComponentAddDataHandlers()};
-    app.handlers[2] = (RequestHandler){.handlerFn=websiteHandlersHandleGenerateRequest,
+    app.handlers[1] = (RequestHandler){.handlerFn=coreHandlersHandleStaticFileRequest,
+        .myPtr=app.appPath, .formDataHandlers=NULL};
+    app.handlers[2] = (RequestHandler){.handlerFn=coreHandlersHandleScriptRouteRequest,
+        .myPtr=dukCtx, .formDataHandlers=NULL};
+    app.handlers[3] = (RequestHandler){.handlerFn=websiteHandlersHandleGenerateRequest,
         .myPtr=&website, .formDataHandlers=NULL};
-    app.handlers[3] = (RequestHandler){.handlerFn=websiteHandlersHandlePageRequest,
+    app.handlers[4] = (RequestHandler){.handlerFn=websiteHandlersHandlePageRequest,
         .myPtr=&website, .formDataHandlers=NULL};
     pthread_t fileWatcherThread;
     if (pthread_create(&fileWatcherThread, NULL, webAppStartFileWatcher, &app) == 0) {

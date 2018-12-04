@@ -9,7 +9,10 @@ if (INSN_IS_WIN)
     )
 
     # -- duktape ----
-    add_library(duktape SHARED ${VENDOR_ROOT}/duktape/duktape.c)
+    add_library(duktape SHARED
+        ${VENDOR_ROOT}/duktape/duktape.c
+        ${VENDOR_ROOT}/duktape/duk_module_duktape.c
+    )
 
     # -- inih ----
     add_library(inih STATIC ${VENDOR_ROOT}/inih/ini.c)
@@ -41,7 +44,10 @@ elseif(INSN_IS_LINUX)
     # -- microhttpd provided by libmicrohttpd-dev ----
 
     # -- duktape ----
-    add_library(duktape SHARED ${VENDOR_ROOT}/duktape/duktape.c)
+    add_library(duktape SHARED
+        ${VENDOR_ROOT}/duktape/duktape.c
+        ${VENDOR_ROOT}/duktape/duk_module_duktape.c
+    )
     target_link_libraries(duktape m) # m = math
 
     # -- inih ----
