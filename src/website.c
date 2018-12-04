@@ -1,7 +1,7 @@
 #include "../include/website.h"
 
-static bool mapDataBatchesRow(sqlite3_stmt *stmt, void **myPtr);
-static bool mapSiteGraphResultRow(sqlite3_stmt *stmt, void **myPtr);
+static bool mapDataBatchesRow(sqlite3_stmt *stmt, void *myPtr);
+static bool mapSiteGraphResultRow(sqlite3_stmt *stmt, void *myPtr);
 static bool bindWebsiteQueryVals(sqlite3_stmt *stmt, void *data);
 
 void
@@ -22,7 +22,7 @@ bool
 websiteFetchAndParseSiteGraph(Website *this, char *err) {
     char *serializedGraphFromDb = NULL;
     if (dbSelect(this->db, "SELECT graph FROM websites LIMIT 1",
-                 mapSiteGraphResultRow, (void*)&serializedGraphFromDb, err)) {
+                 mapSiteGraphResultRow, &serializedGraphFromDb, err)) {
         if (!serializedGraphFromDb) return false;
         bool ok = siteGraphParse(serializedGraphFromDb, &this->siteGraph,
                                  &this->strReader, err);
@@ -64,7 +64,7 @@ websiteFetchBatches(Website *this, DocumentDataConfig *ddc, ComponentArray *to,
     componentArrayInit(to);
     char *sql = documentDataConfigToSql(ddc, err);
     return sql &&
-           dbSelect(this->db, sql, mapDataBatchesRow, (void*)&to, err) &&
+           dbSelect(this->db, sql, mapDataBatchesRow, to, err) &&
            to->length > 0;
 }
 
@@ -186,14 +186,14 @@ pageRender(Website *this, int layoutIdx, const char *url,
 }
 
 static bool
-mapSiteGraphResultRow(sqlite3_stmt *stmt, void **myPtr) {
-    *myPtr = copyString((const char*)sqlite3_column_text(stmt, 0));
+mapSiteGraphResultRow(sqlite3_stmt *stmt, void *myPtr) {
+    *((char**)myPtr) = copyString((const char*)sqlite3_column_text(stmt, 0));
     return true;
 }
 
 static bool
-mapDataBatchesRow(sqlite3_stmt *stmt, void **myPtr) {
-    ComponentArray *arr = *myPtr;
+mapDataBatchesRow(sqlite3_stmt *stmt, void *myPtr) {
+    ComponentArray *arr = myPtr;
     Component newComponent;
     componentInit(&newComponent);
     newComponent.id = (unsigned)sqlite3_column_int(stmt, 0);

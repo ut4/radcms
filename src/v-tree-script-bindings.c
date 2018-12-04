@@ -22,13 +22,13 @@ static bool findAndPushComponentArray(duk_context *ctx, ComponentArray *allCompo
 
 void
 vTreeScriptBindingsRegister(duk_context *ctx) {
-    duk_push_bare_object(ctx);                          // [... object]
-    duk_push_c_lightfunc(ctx, vTreeSBRegisterElement, DUK_VARARGS, 0, 0); // [... object lightfn]
-    duk_put_prop_string(ctx, -2, "registerElement");    // [... object]
-    duk_push_c_lightfunc(ctx, vTreeSBPartial, 2, 2, 0); // [... object lightfn]
+    duk_push_bare_object(ctx);                          // [object]
+    duk_push_c_lightfunc(ctx, vTreeSBRegisterElement, DUK_VARARGS, 0, 0); // [object lightfn]
+    duk_put_prop_string(ctx, -2, "registerElement");    // [object]
+    duk_push_c_lightfunc(ctx, vTreeSBPartial, 2, 2, 0); // [object lightfn]
                                                         // 2 == tmplFileName, data
-    duk_put_prop_string(ctx, -2, "partial");            // [... object]
-    duk_put_global_string(ctx, "vTree");                // [...]
+    duk_put_prop_string(ctx, -2, "partial");            // [object]
+    duk_put_global_string(ctx, "vTree");                // []
 }
 
 bool
@@ -71,7 +71,7 @@ vTreeScriptBindingsExecLayoutTmpl(duk_context *ctx, VTree *vTree,
         cur = cur->next;
         argCount += 1;
     }
-    if (duk_pcall(ctx, argCount) != 0) {
+    if (duk_pcall(ctx, argCount) != DUK_EXEC_SUCCESS) {
         dukUtilsPutDetailedError(ctx, -1, fileName, err);
         return false;
     }
@@ -112,19 +112,19 @@ vTreeSBRegisterElement(duk_context *ctx) {
     ElemProp *props = collectElemProps(ctx);          // 2nd argument (props)
     duk_push_thread_stash(ctx, ctx);
     duk_get_prop_string(ctx, -1, KEY_VTREE_C_PTR);
-    VTree *vTree = duk_to_pointer(ctx, -1);
+    VTree *vTree = duk_get_pointer(ctx, -1);
     NodeRefArray children;
     nodeRefArrayInit(&children);
     /*                                                // 3rd argument (children)
      * Single elemNode (e(..., e("child" ...))
      */
     if (duk_is_number(ctx, 2)) {
-        nodeRefArrayPush(&children, (unsigned)duk_to_uint(ctx, 2));
+        nodeRefArrayPush(&children, (unsigned)duk_get_uint(ctx, 2));
     /*
      * Single textNode (e(..., "Text here")
      */
     } else if (duk_is_string(ctx, 2)) {
-        unsigned ref = vTreeCreateTextNode(vTree, duk_to_string(ctx, 2));
+        unsigned ref = vTreeCreateTextNode(vTree, duk_get_string(ctx, 2));
         nodeRefArrayPush(&children, ref);
     /*
      * Array of elemNodes
@@ -159,23 +159,23 @@ vTreeSBRegisterElement(duk_context *ctx) {
 
 static duk_ret_t
 vTreeSBPartial(duk_context *ctx) {
-    duk_push_thread_stash(ctx, ctx);           // [... str, data, stash]
+    duk_push_thread_stash(ctx, ctx);             // [str data stash]
     const char *tmplFileName = duk_require_string(ctx, 0);
-    duk_get_prop_string(ctx, -1, tmplFileName);// [... str, data, stash, fn]
+    duk_get_prop_string(ctx, -1, tmplFileName);  // [str data stash fn]
     if (!duk_is_function(ctx, -1)) {
         return duk_error(ctx, DUK_ERR_ERROR, "Failed to load cached fn.\n");
         return 0;
     }
-    duk_get_global_string(ctx, "vTree"); // arg1, [... str, data, stash, fn, vTree]
-    duk_dup(ctx, 1);                     // arg2, [... str, data, stash, fn, vTree, data]
-    if (duk_pcall(ctx, 2) != 0) {        //       [... str, data, stash, err]
+    duk_get_global_string(ctx, "vTree"); // arg1, [str data stash fn vTree]
+    duk_dup(ctx, 1);                     // arg2, [str data stash fn vTree, data]
+    if (duk_pcall(ctx, 2) != DUK_EXEC_SUCCESS) { // [str data stash err]
         return duk_error(ctx, DUK_ERR_ERROR, "(%s) %s", tmplFileName,
                          duk_safe_to_string(ctx, -1));
         duk_pop(ctx); // error
         return 0;
-    }                                    //       [... str, data, stash, number]
+    }                                            // [str data stash number]
     duk_get_prop_string(ctx, -2, KEY_VTREE_C_PTR);
-    VTree *vTree = duk_to_pointer(ctx, -1);
+    VTree *vTree = duk_get_pointer(ctx, -1);
     duk_push_uint(ctx, vTreeUtilsMakeNodeRef(TYPE_ELEM,
         vTree->elemNodes.values[vTree->elemNodes.length - 1].id));
     return 1;
@@ -183,10 +183,10 @@ vTreeSBPartial(duk_context *ctx) {
 
 static void
 setStashedTree(duk_context *ctx, VTree *vTree) {
-    duk_push_thread_stash(ctx, ctx);                // [... stash]
-    duk_push_pointer(ctx, vTree);                   // [... stash pointer]
-    duk_put_prop_string(ctx, -2, KEY_VTREE_C_PTR);  // [... stash]
-    duk_pop(ctx);                                   // [...]
+    duk_push_thread_stash(ctx, ctx);                // [stash]
+    duk_push_pointer(ctx, vTree);                   // [stash pointer]
+    duk_put_prop_string(ctx, -2, KEY_VTREE_C_PTR);  // [stash]
+    duk_pop(ctx);                                   // []
 }
 
 static bool
@@ -195,7 +195,7 @@ execLayoutWrap(duk_context *ctx, DocumentDataConfig *ddc, const char *url,
     dataQuerySBSetStashedDocumentDataConfig(ctx, ddc);
     duk_get_global_string(ctx, "documentDataConfig"); // arg1
     duk_push_string(ctx, url);                        // arg2
-    if (duk_pcall(ctx, 2) != 0) {
+    if (duk_pcall(ctx, 2) != DUK_EXEC_SUCCESS) {
         dukUtilsPutDetailedError(ctx, -1, fileName, err);
         return false;
     }
@@ -215,14 +215,14 @@ execLayoutWrap(duk_context *ctx, DocumentDataConfig *ddc, const char *url,
 
 static void
 pushComponent(duk_context *ctx, Component *data) {
-    duk_push_string(ctx, data->json);     // [... string]
-    duk_json_decode(ctx, -1);             // [... obj]
-    duk_push_object(ctx);                 // [... obj obj]
-    duk_push_uint(ctx, data->id);         // [... obj obj uint]
-    duk_put_prop_string(ctx, -2, "id");   // [... obj obj]
-    duk_push_string(ctx, data->name);     // [... obj obj string]
-    duk_put_prop_string(ctx, -2, "name"); // [... obj obj]
-    duk_put_prop_string(ctx, -2, "cmp");  // [... obj]
+    duk_push_string(ctx, data->json);     // [string]
+    duk_json_decode(ctx, -1);             // [obj]
+    duk_push_object(ctx);                 // [obj obj]
+    duk_push_uint(ctx, data->id);         // [obj obj uint]
+    duk_put_prop_string(ctx, -2, "id");   // [obj obj]
+    duk_push_string(ctx, data->name);     // [obj obj string]
+    duk_put_prop_string(ctx, -2, "name"); // [obj obj]
+    duk_put_prop_string(ctx, -2, "cmp");  // [obj]
 }
 
 static bool

@@ -77,7 +77,7 @@ static duk_ret_t
 handleFetchOneOrFetchAll(duk_context *ctx, bool isFetchAll) {
     duk_push_thread_stash(ctx, ctx);
     duk_get_prop_string(ctx, -1, KEY_DDC_C_PTR);
-    DocumentDataConfig *ddc = duk_to_pointer(ctx, -1);
+    DocumentDataConfig *ddc = duk_get_pointer(ctx, -1);
     const char *componentTypeName = duk_require_string(ctx, 0); // 1. arg
     DataBatchConfig *dbc = documentDataConfigAddBatch(ddc, componentTypeName,
                                                       isFetchAll);
@@ -105,7 +105,7 @@ static duk_ret_t
 dataBatchConfigSBSetWhere(duk_context *ctx) {
     duk_push_thread_stash(ctx, ctx);
     duk_get_prop_string(ctx, -1, KEY_DBC_C_PTR);
-    DataBatchConfig *dbc = duk_to_pointer(ctx, -1);
+    DataBatchConfig *dbc = duk_get_pointer(ctx, -1);
     const char *where = duk_require_string(ctx, 0); // 1. arg
     if (strlen(where) > DBC_MAX_WHERE_LEN) {
         setFlag(dbc->errors, DBC_WHERE_TOO_LONG);
@@ -121,7 +121,7 @@ static duk_ret_t
 dataBatchConfigSBSetTmplVarName(duk_context *ctx) {
     duk_push_thread_stash(ctx, ctx);
     duk_get_prop_string(ctx, -1, KEY_DBC_C_PTR);
-    DataBatchConfig *dbc = duk_to_pointer(ctx, -1);
+    DataBatchConfig *dbc = duk_get_pointer(ctx, -1);
     const char *varName = duk_require_string(ctx, 0); // 1. arg
     if (strlen(varName) > DBC_MAX_TMPL_VAR_NAME_LEN) {
         setFlag(dbc->errors, DBC_TMPL_VAR_NAME_TOO_LONG);
@@ -137,7 +137,7 @@ static duk_ret_t
 dataBatchConfigSBValidate(duk_context *ctx) {
     duk_push_thread_stash(ctx, ctx);
     duk_get_prop_string(ctx, -1, KEY_DDC_C_PTR);
-    DataBatchConfig *cur = &((DocumentDataConfig*)duk_to_pointer(ctx, -1))->batches;
+    DataBatchConfig *cur = &((DocumentDataConfig*)duk_get_pointer(ctx, -1))->batches;
     while (cur) {
         if (!cur->isFetchAll && !cur->where) {
             setFlag(cur->errors, DBC_WHERE_REQUIRED);

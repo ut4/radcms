@@ -47,12 +47,12 @@ commonScriptBindingsRegister(duk_context *ctx, Db *db, char* err) {
     // services.db
     duk_push_bare_object(ctx);                         // [stash srvcs]
     duk_push_bare_object(ctx);                         // [stash srvcs db]
-    duk_push_c_lightfunc(ctx, dbSBSelectAll, 2, 0, 0); // [stash srvcs db fn]
+    duk_push_c_lightfunc(ctx, dbSBSelectAll, 2, 0, 0); // [stash srvcs db lightfn]
     duk_put_prop_string(ctx, -2, "selectAll");         // [stash srvcs db]
     duk_put_prop_string(ctx, -2, "db");                // [stash srvcs]
     // services.app
     duk_push_bare_object(ctx);                         // [stash srvcs app]
-    duk_push_c_lightfunc(ctx, appSBAddRoute, 1, 0, 0); // [stash srvcs app fn]
+    duk_push_c_lightfunc(ctx, appSBAddRoute, 1, 0, 0); // [stash srvcs app lightfn]
     duk_put_prop_string(ctx, -2, "addRoute");          // [stash srvcs app]
     duk_push_array(ctx);                               // [stash srvcs app routes]
     duk_put_prop_string(ctx, -2, "_routes");           // [stash srvcs app]
@@ -61,9 +61,9 @@ commonScriptBindingsRegister(duk_context *ctx, Db *db, char* err) {
     duk_put_prop_string(ctx, -2, KEY_SERVICES_JS_IMPL); // [stash]
     // threadStash._ResultRowJsPrototype
     duk_push_bare_object(ctx);                         // [stash row]
-    duk_push_c_lightfunc(ctx, dbSBResultRowGetInt, 1, 0, 0); // [stash row fn]
+    duk_push_c_lightfunc(ctx, dbSBResultRowGetInt, 1, 0, 0); // [stash row lightfn]
     duk_put_prop_string(ctx, -2, "getInt");            // [stash row]
-    duk_push_c_lightfunc(ctx, dbSBResultRowGetString, 1, 0, 0); // [stash row fn]
+    duk_push_c_lightfunc(ctx, dbSBResultRowGetString, 1, 0, 0); // [stash row lightfn]
     duk_put_prop_string(ctx, -2, "getString");         // [stash row]
     duk_put_prop_string(ctx, -2, KEY_ROW_JS_PROTO);    // [stash]
     duk_pop_n(ctx, 1);                                 // []
@@ -116,9 +116,9 @@ appSBAddRoute(duk_context *ctx) {
 }
 
 static bool
-sendDbResultRowToJsMapper(sqlite3_stmt *stmt, void **myPtr) {
+sendDbResultRowToJsMapper(sqlite3_stmt *stmt, void *myPtr) {
                                                       // [str fn stash]
-    duk_context *ctx = *myPtr;
+    duk_context *ctx = myPtr;
     duk_dup(ctx, -2);                                 // [str fn stash fn]
     duk_push_int(ctx, sqlite3_column_count(stmt));    // [str fn stash fn int]
     duk_put_prop_string(ctx, -3, KEY_CUR_ROW_COL_COUNT); // [str fn stash fn]
@@ -129,7 +129,7 @@ sendDbResultRowToJsMapper(sqlite3_stmt *stmt, void **myPtr) {
     duk_get_prop_string(ctx, -3, KEY_ROW_JS_PROTO);   // [str fn stash fn obj obj]
     duk_set_prototype(ctx, -2);                       // [str fn stash fn obj]
     // call myMapper(row)
-    bool ok = duk_pcall(ctx, 1) == 0;                 // [str fn stash undefined|err]
+    bool ok = duk_pcall(ctx, 1) == DUK_EXEC_SUCCESS;  // [str fn stash undefined|err]
     duk_del_prop_string(ctx, -2, KEY_CUR_STMT_C_PTR);
     duk_del_prop_string(ctx, -2, KEY_CUR_ROW_COL_COUNT);
     if (ok) { duk_pop(ctx); }                         // [str fn stash]
@@ -142,9 +142,9 @@ dbSBSelectAll(duk_context *ctx) {
     duk_push_thread_stash(ctx, ctx);            // [str fn stash]
     char err[ERR_BUF_LEN]; err[0] = '\0';
     duk_get_prop_string(ctx, -1, KEY_DB_C_PTR); // [str fn stash ptr]
-    Db *db = duk_to_pointer(ctx, -1);
+    Db *db = duk_get_pointer(ctx, -1);
     duk_pop(ctx);                               // [str fn stash]
-    bool res = dbSelect(db, sql, sendDbResultRowToJsMapper, (void*)&ctx, err);
+    bool res = dbSelect(db, sql, sendDbResultRowToJsMapper, ctx, err);
     if (res) {                                  // [str fn stash]
         duk_push_boolean(ctx, true);            // [str fn stash bool]
         return 1;
@@ -157,9 +157,9 @@ dbSBSelectAll(duk_context *ctx) {
     int idx = duk_require_int(ctx, 0); \
     duk_push_thread_stash(ctx, ctx); \
     duk_get_prop_string(ctx, -1, KEY_CUR_STMT_C_PTR); \
-    sqlite3_stmt *stmt = duk_to_pointer(ctx, -1); \
+    sqlite3_stmt *stmt = duk_get_pointer(ctx, -1); \
     duk_get_prop_string(ctx, -2, KEY_CUR_ROW_COL_COUNT);  \
-    if (idx < duk_to_int(ctx, -1)) { \
+    if (idx < duk_get_int(ctx, -1)) { \
         dukPushFn(ctx, sqliteGetterFn(stmt, idx)); \
     } else { \
         return duk_error(ctx, DUK_ERR_TYPE_ERROR, ""); \

@@ -1,6 +1,6 @@
 #include "component-mapper-tests.h"
 
-static bool mapTestDataRow(sqlite3_stmt *stmt, void **myPtr);
+static bool mapTestDataRow(sqlite3_stmt *stmt, void *myPtr);
 
 static void
 populateComponent(unsigned id, const char *name, const char *json,
@@ -40,7 +40,7 @@ testComponentInsertInsertsTheData(Db *db, char *err) {
     assertIntEqualsOrGoto(insertId, 1, done);
     assertThat(cfd.errors == 0, "Shouldn't set any errors");
     bool selectRes = dbSelect(db, "select name,json,componentTypeId FROM components"
-        " WHERE id=1", mapTestDataRow, (void*)&actual, err);
+        " WHERE id=1", mapTestDataRow, &actual, err);
     assertThatOrGoto(selectRes, done, "Should insert data");
     assertThatOrGoto(actual != NULL, done, "Sanity actual != NULL");
     assertStrEquals(actual->name, cfd.cmp.name);
@@ -107,13 +107,13 @@ componentMapperTestsRun() {
     dbDestruct(&db);
 }
 
-static bool mapTestDataRow(sqlite3_stmt *stmt, void **myPtr) {
+static bool mapTestDataRow(sqlite3_stmt *stmt, void *myPtr) {
     Component *c = ALLOCATE(Component);
     componentInit(c);
     c->name = copyString((const char*)sqlite3_column_text(stmt, 0));
     c->json = copyString((const char*)sqlite3_column_text(stmt, 1));
     c->componentTypeId = (unsigned)sqlite3_column_int(stmt, 2);
-    *myPtr = c;
+    *((Component**)myPtr) = c;
     return true;
 }
 

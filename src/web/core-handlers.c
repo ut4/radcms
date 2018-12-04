@@ -48,7 +48,7 @@ coreHandlersHandleScriptRouteRequest(void *myPtr, void *myDataPtr, const char *m
         /*
          * Call the matcher function.
          */
-        if (duk_pcall(ctx, 2) != 0) {               // [stash app arr fn|null|err]
+        if (duk_pcall(ctx, 2) != DUK_EXEC_SUCCESS) {// [stash app arr fn|null|err]
             dukUtilsPutDetailedError(ctx, -1, url, err); // [stash app arr]
             goto done;
         }
@@ -62,7 +62,7 @@ coreHandlersHandleScriptRouteRequest(void *myPtr, void *myDataPtr, const char *m
         /*
          * Got a handler function, call it.
          */
-        if (duk_pcall(ctx, 0) != 0) {               // [stash app arr obj|err]
+        if (duk_pcall(ctx, 0) != DUK_EXEC_SUCCESS) {// [stash app arr obj|err]
             dukUtilsPutDetailedError(ctx, -1, url, err); // [stash app arr]
             goto done;
         }

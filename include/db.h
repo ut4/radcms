@@ -53,25 +53,25 @@ dbInsert(Db *this, const char *sql, bindValsFn myBindFn, void *data, char *err);
 /**
  * see dbSelect().
  */
-typedef bool (*mapRowFn)(sqlite3_stmt *stmt, void **myPtr);
+typedef bool (*mapRowFn)(sqlite3_stmt *stmt, void *myPtr);
 
 /**
  * Usage:
- * bool myMapFn(sqlite3_stmt *stmt, void **myPtr) {
- *     myData *d = ALLOCATE(MyData);
+ * bool myMapFn(sqlite3_stmt *stmt, void *myPtr) {
+ *     MyData *d = ALLOCATE(MyData);
  *     d->prop = copyString((const char*)sqlite3_column_text(stmt, 0));
  *     d->prop2 = copyString((const char*)sqlite3_column_text(stmt, 1));
  *     d->another = sqlite3_column_int(stmt, 2);
- *     *myPtr = d; // or pushToSomeArray(*myPtr, d);
+ *     *((MyData**)myPtr) = d; // or pushToSomeArray(myPtr, d);
  *     return true; // true == keep going, false == stop
  * }
  * MyData *data = NULL;
- * if (dbSelect(db, "SELECT * FROM foo limit 1", myMapFn, (void*)&data, err)) {
+ * if (dbSelect(db, "SELECT * FROM foo limit 1", myMapFn, &data, err)) {
  *     // ok, each row was passed to myMapFn
  * }
  */
 bool
-dbSelect(Db *this, const char *sql, mapRowFn onRow, void **ptrToMyPtr, char *err);
+dbSelect(Db *this, const char *sql, mapRowFn onRow, void *myPtr, char *err);
 
 /**
  * Usage:

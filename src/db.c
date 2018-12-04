@@ -21,7 +21,7 @@ dbDestruct(Db *this) {
 }
 
 bool
-dbSelect(Db *this, const char *sql, mapRowFn onRow, void **ptrToMyPtr, char *err) {
+dbSelect(Db *this, const char *sql, mapRowFn onRow, void *myPtr, char *err) {
     // 1. Create a prepared statement
     sqlite3_stmt *stmt;
     int status = sqlite3_prepare_v2(this->conn, sql, -1, &stmt, NULL);
@@ -33,7 +33,7 @@ dbSelect(Db *this, const char *sql, mapRowFn onRow, void **ptrToMyPtr, char *err
     // 2. Bind values to the smtm
     // 3. Execute the smtm
     while ((status = sqlite3_step(stmt)) == SQLITE_ROW) {
-        if (!(ret = onRow(stmt, ptrToMyPtr))) { status = SQLITE_DONE; break; }
+        if (!(ret = onRow(stmt, myPtr))) { status = SQLITE_DONE; break; }
     }
     if (status != SQLITE_DONE) {
         ret = false;

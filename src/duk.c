@@ -37,8 +37,8 @@ bool
 dukUtilsCompileAndRunStrGlobal(duk_context *ctx, const char *code,
                                const char *fileName, char *err) {
     duk_push_string(ctx, fileName);
-    if (duk_pcompile_string_filename(ctx, DUK_COMPILE_STRICT, code) != 0 ||
-        duk_pcall(ctx, 0) != 0) {
+    if (duk_pcompile_string_filename(ctx, DUK_COMPILE_STRICT, code) != DUK_EXEC_SUCCESS ||
+        duk_pcall(ctx, 0) != DUK_EXEC_SUCCESS) {
         dukUtilsPutDetailedError(ctx, -1, fileName, err);
         return false;
     }
