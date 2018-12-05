@@ -19,11 +19,9 @@ set(SOURCE_FILES_COMMON
     include/common-script-bindings.h src/common-script-bindings.c
     include/component-mapper.h src/component-mapper.c
     include/data-defs.h src/data-defs.c
-    include/data-def-script-bindings.h src/data-def-script-bindings.c
     include/data-queries.h src/data-queries.c
     include/data-query-script-bindings.h src/data-query-script-bindings.c
     include/db.h src/db.c
-    include/directive-script-bindings.h src/directive-script-bindings.c
     include/duk.h src/duk.c
     include/file-io.h src/file-io.c
     include/hashmap.h src/hashmap.c
@@ -36,6 +34,7 @@ set(SOURCE_FILES_COMMON
     include/v-tree-script-bindings.h src/v-tree-script-bindings.c
     include/v-tree.h src/v-tree.c
     include/website-fw-handlers.h src/website-fw-handlers.c
+    include/website-script-bindings.h src/website-script-bindings.c
     include/website.h src/website.c
 )
 set(SOURCE_FILES_WEB
@@ -63,6 +62,7 @@ set(TESTS_FILES
     tests/v-tree-tests.h tests/v-tree-tests.c
     tests/website-diff-tests.h tests/website-diff-tests.c
     tests/website-mapper-tests.h tests/website-mapper-tests.c
+    tests/website-tests.h tests/website-tests.c
 )
 add_executable(tests ${SOURCE_FILES_COMMON} ${TESTS_FILES} tests-main.c)
 target_compile_options(tests PUBLIC ${INSN_COMPILE_OPTIONS})

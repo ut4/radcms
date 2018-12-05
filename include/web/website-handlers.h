@@ -4,8 +4,9 @@
 #include "../file-io.h" // fileIO*()
 #include "web-app-common.h" // microhttpd
 #include "../timer.h"
-#include "../v-tree-script-bindings.h" // vTreeScriptBindings*()
+#include "../v-tree.h"
 #include "../website.h"
+#include "../website-script-bindings.h" // websiteScriptBindingsStrinfigyStashedPageData()
 
 /**
  * Responds to GET /<any> eg "/" or "/foo" or "/foo/bar/baz".

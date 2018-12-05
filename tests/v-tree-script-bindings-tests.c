@@ -8,9 +8,9 @@ populateComponent(unsigned id, const char *name, const char *json,
     char errBuf[ERR_BUF_LEN]; errBuf[0] = '\0'; \
     duk_context *ctx = myDukCreate(errBuf); \
     ASSERT(ctx != NULL, "Failed to create duk_context\n"); \
-    vTreeScriptBindingsRegister(ctx); \
-    dataDefScriptBindingsRegister(ctx, errBuf); \
-    dataQueryScriptBindingsRegister(ctx)
+    vTreeScriptBindingsInit(ctx); \
+    websiteScriptBindingsInit(ctx, errBuf); \
+    dataQueryScriptBindingsInit(ctx)
 
 static void
 testVTreeRegisterElementWithElemAndTextChildren() {

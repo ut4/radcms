@@ -1,6 +1,7 @@
 #include "../../include/web/website-handlers.h"
 
-static void injectCPanelIframe(char **html, const char *pageDataJson);
+static void injectCPanelIframeAndCurrentPageData(char **html,
+                                                 const char *pageDataJson);
 static void makeCurrentPageDataJson(SiteGraph *siteGraph, VTree *vTree,
                                     void *dukCtx, void *myPtr, char *err);
 
@@ -19,7 +20,7 @@ websiteHandlersHandlePageRequest(void *myPtr, void *myDataPtr, const char *metho
                                     makeCurrentPageDataJson, &pageDataJson,
                                     err);
     if (renderedHtml) {
-        injectCPanelIframe(&renderedHtml, pageDataJson);
+        injectCPanelIframeAndCurrentPageData(&renderedHtml, pageDataJson);
     } else {
         return MHD_HTTP_INTERNAL_SERVER_ERROR;
     }
@@ -85,17 +86,24 @@ websiteHandlersHandleGenerateRequest(void *myPtr, void *myDataPtr, const char *m
 static void makeCurrentPageDataJson(SiteGraph *siteGraph, VTree *vTree,
                                     void *dukCtx, void *myPtr, char *err) {
     const char **pt = myPtr;
-    *pt = dataDefScriptBindingsStrinfigyStashedPageData(dukCtx, err);
+    *pt = websiteScriptBindingsStrinfigyStashedPageData(dukCtx, -1, err);
 }
 
 /*
  * Injects a string into *ptrToHtml:
  *
- * Before: <html><body><p>Hello</p></html>
- * After: <html><body><iframe ...></iframe><script>...</script><p>Hello</p></html>
+ * Before: <html><body>
+ *     <p>Hello</p>
+ * </html>
+ *
+ * After: <html><body>
+ *     <iframe ...></iframe>
+ *     <script>...function getCurrentPageData() { return <pageDataJson>; }...</script>
+ *     <p>Hello</p>
+ * </html>
  */
 static void
-injectCPanelIframe(char **ptrToHtml, const char *pageDataJson) {
+injectCPanelIframeAndCurrentPageData(char **ptrToHtml, const char *pageDataJson) {
     const char *a = "<iframe src=\"/frontend/cpanel.html\" id=\"insn-cpanel-iframe\" style=\"position:fixed;border:none;height:100%;width:200px;right:4px;top:4px;\"></iframe><script>function setIframeVisible(setVisible) { document.getElementById('insn-cpanel-iframe').style.width = setVisible ? '80%' : '200px'; } function getCurrentPageData() { return ";
     const char *c = "; }</script>";
     char *html = *ptrToHtml;

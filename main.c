@@ -7,12 +7,12 @@
 #include "include/web/core-handlers.h" // coreHandlersHandle*()
 #include "include/web/website-handlers.h" // websiteHandlersHandle*()
 #include "include/common-script-bindings.h"
-#include "include/data-def-script-bindings.h"
 #include "include/data-query-script-bindings.h"
-#include "include/directive-script-bindings.h"
 #include "include/db.h"
 #include "include/duk.h"
+#include "include/memory.h" // printMemoryReport()
 #include "include/v-tree-script-bindings.h"
+#include "include/website-script-bindings.h"
 #include "include/web/web-app.h"
 
 static volatile int isCtrlCTyped = 0;
@@ -49,13 +49,11 @@ int main(int argc, const char* argv[]) {
     {
         dukCtx = myDukCreate(errBuf);
         if (!dukCtx) goto done;
-        commonScriptBindingsRegister(dukCtx, &db, errBuf); // db, Response etc.
+        commonScriptBindingsInit(dukCtx, &db, errBuf); // db, Response etc.
         if (strlen(errBuf)) goto done;
-        vTreeScriptBindingsRegister(dukCtx); // vTree object
-        dataQueryScriptBindingsRegister(dukCtx); // documentDataConfig object
-        directiveScriptBindingsRegister(dukCtx, errBuf);
-        if (strlen(errBuf)) goto done;
-        dataDefScriptBindingsRegister(dukCtx, errBuf);
+        vTreeScriptBindingsInit(dukCtx); // vTree object
+        dataQueryScriptBindingsInit(dukCtx); // documentDataConfig object
+        websiteScriptBindingsInit(dukCtx, errBuf); // pageData object
         if (strlen(errBuf)) goto done;
         //
         dbInit(&db);

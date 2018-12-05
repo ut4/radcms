@@ -5,7 +5,7 @@
 #include "duk.h"
 
 void
-dataQueryScriptBindingsRegister(duk_context *ctx);
+dataQueryScriptBindingsInit(duk_context *ctx);
 
 /**
  * Stores $ddc to the duktape thread/ctx stash.

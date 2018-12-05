@@ -1,14 +1,14 @@
-#ifndef insn_websiteMapperTests_h
-#define insn_websiteMapperTests_h
+#ifndef insn_websiteTests_h
+#define insn_websiteTests_h
 
-#include <unistd.h> // getcwd
 #include "testlib.h" // assertThat
-#include "test-utils.h" // testUtilsSetupTestDb()
+#include "test-utils.h" // testUtilsCompileAndCache()
 #include "../include/website.h"
+#include "../../include/common-script-bindings.h"
 #include "../../include/data-query-script-bindings.h"
 #include "../../include/v-tree-script-bindings.h"
 
 void
-websiteMapperTestsRun();
+websiteTestsRun();
 
 #endif

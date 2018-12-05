@@ -21,7 +21,7 @@ static bool findAndPushComponentArray(duk_context *ctx, ComponentArray *allCompo
                                       unsigned dataBatchConfigId);
 
 void
-vTreeScriptBindingsRegister(duk_context *ctx) {
+vTreeScriptBindingsInit(duk_context *ctx) {
     duk_push_bare_object(ctx);                          // [object]
     duk_push_c_lightfunc(ctx, vTreeSBRegisterElement, DUK_VARARGS, 0, 0); // [object lightfn]
     duk_put_prop_string(ctx, -2, "registerElement");    // [object]
@@ -54,11 +54,11 @@ vTreeScriptBindingsExecLayoutTmpl(duk_context *ctx, VTree *vTree,
                                   ComponentArray *allComponents, char *fileName,
                                   char *err) {
     setStashedTree(ctx, vTree);
-    duk_get_global_string(ctx, "vTree"); // Arg1
-    dataDefScriptBindingsSetStashedPageData(ctx); // Arg2
+    duk_get_global_string(ctx, "vTree");          // Arg1
+    websiteScriptBindingsSetStashedPageData(ctx); // Arg2
     unsigned argCount = 2;
     DataBatchConfig *cur = batches;
-    while (cur) {                        // Arg3 ... Arg<n>
+    while (cur) {                                 // Arg3 ... Arg<n>
         const bool found = !cur->isFetchAll
             ? findAndPushSingleComponent(ctx, allComponents, cur->id)
             : findAndPushComponentArray(ctx, allComponents, cur->id);

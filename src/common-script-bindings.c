@@ -5,6 +5,7 @@
 #define KEY_CUR_ROW_COL_COUNT "_curResultRowColCount"
 #define KEY_CUR_STMT_C_PTR "_curSqliteStmtCPtr"
 #define KEY_SERVICES_JS_IMPL "_servicesJsImpl"
+#define KEY_DIRECTIVE_REGISTER_JS_IMPL "_directiveRegisterJsImpl"
 #define JS_MAPPER_FAIL -2
 
 /** Implements Duktape.modSearch */
@@ -27,8 +28,12 @@ dbSBResultRowGetInt(duk_context *ctx);
 static duk_ret_t
 dbSBResultRowGetString(duk_context *ctx);
 
+/** Implements directiveRegister.get(<directiveName>) */
+static duk_ret_t
+directiveRegisterSBGetDirective(duk_context *ctx);
+
 void
-commonScriptBindingsRegister(duk_context *ctx, Db *db, char* err) {
+commonScriptBindingsInit(duk_context *ctx, Db *db, char* err) {
     // global.Duktape.modSearch
     duk_get_global_string(ctx, "Duktape");             // [obj]
     duk_push_c_function(ctx, commonSBSearchModule, 4); // [obj fn]
@@ -66,7 +71,14 @@ commonScriptBindingsRegister(duk_context *ctx, Db *db, char* err) {
     duk_push_c_lightfunc(ctx, dbSBResultRowGetString, 1, 0, 0); // [stash row lightfn]
     duk_put_prop_string(ctx, -2, "getString");         // [stash row]
     duk_put_prop_string(ctx, -2, KEY_ROW_JS_PROTO);    // [stash]
-    duk_pop_n(ctx, 1);                                 // []
+    // threadStash._directiveRegisterJsImpl
+    duk_push_bare_object(ctx);                         // [stash dirreg]
+    duk_push_bare_object(ctx);                         // [stash dirreg entries]
+    duk_put_prop_string(ctx, -2, "_entries");          // [stash dirreg]
+    duk_push_c_lightfunc(ctx, directiveRegisterSBGetDirective, 1, 0, 0); // [stash dirreg lightfn]
+    duk_put_prop_string(ctx, -2, "get");               // [stash dirreg]
+    duk_put_prop_string(ctx, -2, KEY_DIRECTIVE_REGISTER_JS_IMPL); // [stash]
+    duk_pop(ctx);                                      // []
 }
 
 #define pushService(name, threadStashIsAt) \
@@ -84,6 +96,24 @@ commonScriptBindingsPushApp(duk_context *ctx, int threadStashIsAt) {
     pushService("app", threadStashIsAt);
 }
 
+void
+commonScriptBindingsPushDirectiveRegister(duk_context *ctx, int threadStashItAt) {
+    duk_get_prop_string(ctx, threadStashItAt, KEY_DIRECTIVE_REGISTER_JS_IMPL);
+}
+
+void
+commonScriptBindingsPutDirective(duk_context *ctx, const char *directiveName,
+                                 int threadStashIsAt) {
+                                                        // [? fn]
+    ASSERT(duk_is_function(ctx, -1), "Stack top must be a function");
+    commonScriptBindingsPushDirectiveRegister(ctx, threadStashIsAt); // [? fn dirreg]
+    duk_get_prop_string(ctx, -1, "_entries");           // [? fn dirreg entriesObj]
+    duk_swap_top(ctx, -3);                              // [? entriesObj dirreg fn]
+    duk_remove(ctx, -2);                                // [? entriesObj fn]
+    duk_put_prop_string(ctx, -2, directiveName);        // [? entriesObj]
+    duk_pop(ctx);                                       // [?]
+}
+
 static duk_ret_t
 commonSBSearchModule(duk_context *ctx) {
     const char *id = duk_get_string(ctx, 0);
@@ -98,7 +128,8 @@ commonSBSearchModule(duk_context *ctx) {
     }
                                             // [id req exp mod stash out]
     duk_put_prop_string(ctx, 3, "exports"); // [id req exp mod stash]
-    duk_pop(ctx);                           // [id req exp mod]
+    duk_push_null(ctx);                     // [id req exp mod stash null]
+    duk_replace(ctx, -2);                   // [id req exp mod null]
     return 1;
 }
 
@@ -174,4 +205,12 @@ dbSBResultRowGetInt(duk_context *ctx) {
 static duk_ret_t
 dbSBResultRowGetString(duk_context *ctx) {
     getVal(duk_push_string, (const char*)sqlite3_column_text);
+}
+
+static duk_ret_t
+directiveRegisterSBGetDirective(duk_context *ctx) {
+    duk_push_this(ctx);                                       // [str dirreg]
+    duk_get_prop_string(ctx, -1, "_entries");                 // [str dirreg entries]
+    duk_get_prop_string(ctx, -1, duk_require_string(ctx, 0)); // [str dirreg entries fn|undefined]
+    return 1;
 }

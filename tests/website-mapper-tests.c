@@ -109,8 +109,8 @@ static void
 testWebsiteGenerateProcessesPagesWithNoDbcs(Db *db, char *err) {
     duk_context *ctx = myDukCreate(err);
     ASSERT(ctx != NULL, "Failed to create duk_context\n"); \
-    vTreeScriptBindingsRegister(ctx);
-    dataQueryScriptBindingsRegister(ctx);
+    vTreeScriptBindingsInit(ctx);
+    dataQueryScriptBindingsInit(ctx);
     //
     Website site;
     websiteInit(&site);
@@ -119,9 +119,7 @@ testWebsiteGenerateProcessesPagesWithNoDbcs(Db *db, char *err) {
     TextNodeArray log;
     textNodeArrayInit(&log);
     Template *l1 = siteGraphAddTemplate(&site.siteGraph, copyString("a.js"));
-    l1->exists = true;
     Template *l2 = siteGraphAddTemplate(&site.siteGraph, copyString("b.js"));
-    l2->exists = true;
     (void)siteGraphAddPage(&site.siteGraph, 1, copyString("/"), 0, 0);
     (void)siteGraphAddPage(&site.siteGraph, 2, copyString("/foo"), 0, 1);
     if (!testUtilsCompileAndCache(ctx,

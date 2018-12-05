@@ -2,7 +2,7 @@
 #define insn_website_h
 
 #include <stdbool.h>
-#include "directive-script-bindings.h" // directiveFactoriesPutCachedFn()
+#include "common-script-bindings.h" // commonScriptBindingsPutDirective()
 #include "data-defs.h" // Component
 #include "data-queries.h" // DocumentDataConfig
 #include "db.h"

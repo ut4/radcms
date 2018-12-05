@@ -44,12 +44,10 @@ websitePopulateDukCaches(Website *this, char *err) {
     }
     //
     const char *n = "article-list-directive.js";
-    if (dukUtilsCompileStrToFn(this->dukCtx, getSampleFile(n), n, err)) {
-        duk_put_prop_string(this->dukCtx, -2, n);
-    } else {
+    if (!dukUtilsCompileStrToFn(this->dukCtx, getSampleFile(n), n, err)) {
         goto failBadly;
     }
-    directiveFactoriesPutCachedFn(this->dukCtx, "ArticleList", n);
+    commonScriptBindingsPutDirective(this->dukCtx, "ArticleList", -2);
     //
     duk_pop(this->dukCtx);
     return true;

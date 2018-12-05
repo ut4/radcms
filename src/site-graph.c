@@ -40,7 +40,6 @@ siteGraphParse(char *str, SiteGraph *out, StrReader *sr, char *err) {
         } else if (out->pages.size > 0) {
             Template *t = siteGraphAddTemplate(out, strReaderReadStr(sr));
             unsigned tIdx = out->templates.length - 1;
-            t->exists = true;
             HashMapElPtr *ptr = out->pages.orderedAccess;
             while (ptr) {
                 if (((Page*)ptr->data)->layoutIdx == tIdx) {
@@ -151,7 +150,7 @@ siteGraphAddTemplate(SiteGraph *this, char *fileName) {
     Template newLayout;
     newLayout.fileName = fileName;
     newLayout.sampleUrl = NULL;
-    newLayout.exists = false;
+    newLayout.exists = true;
     templateArrayPush(&this->templates, &newLayout);
     return &this->templates.values[this->templates.length - 1];
 }
@@ -194,7 +193,9 @@ siteGraphDiffMake(SiteGraph *this, VTree *vTree, void *dukCtx, void *toMyPtr,
         int layoutIdx = -1;
         (void)siteGraphFindTemplate(this, lfn->val, &layoutIdx);
         if (layoutIdx == -1) {
-            siteGraphAddTemplate(this, copyString(lfn->val))->sampleUrl = hrefUrl;
+            Template *l = siteGraphAddTemplate(this, copyString(lfn->val));
+            l->sampleUrl = hrefUrl;
+            l->exists = false;
             layoutIdx = this->templates.length - 1;
         }
         PageRef *n = ALLOCATE(PageRef);

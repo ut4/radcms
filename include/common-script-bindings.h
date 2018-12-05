@@ -5,12 +5,19 @@
 #include "duk.h"
 
 void
-commonScriptBindingsRegister(duk_context *ctx, Db *db, char *err);
+commonScriptBindingsInit(duk_context *ctx, Db *db, char *err);
 
 void
 commonScriptBindingsPushDb(duk_context *ctx, int threadStashIsAt);
 
 void
 commonScriptBindingsPushApp(duk_context *ctx, int threadStashIsAt);
+
+void
+commonScriptBindingsPushDirectiveRegister(duk_context *ctx, int threadStashItAt);
+
+void
+commonScriptBindingsPutDirective(duk_context *ctx, const char *directiveName,
+                                 int threadStashIsAt);
 
 #endif

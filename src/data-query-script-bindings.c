@@ -25,7 +25,7 @@ static duk_ret_t
 dataBatchConfigSBValidate(duk_context *ctx);
 
 void
-dataQueryScriptBindingsRegister(duk_context *ctx) {
+dataQueryScriptBindingsInit(duk_context *ctx) {
     /*
      * global.documentDataConfig object
      */

@@ -7,6 +7,7 @@
 #include "tests/v-tree-tests.h"
 #include "tests/website-diff-tests.h"
 #include "tests/website-mapper-tests.h"
+#include "tests/website-tests.h"
 
 static unsigned
 runIf(const char *arg, const char *match, void (*suite)()) {
@@ -35,6 +36,7 @@ int main(int argc, const char* argv[]) {
     testSuitesRan += runIf(testSuiteName, "vTree", vTreeTestsRun);
     testSuitesRan += runIf(testSuiteName, "websiteDiff", websiteDiffTestsRun);
     testSuitesRan += runIf(testSuiteName, "websiteMapper", websiteMapperTestsRun);
+    testSuitesRan += runIf(testSuiteName, "website", websiteTestsRun);
     if (testSuitesRan > 0) {
         printf("------------------------\nRan %d test suites.\n", testSuitesRan);
         exit(EXIT_SUCCESS);

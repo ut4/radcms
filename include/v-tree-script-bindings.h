@@ -3,13 +3,13 @@
 
 #include <stdbool.h>
 #include "data-defs.h" // Component
-#include "data-def-script-bindings.h" // dataDefScriptBindingsSetStashedPageData()
+#include "website-script-bindings.h" // websiteScriptBindingsSetStashedPageData()
 #include "data-query-script-bindings.h" // DocumentDataConfig
 #include "duk.h"
 #include "v-tree.h" // VTree
 
 void
-vTreeScriptBindingsRegister(duk_context *ctx);
+vTreeScriptBindingsInit(duk_context *ctx);
 
 /**
  * Compiles and runs $layoutCode.
