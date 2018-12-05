@@ -1,3 +1,5 @@
+import {myFetch} from './common.js';
+
 class AddComponentView extends preact.Component {
     constructor() {
         super();
@@ -20,26 +22,42 @@ class AddComponentView extends preact.Component {
         return $el('form', {className: 'view', onSubmit: e => this.confirm(e)},
             $el('div', null, [
                 $el('h2', null, 'Add component'),
-                $el('label', null, $el('input', {
-                    name: "name",
-                    value: this.state.name,
-                    onChange: e => this.receiveInputValue(e)
-                }, null)),
-                $el('label', null, $el('select', {
-                    value: this.state.componentTypes.indexOf(this.state.componentType),
-                    onChange: e => this.receiveCmpTypeSelection(e)
-                }, this.state.componentTypes.map((type, i) =>
-                    $el('option', {value: i}, type.name)
-                ))),
+                $el('label', null, [
+                    $el('span', null, 'Nimi'),
+                    $el('input', {
+                        name: 'name',
+                        value: this.state.name,
+                        onChange: e => this.receiveInputValue(e)
+                    }, null)
+                ]),
+                $el('label', null, [
+                    $el('span', null, 'Tyyppi'),
+                    $el('select', {
+                        value: this.state.componentTypes.indexOf(this.state.componentType),
+                        onChange: e => this.receiveCmpTypeSelection(e)
+                    }, this.state.componentTypes.map((type, i) =>
+                        $el('option', {value: i}, type.name)
+                    ))
+                ]),
                 this.getInputElsForCmpTypeProps(this.state.componentType.props),
-                $el('input', {value: 'Add', type: 'submit'}, null),
-                $el('button', {type: 'button', onClick: e => { myRedirect('/') }}, 'Cancel')
+                $el('div', {className: 'form-buttons'},
+                    $el('input', {
+                        value: 'Add',
+                        type: 'submit',
+                        className: 'nice-button nice-button-primary'
+                    }, null),
+                    $el('button', {
+                        type: 'button',
+                        onClick: e => { myRedirect('/') },
+                        className: 'text-button'
+                    }, 'Cancel')
+                )
             ])
         );
     }
     confirm(e) {
         e.preventDefault();
-        dafetch('/api/component', {
+        myFetch('/api/component', {
             method: 'POST',
             headers: {'Content-Type': 'application/x-www-form-urlencoded'},
             data: 'name=' + encodeURIComponent(this.state.name) +
@@ -93,13 +111,15 @@ class EditComponentView extends preact.Component {
     }
 }
 
-////////////////////////////////////////////////////////////////////////////////
-
-class ArticleListDirective extends preact.Component {
+/*
+ * Implements end-user management views (editing articles, creating new articles
+ * etc.) for <ArticleList/> directives.
+ */
+class ArticleListDirectiveWebUIImpl extends preact.Component {
     static getRoutes() {
         return [];
     }
-    static getName() {
+    static getTitle() {
         return 'Article list';
     }
     static getMenuItems(directive) {
@@ -109,7 +129,7 @@ class ArticleListDirective extends preact.Component {
                 $el('a', {href:'#/edit-component', onClick: e => {
                     e.preventDefault();
                     myRedirect('/edit-component');
-                }}, 'Edit article')
+                }}, 'Edit')
             ])
         }).concat([
             $el('a', {
@@ -123,7 +143,7 @@ class ArticleListDirective extends preact.Component {
     }
 }
 
-class StaticMenuDirectiveAddPageView {
+class StaticMenuAddPageView {
     render() {
         return $el('div', {className: 'view'},
             $el('div', null, [
@@ -133,11 +153,17 @@ class StaticMenuDirectiveAddPageView {
         );
     }
 }
-class StaticMenuDirective extends preact.Component {
+/*
+ * Implements end-user management views (adding links, reordering links etc.)
+ * for <StaticMenu/> directives.
+ */
+class StaticMenuDirectiveWebUIImpl extends preact.Component {
     static getRoutes() {
-        return [$el(StaticMenuDirectiveAddPageView, {path: "/static-menu-add-page"}, null)];
+        return [
+            $el(StaticMenuAddPageView, {path: '/static-menu-add-page'}, null)
+        ];
     }
-    static getName() {
+    static getTitle() {
         return 'Static menu';
     }
     static getMenuItems(directive) {
@@ -155,43 +181,76 @@ class StaticMenuDirective extends preact.Component {
     }
 }
 
-function getDirectiveImpl(name) {
-    if (name === 'StaticMenu') return StaticMenuDirective;
-    if (name === 'ArticleList') return ArticleListDirective;
-    console.error("Directive '" + name + "' not implemented");
-}
+/*
+ * App-singleton.
+ */
+const app = {
+    _directiveImpls: {
+        'StaticMenu': StaticMenuDirectiveWebUIImpl,
+        'ArticleList': ArticleListDirectiveWebUIImpl
+    },
+    /**
+     * @param {string} name
+     * @param {Object} impl
+     * @throws {TypeError}
+     */
+    registerDirectiveImpl: function(name, impl) {
+        if (this._directiveImpls.hasOwnProperty(name))
+            throw new TypeError('Directive \''+name+'\' already exists.');
+        this._directiveImpls[name] = impl;
+    },
+    /**
+     * @param {string} name
+     * @returns {Object|undefined}
+     */
+    getDirectiveImpl: function (name) {
+        return this._directiveImpls[name];
+    }
+};
 
-////////////////////////////////////////////////////////////////////////////////
-
+/*
+ * Main component.
+ */
 class InsaneControlPanel extends preact.Component {
     constructor(props) {
         super(props);
-        this.currentPageDirectives = props.currentPageData.directiveInstances.map(a=>getDirectiveImpl(a.type));
+        this.currentPageDirectiveImpls = [];
+        props.currentPageData.directiveInstances.forEach(instance => {
+            const impl = app.getDirectiveImpl(instance.type);
+            if (!impl) return;
+            this.currentPageDirectiveImpls.push(impl);
+        });
         this.currentPageComponents = props.currentPageData.allComponents;
         this.state = {className: '', visibleMenuItems: {}, genMessage: ''};
     }
     render() {
         return $el('div', {id: 'control-panel', className: this.state.className}, [
             $el('nav', null, [
-                $el('div', null,
-                    $el('button', {onclick: () => this.sendGenRequest()}, 'Generate'),
-                    this.state.genMessage,
-                    $el('hr', null, null)
-                ),
+                $el('h1', null, 'InsaneCMS'),
+                $el('div', null, [
+                    $el('button', {
+                        onclick: () => this.sendGenRequest(),
+                        className: 'nice-button nice-button-primary'
+                    }, 'Generate'),
+                    this.state.genMessage
+                ]),
                 $el('div', null, [
                     $el('h3', null, 'On this page:'),
-                    $el('div', null, this.currentPageDirectives.map((directive, i) => {
-                        var n = directive.getName();
-                        return $el('div', null, [
+                    $el('div', {
+                        className: 'current-page-directive-list'
+                    }, this.currentPageDirectiveImpls.map((impl, i) => {
+                        var nth = i.toString();
+                        var directive = this.props.currentPageData.directiveInstances[i];
+                        return $el('div', {className: 'directive-' + directive.type}, [
                             $el('h4', null, [
-                                $el('span', null, n),
-                                $el('button', {onClick:()=>this.toggleMenuItem(n)},
-                                    '['+(!this.state.visibleMenuItems[n]?'+':'-')+']'
+                                $el('span', null, impl.getTitle()),
+                                $el('button', {onClick:()=>this.toggleMenuItem(nth)},
+                                    '['+(!this.state.visibleMenuItems[nth]?'+':'-')+']'
                                 )
                             ]),
                             $el('div', {
-                                className: !this.state.visibleMenuItems[n]?'hidden':''
-                            }, directive.getMenuItems(this.props.currentPageData.directiveInstances[i]))
+                                className: !this.state.visibleMenuItems[nth]?'hidden':''
+                            }, impl.getMenuItems(directive))
                         ])
                     })),
                     $el('div', null,
@@ -201,7 +260,9 @@ class InsaneControlPanel extends preact.Component {
                                 '['+(!this.state.visibleMenuItems.other?'+':'-')+']'
                             )
                         ]),
-                        $el('ul', {className: !this.state.visibleMenuItems.other?'hidden':''}, this.currentPageComponents.map(cmp =>
+                        $el('ul', {
+                            className: !this.state.visibleMenuItems.other?'hidden':''
+                        }, this.currentPageComponents.map(cmp =>
                             $el('li', null, [
                                 $el('span', null, cmp.name),
                                 $el('a', {href:'#/edit-component', onClick: e => {
@@ -210,7 +271,9 @@ class InsaneControlPanel extends preact.Component {
                                 }}, 'Edit')
                             ])
                         )),
-                        $el('div', {className: !this.state.visibleMenuItems.other?'hidden':''}, $el('a', {
+                        $el('div', {
+                            className: !this.state.visibleMenuItems.other?'hidden':''
+                        }, $el('a', {
                                 href:'#/add-component', onClick: e => {
                                 e.preventDefault();
                                 myRedirect('/add-component');
@@ -223,15 +286,15 @@ class InsaneControlPanel extends preact.Component {
                 {
                     history: History.createHashHistory(),
                     onChange: e => {
-                        var isEmpty = e.url === '/';
-                        if (!e.current && !isEmpty) return;
-                        window.parent.setIframeVisible(!isEmpty);
-                        this.setState({className: !isEmpty ? 'open' : ''});
+                        var isIndex = e.url === '/';
+                        if (!e.current && !isIndex) return;
+                        window.parent.setIframeVisible(!isIndex);
+                        this.setState({className: !isIndex ? 'open' : ''});
                     }
                 }, [
-                    $el(AddComponentView, {path: "/add-component"}, null),
-                    $el(EditComponentView, {path: "/edit-component"}, null)
-                ].concat(...this.currentPageDirectives.map(dir=>dir.getRoutes()))
+                    $el(AddComponentView, {path: '/add-component'}, null),
+                    $el(EditComponentView, {path: '/edit-component'}, null)
+                ].concat(...this.currentPageDirectiveImpls.map(dir=>dir.getRoutes()))
             )
         ]);
     }
@@ -241,7 +304,7 @@ class InsaneControlPanel extends preact.Component {
         this.setState({visibleMenuItems});
     }
     sendGenRequest() {
-        dafetch('/api/website/generate', {method: 'POST', data: 'a=b'}, req => {
+        myFetch('/api/website/generate', {method: 'POST', data: 'a=b'}, req => {
             this.setState({genMessage: req.responseText});
         }, req => {
             this.setState({genMessage: 'Fail: ' + req.responseText});
@@ -249,21 +312,4 @@ class InsaneControlPanel extends preact.Component {
     }
 }
 
-function dafetch(url, options, onSuccess, onFail) {
-    let req = new XMLHttpRequest();
-    req.onreadystatechange = function() {
-        if (req.readyState !== 4) return;
-        if (req.status >= 200 && req.status < 300) {
-            onSuccess(req);
-        } else {
-            onFail(req);
-        }
-    };
-    req.open(options.method || 'GET', url, true);
-    Object.keys(options.headers || {}).forEach(key => {
-        req.setRequestHeader(key, options.headers[key]);
-    });
-    req.send(options.data);
-}
-
-export {InsaneControlPanel};
+export {app, InsaneControlPanel};

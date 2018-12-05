@@ -1,0 +1,180 @@
+body {
+    margin: 30px 6px 6px;
+}
+.hidden {
+    display: none;
+}
+
+/* == Buttons =============================================================== */
+button {
+    border: medium none;
+    background-color: transparent;
+    cursor: pointer;
+}
+.nice-button {
+    background-color: #F5F5F5;
+    border: 1px solid rgba(0,0,0,0.1);
+    border-radius: 2px;
+    color: #222222;
+    font: 11px/11px "Sans";
+    padding: 8px 12px;
+    text-shadow: 0 1px rgba(0,0,0,0.1);
+    text-decoration: none;
+}
+.nice-button.small {
+    font-size: 10px;
+    padding: 6px;
+}
+.nice-button.large {
+    font-size: 14px;
+    padding: 15px 35px;
+}
+.nice-button:disabled {
+    background-color: #E5E5E5;
+    color: #AAAAAA;
+    cursor: not-allowed;
+    text-shadow: none;
+}
+.nice-button:active:enabled {
+    box-shadow: 0 1px 2px rgba(0,0,0,0.08) inset;
+}
+.nice-button:hover:enabled {
+    background-color: #F2F2F2;
+    border-color: rgba(0,0,0,0.15);
+}
+.nice-button.nice-button-primary:enabled {
+    background: linear-gradient(#50acfb, #358dd8);
+    border-color: #2b94e6;
+    color: #FFFFFF;
+}
+.nice-button.nice-button-primary:active:enabled {
+    box-shadow: 0 1px 2px rgba(0,0,0,0.2) inset;
+}
+.nice-button.nice-button-primary:hover:enabled {
+    background: linear-gradient(#5cb4ff, #4299e4);
+    border-color: #379ded;
+}
+.text-button {
+    font: 0.8em "Sans";
+    color: #676269;
+    padding: 5px 20px;
+    text-decoration: none;
+}
+.text-button.current {
+    border-bottom: 1px solid;
+}
+.text-button:disabled {
+    color: #AAAAAA;
+    cursor: not-allowed;
+}
+.text-button:hover:enabled {
+    color: #2C8EB8;
+}
+
+/* == Forms ================================================================= */
+input, textarea, select:not(.no-style) {
+    background-color: transparent;
+    border-color: #ABADB3 #DBDFE6 #E3E9EF #E2E3EA;
+    border-radius: 1px;
+    border-style: solid;
+    border-width: 1px;
+    color: #444;
+    font: 14px "Sans";
+    margin-bottom: 5px;
+    padding: 5px 0;
+    text-indent: 8px;
+    -webkit-transition: border-color 0.1s ease-out 0s;
+            transition: border-color 0.1s ease-out 0s;
+}
+input[type="submit"] {
+    text-indent: 0;
+}
+select:not(.no-style) {
+    text-indent: 2px;
+}
+input:hover {
+    border-color: #5794BF #B7D5EA #C7E2F1 #C5DAED;
+}
+input[type="date"] {
+    text-indent: 3px;
+}
+input[type="checkbox"] {
+    display:none;
+}
+input[type="checkbox"] + label:after {
+    content: "";
+    display: block;
+    width: 14px;
+    height: 14px;
+    margin: 2px 10px 4px 0;
+    background-repeat: no-repeat;
+    background-size: 19px auto;
+    background-position: 40% 25%;
+    cursor: pointer;
+    border-radius: 2px;
+    padding: 1px;
+    float: left;
+    border: 2px solid #899598;
+}
+input[type="checkbox"]:checked + label:after {
+    background-image: url(icon-sprite.svg#checked);
+    background-color: #52a5e2;
+    border: none;
+    padding: 3px;
+    background-size: 21px auto;
+}
+input[type="checkbox"]:checked:disabled + label:after {
+    background-color: #ddd;
+}
+label, .input-set {
+    display: inline-block;
+    margin-bottom: 4px;
+    width: 100%;
+    text-align: left;
+}
+label > span:first-of-type,
+.input-set > span:first-of-type {
+    box-sizing: border-box;
+    display: inline-block;
+}
+label input,
+.input-set input,
+label textarea,
+.input-set textarea,
+.input-set select,
+label select {
+    box-sizing: border-box;
+    width: 100%;
+}
+label .text-error,
+.input-set .text-error {
+    display: inline-block;
+    width: 100%;
+}
+.form-buttons {
+    text-align: left;
+}
+.form-buttons .nice-button {
+    min-width: 85px;
+}
+
+/* == App =================================================================== */
+.view { float: right; padding: 1px; margin: 10px 15px 0 0; right: 185px; }
+.view > div:first-of-type, .view > form:first-of-type {
+    padding: 15px; }
+.view h2 { margin: -46px 0 22px 0; font-size: 21px; }
+nav { float: right; max-width: 200px; padding: 1px; margin-top: 10px; }
+nav > h1 { float: left; margin: -35px 0 0 0; letter-spacing: -1px;
+    font-size: 20px; }
+nav > div { padding: 15px 15px 0; }
+nav > div:first-of-type { padding-top: 15px; }
+nav > div:last-of-type { padding-bottom: 15px; }
+nav h3 { margin-top: 0; font-size: 18px; }
+nav h4 { margin: 0; font-size: 16px; }
+/**/
+.light { background-color: rgba(255,255,255,0.85); color: rgb(62,62,62); }
+.light .view { background: linear-gradient(#939393,#bababa) }
+.light .view > div:first-of-type, .light .view > form:first-of-type {
+    background-color: #fff; }
+.light nav { background: linear-gradient(#939393,#bababa) }
+.light nav > div { background-color: #fff; }

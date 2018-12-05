@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Insane frontend tests</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" href="tests/test-vendor.bundle.css">
+    </head>
+    <body>
+        <div id="qunit"></div>
+        <div id="qunit-fixture"></div>
+        <!-- Inferno, Inferno.createElement -->
+        <script src="tests/vendor-inferno.bundle.min.js"></script>
+        <script>
+            window.preact = Inferno;
+            window.$el = Inferno.createElement;
+            window.History = {createHashHistory: () => {}};
+            window.preactRouter = () => {};
+        </script>
+        <!-- QUnit, Inferno.TestUtils, sinon -->
+        <script src="tests/test-vendor.bundle.js"></script>
+        <script src="tests/main.js" type="module"></script>
+    </body>
+</html>
