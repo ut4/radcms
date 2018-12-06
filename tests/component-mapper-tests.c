@@ -94,6 +94,9 @@ testComponentArrayToJsonStringifiesComponentArray() {
 
 void
 componentMapperTestsRun() {
+    /*
+     * Before
+     */
     char errBuf[ERR_BUF_LEN]; errBuf[0] = '\0';
     Db db;
     dbInit(&db);
@@ -101,9 +104,15 @@ componentMapperTestsRun() {
         dbDestruct(&db);
         return;
     }
+    /*
+     * The tests
+     */
     testComponentInsertValidatesItsInput(&db, errBuf);
     testComponentInsertInsertsTheData(&db, errBuf);
     testComponentArrayToJsonStringifiesComponentArray();
+    /*
+     * After
+     */
     dbDestruct(&db);
 }
 

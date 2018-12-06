@@ -106,7 +106,9 @@ testPageRenderPopulatesPageData(duk_context *ctx, char *err) {
 
 void
 websiteTestsRun() {
-    //
+    /*
+     * Before
+     */
     char errBuf[ERR_BUF_LEN]; errBuf[0] = '\0';
     duk_context *ctx = myDukCreate(errBuf);
     ASSERT(ctx != NULL, "Failed to create duk_context");
@@ -114,10 +116,14 @@ websiteTestsRun() {
     vTreeScriptBindingsInit(ctx);
     dataQueryScriptBindingsInit(ctx);
     websiteScriptBindingsInit(ctx, errBuf);
-    //
+    /*
+     * The tests
+     */
     testWebsiteGeneratePassesEachPageToWriteFn(ctx, errBuf);
     testPageRenderPopulatesPageData(ctx, errBuf);
-    //
+    /*
+     * After
+     */
     duk_destroy_heap(ctx);
 }
 

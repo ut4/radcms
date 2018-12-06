@@ -121,6 +121,9 @@ testDbSelectAllBindingsHandlesErrors(Db *db, duk_context *ctx, char *err) {
 
 void
 commonScriptBindingsTestsRun() {
+    /*
+     * Before
+     */
     char errBuf[ERR_BUF_LEN]; errBuf[0] = '\0';
     Db db;
     dbInit(&db);
@@ -132,11 +135,15 @@ commonScriptBindingsTestsRun() {
     ASSERT(ctx != NULL, "Failed to create duk_context\n");
     commonScriptBindingsInit(ctx, &db, errBuf);
     ASSERT(strlen(errBuf) == 0, "%s", errBuf);
-    //
+    /*
+     * The tests
+     */
     testAppAddRouteAddsFunctions(ctx, errBuf);
     testDbSelectAllBindingsSelectsStuffFromDb(&db, ctx, errBuf);
     testDbSelectAllBindingsHandlesErrors(&db, ctx, errBuf);
-    //
+    /*
+     * After
+     */
     dbDestruct(&db);
     duk_destroy_heap(ctx);
 }

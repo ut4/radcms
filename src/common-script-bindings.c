@@ -40,9 +40,17 @@ commonScriptBindingsInit(duk_context *ctx, Db *db, char* err) {
     duk_put_prop_string(ctx, -2, "modSearch");         // [obj]
     duk_pop(ctx);                                      // []
     // global.Request
-    static const char *globalCode = "function Response(statusCode, body) {"
-        "if (statusCode < 100) throw new TypeError(\"Not valid status code: \", statusCode);"
-        "this.statusCode = statusCode; this.body = body || \"\";"
+    static const char *globalCode = "function Response(statusCode, body, headers) {"
+        "if (statusCode < 100) throw new TypeError('Not valid status code: ', statusCode);"
+        "this.statusCode = statusCode;"
+        "this.body = body || '';"
+        "if (headers) {"
+            "for (var key in headers) {"
+                "if (typeof headers[key] != 'string')"
+                    "throw new TypeError('A header value must be a string.');"
+            "}"
+            "this.headers = headers;"
+        "} else this.headers = {};"
     "}";
     if (!dukUtilsCompileAndRunStrGlobal(ctx, globalCode, "insane-common.js", err)) return;
     // threadStash._dbCPtr

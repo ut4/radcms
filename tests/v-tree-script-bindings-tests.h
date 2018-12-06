@@ -3,7 +3,7 @@
 
 #include "testlib.h"
 #include "test-utils.h" // testUtilsCompileAndCache()
-#include "../../include/data-query-script-bindings.h"
+#include "../../include/data-query-script-bindings.h" // global.documentDataConfig
 #include "../../include/v-tree-script-bindings.h"
 
 void

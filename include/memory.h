@@ -31,6 +31,7 @@
 
 #define STR_CONCAT(toVarName, a, b) \
     size_t l = strlen(a) + strlen(b) + 1; \
+    ASSERT(l <= 2048, "strlen(strConcatResult) %lu > 2048", l); \
     char toVarName[l]; \
     snprintf(toVarName, l, "%s%s", a, b)
 

@@ -87,20 +87,19 @@ collectElemProps(duk_context *ctx) {// [str obj str] (arguments of vTree.registe
     }
     duk_enum(ctx, 1, DUK_ENUM_OWN_PROPERTIES_ONLY); // [str obj str enum]
     ElemProp *out = NULL;
-    unsigned numPushed = 0;
-    if (duk_next(ctx, 3, true)) {
-        out = elemPropCreate(duk_require_string(ctx, -2),// [str obj str enum key val]
+    if (duk_next(ctx, 3, true)) {                   // [str obj str enum key val]
+        out = elemPropCreate(duk_require_string(ctx, -2),
                              duk_require_string(ctx, -1));
         ElemProp *prev = out;
-        numPushed += 2;
-        while (duk_next(ctx, 3, true)) {
+        duk_pop_n(ctx, 2);                          // [str obj str enum]
+        while (duk_next(ctx, 3, true)) {            // [str obj str enum key val]
             prev->next = elemPropCreate(duk_require_string(ctx, -2),
                                         duk_require_string(ctx, -1));
             prev = prev->next;
-            numPushed += 2;
+            duk_pop_n(ctx, 2);                      // [str obj str enum]
         }
     }
-    duk_pop_n(ctx, numPushed + 1);                  // [str obj str]
+    duk_pop(ctx);                                   // [str obj str]
     return out;
 }
 

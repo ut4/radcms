@@ -91,13 +91,13 @@ webAppFreeProps(WebApp *this) {
 }
 
 bool
-webAppExecModuleScripts(WebApp *this, const char **scriptRouteFiles,
+webAppExecModuleScripts(WebApp *this, const char **fileNames,
                         duk_context *ctx, char *err) {
     bool success = false;
-    unsigned l = sizeof(scriptRouteFiles) / sizeof(const char**);
+    unsigned l = sizeof(fileNames) / sizeof(const char**);
     ASSERT(l < 80, "Refusing to compile %u module files.\n", l);
     for (unsigned i; i < l; ++i) {
-        const char *fName = scriptRouteFiles[i];
+        const char *fName = fileNames[i];
         ASSERT(strlen(fName) < 64, "strlen(scriptRouteFileName) %lu", strlen(fName));
         STR_CONCAT(filePath, this->appPath, fName);
         char *code = fileIOReadFile(filePath, err);

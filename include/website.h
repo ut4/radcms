@@ -10,7 +10,7 @@
 #include "file-io.h"
 #include "file-watcher.h"
 #include "memory.h"
-#include "static-data.h" // getSampleData()
+#include "static-data.h" // getSampleData, getDbSchemaSql()()
 #include "site-graph.h"
 #include "v-tree-script-bindings.h" // vTreeScriptBindingsExecLayout|Template()
 #include "v-tree.h" // VTree, DocumentDataConfig

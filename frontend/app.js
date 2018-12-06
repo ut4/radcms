@@ -1,24 +1,35 @@
-import {myFetch} from './common.js';
+import services from './common-services.js';
 
 class AddComponentView extends preact.Component {
-    constructor() {
-        super();
+    constructor(props) {
+        super(props);
         this.state = {
             name: '',
-            componentType: null,
-            componentTypes: [
-                {id: 1, name: 'Generic', props: [
-                    {id: 1, name: 'content', type: 'richtext'}
-                ]},
-                {id: 2, name: 'Article', props: [
-                    {id: 2, name: 'title', type: 'text'},
-                    {id: 3, name: 'body', type: 'richtext'}
-                ]}
-            ]
+            selectedCmpType: null,
+            componentTypes: []
         };
-        this.state.componentType = this.state.componentTypes[0];
+        services.myFetch('/api/component-type').then(
+            res => {
+                let newState = {
+                    componentTypes: JSON.parse(res.responseText),
+                    selectedCmpType: null
+                };
+                if (props.initialComponentTypeName) {
+                    newState.selectedCmpType = newState.componentTypes.find(
+                        t => t.name === props.initialComponentTypeName
+                    );
+                }
+                if (!newState.selectedCmpType) {
+                    newState.selectedCmpType = newState.componentTypes[0];
+                }
+                this.setState(newState);
+            },
+            () => { toast('Failed to fetch component types. Maybe refreshing ' +
+                          'the page will help?', 'error'); }
+        );
     }
     render() {
+        if (!this.state.selectedCmpType) return null;
         return $el('form', {className: 'view', onSubmit: e => this.confirm(e)},
             $el('div', null, [
                 $el('h2', null, 'Add component'),
@@ -33,13 +44,13 @@ class AddComponentView extends preact.Component {
                 $el('label', null, [
                     $el('span', null, 'Tyyppi'),
                     $el('select', {
-                        value: this.state.componentTypes.indexOf(this.state.componentType),
+                        value: this.state.componentTypes.indexOf(this.state.selectedCmpType),
                         onChange: e => this.receiveCmpTypeSelection(e)
                     }, this.state.componentTypes.map((type, i) =>
                         $el('option', {value: i}, type.name)
                     ))
                 ]),
-                this.getInputElsForCmpTypeProps(this.state.componentType.props),
+                this.getInputElsForCmpTypeProps(this.state.selectedCmpType.props),
                 $el('div', {className: 'form-buttons'},
                     $el('input', {
                         value: 'Add',
@@ -48,7 +59,7 @@ class AddComponentView extends preact.Component {
                     }, null),
                     $el('button', {
                         type: 'button',
-                        onClick: e => { myRedirect('/') },
+                        onClick: () => { myRedirect('/') },
                         className: 'text-button'
                     }, 'Cancel')
                 )
@@ -57,24 +68,23 @@ class AddComponentView extends preact.Component {
     }
     confirm(e) {
         e.preventDefault();
-        myFetch('/api/component', {
+        services.myFetch('/api/component', {
             method: 'POST',
             headers: {'Content-Type': 'application/x-www-form-urlencoded'},
             data: 'name=' + encodeURIComponent(this.state.name) +
                    '&json=' + encodeURIComponent(collectCmpKeyVals(this.state)) +
-                   '&componentTypeId=' + encodeURIComponent(this.state.componentType.id)
-        }, req => {
-            console.log('success');
+                   '&componentTypeId=' + encodeURIComponent(this.state.selectedCmpType.id)
+        }).then(() => {
             myRedirect('/', true);
-        }, req => {
-            console.log('error',req);
+        }, () => {
+            toast('Failed to create the component.', 'error');
         });
     }
     receiveInputValue(e) {
         this.setState({[e.target.name]: e.target.value});
     }
     receiveCmpTypeSelection(e) {
-        this.setState({componentType: this.state.componentTypes[e.target.value]});
+        this.setState({selectedCmpType: this.state.componentTypes[e.target.value]});
     }
     getInputElsForCmpTypeProps(props) {
         var inputEls = []
@@ -85,7 +95,7 @@ class AddComponentView extends preact.Component {
             }
             inputEls.push($el('label', null, [
                 $el('span', '', prop.name.toUpperCase()[0] + prop.name.substr(1)),
-                $el(prop.name == 'richtext' ? 'textarea' : 'input', {
+                $el(prop.contentType == 'richtext' ? 'textarea' : 'input', {
                     name: stateKey,
                     value: this.state[stateKey],
                     onChange: e => this.receiveInputValue(e)
@@ -97,7 +107,7 @@ class AddComponentView extends preact.Component {
 }
 function collectCmpKeyVals(state) {
     var out = {};
-    state.componentType.props.forEach(prop => {
+    state.selectedCmpType.props.forEach(prop => {
         out[prop.name] = state['val-' + prop.name];
     });
     return JSON.stringify(out);
@@ -312,4 +322,4 @@ class InsaneControlPanel extends preact.Component {
     }
 }
 
-export {app, InsaneControlPanel};
+export {app, InsaneControlPanel, AddComponentView};

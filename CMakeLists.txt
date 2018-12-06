@@ -52,6 +52,7 @@ target_link_libraries(insane ${INSN_DEP_LIBS})
 # == tests.exe =================================================================
 set(TESTS_FILES
     tests/common-script-bindings-tests.h tests/common-script-bindings-tests.c
+    tests/component-handlers-tests.h tests/component-handlers-tests.c
     tests/component-mapper-tests.h tests/component-mapper-tests.c
     tests/test-utils.h tests/test-utils.c
     tests/testlib.h

@@ -7,22 +7,8 @@ testUtilsSetupTestDb(Db *db, char *err) {
         return false;
     }
     char *sqliteErr = NULL;
-    if (sqlite3_exec(db->conn,
-"create table websites ("
-"    `id` INTEGER PRIMARY KEY AUTOINCREMENT,"
-"    `graph` text"
-");"
-"create table componentTypes ("
-"    `id` integer primary key autoincrement,"
-"    `name` varchar(64)"
-");"
-"create table components ("
-"    `id` integer primary key autoincrement,"
-"    `name` varchar(32) not null,"
-"    `json` json,"
-"    componentTypeId integer not null,"
-"    foreign key (componentTypeId) references componentTypes(id)"
-");", NULL, NULL, &sqliteErr) != SQLITE_OK) {
+    if (sqlite3_exec(db->conn, getDbSchemaSql(), NULL, NULL,
+                     &sqliteErr) != SQLITE_OK) {
         printToStdErr("Failed to create the test database: %s.\n", sqliteErr);
         sqlite3_free(sqliteErr);
         return false;
@@ -48,4 +34,25 @@ testUtilsCompileAndCache(duk_context *ctx, const char *code, char *key, char *er
     duk_put_prop_string(ctx, -2, key);
     duk_pop(ctx); // thread stash
     return true;
+}
+
+char*
+testUtilsGetNormalizedCwd() {
+    char cwd[PATH_MAX];
+    if (!getcwd(cwd, sizeof(cwd))) {
+        perror("getcwd() error");
+        return NULL;
+    }
+    return fileIOGetNormalizedPath(cwd);
+}
+
+bool
+testUtilsReadAndRunGlobal(duk_context *ctx, char *appPath, const char *fileName,
+                          char *err) {
+    STR_CONCAT(filePath, appPath, fileName);
+    char *code = fileIOReadFile(filePath, err);
+    if (!code) return false;
+    bool success = dukUtilsCompileAndRunStrGlobal(ctx, code, fileName, err);
+    FREE_STR(code);
+    return success;
 }

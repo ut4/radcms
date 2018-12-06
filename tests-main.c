@@ -1,4 +1,5 @@
 #include "tests/common-script-bindings-tests.h"
+#include "tests/component-handlers-tests.h"
 #include "tests/component-mapper-tests.h"
 #include "tests/data-query-tests.h"
 #include "tests/file-io-tests.h"
@@ -28,6 +29,7 @@ int main(int argc, const char* argv[]) {
     const char *testSuiteName = argv[1];
     int testSuitesRan = 0;
     testSuitesRan += runIf(testSuiteName, "commonScriptBindings", commonScriptBindingsTestsRun);
+    testSuitesRan += runIf(testSuiteName, "componentHandlers", componentHandlersTestsRun);
     testSuitesRan += runIf(testSuiteName, "componentMapper", componentMapperTestsRun);
     testSuitesRan += runIf(testSuiteName, "dataQueries", dataQueryTestsRun);
     testSuitesRan += runIf(testSuiteName, "fileIO", fileIOTestsRun);

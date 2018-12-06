@@ -110,7 +110,6 @@ testWebsiteGenerateProcessesPagesWithNoDbcs(Db *db, char *err) {
     duk_context *ctx = myDukCreate(err);
     ASSERT(ctx != NULL, "Failed to create duk_context\n"); \
     vTreeScriptBindingsInit(ctx);
-    dataQueryScriptBindingsInit(ctx);
     //
     Website site;
     websiteInit(&site);
@@ -149,12 +148,7 @@ static bool mapTestDataRow(sqlite3_stmt *stmt, void *myPtr) {
 
 static void
 testWebsiteInstallWritesAllData(Db *db, char *err) {
-    char cwd[PATH_MAX];
-    if (!getcwd(cwd, sizeof(cwd))) {
-        perror("getcwd() error");
-        return;
-    }
-    char *dir = fileIOGetNormalizedPath(cwd);
+    char *dir = testUtilsGetNormalizedCwd();
     //
     Website site;
     websiteInit(&site);
@@ -224,6 +218,9 @@ testWebsiteSaveToDbUpdatesTheDatabase(Db *db, char *err) {
 
 void
 websiteMapperTestsRun() {
+    /*
+     * Before
+     */
     char errBuf[ERR_BUF_LEN]; errBuf[0] = '\0';
     Db db;
     dbInit(&db);
@@ -231,12 +228,18 @@ websiteMapperTestsRun() {
         dbDestruct(&db);
         return;
     }
+    /*
+     * The tests
+     */
     testWebsiteFetchAndParseSiteGraphDoesWhatItSays(&db, errBuf);
     testWebsiteFetchBatchesFetchesDataForDDCWithOneBatch(&db, errBuf);
     testWebsiteFetchBatchesFetchesDataForDDCWithMultipleBatches(&db, errBuf);
     testWebsiteGenerateProcessesPagesWithNoDbcs(&db, errBuf);
     testWebsiteInstallWritesAllData(&db, errBuf);
     testWebsiteSaveToDbUpdatesTheDatabase(&db, errBuf);
+    /*
+     * After
+     */
     dbDestruct(&db);
 }
 

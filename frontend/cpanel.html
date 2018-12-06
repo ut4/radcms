@@ -16,6 +16,10 @@
                 window.parent.location.hash = '#' + to;
                 if (doReload) window.parent.location.reload();
             };
+            window.toast = (message, level) => {
+                if (level === 'error') console.error(message);
+                else console.info(message);
+            };
             /*
              * Require all components
              */

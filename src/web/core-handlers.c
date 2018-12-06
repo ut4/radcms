@@ -39,51 +39,59 @@ coreHandlersHandleScriptRouteRequest(void *myPtr, void *myDataPtr, const char *m
     ASSERT(duk_get_top(ctx) == 0, "Duk stack not empty.");
     duk_push_thread_stash(ctx, ctx);                // [stash]
     commonScriptBindingsPushApp(ctx, -1);           // [stash app]
-    duk_get_prop_string(ctx, -1, "_routes");        // [stash app arr]
+    duk_get_prop_string(ctx, -1, "_routes");        // [stash app routes]
     duk_size_t l = duk_get_length(ctx, -1);
     for (duk_size_t i = 0; i < l; ++i) {
-        duk_get_prop_index(ctx, -1, i);             // [stash app arr fn]
-        duk_push_string(ctx, method);               // [stash app arr fn str]
-        duk_push_string(ctx, url);                  // [stash app arr fn str str]
+        duk_get_prop_index(ctx, -1, i);             // [stash app routes fn]
+        duk_push_string(ctx, method);               // [stash app routes fn str]
+        duk_push_string(ctx, url);                  // [stash app routes fn str str]
         /*
          * Call the matcher function.
          */
-        if (duk_pcall(ctx, 2) != DUK_EXEC_SUCCESS) {// [stash app arr fn|null|err]
-            dukUtilsPutDetailedError(ctx, -1, url, err); // [stash app arr]
+        if (duk_pcall(ctx, 2) != DUK_EXEC_SUCCESS) {// [stash app routes fn|null|err]
+            dukUtilsPutDetailedError(ctx, -1, url, err); // [stash app routes]
             goto done;
         }
         /*
          * Wasn't interested.
          */
         if (!duk_is_function(ctx, -1)) {
-            duk_pop(ctx);                           // [stash app arr]
+            duk_pop(ctx);                           // [stash app routes]
             continue;
         }
         /*
          * Got a handler function, call it.
          */
-        if (duk_pcall(ctx, 0) != DUK_EXEC_SUCCESS) {// [stash app arr obj|err]
-            dukUtilsPutDetailedError(ctx, -1, url, err); // [stash app arr]
+        if (duk_pcall(ctx, 0) != DUK_EXEC_SUCCESS) {// [stash app routes obj|err]
+            dukUtilsPutDetailedError(ctx, -1, url, err); // [stash app routes]
             goto done;
         }
         /*
          * Got a response.
          */
         bool didReturnObj = duk_is_object(ctx, -1);
-        if (didReturnObj && duk_get_prop_string(ctx, -1, "statusCode")) { // [stash app arr obj number]
+        if (didReturnObj && duk_get_prop_string(ctx, -1, "statusCode")) {
             out = duk_to_uint(ctx, -1);
-            duk_get_prop_string(ctx, -2, "body");   // [stash app arr obj number str]
+            duk_get_prop_string(ctx, -2, "body");   // [stash app routes res statcode body]
             const char *body = duk_to_string(ctx, -1);
             *response = MHD_create_response_from_buffer(strlen(body), (void*)body,
                                                         MHD_RESPMEM_MUST_COPY);
-            duk_pop_n(ctx, 3);                      // [stash app arr]
+            duk_pop_n(ctx, 2);                      // [stash app routes res]
+            duk_get_prop_string(ctx, -1, "headers");// [stash app routes res headers]
+            duk_enum(ctx, -1, DUK_ENUM_OWN_PROPERTIES_ONLY); // [stash app routes res headers enum]
+            while (duk_next(ctx, -1, true)) {       // [stash app routes res headers enum key val]
+                MHD_add_response_header(*response, duk_get_string(ctx, -2),
+                                        duk_get_string(ctx, -1));
+                duk_pop_n(ctx, 2);
+            }                                       // [stash app routes res headers enum]
+            duk_pop_n(ctx, 3);                      // [stash app routes]
         } else {
-            if (didReturnObj) duk_pop(ctx);         // [stash app arr]
+            if (didReturnObj) duk_pop(ctx);         // [stash app routes]
             putError("A handler must return new Response(<statusCode>, <bodyStr>)");
         }
         break;
     }
-                                                    // [stash app arr]
+                                                    // [stash app routes]
     done:
     duk_pop_n(ctx, 3);                              // []
     return out;
