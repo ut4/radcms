@@ -23,36 +23,31 @@ vTreeFreeProps(VTree *this) {
 unsigned
 vTreeCreateElemNode(VTree *this, const char *tagName, ElemProp *props,
                     NodeRefArray *children) {
-    unsigned newId;
-    if (children) {
-        ElemNode newNode = {.id = this->elemNodeCounter, .tagName=copyString(tagName),
-                            .props = props, .children = *children};
-        elemNodeArrayPush(&this->elemNodes, &newNode);
-        newId = newNode.id;
-    } else {
-        ElemNode newNode = {.id = this->elemNodeCounter, .tagName=copyString(tagName),
-                            .props = props};
-        nodeRefArrayReset(&newNode.children);
-        elemNodeArrayPush(&this->elemNodes, &newNode);
-        newId = newNode.id;
-    }
-    this->elemNodeCounter++;
+    elemNodeArrayPush(&this->elemNodes, (ElemNode){
+        .id = this->elemNodeCounter,
+        .tagName = copyString(tagName),
+        .props = props,
+        .children = children ? *children : (NodeRefArray){0, 0, NULL}
+    });
+    this->elemNodeCounter += 1;
     this->calculatedRenderCharCount += strlen(tagName)*2 + strlen("<></>");
     ElemProp *cur = props;
     while (cur) {
         this->calculatedRenderCharCount += strlen(cur->key) + strlen(cur->val) + strlen(" =\"\"");
         cur = cur->next;
     }
-    return vTreeUtilsMakeNodeRef(TYPE_ELEM, newId);
+    return vTreeUtilsMakeNodeRef(TYPE_ELEM, this->elemNodeCounter - 1);
 }
 
 unsigned
 vTreeCreateTextNode(VTree *this, const char *text) {
-    TextNode newStr = {.id=this->textNodeCounter, .chars=copyString(text)};
-    this->textNodeCounter++;
-    textNodeArrayPush(&this->textNodes, &newStr);
+    textNodeArrayPush(&this->textNodes, (TextNode){
+        .id = this->textNodeCounter,
+        .chars = copyString(text)
+    });
     this->calculatedRenderCharCount += strlen(text);
-    return vTreeUtilsMakeNodeRef(TYPE_TEXT, newStr.id);
+    this->textNodeCounter++;
+    return vTreeUtilsMakeNodeRef(TYPE_TEXT, this->textNodeCounter - 1);
 }
 
 static char*
@@ -194,76 +189,35 @@ textNodeFreeProps(TextNode *this) {
 }
 
 void elemNodeArrayInit(ElemNodeArray *this) {
-    this->length = 0;
-    this->capacity = 0;
-    this->values = NULL;
+    arrayInit(ElemNode, 0);
 }
-void elemNodeArrayPush(ElemNodeArray *this, ElemNode *value) {
-    if (this->capacity < this->length + 1) {
-        unsigned oldCapacity = this->capacity;
-        this->capacity = ARRAY_INCREASE_CAPACITY(oldCapacity);
-        this->values = ARRAY_GROW(this->values, ElemNode,
-                                  oldCapacity, this->capacity);
-    }
-    this->values[this->length] = *value;
-    this->length++;
+void elemNodeArrayPush(ElemNodeArray *this, ElemNode value) {
+    arrayPush(ElemNode, value);
 }
 void elemNodeArrayFreeProps(ElemNodeArray *this) {
-    if (this->length) {
-        for (unsigned i = 0; i < this->length; ++i) {
-            elemNodeFreeProps(&this->values[i]);
-        }
-        FREE_ARR(ElemNode, this->values, this->capacity);
+    for (unsigned i = 0; i < this->length; ++i) {
+        elemNodeFreeProps(&this->values[i]);
     }
-    elemNodeArrayInit(this);
+    arrayFreeProps(ElemNode);
 }
 
 void textNodeArrayInit(TextNodeArray *this) {
-    this->length = 0;
-    this->capacity = 1;
-    this->values = NULL;
-    this->values = ARRAY_GROW(this->values, TextNode, 0, this->capacity);
+    arrayInit(TextNode, 1);
 }
-void textNodeArrayPush(TextNodeArray *this, TextNode *value) {
-    if (this->capacity < this->length + 1) {
-        unsigned oldCapacity = this->capacity;
-        this->capacity = ARRAY_INCREASE_CAPACITY(oldCapacity);
-        this->values = ARRAY_GROW(this->values, TextNode,
-                                  oldCapacity, this->capacity);
-    }
-    this->values[this->length] = *value;
-    this->length++;
+void textNodeArrayPush(TextNodeArray *this, TextNode value) {
+    arrayPush(TextNode, value);
 }
 void textNodeArrayFreeProps(TextNodeArray *this) {
     for (unsigned i = 0; i < this->length; ++i) textNodeFreeProps(&this->values[i]);
-    FREE_ARR(TextNode, this->values, this->capacity);
-    this->length = 0;
-    this->capacity = 0;
-    this->values = NULL;
+    arrayFreeProps(TextNode);
 }
 
 void nodeRefArrayInit(NodeRefArray *this) {
-    this->length = 0;
-    this->capacity = 1;
-    this->values = NULL;
-    this->values = ARRAY_GROW(this->values, unsigned, 0, this->capacity);
+    arrayInit(unsigned, 1);
 }
 void nodeRefArrayPush(NodeRefArray *this, unsigned value) {
-    if (this->capacity < this->length + 1) {
-        unsigned oldCapacity = this->capacity;
-        this->capacity = ARRAY_INCREASE_CAPACITY(oldCapacity);
-        this->values = ARRAY_GROW(this->values, unsigned, oldCapacity,
-                                  this->capacity);
-    }
-    this->values[this->length] = value;
-    this->length++;
-}
-void nodeRefArrayReset(NodeRefArray *this) {
-    this->length = 0;
-    this->capacity = 0;
-    this->values = NULL;
+    arrayPush(unsigned, value);
 }
 void nodeRefArrayFreeProps(NodeRefArray *this) {
-    FREE_ARR(unsigned, this->values, this->capacity);
-    nodeRefArrayReset(this);
+    arrayFreeProps(unsigned);
 }

@@ -14,10 +14,10 @@
 #include "timer.h" // timerStart() etc.
 
 typedef enum {
-    FW_ACTION_ADDED,
-    FW_ACTION_MODIFIED,
-    FW_ACTION_DELETED,
-    FW_ACTION_OTHER,
+    FW_EVENT_ADDED,
+    FW_EVENT_MODIFIED,
+    FW_EVENT_DELETED,
+    FW_EVENT_OTHER,
 } FWEventType;
 
 typedef void (*onFWEvent)(FWEventType type, const char *fileName, void *myPtr);

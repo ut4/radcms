@@ -147,11 +147,11 @@ siteGraphGetTemplate(SiteGraph *this, int idx) {
 
 Template*
 siteGraphAddTemplate(SiteGraph *this, char *fileName) {
-    Template newLayout;
-    newLayout.fileName = fileName;
-    newLayout.sampleUrl = NULL;
-    newLayout.exists = true;
-    templateArrayPush(&this->templates, &newLayout);
+    templateArrayPush(&this->templates, (Template){
+        .fileName = fileName,
+        .sampleUrl = NULL,
+        .exists = true
+    });
     return &this->templates.values[this->templates.length - 1];
 }
 
@@ -218,26 +218,14 @@ pageFreeProps(Page *this) {
 }
 
 void templateArrayInit(TemplateArray *this) {
-    this->length = 0;
-    this->capacity = 0;
-    this->values = NULL;
+    arrayInit(Template, 0);
 }
-void templateArrayPush(TemplateArray *this, Template *value) {
-    if (this->capacity < this->length + 1) {
-        unsigned oldCapacity = this->capacity;
-        this->capacity = ARRAY_INCREASE_CAPACITY(oldCapacity);
-        this->values = ARRAY_GROW(this->values, Template,
-                                  oldCapacity, this->capacity);
-    }
-    this->values[this->length] = *value;
-    this->length++;
+void templateArrayPush(TemplateArray *this, Template value) {
+    arrayPush(Template, value);
 }
 void templateArrayFreeProps(TemplateArray *this) {
-    if (this->length) {
-        for (unsigned i = 0; i < this->length; ++i) {
-            FREE_STR(this->values[i].fileName);
-        }
-        FREE_ARR(Template, this->values, this->capacity);
+    for (unsigned i = 0; i < this->length; ++i) {
+        FREE_STR(this->values[i].fileName);
     }
-    templateArrayInit(this);
+    arrayFreeProps(Template);
 }

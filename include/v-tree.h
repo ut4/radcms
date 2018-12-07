@@ -1,6 +1,7 @@
 #ifndef insn_vTree_h
 #define insn_vTree_h
 
+#include "array.h"
 #include "memory.h"
 
 /*
@@ -155,14 +156,13 @@ elemNodeGetProp(ElemNode *this, const char *key);
 ElemProp *elemPropCreate(const char *key, const char *value);
 
 void nodeRefArrayInit(NodeRefArray *this);
-void nodeRefArrayReset(NodeRefArray *this);
 void nodeRefArrayPush(NodeRefArray *this, unsigned value);
 void nodeRefArrayFreeProps(NodeRefArray *this);
 void elemNodeArrayInit(ElemNodeArray *this);
-void elemNodeArrayPush(ElemNodeArray *this, ElemNode *value);
+void elemNodeArrayPush(ElemNodeArray *this, ElemNode value);
 void elemNodeArrayFreeProps(ElemNodeArray *this);
 void textNodeArrayInit(TextNodeArray *this);
-void textNodeArrayPush(TextNodeArray *this, TextNode *value);
+void textNodeArrayPush(TextNodeArray *this, TextNode value);
 void textNodeArrayFreeProps(TextNodeArray *this);
 
 #endif

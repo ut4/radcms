@@ -34,7 +34,7 @@ fileWatcherWatch(FileWatcher *this, const char *path, fileNameMatcher matcherFn,
     char buf[BUF_LEN];
     const struct inotify_event *event;
     timerInit();
-    unsigned lastAction = 0;
+    unsigned lastEvent = 0;
     while (true) {
         int len = read(fd, buf, BUF_LEN);
         if (len < 0) {
@@ -43,30 +43,30 @@ fileWatcherWatch(FileWatcher *this, const char *path, fileNameMatcher matcherFn,
         }
         for (char *ptr = buf; ptr < buf + len; ptr += EVENT_SIZE + event->len) {
             event = (const struct inotify_event*)ptr;
-            unsigned incomingAction = FW_ACTION_OTHER;
+            unsigned incomingEvent = FW_EVENT_OTHER;
             if (event->mask & IN_CREATE) {
-                incomingAction = FW_ACTION_ADDED;
+                incomingEvent = FW_EVENT_ADDED;
             } else if (event->mask & IN_MODIFY) {
-                incomingAction = FW_ACTION_MODIFIED;
+                incomingEvent = FW_EVENT_MODIFIED;
             } else if (event->mask & IN_DELETE) {
-                incomingAction = FW_ACTION_DELETED;
+                incomingEvent = FW_EVENT_DELETED;
             } else {
                 printToStdErr("Warn: Unsupported fw event type.\n");
                 continue;
             }
             //
-            if (incomingAction == lastAction &&
+            if (incomingEvent == lastEvent &&
                 timerGetTime() < MIN_TIME_BETWEEN_EVENTS) {
-                lastAction = incomingAction;
+                lastEvent = incomingEvent;
                 timerStart();
                 continue;
             }
             //
             if (matcherFn && !matcherFn(event->name)) continue;
             nanosleep(&fileLockWaitTime, NULL);
-            lastAction = incomingAction;
+            lastEvent = incomingEvent;
             timerStart();
-            this->onEventFn(incomingAction, event->name, myPtr);
+            this->onEventFn(incomingEvent, event->name, myPtr);
         }
     }
     //

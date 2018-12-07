@@ -1,9 +1,5 @@
 #include "v-tree-script-bindings-tests.h"
 
-static void
-populateComponent(unsigned id, const char *name, const char *json,
-                  unsigned dbcId, Component *out);
-
 #define beforeEach() \
     char errBuf[ERR_BUF_LEN]; errBuf[0] = '\0'; \
     duk_context *ctx = myDukCreate(errBuf); \
@@ -373,12 +369,20 @@ testExecLayoutTmplProvidesFetchOnesInVariables() {
     dataBatchConfigSetWhere(dbc2, "gos=bar");
     dataBatchConfigSetTmplVarName(dbc2, "var2");
     //
-    Component component1;
-    Component component2;
-    populateComponent(1, "foo", "{\"prop\":2.5}", dbc1->id, &component1);
-    populateComponent(2, "bar", "{\"fus\":4.5}", dbc2->id, &component2);
-    componentArrayPush(&cmps, &component1);
-    componentArrayPush(&cmps, &component2);
+    componentArrayPush(&cmps, (Component){
+        .id = 1,
+        .name = copyString("foo"),
+        .json = copyString("{\"prop\":2.5}"),
+        .componentTypeId = 0,
+        .dataBatchConfigId = dbc1->id
+    });
+    componentArrayPush(&cmps, (Component){
+        .id = 2,
+        .name = copyString("bar"),
+        .json = copyString("{\"fus\":4.5}"),
+        .componentTypeId = 0,
+        .dataBatchConfigId = dbc2->id
+    });
     // 2. Call
     char *layoutTmpl = "function (vTree, pageData, var1, var2) {"
                            "vTree.registerElement('fos', null, "
@@ -421,18 +425,34 @@ testExecLayoutTmplProvidesFetchAllsInVariables() {
     DataBatchConfig *dbc2 = documentDataConfigAddBatch(&ddc, "Bar", isFetchAll);
     dataBatchConfigSetTmplVarName(dbc2, "bars");
     //
-    Component foo1;
-    Component foo2;
-    Component bar1;
-    Component bar2;
-    populateComponent(1, "foo", "{\"prop\":5.5}", dbc1->id, &foo1);
-    populateComponent(2, "bar", "{\"prop\":6.6}", dbc1->id, &foo2);
-    populateComponent(3, "baz", "{\"fus\":7.7}", dbc2->id, &bar1);
-    populateComponent(4, "naz", "{\"fus\":8.8}", dbc2->id, &bar2);
-    componentArrayPush(&cmps, &foo1);
-    componentArrayPush(&cmps, &foo2);
-    componentArrayPush(&cmps, &bar1);
-    componentArrayPush(&cmps, &bar2);
+    componentArrayPush(&cmps, (Component){
+        .id = 1,
+        .name = copyString("foo"),
+        .json = copyString("{\"prop\":5.5}"),
+        .componentTypeId = 0,
+        .dataBatchConfigId = dbc1->id
+    });
+    componentArrayPush(&cmps, (Component){
+        .id = 2,
+        .name = copyString("bar"),
+        .json = copyString("{\"prop\":6.6}"),
+        .componentTypeId = 0,
+        .dataBatchConfigId = dbc1->id
+    });
+    componentArrayPush(&cmps, (Component){
+        .id = 3,
+        .name = copyString("baz"),
+        .json = copyString("{\"fus\":7.7}"),
+        .componentTypeId = 0,
+        .dataBatchConfigId = dbc2->id
+    });
+    componentArrayPush(&cmps, (Component){
+        .id = 4,
+        .name = copyString("naz"),
+        .json = copyString("{\"fus\":8.8}"),
+        .componentTypeId = 0,
+        .dataBatchConfigId = dbc2->id
+    });
     // 2. Call
     char *layoutTmpl = "function (vTree, pageData, foos, bars) {"
                            "vTree.registerElement('fos', null, "
@@ -479,16 +499,6 @@ vTreeScriptBindingsTestsRun() {
     testExecLayoutRunsMultipleLayoutsWithoutConflict();
     testExecLayoutTmplProvidesFetchOnesInVariables();
     testExecLayoutTmplProvidesFetchAllsInVariables();
-}
-
-static void
-populateComponent(unsigned id, const char *name, const char *json,
-                  unsigned dbcId, Component *out) {
-    componentInit(out);
-    out->id = id;
-    out->name = copyString(name);
-    out->json = copyString(json);
-    out->dataBatchConfigId = dbcId;
 }
 
 #undef beforeEach

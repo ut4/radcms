@@ -13,7 +13,7 @@ strReaderReadInt(StrReader *this) {
     unsigned n = 0;
     while (strReaderIsDigit(*this->current)) {
         uintBuf[n] = strReaderAdvance(this);
-        n++;
+        n += 1;
     }
     if (*this->current == this->END_OF_VAL) (void)strReaderAdvance(this);
     return (unsigned)atoi(uintBuf);
@@ -42,6 +42,6 @@ strReaderIsDigit(char c) {
 
 char
 strReaderAdvance(StrReader *this) {
-    this->current++;
+    this->current += 1;
     return this->current[-1];
 }

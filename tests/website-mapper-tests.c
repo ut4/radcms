@@ -95,52 +95,6 @@ testWebsiteFetchBatchesFetchesDataForDDCWithMultipleBatches(Db *db, char *err) {
         );
 }
 
-static bool logPageWriteCall(char *renderedHtml, Page *page, Website *site,
-                             void *myPtr, char *err) {
-    TextNodeArray *log = myPtr;
-    TextNode stored;
-    stored.id = 0;
-    stored.chars = copyString(renderedHtml);
-    textNodeArrayPush(log, &stored);
-    return true;
-}
-
-static void
-testWebsiteGenerateProcessesPagesWithNoDbcs(Db *db, char *err) {
-    duk_context *ctx = myDukCreate(err);
-    ASSERT(ctx != NULL, "Failed to create duk_context\n"); \
-    vTreeScriptBindingsInit(ctx);
-    //
-    Website site;
-    websiteInit(&site);
-    site.db = db;
-    site.dukCtx = ctx;
-    TextNodeArray log;
-    textNodeArrayInit(&log);
-    Template *l1 = siteGraphAddTemplate(&site.siteGraph, copyString("a.js"));
-    Template *l2 = siteGraphAddTemplate(&site.siteGraph, copyString("b.js"));
-    (void)siteGraphAddPage(&site.siteGraph, 1, copyString("/"), 0, 0);
-    (void)siteGraphAddPage(&site.siteGraph, 2, copyString("/foo"), 0, 1);
-    if (!testUtilsCompileAndCache(ctx,
-        "function(){return function(v){v.registerElement('p',null,'a'); };}",
-        l1->fileName, err)) { printToStdErr("%s", err); goto done; }
-    if (!testUtilsCompileAndCache(ctx,
-        "function(){return function(v){v.registerElement('p',null,'b'); };}",
-        l2->fileName, err)) { printToStdErr("%s", err); goto done; }
-    //
-    websiteGenerate(&site, logPageWriteCall, &log, err);
-    //
-    assertThatOrGoto(log.length == 2, done, "Should pass each page to writeFn");
-    assertThatOrGoto(log.values[0].chars != NULL, done, "renderedHtml #0 != NULL");
-    assertStrEquals(log.values[0].chars, "<p>a</p>");
-    assertThatOrGoto(log.values[1].chars != NULL, done, "renderedHtml #1 != NULL");
-    assertStrEquals(log.values[1].chars, "<p>b</p>");
-    done:
-        duk_destroy_heap(ctx);
-        websiteFreeProps(&site);
-        textNodeArrayFreeProps(&log);
-}
-
 static bool mapTestDataRow(sqlite3_stmt *stmt, void *myPtr) {
     *((char**)myPtr) = copyString((const char*)sqlite3_column_text(stmt, 0));
     return true;
@@ -234,7 +188,6 @@ websiteMapperTestsRun() {
     testWebsiteFetchAndParseSiteGraphDoesWhatItSays(&db, errBuf);
     testWebsiteFetchBatchesFetchesDataForDDCWithOneBatch(&db, errBuf);
     testWebsiteFetchBatchesFetchesDataForDDCWithMultipleBatches(&db, errBuf);
-    testWebsiteGenerateProcessesPagesWithNoDbcs(&db, errBuf);
     testWebsiteInstallWritesAllData(&db, errBuf);
     testWebsiteSaveToDbUpdatesTheDatabase(&db, errBuf);
     /*

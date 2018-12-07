@@ -33,11 +33,10 @@ fileWatcherWatch(FileWatcher *this, const char *dir, fileNameMatcher matcherFn,
         return false;
     }
     DWORD bytesReturned = 0;
-    DWORD lastIncomingAction = 0;
     char fileName[MAX_PATH + 1];
     const struct timespec fileLockWaitTime = {0, FILE_LOCK_WAIT_TIME};
     timerInit();
-    unsigned lastAction = 0;
+    unsigned lastEvent = 0;
     while (true) {
         if (ReadDirectoryChangesW(
             handle,               // hDirectory
@@ -49,22 +48,22 @@ fileWatcherWatch(FileWatcher *this, const char *dir, fileNameMatcher matcherFn,
             NULL,                 // lpOverlapped
             NULL                  // lpCompletionRoutine
         ) != 0 && bytesReturned != 0) {
-            unsigned incomingAction = FW_ACTION_OTHER;
+            unsigned incomingEvent = FW_EVENT_OTHER;
             DWORD incomingDword = notifyBuffer[0].Action;
             if (incomingDword == FILE_ACTION_ADDED) {
-                incomingAction = FW_ACTION_ADDED;
+                incomingEvent = FW_EVENT_ADDED;
             } else if (incomingDword == FILE_ACTION_MODIFIED) {
-                incomingAction = FW_ACTION_MODIFIED;
+                incomingEvent = FW_EVENT_MODIFIED;
             } else if (incomingDword == FILE_ACTION_REMOVED) {
-                incomingAction = FW_ACTION_DELETED;
+                incomingEvent = FW_EVENT_DELETED;
             } else {
                 printToStdErr("Warn: Unsupported fw event type.\n");
                 continue;
             }
             //
-            if (incomingAction == lastAction &&
+            if (incomingEvent == lastEvent &&
                 timerGetTime() < MIN_TIME_BETWEEN_EVENTS) {
-                lastAction = incomingAction;
+                lastEvent = incomingEvent;
                 timerStart();
                 continue;
             }
@@ -72,9 +71,9 @@ fileWatcherWatch(FileWatcher *this, const char *dir, fileNameMatcher matcherFn,
             unicodeFileNameToMb(&notifyBuffer[0], fileName);
             if (matcherFn && !matcherFn(fileName)) continue;
             nanosleep(&fileLockWaitTime, NULL);
-            lastAction = incomingAction;
+            lastEvent = incomingEvent;
             timerStart();
-            this->onEventFn(incomingAction, fileName, myPtr);
+            this->onEventFn(incomingEvent, fileName, myPtr);
         } else {
             putError("Failed to ReadDirectoryChangesW(): %lu.\n", GetLastError());
             return false;

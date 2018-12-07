@@ -15,6 +15,7 @@ include_directories(insane ${INSN_DEP_INCLUDES})
 
 # == insane.exe ================================================================
 set(SOURCE_FILES_COMMON
+    include/array.h
     include/common.h
     include/common-script-bindings.h src/common-script-bindings.c
     include/component-mapper.h src/component-mapper.c

@@ -192,13 +192,13 @@ mapSiteGraphResultRow(sqlite3_stmt *stmt, void *myPtr) {
 static bool
 mapDataBatchesRow(sqlite3_stmt *stmt, void *myPtr) {
     ComponentArray *arr = myPtr;
-    Component newComponent;
-    componentInit(&newComponent);
-    newComponent.id = (unsigned)sqlite3_column_int(stmt, 0);
-    newComponent.name = copyString((const char*)sqlite3_column_text(stmt, 1));
-    newComponent.json = copyString((const char*)sqlite3_column_text(stmt, 2));
-    newComponent.dataBatchConfigId = (unsigned)sqlite3_column_int(stmt, 3);
-    componentArrayPush(arr, &newComponent);
+    componentArrayPush(arr, (Component){
+        .id = (unsigned)sqlite3_column_int(stmt, 0),
+        .name = copyString((const char*)sqlite3_column_text(stmt, 1)),
+        .json = copyString((const char*)sqlite3_column_text(stmt, 2)),
+        .componentTypeId = 0,
+        .dataBatchConfigId = (unsigned)sqlite3_column_int(stmt, 3)
+    });
     return true;
 }
 

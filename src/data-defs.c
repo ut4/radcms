@@ -43,22 +43,12 @@ componentArrayToJson(ComponentArray *this) {
 }
 
 void componentArrayInit(ComponentArray *this) {
-    this->length = 0;
-    this->capacity = 0;
-    this->values = NULL;
+    arrayInit(Component, 0);
 }
-void componentArrayPush(ComponentArray *this, Component *value) {
-    if (this->capacity < this->length + 1) {
-        unsigned oldCapacity = this->capacity;
-        this->capacity = ARRAY_INCREASE_CAPACITY(oldCapacity);
-        this->values = ARRAY_GROW(this->values, Component,
-                                  oldCapacity, this->capacity);
-    }
-    this->values[this->length] = *value;
-    this->length++;
+void componentArrayPush(ComponentArray *this, Component value) {
+    arrayPush(Component, value);
 }
 void componentArrayFreeProps(ComponentArray *this) {
     for (unsigned i = 0; i < this->length; ++i) componentFreeProps(&this->values[i]);
-    FREE_ARR(Component, this->values, this->capacity);
-    componentArrayInit(this);
+    arrayFreeProps(Component);
 }

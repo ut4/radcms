@@ -2,6 +2,7 @@
 #define insn_siteGraph_h
 
 #include <math.h> // log10
+#include "array.h"
 #include "hashmap.h"
 #include "str-reader.h" // strReaderRead*() etc.
 #include "v-tree.h" // TextNodeArray
@@ -110,7 +111,7 @@ siteGraphDiffMake(SiteGraph *this, VTree *vTree, void *dukCtx, void *toMyPtr,
                   char *err);
 
 void templateArrayInit(TemplateArray *this);
-void templateArrayPush(TemplateArray *this, Template *value);
+void templateArrayPush(TemplateArray *this, Template value);
 void templateArrayFreeProps(TemplateArray *this);
 
 #endif

@@ -7,11 +7,11 @@ void
 websiteHandleFWEvent(FWEventType type, const char *fileName, void *myPtr) {
     Website *this = myPtr;
     char *err = this->errBuf;
-    if (type == FW_ACTION_ADDED) {
+    if (type == FW_EVENT_ADDED) {
         //
-    } else if (type == FW_ACTION_MODIFIED) {
+    } else if (type == FW_EVENT_MODIFIED) {
         handleFileModifyEvent(fileName, this, err);
-    } else if (type == FW_ACTION_DELETED) {
+    } else if (type == FW_EVENT_DELETED) {
         //
     }
 }

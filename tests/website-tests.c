@@ -130,9 +130,6 @@ websiteTestsRun() {
 static bool logPageWriteCall(char *renderedHtml, Page *page, Website *site,
                              void *myPtr, char *err) {
     TextNodeArray *log = myPtr;
-    TextNode stored;
-    stored.id = 0;
-    stored.chars = copyString(renderedHtml);
-    textNodeArrayPush(log, &stored);
+    textNodeArrayPush(log, (TextNode){.id = 0, .chars = copyString(renderedHtml)});
     return true;
 }
