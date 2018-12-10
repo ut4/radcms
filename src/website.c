@@ -184,12 +184,6 @@ pageRender(Website *this, int layoutIdx, const char *url,
 }
 
 static bool
-mapSiteGraphResultRow(sqlite3_stmt *stmt, void *myPtr) {
-    *((char**)myPtr) = copyString((const char*)sqlite3_column_text(stmt, 0));
-    return true;
-}
-
-static bool
 mapDataBatchesRow(sqlite3_stmt *stmt, void *myPtr) {
     ComponentArray *arr = myPtr;
     componentArrayPush(arr, (Component){
@@ -199,6 +193,12 @@ mapDataBatchesRow(sqlite3_stmt *stmt, void *myPtr) {
         .componentTypeId = 0,
         .dataBatchConfigId = (unsigned)sqlite3_column_int(stmt, 3)
     });
+    return true;
+}
+
+static bool
+mapSiteGraphResultRow(sqlite3_stmt *stmt, void *myPtr) {
+    *((char**)myPtr) = copyString((const char*)sqlite3_column_text(stmt, 0));
     return true;
 }
 

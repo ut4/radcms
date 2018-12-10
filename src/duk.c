@@ -95,7 +95,7 @@ void
 dukUtilsPutDetailedError(duk_context *ctx, int errorObjIdAt,
                          const char *fileName, char *err) {
     if (duk_get_prop_string(ctx, errorObjIdAt, "stack")) {
-        putError("Problem at %s: %s", fileName, duk_safe_to_string(ctx, -1));
+        putError("Problem at %s: %s\n", fileName, duk_safe_to_string(ctx, -1));
     }
     duk_pop_n(ctx, 2); // error, stacktrace|undefined
 }

@@ -2,8 +2,8 @@
 
 unsigned
 coreHandlersHandleStaticFileRequest(void *myPtr, void *myDataPtr, const char *method,
-                                    const char *url, struct MHD_Response **response,
-                                    char *err) {
+                                    const char *url, struct MHD_Connection *conn,
+                                    struct MHD_Response **response, char *err) {
     if (strcmp(method, "GET") != 0 || strstr(url, "/frontend/") != url) return 0;
     if (strstr(url, "..")) return MHD_HTTP_NOT_FOUND;
     char *ext = strrchr(url, '.');
@@ -31,8 +31,8 @@ coreHandlersHandleStaticFileRequest(void *myPtr, void *myDataPtr, const char *me
 
 unsigned
 coreHandlersHandleScriptRouteRequest(void *myPtr, void *myDataPtr, const char *method,
-                                     const char *url, struct MHD_Response **response,
-                                     char *err) {
+                                     const char *url, struct MHD_Connection *conn,
+                                     struct MHD_Response **response, char *err) {
     if (strstr(url, "/api/") != url) return 0;
     unsigned out = MHD_HTTP_INTERNAL_SERVER_ERROR;
     duk_context *ctx = myPtr;

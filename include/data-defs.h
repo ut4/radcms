@@ -13,9 +13,6 @@ typedef struct {
     unsigned dataBatchConfigId; // id of the DataBatchConfig that this data belongs to
 } Component;
 
-#define componentMake(id, name, json, componentTypeId, dataBatchConfigId) \
-    (Component){id, name, json, componentTypeId, dataBatchConfigId}
-
 void
 componentInit(Component *this);
 

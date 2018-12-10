@@ -5,6 +5,7 @@
 #include "../file-io.h" // fileIO*()
 #include "../common.h" // stdbool etc.
 #include "../duk.h" // dukUtilsCompileAndRunStrGlobal()
+#include "../events.h" // eventsInit()
 #include "../memory.h" // ALLOCATE etc.
 #include "../site-ini.h" // SiteIni etc.
 #include "web-app-common.h" // handlerFn, microhttpd etc.

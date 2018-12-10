@@ -75,7 +75,7 @@ class AddComponentView extends preact.Component {
                    '&json=' + encodeURIComponent(collectCmpKeyVals(this.state)) +
                    '&componentTypeId=' + encodeURIComponent(this.state.selectedCmpType.id)
         }).then(() => {
-            myRedirect('/', true);
+            myRedirect('/?rescan=1', true);
         }, () => {
             toast('Failed to create the component.', 'error');
         });
@@ -143,10 +143,10 @@ class ArticleListDirectiveWebUIImpl extends preact.Component {
             ])
         }).concat([
             $el('a', {
-                href:'#/add-component',
+                href:'#/add-component/Article',
                 onClick: e => {
                     e.preventDefault();
-                    myRedirect('/add-component');
+                    myRedirect('/add-component/Article');
                 }
             }, 'Add article')
         ]);
@@ -302,7 +302,7 @@ class InsaneControlPanel extends preact.Component {
                         this.setState({className: !isIndex ? 'open' : ''});
                     }
                 }, [
-                    $el(AddComponentView, {path: '/add-component'}, null),
+                    $el(AddComponentView, {path: '/add-component/:initialComponentTypeName?'}, null),
                     $el(EditComponentView, {path: '/edit-component'}, null)
                 ].concat(...this.currentPageDirectiveImpls.map(dir=>dir.getRoutes()))
             )

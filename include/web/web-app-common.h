@@ -17,8 +17,8 @@
  *                     MHD_HTTP_* | >1 == accept, respond immediately
  */
 typedef unsigned (*handlerFn)(void *myPtr, void *myDataPtr, const char *method,
-                              const char *url, struct MHD_Response **response,
-                              char *err);
+                              const char *url, struct MHD_Connection *conn,
+                              struct MHD_Response **response, char *err);
 
 struct FormDataHandlers;
 typedef struct FormDataHandlers FormDataHandlers;

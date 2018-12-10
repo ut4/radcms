@@ -68,6 +68,7 @@ webAppInit(WebApp *this, const char *rootDir, Website *site, char *err) {
         putError("Failed to getcwd().\n");
         return;
     }
+    eventsInit();
     this->appPath = copyString(cwd);
     siteIniInit(&this->ini);
     this->ini.rootDir = this->rootDir;
@@ -79,6 +80,7 @@ webAppInit(WebApp *this, const char *rootDir, Website *site, char *err) {
 
 void
 webAppFreeProps(WebApp *this) {
+    eventsFreeProps();
     if (this->rootDir) FREE_STR(this->rootDir);
     if (this->appPath) FREE_STR(this->appPath);
     siteIniFreeProps(&this->ini);
@@ -148,6 +150,7 @@ webAppReadOrCreateSiteIni(WebApp *this, const char *contents, char *err) {
 void*
 webAppStartFileWatcher(void *myPtr) {
     WebApp *app = myPtr;
+    websiteFWHandlersInit(app->site);
     fileWatcherInit(&app->fileWatcher, websiteHandleFWEvent);
     fileWatcherWatch(&app->fileWatcher, app->rootDir, websiteCheckIsFWFileAcceptable,
                      app->site, app->errBuf);
@@ -178,8 +181,8 @@ webAppRespond(void *myPtr, struct MHD_Connection *conn, const char *url,
         unsigned statusCode = MHD_HTTP_NOT_FOUND;
         for (unsigned i = 0; i < app->handlerCount; ++i) {
             RequestHandler *h = &app->handlers[i];
-            unsigned ret = h->handlerFn(h->myPtr, NULL, method, url, &response,
-                                        app->errBuf);
+            unsigned ret = h->handlerFn(h->myPtr, NULL, method, url, conn,
+                                        &response, app->errBuf);
             // Wasn't the right handler
             if (ret == 0) continue;
             // Was MHD_YES, setup *perConnPtr
@@ -209,7 +212,8 @@ webAppRespond(void *myPtr, struct MHD_Connection *conn, const char *url,
     }
     RequestHandler *h = connInfo->reqHandler;
     connInfo->statusCode = h->handlerFn(h->myPtr, h->formDataHandlers->myPtr,
-                                        method, url, &response, app->errBuf);
+                                        method, url, conn, &response,
+                                        app->errBuf);
     return respond(connInfo->statusCode, conn, response, app->errBuf);
 }
 

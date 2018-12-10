@@ -12,8 +12,8 @@
  */
 unsigned
 componentHandlersHandleComponentAddRequest(void *myPtr, void *myDataPtr, const char *method,
-                                           const char *url, struct MHD_Response **response,
-                                           char *err);
+                                           const char *url, struct MHD_Connection *conn,
+                                           struct MHD_Response **response, char *err);
 
 FormDataHandlers*
 componentHandlersGetComponentAddDataHandlers();

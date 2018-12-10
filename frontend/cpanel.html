@@ -12,9 +12,12 @@
              * Store globals
              */
             window.$el = preact.createElement;
-            window.myRedirect = (to, doReload) => {
-                window.parent.location.hash = '#' + to;
-                if (doReload) window.parent.location.reload();
+            window.myRedirect = (to, full) => {
+                if (!full) {
+                    window.parent.location.hash = '#' + to;
+                } else {
+                    window.parent.location.href = window.parent.location.origin + to;
+                }
             };
             window.toast = (message, level) => {
                 if (level === 'error') console.error(message);
@@ -32,7 +35,12 @@
             }, null), document.getElementById("app"));
             //
             var parentUrlPcs = window.parent.location.href.split('#');
-            if (parentUrlPcs[1]) window.location.hash = parentUrlPcs[1];
+            if (parentUrlPcs[0].indexOf('?rescan=1') > -1) {
+                window.parent.history.replaceState(null, window.parent.document.title,
+                    window.parent.location.href.replace('?rescan=1', ''));
+            } else if (parentUrlPcs[1]) {
+                window.location.hash = parentUrlPcs[1];
+            }
             //
             window.parent.addEventListener('hashchange', e => {
                 if (e.newURL !== e.oldURL) window.location.replace(

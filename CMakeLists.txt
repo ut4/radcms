@@ -24,6 +24,7 @@ set(SOURCE_FILES_COMMON
     include/data-query-script-bindings.h src/data-query-script-bindings.c
     include/db.h src/db.c
     include/duk.h src/duk.c
+    include/events.h src/events.c
     include/file-io.h src/file-io.c
     include/hashmap.h src/hashmap.c
     include/memory.h src/memory.c

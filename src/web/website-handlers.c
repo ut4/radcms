@@ -7,13 +7,16 @@ static void makeCurrentPageDataJson(SiteGraph *siteGraph, VTree *vTree,
 
 unsigned
 websiteHandlersHandlePageRequest(void *myPtr, void *myDataPtr, const char *method,
-                                 const char *url, struct MHD_Response **response,
-                                 char *err) {
+                                 const char *url, struct MHD_Connection *conn,
+                                 struct MHD_Response **response, char *err) {
     if (strcmp(method, "GET") != 0) return MHD_HTTP_NOT_FOUND;
     Website *site = myPtr;
     Page *p = siteGraphFindPage(&site->siteGraph, (char*)url);
     if (!p) {
         return MHD_HTTP_NOT_FOUND;
+    }
+    if (MHD_lookup_connection_value(conn, MHD_GET_ARGUMENT_KIND, "rescan")) {
+        emitEvent("sitegraphRescanRequested", p);
     }
     const char *pageDataJson;
     char *renderedHtml = pageRender(site, p->layoutIdx, url,
@@ -57,8 +60,8 @@ writePageToFile(char *renderedHtml, Page *page, Website *site, void *myPtr,
 
 unsigned
 websiteHandlersHandleGenerateRequest(void *myPtr, void *myDataPtr, const char *method,
-                                     const char *url, struct MHD_Response **response,
-                                     char *err) {
+                                     const char *url, struct MHD_Connection *conn,
+                                     struct MHD_Response **response, char *err) {
     if (strcmp(method, "POST") != 0 || strcmp(url, "/api/website/generate") != 0) return 0;
     Website *site = myPtr;
     timerInit();
