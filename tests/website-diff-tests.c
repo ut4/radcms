@@ -29,7 +29,7 @@ testSiteGraphDiffMakeSpotsNewLinks() {
     }
     //
     char *rendered = pageRender(&site, p->layoutIdx, "/", siteGraphDiffMake,
-                                &diff, errBuf);
+                                &diff, NULL, errBuf);
     if (!rendered) { printToStdErr("Failed to render the test layout.\n"); goto done; }
     else { FREE_STR(rendered); }
     assertThatOrGoto(diff.newPages != NULL, done, "Sanity diff.newPages != NULL");

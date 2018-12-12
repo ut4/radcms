@@ -34,7 +34,7 @@ performRescan(Website *this, const char *url, int layoutIdx, char *err) {
     SiteGraphDiff diff;
     siteGraphDiffInit(&diff);
     char *rendered = pageRender(this, layoutIdx, url, siteGraphDiffMake, &diff,
-                                err);
+                                NULL, err);
     if (!rendered) goto done;
     FREE_STR(rendered);
     success = true;

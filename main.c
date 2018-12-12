@@ -94,10 +94,10 @@ int main(int argc, const char* argv[]) {
         .myPtr=&website, .formDataHandlers=componentHandlersGetComponentAddDataHandlers()};
     app.handlers[1] = (RequestHandler){.handlerFn=coreHandlersHandleStaticFileRequest,
         .myPtr=app.appPath, .formDataHandlers=NULL};
-    app.handlers[2] = (RequestHandler){.handlerFn=coreHandlersHandleScriptRouteRequest,
-        .myPtr=dukCtx, .formDataHandlers=NULL};
-    app.handlers[3] = (RequestHandler){.handlerFn=websiteHandlersHandleGenerateRequest,
+    app.handlers[2] = (RequestHandler){.handlerFn=websiteHandlersHandleGenerateRequest,
         .myPtr=&website, .formDataHandlers=NULL};
+    app.handlers[3] = (RequestHandler){.handlerFn=coreHandlersHandleScriptRouteRequest,
+        .myPtr=dukCtx, .formDataHandlers=NULL};
     app.handlers[4] = (RequestHandler){.handlerFn=websiteHandlersHandlePageRequest,
         .myPtr=&website, .formDataHandlers=NULL};
     pthread_t fileWatcherThread;

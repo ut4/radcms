@@ -1,4 +1,4 @@
-function myFetch(url, options = {method: 'GET', headers: {}}) {
+function myFetch(url, options = {}) {
     const req = new XMLHttpRequest();
     return new Promise((resolve, reject) => {
         req.onreadystatechange = () => {
@@ -9,8 +9,8 @@ function myFetch(url, options = {method: 'GET', headers: {}}) {
                 reject(req);
             }
         };
-        req.open(options.method, url, true);
-        Object.keys(options.headers).forEach(key => {
+        req.open(options.method || 'GET', url, true);
+        Object.keys(options.headers || {}).forEach(key => {
             req.setRequestHeader(key, options.headers[key]);
         });
         req.send(options.data);

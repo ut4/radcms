@@ -8,8 +8,7 @@ testWebsiteGeneratePassesEachPageToWriteFn(duk_context *ctx, char *err) {
     Website site;
     websiteInit(&site);
     site.dukCtx = ctx;
-    TextNodeArray log;
-    textNodeArrayInit(&log);
+    StrTube log = strTubeMake();
     Template *l1 = siteGraphAddTemplate(&site.siteGraph, copyString("a.js"));
     Template *l2 = siteGraphAddTemplate(&site.siteGraph, copyString("b.js"));
     (void)siteGraphAddPage(&site.siteGraph, 1, copyString("/"), 0, 0);
@@ -21,16 +20,19 @@ testWebsiteGeneratePassesEachPageToWriteFn(duk_context *ctx, char *err) {
         "function(){return function(v){v.registerElement('p',null,'b'); };}",
         l2->fileName, err)) { printToStdErr("%s", err); goto done; }
     //
-    websiteGenerate(&site, logPageWriteCall, &log, err);
+    unsigned numWrites = websiteGenerate(&site, logPageWriteCall, &log, NULL, err);
+    assertIntEqualsOrGoto(numWrites, 2, done);
     //
-    assertThatOrGoto(log.length == 2, done, "Should pass each page to writeFn");
-    assertThatOrGoto(log.values[0].chars != NULL, done, "renderedHtml #0 != NULL");
-    assertStrEquals(log.values[0].chars, "<p>a</p>");
-    assertThatOrGoto(log.values[1].chars != NULL, done, "renderedHtml #1 != NULL");
-    assertStrEquals(log.values[1].chars, "<p>b</p>");
+    StrTubeReader reader = strTubeReaderMake(&log);
+    char* first = strTubeReaderNext(&reader);
+    assertThatOrGoto(first != NULL, done, "renderedHtml #0 != NULL");
+    assertStrEquals(first, "<p>a</p>");
+    char *second = strTubeReaderNext(&reader);
+    assertThatOrGoto(second != NULL, done, "renderedHtml #1 != NULL");
+    assertStrEquals(second, "<p>b</p>");
     done:
         websiteFreeProps(&site);
-        textNodeArrayFreeProps(&log);
+        strTubeFreeProps(&log);
 }
 
 static void
@@ -83,7 +85,7 @@ testPageRenderPopulatesPageData(duk_context *ctx, char *err) {
     //
     char *actualDataStr = NULL;
     char *rendered = pageRender(&site, p->layoutIdx, "/", storePageDataToStr,
-                                &actualDataStr, err);
+                                &actualDataStr, NULL, err);
     assertThatOrGoto(rendered != NULL, done, "Should render succefully");
     FREE_STR(rendered);
     assertThatOrGoto(actualDataStr != NULL, done, "Sanity actualDataStr != NULL");
@@ -104,6 +106,30 @@ testPageRenderPopulatesPageData(duk_context *ctx, char *err) {
     #undef MOCK_COMPONENT2
 }
 
+static void
+testPageRenderPopulatesIssuesArgument(duk_context *ctx, char *err) {
+    //
+    Website site;
+    websiteInit(&site);
+    site.dukCtx = ctx;
+    Template *l = siteGraphAddTemplate(&site.siteGraph, copyString("foo.js"));
+    l->exists = false;
+    Page *p = siteGraphAddPage(&site.siteGraph, 1, copyString("/foo"), 0, 0);
+    //
+    StrTube issues = strTubeMake();
+    char *rendered = pageRender(&site, p->layoutIdx, "/foo", NULL, NULL, &issues, err);
+    assertThatOrGoto(rendered != NULL, done, "Should return succefully");
+    FREE_STR(rendered);
+    StrTubeReader reader = strTubeReaderMake(&issues);
+    char *first = strTubeReaderNext(&reader);
+    assertThatOrGoto(first != NULL, done, "Should add first warning");
+    assertStrEquals(first, "/foo>Layout file 'foo.js' doesn't exists yet.");
+    done:
+        duk_set_top(ctx, 0);
+        websiteFreeProps(&site);
+        strTubeFreeProps(&issues);
+}
+
 void
 websiteTestsRun() {
     /*
@@ -121,6 +147,7 @@ websiteTestsRun() {
      */
     testWebsiteGeneratePassesEachPageToWriteFn(ctx, errBuf);
     testPageRenderPopulatesPageData(ctx, errBuf);
+    testPageRenderPopulatesIssuesArgument(ctx, errBuf);
     /*
      * After
      */
@@ -129,7 +156,6 @@ websiteTestsRun() {
 
 static bool logPageWriteCall(char *renderedHtml, Page *page, Website *site,
                              void *myPtr, char *err) {
-    TextNodeArray *log = myPtr;
-    textNodeArrayPush(log, (TextNode){.id = 0, .chars = copyString(renderedHtml)});
+    strTubePush(myPtr, renderedHtml);
     return true;
 }

@@ -18,10 +18,10 @@ websiteHandlersHandlePageRequest(void *myPtr, void *myDataPtr, const char *metho
     if (MHD_lookup_connection_value(conn, MHD_GET_ARGUMENT_KIND, "rescan")) {
         emitEvent("sitegraphRescanRequested", p);
     }
-    const char *pageDataJson;
+    const char *pageDataJson = NULL;
     char *renderedHtml = pageRender(site, p->layoutIdx, url,
                                     makeCurrentPageDataJson, &pageDataJson,
-                                    err);
+                                    NULL, err);
     if (renderedHtml) {
         injectCPanelIframeAndCurrentPageData(&renderedHtml, pageDataJson);
     } else {
@@ -63,27 +63,49 @@ websiteHandlersHandleGenerateRequest(void *myPtr, void *myDataPtr, const char *m
                                      const char *url, struct MHD_Connection *conn,
                                      struct MHD_Response **response, char *err) {
     if (strcmp(method, "POST") != 0 || strcmp(url, "/api/website/generate") != 0) return 0;
-    Website *site = myPtr;
     timerInit();
     timerStart();
-    if (!websiteGenerate(site, writePageToFile, NULL, err)) {
-        return MHD_HTTP_INTERNAL_SERVER_ERROR;
+    StrTube issues = strTubeMake();
+    Website *site = myPtr;
+    cJSON *json;
+    unsigned statusCode = MHD_HTTP_INTERNAL_SERVER_ERROR;
+    unsigned succefulWrites = websiteGenerate(site, writePageToFile, NULL,
+                                              &issues, err);
+    if (succefulWrites == 0) {
+        goto done;
     }
     double secsElapsed = timerGetTime();
-    double roundSecs = round(secsElapsed);
-    const char *tmpl = "Generated %d pages to '%sout' in %.6f secs.";
-    size_t messageLen = strlen(tmpl) - strlen("%d%s%.6f") +
-                        (log10(site->siteGraph.pages.size) + 1) +
-                        strlen(site->rootDir) +
-                        (roundSecs > 0.1 ? log10(roundSecs) + 1: 1) + 6 +
-                        1;
-    char *ret = ALLOCATE_ARR_NO_COUNT(char, messageLen);
-    snprintf(ret, messageLen, tmpl, site->siteGraph.pages.size, site->rootDir,
-             secsElapsed);
-    *response = MHD_create_response_from_buffer(strlen(ret), ret,
-                                                MHD_RESPMEM_MUST_FREE);
-    MHD_add_response_header(*response, "Content-Type", "text/html");
-    return MHD_HTTP_OK;
+    json = cJSON_CreateObject();
+    cJSON *issuesJson;
+    if (!json ||
+        !(issuesJson = cJSON_AddArrayToObject(json, "issues")) ||
+        !cJSON_AddStringToObject(json, "targetRoot", site->rootDir) ||
+        !cJSON_AddStringToObject(json, "targetDir", "out") ||
+        !cJSON_AddNumberToObject(json, "wrotePagesNum", succefulWrites) ||
+        !cJSON_AddNumberToObject(json, "tookSecs", secsElapsed) ||
+        !cJSON_AddNumberToObject(json, "totalPages", site->siteGraph.pages.size)) {
+        putError("Failed to build a json reponse.\n");
+        goto done;
+    }
+    StrTubeReader reader = strTubeReaderMake(&issues);
+    char *issueInfo = NULL;
+    while ((issueInfo = strTubeReaderNext(&reader))) {
+        cJSON *error = cJSON_CreateString(issueInfo);
+        if (!error) { putError("Failed to cJSON_CreateString()\n"); goto done; }
+        cJSON_AddItemToArray(issuesJson, error);
+    }
+    char *res = cJSON_PrintUnformatted(json);
+    if (res) statusCode = MHD_HTTP_OK;
+    //
+    done:
+    if (statusCode == MHD_HTTP_OK) {
+        *response = MHD_create_response_from_buffer(strlen(res), res,
+                                                    MHD_RESPMEM_MUST_FREE);
+        MHD_add_response_header(*response, "Content-Type", "application/json");
+    }
+    strTubeFreeProps(&issues);
+    if (json) cJSON_Delete(json);
+    return statusCode;
 }
 
 static void makeCurrentPageDataJson(SiteGraph *siteGraph, VTree *vTree,
@@ -127,16 +149,10 @@ injectCPanelIframeAndCurrentPageData(char **ptrToHtml, const char *pageDataJson)
     // Inserts <html><body>?|?|?...</body>
     memmove(startOfBody + injlen, startOfBody, strlen(startOfBody) + 1);
     // Replaces <body>?|?|?... -> <body>$a|?|?...
-    memcpy(startOfBody, a, lenA);
-    startOfBody += lenA;
+    STR_APPEND(startOfBody, a, lenA);
     // Replaces <body>$a|?|?... -> <body>$a|$b|?...
-    if (pageDataJson) {
-        memcpy(startOfBody, pageDataJson, lenB);
-    } else {
-        memcpy(startOfBody, (char[2]){'[', ']'}, lenB);
-    }
-    startOfBody += lenB;
+    STR_APPEND(startOfBody, pageDataJson ? pageDataJson : "[]", lenB);
     // Replaces <body>$a|$b|?... -> <body>$a|$b|$c...
-    memcpy(startOfBody, c, lenC);
+    STR_APPEND(startOfBody, c, lenC);
     *ptrToHtml = tmp;
 }

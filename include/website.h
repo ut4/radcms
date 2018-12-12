@@ -11,6 +11,7 @@
 #include "file-watcher.h"
 #include "memory.h"
 #include "static-data.h" // getSampleData, getDbSchemaSql()()
+#include "string.h" // StrTube
 #include "site-graph.h"
 #include "v-tree-script-bindings.h" // vTreeScriptBindingsExecLayout|Template()
 #include "v-tree.h" // VTree, DocumentDataConfig
@@ -43,8 +44,9 @@ websiteFetchBatches(Website *this, DocumentDataConfig *ddc, ComponentArray *to,
 typedef bool (*pageExportWriteFn)(char *renderedHtml, Page *page, Website *site,
                                   void *myPtr, char *err);
 
-bool
-websiteGenerate(Website *this, pageExportWriteFn writeFn, void *myPtr, char *err);
+unsigned
+websiteGenerate(Website *this, pageExportWriteFn writeFn, void *writeFnMyptr,
+                StrTube *issues, char *err);
 
 /**
  * Writes site.ini + data.db + $data->files to $this->rootDir.
@@ -67,6 +69,7 @@ typedef void (*renderInspectFn)(SiteGraph *siteGraph, VTree *vTree, void *dukCtx
  */
 char*
 pageRender(Website *this, int layoutIdx, const char *url,
-           renderInspectFn inspectFn, void *myPtr, char *err);
+           renderInspectFn inspectFn, void *inspectFnMyPtr, StrTube *errors,
+           char *err);
 
 #endif

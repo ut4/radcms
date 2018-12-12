@@ -1,6 +1,7 @@
 #ifndef insn_websiteHandlers_h
 #define insn_websiteHandlers_h
 
+#include <cJSON.h>
 #include "../events.h" // emitEvent()
 #include "../file-io.h" // fileIO*()
 #include "web-app-common.h" // microhttpd
@@ -18,7 +19,14 @@ websiteHandlersHandlePageRequest(void *myPtr, void *myDataPtr, const char *metho
                                  struct MHD_Response **response, char *err);
 
 /**
- * Responds to GET /api/website/generate.
+ * Responds to GET /api/website/generate. Example response {
+ *     wrotePagesNum: 5,
+ *     tookSecs: 0.002672617,
+ *     totalPages: 6,
+ *     targetRoot: '/some/path/',
+ *     targetDir: 'my/dir',
+ *     issues: ['/some-url>Some error.']
+ * }
  */
 unsigned
 websiteHandlersHandleGenerateRequest(void *myPtr, void *myDataPtr, const char *method,

@@ -66,24 +66,28 @@ websiteFetchBatches(Website *this, DocumentDataConfig *ddc, ComponentArray *to,
            to->length > 0;
 }
 
-bool
-websiteGenerate(Website *this, pageExportWriteFn writeFn, void *myPtr, char *err) {
+unsigned
+websiteGenerate(Website *this, pageExportWriteFn writeFn, void *writeFnMyptr,
+                StrTube *issues, char *err) {
     HashMapElPtr *ptr = this->siteGraph.pages.orderedAccess;
+    unsigned numSuccesfulWrites = 0;
     while (ptr) {
         Page *p = ptr->data;
-        char *rendered = pageRender(this, p->layoutIdx, p->url, NULL, NULL, err);
+        char *rendered = pageRender(this, p->layoutIdx, p->url, NULL, NULL,
+                                    issues, err);
         if (rendered) {
-            if (!writeFn(rendered, p, this, myPtr, err)) {
+            if (!writeFn(rendered, p, this, writeFnMyptr, err)) {
                 FREE_STR(rendered);
                 return false;
             }
             FREE_STR(rendered);
+            numSuccesfulWrites += 1;
         } else {
-            return false;
+            return numSuccesfulWrites;
         }
         ptr = ptr->next;
     }
-    return true;
+    return numSuccesfulWrites;
 }
 
 bool
@@ -139,8 +143,10 @@ websiteCacheTemplate(Website *this, const char *fileName, char *err) {
 
 char*
 pageRender(Website *this, int layoutIdx, const char *url,
-           renderInspectFn inspectFn, void *myPtr, char *err) {
-    #define NO_LAYOUT_PAGE "<html><body>Layout file '%s' doesn't exists yet.</body></html>"
+           renderInspectFn inspectFn, void *inspectFnMyPtr, StrTube *issues,
+           char *err) {
+    #define NO_LAYOUT_TMPL "Layout file '%s' doesn't exists yet."
+    #define NO_LAYOUT_PAGE "<html><body>"NO_LAYOUT_TMPL"</body></html>"
     Template *layout = siteGraphGetTemplate(&this->siteGraph, layoutIdx);
     ASSERT(layout != NULL, "Unknown layoutIdx %u.\n", layoutIdx);
     // User has added a link, but hasn't had the time to create a layout for it yet
@@ -151,6 +157,14 @@ pageRender(Website *this, int layoutIdx, const char *url,
                             1; // \0
         char *renderedHtml = ALLOCATE_ARR(char, messageLen);
         snprintf(renderedHtml, messageLen, NO_LAYOUT_PAGE, layout->fileName);
+        if (issues) {
+            char issue[strlen(url) +
+                       1 + // '>'
+                       strlen(NO_LAYOUT_TMPL) - 2 + strlen(layout->fileName) + // message
+                       1]; // '\0'
+            sprintf(issue, "%s>"NO_LAYOUT_TMPL, url, layout->fileName);
+            strTubePush(issues, issue);
+        }
         return renderedHtml;
     }
     duk_push_thread_stash(this->dukCtx, this->dukCtx);
@@ -173,13 +187,15 @@ pageRender(Website *this, int layoutIdx, const char *url,
         goto done;
     }
     renderedHtml = vTreeToHtml(&vTree, err);
-    if (inspectFn) inspectFn(&this->siteGraph, &vTree, this->dukCtx, myPtr, err);
+    if (inspectFn) inspectFn(&this->siteGraph, &vTree, this->dukCtx,
+                             inspectFnMyPtr, err);
     done:
     duk_pop(this->dukCtx); // thread stash
     vTreeFreeProps(&vTree);
     documentDataConfigFreeProps(&ddc);
     componentArrayFreeProps(&components);
     return renderedHtml;
+    #undef NO_LAYOUT_TMPL
     #undef NO_LAYOUT_PAGE
 }
 

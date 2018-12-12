@@ -1,6 +1,13 @@
 import services from './common-services.js';
+import {Form} from './common-components.js';
+import {WebsiteGenerateView} from './website-views.js';
 
 class AddComponentView extends preact.Component {
+    /**
+     * @param {Object} props {
+     *     initialComponentTypeName?: string;
+     * }
+     */
     constructor(props) {
         super(props);
         this.state = {
@@ -30,45 +37,34 @@ class AddComponentView extends preact.Component {
     }
     render() {
         if (!this.state.selectedCmpType) return null;
-        return $el('form', {className: 'view', onSubmit: e => this.confirm(e)},
-            $el('div', null, [
-                $el('h2', null, 'Add component'),
-                $el('label', null, [
-                    $el('span', null, 'Nimi'),
-                    $el('input', {
-                        name: 'name',
-                        value: this.state.name,
-                        onChange: e => this.receiveInputValue(e)
-                    }, null)
-                ]),
-                $el('label', null, [
-                    $el('span', null, 'Tyyppi'),
-                    $el('select', {
-                        value: this.state.componentTypes.indexOf(this.state.selectedCmpType),
-                        onChange: e => this.receiveCmpTypeSelection(e)
-                    }, this.state.componentTypes.map((type, i) =>
-                        $el('option', {value: i}, type.name)
-                    ))
-                ]),
-                this.getInputElsForCmpTypeProps(this.state.selectedCmpType.props),
-                $el('div', {className: 'form-buttons'},
-                    $el('input', {
-                        value: 'Add',
-                        type: 'submit',
-                        className: 'nice-button nice-button-primary'
-                    }, null),
-                    $el('button', {
-                        type: 'button',
-                        onClick: () => { myRedirect('/') },
-                        className: 'text-button'
-                    }, 'Cancel')
-                )
-            ])
-        );
+        return $el('div', {className: 'view'}, $el('div', null,
+            $el(Form, {onConfirm: e => this.confirm(e)},
+                [
+                    $el('h2', null, 'Add component'),
+                    $el('label', null, [
+                        $el('span', null, 'Nimi'),
+                        $el('input', {
+                            name: 'name',
+                            value: this.state.name,
+                            onChange: e => this.receiveInputValue(e)
+                        }, null)
+                    ]),
+                    $el('label', null, [
+                        $el('span', null, 'Tyyppi'),
+                        $el('select', {
+                            value: this.state.componentTypes.indexOf(this.state.selectedCmpType),
+                            onChange: e => this.receiveCmpTypeSelection(e)
+                        }, this.state.componentTypes.map((type, i) =>
+                            $el('option', {value: i}, type.name)
+                        ))
+                    ]),
+                    this.getInputElsForCmpTypeProps(this.state.selectedCmpType.props),
+                ]
+            )
+        ));
     }
     confirm(e) {
-        e.preventDefault();
-        services.myFetch('/api/component', {
+        return services.myFetch('/api/component', {
             method: 'POST',
             headers: {'Content-Type': 'application/x-www-form-urlencoded'},
             data: 'name=' + encodeURIComponent(this.state.name) +
@@ -222,6 +218,11 @@ const app = {
  * Main component.
  */
 class InsaneControlPanel extends preact.Component {
+    /**
+     * @param {Object} props {
+     *     currentPageData: Object;
+     * }
+     */
     constructor(props) {
         super(props);
         this.currentPageDirectiveImpls = [];
@@ -239,7 +240,7 @@ class InsaneControlPanel extends preact.Component {
                 $el('h1', null, 'InsaneCMS'),
                 $el('div', null, [
                     $el('button', {
-                        onclick: () => this.sendGenRequest(),
+                        onclick: () => myRedirect('/generate-website'),
                         className: 'nice-button nice-button-primary'
                     }, 'Generate'),
                     this.state.genMessage
@@ -303,7 +304,8 @@ class InsaneControlPanel extends preact.Component {
                     }
                 }, [
                     $el(AddComponentView, {path: '/add-component/:initialComponentTypeName?'}, null),
-                    $el(EditComponentView, {path: '/edit-component'}, null)
+                    $el(EditComponentView, {path: '/edit-component'}, null),
+                    $el(WebsiteGenerateView, {path: '/generate-website'}, null)
                 ].concat(...this.currentPageDirectiveImpls.map(dir=>dir.getRoutes()))
             )
         ]);
@@ -312,13 +314,6 @@ class InsaneControlPanel extends preact.Component {
         let visibleMenuItems = this.state.visibleMenuItems;
         visibleMenuItems[name] = !visibleMenuItems[name];
         this.setState({visibleMenuItems});
-    }
-    sendGenRequest() {
-        myFetch('/api/website/generate', {method: 'POST', data: 'a=b'}, req => {
-            this.setState({genMessage: req.responseText});
-        }, req => {
-            this.setState({genMessage: 'Fail: ' + req.responseText});
-        });
     }
 }
 

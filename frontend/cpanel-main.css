@@ -153,6 +153,7 @@ label .text-error,
 }
 .form-buttons {
     text-align: left;
+    margin-top: 15px;
 }
 .form-buttons .nice-button {
     min-width: 85px;
@@ -162,7 +163,7 @@ label .text-error,
 .view { float: right; padding: 1px; margin: 10px 15px 0 0; right: 185px; }
 .view > div:first-of-type, .view > form:first-of-type {
     padding: 15px; }
-.view h2 { margin: -46px 0 22px 0; font-size: 21px; }
+.view h2 { margin: -50px 0 24px -8px; font-size: 21px; }
 nav { float: right; max-width: 200px; padding: 1px; margin-top: 10px; }
 nav > h1 { float: left; margin: -35px 0 0 0; letter-spacing: -1px;
     font-size: 20px; }
