@@ -38,9 +38,9 @@ QUnit.module('AddComponentViewComponent', hooks => {
             const titleInput = form.querySelector('input[name="val-title"]');
             const bodyInput = form.querySelector('textarea[name="val-body"]');
             // Fill out the form
-            utils.setInputValue("/new-article", cmpNameInput);
-            utils.setInputValue("New article", titleInput);
-            utils.setInputValue("Hello from my new article", bodyInput);
+            utils.setInputValue('/new-article', cmpNameInput);
+            utils.setInputValue('New article', titleInput);
+            utils.setInputValue('Hello from my new article', bodyInput);
             // Submit it
             submitButton.click();
             // Did it send anything?
@@ -79,8 +79,8 @@ QUnit.module('AddComponentViewComponent', hooks => {
             const cmpNameInput = form.querySelector('input[name="name"]');
             const contentInput = form.querySelector('textarea[name="val-content"]');
             // Fill out the form
-            utils.setInputValue("/new-article", cmpNameInput);
-            utils.setInputValue("Generic component content", contentInput);
+            utils.setInputValue('/new-article', cmpNameInput);
+            utils.setInputValue('Generic component content', contentInput);
             // Submit it
             submitButton.click();
             // Did window.toast(<message>, 'error') got called?

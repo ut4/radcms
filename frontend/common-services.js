@@ -9,6 +9,11 @@ function myFetch(url, options = {}) {
                 reject(req);
             }
         };
+        if (options.progress) {
+            req.onprogress = e => {
+                options.progress(e.target, e.lengthComputable ? e.loaded / e.total * 100 : -1);
+            };
+        }
         req.open(options.method || 'GET', url, true);
         Object.keys(options.headers || {}).forEach(key => {
             req.setRequestHeader(key, options.headers[key]);

@@ -1,6 +1,6 @@
 import services from './common-services.js';
 import {Form} from './common-components.js';
-import {WebsiteGenerateView} from './website-views.js';
+import {WebsiteGenerateView, WebsiteUploadView} from './website-views.js';
 
 class AddComponentView extends preact.Component {
     /**
@@ -232,7 +232,7 @@ class InsaneControlPanel extends preact.Component {
             this.currentPageDirectiveImpls.push(impl);
         });
         this.currentPageComponents = props.currentPageData.allComponents;
-        this.state = {className: '', visibleMenuItems: {}, genMessage: ''};
+        this.state = {className: '', visibleMenuItems: {}};
     }
     render() {
         return $el('div', {id: 'control-panel', className: this.state.className}, [
@@ -243,7 +243,10 @@ class InsaneControlPanel extends preact.Component {
                         onclick: () => myRedirect('/generate-website'),
                         className: 'nice-button nice-button-primary'
                     }, 'Generate'),
-                    this.state.genMessage
+                    $el('button', {
+                        onclick: () => myRedirect('/upload-website'),
+                        className: 'nice-button nice-button-primary'
+                    }, 'Upload')
                 ]),
                 $el('div', null, [
                     $el('h3', null, 'On this page:'),
@@ -305,7 +308,8 @@ class InsaneControlPanel extends preact.Component {
                 }, [
                     $el(AddComponentView, {path: '/add-component/:initialComponentTypeName?'}, null),
                     $el(EditComponentView, {path: '/edit-component'}, null),
-                    $el(WebsiteGenerateView, {path: '/generate-website'}, null)
+                    $el(WebsiteGenerateView, {path: '/generate-website'}, null),
+                    $el(WebsiteUploadView, {path: '/upload-website'}, null)
                 ].concat(...this.currentPageDirectiveImpls.map(dir=>dir.getRoutes()))
             )
         ]);

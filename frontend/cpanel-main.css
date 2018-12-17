@@ -101,15 +101,17 @@ input[type="date"] {
 input[type="checkbox"] {
     display:none;
 }
+input[type="checkbox"] + label {
+    cursor: pointer;
+}
 input[type="checkbox"] + label:after {
     content: "";
     display: block;
     width: 14px;
     height: 14px;
-    margin: 2px 10px 4px 0;
     background-repeat: no-repeat;
-    background-size: 19px auto;
-    background-position: 40% 25%;
+    background-size: 13px auto;
+    background-position: 4px 4px;
     cursor: pointer;
     border-radius: 2px;
     padding: 1px;
@@ -117,16 +119,15 @@ input[type="checkbox"] + label:after {
     border: 2px solid #899598;
 }
 input[type="checkbox"]:checked + label:after {
-    background-image: url(icon-sprite.svg#checked);
-    background-color: #52a5e2;
+    background-image: url(assets/icon-sprite.svg#checked);
+    background-color: #449eec;
     border: none;
     padding: 3px;
-    background-size: 21px auto;
 }
 input[type="checkbox"]:checked:disabled + label:after {
     background-color: #ddd;
 }
-label, .input-set {
+label:not(.inline), .input-set {
     display: inline-block;
     margin-bottom: 4px;
     width: 100%;
@@ -159,12 +160,59 @@ label .text-error,
     min-width: 85px;
 }
 
+/* == Tables ================================================================ */
+table {
+    border-collapse: collapse;
+    margin-bottom: 10px;
+    border-spacing: 0;
+    max-width: 100%;
+    width: 100%;
+}
+table.fixed {
+    table-layout: fixed;
+}
+table th {
+    padding-right: 10px;
+    text-align: left;
+}
+table th:first-child {
+    padding-left: 6px;
+}
+table.striped tr:nth-of-type(2n) td, .striped > *:nth-of-type(2n) {
+    background-color: rgba(0,0,0,0.05);
+}
+table td {
+    padding: 6px 10px 6px 0;
+    text-align: left;
+    vertical-align: top;
+}
+table tbody td:first-child {
+    padding-left: 4px;
+}
+table.striped tbody td:first-child {
+    padding-left: 6px;
+}
+.striped thead tr:only-child th:first-child,
+.striped tbody tr:only-child td:first-child {
+    padding-left: 0;
+}
+table .input-set {
+    max-width: 48%;
+    margin: 0 2% 0 0;
+}
+table .input-set > span:first-of-type {
+    display: none;
+}
+table .input-set input {
+    margin: 0;
+}
+
 /* == App =================================================================== */
-.view { float: right; padding: 1px; margin: 10px 15px 0 0; right: 185px; }
-.view > div:first-of-type, .view > form:first-of-type {
-    padding: 15px; }
+.view { float: right; padding: 1px; margin: 10px 185px 0 0; border-radius: 1px; }
+.view > div:first-of-type, .view > form:first-of-type { padding: 15px; }
 .view h2 { margin: -50px 0 24px -8px; font-size: 21px; }
-nav { float: right; max-width: 200px; padding: 1px; margin-top: 10px; }
+nav { position: absolute; max-width: 200px; padding: 1px; margin-top: 10px;
+    right: 5px; }
 nav > h1 { float: left; margin: -35px 0 0 0; letter-spacing: -1px;
     font-size: 20px; }
 nav > div { padding: 15px 15px 0; }
