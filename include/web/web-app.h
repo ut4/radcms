@@ -21,7 +21,7 @@ typedef struct {
     Website *site;
     unsigned handlerCount;
     char *errBuf;
-    RequestHandler handlers[5];
+    RequestHandler handlers[6];
 } WebApp;
 
 void
@@ -31,8 +31,8 @@ void
 webAppFreeProps(WebApp *this);
 
 bool
-webAppExecModuleScripts(WebApp *this, const char **scriptRouteFiles,
-                        duk_context *ctx, char *err);
+webAppExecModuleScripts(WebApp *this, const char* fileNames[],
+                        unsigned numFiles, duk_context *ctx, char *err);
 
 /**
  * Allocates and starts a microhttpd-server.

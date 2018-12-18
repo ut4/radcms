@@ -1,14 +1,25 @@
 #include "../../include/web/website-handlers.h"
 
-static void injectCPanelIframeAndCurrentPageData(char **html,
-                                                 const char *pageDataJson);
+static bool writePageToFile(char *renderedHtml, Page *page, Website *site,
+                            void *myPtr, char *err);
 static void makeCurrentPageDataJson(SiteGraph *siteGraph, VTree *vTree,
                                     void *dukCtx, void *myPtr, char *err);
+static void injectCPanelIframeAndCurrentPageData(char **html,
+                                                 const char *pageDataJson);
+static int uploadFileFtp(UploadState *state, char *renderedHtml, Page *page);
+static void finalizeUploadReq(void *cls);
+static bool receiveUploadFormField(const char *key, const char *value, void *myPtr);
+static void* makeUploadFormData();
+static void freeUploadFormData(void *myPtr);
+
+const char *alreadyUploadingMessage = "The upload process has already started.";
+static bool uploadHandlerIsBusy = false;
 
 unsigned
 websiteHandlersHandlePageRequest(void *myPtr, void *myDataPtr, const char *method,
                                  const char *url, struct MHD_Connection *conn,
                                  struct MHD_Response **response, char *err) {
+    // Since this is always the last handler, return 404 instead of MHD_NO
     if (strcmp(method, "GET") != 0) return MHD_HTTP_NOT_FOUND;
     Website *site = myPtr;
     Page *p = siteGraphFindPage(&site->siteGraph, (char*)url);
@@ -35,27 +46,6 @@ websiteHandlersHandlePageRequest(void *myPtr, void *myDataPtr, const char *metho
                                                 renderedHtml,
                                                 MHD_RESPMEM_MUST_FREE);
     return MHD_HTTP_OK;
-}
-
-static bool
-writePageToFile(char *renderedHtml, Page *page, Website *site, void *myPtr,
-                char *err) {
-    STR_CONCAT(outDirPath, site->rootDir, "out"); // -> c:/foo/bar/out
-    const char* indexPart = "/index.html";
-    //
-    const size_t urlStrLen = strlen(page->url);
-    const size_t l2 = strlen(outDirPath) + urlStrLen + strlen(indexPart) + 1;
-    char filePath[l2];
-    // 'c:/foo/bar/out' + '/foo'
-    // 'c:/foo/bar/out' + '/'
-    snprintf(filePath, l2, "%s%s", outDirPath, page->url);
-    if (!fileIOMakeDirs(filePath, err)) {
-        return false;
-    }
-    // 'c:/foo/bar/out/foo + '/index.html'
-    // 'c:/foo/bar/out/'   + 'index.html'
-    strcat(filePath, indexPart + (urlStrLen > 1 ? 0 : 1));
-    return fileIOWriteFile(filePath, renderedHtml, err);
 }
 
 unsigned
@@ -108,6 +98,106 @@ websiteHandlersHandleGenerateRequest(void *myPtr, void *myDataPtr, const char *m
     return statusCode;
 }
 
+static bool
+storeRenderedPage(char *renderedHtml, Page *page, Website *site, void *myPtr,
+                char *err) {
+    strTubePush(myPtr, renderedHtml);
+    return true;
+}
+
+unsigned
+websiteHandlersHandleUploadRequest(void *myPtr, void *myDataPtr, const char *method,
+                                   const char *url, struct MHD_Connection *conn,
+                                   struct MHD_Response **response, char *err) {
+    // First/matcher call -> return 1 if matches, 0 otherwise
+    if (!myDataPtr) {
+        return (unsigned)(strcmp(method, "POST") == 0 && strcmp(url, "/api/website/upload") == 0);
+    }
+    // Second/actual call, myDataPtr is now filled -> handle the request
+    if (uploadHandlerIsBusy) {
+        *response = MHD_create_response_from_buffer(strlen(alreadyUploadingMessage),
+                                                    (void*)alreadyUploadingMessage,
+                                                    MHD_RESPMEM_PERSISTENT);
+        MHD_add_response_header(*response, "Content-Type", "text/html");
+        return MHD_HTTP_CONFLICT;
+    }
+    void *curl = curl_easy_init();
+    if (!curl) {
+        putError("Failed to curl_easy_init()\n.");
+        return MHD_HTTP_INTERNAL_SERVER_ERROR;
+    }
+    uploadHandlerIsBusy = true;
+    /*
+     * Render all pages.
+     */
+    StrTube *htmls = ALLOCATE(StrTube);
+    strTubeInit(htmls);
+    StrTube issues = strTubeMake();
+    Website *site = myPtr;
+    if (websiteGenerate(site, storeRenderedPage, htmls, &issues,
+                        site->errBuf) == 0 || issues.length > 0) {
+        printToStdErr("%u pages had issues, returning BAD_REQUEST\n", issues.length);
+        strTubeFreeProps(htmls);
+        FREE(StrTube, htmls);
+        strTubeFreeProps(&issues);
+        return MHD_HTTP_BAD_REQUEST;
+    }
+    strTubeFreeProps(&issues);
+    /*
+     * Make UploadState
+     */
+    UploadState *state = ALLOCATE(UploadState);
+    state->nthPage = 1;
+    state->totalIncomingPages = htmls->length;
+    state->hadStopError = false;
+    state->formData = myDataPtr;
+    state->renderOutputReader = ALLOCATE(StrTubeReader);
+    state->uploadImplFn = uploadFileFtp;
+    strTubeReaderInit(state->renderOutputReader, htmls);
+    state->curPage = site->siteGraph.pages.orderedAccess;
+    state->curl = curl;
+    /*
+     * Upload the pages one by one.
+     */
+    *response = MHD_create_response_from_callback(MHD_SIZE_UNKNOWN, 512,
+                                                  uploadPageAndWriteRespChunk,
+                                                  state, &finalizeUploadReq);
+    MHD_add_response_header(*response, "Transfer-Encoding", "chunked");
+    MHD_add_response_header(*response, "Content-Type", "text/html;charset=utf-8");
+    return MHD_HTTP_OK;
+}
+
+FormDataHandlers*
+websiteHandlersGetUploadDataHandlers() {
+    FormDataHandlers *out = ALLOCATE(FormDataHandlers);
+    out->formDataReceiverFn = receiveUploadFormField;
+    out->formDataInitFn = makeUploadFormData;
+    out->formDataFreeFn = freeUploadFormData;
+    out->myPtr = NULL;
+    return out;
+}
+
+static bool
+writePageToFile(char *renderedHtml, Page *page, Website *site, void *myPtr,
+                char *err) {
+    STR_CONCAT(outDirPath, site->rootDir, "out"); // -> c:/foo/bar/out
+    const char* indexPart = "/index.html";
+    //
+    const size_t urlStrLen = strlen(page->url);
+    const size_t l2 = strlen(outDirPath) + urlStrLen + strlen(indexPart) + 1;
+    char filePath[l2];
+    // 'c:/foo/bar/out' + '/foo'
+    // 'c:/foo/bar/out' + '/'
+    snprintf(filePath, l2, "%s%s", outDirPath, page->url);
+    if (!fileIOMakeDirs(filePath, err)) {
+        return false;
+    }
+    // 'c:/foo/bar/out/foo + '/index.html'
+    // 'c:/foo/bar/out/'   + 'index.html'
+    strcat(filePath, indexPart + (urlStrLen > 1 ? 0 : 1));
+    return fileIOWriteFile(filePath, renderedHtml, err);
+}
+
 static void makeCurrentPageDataJson(SiteGraph *siteGraph, VTree *vTree,
                                     void *dukCtx, void *myPtr, char *err) {
     const char **pt = myPtr;
@@ -155,4 +245,84 @@ injectCPanelIframeAndCurrentPageData(char **ptrToHtml, const char *pageDataJson)
     // Replaces <body>$a|$b|?... -> <body>$a|$b|$c...
     STR_APPEND(startOfBody, c, lenC);
     *ptrToHtml = tmp;
+}
+
+static size_t
+myCurlPutChunk(void *buf, size_t multiplier, size_t nmemb, void *myPtr) {
+    CurlUploadState *state = myPtr;
+    size_t max = multiplier * nmemb;
+    if (max < 1) return 0;
+    if (state->sizeleft) {
+        size_t chunkSize = max > state->sizeleft ? state->sizeleft : max;
+        memcpy(buf, state->fileContents, chunkSize);
+        state->fileContents += chunkSize;
+        state->sizeleft -= chunkSize;
+        return chunkSize;
+    }
+    return 0; // no more data left to deliver
+}
+
+static int
+uploadFileFtp(UploadState *state, char *renderedHtml, Page *page) {
+    void *curl = state->curl;
+    char fname[strlen(state->formData->remoteUrl) + strlen(page->url) + strlen(".html") + 1];
+    sprintf(fname, "%s%s.html", state->formData->remoteUrl,
+            strlen(page->url) > 1 ? page->url + 1 : "_"); // '/foo' -> 'foo'
+    curl_easy_setopt(curl, CURLOPT_URL, fname);
+    curl_easy_setopt(curl, CURLOPT_USERNAME, state->formData->username);
+    curl_easy_setopt(curl, CURLOPT_PASSWORD, state->formData->password);
+    curl_easy_setopt(curl, CURLOPT_UPLOAD, 1L);
+    curl_easy_setopt(curl, CURLOPT_READFUNCTION, myCurlPutChunk);
+    CurlUploadState ustate = {renderedHtml, strlen(renderedHtml)};
+    curl_easy_setopt(curl, CURLOPT_READDATA, &ustate);
+    curl_easy_setopt(curl, CURLOPT_INFILESIZE_LARGE, (curl_off_t)ustate.sizeleft);
+    CURLcode res = curl_easy_perform(curl);
+    curl_easy_reset(curl);
+    if (res == CURLE_OK) return UPLOAD_OK;
+    printToStdErr("curl_easy_perform() failed: %s.\n",
+                    curl_easy_strerror(res));
+    if (res == CURLE_LOGIN_DENIED) return UPLOAD_LOGIN_DENIED;
+    return res;
+}
+
+static void
+finalizeUploadReq(void *cls) {
+    UploadState *state = cls;
+    strTubeFreeProps(state->renderOutputReader->strTube);
+    FREE(StrTube, state->renderOutputReader->strTube);
+    FREE(StrTubeReader, state->renderOutputReader);
+    curl_easy_cleanup(state->curl);
+    FREE(UploadState, state);
+    uploadHandlerIsBusy = false;
+}
+
+static bool
+receiveUploadFormField(const char *key, const char *value, void *myPtr) {
+    if (strcmp(key, "remoteUrl") == 0) {
+        ((UploadFormData*)myPtr)->remoteUrl = copyString(value);
+    } else if (strcmp(key, "username") == 0) {
+        ((UploadFormData*)myPtr)->username = copyString(value);
+    } else if (strcmp(key, "password") == 0) {
+        ((UploadFormData*)myPtr)->password = copyString(value);
+    }
+    return true;
+}
+
+static void*
+makeUploadFormData() {
+    UploadFormData *out = ALLOCATE(UploadFormData);
+    out->remoteUrl = NULL;
+    out->username = NULL;
+    out->password = NULL;
+    out->errors = 0;
+    return out;
+}
+
+static void
+freeUploadFormData(void *myPtr) {
+    UploadFormData *c = myPtr;
+    if (c->remoteUrl) FREE_STR(c->remoteUrl);
+    if (c->username) FREE_STR(c->username);
+    if (c->password) FREE_STR(c->password);
+    FREE(UploadFormData, myPtr);
 }

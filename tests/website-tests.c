@@ -23,6 +23,7 @@ testWebsiteGeneratePassesEachPageToWriteFn(duk_context *ctx, char *err) {
     unsigned numWrites = websiteGenerate(&site, logPageWriteCall, &log, NULL, err);
     assertIntEqualsOrGoto(numWrites, 2, done);
     //
+    assertIntEqualsOrGoto(log.length, 2, done);
     StrTubeReader reader = strTubeReaderMake(&log);
     char* first = strTubeReaderNext(&reader);
     assertThatOrGoto(first != NULL, done, "renderedHtml #0 != NULL");
@@ -138,7 +139,7 @@ websiteTestsRun() {
     char errBuf[ERR_BUF_LEN]; errBuf[0] = '\0';
     duk_context *ctx = myDukCreate(errBuf);
     ASSERT(ctx != NULL, "Failed to create duk_context");
-    commonScriptBindingsInit(ctx, NULL, errBuf);
+    commonScriptBindingsInit(ctx, NULL, NULL, errBuf);
     vTreeScriptBindingsInit(ctx);
     dataQueryScriptBindingsInit(ctx);
     websiteScriptBindingsInit(ctx, errBuf);

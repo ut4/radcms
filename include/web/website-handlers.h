@@ -2,9 +2,11 @@
 #define insn_websiteHandlers_h
 
 #include <cJSON.h>
+#include <curl/curl.h>
 #include "../events.h" // emitEvent()
 #include "../file-io.h" // fileIO*()
 #include "web-app-common.h" // microhttpd
+#include "website-handlers-funcs.h"
 #include "../timer.h"
 #include "../v-tree.h"
 #include "../website.h"
@@ -32,5 +34,16 @@ unsigned
 websiteHandlersHandleGenerateRequest(void *myPtr, void *myDataPtr, const char *method,
                                      const char *url, struct MHD_Connection *conn,
                                      struct MHD_Response **response, char *err);
+
+/**
+ * Responds to POST /api/website/upload.
+ */
+unsigned
+websiteHandlersHandleUploadRequest(void *myPtr, void *myDataPtr, const char *method,
+                                   const char *url, struct MHD_Connection *conn,
+                                   struct MHD_Response **response, char *err);
+
+FormDataHandlers*
+websiteHandlersGetUploadDataHandlers();
 
 #endif

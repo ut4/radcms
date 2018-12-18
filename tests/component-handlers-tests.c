@@ -10,7 +10,7 @@ testGETComponentTypesReturnsComponentTypes(Db *db, duk_context *ctx, char *err) 
     )) return;
     //
     char *cwd = testUtilsGetNormalizedCwd();
-    if (!testUtilsReadAndRunGlobal(ctx, cwd, "src/web/component-handlers.mod.js",
+    if (!testUtilsReadAndRunGlobal(ctx, cwd, "src/web/component-handlers.js",
                                    err)) { printToStdErr("%s",err); return; }
     duk_push_thread_stash(ctx, ctx);         // [stash]
     commonScriptBindingsPushApp(ctx, -1);    // [stash app]
@@ -58,7 +58,7 @@ componentHandlersTestsRun() {
     }
     duk_context *ctx = myDukCreate(errBuf);
     ASSERT(ctx != NULL, "Failed to create duk_context");
-    commonScriptBindingsInit(ctx, &db, errBuf);
+    commonScriptBindingsInit(ctx, &db, NULL, errBuf);
     /*
      * The tests
      */

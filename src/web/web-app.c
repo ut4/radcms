@@ -93,12 +93,10 @@ webAppFreeProps(WebApp *this) {
 }
 
 bool
-webAppExecModuleScripts(WebApp *this, const char **fileNames,
-                        duk_context *ctx, char *err) {
+webAppExecModuleScripts(WebApp *this, const char* fileNames[],
+                        unsigned numFiles, duk_context *ctx, char *err) {
     bool success = false;
-    unsigned l = sizeof(fileNames) / sizeof(const char**);
-    ASSERT(l < 80, "Refusing to compile %u module files.\n", l);
-    for (unsigned i; i < l; ++i) {
+    for (unsigned i; i < numFiles; ++i) {
         const char *fName = fileNames[i];
         ASSERT(strlen(fName) < 64, "strlen(scriptRouteFileName) %lu", strlen(fName));
         STR_CONCAT(filePath, this->appPath, fName);
@@ -161,7 +159,6 @@ void
 webAppShutdown(WebApp *this) {
     if (this->daemon) MHD_stop_daemon(this->daemon);
 }
-
 
 static int
 webAppRespond(void *myPtr, struct MHD_Connection *conn, const char *url,

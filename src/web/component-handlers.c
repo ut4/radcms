@@ -27,9 +27,11 @@ unsigned
 componentHandlersHandleComponentAddRequest(void *myPtr, void *myDataPtr, const char *method,
                                            const char *url, struct MHD_Connection *conn,
                                            struct MHD_Response **response, char *err) {
+    // First/matcher call -> return 1 if matches, 0 otherwise
     if (!myDataPtr) {
         return (unsigned)(strcmp(method, "POST") == 0 && strcmp(url, "/api/component") == 0);
     }
+    // Second/actual call, myDataPtr is now filled -> handle the request
     ComponentFormData *data = myDataPtr;
     int insertId = componentMapperInsertComponent(((Website*)myPtr)->db, data, err);
     if (insertId < 0) {

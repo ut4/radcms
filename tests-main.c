@@ -7,6 +7,7 @@
 #include "tests/v-tree-script-bindings-tests.h"
 #include "tests/v-tree-tests.h"
 #include "tests/website-diff-tests.h"
+#include "tests/website-handlers-tests.h"
 #include "tests/website-mapper-tests.h"
 #include "tests/website-tests.h"
 
@@ -37,6 +38,7 @@ int main(int argc, const char* argv[]) {
     testSuitesRan += runIf(testSuiteName, "vTreeScriptBindings", vTreeScriptBindingsTestsRun);
     testSuitesRan += runIf(testSuiteName, "vTree", vTreeTestsRun);
     testSuitesRan += runIf(testSuiteName, "websiteDiff", websiteDiffTestsRun);
+    testSuitesRan += runIf(testSuiteName, "websiteHandlers", websiteHandlersTestsRun);
     testSuitesRan += runIf(testSuiteName, "websiteMapper", websiteMapperTestsRun);
     testSuitesRan += runIf(testSuiteName, "website", websiteTestsRun);
     if (testSuitesRan > 0) {

@@ -6,6 +6,7 @@ StrTube strTubeMake() {
 }
 
 void strTubeInit(StrTube *this) {
+    this->length = 0;
     this->tubeLength = 0;
     this->tubeCapacity = 0;
     this->tube = NULL;
@@ -37,11 +38,18 @@ void strTubePush(StrTube *this, const char *value) {
     memcpy(this->tail, value, valLen);
     this->tail += valLen;
     this->tubeLength += valLen;
+    this->length += 1;
     #undef TO_NEAREST_UPPER
 }
 
 StrTubeReader strTubeReaderMake(StrTube *strTube) {
-    return (StrTubeReader){.strTube = strTube, .cursor = strTube->tube, .pos = 0};
+    return (StrTubeReader){.strTube = strTube, .cursor = &strTube->tube[0], .pos = 0};
+}
+
+void strTubeReaderInit(StrTubeReader *this, StrTube *strTube) {
+    this->strTube = strTube;
+    this->cursor = &strTube->tube[0];
+    this->pos = 0;
 }
 
 char* strTubeReaderNext(StrTubeReader *this) {

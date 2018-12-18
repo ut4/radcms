@@ -85,9 +85,9 @@ int main(int argc, const char* argv[]) {
      */
     if (!webAppReadOrCreateSiteIni(&app, "", errBuf) ||
         !websiteFetchAndParseSiteGraph(&website, errBuf) ||
-        !webAppExecModuleScripts(&app, (const char*[1]){
-                                    "/src/web/component-handlers.mod.js",
-                                }, dukCtx, errBuf) ||
+        !webAppExecModuleScripts(&app, (const char*[]){
+                                    "/src/web/component-handlers.js",
+                                }, 1, dukCtx, errBuf) ||
         !websitePopulateDukCaches(&website, errBuf)) goto done;
     app.handlerCount = sizeof(app.handlers) / sizeof(RequestHandler);
     app.handlers[0] = (RequestHandler){.handlerFn=componentHandlersHandleComponentAddRequest,
@@ -96,9 +96,11 @@ int main(int argc, const char* argv[]) {
         .myPtr=app.appPath, .formDataHandlers=NULL};
     app.handlers[2] = (RequestHandler){.handlerFn=websiteHandlersHandleGenerateRequest,
         .myPtr=&website, .formDataHandlers=NULL};
-    app.handlers[3] = (RequestHandler){.handlerFn=coreHandlersHandleScriptRouteRequest,
+    app.handlers[3] = (RequestHandler){.handlerFn=websiteHandlersHandleUploadRequest,
+        .myPtr=&website, .formDataHandlers=websiteHandlersGetUploadDataHandlers()};
+    app.handlers[4] = (RequestHandler){.handlerFn=coreHandlersHandleScriptRouteRequest,
         .myPtr=dukCtx, .formDataHandlers=NULL};
-    app.handlers[4] = (RequestHandler){.handlerFn=websiteHandlersHandlePageRequest,
+    app.handlers[5] = (RequestHandler){.handlerFn=websiteHandlersHandlePageRequest,
         .myPtr=&website, .formDataHandlers=NULL};
     pthread_t fileWatcherThread;
     if (pthread_create(&fileWatcherThread, NULL, webAppStartFileWatcher, &app) == 0) {

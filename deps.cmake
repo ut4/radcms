@@ -23,6 +23,12 @@ if (INSN_IS_WIN)
         IMPORTED_IMPLIB ${CMAKE_BINARY_DIR}/sqlite3.dll
     )
 
+    # -- curl ----
+    add_library(curl SHARED IMPORTED)
+    set_target_properties(curl PROPERTIES
+        IMPORTED_IMPLIB ${CMAKE_BINARY_DIR}/libcurl-x64.dll
+    )
+
     # -- cjson ----
     add_library(cjson SHARED ${VENDOR_ROOT}/cjson/cJSON.c)
 
@@ -31,6 +37,8 @@ if (INSN_IS_WIN)
         ${VENDOR_ROOT}/duktape
         ${VENDOR_ROOT}/inih
         ${VENDOR_ROOT}/sqlite3
+        ${VENDOR_ROOT}/openssl
+        ${VENDOR_ROOT}/curl
         ${VENDOR_ROOT}/cjson
     )
     set(INSN_DEP_LIBS
@@ -38,6 +46,7 @@ if (INSN_IS_WIN)
         duktape
         inih
         sqlite3
+        curl
         cjson
     )
 elseif(INSN_IS_LINUX)
@@ -55,6 +64,9 @@ elseif(INSN_IS_LINUX)
 
     # -- sqlite provided by libsqlite3-dev ----
 
+    # -- openssl & crypto provided by libssl-dev ----
+    # -- curl provided by libcurl4-openssl-dev ----
+
     # -- cjson ----
     add_library(cjson SHARED ${VENDOR_ROOT}/cjson/cJSON.c)
 
@@ -70,6 +82,9 @@ elseif(INSN_IS_LINUX)
         duktape
         inih
         sqlite3
+        crypto
+        ssl
+        curl
         cjson
     )
 else()

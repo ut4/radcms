@@ -133,7 +133,7 @@ commonScriptBindingsTestsRun() {
     }
     duk_context *ctx = myDukCreate(errBuf);
     ASSERT(ctx != NULL, "Failed to create duk_context\n");
-    commonScriptBindingsInit(ctx, &db, errBuf);
+    commonScriptBindingsInit(ctx, &db, NULL, errBuf);
     ASSERT(strlen(errBuf) == 0, "%s", errBuf);
     /*
      * The tests

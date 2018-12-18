@@ -9,8 +9,9 @@
 
 /** A continous array of sring length + string -pairs, eg. (3foo4bars2fu...). */
 typedef struct {
-    unsigned tubeLength;   // Filled length, chars
-    unsigned tubeCapacity; // Allocated length, chars/bytes
+    unsigned length;       // Amount of strings
+    unsigned tubeLength;   // Total filled length, amount of chars/bytes
+    unsigned tubeCapacity; // Total allocated length, abount of chars/bytes
     char *tube;
     char *tail;
 } StrTube;
@@ -27,6 +28,7 @@ typedef struct {
 } StrTubeReader;
 
 StrTubeReader strTubeReaderMake(StrTube *strTube);
+void strTubeReaderInit(StrTubeReader *this, StrTube *strTube);
 char* strTubeReaderNext(StrTubeReader *this);
 
 #endif

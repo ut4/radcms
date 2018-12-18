@@ -36,6 +36,7 @@ set(SOURCE_FILES_COMMON
     include/timer.h
     include/v-tree-script-bindings.h src/v-tree-script-bindings.c
     include/v-tree.h src/v-tree.c
+    include/web/website-handlers-funcs.h src/web/website-handlers-funcs.c
     include/website-fw-handlers.h src/website-fw-handlers.c
     include/website-script-bindings.h src/website-script-bindings.c
     include/website.h src/website.c
@@ -65,6 +66,7 @@ set(TESTS_FILES
     tests/v-tree-script-bindings-tests.h tests/v-tree-script-bindings-tests.c
     tests/v-tree-tests.h tests/v-tree-tests.c
     tests/website-diff-tests.h tests/website-diff-tests.c
+    tests/website-handlers-tests.h tests/website-handlers-tests.c
     tests/website-mapper-tests.h tests/website-mapper-tests.c
     tests/website-tests.h tests/website-tests.c
 )
