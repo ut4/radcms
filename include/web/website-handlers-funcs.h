@@ -12,7 +12,6 @@ typedef struct {
     char *remoteUrl;
     char *username;
     char *password;
-    unsigned errors;
 } UploadFormData;
 
 struct UploadState;
@@ -38,5 +37,11 @@ typedef struct {
 ssize_t
 uploadPageAndWriteRespChunk(void *myPtr, uint64_t pos, char *responseBuf,
                             size_t max);
+
+/**
+ * Returns NULL, or comma-separated list of errors.
+ */
+char*
+validateUploadFormData(UploadFormData *data);
 
 #endif

@@ -10,7 +10,8 @@ coreHandlersHandleStaticFileRequest(void *myPtr, void *myDataPtr, const char *me
     if (!ext) return MHD_HTTP_NOT_FOUND;
     bool isJs = strcmp(ext, ".js") == 0;
     bool isHtml = !isJs ? strcmp(ext, ".html") == 0 : false;
-    if (!isJs && !isHtml && strcmp(ext, ".css") != 0) {
+    bool isCss = !isHtml ? strcmp(ext, ".css") == 0 : false;
+    if (!isJs && !isHtml && !isCss && strcmp(ext, ".svg") != 0) {
         return MHD_HTTP_NOT_FOUND;
     }
     int fd;
@@ -24,7 +25,8 @@ coreHandlersHandleStaticFileRequest(void *myPtr, void *myDataPtr, const char *me
     *response = MHD_create_response_from_fd_at_offset64(sbuf.st_size, fd, 0);
     if (isJs) MHD_add_response_header(*response, "Content-Type", "application/javascript");
     else if (isHtml) MHD_add_response_header(*response, "Content-Type", "text/html");
-    else MHD_add_response_header(*response, "Content-Type", "text/css");
+    else if (isCss) MHD_add_response_header(*response, "Content-Type", "text/css");
+    else MHD_add_response_header(*response, "Content-Type", "image/svg+xml");
     MHD_add_response_header(*response, "Cache-Control", "public,max-age=86400");//24h
     return MHD_HTTP_OK;
 }
@@ -34,7 +36,7 @@ coreHandlersHandleScriptRouteRequest(void *myPtr, void *myDataPtr, const char *m
                                      const char *url, struct MHD_Connection *conn,
                                      struct MHD_Response **response, char *err) {
     if (strstr(url, "/api/") != url) return 0;
-    unsigned out = MHD_HTTP_INTERNAL_SERVER_ERROR;
+    unsigned out = MHD_HTTP_NOT_FOUND;
     duk_context *ctx = myPtr;
     ASSERT(duk_get_top(ctx) == 0, "Duk stack not empty.");
     duk_push_thread_stash(ctx, ctx);                // [stash]
@@ -64,6 +66,7 @@ coreHandlersHandleScriptRouteRequest(void *myPtr, void *myDataPtr, const char *m
          */
         if (duk_pcall(ctx, 0) != DUK_EXEC_SUCCESS) {// [stash app routes obj|err]
             dukUtilsPutDetailedError(ctx, -1, url, err); // [stash app routes]
+            out = MHD_HTTP_INTERNAL_SERVER_ERROR;
             goto done;
         }
         /*
@@ -88,6 +91,7 @@ coreHandlersHandleScriptRouteRequest(void *myPtr, void *myDataPtr, const char *m
         } else {
             if (didReturnObj) duk_pop(ctx);         // [stash app routes]
             putError("A handler must return new Response(<statusCode>, <bodyStr>)");
+            out = MHD_HTTP_INTERNAL_SERVER_ERROR;
         }
         break;
     }

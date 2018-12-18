@@ -71,7 +71,25 @@ testUploadPageAndWriteRespChunkDoesStuff() {
     #undef HTML_2
 }
 
+static void
+testValidateUploadFormDataReturnsErrorsAndNormalizesData() {
+    UploadFormData data = {NULL, NULL, NULL};
+    char *errors = validateUploadFormData(&data);
+    assertThatOrGoto(errors != NULL, done, "Should return errors");
+    assertStrEquals(errors, "FPS remote url is required,"
+                            "Username is required," "Password is required");
+    //
+    UploadFormData needNormalization = {copyString("no/trailing/slash"), "uname", "pass"};
+    char *errors2 = validateUploadFormData(&needNormalization);
+    assertThat(errors2 == NULL, "Shouldn't return errors");
+    assertStrEquals(needNormalization.remoteUrl, "no/trailing/slash/");
+    done:
+        free(errors);
+        FREE_STR(needNormalization.remoteUrl);
+}
+
 void
 websiteHandlersTestsRun() {
     testUploadPageAndWriteRespChunkDoesStuff();
+    testValidateUploadFormDataReturnsErrorsAndNormalizesData();
 }

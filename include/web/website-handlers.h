@@ -36,7 +36,10 @@ websiteHandlersHandleGenerateRequest(void *myPtr, void *myDataPtr, const char *m
                                      struct MHD_Response **response, char *err);
 
 /**
- * Responds to POST /api/website/upload.
+ * Responds to POST /api/website/upload. Payload:
+ * remoteUrl=str|required&
+ * username=str|required&
+ * password=str|required
  */
 unsigned
 websiteHandlersHandleUploadRequest(void *myPtr, void *myDataPtr, const char *method,

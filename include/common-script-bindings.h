@@ -3,9 +3,10 @@
 
 #include "db.h"
 #include "duk.h"
+#include "site-graph.h"
 
 void
-commonScriptBindingsInit(duk_context *ctx, Db *db, char *err);
+commonScriptBindingsInit(duk_context *ctx, Db *db, SiteGraph *siteGraph, char *err);
 
 void
 commonScriptBindingsPushDb(duk_context *ctx, int threadStashIsAt);

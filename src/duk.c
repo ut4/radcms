@@ -17,8 +17,12 @@ myDukCreate(char *errBuf) {
     );
     if (!out) return NULL;
     duk_module_duktape_init(out);
-    duk_push_c_function(out, myPrint, DUK_VARARGS);
+    duk_push_c_lightfunc(out, myPrint, DUK_VARARGS, 0, 0);
     duk_put_global_string(out, "print");
+    duk_push_bare_object(out);
+    duk_get_global_string(out, "print");
+    duk_put_prop_string(out, -2, "log");
+    duk_put_global_string(out, "console");
     return out;
 }
 

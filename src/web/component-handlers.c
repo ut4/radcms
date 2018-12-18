@@ -46,8 +46,8 @@ componentHandlersHandleComponentAddRequest(void *myPtr, void *myDataPtr, const c
             if (b > 0) STR_APPEND(tail, jsonReqError, b);
             if (c > 0) STR_APPEND(tail, ctidReqError, c);
             *tail = '\0';
-            *response = MHD_create_response_from_buffer(
-                l - 1, message, MHD_RESPMEM_MUST_FREE);
+            *response = MHD_create_response_from_buffer(l - 1, message,
+                                                        MHD_RESPMEM_MUST_FREE);
             return MHD_HTTP_BAD_REQUEST;
         }
         return MHD_HTTP_INTERNAL_SERVER_ERROR;

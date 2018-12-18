@@ -121,6 +121,12 @@ websiteHandlersHandleUploadRequest(void *myPtr, void *myDataPtr, const char *met
         MHD_add_response_header(*response, "Content-Type", "text/html");
         return MHD_HTTP_CONFLICT;
     }
+    char *errors = validateUploadFormData(myDataPtr);
+    if (errors) {
+        *response = MHD_create_response_from_buffer(strlen(errors), errors,
+                                                    MHD_RESPMEM_MUST_FREE);
+        return MHD_HTTP_BAD_REQUEST;
+    }
     void *curl = curl_easy_init();
     if (!curl) {
         putError("Failed to curl_easy_init()\n.");
@@ -314,7 +320,6 @@ makeUploadFormData() {
     out->remoteUrl = NULL;
     out->username = NULL;
     out->password = NULL;
-    out->errors = 0;
     return out;
 }
 

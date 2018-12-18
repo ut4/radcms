@@ -49,7 +49,7 @@ int main(int argc, const char* argv[]) {
     {
         dukCtx = myDukCreate(errBuf);
         if (!dukCtx) goto done;
-        commonScriptBindingsInit(dukCtx, &db, errBuf); // db, Response etc.
+        commonScriptBindingsInit(dukCtx, &db, &website.siteGraph, errBuf); // db, Response etc.
         if (strlen(errBuf)) goto done;
         vTreeScriptBindingsInit(dukCtx); // vTree object
         dataQueryScriptBindingsInit(dukCtx); // documentDataConfig object
@@ -87,7 +87,8 @@ int main(int argc, const char* argv[]) {
         !websiteFetchAndParseSiteGraph(&website, errBuf) ||
         !webAppExecModuleScripts(&app, (const char*[]){
                                     "/src/web/component-handlers.js",
-                                }, 1, dukCtx, errBuf) ||
+                                    "/src/web/website-handlers.js",
+                                }, 2, dukCtx, errBuf) ||
         !websitePopulateDukCaches(&website, errBuf)) goto done;
     app.handlerCount = sizeof(app.handlers) / sizeof(RequestHandler);
     app.handlers[0] = (RequestHandler){.handlerFn=componentHandlersHandleComponentAddRequest,

@@ -8,7 +8,7 @@
 #include "web-app-common.h" // microhttpd
 
 /**
- * Responds to GET /frontend/<any>.html|js|css eg. "/frontend/cpanel.html"
+ * Responds to GET /frontend/<any>.html|js|css|svg eg. "/frontend/cpanel.html"
  */
 unsigned
 coreHandlersHandleStaticFileRequest(void *myPtr, void *myDataPtr, const char *method,
