@@ -12,7 +12,7 @@ testSiteGraphParseFailsOnEmptyInput() {
     bool ok = siteGraphParse(empty, &testGraph, &strReader, errBuf);
     // 3. Assert
     assertThat(!ok, "parse() should return false");
-    assertStrEquals(errBuf, "ParseError: Expected a digit but got '\0");
+    assertStrEquals(errBuf, "Expected a digit but got '\0");
 }
 
 static void

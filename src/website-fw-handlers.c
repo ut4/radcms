@@ -40,14 +40,14 @@ performRescan(Website *this, const char *url, int layoutIdx, char *err) {
     success = true;
     if (!diff.newPages) goto done;
     if (!websiteSaveToDb(this, err)) {
-        putError("Error: Failed to save the site-graph: %s\n", err);
+        putError("Failed to save the site-graph: %s\n", err);
         success = false;
     }
     done:
     siteGraphDiffFreeProps(&diff);
-    if (success) printf("Info: Rescanned '%s': %s.\n", url,
+    if (success) printf("[Info]: Rescanned '%s': %s.\n", url,
                         diff.newPages ? "added page(s)" : "no changes");
-    else printToStdErr("%s", err);
+    else printToStdErr("[Error]: %s", err);
     duk_pop(this->dukCtx);
     return success;
 }
@@ -64,7 +64,7 @@ handleFileModifyEvent(const char *fileName, Website *this, char *err) {
         duk_pop(this->dukCtx);
         return;
     }
-    printf("Info: Cached %s\n", layout->fileName);
+    printf("[Info]: Cached %s\n", layout->fileName);
     (void)performRescan(this, layout->sampleUrl ? layout->sampleUrl : "/",
                         layoutIdx, err);
 }

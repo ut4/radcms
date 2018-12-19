@@ -65,8 +65,8 @@ vTreeScriptBindingsExecLayoutTmpl(duk_context *ctx, VTree *vTree,
         if (!found) {
             char asStr[dataBatchConfigGetToStringLen(cur)];
             dataBatchConfigToString(cur, asStr);
-            printToStdErr("Error: '%s' didn't return anything from the database.\n", asStr);
-            duk_push_null(ctx);
+            printToStdErr("[Error]: '%s' didn't return anything from the database.\n", asStr);
+            duk_push_bare_object(ctx);
         }
         cur = cur->next;
         argCount += 1;
@@ -118,7 +118,7 @@ vTreeSBRegisterElement(duk_context *ctx) {
      * Single elemNode (e(..., e("child" ...))
      */
     if (duk_is_number(ctx, 2)) {
-        nodeRefArrayPush(&children, (unsigned)duk_get_uint(ctx, 2));
+        nodeRefArrayPush(&children, duk_get_uint(ctx, 2));
     /*
      * Single textNode (e(..., "Text here")
      */
@@ -130,26 +130,30 @@ vTreeSBRegisterElement(duk_context *ctx) {
      */
     } else if (duk_is_array(ctx, 2)) {
         unsigned l = duk_get_length(ctx, 2);
-        if (l == 0) {
-            nodeRefArrayFreeProps(&children);
-            return duk_error(ctx, DUK_ERR_TYPE_ERROR, "Child-array can't be empty.\n");
-        }
-        for (unsigned i = 0; i < l; ++i) {
-            duk_get_prop_index(ctx, 2, i);
-            duk_int_t a = duk_get_type(ctx, -1);
-            if (a == DUK_TYPE_NUMBER) {
-                nodeRefArrayPush(&children, (unsigned)duk_require_uint(ctx, -1));
-            } else {
-                nodeRefArrayFreeProps(&children);
-                return duk_error(ctx, DUK_ERR_TYPE_ERROR,
-                                "Child-array value must be a <nodeRef>.\n");
+        if (l > 0) {
+            for (unsigned i = 0; i < l; ++i) {
+                duk_get_prop_index(ctx, 2, i);
+                duk_int_t a = duk_get_type(ctx, -1);
+                if (a == DUK_TYPE_NUMBER) {
+                    nodeRefArrayPush(&children, duk_require_uint(ctx, -1));
+                } else {
+                    nodeRefArrayFreeProps(&children);
+                    return duk_error(ctx, DUK_ERR_TYPE_ERROR,
+                                     "Child-array value must be a <nodeRef>.\n");
+                }
+                duk_pop(ctx);
             }
+        } else {
+            printToStdErr("[Notice]: got an empty vElem child-array, pushing an "
+                          "empty string.\n");
+            unsigned emptyStringRef = vTreeCreateTextNode(vTree, "");
+            nodeRefArrayPush(&children, emptyStringRef);
         }
-        duk_pop_n(ctx, l); // each array value
     } else {
-        nodeRefArrayFreeProps(&children);
-        return duk_error(ctx, DUK_ERR_TYPE_ERROR, "3rd arg must be \"str\", "
-                        "<nodeRef>, or [<nodeRef>...].\n");
+        printToStdErr("[Warn]: vElem content wasn't \"str\", <nodeRef> nor "
+                      "[<nodeRef>...]: attempting toString().\n");
+        unsigned toStringTextRef = vTreeCreateTextNode(vTree, duk_to_string(ctx, 2));
+        nodeRefArrayPush(&children, toStringTextRef);
     }
     unsigned newId = vTreeCreateElemNode(vTree, tagName, props, &children);
     duk_push_uint(ctx, newId);

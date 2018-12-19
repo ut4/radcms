@@ -114,20 +114,25 @@ static void
 testVTreeRegisterElementValidatesItsArguments() {
     //
     beforeEach();
-    VTree vTree1;
-    VTree vTree2;
-    VTree vTree3;
-    vTreeInit(&vTree1);
-    vTreeInit(&vTree2);
-    vTreeInit(&vTree3);
+    VTree vTree1; vTreeInit(&vTree1);
+    VTree vTree2; vTreeInit(&vTree2);
+    VTree vTree3; vTreeInit(&vTree3);
+    VTree vTree4; vTreeInit(&vTree4);
+    VTree vTree5; vTreeInit(&vTree5);
     char *layoutTmpl1 = "function (vTree, _) {"
         " vTree.registerElement();"
     "}";
     char *layoutTmpl2 = "function (vTree, _) {"
-        " vTree.registerElement('p', null, true);"
+        " vTree.registerElement('p', null, []);"
     "}";
     char *layoutTmpl3 = "function (vTree, _) {"
-        " vTree.registerElement('p', null, []);"
+        " vTree.registerElement('p', null, null);"
+    "}";
+    char *layoutTmpl4 = "function (vTree, _) {"
+        " vTree.registerElement('p', null, undefined);"
+    "}";
+    char *layoutTmpl5 = "function (vTree, _) {"
+        " vTree.registerElement('p', null, true);"
     "}";
     //
     if (!dukUtilsCompileStrToFn(ctx, layoutTmpl1, "l", errBuf)) {
@@ -138,25 +143,28 @@ testVTreeRegisterElementValidatesItsArguments() {
     assertThat(strstr(errBuf, "registerElement expects exactly 3 arguments") != NULL,
                       "Should whine about wrong arg-count");
     //
-    if (!dukUtilsCompileStrToFn(ctx, layoutTmpl2, "l", errBuf)) {
-        printToStdErr("Failed to compile test script: %s", errBuf); goto done; }
-    bool success2 = vTreeScriptBindingsExecLayoutTmpl(ctx, &vTree2, NULL, NULL, "", errBuf);
-    assertThatOrGoto(!success2, done, "Should return false");
-    assertThat(strstr(errBuf, "3rd arg must be \"str\", <nodeRef>, or [<nodeRef>...]") != NULL,
-                      "Should whine about wrong 3rd. arg");
-    //
-    if (!dukUtilsCompileStrToFn(ctx, layoutTmpl3, "l", errBuf)) {
-        printToStdErr("Failed to compile test script: %s", errBuf); goto done; }
-    bool success3 = vTreeScriptBindingsExecLayoutTmpl(ctx, &vTree3, NULL, NULL, "", errBuf);
-    assertThatOrGoto(!success3, done, "Should return false");
-    assertThat(strstr(errBuf, "Child-array can't be empty") != NULL,
-                      "Should whine about empty child-array");
+    const char* tmpls[] = {layoutTmpl2, layoutTmpl3, layoutTmpl4, layoutTmpl5};
+    const char* expected[] = {"", "null", "undefined", "true"};
+    VTree* trees[] = {&vTree2, &vTree3, &vTree4, &vTree5};
+    for (unsigned i = 0; i < sizeof(tmpls) / sizeof(const char*); ++i) {
+        if (!dukUtilsCompileStrToFn(ctx, tmpls[i], "l", errBuf)) {
+            printToStdErr("Failed to compile test script: %s", errBuf); goto done; }
+        bool success = vTreeScriptBindingsExecLayoutTmpl(ctx, trees[i], NULL, NULL, "", errBuf);
+        assertThatOrGoto(success, done, "Should return true");
+        ElemNode *p = vTreeFindElemNodeByTagName(trees[i], "p");
+        assertThatOrGoto(p != NULL, done, "Sanity <p> != NULL");
+        TextNode *pText = vTreeFindTextNode(trees[i], p->children.values[0]);
+        assertThatOrGoto(pText != NULL, done, "Sanity <p> text != NULL");
+        assertStrEquals(pText->chars, expected[i]);
+    }
     //
     done:
         duk_destroy_heap(ctx);
         vTreeFreeProps(&vTree1);
         vTreeFreeProps(&vTree2);
         vTreeFreeProps(&vTree3);
+        vTreeFreeProps(&vTree4);
+        vTreeFreeProps(&vTree5);
 }
 
 static void

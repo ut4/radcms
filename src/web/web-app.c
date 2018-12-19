@@ -167,7 +167,7 @@ webAppRespond(void *myPtr, struct MHD_Connection *conn, const char *url,
     struct MHD_Response *response = NULL;
     WebApp *app = myPtr;
     if (strlen(url) > MAX_URL_LEN) {
-        printToStdErr("Error: Url too long (max %u, was %lu).", MAX_URL_LEN,
+        printToStdErr("[Error]: Url too long (max %u, was %lu).", MAX_URL_LEN,
                       strlen(url));
         return MHD_NO;
     }
@@ -274,13 +274,13 @@ preparePostRequest(struct MHD_Response **response, struct MHD_Connection *conn,
     MHD_get_connection_values(conn, MHD_HEADER_KIND, validatePostReqHeaders,
                               &hasRightContentType);
     if (!hasRightContentType) {
-        printToStdErr("Error: Expected Content-Type: \"application/x-www-form-urlencoded\".\n");
+        printToStdErr("[Error]: Expected Content-Type: \"application/x-www-form-urlencoded\".\n");
         return MHD_HTTP_BAD_REQUEST;
     }
     //
     PerConnInfo *connInfo = ALLOCATE(PerConnInfo);
     if (!connInfo) {
-        printToStdErr("Error: preparePostRequest: Failed to ALLOCATE(PerConnInfo).\n");
+        printToStdErr("[Error]: preparePostRequest: Failed to ALLOCATE(PerConnInfo).\n");
         return MHD_HTTP_INTERNAL_SERVER_ERROR;
     }
     connInfo->reqHandler = h;
@@ -288,7 +288,7 @@ preparePostRequest(struct MHD_Response **response, struct MHD_Connection *conn,
         conn, FORM_DATA_ITER_BUF_LEN, iterateFormDataBasic,
         h->formDataHandlers);
     if (!connInfo->postProcessor) {
-        printToStdErr("Error: preparePostRequest: Failed to MHD_create_post_processor().\n");
+        printToStdErr("[Error]: preparePostRequest: Failed to MHD_create_post_processor().\n");
         FREE(PerConnInfo, connInfo);
         return MHD_HTTP_INTERNAL_SERVER_ERROR;
     }
@@ -302,7 +302,7 @@ processPostData(const char *uploadData, size_t *uploadDataSize,
                 void **perConnPtr) {
     size_t l = *uploadDataSize;
     if (l == 0 || l > MAX_POST_SIZE) {
-        printToStdErr("Error: POST body length out of range (max %u, was %lu).\n",
+        printToStdErr("[Error]: POST body length out of range (max %u, was %lu).\n",
                       MAX_POST_SIZE, l);
         return MHD_HTTP_BAD_REQUEST;
     }
@@ -311,7 +311,7 @@ processPostData(const char *uploadData, size_t *uploadDataSize,
     FormDataHandlers *formHandlers = connInfo->reqHandler->formDataHandlers;
     formHandlers->myPtr = formHandlers->formDataInitFn();
     if (!formHandlers->myPtr) {
-        printToStdErr("Error: preparePostRequest: formDataInitFn returned nullPtr.\n");
+        printToStdErr("[Error]: preparePostRequest: formDataInitFn returned nullPtr.\n");
         return MHD_HTTP_INTERNAL_SERVER_ERROR;
     }
     //
@@ -330,7 +330,7 @@ iterateFormDataBasic(void *myPPPtr, enum MHD_ValueKind kind, const char *key,
         FormDataHandlers *h = myPPPtr;
         return (int)h->formDataReceiverFn(key, data, h->myPtr);
     }
-    printToStdErr("Error: POST|PUT key length ouf or range (max %u, is %lu), ignoring.\n",
+    printToStdErr("[Error]: POST|PUT key length ouf or range (max %u, is %lu), ignoring.\n",
                   MAX_FIELD_KEY_LEN, size);
     return MHD_YES;
 }

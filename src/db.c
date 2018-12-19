@@ -42,7 +42,7 @@ dbSelect(Db *this, const char *sql, mapRowFn onRow, void *myPtr, char *err) {
     }
     // 4. Clean up
     if (sqlite3_finalize(stmt) != SQLITE_OK) {
-        printToStdErr("Warn: Failed to finalize stmt: %s\n",
+        printToStdErr("[Warn]: Failed to finalize stmt: %s\n",
                       sqlite3_errmsg(this->conn));
     }
     return ret;
@@ -71,7 +71,7 @@ dbInsert(Db *this, const char *sql, bindValsFn myBindFn, void *data, char *err) 
     // 4. Clean up
     done:
     if (sqlite3_finalize(stmt) != SQLITE_OK) {
-        printToStdErr("Warn: Failed to finalize stmt: %s\n",
+        printToStdErr("[Warn]: Failed to finalize stmt: %s\n",
                       sqlite3_errmsg(this->conn));
     }
     return insertId;
@@ -100,7 +100,7 @@ dbUpdate(Db *this, const char *sql, bindValsFn myBindFn, void *myPtr, char *err)
     // 4. Clean up
     done:
     if (sqlite3_finalize(stmt) != SQLITE_OK) {
-        printToStdErr("Warn: Failed to finalize stmt: %s\n",
+        printToStdErr("[Warn]: Failed to finalize stmt: %s\n",
                       sqlite3_errmsg(this->conn));
     }
     return updateRowCount;

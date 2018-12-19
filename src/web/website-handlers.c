@@ -238,7 +238,7 @@ injectCPanelIframeAndCurrentPageData(char **ptrToHtml, const char *pageDataJson)
     if (startOfBody && startOfBody != html) {
         startOfBody += strlen("<body>");
     } else {
-        printToStdErr("Warn: failed to injectCPanelIframe().\n");
+        printToStdErr("[Warn]: failed to injectCPanelIframe().\n");
         FREE_ARR(char, tmp, oldLen + injlen);
         return;
     }

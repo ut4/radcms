@@ -93,7 +93,7 @@ websiteGenerate(Website *this, pageExportWriteFn writeFn, void *writeFnMyptr,
 bool
 websiteInstall(Website *this, SampleData *data, const char *schemaSql,
                char *err) {
-    printf("Info: Starting to write sample data '%s' to '%s'...\n", data->name,
+    printf("[Info]: Starting to write sample data '%s' to '%s'...\n", data->name,
            this->rootDir);
     /**
      * 1. Create db schema
@@ -112,7 +112,7 @@ websiteInstall(Website *this, SampleData *data, const char *schemaSql,
             return false;
         }
     }
-    printf("Info: All done.\n");
+    printf("[Info]: Wrote sample data.\n");
     return true;
 }
 

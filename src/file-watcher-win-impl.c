@@ -57,7 +57,7 @@ fileWatcherWatch(FileWatcher *this, const char *dir, fileNameMatcher matcherFn,
             } else if (incomingDword == FILE_ACTION_REMOVED) {
                 incomingEvent = FW_EVENT_DELETED;
             } else {
-                printToStdErr("Warn: Unsupported fw event type.\n");
+                printToStdErr("[Warn]: Unsupported fw event type.\n");
                 continue;
             }
             //
@@ -75,7 +75,8 @@ fileWatcherWatch(FileWatcher *this, const char *dir, fileNameMatcher matcherFn,
             timerStart();
             this->onEventFn(incomingEvent, fileName, myPtr);
         } else {
-            putError("Failed to ReadDirectoryChangesW(): %lu.\n", GetLastError());
+            putError("Failed to ReadDirectoryChangesW(): %lu.\n",
+                     GetLastError());
             return false;
         }
     }

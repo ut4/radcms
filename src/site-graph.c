@@ -23,7 +23,7 @@ siteGraphFreeProps(SiteGraph *this) {
 bool
 siteGraphParse(char *str, SiteGraph *out, StrReader *sr, char *err) {
     if (!strReaderIsDigit(str[0])) {
-        putError("ParseError: Expected a digit but got '%c'.\n", str[0]);
+        putError("Expected a digit but got '%c'.\n", str[0]);
         return false;
     }
     strReaderInit(sr, str, '|');
@@ -54,10 +54,10 @@ siteGraphParse(char *str, SiteGraph *out, StrReader *sr, char *err) {
         }
     }
     if (out->pages.size != totalPageCount) {
-        printToStdErr("Warn: siteGraph->pages.size != definedTotalPageCount");
+        printToStdErr("[Warn]: siteGraph->pages.size != definedTotalPageCount");
     }
     if (out->templates.length != templateCount) {
-        printToStdErr("Warn: siteGraph->templates.length != definedTemplateCount");
+        printToStdErr("[Warn]: siteGraph->templates.length != definedTemplateCount");
     }
     return true;
 }
@@ -91,7 +91,7 @@ siteGraphSerialize(SiteGraph *this) {
      */
     char *out = ALLOCATE_ARR(char, len);
     if (!out) {
-        printToStdErr("Error: siteGraphSerialize: Failed to allocate $out.\n");
+        printToStdErr("[Error]: siteGraphSerialize: Failed to allocate $out.\n");
         return NULL;
     }
     char *tail = out;
@@ -183,7 +183,7 @@ siteGraphDiffMake(SiteGraph *this, VTree *vTree, void *dukCtx, void *toMyPtr,
         if (!lfn) continue;
         ElemProp *href = elemNodeGetProp(&vTree->elemNodes.values[i], "href");
         if (!href) {
-            printToStdErr("Error: Can't follow a link without href.\n");
+            printToStdErr("[Error]: Can't follow a link without href.\n");
             return;
         }
         // Page already in the site-graph -> skip
