@@ -12,7 +12,7 @@ testGETComponentTypesReturnsComponentTypes(Db *db, duk_context *ctx, char *err) 
     char *cwd = testUtilsGetNormalizedCwd();
     if (!testUtilsReadAndRunGlobal(ctx, cwd, "src/web/component-handlers.js",
                                    err)) { printToStdErr("%s",err); return; }
-    duk_push_thread_stash(ctx, ctx);         // [stash]
+    duk_push_global_stash(ctx);              // [stash]
     commonScriptBindingsPushApp(ctx, -1);    // [stash app]
     duk_get_prop_string(ctx, -1, "_routes"); // [stash app routes]
     assertThatOrGoto(duk_get_length(ctx, -1) == 1, done, "Sanity routes.length == 1");

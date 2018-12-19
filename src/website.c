@@ -35,7 +35,7 @@ websiteFetchAndParseSiteGraph(Website *this, char *err) {
 bool
 websitePopulateDukCaches(Website *this, char *err) {
     TemplateArray *tmpls = &this->siteGraph.templates;
-    duk_push_thread_stash(this->dukCtx, this->dukCtx);
+    duk_push_global_stash(this->dukCtx);
     //
     for (unsigned i = 0; i < tmpls->length; ++i) {
         if (!websiteCacheTemplate(this, tmpls->values[i].fileName, err)) {
@@ -167,7 +167,7 @@ pageRender(Website *this, int layoutIdx, const char *url,
         }
         return renderedHtml;
     }
-    duk_push_thread_stash(this->dukCtx, this->dukCtx);
+    duk_push_global_stash(this->dukCtx);
     VTree vTree;
     vTreeInit(&vTree);
     DocumentDataConfig ddc;
@@ -190,7 +190,7 @@ pageRender(Website *this, int layoutIdx, const char *url,
     if (inspectFn) inspectFn(&this->siteGraph, &vTree, this->dukCtx,
                              inspectFnMyPtr, err);
     done:
-    duk_pop(this->dukCtx); // thread stash
+    duk_pop(this->dukCtx); // stash
     vTreeFreeProps(&vTree);
     documentDataConfigFreeProps(&ddc);
     componentArrayFreeProps(&components);

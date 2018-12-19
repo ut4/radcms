@@ -39,7 +39,7 @@ coreHandlersHandleScriptRouteRequest(void *myPtr, void *myDataPtr, const char *m
     unsigned out = MHD_HTTP_NOT_FOUND;
     duk_context *ctx = myPtr;
     ASSERT(duk_get_top(ctx) == 0, "Duk stack not empty.");
-    duk_push_thread_stash(ctx, ctx);                // [stash]
+    duk_push_global_stash(ctx);                     // [stash]
     commonScriptBindingsPushApp(ctx, -1);           // [stash app]
     duk_get_prop_string(ctx, -1, "_routes");        // [stash app routes]
     duk_size_t l = duk_get_length(ctx, -1);

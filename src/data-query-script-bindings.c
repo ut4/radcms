@@ -38,7 +38,7 @@ dataQueryScriptBindingsInit(duk_context *ctx) {
     /*
      * stashed DataBatchConfig object prototype
      */
-    duk_push_thread_stash(ctx, ctx);                        // [... stash]
+    duk_push_global_stash(ctx);                             // [... stash]
     duk_push_bare_object(ctx);                              // [... stash obj]
     duk_push_c_lightfunc(ctx, dataBatchConfigSBSetWhere, 1, 1, 0); // [... stash obj lightfn]
     duk_put_prop_string(ctx, -2, "where");                  // [... stash obj]
@@ -52,7 +52,7 @@ dataQueryScriptBindingsInit(duk_context *ctx) {
 
 void
 dataQuerySBSetStashedDocumentDataConfig(duk_context *ctx, DocumentDataConfig *ddc) {
-    duk_push_thread_stash(ctx, ctx);             // [... stash]
+    duk_push_global_stash(ctx);                  // [... stash]
     duk_push_pointer(ctx, ddc);                  // [... stash ptr]
     duk_put_prop_string(ctx, -2, KEY_DDC_C_PTR); // [... stash]
     duk_pop(ctx);                                // [...]
@@ -63,7 +63,7 @@ dataQuerySBPushDbc(duk_context *ctx, DataBatchConfig *dbc) {
     duk_push_object(ctx);                        // [... obj]
     duk_push_uint(ctx, dbc->id);                 // [... obj, uint]
     duk_put_prop_string(ctx, -2, "id");          // [... obj]
-    duk_push_thread_stash(ctx, ctx);             // [... obj stash]
+    duk_push_global_stash(ctx);                  // [... obj stash]
     // set obj.prototype = stash.dbcPrototypeObject
     duk_get_prop_string(ctx, -1, KEY_DBC_JS_PROTO);// [... obj stash proto]
     duk_set_prototype(ctx, -3);                  // [... obj stash]
@@ -75,7 +75,7 @@ dataQuerySBPushDbc(duk_context *ctx, DataBatchConfig *dbc) {
 
 static duk_ret_t
 handleFetchOneOrFetchAll(duk_context *ctx, bool isFetchAll) {
-    duk_push_thread_stash(ctx, ctx);
+    duk_push_global_stash(ctx);
     duk_get_prop_string(ctx, -1, KEY_DDC_C_PTR);
     DocumentDataConfig *ddc = duk_get_pointer(ctx, -1);
     const char *componentTypeName = duk_require_string(ctx, 0); // 1. arg
@@ -103,7 +103,7 @@ documentDataConfigSBFetchAll(duk_context *ctx) {
 
 static duk_ret_t
 dataBatchConfigSBSetWhere(duk_context *ctx) {
-    duk_push_thread_stash(ctx, ctx);
+    duk_push_global_stash(ctx);
     duk_get_prop_string(ctx, -1, KEY_DBC_C_PTR);
     DataBatchConfig *dbc = duk_get_pointer(ctx, -1);
     const char *where = duk_require_string(ctx, 0); // 1. arg
@@ -119,7 +119,7 @@ dataBatchConfigSBSetWhere(duk_context *ctx) {
 
 static duk_ret_t
 dataBatchConfigSBSetTmplVarName(duk_context *ctx) {
-    duk_push_thread_stash(ctx, ctx);
+    duk_push_global_stash(ctx);
     duk_get_prop_string(ctx, -1, KEY_DBC_C_PTR);
     DataBatchConfig *dbc = duk_get_pointer(ctx, -1);
     const char *varName = duk_require_string(ctx, 0); // 1. arg
@@ -135,7 +135,7 @@ dataBatchConfigSBSetTmplVarName(duk_context *ctx) {
 
 static duk_ret_t
 dataBatchConfigSBValidate(duk_context *ctx) {
-    duk_push_thread_stash(ctx, ctx);
+    duk_push_global_stash(ctx);
     duk_get_prop_string(ctx, -1, KEY_DDC_C_PTR);
     DataBatchConfig *cur = &((DocumentDataConfig*)duk_get_pointer(ctx, -1))->batches;
     while (cur) {

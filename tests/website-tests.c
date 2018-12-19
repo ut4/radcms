@@ -40,7 +40,7 @@ static void
 storePageDataToStr(SiteGraph *this, VTree *vTree, void *dukCtx, void *toMyPtr,
                  char *err) {
     duk_context *ctx = dukCtx;
-    duk_push_thread_stash(ctx, ctx);                    // [stash]
+    duk_push_global_stash(ctx);                         // [stash]
     duk_get_prop_string(ctx, -1, "_pageDataJsImpl");    // [stash pageData]
     duk_get_prop_string(ctx, -1, "directiveInstances"); // [stash pageData arr]
     duk_json_encode(ctx, -1);                           // [stash pageData str]
@@ -72,7 +72,7 @@ testPageRenderPopulatesPageData(duk_context *ctx, char *err) {
             "]);"
         "}"
     "}";
-    duk_push_thread_stash(ctx, ctx);                                   // [stash]
+    duk_push_global_stash(ctx);                                        // [stash]
     if (!testUtilsCompileAndCache(ctx, testLayoutTmpl, l->fileName, err)) {
         printToStdErr("%s", err); goto done;
     }

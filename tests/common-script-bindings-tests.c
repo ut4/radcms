@@ -2,7 +2,7 @@
 
 static void
 testAppAddRouteAddsFunctions(duk_context *ctx, char *err) {
-    duk_push_thread_stash(ctx, ctx);
+    duk_push_global_stash(ctx);
     char *testScript = "function(app) {"
         "app.addRoute(function() { return 11; });"
         "app.addRoute(function() { return 22; });"
@@ -36,7 +36,7 @@ testDbSelectAllBindingsSelectsStuffFromDb(Db *db, duk_context *ctx, char *err) {
         "insert into componentTypes values (1, 'test'), (2, 'another');"
     )) return;
     //
-    duk_push_thread_stash(ctx, ctx);
+    duk_push_global_stash(ctx);
     char *myScript = "function(db) { var out=[];"
                         "db.selectAll('select id, `name` from componentTypes',"
                         "function map(row) {"
@@ -84,7 +84,7 @@ testDbSelectAllBindingsHandlesErrors(Db *db, duk_context *ctx, char *err) {
     if (!testUtilsExecSql(db,
         "insert into componentTypes values (1, 'test');"
     )) return;
-    duk_push_thread_stash(ctx, ctx);
+    duk_push_global_stash(ctx);
     //
     char *scriptError = "function(db) {"
                         "db.selectAll('select id, `name` from"

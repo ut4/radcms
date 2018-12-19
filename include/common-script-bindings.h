@@ -9,16 +9,16 @@ void
 commonScriptBindingsInit(duk_context *ctx, Db *db, SiteGraph *siteGraph, char *err);
 
 void
-commonScriptBindingsPushDb(duk_context *ctx, int threadStashIsAt);
+commonScriptBindingsPushDb(duk_context *ctx, int dukStashIsAt);
 
 void
-commonScriptBindingsPushApp(duk_context *ctx, int threadStashIsAt);
+commonScriptBindingsPushApp(duk_context *ctx, int dukStashIsAt);
 
 void
-commonScriptBindingsPushDirectiveRegister(duk_context *ctx, int threadStashItAt);
+commonScriptBindingsPushDirectiveRegister(duk_context *ctx, int dukStashIsAt);
 
 void
 commonScriptBindingsPutDirective(duk_context *ctx, const char *directiveName,
-                                 int threadStashIsAt);
+                                 int dukStashIsAt);
 
 #endif

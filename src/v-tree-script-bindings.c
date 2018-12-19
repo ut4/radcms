@@ -109,7 +109,7 @@ vTreeSBRegisterElement(duk_context *ctx) {
         "registerElement expects exactly 3 arguments");
     const char *tagName = duk_require_string(ctx, 0); // 1st argument
     ElemProp *props = collectElemProps(ctx);          // 2nd argument (props)
-    duk_push_thread_stash(ctx, ctx);
+    duk_push_global_stash(ctx);
     duk_get_prop_string(ctx, -1, KEY_VTREE_C_PTR);
     VTree *vTree = duk_get_pointer(ctx, -1);
     NodeRefArray children;
@@ -162,7 +162,7 @@ vTreeSBRegisterElement(duk_context *ctx) {
 
 static duk_ret_t
 vTreeSBPartial(duk_context *ctx) {
-    duk_push_thread_stash(ctx, ctx);             // [str data stash]
+    duk_push_global_stash(ctx);                  // [str data stash]
     const char *tmplFileName = duk_require_string(ctx, 0);
     duk_get_prop_string(ctx, -1, tmplFileName);  // [str data stash fn]
     if (!duk_is_function(ctx, -1)) {
@@ -186,7 +186,7 @@ vTreeSBPartial(duk_context *ctx) {
 
 static void
 setStashedTree(duk_context *ctx, VTree *vTree) {
-    duk_push_thread_stash(ctx, ctx);                // [stash]
+    duk_push_global_stash(ctx);                     // [stash]
     duk_push_pointer(ctx, vTree);                   // [stash pointer]
     duk_put_prop_string(ctx, -2, KEY_VTREE_C_PTR);  // [stash]
     duk_pop(ctx);                                   // []

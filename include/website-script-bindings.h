@@ -7,13 +7,13 @@
 void
 websiteScriptBindingsInit(duk_context *ctx, char *err);
 
-/** threadStash._pageDataJsImpl = new PageData() */
+/** dukStash._pageDataJsImpl = new PageData() */
 void
 websiteScriptBindingsSetStashedPageData(duk_context *ctx);
 
-/** return JSON.stringify(threadStash._pageDataJsImpl) */
+/** return JSON.stringify(dukStash._pageDataJsImpl) */
 const char*
 websiteScriptBindingsStrinfigyStashedPageData(duk_context *ctx,
-                                              int threadStashIsAt, char *err);
+                                              int dukStashIsAt, char *err);
 
 #endif

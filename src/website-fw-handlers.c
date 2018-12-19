@@ -58,7 +58,7 @@ handleFileModifyEvent(const char *fileName, Website *this, char *err) {
     Template *layout = siteGraphFindTemplate(&this->siteGraph, (char*)fileName,
                                              &layoutIdx);
     ASSERT(layout != NULL, "An unknown file was modified.");
-    duk_push_thread_stash(this->dukCtx, this->dukCtx);
+    duk_push_global_stash(this->dukCtx);
     if (!websiteCacheTemplate(this, layout->fileName, err)) {
         printToStdErr("%s\n", err);
         duk_pop(this->dukCtx);
@@ -73,6 +73,6 @@ static bool
 onRescanRequested(void *arg, void *myPtr) {
     Page *page = arg;
     Website *this = myPtr;
-    duk_push_thread_stash(this->dukCtx, this->dukCtx);
+    duk_push_global_stash(this->dukCtx);
     return performRescan(this, page->url, page->layoutIdx, this->errBuf);
 }

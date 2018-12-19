@@ -58,8 +58,8 @@ commonScriptBindingsInit(duk_context *ctx, Db *db, SiteGraph *siteGraph, char* e
         "} else this.headers = {};"
     "}";
     if (!dukUtilsCompileAndRunStrGlobal(ctx, globalCode, "insane-common.js", err)) return;
-    duk_push_thread_stash(ctx, ctx);                   // [stash]
-    // threadStash._dbCPtr & threadStash._websiteCPtr
+    duk_push_global_stash(ctx);                        // [stash]
+    // dukStash._dbCPtr & dukStash._websiteCPtr
     duk_push_pointer(ctx, db);                         // [stash ptr]
     duk_put_prop_string(ctx, -2, KEY_DB_C_PTR);        // [stash]
     duk_push_pointer(ctx, siteGraph);                  // [stash ptr]
@@ -82,16 +82,16 @@ commonScriptBindingsInit(duk_context *ctx, Db *db, SiteGraph *siteGraph, char* e
     duk_push_c_lightfunc(ctx, websiteSBGetPages, 0, 0, 0); // [stash srvcs site lightfn]
     duk_put_prop_string(ctx, -2, "getPages");          // [stash srvcs site]
     duk_put_prop_string(ctx, -2, "website");           // [stash srvcs]
-    // threadStash.services
+    // dukStash.services
     duk_put_prop_string(ctx, -2, KEY_SERVICES_JS_IMPL); // [stash]
-    // threadStash._ResultRowJsPrototype
+    // dukStash._ResultRowJsPrototype
     duk_push_bare_object(ctx);                         // [stash row]
     duk_push_c_lightfunc(ctx, dbSBResultRowGetInt, 1, 0, 0); // [stash row lightfn]
     duk_put_prop_string(ctx, -2, "getInt");            // [stash row]
     duk_push_c_lightfunc(ctx, dbSBResultRowGetString, 1, 0, 0); // [stash row lightfn]
     duk_put_prop_string(ctx, -2, "getString");         // [stash row]
     duk_put_prop_string(ctx, -2, KEY_ROW_JS_PROTO);    // [stash]
-    // threadStash._directiveRegisterJsImpl
+    // dukStash._directiveRegisterJsImpl
     duk_push_bare_object(ctx);                         // [stash dirreg]
     duk_push_bare_object(ctx);                         // [stash dirreg entries]
     duk_put_prop_string(ctx, -2, "_entries");          // [stash dirreg]
@@ -101,32 +101,32 @@ commonScriptBindingsInit(duk_context *ctx, Db *db, SiteGraph *siteGraph, char* e
     duk_pop(ctx);                                      // []
 }
 
-#define pushService(name, threadStashIsAt) \
-    duk_get_prop_string(ctx, threadStashIsAt, KEY_SERVICES_JS_IMPL); \
+#define pushService(name, dukStashIsAt) \
+    duk_get_prop_string(ctx, dukStashIsAt, KEY_SERVICES_JS_IMPL); \
     duk_get_prop_string(ctx, -1, name); \
     duk_remove(ctx, -2)
 
 void
-commonScriptBindingsPushDb(duk_context *ctx, int threadStashIsAt) {
-    pushService("db", threadStashIsAt);
+commonScriptBindingsPushDb(duk_context *ctx, int dukStashIsAt) {
+    pushService("db", dukStashIsAt);
 }
 
 void
-commonScriptBindingsPushApp(duk_context *ctx, int threadStashIsAt) {
-    pushService("app", threadStashIsAt);
+commonScriptBindingsPushApp(duk_context *ctx, int dukStashIsAt) {
+    pushService("app", dukStashIsAt);
 }
 
 void
-commonScriptBindingsPushDirectiveRegister(duk_context *ctx, int threadStashItAt) {
-    duk_get_prop_string(ctx, threadStashItAt, KEY_DIRECTIVE_REGISTER_JS_IMPL);
+commonScriptBindingsPushDirectiveRegister(duk_context *ctx, int dukStashItAt) {
+    duk_get_prop_string(ctx, dukStashItAt, KEY_DIRECTIVE_REGISTER_JS_IMPL);
 }
 
 void
 commonScriptBindingsPutDirective(duk_context *ctx, const char *directiveName,
-                                 int threadStashIsAt) {
+                                 int dukStashIsAt) {
                                                         // [? fn]
     ASSERT(duk_is_function(ctx, -1), "Stack top must be a function");
-    commonScriptBindingsPushDirectiveRegister(ctx, threadStashIsAt); // [? fn dirreg]
+    commonScriptBindingsPushDirectiveRegister(ctx, dukStashIsAt); // [? fn dirreg]
     duk_get_prop_string(ctx, -1, "_entries");           // [? fn dirreg entriesObj]
     duk_swap_top(ctx, -3);                              // [? entriesObj dirreg fn]
     duk_remove(ctx, -2);                                // [? entriesObj fn]
@@ -137,7 +137,7 @@ commonScriptBindingsPutDirective(duk_context *ctx, const char *directiveName,
 static duk_ret_t
 commonSBSearchModule(duk_context *ctx) {
     const char *id = duk_get_string(ctx, 0);
-    duk_push_thread_stash(ctx, ctx);        // [id req exp mod stash]
+    duk_push_global_stash(ctx);             // [id req exp mod stash]
     if (strcmp(id, "services") == 0) {
         duk_get_prop_string(ctx, -1, KEY_SERVICES_JS_IMPL);
     } else {
@@ -166,7 +166,7 @@ appSBAddRoute(duk_context *ctx) {
 
 static duk_ret_t
 websiteSBGetPages(duk_context *ctx) {
-    duk_push_thread_stash(ctx, ctx);                    // [stash]
+    duk_push_global_stash(ctx);                         // [stash]
     duk_get_prop_string(ctx, -1, KEY_SITE_GRAPH_C_PTR); // [stash ptr]
     duk_push_array(ctx);                                // [stash ptr out]
     HashMapElPtr *ptr = ((SiteGraph*)duk_get_pointer(ctx, -2))->pages.orderedAccess;
@@ -210,7 +210,7 @@ sendDbResultRowToJsMapper(sqlite3_stmt *stmt, void *myPtr) {
 static duk_ret_t
 dbSBSelectAll(duk_context *ctx) {
     const char *sql = duk_require_string(ctx, 0);
-    duk_push_thread_stash(ctx, ctx);            // [str fn stash]
+    duk_push_global_stash(ctx);                 // [str fn stash]
     char err[ERR_BUF_LEN]; err[0] = '\0';
     duk_get_prop_string(ctx, -1, KEY_DB_C_PTR); // [str fn stash ptr]
     Db *db = duk_get_pointer(ctx, -1);
@@ -226,7 +226,7 @@ dbSBSelectAll(duk_context *ctx) {
 
 #define getVal(dukPushFn, sqliteGetterFn) \
     int idx = duk_require_int(ctx, 0); \
-    duk_push_thread_stash(ctx, ctx); \
+    duk_push_global_stash(ctx); \
     duk_get_prop_string(ctx, -1, KEY_CUR_STMT_C_PTR); \
     sqlite3_stmt *stmt = duk_get_pointer(ctx, -1); \
     duk_get_prop_string(ctx, -2, KEY_CUR_ROW_COL_COUNT);  \

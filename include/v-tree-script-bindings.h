@@ -21,8 +21,8 @@ vTreeScriptBindingsCompileAndExecLayoutWrap(duk_context *ctx, const char *layout
 
 /**
  * Same as vTreeScriptBindingsCompileAndExecLayout, but retrieves the layout
- * -function from the duktape thread stash, using $layoutName as a key. Note:
- * assumes that duk_push_thread_stash is already called. */
+ * -function from a duktape stash, using $layoutName as a key. Note: assumes
+ * that duk_push_some_stash is already called. */
 bool
 vTreeScriptBindingsExecLayoutWrapFromCache(duk_context *ctx, const char *layoutName,
                                            DocumentDataConfig *ddc, const char *url,

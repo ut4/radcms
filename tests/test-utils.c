@@ -29,10 +29,10 @@ testUtilsExecSql(Db *db, const char *sql) {
 
 bool
 testUtilsCompileAndCache(duk_context *ctx, const char *code, char *key, char *err) {
-    duk_push_thread_stash(ctx, ctx);
+    duk_push_global_stash(ctx);
     if (!dukUtilsCompileStrToFn(ctx, code, key, err)) return false;
     duk_put_prop_string(ctx, -2, key);
-    duk_pop(ctx); // thread stash
+    duk_pop(ctx); // stash
     return true;
 }
 
