@@ -25,8 +25,8 @@ websiteHandlersHandlePageRequest(void *myPtr, void *myDataPtr, const char *metho
  *     wrotePagesNum: 5,
  *     tookSecs: 0.002672617,
  *     totalPages: 6,
- *     targetRoot: '/some/path/',
- *     targetDir: 'my/dir',
+ *     sitePath: '/some/path/',
+ *     outDir: 'my/dir',
  *     issues: ['/some-url>Some error.']
  * }
  */

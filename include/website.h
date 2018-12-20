@@ -19,7 +19,7 @@
 typedef struct {
     SiteGraph siteGraph;
     StrReader strReader;
-    char *rootDir; // borrowed from WebApp
+    char *sitePath; // borrowed from WebApp
     duk_context *dukCtx; // borrowed from main.c
     Db *db; // borrowed from main.c
     char *errBuf; // borrowed from main.c
@@ -49,7 +49,7 @@ websiteGenerate(Website *this, pageExportWriteFn writeFn, void *writeFnMyptr,
                 StrTube *issues, char *err);
 
 /**
- * Writes site.ini + data.db + $data->files to $this->rootDir.
+ * Writes site.ini + data.db + $data->files to $this->sitePath.
  */
 bool
 websiteInstall(Website *this, SampleData *data, const char *schemaSql,

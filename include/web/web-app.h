@@ -13,7 +13,7 @@
 #include "../website-fw-handlers.h" // file-watcher.h
 
 typedef struct {
-    char *rootDir; // Normalized, always ends with "/"
+    char *sitePath; // Normalized, always ends with "/"
     char *appPath;
     SiteIni ini;
     FileWatcher fileWatcher;
@@ -25,7 +25,7 @@ typedef struct {
 } WebApp;
 
 void
-webAppInit(WebApp *this, const char *rootDir, Website *site, char *err);
+webAppInit(WebApp *this, const char *sitePath, Website *site, char *err);
 
 void
 webAppFreeProps(WebApp *this);

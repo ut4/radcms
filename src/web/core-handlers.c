@@ -4,20 +4,25 @@ unsigned
 coreHandlersHandleStaticFileRequest(void *myPtr, void *myDataPtr, const char *method,
                                     const char *url, struct MHD_Connection *conn,
                                     struct MHD_Response **response, char *err) {
-    if (strcmp(method, "GET") != 0 || strstr(url, "/frontend/") != url) return 0;
-    if (strstr(url, "..")) return MHD_HTTP_NOT_FOUND;
+    if (strcmp(method, "GET") != 0) return 0;
+    // Must have an extension
     char *ext = strrchr(url, '.');
-    if (!ext) return MHD_HTTP_NOT_FOUND;
+    if (!ext) return 0;
+    // Mustn't contain ".."
+    if (strstr(url, "..")) return MHD_HTTP_NOT_FOUND;
+    // Must end with .(js|html|css|svg)
     bool isJs = strcmp(ext, ".js") == 0;
     bool isHtml = !isJs ? strcmp(ext, ".html") == 0 : false;
     bool isCss = !isHtml ? strcmp(ext, ".css") == 0 : false;
     if (!isJs && !isHtml && !isCss && strcmp(ext, ".svg") != 0) {
         return MHD_HTTP_NOT_FOUND;
     }
+    // Must exist
     int fd;
     struct stat sbuf;
-    char *appPath = myPtr;
-    STR_CONCAT(path, appPath, url);
+    bool isUserFile = strstr(url, "/frontend/") != url;
+    char *rootPath = isUserFile ? ((WebApp*)myPtr)->sitePath : ((WebApp*)myPtr)->appPath;
+    STR_CONCAT(path, rootPath, url);
     if ((fd = open(path, O_RDONLY)) == -1 || fstat(fd, &sbuf) != 0) {
         if (fd != -1) (void)close(fd);
         return MHD_HTTP_INTERNAL_SERVER_ERROR;

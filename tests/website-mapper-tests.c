@@ -107,7 +107,7 @@ testWebsiteInstallWritesAllData(Db *db, char *err) {
     Website site;
     websiteInit(&site);
     site.db = db;
-    site.rootDir = dir;
+    site.sitePath = dir;
     const char* mockSchemaSql = "create table foo ( bar text );";
     SampleData data = {
         .name="test",
@@ -116,7 +116,7 @@ testWebsiteInstallWritesAllData(Db *db, char *err) {
         .installSql="insert into foo values ('atest');",
         .siteIniContents=""
     };
-    STR_CONCAT(testTmplFilePath, site.rootDir, data.files[0].name);
+    STR_CONCAT(testTmplFilePath, site.sitePath, data.files[0].name);
     bool success = websiteInstall(&site, &data, mockSchemaSql, err);
     assertThatOrGoto(success, done, "Should return succesfully");
     // Assert that ran mockSchemaSql

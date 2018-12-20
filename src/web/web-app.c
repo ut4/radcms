@@ -56,11 +56,11 @@ validatePostReqHeaders(void *myPtr, enum MHD_ValueKind kind, const char *key,
                        const char *value);
 
 void
-webAppInit(WebApp *this, const char *rootDir, Website *site, char *err) {
-    this->rootDir = fileIOGetNormalizedPath(rootDir);
+webAppInit(WebApp *this, const char *sitePath, Website *site, char *err) {
+    this->sitePath = fileIOGetNormalizedPath(sitePath);
     #define MAX_FILENAME_LEN 40
-    if (strlen(this->rootDir) + MAX_FILENAME_LEN > PATH_MAX) {
-        putError("Rootdir too long.\n");
+    if (strlen(this->sitePath) + MAX_FILENAME_LEN > PATH_MAX) {
+        putError("Sitepath too long.\n");
         return;
     }
     char cwd[PATH_MAX];
@@ -71,7 +71,7 @@ webAppInit(WebApp *this, const char *rootDir, Website *site, char *err) {
     eventsInit();
     this->appPath = copyString(cwd);
     siteIniInit(&this->ini);
-    this->ini.rootDir = this->rootDir;
+    this->ini.sitePath = this->sitePath;
     this->daemon = NULL;
     this->site = site;
     this->handlerCount = 0;
@@ -81,7 +81,7 @@ webAppInit(WebApp *this, const char *rootDir, Website *site, char *err) {
 void
 webAppFreeProps(WebApp *this) {
     eventsFreeProps();
-    if (this->rootDir) FREE_STR(this->rootDir);
+    if (this->sitePath) FREE_STR(this->sitePath);
     if (this->appPath) FREE_STR(this->appPath);
     siteIniFreeProps(&this->ini);
     fileWatcherFreeProps(&this->fileWatcher);
@@ -131,7 +131,7 @@ webAppStart(WebApp *this) {
 
 bool
 webAppReadOrCreateSiteIni(WebApp *this, const char *contents, char *err) {
-    STR_CONCAT(iniFilePath, this->rootDir, "site.ini");
+    STR_CONCAT(iniFilePath, this->sitePath, "site.ini");
     // Read
     if (strlen(contents) == 0) {
         return siteIniReadAndValidate(&this->ini, iniFilePath, err);
@@ -150,7 +150,7 @@ webAppStartFileWatcher(void *myPtr) {
     WebApp *app = myPtr;
     websiteFWHandlersInit(app->site);
     fileWatcherInit(&app->fileWatcher, websiteHandleFWEvent);
-    fileWatcherWatch(&app->fileWatcher, app->rootDir, websiteCheckIsFWFileAcceptable,
+    fileWatcherWatch(&app->fileWatcher, app->sitePath, websiteCheckIsFWFileAcceptable,
                      app->site, app->errBuf);
     return NULL;
 }

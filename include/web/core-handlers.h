@@ -5,7 +5,7 @@
 #include "../common-script-bindings.h" // commonScriptBindingsPushApp()
 #include "../duk.h"
 #include "../file-io.h"
-#include "web-app-common.h" // microhttpd
+#include "web-app.h" // microhttpd
 
 /**
  * Responds to GET /frontend/<any>.html|js|css|svg eg. "/frontend/cpanel.html"

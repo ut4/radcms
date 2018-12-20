@@ -7,7 +7,7 @@ static bool bindWebsiteQueryVals(sqlite3_stmt *stmt, void *data);
 void
 websiteInit(Website *this) {
     siteGraphInit(&this->siteGraph);
-    this->rootDir = NULL;
+    this->sitePath = NULL;
     this->dukCtx = NULL;
     this->db = NULL;
     this->errBuf = NULL;
@@ -94,7 +94,7 @@ bool
 websiteInstall(Website *this, SampleData *data, const char *schemaSql,
                char *err) {
     printf("[Info]: Starting to write sample data '%s' to '%s'...\n", data->name,
-           this->rootDir);
+           this->sitePath);
     /**
      * 1. Create db schema
      */
@@ -107,7 +107,7 @@ websiteInstall(Website *this, SampleData *data, const char *schemaSql,
      * 3. Write the layout-files & template-files.
      */
     for (unsigned i = 0; i < data->numFiles; ++i) {
-        STR_CONCAT(filePath, this->rootDir, data->files[i].name);
+        STR_CONCAT(filePath, this->sitePath, data->files[i].name);
         if (!fileIOWriteFile(filePath, data->files[i].contents, err)) {
             return false;
         }
@@ -128,7 +128,7 @@ websiteSaveToDb(Website *this, char *err) {
 
 bool
 websiteCacheTemplate(Website *this, const char *fileName, char *err) {
-    STR_CONCAT(tmplFilePath, this->rootDir, fileName);
+    STR_CONCAT(tmplFilePath, this->sitePath, fileName);
     char *code = fileIOReadFile(tmplFilePath, err);
     if (!code) return false;
     bool success = false;

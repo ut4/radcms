@@ -17,7 +17,7 @@ class WebsiteGenerateView extends preact.Component {
         } else if (!this.unexpectedError) {
             content = [
                 $el('div', null, ['Wrote ', g.wrotePagesNum, '/', g.totalPages,
-                                  ' pages to "', g.targetRoot, g.targetDir,
+                                  ' pages to "', g.sitePath, g.outDir,
                                   '", but had the following issues:'].join('')),
                 g.issues.map(str => {
                     const [url, ...message] = str.split('>');
@@ -43,7 +43,7 @@ class WebsiteGenerateView extends preact.Component {
             const g = JSON.parse(req.responseText);
             if (!g.issues.length) {
                 toast(['Wrote ', g.wrotePagesNum, '/', g.totalPages, ' pages to "',
-                       g.targetRoot, g.targetDir, '" in ', g.tookSecs.toFixed(6),
+                       g.sitePath, g.outDir, '" in ', g.tookSecs.toFixed(6),
                        ' secs.'].join(''), 'success');
                 myRedirect('/');
             } else {

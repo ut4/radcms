@@ -57,7 +57,10 @@ handleFileModifyEvent(const char *fileName, Website *this, char *err) {
     int layoutIdx = -1;
     Template *layout = siteGraphFindTemplate(&this->siteGraph, (char*)fileName,
                                              &layoutIdx);
-    ASSERT(layout != NULL, "An unknown file was modified.");
+    if (!layout) {
+        printToStdErr("[Notice]: An unknown file was modified, skipping.");
+        return;
+    }
     duk_push_global_stash(this->dukCtx);
     if (!websiteCacheTemplate(this, layout->fileName, err)) {
         printToStdErr("%s\n", err);
@@ -65,6 +68,7 @@ handleFileModifyEvent(const char *fileName, Website *this, char *err) {
         return;
     }
     printf("[Info]: Cached %s\n", layout->fileName);
+    err[0] = '\0';
     (void)performRescan(this, layout->sampleUrl ? layout->sampleUrl : "/",
                         layoutIdx, err);
 }

@@ -21,10 +21,22 @@ uploadPageAndWriteRespChunk(void *myPtr, uint64_t pos, char *responseBuf,
             uploadResult = UPLOAD_UNEXPECTED_ERR;
             state->hadStopError = true;
         }
-        //
-        sprintf(responseBuf, "%x\r\n%s|%03d\r\n",
-                (int)strlen(p->url) + 1 + 3, // 1 == '|', 3 == uint8
-                p->url, uploadResult);
+        const int urlLen = strlen(p->url);
+        const int urlMax = max - strlen("NNN\r\n|NNN\r\n");
+        if (urlLen <= urlMax) {
+            sprintf(responseBuf, "%x\r\n%s|%03d\r\n",
+                    urlLen + 1 + 3, // 1 == '|', 3 == uint8
+                    p->url, uploadResult);
+        } else {
+            char last = p->url[urlMax];
+            printToStdErr("[Warn]: Url too long, temporarily truncating %u "
+                          "chars.\n", urlLen - urlMax);
+            p->url[urlMax] = '\0'; // truncate abcd -> ab\0d
+            sprintf(responseBuf, "%x\r\n%s|%03d\r\n",
+                    urlMax + 1 + 3, // 1 == '|', 3 == uint8
+                    p->url, uploadResult);
+            p->url[urlMax] = last; // restore
+        }
         state->nthPage += 1;
         state->curPage = state->curPage->next;
         return strlen(responseBuf);

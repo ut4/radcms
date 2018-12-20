@@ -13,8 +13,8 @@ QUnit.module('WebsiteGenerateViewComponent', hooks => {
     });
     QUnit.test('sends request to backend', assert => {
         const responseText = JSON.stringify({
-            targetRoot: '/some/path/',
-            targetDir: 'my/dir',
+            sitePath: '/some/path/',
+            outDir: 'my/dir',
             wrotePagesNum: 5,
             tookSecs: 0.002672617,
             totalPages: 6,
@@ -38,7 +38,7 @@ QUnit.module('WebsiteGenerateViewComponent', hooks => {
             const r = JSON.parse(responseText);
             assert.equal(toastSpy.getCall(0).args[0], [
                 'Wrote ', r.wrotePagesNum, '/', r.totalPages, ' pages to "',
-                r.targetRoot, r.targetDir, '" in ', r.tookSecs.toFixed(6), ' secs.'
+                r.sitePath, r.outDir, '" in ', r.tookSecs.toFixed(6), ' secs.'
             ].join(''));
             assert.ok(redirectSpy.calledAfter(toastSpy), 'Should redirect');
             toastSpy.restore();
@@ -48,8 +48,8 @@ QUnit.module('WebsiteGenerateViewComponent', hooks => {
     });
     QUnit.test('displays issues and warnings', assert => {
         const responseText = JSON.stringify({
-            targetRoot: '/some/path/',
-            targetDir: '/my/dir',
+            sitePath: '/some/path/',
+            outDir: '/my/dir',
             wrotePagesNum: 5,
             tookSecs: 0.002672617,
             totalPages: 6,
@@ -72,7 +72,7 @@ QUnit.module('WebsiteGenerateViewComponent', hooks => {
             const firstError = form.children[1].children[1];
             const g = JSON.parse(responseText);
             assert.equal(mainContent.textContent, ['Wrote ', g.wrotePagesNum, '/',
-                g.totalPages, ' pages to "', g.targetRoot, g.targetDir,
+                g.totalPages, ' pages to "', g.sitePath, g.outDir,
                 '", but had the following issues:'].join(''));
             assert.equal(firstError.textContent, '/some-url: Some error.');
             done();

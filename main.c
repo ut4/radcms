@@ -35,6 +35,18 @@ int main(int argc, const char* argv[]) {
     if (doInit && argc < 4) printCmdInstructionsAndExit();
     //
     atexit(printMemoryReport);
+
+
+    //const char* ibuf = "compute sha1";
+    //unsigned char obuf[20];
+    //SHA1(ibuf, strlen(ibuf), obuf);
+    //int i;
+    //for (i = 0; i < 20; i++) {
+    //    printf("%02x ", obuf[i]);
+    //}
+    //printf("\n");
+
+
     int exitStatus = EXIT_FAILURE;
     Website website;
     websiteInit(&website);
@@ -57,11 +69,11 @@ int main(int argc, const char* argv[]) {
         if (strlen(errBuf)) goto done;
         //
         dbInit(&db);
-        STR_CONCAT(dbFilePath, app.rootDir, "data.db");
-        if (doInit && !fileIOMakeDirs(app.rootDir, errBuf)) goto done;
+        STR_CONCAT(dbFilePath, app.sitePath, "data.db");
+        if (doInit && !fileIOMakeDirs(app.sitePath, errBuf)) goto done;
         if (!dbOpen(&db, dbFilePath, errBuf)) goto done;
     }
-    website.rootDir = app.rootDir;
+    website.sitePath = app.sitePath;
     website.dukCtx = dukCtx;
     website.db = &db;
     website.errBuf = errBuf;
@@ -94,7 +106,7 @@ int main(int argc, const char* argv[]) {
     app.handlers[0] = (RequestHandler){.handlerFn=componentHandlersHandleComponentAddRequest,
         .myPtr=&website, .formDataHandlers=componentHandlersGetComponentAddDataHandlers()};
     app.handlers[1] = (RequestHandler){.handlerFn=coreHandlersHandleStaticFileRequest,
-        .myPtr=app.appPath, .formDataHandlers=NULL};
+        .myPtr=&app, .formDataHandlers=NULL};
     app.handlers[2] = (RequestHandler){.handlerFn=websiteHandlersHandleGenerateRequest,
         .myPtr=&website, .formDataHandlers=NULL};
     app.handlers[3] = (RequestHandler){.handlerFn=websiteHandlersHandleUploadRequest,
@@ -105,7 +117,7 @@ int main(int argc, const char* argv[]) {
         .myPtr=&website, .formDataHandlers=NULL};
     pthread_t fileWatcherThread;
     if (pthread_create(&fileWatcherThread, NULL, webAppStartFileWatcher, &app) == 0) {
-        printf("[Info]: Started watching files at '%s'.\n", app.rootDir);
+        printf("[Info]: Started watching files at '%s'.\n", app.sitePath);
     } else {
         sprintf(errBuf, "Failed to create the fileWatcher thread.\n");
         goto done;

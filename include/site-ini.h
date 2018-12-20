@@ -9,7 +9,7 @@
 
 typedef struct {
     char *foo;
-    char *rootDir; // borrowed from WebApp
+    char *sitePath; // borrowed from WebApp
 } SiteIni;
 
 void

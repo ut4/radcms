@@ -69,8 +69,8 @@ websiteHandlersHandleGenerateRequest(void *myPtr, void *myDataPtr, const char *m
     cJSON *issuesJson;
     if (!json ||
         !(issuesJson = cJSON_AddArrayToObject(json, "issues")) ||
-        !cJSON_AddStringToObject(json, "targetRoot", site->rootDir) ||
-        !cJSON_AddStringToObject(json, "targetDir", "out") ||
+        !cJSON_AddStringToObject(json, "sitePath", site->sitePath) ||
+        !cJSON_AddStringToObject(json, "outDir", "out") ||
         !cJSON_AddNumberToObject(json, "wrotePagesNum", succefulWrites) ||
         !cJSON_AddNumberToObject(json, "tookSecs", secsElapsed) ||
         !cJSON_AddNumberToObject(json, "totalPages", site->siteGraph.pages.size)) {
@@ -186,7 +186,7 @@ websiteHandlersGetUploadDataHandlers() {
 static bool
 writePageToFile(char *renderedHtml, Page *page, Website *site, void *myPtr,
                 char *err) {
-    STR_CONCAT(outDirPath, site->rootDir, "out"); // -> c:/foo/bar/out
+    STR_CONCAT(outDirPath, site->sitePath, "out"); // -> c:/foo/bar/out
     const char* indexPart = "/index.html";
     //
     const size_t urlStrLen = strlen(page->url);

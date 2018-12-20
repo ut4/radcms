@@ -26,7 +26,7 @@ validateFields(SiteIni *this, char *err) {
 void
 siteIniInit(SiteIni *this) {
     this->foo = NULL;
-    this->rootDir = NULL;
+    this->sitePath = NULL;
 }
 
 void

@@ -32,8 +32,6 @@ typedef struct {
     size_t sizeleft;
 } CurlUploadState;
 
-// Note: assumes that the length of ((Page*)cls)->url is never greater than 501
-// (the response must fit under 512 chunk and 'NNN\r\n|NNN\r\n' takes the rest.
 ssize_t
 uploadPageAndWriteRespChunk(void *myPtr, uint64_t pos, char *responseBuf,
                             size_t max);
