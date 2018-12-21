@@ -1,6 +1,6 @@
 #include "component-mapper-tests.h"
 
-static bool mapTestDataRow(sqlite3_stmt *stmt, void *myPtr);
+static bool mapTestDataRow(sqlite3_stmt *stmt, void *myPtr, unsigned nthRow);
 
 static void
 testComponentInsertValidatesItsInput(Db *db, char *err) {
@@ -99,7 +99,7 @@ testComponentArrayToJsonStringifiesComponentArray() {
 void
 componentMapperTestsRun() {
     /*
-     * Before
+     * Before all
      */
     char errBuf[ERR_BUF_LEN]; errBuf[0] = '\0';
     Db db;
@@ -115,12 +115,12 @@ componentMapperTestsRun() {
     testComponentInsertInsertsTheData(&db, errBuf);
     testComponentArrayToJsonStringifiesComponentArray();
     /*
-     * After
+     * After all
      */
     dbDestruct(&db);
 }
 
-static bool mapTestDataRow(sqlite3_stmt *stmt, void *myPtr) {
+static bool mapTestDataRow(sqlite3_stmt *stmt, void *myPtr, unsigned nthRow) {
     Component *c = ALLOCATE(Component);
     componentInit(c);
     c->name = copyString((const char*)sqlite3_column_text(stmt, 0));

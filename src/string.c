@@ -43,13 +43,15 @@ void strTubePush(StrTube *this, const char *value) {
 }
 
 StrTubeReader strTubeReaderMake(StrTube *strTube) {
-    return (StrTubeReader){.strTube = strTube, .cursor = &strTube->tube[0], .pos = 0};
+    return (StrTubeReader){.strTube = strTube, .cursor = &strTube->tube[0],
+                           .pos = 0, .i = 0};
 }
 
 void strTubeReaderInit(StrTubeReader *this, StrTube *strTube) {
     this->strTube = strTube;
     this->cursor = &strTube->tube[0];
     this->pos = 0;
+    this->i = 0;
 }
 
 char* strTubeReaderNext(StrTubeReader *this) {
@@ -61,6 +63,7 @@ char* strTubeReaderNext(StrTubeReader *this) {
         char *out = this->cursor;
         this->cursor += strLen + 1;
         this->pos += sizeof(unsigned) + strLen + 1;
+        this->i += 1;
         return out;
     }
     return NULL;

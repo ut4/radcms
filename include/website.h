@@ -72,4 +72,11 @@ pageRender(Website *this, int layoutIdx, const char *url,
            renderInspectFn inspectFn, void *inspectFnMyPtr, StrTube *errors,
            char *err);
 
+/**
+ * Same as pageRender(), but skips the vTreeRender().
+ */
+bool
+pageDryRun(Website *this, Template *layout, const char *url,
+           renderInspectFn inspectFn, void *inspectFnMyPtr, char *err);
+
 #endif

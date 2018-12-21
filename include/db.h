@@ -52,12 +52,16 @@ dbInsert(Db *this, const char *sql, bindValsFn myBindFn, void *data, char *err);
 
 /**
  * see dbSelect().
+ *
+ * @param {sqlite3_stmt} *stmt
+ * @param {void} *myPtr
+ * @param {unsigned} nthRow Current row index, zero-based
  */
-typedef bool (*mapRowFn)(sqlite3_stmt *stmt, void *myPtr);
+typedef bool (*mapRowFn)(sqlite3_stmt *stmt, void *myPtr, unsigned nthRow);
 
 /**
  * Usage:
- * bool myMapFn(sqlite3_stmt *stmt, void *myPtr) {
+ * bool myMapFn(sqlite3_stmt *stmt, void *myPtr, unsigned nthRow) {
  *     MyData *d = ALLOCATE(MyData);
  *     d->prop = copyString((const char*)sqlite3_column_text(stmt, 0));
  *     d->prop2 = copyString((const char*)sqlite3_column_text(stmt, 1));

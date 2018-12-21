@@ -32,8 +32,10 @@ dbSelect(Db *this, const char *sql, mapRowFn onRow, void *myPtr, char *err) {
     bool ret = 1;
     // 2. Bind values to the smtm
     // 3. Execute the smtm
+    unsigned i = 0;
     while ((status = sqlite3_step(stmt)) == SQLITE_ROW) {
-        if (!(ret = onRow(stmt, myPtr))) { status = SQLITE_DONE; break; }
+        if (!(ret = onRow(stmt, myPtr, i))) { status = SQLITE_DONE; break; }
+        i += 1;
     }
     if (status != SQLITE_DONE) {
         ret = false;

@@ -95,7 +95,7 @@ testWebsiteFetchBatchesFetchesDataForDDCWithMultipleBatches(Db *db, char *err) {
         );
 }
 
-static bool mapTestDataRow(sqlite3_stmt *stmt, void *myPtr) {
+static bool mapTestDataRow(sqlite3_stmt *stmt, void *myPtr, unsigned nthRow) {
     *((char**)myPtr) = copyString((const char*)sqlite3_column_text(stmt, 0));
     return true;
 }
@@ -121,18 +121,20 @@ testWebsiteInstallWritesAllData(Db *db, char *err) {
     assertThatOrGoto(success, done, "Should return succesfully");
     // Assert that ran mockSchemaSql
     char *tableName = NULL;
-    if (dbSelect(db, "select name FROM sqlite_master WHERE type='table' "
-                 "and name='foo'", mapTestDataRow, &tableName, err)) {
-        assertThatOrGoto(tableName != NULL, done, "Should run $mockSchemaSql");
-        FREE_STR(tableName);
-    }
+    bool selectRes = dbSelect(db, "select name FROM sqlite_master WHERE type="
+                              "'table' and name='foo'", mapTestDataRow, &tableName,
+                              err);
+    assertThatOrGoto(selectRes, done, "Should create tables");
+    assertThatOrGoto(tableName != NULL, done, "Should run $mockSchemaSql");
+    FREE_STR(tableName);
     // Assert that ran data->installSql
     char *installRow = NULL;
-    if (dbSelect(db, "select bar from foo", mapTestDataRow, &installRow, err)) {
-        assertThatOrGoto(installRow != NULL, done, "Should run $data->installSql");
-        assertStrEquals(installRow, "atest");
-        FREE_STR(installRow);
-    }
+    bool selectRes2 = dbSelect(db, "select bar from foo", mapTestDataRow,
+                               &installRow, err);
+    assertThatOrGoto(selectRes2, done, "Should insert data");
+    assertThatOrGoto(installRow != NULL, done, "Should run $data->installSql");
+    assertStrEquals(installRow, "atest");
+    FREE_STR(installRow);
     // Assert that wrote a template-file
     char *actualTmplFileContents = fileIOReadFile(testTmplFilePath, err);
     assertThatOrGoto(actualTmplFileContents != NULL, done, "Should write tmpl file");
@@ -158,9 +160,10 @@ testWebsiteSaveToDbUpdatesTheDatabase(Db *db, char *err) {
     //
     assertThatOrGoto(websiteSaveToDb(&site, err), done, "Should return succesfully");
     char *actual = NULL;
-    if (dbSelect(db, "select `graph` from websites", mapTestDataRow, &actual, err)) {
-        assertThatOrGoto(actual != NULL, done, "Sanity updatedGraph != NULL");
-    }
+    bool selectRes = dbSelect(db, "select `graph` from websites", mapTestDataRow,
+                              &actual, err);
+    assertThatOrGoto(selectRes, done, "Should insert data");
+    assertThatOrGoto(actual != NULL, done, "Sanity updatedGraph != NULL");
     assertStrEquals(actual, "1|1|1/|0|0|mytmpl.js|");
     FREE_STR(actual);
     done:
@@ -173,7 +176,7 @@ testWebsiteSaveToDbUpdatesTheDatabase(Db *db, char *err) {
 void
 websiteMapperTestsRun() {
     /*
-     * Before
+     * Before all
      */
     char errBuf[ERR_BUF_LEN]; errBuf[0] = '\0';
     Db db;
@@ -191,7 +194,7 @@ websiteMapperTestsRun() {
     testWebsiteInstallWritesAllData(&db, errBuf);
     testWebsiteSaveToDbUpdatesTheDatabase(&db, errBuf);
     /*
-     * After
+     * After all
      */
     dbDestruct(&db);
 }

@@ -1,7 +1,7 @@
 #include "../include/website.h"
 
-static bool mapDataBatchesRow(sqlite3_stmt *stmt, void *myPtr);
-static bool mapSiteGraphResultRow(sqlite3_stmt *stmt, void *myPtr);
+static bool mapDataBatchesRow(sqlite3_stmt *stmt, void *myPtr, unsigned nthRow);
+static bool mapSiteGraphResultRow(sqlite3_stmt *stmt, void *myPtr, unsigned nthRow);
 static bool bindWebsiteQueryVals(sqlite3_stmt *stmt, void *data);
 
 void
@@ -199,8 +199,40 @@ pageRender(Website *this, int layoutIdx, const char *url,
     #undef NO_LAYOUT_PAGE
 }
 
+bool
+pageDryRun(Website *this, Template *layout, const char *url,
+           renderInspectFn inspectFn, void *inspectFnMyPtr, char *err) {
+    duk_push_global_stash(this->dukCtx);
+    VTree vTree;
+    vTreeInit(&vTree);
+    DocumentDataConfig ddc;
+    documentDataConfigInit(&ddc);
+    ComponentArray components;
+    componentArrayInit(&components);
+    bool success = false;
+    if (!vTreeScriptBindingsExecLayoutWrapFromCache(this->dukCtx, layout->fileName,
+                                                    &ddc, url, err)) {
+        goto done;
+    }
+    if (ddc.batchCount > 0 && !websiteFetchBatches(this, &ddc, &components, err)) {
+        goto done;
+    }
+    if (!vTreeScriptBindingsExecLayoutTmpl(this->dukCtx, &vTree,
+        ddc.batchHead ? &ddc.batches : NULL, &components, layout->fileName, err)) {
+        goto done;
+    }
+    success = true;
+    inspectFn(&this->siteGraph, &vTree, this->dukCtx, inspectFnMyPtr, err);
+    done:
+    duk_pop(this->dukCtx); // stash
+    vTreeFreeProps(&vTree);
+    documentDataConfigFreeProps(&ddc);
+    componentArrayFreeProps(&components);
+    return success;
+}
+
 static bool
-mapDataBatchesRow(sqlite3_stmt *stmt, void *myPtr) {
+mapDataBatchesRow(sqlite3_stmt *stmt, void *myPtr, unsigned nthRow) {
     ComponentArray *arr = myPtr;
     componentArrayPush(arr, (Component){
         .id = (unsigned)sqlite3_column_int(stmt, 0),
@@ -213,7 +245,7 @@ mapDataBatchesRow(sqlite3_stmt *stmt, void *myPtr) {
 }
 
 static bool
-mapSiteGraphResultRow(sqlite3_stmt *stmt, void *myPtr) {
+mapSiteGraphResultRow(sqlite3_stmt *stmt, void *myPtr, unsigned nthRow) {
     *((char**)myPtr) = copyString((const char*)sqlite3_column_text(stmt, 0));
     return true;
 }

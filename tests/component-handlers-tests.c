@@ -47,7 +47,7 @@ testGETComponentTypesReturnsComponentTypes(Db *db, duk_context *ctx, char *err) 
 void
 componentHandlersTestsRun() {
     /*
-     * Before
+     * Before all
      */
     char errBuf[ERR_BUF_LEN]; errBuf[0] = '\0';
     Db db;
@@ -64,7 +64,7 @@ componentHandlersTestsRun() {
      */
     testGETComponentTypesReturnsComponentTypes(&db, ctx, errBuf);
     /*
-     * After
+     * After all
      */
     dbDestruct(&db);
     duk_destroy_heap(ctx);

@@ -134,7 +134,7 @@ testPageRenderPopulatesIssuesArgument(duk_context *ctx, char *err) {
 void
 websiteTestsRun() {
     /*
-     * Before
+     * Before all
      */
     char errBuf[ERR_BUF_LEN]; errBuf[0] = '\0';
     duk_context *ctx = myDukCreate(errBuf);
@@ -150,7 +150,7 @@ websiteTestsRun() {
     testPageRenderPopulatesPageData(ctx, errBuf);
     testPageRenderPopulatesIssuesArgument(ctx, errBuf);
     /*
-     * After
+     * After all
      */
     duk_destroy_heap(ctx);
 }

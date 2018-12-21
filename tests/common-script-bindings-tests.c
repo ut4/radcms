@@ -39,10 +39,11 @@ testDbSelectAllBindingsSelectsStuffFromDb(Db *db, duk_context *ctx, char *err) {
     duk_push_global_stash(ctx);
     char *myScript = "function(db) { var out=[];"
                         "db.selectAll('select id, `name` from componentTypes',"
-                        "function map(row) {"
+                        "function map(row, nthRow) {"
                             "out.push({"
                                 "id: row.getInt(0), "
-                                "name: row.getString(1)"
+                                "name: row.getString(1),"
+                                "nthRow: nthRow"
                             "});"
                         "});"
                         "return out;"
@@ -62,7 +63,10 @@ testDbSelectAllBindingsSelectsStuffFromDb(Db *db, duk_context *ctx, char *err) {
     assertThatOrGoto(duk_get_prop_string(ctx, -2, "name"),   // [stash arr obj int str]
                      done, "1st row should contain .name");
     assertStrEquals(duk_get_string(ctx, -1), "test");
-    duk_pop_n(ctx, 3);                                       // [stash arr]
+    assertThatOrGoto(duk_get_prop_string(ctx, -3, "nthRow"), // [stash arr obj int str int]
+                     done, "1st row should contain .nthRow");
+    assertIntEquals(duk_get_int(ctx, -1), 0);
+    duk_pop_n(ctx, 4);                                       // [stash arr]
     duk_get_prop_index(ctx, -1, 1);                          // [stash arr obj]
     assertThatOrGoto(duk_get_prop_string(ctx, -1, "id"),     // [stash arr obj int]
                      done, "2nd row should contain .id");
@@ -70,6 +74,9 @@ testDbSelectAllBindingsSelectsStuffFromDb(Db *db, duk_context *ctx, char *err) {
     assertThatOrGoto(duk_get_prop_string(ctx, -2, "name"),   // [stash arr obj int str]
                      done, "2nd row should contain .name");
     assertStrEquals(duk_get_string(ctx, -1), "another");
+    assertThatOrGoto(duk_get_prop_string(ctx, -3, "nthRow"), // [stash arr obj int str int]
+                     done, "2nd row should contain .nthRow");
+    assertIntEquals(duk_get_int(ctx, -1), 1);
     //
     done:
         duk_set_top(ctx, 0); // []
@@ -122,7 +129,7 @@ testDbSelectAllBindingsHandlesErrors(Db *db, duk_context *ctx, char *err) {
 void
 commonScriptBindingsTestsRun() {
     /*
-     * Before
+     * Before all
      */
     char errBuf[ERR_BUF_LEN]; errBuf[0] = '\0';
     Db db;
@@ -142,7 +149,7 @@ commonScriptBindingsTestsRun() {
     testDbSelectAllBindingsSelectsStuffFromDb(&db, ctx, errBuf);
     testDbSelectAllBindingsHandlesErrors(&db, ctx, errBuf);
     /*
-     * After
+     * After all
      */
     dbDestruct(&db);
     duk_destroy_heap(ctx);

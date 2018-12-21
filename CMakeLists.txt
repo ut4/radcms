@@ -37,6 +37,7 @@ set(SOURCE_FILES_COMMON
     include/v-tree-script-bindings.h src/v-tree-script-bindings.c
     include/v-tree.h src/v-tree.c
     include/web/website-handlers-funcs.h src/web/website-handlers-funcs.c
+    include/website-diff-manager.h src/website-diff-manager.c
     include/website-fw-handlers.h src/website-fw-handlers.c
     include/website-script-bindings.h src/website-script-bindings.c
     include/website.h src/website.c

@@ -3,7 +3,7 @@
 
 #include "testlib.h"
 #include "test-utils.h" // testUtilsCompileAndCache()
-#include "../include/website.h" // Website, SiteGraph
+#include "../include/website-diff-manager.h"
 
 void
 websiteDiffTestsRun();

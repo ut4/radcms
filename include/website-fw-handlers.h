@@ -3,7 +3,7 @@
 
 #include "events.h" // onEvent()
 #include "file-watcher.h"
-#include "website.h"
+#include "website-diff-manager.h"
 
 void
 websiteFWHandlersInit(Website *site);

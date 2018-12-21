@@ -4,8 +4,7 @@
 #include "../include/memory.h"
 
 #define STR_APPEND(to, str, amount) \
-    memcpy(to, str, amount); \
-    to += amount
+    do { memcpy(to, str, amount); to += amount; } while (0)
 
 /** A continous array of sring length + string -pairs, eg. (3foo4bars2fu...). */
 typedef struct {
@@ -25,6 +24,7 @@ typedef struct {
     StrTube *strTube;
     char *cursor;
     unsigned pos;
+    unsigned i;
 } StrTubeReader;
 
 StrTubeReader strTubeReaderMake(StrTube *strTube);

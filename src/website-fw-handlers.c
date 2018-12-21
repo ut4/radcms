@@ -27,31 +27,6 @@ websiteCheckIsFWFileAcceptable(const char *fileName) {
     return ext && strcmp(ext, ".js") == 0;
 }
 
-static bool
-performRescan(Website *this, const char *url, int layoutIdx, char *err) {
-    //
-    bool success = false;
-    SiteGraphDiff diff;
-    siteGraphDiffInit(&diff);
-    char *rendered = pageRender(this, layoutIdx, url, siteGraphDiffMake, &diff,
-                                NULL, err);
-    if (!rendered) goto done;
-    FREE_STR(rendered);
-    success = true;
-    if (!diff.newPages) goto done;
-    if (!websiteSaveToDb(this, err)) {
-        putError("Failed to save the site-graph: %s\n", err);
-        success = false;
-    }
-    done:
-    siteGraphDiffFreeProps(&diff);
-    if (success) printf("[Info]: Rescanned '%s': %s.\n", url,
-                        diff.newPages ? "added page(s)" : "no changes");
-    else printToStdErr("[Error]: %s", err);
-    duk_pop(this->dukCtx);
-    return success;
-}
-
 static void
 handleFileModifyEvent(const char *fileName, Website *this, char *err) {
     int layoutIdx = -1;
@@ -69,8 +44,9 @@ handleFileModifyEvent(const char *fileName, Website *this, char *err) {
     }
     printf("[Info]: Cached %s\n", layout->fileName);
     err[0] = '\0';
-    (void)performRescan(this, layout->sampleUrl ? layout->sampleUrl : "/",
-                        layoutIdx, err);
+    (void)websiteDiffPerformRescan(this, layout->sampleUrl ? layout->sampleUrl :
+                                   "/", layoutIdx, err);
+    duk_pop(this->dukCtx);
 }
 
 static bool
@@ -78,5 +54,8 @@ onRescanRequested(void *arg, void *myPtr) {
     Page *page = arg;
     Website *this = myPtr;
     duk_push_global_stash(this->dukCtx);
-    return performRescan(this, page->url, page->layoutIdx, this->errBuf);
+    bool out = websiteDiffPerformRescan(this, page->url, page->layoutIdx,
+                                        this->errBuf);
+    duk_pop(this->dukCtx);
+    return out;
 }

@@ -155,63 +155,6 @@ siteGraphAddTemplate(SiteGraph *this, char *fileName) {
     return &this->templates.values[this->templates.length - 1];
 }
 
-void
-siteGraphDiffInit(SiteGraphDiff *this) {
-    this->newPages = NULL;
-    this->newPagesTail = NULL;
-}
-
-void
-siteGraphDiffFreeProps(SiteGraphDiff *this) {
-    this->newPagesTail = NULL;
-    PageRef *cur = this->newPages;
-    PageRef *tmp;
-    while (cur) {
-        tmp = cur;
-        cur = cur->next;
-        FREE(PageRef, tmp);
-    }
-}
-
-void
-siteGraphDiffMake(SiteGraph *this, VTree *vTree, void *dukCtx, void *toMyPtr,
-                  char *err) {
-    for (unsigned i = 0; i < vTree->elemNodes.length; ++i) {
-        if (strcmp(vTree->elemNodes.values[i].tagName, "a") != 0) continue;
-        ElemProp *lfn = elemNodeGetProp(&vTree->elemNodes.values[i], "layoutFileName");
-        // layoutFileName-attribute not defined -> skip
-        if (!lfn) continue;
-        ElemProp *href = elemNodeGetProp(&vTree->elemNodes.values[i], "href");
-        if (!href) {
-            printToStdErr("[Error]: Can't follow a link without href.\n");
-            return;
-        }
-        // Page already in the site-graph -> skip
-        if (siteGraphFindPage(this, href->val)) continue;
-        char *hrefUrl = copyString(href->val);
-        // New page -> add it
-        int layoutIdx = -1;
-        (void)siteGraphFindTemplate(this, lfn->val, &layoutIdx);
-        if (layoutIdx == -1) {
-            Template *l = siteGraphAddTemplate(this, copyString(lfn->val));
-            l->sampleUrl = hrefUrl;
-            l->exists = false;
-            layoutIdx = this->templates.length - 1;
-        }
-        PageRef *n = ALLOCATE(PageRef);
-        n->next = NULL;
-        n->ptr = siteGraphAddPage(this, 99, hrefUrl, 0, layoutIdx);
-        SiteGraphDiff *diff = toMyPtr;
-        if (diff->newPages) {
-            diff->newPagesTail->next = n;
-            diff->newPagesTail = n;
-        } else {
-            diff->newPages = n;
-            diff->newPagesTail = diff->newPages;
-        }
-    }
-}
-
 static void
 pageFreeProps(Page *this) {
     FREE_STR(this->url);

@@ -5,7 +5,7 @@
 #include "array.h"
 #include "hashmap.h"
 #include "str-reader.h" // strReaderRead*() etc.
-#include "v-tree.h" // TextNodeArray
+#include "v-tree.h"
 
 typedef struct {
     unsigned id;
@@ -37,11 +37,6 @@ struct PageRef {
     Page *ptr; // borrowed from SiteGraph.pages
     PageRef *next;
 };
-
-typedef struct {
-    PageRef *newPages;
-    PageRef *newPagesTail;
-} SiteGraphDiff;
 
 void
 siteGraphInit(SiteGraph *this);
@@ -99,16 +94,6 @@ siteGraphGetTemplate(SiteGraph *this, int idx);
  */
 Template*
 siteGraphAddTemplate(SiteGraph *this, char *fileName);
-
-void
-siteGraphDiffInit(SiteGraphDiff *this);
-
-void
-siteGraphDiffFreeProps(SiteGraphDiff *this);
-
-void
-siteGraphDiffMake(SiteGraph *this, VTree *vTree, void *dukCtx, void *toMyPtr,
-                  char *err);
 
 void templateArrayInit(TemplateArray *this);
 void templateArrayPush(TemplateArray *this, Template value);

@@ -187,7 +187,7 @@ websiteSBGetPages(duk_context *ctx) {
 }
 
 static bool
-sendDbResultRowToJsMapper(sqlite3_stmt *stmt, void *myPtr) {
+sendDbResultRowToJsMapper(sqlite3_stmt *stmt, void *myPtr, unsigned nthRow) {
                                                       // [str fn stash]
     duk_context *ctx = myPtr;
     duk_dup(ctx, -2);                                 // [str fn stash fn]
@@ -199,8 +199,9 @@ sendDbResultRowToJsMapper(sqlite3_stmt *stmt, void *myPtr) {
     duk_push_bare_object(ctx);                        // [str fn stash fn obj]
     duk_get_prop_string(ctx, -3, KEY_ROW_JS_PROTO);   // [str fn stash fn obj obj]
     duk_set_prototype(ctx, -2);                       // [str fn stash fn obj]
+    duk_push_uint(ctx, nthRow);                       // [str fn stash fn obj int]
     // call myMapper(row)
-    bool ok = duk_pcall(ctx, 1) == DUK_EXEC_SUCCESS;  // [str fn stash undefined|err]
+    bool ok = duk_pcall(ctx, 2) == DUK_EXEC_SUCCESS;  // [str fn stash undefined|err]
     duk_del_prop_string(ctx, -2, KEY_CUR_STMT_C_PTR);
     duk_del_prop_string(ctx, -2, KEY_CUR_ROW_COL_COUNT);
     if (ok) { duk_pop(ctx); }                         // [str fn stash]

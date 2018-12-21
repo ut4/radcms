@@ -86,6 +86,7 @@ SampleData sampleData[] = {
 };
 
 const char *schemaSql =
+"drop table if exists staticFileResources;"
 "drop index if exists componentNameIdx;"
 "drop table if exists components;"
 "drop table if exists componentTypeProps;"
@@ -115,7 +116,10 @@ const char *schemaSql =
 "    componentTypeId integer not null,"
 "    foreign key (componentTypeId) references componentTypes(id)"
 ");"
-"create unique index componentNameIdx on components(`name`);";
+"create unique index componentNameIdx on components(`name`);"
+"create table staticFileResources ("
+"    `url` varchar(512) primary key"
+");";
 
 const char *articleListDirective = "function (vTree, articles) {\n"
     "var e = vTree.registerElement;\n"
