@@ -1,8 +1,8 @@
 /*
  * Generic map implementation.
  */
-#include "../include/hashmap.h"
-#include "../include/memory.h"
+#include "../../include/common/hashmap.h"
+#include "../../include/common/memory.h"
 
 #include <stdlib.h>
 #include <stdio.h>

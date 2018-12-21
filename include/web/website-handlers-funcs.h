@@ -1,7 +1,7 @@
 #ifndef insn_websiteHandlersFuncs_h
 #define insn_websiteHandlersFuncs_h
 
-#include "../string.h"
+#include "../common/my-string.h"
 #include "../website.h" // Page
 
 #define UPLOAD_OK 0

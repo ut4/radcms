@@ -1,7 +1,7 @@
 #ifndef insn_string_h
 #define insn_string_h
 
-#include "../include/memory.h"
+#include "memory.h"
 
 #define STR_APPEND(to, str, amount) \
     do { memcpy(to, str, amount); to += amount; } while (0)

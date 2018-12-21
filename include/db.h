@@ -3,7 +3,7 @@
 
 #include <string.h> // strlen
 #include <sqlite3.h>
-#include "common.h"
+#include "common/common.h"
 
 typedef struct {
     sqlite3 *conn;

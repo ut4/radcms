@@ -1,8 +1,8 @@
 #ifndef insn_vTree_h
 #define insn_vTree_h
 
-#include "array.h"
-#include "memory.h"
+#include "common/array.h"
+#include "common/memory.h"
 
 /*
  * https://www.lua.org/source/5.3/lopcodes.h.html#MASK_WITH_1

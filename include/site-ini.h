@@ -3,9 +3,9 @@
 
 #include <stdbool.h>
 #include <ini.h> // ini_parse
-#include "common.h" // putError, printToStdErr
+#include "common/common.h" // putError, printToStdErr
 #include "file-io.h" // fileIO*()
-#include "memory.h" // copyString
+#include "common/memory.h" // copyString
 
 typedef struct {
     char *foo;

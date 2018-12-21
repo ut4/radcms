@@ -1,7 +1,7 @@
 #ifndef insn_websiteFwHandlers_h
 #define insn_websiteFwHandlers_h
 
-#include "events.h" // onEvent()
+#include "common/events.h" // onEvent()
 #include "file-watcher.h"
 #include "website-diff-manager.h"
 

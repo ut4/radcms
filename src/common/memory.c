@@ -1,4 +1,4 @@
-#include "../include/memory.h"
+#include "../../include/common/memory.h"
 
 #ifdef DEBUG_COUNT_ALLOC
 static size_t bytesAllocated = 0;

@@ -2,7 +2,7 @@
 #define insn_dataQueries_h
 
 #include <math.h> // log10
-#include "memory.h"
+#include "common/memory.h"
 
 #define DBC_MAX_CMP_TYPE_NAME_LEN 64
 #define DBC_MAX_WHERE_LEN 2048

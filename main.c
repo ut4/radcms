@@ -10,7 +10,7 @@
 #include "include/data-query-script-bindings.h"
 #include "include/db.h"
 #include "include/duk.h"
-#include "include/memory.h" // printMemoryReport()
+#include "include/common/memory.h" // printMemoryReport()
 #include "include/v-tree-script-bindings.h"
 #include "include/website-script-bindings.h"
 #include "include/web/web-app.h"

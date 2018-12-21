@@ -3,7 +3,7 @@
 
 #include <duktape.h>
 #include <duk_module_duktape.h>
-#include "common.h" // putError
+#include "common/common.h" // putError
 
 /**
  * Allocates, configures and returns a duk_context. Returns NULL on failure.

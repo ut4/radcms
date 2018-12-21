@@ -14,9 +14,14 @@ include(deps.cmake)
 include_directories(insane ${INSN_DEP_INCLUDES})
 
 # == insane.exe ================================================================
-set(SOURCE_FILES_COMMON
-    include/array.h
-    include/common.h
+set(SOURCE_FILES
+    include/common/array.h
+    include/common/common.h
+    include/common/events.h src/common/events.c
+    include/common/hashmap.h src/common/hashmap.c
+    include/common/memory.h src/common/memory.c
+    include/common/my-string.h src/common/my-string.c
+    include/common/timer.h
     include/common-script-bindings.h src/common-script-bindings.c
     include/component-mapper.h src/component-mapper.c
     include/data-defs.h src/data-defs.c
@@ -24,16 +29,11 @@ set(SOURCE_FILES_COMMON
     include/data-query-script-bindings.h src/data-query-script-bindings.c
     include/db.h src/db.c
     include/duk.h src/duk.c
-    include/events.h src/events.c
     include/file-io.h src/file-io.c
-    include/hashmap.h src/hashmap.c
-    include/memory.h src/memory.c
     include/site-graph.h src/site-graph.c
     include/site-ini.h src/site-ini.c
     include/static-data.h src/static-data.c
     include/str-reader.h src/str-reader.c
-    include/string.h src/string.c
-    include/timer.h
     include/v-tree-script-bindings.h src/v-tree-script-bindings.c
     include/v-tree.h src/v-tree.c
     include/web/website-handlers-funcs.h src/web/website-handlers-funcs.c
@@ -42,7 +42,7 @@ set(SOURCE_FILES_COMMON
     include/website-script-bindings.h src/website-script-bindings.c
     include/website.h src/website.c
 )
-set(SOURCE_FILES_WEB
+set(SOURCE_FILES_NOTEST
     include/file-watcher.h src/file-watcher.c
     include/web/component-handlers.h src/web/component-handlers.c
     include/web/core-handlers.h src/web/core-handlers.c
@@ -50,8 +50,8 @@ set(SOURCE_FILES_WEB
     include/web/web-app.h src/web/web-app.c
     include/web/website-handlers.h src/web/website-handlers.c
 )
-add_executable(insane ${SOURCE_FILES_COMMON} ${SOURCE_FILES_WEB} main.c)
-target_compile_options(insane PUBLIC ${INSN_COMPILE_OPTIONS})
+add_executable(insane ${SOURCE_FILES} ${SOURCE_FILES_NOTEST} main.c)
+target_compile_options(insane PUBLIC ${INSN_COMPILE_OPTIONS} -g)
 target_link_libraries(insane ${INSN_DEP_LIBS})
 
 # == tests.exe =================================================================
@@ -71,6 +71,6 @@ set(TESTS_FILES
     tests/website-mapper-tests.h tests/website-mapper-tests.c
     tests/website-tests.h tests/website-tests.c
 )
-add_executable(tests ${SOURCE_FILES_COMMON} ${TESTS_FILES} tests-main.c)
-target_compile_options(tests PUBLIC ${INSN_COMPILE_OPTIONS})
+add_executable(tests ${SOURCE_FILES} ${TESTS_FILES} tests-main.c)
+target_compile_options(tests PUBLIC ${INSN_COMPILE_OPTIONS} -g)
 target_link_libraries(tests duktape inih sqlite3 cjson)

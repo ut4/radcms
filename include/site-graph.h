@@ -2,8 +2,8 @@
 #define insn_siteGraph_h
 
 #include <math.h> // log10
-#include "array.h"
-#include "hashmap.h"
+#include "common/array.h"
+#include "common/hashmap.h"
 #include "str-reader.h" // strReaderRead*() etc.
 #include "v-tree.h"
 

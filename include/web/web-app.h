@@ -3,10 +3,10 @@
 
 #include <unistd.h> // getcwd
 #include "../file-io.h" // fileIO*()
-#include "../common.h" // stdbool etc.
+#include "../common/common.h" // stdbool etc.
 #include "../duk.h" // dukUtilsCompileAndRunStrGlobal()
-#include "../events.h" // eventsInit()
-#include "../memory.h" // ALLOCATE etc.
+#include "../common/events.h" // eventsInit()
+#include "../common/memory.h" // ALLOCATE etc.
 #include "../site-ini.h" // SiteIni etc.
 #include "web-app-common.h" // handlerFn, microhttpd etc.
 #include "../website.h" // Website

@@ -3,11 +3,11 @@
 
 #include <cJSON.h>
 #include <curl/curl.h>
-#include "../events.h" // emitEvent()
+#include "../common/events.h" // emitEvent()
 #include "../file-io.h" // fileIO*()
 #include "web-app-common.h" // microhttpd
 #include "website-handlers-funcs.h"
-#include "../timer.h"
+#include "../common/timer.h"
 #include "../v-tree.h"
 #include "../website.h"
 #include "../website-script-bindings.h" // websiteScriptBindingsStrinfigyStashedPageData()

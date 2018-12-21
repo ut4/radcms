@@ -2,8 +2,8 @@
 #define insn_dataDefs_h
 
 #include <cJSON.h>
-#include "array.h"
-#include "memory.h"
+#include "common/array.h"
+#include "common/memory.h"
 
 typedef struct {
     unsigned id;

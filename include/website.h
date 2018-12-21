@@ -9,9 +9,9 @@
 #include "duk.h" // duk_context
 #include "file-io.h"
 #include "file-watcher.h"
-#include "memory.h"
+#include "common/memory.h"
 #include "static-data.h" // getSampleData, getDbSchemaSql()()
-#include "string.h" // StrTube
+#include "common/my-string.h" // StrTube
 #include "site-graph.h"
 #include "v-tree-script-bindings.h" // vTreeScriptBindingsExecLayout|Template()
 #include "v-tree.h" // VTree, DocumentDataConfig

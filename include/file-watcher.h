@@ -10,8 +10,8 @@
 #include <unistd.h> // close()
 #include <sys/inotify.h>
 #endif
-#include "memory.h"
-#include "timer.h" // timerStart() etc.
+#include "common/memory.h"
+#include "common/timer.h" // timerStart() etc.
 
 typedef enum {
     FW_EVENT_ADDED,

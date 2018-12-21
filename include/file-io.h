@@ -8,8 +8,8 @@
 #endif
 #include <sys/stat.h> // fstat
 #include <unistd.h> // access
-#include "common.h" // stdbool etc.
-#include "memory.h"
+#include "common/common.h" // stdbool etc.
+#include "common/memory.h"
 
 int mkdirp(const char *path, unsigned mode);
 
