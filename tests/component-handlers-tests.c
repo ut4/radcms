@@ -49,16 +49,10 @@ componentHandlersTestsRun() {
     /*
      * Before all
      */
-    char errBuf[ERR_BUF_LEN]; errBuf[0] = '\0';
     Db db;
-    dbInit(&db);
-    if (!testUtilsSetupTestDb(&db, errBuf)) {
-        dbDestruct(&db);
-        return;
-    }
-    duk_context *ctx = myDukCreate(errBuf);
-    ASSERT(ctx != NULL, "Failed to create duk_context");
-    commonScriptBindingsInit(ctx, &db, NULL, errBuf);
+    duk_context *ctx;
+    char errBuf[ERR_BUF_LEN];
+    jsHandlersTestCaseInit(&db, &ctx, errBuf);
     /*
      * The tests
      */
@@ -66,6 +60,5 @@ componentHandlersTestsRun() {
     /*
      * After all
      */
-    dbDestruct(&db);
-    duk_destroy_heap(ctx);
+    jsHandlersTestCaseClean(&db, ctx);
 }

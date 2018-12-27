@@ -21,6 +21,7 @@ function myFetch(url, options = {}) {
         req.send(options.data);
     }).catch(err => {
         console.error(err);
+        throw err;
     });
 }
 

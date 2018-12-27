@@ -1,7 +1,6 @@
 #include "../include/common-script-bindings.h"
 
 #define KEY_DB_C_PTR "_dbCPtr"
-#define KEY_SITE_GRAPH_C_PTR "_siteGraphCPtr"
 #define KEY_ROW_JS_PROTO "_ResultRowJsPrototype"
 #define KEY_CUR_ROW_COL_COUNT "_curResultRowColCount"
 #define KEY_CUR_STMT_C_PTR "_curSqliteStmtCPtr"
@@ -16,10 +15,6 @@ commonSBSearchModule(duk_context *ctx);
 /** Implements app.addRoute(<matcherFn>) */
 static duk_ret_t
 appSBAddRoute(duk_context *ctx);
-
-/** Implements website.getPages() */
-static duk_ret_t
-websiteSBGetPages(duk_context *ctx);
 
 /** Implements db.selectAll(<sql>, <bindings>, <mapFn>) */
 static duk_ret_t
@@ -38,7 +33,7 @@ static duk_ret_t
 directiveRegisterSBGetDirective(duk_context *ctx);
 
 void
-commonScriptBindingsInit(duk_context *ctx, Db *db, SiteGraph *siteGraph, char* err) {
+commonScriptBindingsInit(duk_context *ctx, Db *db, char* err) {
     // global.Duktape.modSearch
     duk_get_global_string(ctx, "Duktape");             // [obj]
     duk_push_c_function(ctx, commonSBSearchModule, 4); // [obj fn]
@@ -59,11 +54,9 @@ commonScriptBindingsInit(duk_context *ctx, Db *db, SiteGraph *siteGraph, char* e
     "}";
     if (!dukUtilsCompileAndRunStrGlobal(ctx, globalCode, "insane-common.js", err)) return;
     duk_push_global_stash(ctx);                        // [stash]
-    // dukStash._dbCPtr & dukStash._websiteCPtr
+    // dukStash._dbCPtr
     duk_push_pointer(ctx, db);                         // [stash ptr]
     duk_put_prop_string(ctx, -2, KEY_DB_C_PTR);        // [stash]
-    duk_push_pointer(ctx, siteGraph);                  // [stash ptr]
-    duk_put_prop_string(ctx, -2, KEY_SITE_GRAPH_C_PTR);// [stash]
     // services.db
     duk_push_bare_object(ctx);                         // [stash srvcs]
     duk_push_bare_object(ctx);                         // [stash srvcs db]
@@ -77,11 +70,6 @@ commonScriptBindingsInit(duk_context *ctx, Db *db, SiteGraph *siteGraph, char* e
     duk_push_array(ctx);                               // [stash srvcs app routes]
     duk_put_prop_string(ctx, -2, "_routes");           // [stash srvcs app]
     duk_put_prop_string(ctx, -2, "app");               // [stash srvcs]
-    // services.website
-    duk_push_bare_object(ctx);                         // [stash srvcs site]
-    duk_push_c_lightfunc(ctx, websiteSBGetPages, 0, 0, 0); // [stash srvcs site lightfn]
-    duk_put_prop_string(ctx, -2, "getPages");          // [stash srvcs site]
-    duk_put_prop_string(ctx, -2, "website");           // [stash srvcs]
     // dukStash.services
     duk_put_prop_string(ctx, -2, KEY_SERVICES_JS_IMPL); // [stash]
     // dukStash._ResultRowJsPrototype
@@ -101,19 +89,23 @@ commonScriptBindingsInit(duk_context *ctx, Db *db, SiteGraph *siteGraph, char* e
     duk_pop(ctx);                                      // []
 }
 
-#define pushService(name, dukStashIsAt) \
-    duk_get_prop_string(ctx, dukStashIsAt, KEY_SERVICES_JS_IMPL); \
-    duk_get_prop_string(ctx, -1, name); \
-    duk_remove(ctx, -2)
+void
+commonScriptBindingsPushServices(duk_context *ctx, int dukStashIsAt) {
+    duk_get_prop_string(ctx, dukStashIsAt, KEY_SERVICES_JS_IMPL);
+}
 
 void
 commonScriptBindingsPushDb(duk_context *ctx, int dukStashIsAt) {
-    pushService("db", dukStashIsAt);
+    commonScriptBindingsPushServices(ctx, dukStashIsAt); // [? srvcs]
+    duk_get_prop_string(ctx, -1, "db");                  // [? srvcs db]
+    duk_remove(ctx, -2);                                 // [? db]
 }
 
 void
 commonScriptBindingsPushApp(duk_context *ctx, int dukStashIsAt) {
-    pushService("app", dukStashIsAt);
+    commonScriptBindingsPushServices(ctx, dukStashIsAt); // [? srvcs]
+    duk_get_prop_string(ctx, -1, "app");                 // [? srvcs app]
+    duk_remove(ctx, -2);                                 // [? app]
 }
 
 void
@@ -162,28 +154,6 @@ appSBAddRoute(duk_context *ctx) {
     duk_swap_top(ctx, -2);                   // [app routes]
     duk_put_prop_string(ctx, -2, "_routes");
     return 0;
-}
-
-static duk_ret_t
-websiteSBGetPages(duk_context *ctx) {
-    duk_push_global_stash(ctx);                         // [stash]
-    duk_get_prop_string(ctx, -1, KEY_SITE_GRAPH_C_PTR); // [stash ptr]
-    duk_push_array(ctx);                                // [stash ptr out]
-    HashMapElPtr *ptr = ((SiteGraph*)duk_get_pointer(ctx, -2))->pages.orderedAccess;
-    unsigned i = 0;
-    while (ptr) {
-        Page *p = ptr->data;
-        duk_push_bare_object(ctx);                      // [... out page]
-        duk_push_string(ctx, p->url);                   // [... out page url]
-        duk_put_prop_string(ctx, -2, "url");            // [... out page]
-        duk_push_uint(ctx, p->parentId);                // [... out page parentId]
-        duk_put_prop_string(ctx, -2, "parentId");       // [... out page]
-        duk_put_prop_index(ctx, -2, i);                 // [... out]
-        ptr = ptr->next;
-        i += 1;
-    }
-                                                        // [stash ptr out]
-    return 1;
 }
 
 static bool

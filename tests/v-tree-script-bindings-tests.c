@@ -4,8 +4,9 @@
     char errBuf[ERR_BUF_LEN]; errBuf[0] = '\0'; \
     duk_context *ctx = myDukCreate(errBuf); \
     ASSERT(ctx != NULL, "Failed to create duk_context\n"); \
+    commonScriptBindingsInit(ctx, NULL, errBuf); \
     vTreeScriptBindingsInit(ctx); \
-    websiteScriptBindingsInit(ctx, errBuf); \
+    websiteScriptBindingsInit(ctx, NULL, errBuf); \
     dataQueryScriptBindingsInit(ctx)
 
 static void

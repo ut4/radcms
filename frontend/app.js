@@ -1,191 +1,8 @@
 import services from './common-services.js';
-import {Form} from './common-components.js';
+import {ArticleListDirectiveWebUIImpl,
+        StaticMenuDirectiveWebUIImpl} from './directive-impls.js';
+import {AddComponentView, EditComponentView} from './component-views.js';
 import {WebsiteGenerateView, WebsiteUploadView} from './website-views.js';
-
-class AddComponentView extends preact.Component {
-    /**
-     * @param {Object} props {
-     *     initialComponentTypeName?: string;
-     * }
-     */
-    constructor(props) {
-        super(props);
-        this.state = {
-            name: '',
-            selectedCmpType: null,
-            componentTypes: []
-        };
-        services.myFetch('/api/component-type').then(
-            res => {
-                let newState = {
-                    componentTypes: JSON.parse(res.responseText),
-                    selectedCmpType: null
-                };
-                if (props.initialComponentTypeName) {
-                    newState.selectedCmpType = newState.componentTypes.find(
-                        t => t.name === props.initialComponentTypeName
-                    );
-                }
-                if (!newState.selectedCmpType) {
-                    newState.selectedCmpType = newState.componentTypes[0];
-                }
-                this.setState(newState);
-            },
-            () => { toast('Failed to fetch component types. Maybe refreshing ' +
-                          'the page will help?', 'error'); }
-        );
-    }
-    render() {
-        if (!this.state.selectedCmpType) return null;
-        return $el('div', {className: 'view'}, $el('div', null,
-            $el(Form, {onConfirm: e => this.confirm(e)},
-                [
-                    $el('h2', null, 'Add component'),
-                    $el('label', null, [
-                        $el('span', null, 'Nimi'),
-                        $el('input', {
-                            name: 'name',
-                            value: this.state.name,
-                            onChange: e => this.receiveInputValue(e)
-                        }, null)
-                    ]),
-                    $el('label', null, [
-                        $el('span', null, 'Tyyppi'),
-                        $el('select', {
-                            value: this.state.componentTypes.indexOf(this.state.selectedCmpType),
-                            onChange: e => this.receiveCmpTypeSelection(e)
-                        }, this.state.componentTypes.map((type, i) =>
-                            $el('option', {value: i}, type.name)
-                        ))
-                    ]),
-                    this.getInputElsForCmpTypeProps(this.state.selectedCmpType.props),
-                ]
-            )
-        ));
-    }
-    confirm(e) {
-        return services.myFetch('/api/component', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-            data: 'name=' + encodeURIComponent(this.state.name) +
-                   '&json=' + encodeURIComponent(collectCmpKeyVals(this.state)) +
-                   '&componentTypeId=' + encodeURIComponent(this.state.selectedCmpType.id)
-        }).then(() => {
-            myRedirect('/?rescan=1', true);
-        }, () => {
-            toast('Failed to create the component.', 'error');
-        });
-    }
-    receiveInputValue(e) {
-        this.setState({[e.target.name]: e.target.value});
-    }
-    receiveCmpTypeSelection(e) {
-        this.setState({selectedCmpType: this.state.componentTypes[e.target.value]});
-    }
-    getInputElsForCmpTypeProps(props) {
-        var inputEls = []
-        props.forEach(prop => {
-            var stateKey = 'val-' + prop.name;
-            if (!this.state.hasOwnProperty(stateKey)) {
-                this.state[stateKey] = null;
-            }
-            inputEls.push($el('label', null, [
-                $el('span', '', prop.name.toUpperCase()[0] + prop.name.substr(1)),
-                $el(prop.contentType == 'richtext' ? 'textarea' : 'input', {
-                    name: stateKey,
-                    value: this.state[stateKey],
-                    onChange: e => this.receiveInputValue(e)
-                }, null)
-            ]));
-        });
-        return $el('div', null, inputEls);
-    }
-}
-function collectCmpKeyVals(state) {
-    var out = {};
-    state.selectedCmpType.props.forEach(prop => {
-        out[prop.name] = state['val-' + prop.name];
-    });
-    return JSON.stringify(out);
-}
-
-class EditComponentView extends preact.Component {
-    render() {
-        return $el('div', {className: 'view'}, $el('div', null,
-            $el('p', null, 'todo')
-        ));
-    }
-}
-
-/*
- * Implements end-user management views (editing articles, creating new articles
- * etc.) for <ArticleList/> directives.
- */
-class ArticleListDirectiveWebUIImpl extends preact.Component {
-    static getRoutes() {
-        return [];
-    }
-    static getTitle() {
-        return 'Article list';
-    }
-    static getMenuItems(directive) {
-        return directive.components.map(article => {
-            return $el('div', null, [
-                $el('span', null, article.title),
-                $el('a', {href:'#/edit-component', onClick: e => {
-                    e.preventDefault();
-                    myRedirect('/edit-component');
-                }}, 'Edit')
-            ])
-        }).concat([
-            $el('a', {
-                href:'#/add-component/Article',
-                onClick: e => {
-                    e.preventDefault();
-                    myRedirect('/add-component/Article');
-                }
-            }, 'Add article')
-        ]);
-    }
-}
-
-class StaticMenuAddPageView {
-    render() {
-        return $el('div', {className: 'view'},
-            $el('div', null, [
-                $el('p', null, '...'),
-                $el('button', {onClick: e => myRedirect('/')}, 'x')
-            ])
-        );
-    }
-}
-/*
- * Implements end-user management views (adding links, reordering links etc.)
- * for <StaticMenu/> directives.
- */
-class StaticMenuDirectiveWebUIImpl extends preact.Component {
-    static getRoutes() {
-        return [
-            $el(StaticMenuAddPageView, {path: '/static-menu-add-page'}, null)
-        ];
-    }
-    static getTitle() {
-        return 'Static menu';
-    }
-    static getMenuItems(directive) {
-        return directive.components.map(article => {
-            return $el('span', null, article.title)
-        }).concat([
-            $el('a', {
-                href:'#static-menu-add-page',
-                onClick: e => {
-                    e.preventDefault();
-                    myRedirect('/static-menu-add-page');
-                }
-            }, 'Add page')
-        ]);
-    }
-}
 
 /*
  * App-singleton.
@@ -232,7 +49,20 @@ class InsaneControlPanel extends preact.Component {
             this.currentPageDirectiveImpls.push(impl);
         });
         this.currentPageComponents = props.currentPageData.allComponents;
+        this.uploadButtonEl = null;
         this.state = {className: '', visibleMenuItems: {}};
+        services.myFetch('/api/website/num-pending-changes')
+            .then(res => {
+                const len = parseInt(res.responseText);
+                if (len > 0) {
+                    this.uploadButtonEl.setAttribute('data-num-pending-changes',
+                                                     len);
+                    this.uploadButtonEl.setAttribute('title', 'Upload ' + len +
+                                                     ' pending files.');
+                }
+            }, () => {
+                console.error('Failed to fetch pending changes.');
+            });
     }
     render() {
         return $el('div', {id: 'control-panel', className: this.state.className}, [
@@ -245,7 +75,8 @@ class InsaneControlPanel extends preact.Component {
                     }, 'Generate'),
                     $el('button', {
                         onclick: () => myRedirect('/upload-website'),
-                        className: 'nice-button nice-button-primary'
+                        className: 'nice-button nice-button-primary',
+                        ref: el => { this.uploadButtonEl = el; }
                     }, 'Upload')
                 ]),
                 $el('div', null, [

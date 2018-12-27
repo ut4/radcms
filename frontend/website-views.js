@@ -55,10 +55,21 @@ class WebsiteGenerateView extends preact.Component {
     }
 }
 
-const USTATUS_NOT_UPLOADED = "No";
-const USTATUS_UPLOADED = "Yes";
-const USTATUS_UPLOADING = "Uploading...";
-const USTATUS_ERROR = "Error";
+const UStatus = Object.freeze({
+    NOT_UPLOADED: 0,
+    OUTDATED: 1,
+    UPLOADED: 2,
+    UPLOADING: 3,
+    ERROR: 4,
+});
+
+const UStatusToStr = [
+    "No",            // UStatus.NOT_UPLOADED(0)
+    "Yes(outdated)", // UStatus.OUTDATED(1)
+    "Yes",           // UStatus.UPLOADED(2)
+    "Uploading...",  // UStatus.UPLOADING(3)
+    "Error",         // UStatus.ERROR(4)
+];
 
 /**
  * #/upload-website.
@@ -71,15 +82,11 @@ class WebsiteUploadView extends preact.Component {
             username: 'ftp@mysite.net',
             password: '',
             uploading: false,
-            pages: [],
-            statuses: []
+            pages: []
         };
         services.myFetch('/api/website/pages').then(
             res => {
-                const pages = JSON.parse(res.responseText);
-                this.setState({pages, statuses: pages.map(() => ({
-                    status: USTATUS_NOT_UPLOADED
-                }))});
+                this.setState({pages: JSON.parse(res.responseText)});
             },
             () => { toast('Failed to fetch pages.', 'error'); }
         );
@@ -128,7 +135,7 @@ class WebsiteUploadView extends preact.Component {
                     ])),
                     $el('tbody', null, this.state.pages.map((page, i) => $el('tr', null, [
                         $el('td', null, page.url),
-                        $el('td', null, this.state.statuses[i].status),
+                        $el('td', null, UStatusToStr[page.uploadStatus]),
                     ])))
                 ])) : ''
             ])
@@ -138,9 +145,14 @@ class WebsiteUploadView extends preact.Component {
         this.setState({[name]: e.target.value});
     }
     confirm() {
-        this.setState({uploading: true, statuses: this.state.statuses.map(
-            s => { s.status = USTATUS_UPLOADING; return s; }
-        )});
+        const pendingPages = [];
+        this.setState({uploading: true, pages: this.state.pages.map(page => {
+            if (page.uploadStatus != UStatus.UPLOADED) {
+                page.uploadStatus = UStatus.UPLOADING;
+                pendingPages.push(page);
+            }
+            return page;
+        })});
         services.myFetch('/api/website/upload', {
             method: 'POST',
             headers: {'Content-Type': 'application/x-www-form-urlencoded'},
@@ -149,23 +161,23 @@ class WebsiteUploadView extends preact.Component {
                     '&password=' + encodeURIComponent(this.state.password),
             progress: (res, percent) => {
                 if (!res.responseText.length) return;
-                const statuses = this.state.statuses;
+                const pages = this.state.pages;
                 const pcs = res.responseText.split('\r\n');
                 // Note: loops all chunks every time, because backend may return
                 // multiple chunks at once
                 for (let i = 0; i < pcs.length - 1; i += 2) {
                     const [url, uploadResult] = pcs[i + 1].split('|');
                     const idx = this.state.pages.findIndex(p => p.url === url);
-                    statuses[idx].status = uploadResult === '000' ? USTATUS_UPLOADED : USTATUS_ERROR;
+                    pages[idx].uploadStatus = uploadResult === '000' ? UStatus.UPLOADED : UStatus.ERROR;
                 }
-                this.setState({statuses});
+                this.setState({pages});
             }
         }).then(() => {
             this.setState({uploading: false});
-            const nSuccesfulUploads = this.state.statuses.reduce(
-                (n, status) => n + (status.status === USTATUS_UPLOADED), 0
+            const nSuccesfulUploads = pendingPages.reduce(
+                (n, page) => n + (page.uploadStatus === UStatus.UPLOADED), 0
             );
-            const nTotal = this.state.pages.length;
+            const nTotal = pendingPages.length;
             toast('Uploaded ' + nSuccesfulUploads + '/' + nTotal + ' pages.',
                   nSuccesfulUploads === nTotal ? 'success' : 'error');
         }, () => {
@@ -174,4 +186,4 @@ class WebsiteUploadView extends preact.Component {
     }
 }
 
-export {WebsiteGenerateView, WebsiteUploadView};
+export {WebsiteGenerateView, WebsiteUploadView, UStatus as UploadStatus};

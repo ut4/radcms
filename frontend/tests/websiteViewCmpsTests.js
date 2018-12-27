@@ -1,4 +1,4 @@
-import {WebsiteGenerateView, WebsiteUploadView} from './../website-views.js';
+import {WebsiteGenerateView, WebsiteUploadView, UploadStatus} from './../website-views.js';
 import services from './../common-services.js';
 import utils from './my-test-utils.js';
 const itu = Inferno.TestUtils;
@@ -89,7 +89,11 @@ QUnit.module('WebsiteUploadViewComponent', hooks => {
         httpStub.restore();
     });
     QUnit.test('sends request to backend and updates upload statuses', assert => {
-        const testPages = [{id:1,url:'/'},{id:2,url:'/foo'},{id:3,url:'/bar'}];
+        const testPages = [
+            {id:1,url:'/',uploadStatus:UploadStatus.NOT_UPLOADED},
+            {id:2,url:'/foo',uploadStatus:UploadStatus.NOT_UPLOADED},
+            {id:3,url:'/bar',uploadStatus:UploadStatus.NOT_UPLOADED}
+        ];
         httpStub
             .onCall(0)
                 .returns(Promise.resolve({responseText: JSON.stringify(testPages)}))

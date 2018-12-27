@@ -2,8 +2,8 @@
 #define commonScriptBindingsTests_h
 
 #include "testlib.h"
-#include "test-utils.h" // testUtilsSetupTestDb(), testUtilsCompileAndCache()
-#include "../../include/common-script-bindings.h"
+#include "test-utils.h" // testUtilsCompileAndCache()
+#include "js-handlers-test-case.h"
 
 void
 commonScriptBindingsTestsRun();

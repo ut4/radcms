@@ -3,7 +3,7 @@
 
 #include "testlib.h" // assertThat
 #include "test-utils.h" // testUtilsSetupTestDb()
-#include "../../include/common-script-bindings.h" // stash.db, stash.app, global.Response
+#include "js-handlers-test-case.h"
 
 void
 componentHandlersTestsRun();

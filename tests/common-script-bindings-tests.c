@@ -131,17 +131,10 @@ commonScriptBindingsTestsRun() {
     /*
      * Before all
      */
-    char errBuf[ERR_BUF_LEN]; errBuf[0] = '\0';
     Db db;
-    dbInit(&db);
-    if (!testUtilsSetupTestDb(&db, errBuf)) {
-        dbDestruct(&db);
-        return;
-    }
-    duk_context *ctx = myDukCreate(errBuf);
-    ASSERT(ctx != NULL, "Failed to create duk_context\n");
-    commonScriptBindingsInit(ctx, &db, NULL, errBuf);
-    ASSERT(strlen(errBuf) == 0, "%s", errBuf);
+    duk_context *ctx;
+    char errBuf[ERR_BUF_LEN];
+    jsHandlersTestCaseInit(&db, &ctx, errBuf);
     /*
      * The tests
      */
@@ -151,8 +144,7 @@ commonScriptBindingsTestsRun() {
     /*
      * After all
      */
-    dbDestruct(&db);
-    duk_destroy_heap(ctx);
+    jsHandlersTestCaseClean(&db, ctx);
 }
 
 #undef beforeEach

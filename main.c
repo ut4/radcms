@@ -61,11 +61,11 @@ int main(int argc, const char* argv[]) {
     {
         dukCtx = myDukCreate(errBuf);
         if (!dukCtx) goto done;
-        commonScriptBindingsInit(dukCtx, &db, &website.siteGraph, errBuf); // db, Response etc.
+        commonScriptBindingsInit(dukCtx, &db, errBuf); // services.app, services.db, Response etc.
         if (strlen(errBuf)) goto done;
         vTreeScriptBindingsInit(dukCtx); // vTree object
         dataQueryScriptBindingsInit(dukCtx); // documentDataConfig object
-        websiteScriptBindingsInit(dukCtx, errBuf); // pageData object
+        websiteScriptBindingsInit(dukCtx, &website.siteGraph, errBuf); // services.website, pageData object
         if (strlen(errBuf)) goto done;
         //
         dbInit(&db);

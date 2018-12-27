@@ -1,11 +1,11 @@
 #ifndef insn_websiteScriptBindings_h
 #define insn_websiteScriptBindings_h
 
-#include "common-script-bindings.h" // commonScriptBindingsPushDirectiveRegister()
+#include "common-script-bindings.h" // pushServices(), pushDirectiveRegister()
 #include "duk.h"
 
 void
-websiteScriptBindingsInit(duk_context *ctx, char *err);
+websiteScriptBindingsInit(duk_context *ctx, SiteGraph *siteGraph, char *err);
 
 /** dukStash._pageDataJsImpl = new PageData() */
 void

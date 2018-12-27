@@ -56,11 +56,13 @@ target_link_libraries(insane ${INSN_DEP_LIBS})
 
 # == tests.exe =================================================================
 set(TESTS_FILES
+    tests/testlib.h
+    tests/test-utils.h tests/test-utils.c
+    tests/js-handlers-test-case.h tests/js-handlers-test-case.c
+
     tests/common-script-bindings-tests.h tests/common-script-bindings-tests.c
     tests/component-handlers-tests.h tests/component-handlers-tests.c
     tests/component-mapper-tests.h tests/component-mapper-tests.c
-    tests/test-utils.h tests/test-utils.c
-    tests/testlib.h
     tests/data-query-tests.h tests/data-query-tests.c
     tests/file-io-tests.h tests/file-io-tests.c
     tests/site-graph-tests.h tests/site-graph-tests.c

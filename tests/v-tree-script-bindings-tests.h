@@ -3,6 +3,7 @@
 
 #include "testlib.h"
 #include "test-utils.h" // testUtilsCompileAndCache()
+#include "../../include/common-script-bindings.h" // commonScriptBindingsInit()
 #include "../../include/data-query-script-bindings.h" // global.documentDataConfig
 #include "../../include/v-tree-script-bindings.h"
 

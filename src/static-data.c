@@ -86,6 +86,7 @@ SampleData sampleData[] = {
 };
 
 const char *schemaSql =
+"drop table if exists uploadStatuses;"
 "drop table if exists staticFileResources;"
 "drop index if exists componentNameIdx;"
 "drop table if exists components;"
@@ -119,6 +120,11 @@ const char *schemaSql =
 "create unique index componentNameIdx on components(`name`);"
 "create table staticFileResources ("
 "    `url` varchar(512) primary key"
+");"
+"create table uploadStatuses ("
+"    `url` varchar(512) primary key,"
+"    `hash` varchar(32) default null,"
+"    `status` integer default 0" // 0 = not uploaded, 1 = uploaded but outdated, 2 = uploaded
 ");";
 
 const char *articleListDirective = "function (vTree, articles) {\n"
