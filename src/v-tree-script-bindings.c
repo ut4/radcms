@@ -2,9 +2,9 @@
 
 #define KEY_VTREE_C_PTR "_vTreeCPtr"
 
-/** Implements global.vTree.registerElement($tagName, $props, $children) */
+/** Implements global.vTree.createElement($tagName, $props, $children) */
 static duk_ret_t
-vTreeSBRegisterElement(duk_context *ctx);
+vTreeSBCreateElement(duk_context *ctx);
 
 /** Implements global.vTree.partial($fileName, $data) */
 static duk_ret_t
@@ -23,8 +23,8 @@ static bool findAndPushComponentArray(duk_context *ctx, ComponentArray *allCompo
 void
 vTreeScriptBindingsInit(duk_context *ctx) {
     duk_push_bare_object(ctx);                          // [object]
-    duk_push_c_lightfunc(ctx, vTreeSBRegisterElement, DUK_VARARGS, 0, 0); // [object lightfn]
-    duk_put_prop_string(ctx, -2, "registerElement");    // [object]
+    duk_push_c_lightfunc(ctx, vTreeSBCreateElement, DUK_VARARGS, 0, 0); // [object lightfn]
+    duk_put_prop_string(ctx, -2, "createElement");      // [object]
     duk_push_c_lightfunc(ctx, vTreeSBPartial, 2, 2, 0); // [object lightfn]
                                                         // 2 == tmplFileName, data
     duk_put_prop_string(ctx, -2, "partial");            // [object]
@@ -81,7 +81,7 @@ vTreeScriptBindingsExecLayoutTmpl(duk_context *ctx, VTree *vTree,
 }
 
 static ElemProp*
-collectElemProps(duk_context *ctx) {// [str obj str] (arguments of vTree.registerElement()
+collectElemProps(duk_context *ctx) {// [str obj str] (arguments of vTree.createElement()
     if (!duk_is_object_coercible(ctx, 1)) {
         return NULL;
     }
@@ -104,9 +104,9 @@ collectElemProps(duk_context *ctx) {// [str obj str] (arguments of vTree.registe
 }
 
 static duk_ret_t
-vTreeSBRegisterElement(duk_context *ctx) {
+vTreeSBCreateElement(duk_context *ctx) {
     if (duk_get_top(ctx) != 3) return duk_error(ctx, DUK_ERR_TYPE_ERROR,
-        "registerElement expects exactly 3 arguments");
+        "createElement expects exactly 3 arguments");
     const char *tagName = duk_require_string(ctx, 0); // 1st argument
     ElemProp *props = collectElemProps(ctx);          // 2nd argument (props)
     duk_push_global_stash(ctx);
@@ -126,7 +126,7 @@ vTreeSBRegisterElement(duk_context *ctx) {
         unsigned ref = vTreeCreateTextNode(vTree, duk_get_string(ctx, 2));
         nodeRefArrayPush(&children, ref);
     /*
-     * Array of elemNodes
+     * Array of elem|TextNodes
      */
     } else if (duk_is_array(ctx, 2)) {
         unsigned l = duk_get_length(ctx, 2);
@@ -136,10 +136,13 @@ vTreeSBRegisterElement(duk_context *ctx) {
                 duk_int_t a = duk_get_type(ctx, -1);
                 if (a == DUK_TYPE_NUMBER) {
                     nodeRefArrayPush(&children, duk_require_uint(ctx, -1));
+                } else if (a == DUK_TYPE_STRING) {
+                    unsigned ref = vTreeCreateTextNode(vTree, duk_get_string(ctx, -1));
+                    nodeRefArrayPush(&children, ref);
                 } else {
                     nodeRefArrayFreeProps(&children);
-                    return duk_error(ctx, DUK_ERR_TYPE_ERROR,
-                                     "Child-array value must be a <nodeRef>.\n");
+                    return duk_error(ctx, DUK_ERR_TYPE_ERROR, "Child-array val"
+                                     "ue must be a <nodeRef> or \"str\".\n");
                 }
                 duk_pop(ctx);
             }

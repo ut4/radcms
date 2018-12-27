@@ -14,10 +14,10 @@ testWebsiteGeneratePassesEachPageToWriteFn(duk_context *ctx, char *err) {
     (void)siteGraphAddPage(&site.siteGraph, 1, copyString("/"), 0, 0);
     (void)siteGraphAddPage(&site.siteGraph, 2, copyString("/foo"), 0, 1);
     if (!testUtilsCompileAndCache(ctx,
-        "function(){return function(v){v.registerElement('p',null,'a'); };}",
+        "function(){return function(v){v.createElement('p',null,'a'); };}",
         l1->fileName, err)) { printToStdErr("%s", err); goto done; }
     if (!testUtilsCompileAndCache(ctx,
-        "function(){return function(v){v.registerElement('p',null,'b'); };}",
+        "function(){return function(v){v.createElement('p',null,'b'); };}",
         l2->fileName, err)) { printToStdErr("%s", err); goto done; }
     //
     unsigned numWrites = websiteGenerate(&site, logPageWriteCall, &log, NULL, err);
@@ -53,7 +53,7 @@ testPageRenderPopulatesPageData(duk_context *ctx, char *err) {
     #define MOCK_COMPONENT1 "{\"title\":\"Foo\",\"body\":\"bar\",\"cmp\":{\"id\":11,\"name\":\"/aa\"}}"
     #define MOCK_COMPONENT2 "{\"title\":\"Bar\",\"body\":\"baz\",\"cmp\":{\"id\":22,\"name\":\"/bb\"}}"
     const char *testDirective = "function (vTree, components) {"
-        "return vTree.registerElement('div', null, 'foo');"
+        "return vTree.createElement('div', null, 'foo');"
     "}";
     //
     Website site;
@@ -65,7 +65,7 @@ testPageRenderPopulatesPageData(duk_context *ctx, char *err) {
         "return function(vTree, pageData) {"
             "var mockComponent1 = "MOCK_COMPONENT1";"
             "var mockComponent2 = "MOCK_COMPONENT2";"
-            "vTree.registerElement('div', null, ["
+            "vTree.createElement('div', null, ["
                 "pageData.callDirective('TestDirective', vTree, [mockComponent1]),"
                 "pageData.callDirective('AnotherDirective', vTree, "
                                        "[mockComponent1, mockComponent2])"

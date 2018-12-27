@@ -16,11 +16,11 @@ testVTreeRegisterElementWithElemAndTextChildren() {
     vTreeInit(&vTree);
     // 2. Call
     char *layoutTmpl = "function (vTree) {"
-            "vTree.registerElement('div', null, ["               // multiple nodes as children
-                "vTree.registerElement('h2', null,"              // single node as a children
-                    "vTree.registerElement('span', null, 'foo')" // text as a children
+            "vTree.createElement('div', null, ["               // multiple nodes as children
+                "vTree.createElement('h2', null,"              // single node as a children
+                    "vTree.createElement('span', null, 'foo')" // text as a children
                 "),"
-                "vTree.registerElement('p', null, 'bar')"
+                "vTree.createElement('p', null, 'bar')"
             "]);"
         "}";
     if (!dukUtilsCompileStrToFn(ctx, layoutTmpl, "l", errBuf)) {
@@ -72,8 +72,8 @@ testVTreeRegisterElementAttributes() {
     vTreeInit(&vTree);
     // 2. Call
     char *layoutTmpl = "function (vTree) {"
-            "vTree.registerElement('div', {foo: 'bar'}, "
-                "vTree.registerElement('div', {baz: 'naz', gas: 'maz foo'}, 'Foo')"
+            "vTree.createElement('div', {foo: 'bar'}, "
+                "vTree.createElement('div', {baz: 'naz', gas: 'maz foo'}, 'Foo')"
             ")"
         "}";
     if (!dukUtilsCompileStrToFn(ctx, layoutTmpl, "l", errBuf)) {
@@ -120,19 +120,19 @@ testVTreeRegisterElementValidatesItsArguments() {
     VTree vTree4; vTreeInit(&vTree4);
     VTree vTree5; vTreeInit(&vTree5);
     char *layoutTmpl1 = "function (vTree, _) {"
-        " vTree.registerElement();"
+        " vTree.createElement();"
     "}";
     char *layoutTmpl2 = "function (vTree, _) {"
-        " vTree.registerElement('p', null, []);"
+        " vTree.createElement('p', null, []);"
     "}";
     char *layoutTmpl3 = "function (vTree, _) {"
-        " vTree.registerElement('p', null, null);"
+        " vTree.createElement('p', null, null);"
     "}";
     char *layoutTmpl4 = "function (vTree, _) {"
-        " vTree.registerElement('p', null, undefined);"
+        " vTree.createElement('p', null, undefined);"
     "}";
     char *layoutTmpl5 = "function (vTree, _) {"
-        " vTree.registerElement('p', null, true);"
+        " vTree.createElement('p', null, true);"
     "}";
     //
     if (!dukUtilsCompileStrToFn(ctx, layoutTmpl1, "l", errBuf)) {
@@ -140,7 +140,7 @@ testVTreeRegisterElementValidatesItsArguments() {
     bool success1 = vTreeScriptBindingsExecLayoutTmpl(ctx, &vTree1, NULL, NULL,
                                                       "foo", errBuf);
     assertThatOrGoto(!success1, done, "Should return false");
-    assertThat(strstr(errBuf, "registerElement expects exactly 3 arguments") != NULL,
+    assertThat(strstr(errBuf, "createElement expects exactly 3 arguments") != NULL,
                       "Should whine about wrong arg-count");
     //
     const char* tmpls[] = {layoutTmpl2, layoutTmpl3, layoutTmpl4, layoutTmpl5};
@@ -173,14 +173,14 @@ testVTreePartialRunsCachedPartial() {
     VTree vTree;
     vTreeInit(&vTree);
     const char *testPartial = "function(vTree,d) {"
-        "return vTree.registerElement('div', null, d.foo)"
+        "return vTree.createElement('div', null, d.foo)"
     "}";
     if (!testUtilsCompileAndCache(ctx, testPartial, "foo.js", errBuf)) {
         printToStdErr("%s", errBuf); goto done;
     }
     //
     char *layoutTmpl = "function (vTree) {"
-        "vTree.registerElement('div', null, vTree.partial('foo.js', {foo:'bar'}));"
+        "vTree.createElement('div', null, vTree.partial('foo.js', {foo:'bar'}));"
     "}";
     if (!dukUtilsCompileStrToFn(ctx, layoutTmpl, "l", errBuf)) {
         printToStdErr("Failed to compile test script: %s", errBuf); goto done; }
@@ -319,10 +319,10 @@ testExecLayoutRunsMultipleLayoutsWithoutConflict() {
     vTreeInit(&vTree1);
     vTreeInit(&vTree2);
     char *layoutTmpl1 = "function (vTree) {"
-        " vTree.registerElement('div', null, 'foo');"
+        " vTree.createElement('div', null, 'foo');"
     "}";
     char *layoutTmpl2 = "function (vTree) {"
-        " vTree.registerElement('span', null, 'bar');"
+        " vTree.createElement('span', null, 'bar');"
     "}";
     // 2. Evaluate two layouts and vTrees
     if (!dukUtilsCompileStrToFn(ctx, layoutTmpl1, "l", errBuf)) {
@@ -393,7 +393,7 @@ testExecLayoutTmplProvidesFetchOnesInVariables() {
     });
     // 2. Call
     char *layoutTmpl = "function (vTree, pageData, var1, var2) {"
-                           "vTree.registerElement('fos', null, "
+                           "vTree.createElement('fos', null, "
                                "var1.prop + ' ' + var1.cmp.id + ' ' + var1.cmp.name + ' | ' +"
                                "var2.fus + ' ' + var2.cmp.id + ' ' + var2.cmp.name"
                            ")"
@@ -463,7 +463,7 @@ testExecLayoutTmplProvidesFetchAllsInVariables() {
     });
     // 2. Call
     char *layoutTmpl = "function (vTree, pageData, foos, bars) {"
-                           "vTree.registerElement('fos', null, "
+                           "vTree.createElement('fos', null, "
                                "foos.map(function (foo) {"
                                   "return foo.prop + ' ' + foo.cmp.id + ' ' + "
                                           "foo.cmp.name"

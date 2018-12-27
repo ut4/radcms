@@ -14,9 +14,9 @@ testPerformRescanSpotsNewLinks(Db *db, duk_context *ctx, char *errBuf) {
     unsigned pageCountBefore = site.siteGraph.pages.size;
     const char *updatedLayoutTmpl = "function (ddc, url) {"
         "return function(vTree) {"
-            "vTree.registerElement('div', null, ["
-                "vTree.registerElement('a', {layoutFileName:'foo.js',href:'"newLinkUrl1"'}, 'Hello'),"
-                "vTree.registerElement('a', {layoutFileName:'foo.js',href:'"newLinkUrl2"'}, 'olleH')"
+            "vTree.createElement('div', null, ["
+                "vTree.createElement('a', {layoutFileName:'foo.js',href:'"newLinkUrl1"'}, 'Hello'),"
+                "vTree.createElement('a', {layoutFileName:'foo.js',href:'"newLinkUrl2"'}, 'olleH')"
             "]);"
         "}"
     "}";
@@ -59,9 +59,9 @@ testPerformRescanSpotsNewCssAndScriptResources(Db *db, duk_context *ctx,
     Page *p = siteGraphAddPage(&site.siteGraph, 1, copyString("/"), 0, 0);
     const char *updatedLayoutTmpl = "function (ddc, url) {"
         "return function(vTree) {"
-            "vTree.registerElement('head', null, ["
-                "vTree.registerElement('link', {rel:'stylesheet',href:'"newCssUrl"'}, ''),"
-                "vTree.registerElement('script', {src:'"newScriptUrl"'}, '')"
+            "vTree.createElement('head', null, ["
+                "vTree.createElement('link', {rel:'stylesheet',href:'"newCssUrl"'}, ''),"
+                "vTree.createElement('script', {src:'"newScriptUrl"'}, '')"
             "]);"
         "}"
     "}";

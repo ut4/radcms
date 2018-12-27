@@ -35,6 +35,7 @@ testVTreeRenderRendersNodes() {
     NodeRefArray articleChildren;
     nodeRefArrayInit(&articleChildren);
     nodeRefArrayPush(&articleChildren, h2Ref);
+    nodeRefArrayPush(&articleChildren, vTreeCreateTextNode(&vTree, "mixed"));
     nodeRefArrayPush(&articleChildren, pRef);
     vTreeCreateElemNode(&vTree, "article", NULL, &articleChildren);
     vTree.rootElemIndex = vTree.elemNodes.length - 1;
@@ -42,7 +43,7 @@ testVTreeRenderRendersNodes() {
     char errBuf[ERR_BUF_LEN];
     char *out = vTreeToHtml(&vTree, errBuf);
     // 3. Assert
-    assertStrEquals(out, "<article><h2>Hello</h2><p>Some text</p></article>");
+    assertStrEquals(out, "<article><h2>Hello</h2>mixed<p>Some text</p></article>");
     //
     vTreeFreeProps(&vTree);
     FREE_STR(out);
