@@ -22,15 +22,15 @@ websiteHandlersHandlePageRequest(void *myPtr, void *myDataPtr, const char *metho
     // Since this is always the last handler, return 404 instead of MHD_NO
     if (strcmp(method, "GET") != 0) return MHD_HTTP_NOT_FOUND;
     Website *site = myPtr;
-    Page *p = siteGraphFindPage(&site->siteGraph, (char*)url);
-    if (!p) {
+    Page *page = siteGraphFindPage(&site->siteGraph, (char*)url);
+    if (!page) {
         return MHD_HTTP_NOT_FOUND;
     }
     if (MHD_lookup_connection_value(conn, MHD_GET_ARGUMENT_KIND, "rescan")) {
-        emitEvent("sitegraphRescanRequested", p);
+        emitEvent("sitegraphRescanRequested", page);
     }
     const char *pageDataJson = NULL;
-    char *renderedHtml = pageRender(site, p->layoutIdx, url,
+    char *renderedHtml = pageRender(site, page->layoutIdx, url,
                                     makeCurrentPageDataJson, &pageDataJson,
                                     NULL, err);
     if (renderedHtml) {

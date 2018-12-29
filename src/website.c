@@ -38,7 +38,8 @@ websitePopulateDukCaches(Website *this, char *err) {
     duk_push_global_stash(this->dukCtx);
     //
     for (unsigned i = 0; i < tmpls->length; ++i) {
-        if (!websiteCacheTemplate(this, tmpls->values[i].fileName, err)) {
+        if (!websiteCompileAndCacheTemplate(this, tmpls->values[i].fileName, -1,
+                                            err)) {
             goto failBadly;
         }
     }
@@ -127,17 +128,26 @@ websiteSaveToDb(Website *this, char *err) {
 }
 
 bool
-websiteCacheTemplate(Website *this, const char *fileName, char *err) {
+websiteCompileAndCacheTemplate(Website *this, const char *fileName,
+                               int dukStashItAt, char *err) {
     STR_CONCAT(tmplFilePath, this->sitePath, fileName);
-    char *code = fileIOReadFile(tmplFilePath, err);
-    if (!code) return false;
-    bool success = false;
+    char *isx = fileIOReadFile(tmplFilePath, err);
+    if (!isx) return false;
+    char *js = transpilerTranspile(isx);
     //
-    if (dukUtilsCompileStrToFn(this->dukCtx, code, fileName, err)) { // [stash fn]
-        duk_put_prop_string(this->dukCtx, -2, fileName);             // [stash]
+    if (!js) {
+        putError("Failed to compile isx: %s", transpilerGetLastError());
+        FREE_STR(isx);
+        return false;
+    }
+    //
+    bool success = false;
+    if (dukUtilsCompileStrToFn(this->dukCtx, js, fileName, err)) { // [? fn]
+        duk_put_prop_string(this->dukCtx, dukStashItAt - (dukStashItAt < 0 ? 1 : 0),
+                            fileName);                             // [?]
         success = true;
     }
-    FREE_STR(code);
+    FREE_STR(isx);
     return success;
 }
 
