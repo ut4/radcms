@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <signal.h>
 #include <time.h>
+#include "include/common/memory.h" // printMemoryReport()
 #include "include/web/component-handlers.h" // componentHandlersHandle*()
 #include "include/web/core-handlers.h" // coreHandlersHandle*()
 #include "include/web/website-handlers.h" // websiteHandlersHandle*()
@@ -10,7 +11,7 @@
 #include "include/data-query-script-bindings.h"
 #include "include/db.h"
 #include "include/duk.h"
-#include "include/common/memory.h" // printMemoryReport()
+#include "include/jsx/jsx-transpiler.h"
 #include "include/v-tree-script-bindings.h"
 #include "include/website-script-bindings.h"
 #include "include/web/web-app.h"
@@ -50,6 +51,8 @@ int main(int argc, const char* argv[]) {
     int exitStatus = EXIT_FAILURE;
     Website website;
     websiteInit(&website);
+    transpilerInit();
+    transpilerSetPrintErrors(false);
     WebApp app;
     webAppInit(&app, argv[2 + (int)doInit], &website, errBuf);
     if (strlen(errBuf)) { goto done; }
@@ -141,5 +144,6 @@ int main(int argc, const char* argv[]) {
         webAppFreeProps(&app);
         if (dukCtx) duk_destroy_heap(dukCtx);
         dbDestruct(&db);
+        transpilerFreeProps();
         exit(exitStatus);
 }

@@ -24,7 +24,11 @@ websiteHandleFWEvent(FWEventType type, const char *fileName, void *myPtr) {
 bool
 websiteCheckIsFWFileAcceptable(const char *fileName) {
     char *ext = strrchr(fileName, '.');
-    return ext && strcmp(ext, ".js") == 0;
+    return ext && (
+        strcmp(ext, ".js") == 0 ||
+        strcmp(ext, ".jsx") == 0 ||
+        strcmp(ext, ".htm") == 0
+    );
 }
 
 static void
@@ -37,7 +41,7 @@ handleFileModifyEvent(const char *fileName, Website *this, char *err) {
         return;
     }
     duk_push_global_stash(this->dukCtx);
-    if (!websiteCacheTemplate(this, layout->fileName, err)) {
+    if (!websiteCompileAndCacheTemplate(this, layout->fileName, -1, err)) {
         printToStdErr("%s\n", err);
         duk_pop(this->dukCtx);
         return;

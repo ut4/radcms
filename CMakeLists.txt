@@ -22,6 +22,9 @@ set(SOURCE_FILES
     include/common/memory.h src/common/memory.c
     include/common/my-string.h src/common/my-string.c
     include/common/timer.h
+    include/jsx/jsx-producer.h src/jsx/jsx-producer.c
+    include/jsx/jsx-scanner.h src/jsx/jsx-scanner.c
+    include/jsx/jsx-transpiler.h src/jsx/jsx-transpiler.c
     include/common-script-bindings.h src/common-script-bindings.c
     include/component-mapper.h src/component-mapper.c
     include/data-defs.h src/data-defs.c

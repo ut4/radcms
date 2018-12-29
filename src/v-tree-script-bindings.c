@@ -66,7 +66,6 @@ vTreeScriptBindingsExecLayoutTmpl(duk_context *ctx, VTree *vTree,
             char asStr[dataBatchConfigGetToStringLen(cur)];
             dataBatchConfigToString(cur, asStr);
             printToStdErr("[Error]: '%s' didn't return anything from the database.\n", asStr);
-            duk_push_bare_object(ctx);
         }
         cur = cur->next;
         argCount += 1;
@@ -240,6 +239,7 @@ findAndPushSingleComponent(duk_context *ctx, ComponentArray *allComponents,
             return true;
         }
     }
+    duk_push_bare_object(ctx);
     return false;
 }
 

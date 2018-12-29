@@ -2,6 +2,9 @@
 #define insn_website_h
 
 #include <stdbool.h>
+#include "common/memory.h"
+#include "common/my-string.h" // StrTube
+#include "jsx/jsx-transpiler.h"
 #include "common-script-bindings.h" // commonScriptBindingsPutDirective()
 #include "data-defs.h" // Component
 #include "data-queries.h" // DocumentDataConfig
@@ -9,9 +12,7 @@
 #include "duk.h" // duk_context
 #include "file-io.h"
 #include "file-watcher.h"
-#include "common/memory.h"
 #include "static-data.h" // getSampleData, getDbSchemaSql()()
-#include "common/my-string.h" // StrTube
 #include "site-graph.h"
 #include "v-tree-script-bindings.h" // vTreeScriptBindingsExecLayout|Template()
 #include "v-tree.h" // VTree, DocumentDataConfig
@@ -59,7 +60,8 @@ bool
 websiteSaveToDb(Website *this, char *err);
 
 bool
-websiteCacheTemplate(Website *this, const char *fileName, char *err);
+websiteCompileAndCacheTemplate(Website *this, const char *fileName,
+                               int dukStashItAt, char *err);
 
 typedef void (*renderInspectFn)(SiteGraph *siteGraph, VTree *vTree, void *dukCtx,
                                 void *myPtr, char *err);
