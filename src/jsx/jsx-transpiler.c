@@ -43,7 +43,7 @@ static bool attrCodeBlock(struct Token *keyToken);
 static bool tryStartTag();
 static bool closingTag();
 static bool comment();
-static int dataConfigs();
+static bool dataConfigs();
 //
 static struct Token* advance(bool consumeWhiteSpace, enum ScanMode scanMode);
 static bool advanceIf(enum TokenType type, bool consumeWhiteSpace,
@@ -75,19 +75,29 @@ transpilerFreeProps() {
     producerFreeProps();
 }
 
+#define resetTranspiler() \
+    transpiler.hadError = false; \
+    transpiler.lastErr[0] = '\0'; \
+    sharedErr[0] = '\0'; \
+    scannerInit(code); \
+    producerClear()
+
 char*
 transpilerTranspile(const char *code) {
-    transpiler.hadError = false;
-    transpiler.lastErr[0] = '\0';
-    sharedErr[0] = '\0';
-    scannerInit(code);
-    producerClear();
+    resetTranspiler();
+    (void)advance(true, SCAN_NAME);
+    if (transpiler.current.type != TOKEN_EOF) fragment();
+    return !transpiler.hadError ? producerGetResult() : NULL;
+}
+
+char*
+transpilerTranspileIsx(const char *code) {
+    resetTranspiler();
     (void)advance(true, SCAN_NAME);
     if (transpiler.current.type != TOKEN_EOF) {
-        int numConfigs = dataConfigs();
-        if (numConfigs > -1) {
+        if (dataConfigs()) {
             fragment();
-            if (numConfigs > 0) producerAddChars("};}");
+            producerAddChars("};}");
         }
     }
     return !transpiler.hadError ? producerGetResult() : NULL;
@@ -556,12 +566,18 @@ static int varDecl();
 static int methodCall();
 static bool validateVarName();
 
-static int
+static bool
 dataConfigs() {
-    if (*transpiler.current.lexemeFrom != '@') return 0;
-    advance(true, SCAN_NAME);
-    if (!validateVarName()) return -1;
     producerAddChars("function(ddc, url) {");
+    #define CLOSE_EXPRS ";return function(vTree, pageData"
+    #define CLOSE_ARGS ") {"
+    if (*transpiler.current.lexemeFrom != '@') {
+        producerAddChars(&CLOSE_EXPRS[1]);
+        producerAddChars(CLOSE_ARGS);
+        return true;
+    }
+    advance(true, SCAN_NAME);
+    if (!validateVarName()) return false;
     const char *start = transpiler.current.lexemeFrom;
     const unsigned maxNameArrLen = MAX_VARS * 2;
     unsigned vNamePositions[maxNameArrLen];
@@ -574,10 +590,10 @@ dataConfigs() {
                 vNamePositions[vNameI] = transpiler.current.lexemeFrom - start;
                 vNamePositions[vNameI + 1] = transpiler.current.lexemeLen;
                 vNameI += 2;
-                if (varDecl() < 0) return -1;
+                if (varDecl() < 0) return false;
                 isVar = false;
             } else { // method(
-                if (methodCall() < 0) return -1;
+                if (methodCall() < 0) return false;
                 char c = *transpiler.current.lexemeFrom;
                 if ((isVar = c == '@')) {
                     advance(true, SCAN_NAME);
@@ -594,7 +610,7 @@ dataConfigs() {
             failAndReturn(makeError("Unexpected '%s'", lex));
         }
     }
-    producerAddChars(";return function(vTree, pageData");
+    producerAddChars(CLOSE_EXPRS);
     for (unsigned i = 0; i < vNameI; i += 2) {
         const unsigned vNameLen = vNamePositions[i + 1];
         if (vNameLen > MAX_VAR_NAME_LEN) { failAndReturn("VAR_NAME_TOO_LONG"); }
@@ -604,8 +620,10 @@ dataConfigs() {
         varName[2 + vNameLen] = '\0';
         producerAddChars(varName);
     }
-    producerAddChars(") {");
-    return vNameI * 0.5;
+    producerAddChars(CLOSE_ARGS);
+    return true;
+    #undef CLOSE_EXPRS
+    #undef CLOSE_ARGS
 }
 
 static int

@@ -13,6 +13,9 @@ char*
 transpilerTranspile(const char *code);
 
 char*
+transpilerTranspileIsx(const char *code);
+
+char*
 transpilerGetLastError();
 
 void
