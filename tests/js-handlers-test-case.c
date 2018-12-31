@@ -9,11 +9,12 @@ void jsHandlersTestCaseInit(Db *db, duk_context **ctx, char *errBuf) {
     }
     duk_context *d = myDukCreate(errBuf);
     ASSERT(d != NULL, "Failed to create duk_context");
-    commonScriptBindingsInit(d, db, errBuf);
+    commonScriptBindingsInit(d, db, NULL, errBuf);
     *ctx = d;
 }
 
 void jsHandlersTestCaseClean(Db *db, duk_context *ctx) {
     dbDestruct(db);
+    commonScriptBindingsClean(ctx);
     duk_destroy_heap(ctx);
 }

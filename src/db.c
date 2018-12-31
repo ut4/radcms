@@ -61,7 +61,9 @@ dbInsert(Db *this, const char *sql, bindValsFn myBindFn, void *data, char *err) 
     }
     // 2. Call the binder function
     if (!myBindFn(stmt, data)) {
-        putError("myBindFn() failed: %s\n", sqlite3_errmsg(this->conn));
+        if (sqlite3_errcode(this->conn) != SQLITE_OK)
+            putError("myBindFn() failed: %s\n", sqlite3_errmsg(this->conn));
+        // else myBindFn wants to set the error manually
         goto done;
     }
     // 3. Execute

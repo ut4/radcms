@@ -6,7 +6,10 @@
 #include "site-graph.h"
 
 void
-commonScriptBindingsInit(duk_context *ctx, Db *db, char *err);
+commonScriptBindingsInit(duk_context *ctx, Db *db, char *appPath, char *err);
+
+void
+commonScriptBindingsClean(duk_context *ctx);
 
 void
 commonScriptBindingsPushServices(duk_context *ctx, int dukStashIsAt);

@@ -139,7 +139,7 @@ websiteTestsRun() {
     char errBuf[ERR_BUF_LEN]; errBuf[0] = '\0';
     duk_context *ctx = myDukCreate(errBuf);
     ASSERT(ctx != NULL, "Failed to create duk_context");
-    commonScriptBindingsInit(ctx, NULL, errBuf);
+    commonScriptBindingsInit(ctx, NULL, NULL, errBuf);
     vTreeScriptBindingsInit(ctx);
     dataQueryScriptBindingsInit(ctx);
     websiteScriptBindingsInit(ctx, NULL, errBuf);

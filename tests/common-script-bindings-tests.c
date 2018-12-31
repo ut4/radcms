@@ -1,5 +1,7 @@
 #include "common-script-bindings-tests.h"
 
+static bool mapComponentTypeRow(sqlite3_stmt *stmt, void *myPtr, unsigned nthRow);
+
 static void
 testAppAddRouteAddsFunctions(duk_context *ctx, char *err) {
     duk_push_global_stash(ctx);
@@ -27,6 +29,100 @@ testAppAddRouteAddsFunctions(duk_context *ctx, char *err) {
     assertIntEqualsOrGoto(duk_get_int(ctx, -1), 22, done);
     done:
         duk_set_top(ctx, 0);
+}
+
+static void
+testDbInsertInsertsDataToDb(Db *db, duk_context *ctx, char *err) {
+    //
+    StrTube inserted = strTubeMake();
+    duk_push_global_stash(ctx);
+    char *myScript = "function(db) {"
+                        "return db.insert('insert into componentTypes values (?,?),(?,?)',"
+                            "function bind(stmt) {"
+                                "stmt.bindInt(0,1);"
+                                "stmt.bindString(1,'foo');"
+                                "stmt.bindInt(2,2);"
+                                "stmt.bindString(3,'bar');"
+                            "}"
+                        ");"
+                    "}";
+    if (!dukUtilsCompileStrToFn(ctx, myScript, "l", err)) {  // [stash err]
+        printToStdErr("Failed to compile test script: %s", err); goto done; }
+    commonScriptBindingsPushDb(ctx, -2);                     // [stash fn obj]
+    if (duk_pcall(ctx, 1) != DUK_EXEC_SUCCESS) {             // [stash arr|err]
+        printToStdErr("Failed to exec test code %s.\n", err); goto done; }
+    //
+    unsigned insertId = duk_get_int(ctx, -1);
+    assertIntEquals(insertId, 2);
+    bool selectRes = dbSelect(db, "select `id`,`name` FROM componentTypes",
+                              mapComponentTypeRow, &inserted, err);
+    assertThatOrGoto(selectRes, done, "Should insert data");
+    assertIntEqualsOrGoto(inserted.length, 2, done);
+    StrTubeReader r = strTubeReaderMake(&inserted);
+    char *actuallyInserted1 = strTubeReaderNext(&r);
+    assertStrEquals(actuallyInserted1, "1foo");
+    char *actuallyInserted2 = strTubeReaderNext(&r);
+    assertStrEquals(actuallyInserted2, "2bar");
+    //
+    done:
+        duk_set_top(ctx, 0); // []
+        strTubeFreeProps(&inserted);
+        testUtilsExecSql(db, "delete from componentTypes");
+}
+
+static void
+testDbInsertStmtBindValidatesItsArguments(Db *db, duk_context *ctx, char *err) {
+    //
+    duk_push_global_stash(ctx);
+    commonScriptBindingsPushDb(ctx, -1);
+    char *myScript = "function(db, testName) {"
+                        "var someSql = 'insert into components(`name`) values (?)';"
+                        "if (testName == 'idxTooLarge') db.insert(someSql,"
+                            "function bind(stmt) {"
+                                "stmt.bindInt(2,1);"
+                            "}"
+                        ");"
+                        "if (testName == 'notAnInt') db.insert(someSql,"
+                            "function bind(stmt) {"
+                                "stmt.bindInt(0, \"notAnInt\");"
+                            "}"
+                        ");"
+                        "if (testName == 'notAString') db.insert(someSql,"
+                            "function bind(stmt) {"
+                                "stmt.bindString(0, {});"
+                            "}"
+                        ");"
+                    "}";
+    if (!dukUtilsCompileStrToFn(ctx, myScript, "l", err)) {  // [stash err]
+        printToStdErr("Failed to compile test script: %s", err); goto done; }
+    //
+    duk_dup(ctx, -1); // [stash db fn fnClone]
+    duk_dup(ctx, -3); // [stash db fn fnClone dbClone]
+    duk_push_string(ctx, "idxTooLarge");
+    int success1 = duk_pcall(ctx, 2); // [stash dn fn null|err]
+    assertThatOrGoto(success1 != DUK_EXEC_SUCCESS, done, "Should fail");
+    assertStrEquals(duk_safe_to_string(ctx, -1), "Error: RangeError: Bind index"
+        " 2 too large (max 0)");
+    duk_pop(ctx); // error
+    //
+    duk_dup(ctx, -1); // [stash db fn fnClone]
+    duk_dup(ctx, -3); // [stash db fn fnClone dbClone]
+    duk_push_string(ctx, "notAnInt");
+    int success2 = duk_pcall(ctx, 2); // [stash dn fn null|err]
+    assertThatOrGoto(success2 != DUK_EXEC_SUCCESS, done, "Should fail");
+    assertStrEquals(duk_safe_to_string(ctx, -1), "Error: TypeError: number "
+        "required, found 'notAnInt' (stack index 1)");
+    duk_pop(ctx); // error
+    //
+    duk_dup(ctx, -1); // [stash db fn fnClone]
+    duk_dup(ctx, -3); // [stash db fn fnClone dbClone]
+    duk_push_string(ctx, "notAString");
+    int success3 = duk_pcall(ctx, 2); // [stash dn fn null|err]
+    assertThatOrGoto(success3 != DUK_EXEC_SUCCESS, done, "Should fail");
+    assertStrEquals(duk_safe_to_string(ctx, -1), "Error: TypeError: string "
+        "required, found [object Object] (stack index 1)");
+    done:
+        duk_set_top(ctx, 0); // []
 }
 
 static void
@@ -139,12 +235,23 @@ commonScriptBindingsTestsRun() {
      * The tests
      */
     testAppAddRouteAddsFunctions(ctx, errBuf);
+    testDbInsertInsertsDataToDb(&db, ctx, errBuf);
+    testDbInsertStmtBindValidatesItsArguments(&db, ctx, errBuf);
     testDbSelectAllBindingsSelectsStuffFromDb(&db, ctx, errBuf);
     testDbSelectAllBindingsHandlesErrors(&db, ctx, errBuf);
     /*
      * After all
      */
     jsHandlersTestCaseClean(&db, ctx);
+}
+
+static bool mapComponentTypeRow(sqlite3_stmt *stmt, void *myPtr, unsigned nthRow) {
+    int componentTypeId = sqlite3_column_int(stmt, 0);
+    const char *componentTypeName = (const char*)sqlite3_column_text(stmt, 1);
+    char stringified[1 + strlen(componentTypeName) + 1];
+    sprintf(stringified, "%d%s", componentTypeId, componentTypeName);
+    strTubePush(myPtr, stringified);
+    return true;
 }
 
 #undef beforeEach

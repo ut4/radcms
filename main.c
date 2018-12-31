@@ -64,11 +64,11 @@ int main(int argc, const char* argv[]) {
     {
         dukCtx = myDukCreate(errBuf);
         if (!dukCtx) goto done;
-        commonScriptBindingsInit(dukCtx, &db, errBuf); // services.app, services.db, Response etc.
+        commonScriptBindingsInit(dukCtx, &db, app.appPath, errBuf);
         if (strlen(errBuf)) goto done;
-        vTreeScriptBindingsInit(dukCtx); // vTree object
-        dataQueryScriptBindingsInit(dukCtx); // documentDataConfig object
-        websiteScriptBindingsInit(dukCtx, &website.siteGraph, errBuf); // services.website, pageData object
+        vTreeScriptBindingsInit(dukCtx);
+        dataQueryScriptBindingsInit(dukCtx);
+        websiteScriptBindingsInit(dukCtx, &website.siteGraph, errBuf);
         if (strlen(errBuf)) goto done;
         //
         dbInit(&db);
@@ -101,8 +101,8 @@ int main(int argc, const char* argv[]) {
     if (!webAppReadOrCreateSiteIni(&app, "", errBuf) ||
         !websiteFetchAndParseSiteGraph(&website, errBuf) ||
         !webAppExecModuleScripts(&app, (const char*[]){
-                                    "/src/web/component-handlers.js",
-                                    "/src/web/website-handlers.js",
+                                    "src/web/component-handlers.js",
+                                    "src/web/website-handlers.js",
                                 }, 2, dukCtx, errBuf) ||
         !websitePopulateDukCaches(&website, errBuf)) goto done;
     app.handlerCount = sizeof(app.handlers) / sizeof(RequestHandler);
@@ -142,7 +142,10 @@ int main(int argc, const char* argv[]) {
         if (exitStatus == EXIT_FAILURE) printToStdErr("[Fatal]: %s", errBuf);
         websiteFreeProps(&website);
         webAppFreeProps(&app);
-        if (dukCtx) duk_destroy_heap(dukCtx);
+        if (dukCtx) {
+            commonScriptBindingsClean(dukCtx);
+            duk_destroy_heap(dukCtx);
+        }
         dbDestruct(&db);
         transpilerFreeProps();
         exit(exitStatus);

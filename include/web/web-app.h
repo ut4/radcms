@@ -13,8 +13,8 @@
 #include "../website-fw-handlers.h" // file-watcher.h
 
 typedef struct {
-    char *sitePath; // Normalized, always ends with "/"
-    char *appPath;
+    char *sitePath; // An absolute path to the website source dir, always ends with "/"
+    char *appPath; // An absolute path to the app/binary dir, always ends with "/"
     SiteIni ini;
     FileWatcher fileWatcher;
     struct MHD_Daemon *daemon;
