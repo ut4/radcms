@@ -88,18 +88,59 @@ collectElemProps(duk_context *ctx) {// [str obj str] (arguments of vTree.createE
     ElemProp *out = NULL;
     if (duk_next(ctx, 3, true)) {                   // [str obj str enum key val]
         out = elemPropCreate(duk_require_string(ctx, -2),
-                             duk_require_string(ctx, -1));
+                             duk_to_string(ctx, -1));
         ElemProp *prev = out;
         duk_pop_n(ctx, 2);                          // [str obj str enum]
         while (duk_next(ctx, 3, true)) {            // [str obj str enum key val]
             prev->next = elemPropCreate(duk_require_string(ctx, -2),
-                                        duk_require_string(ctx, -1));
+                                        duk_to_string(ctx, -1));
             prev = prev->next;
             duk_pop_n(ctx, 2);                      // [str obj str enum]
         }
     }
     duk_pop(ctx);                                   // [str obj str]
     return out;
+}
+
+static void
+collectElemChildren(duk_context *ctx, int valueIsAt, NodeRefArray *children,
+                    VTree *vTree) {
+    duk_int_t type = duk_get_type(ctx, valueIsAt);
+    /*
+     * Single elemNode (..., e("child" ...)...)
+     */
+    if (type == DUK_TYPE_NUMBER) {
+        nodeRefArrayPush(children, duk_get_uint(ctx, valueIsAt));
+    /*
+     * Single textNode (..., "Text here"...)
+     */
+    } else if (type == DUK_TYPE_STRING) {
+        unsigned ref = vTreeCreateTextNode(vTree, duk_get_string(ctx, valueIsAt));
+        nodeRefArrayPush(children, ref);
+    /*
+     * Array of elem|TextNodes (..., [e("child"...)|"Text here"...]...)
+     */
+    } else if (duk_is_array(ctx, valueIsAt)) {
+        unsigned l = duk_get_length(ctx, valueIsAt);
+        if (l > 0) {
+            for (unsigned i = 0; i < l; ++i) {
+                duk_get_prop_index(ctx, valueIsAt, i);
+                collectElemChildren(ctx, -1, children, vTree);
+                duk_pop(ctx);
+            }
+        } else {
+            printToStdErr("[Notice]: got an empty vElem child-array, pushing an "
+                          "empty string.\n");
+            unsigned emptyStringRef = vTreeCreateTextNode(vTree, "");
+            nodeRefArrayPush(children, emptyStringRef);
+        }
+    } else {
+        printToStdErr("[Warn]: vElem content wasn't \"str\", <nodeRef> nor "
+                      "[<nodeRef>...]: attempting toString().\n");
+        unsigned toStringTextRef = vTreeCreateTextNode(vTree,
+            duk_to_string(ctx, valueIsAt));
+        nodeRefArrayPush(children, toStringTextRef);
+    }
 }
 
 static duk_ret_t
@@ -113,50 +154,7 @@ vTreeSBCreateElement(duk_context *ctx) {
     VTree *vTree = duk_get_pointer(ctx, -1);
     NodeRefArray children;
     nodeRefArrayInit(&children);
-    /*                                                // 3rd argument (children)
-     * Single elemNode (e(..., e("child" ...))
-     */
-    if (duk_is_number(ctx, 2)) {
-        nodeRefArrayPush(&children, duk_get_uint(ctx, 2));
-    /*
-     * Single textNode (e(..., "Text here")
-     */
-    } else if (duk_is_string(ctx, 2)) {
-        unsigned ref = vTreeCreateTextNode(vTree, duk_get_string(ctx, 2));
-        nodeRefArrayPush(&children, ref);
-    /*
-     * Array of elem|TextNodes
-     */
-    } else if (duk_is_array(ctx, 2)) {
-        unsigned l = duk_get_length(ctx, 2);
-        if (l > 0) {
-            for (unsigned i = 0; i < l; ++i) {
-                duk_get_prop_index(ctx, 2, i);
-                duk_int_t a = duk_get_type(ctx, -1);
-                if (a == DUK_TYPE_NUMBER) {
-                    nodeRefArrayPush(&children, duk_require_uint(ctx, -1));
-                } else if (a == DUK_TYPE_STRING) {
-                    unsigned ref = vTreeCreateTextNode(vTree, duk_get_string(ctx, -1));
-                    nodeRefArrayPush(&children, ref);
-                } else {
-                    nodeRefArrayFreeProps(&children);
-                    return duk_error(ctx, DUK_ERR_TYPE_ERROR, "Child-array val"
-                                     "ue must be a <nodeRef> or \"str\".\n");
-                }
-                duk_pop(ctx);
-            }
-        } else {
-            printToStdErr("[Notice]: got an empty vElem child-array, pushing an "
-                          "empty string.\n");
-            unsigned emptyStringRef = vTreeCreateTextNode(vTree, "");
-            nodeRefArrayPush(&children, emptyStringRef);
-        }
-    } else {
-        printToStdErr("[Warn]: vElem content wasn't \"str\", <nodeRef> nor "
-                      "[<nodeRef>...]: attempting toString().\n");
-        unsigned toStringTextRef = vTreeCreateTextNode(vTree, duk_to_string(ctx, 2));
-        nodeRefArrayPush(&children, toStringTextRef);
-    }
+    collectElemChildren(ctx, 2, &children, vTree);    // 3rd argument (children)
     unsigned newId = vTreeCreateElemNode(vTree, tagName, props, &children);
     duk_push_uint(ctx, newId);
     return 1;

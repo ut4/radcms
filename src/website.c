@@ -63,8 +63,7 @@ websiteFetchBatches(Website *this, DocumentDataConfig *ddc, ComponentArray *to,
     componentArrayInit(to);
     char *sql = documentDataConfigToSql(ddc, err);
     return sql &&
-           dbSelect(this->db, sql, mapDataBatchesRow, to, err) &&
-           to->length > 0;
+           dbSelect(this->db, sql, mapDataBatchesRow, to, err);
 }
 
 unsigned
@@ -133,7 +132,7 @@ websiteCompileAndCacheTemplate(Website *this, const char *fileName,
     STR_CONCAT(tmplFilePath, this->sitePath, fileName);
     char *isx = fileIOReadFile(tmplFilePath, err);
     if (!isx) return false;
-    char *js = transpilerTranspile(isx);
+    char *js = transpilerTranspileIsx(isx);
     //
     if (!js) {
         putError("Failed to compile isx: %s", transpilerGetLastError());

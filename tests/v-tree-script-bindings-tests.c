@@ -66,6 +66,56 @@ testVTreeRegisterElementWithElemAndTextChildren() {
 }
 
 static void
+testVTreeRegisterElementFlattensNestedArrays() {
+    // 1. Setup
+    beforeEach();
+    VTree vTree;
+    vTreeInit(&vTree);
+    // 2. Call
+    char *layoutTmpl = "function (vTree) {"
+            "vTree.createElement('ul', null, [' a ', ["
+                "vTree.createElement('li', null, 'li1'),"
+                "vTree.createElement('li', null, 'li2')"
+            "], ' b ']);"
+        "}";
+    if (!dukUtilsCompileStrToFn(ctx, layoutTmpl, "l", errBuf)) {
+        printToStdErr("Failed to compile test script: %s", errBuf); goto done; }
+    bool success = vTreeScriptBindingsExecLayoutTmpl(ctx, &vTree, NULL, NULL, "", errBuf);
+    // 3. Assert
+    assertThatOrGoto(success, done, "Should return succesfully");
+    assertIntEqualsOrGoto(vTree.elemNodes.length, 3, done);
+    assertIntEqualsOrGoto(vTree.textNodes.length, 4, done);
+    // ul
+    ElemNode *ul = vTreeFindElemNodeByTagName(&vTree, "ul");
+    assertThatOrGoto(ul != NULL, done, "Sanity <ul> != NULL");
+    assertIntEqualsOrGoto(ul->children.length, 4, done);
+    // #1
+    TextNode *a = vTreeFindTextNode(&vTree, ul->children.values[0]);
+    assertThatOrGoto(a != NULL, done, "Should set <ul>'s #1 child");
+    assertStrEquals(a->chars, " a ");
+    // #2
+    ElemNode *b = vTreeFindElemNode(&vTree, ul->children.values[1]);
+    assertThatOrGoto(b != NULL, done, "Should set <ul>'s #2 child");
+    assertThatOrGoto(vTreeFindTextNode(&vTree, b->children.values[0]) != NULL,
+                     done, "Sanity li#1->textContent ! NULL");
+    assertStrEquals(vTreeFindTextNode(&vTree, b->children.values[0])->chars, "li1");
+    // #3
+    ElemNode *c = vTreeFindElemNode(&vTree, ul->children.values[2]);
+    assertThatOrGoto(c != NULL, done, "Should set <ul>'s #3 child");
+    assertThatOrGoto(vTreeFindTextNode(&vTree, c->children.values[0]) != NULL,
+                     done, "Sanity li#2->textContent ! NULL");
+    assertStrEquals(vTreeFindTextNode(&vTree, c->children.values[0])->chars, "li2");
+    // #4
+    TextNode *d = vTreeFindTextNode(&vTree, ul->children.values[3]);
+    assertThatOrGoto(d != NULL, done, "Should set <ul>'s #4 child");
+    assertStrEquals(d->chars, " b ");
+    //
+    done:
+        duk_destroy_heap(ctx);
+        vTreeFreeProps(&vTree);
+}
+
+static void
 testVTreeRegisterElementAttributes() {
     // 1. Setup
     beforeEach();
@@ -105,6 +155,38 @@ testVTreeRegisterElementAttributes() {
     assertStrEquals(outerDiv->props->key, "foo");
     assertThatOrGoto(outerDiv->props->val != NULL, done, "Should set outerDiv.props[0].val");
     assertStrEquals(outerDiv->props->val, "bar");
+    //
+    done:
+        duk_destroy_heap(ctx);
+        vTreeFreeProps(&vTree);
+}
+
+static void
+testVTreeRegisterElementToleratesNonStringAttributes() {
+    // 1. Setup
+    beforeEach();
+    VTree vTree;
+    vTreeInit(&vTree);
+    // 2. Call
+    char *layoutTmpl = "function (vTree) {"
+            "vTree.createElement('div', {foo: null, bar: undefined}, '')"
+        "}";
+    if (!dukUtilsCompileStrToFn(ctx, layoutTmpl, "l", errBuf)) {
+        printToStdErr("Failed to compile test script: %s", errBuf); goto done; }
+    bool success = vTreeScriptBindingsExecLayoutTmpl(ctx, &vTree, NULL, NULL, "", errBuf);
+    // 3. Assert
+    assertThatOrGoto(success, done, "Should return succesfully");
+    assertIntEqualsOrGoto(vTree.elemNodes.length, 1, done);
+    //
+    ElemProp *prop = vTree.elemNodes.values[0].props;
+    assertThatOrGoto(prop != NULL, done, "Should set attribute #1");
+    assertThatOrGoto(prop->val != NULL, done, "Should set attribute #1 value");
+    assertStrEquals(prop->val, "null");
+    //
+    ElemProp *prop2 = prop->next;
+    assertThatOrGoto(prop2 != NULL, done, "Should set attribute #2");
+    assertThatOrGoto(prop2->val != NULL, done, "Should set attribute #2 value");
+    assertStrEquals(prop2->val, "undefined");
     //
     done:
         duk_destroy_heap(ctx);
@@ -498,7 +580,9 @@ testExecLayoutTmplProvidesFetchAllsInVariables() {
 void
 vTreeScriptBindingsTestsRun() {
     testVTreeRegisterElementWithElemAndTextChildren();
+    testVTreeRegisterElementFlattensNestedArrays();
     testVTreeRegisterElementAttributes();
+    testVTreeRegisterElementToleratesNonStringAttributes();
     testVTreeRegisterElementValidatesItsArguments();
     testVTreePartialRunsCachedPartial();
     testDocumentDataConfigFetchOneChains();

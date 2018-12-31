@@ -6,7 +6,6 @@ const char *internalErrorMessage = "<html><title>500 Internal Server Error</titl
 const char *notImplementedMessage = "<html><title>501 Not Implemented</title><body>501 Not Implemented</body></html>";
 
 #define FORM_DATA_ITER_BUF_LEN 256
-#define MAX_FIELD_KEY_LEN 128
 #define MAX_POST_SIZE 500000
 #define MAX_URL_LEN 2000
 #define SEND_TMPL_ERRORS_TO_BROWSER 1
@@ -326,12 +325,12 @@ iterateFormDataBasic(void *myPPPtr, enum MHD_ValueKind kind, const char *key,
                      const char *transferEncoding, const char *data,
                      uint64_t off, size_t size) {
     if (size == 0) return MHD_NO;
-    if (size <= MAX_FIELD_KEY_LEN) {
+    if (size <= MAX_POST_SIZE) {
         FormDataHandlers *h = myPPPtr;
         return (int)h->formDataReceiverFn(key, data, h->myPtr);
     }
-    printToStdErr("[Error]: POST|PUT key length ouf or range (max %u, is %lu), ignoring.\n",
-                  MAX_FIELD_KEY_LEN, size);
+    printToStdErr("[Error]: POST|PUT field too large (max %u, is %lu), ignoring.\n",
+                  MAX_POST_SIZE, size);
     return MHD_YES;
 }
 
