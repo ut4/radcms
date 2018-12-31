@@ -1,21 +1,6 @@
 #include "site-graph-tests.h"
 
 static void
-testSiteGraphParseFailsOnEmptyInput() {
-    // 1. Setup
-    SiteGraph testGraph;
-    siteGraphInit(&testGraph);
-    StrReader strReader;
-    char errBuf[ERR_BUF_LEN]; errBuf[0] = '\0';
-    char empty[1] = {'\0'};
-    // 2. Call
-    bool ok = siteGraphParse(empty, &testGraph, &strReader, errBuf);
-    // 3. Assert
-    assertThat(!ok, "parse() should return false");
-    assertStrEquals(errBuf, "Expected a digit but got '\0");
-}
-
-static void
 testSiteGraphParseParsesTheInput() {
     // 1. Setup
     SiteGraph testGraph;
@@ -83,6 +68,66 @@ testSiteGraphParseParsesTheInput() {
     done:
         siteGraphFreeProps(&testGraph);
 }
+static void
+testSiteGraphParseHandlesBadInput() {
+    const char* inputs[] = {
+        "",
+        "foo",
+        "-1|",
+        "-1",
+        "1|-1|",
+        "1|-1",
+
+        "1|2",
+        "1|2|0",
+        "1|2|foo",
+
+        "1|2|3|",
+        "1|2|3|foo|",
+        "1|2|3|foo|-1",
+
+        "1|2|3|foo|4|",
+        "1|2|3|foo|4|-1",
+
+        "1|2|3|foo|4|5|",
+        "2|2|3|foo|4|5",
+        "1|2|3|foo|4|5|first",
+    };
+    const char* expected[] = {
+        "Sitegraph: Expected pageCount at the beginning",
+        "Sitegraph: Expected pageCount at the beginning",
+        "Sitegraph: Expected pageCount at the beginning",
+        "Sitegraph: Expected pageCount at the beginning",
+        "Sitegraph: Expected template count after pageCount",
+        "Sitegraph: Expected template count after pageCount",
+
+        "Sitegraph: Expected pageId",
+        "Sitegraph: Expected pageId",
+        "Sitegraph: Expected pageId",
+
+        "Sitegraph: Expected url after pageId",
+        "Sitegraph: Expected parentId after url",
+        "Sitegraph: Expected parentId after url",
+
+        "Sitegraph: Expected layoutIdx after parentId",
+        "Sitegraph: Expected layoutIdx after parentId",
+
+        "Sitegraph: Expected template name",
+        "Sitegraph: Expected pageId",
+        "Sitegraph: Expected template name",
+    };
+    char errBuf[ERR_BUF_LEN]; errBuf[0] = '\0';
+    for (unsigned i = 0; i < sizeof(inputs) / sizeof(char*); ++i) {
+        SiteGraph testGraph;
+        siteGraphInit(&testGraph);
+        StrReader strReader;
+        assertThat(!siteGraphParse((char*)inputs[i], &testGraph, &strReader, errBuf),
+                   "Should fail");
+        assertStrEquals(errBuf, expected[i]);
+        siteGraphFreeProps(&testGraph);
+        errBuf[0] = '\0';
+    }
+}
 
 static void
 testSiteGraphSerializeSerializesTheInput() {
@@ -112,7 +157,7 @@ testSiteGraphSerializeSerializesTheInput() {
 }
 
 void siteGraphTestsRun() {
-    testSiteGraphParseFailsOnEmptyInput();
     testSiteGraphParseParsesTheInput();
+    testSiteGraphParseHandlesBadInput();
     testSiteGraphSerializeSerializesTheInput();
 }

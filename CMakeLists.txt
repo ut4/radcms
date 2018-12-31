@@ -36,7 +36,6 @@ set(SOURCE_FILES
     include/site-graph.h src/site-graph.c
     include/site-ini.h src/site-ini.c
     include/static-data.h src/static-data.c
-    include/str-reader.h src/str-reader.c
     include/v-tree-script-bindings.h src/v-tree-script-bindings.c
     include/v-tree.h src/v-tree.c
     include/web/website-handlers-funcs.h src/web/website-handlers-funcs.c

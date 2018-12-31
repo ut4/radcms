@@ -1,6 +1,15 @@
+#include <errno.h>
+#include <limits.h>
 #include "../include/site-graph.h"
+#include "../include/common/memory.h" // ALLOCATE, strtol(stdlib.h), memcpy(string.h), bool
 
+static long int strReaderReadInt(StrReader *this);
+static char* strReaderReadStr(StrReader *this);
+static char strReaderAdvance(StrReader *this);
 static void pageFreeProps(Page *this);
+static void templateArrayInit(TemplateArray *this);
+static void templateArrayPush(TemplateArray *this, Template value);
+static void templateArrayFreeProps(TemplateArray *this);
 
 void
 siteGraphInit(SiteGraph *this) {
@@ -22,44 +31,78 @@ siteGraphFreeProps(SiteGraph *this) {
 
 bool
 siteGraphParse(char *str, SiteGraph *out, StrReader *sr, char *err) {
-    if (!strReaderIsDigit(str[0])) {
-        putError("Expected a digit but got '%c'.\n", str[0]);
-        return false;
+    #define MAX_PAGES 4000000
+    #define MAX_TEMPLATES 1000
+    #define MAX_ID 2147483647
+    #define putErrorAndReturn(error) putError("Sitegraph: %s", error); return false
+    if (!strlen(str)) {
+        putErrorAndReturn("Expected pageCount at the beginning");
     }
-    strReaderInit(sr, str, '|');
-    unsigned totalPageCount = strReaderReadInt(sr);
-    unsigned templateCount = strReaderReadInt(sr);
-    if (templateCount == 0) return false;
-    while (*sr->current != '\0') {
-        if (strReaderIsDigit(*sr->current)) {
-            unsigned id = strReaderReadInt(sr);
-            char *url = strReaderReadStr(sr);
-            unsigned parentId = strReaderReadInt(sr);
-            int layoutIdx = (int)strReaderReadInt(sr);
-            (void)siteGraphAddPage(out, id, url, parentId, layoutIdx);
-        } else if (out->pages.size > 0) {
-            Template *t = siteGraphAddTemplate(out, strReaderReadStr(sr));
-            unsigned tIdx = out->templates.length - 1;
-            HashMapElPtr *ptr = out->pages.orderedAccess;
-            while (ptr) {
-                if (((Page*)ptr->data)->layoutIdx == tIdx) {
-                    t->sampleUrl = ((Page*)ptr->data)->url;
-                    break;
-                }
-                ptr = ptr->next;
+    sr->current = str;
+    sr->END_OF_VAL = '|';
+    /*
+     * Header: `<pageCount>|<templateCount>|`
+     */
+    long int totalPageCount = strReaderReadInt(sr);
+    if (totalPageCount < 1 || totalPageCount > MAX_PAGES) {
+        putErrorAndReturn("Expected pageCount at the beginning");
+    }
+    long int templateCount = strReaderReadInt(sr);
+    if (templateCount < 1 || templateCount > MAX_TEMPLATES) {
+        putErrorAndReturn("Expected template count after pageCount");
+    }
+    /*
+     * Pages: `<id>|<url>|<parentId>|<layoutIdx>|`...
+     */
+    while (out->pages.size < totalPageCount) {
+        long int id = strReaderReadInt(sr);
+        if (id < 1 || id > MAX_ID) {
+            putErrorAndReturn("Expected pageId");
+        }
+        char *url = strReaderReadStr(sr);
+        if (!url) {
+            putErrorAndReturn("Expected url after pageId");
+        }
+        long int parentId = strReaderReadInt(sr);
+        if (parentId < 0 || id > MAX_ID) {
+            putErrorAndReturn("Expected parentId after url");
+        }
+        long int layoutIdx = strReaderReadInt(sr);
+        if (layoutIdx < 0 || id > (MAX_TEMPLATES - 1)) {
+            putErrorAndReturn("Expected layoutIdx after parentId");
+        }
+        (void)siteGraphAddPage(out, id, url, parentId, layoutIdx);
+    }
+    if (out->pages.size < totalPageCount) {
+        putErrorAndReturn("Expected pageId");
+    }
+    /*
+     * Template names: `<name>|`...
+     */
+    while (out->templates.length < templateCount) {
+        char *templateName = strReaderReadStr(sr);
+        if (!templateName) {
+            putErrorAndReturn("Expected template name");
+        }
+        Template *t = siteGraphAddTemplate(out, templateName);
+        unsigned tIdx = out->templates.length - 1;
+        HashMapElPtr *ptr = out->pages.orderedAccess;
+        while (ptr) {
+            if (((Page*)ptr->data)->layoutIdx == tIdx) {
+                t->sampleUrl = ((Page*)ptr->data)->url;
+                break;
             }
-        } else {
-            putError("Unpexted character '%c'.\n", *sr->current);
-            return false;
+            ptr = ptr->next;
         }
     }
-    if (out->pages.size != totalPageCount) {
-        printToStdErr("[Warn]: siteGraph->pages.size != definedTotalPageCount");
-    }
-    if (out->templates.length != templateCount) {
-        printToStdErr("[Warn]: siteGraph->templates.length != definedTemplateCount");
+    if (out->templates.length < templateCount) {
+        putErrorAndReturn("Expected template name");
     }
     return true;
+    #undef MAX_PAGES
+    #undef MAX_TEMPLATES
+    #undef MAX_ID
+    #undef putErrorAndReturn
 }
 
 char*
@@ -155,18 +198,53 @@ siteGraphAddTemplate(SiteGraph *this, char *fileName) {
     return &this->templates.values[this->templates.length - 1];
 }
 
+static long int
+strReaderReadInt(StrReader *this) {
+    char *end;
+    if (*this->current == '\0') return LONG_MIN;
+    long int res = strtol(this->current, &end, 10);
+    if (errno != ERANGE) {
+        this->current = end;
+        if (*this->current == this->END_OF_VAL) (void)strReaderAdvance(this);
+    } // else res == LONG_MIN or LONG_MAX
+    return res;
+}
+
+static char*
+strReaderReadStr(StrReader *this) {
+    char *start = this->current;
+    char c = *this->current;
+    while (c != this->END_OF_VAL && c != '\0') {
+        (void)strReaderAdvance(this);
+        c = *this->current;
+    }
+    int len = (int)(this->current - start); // not including space for \0
+    if (len <= 0) return NULL;
+    char *out = ALLOCATE_ARR(char, len + 1);
+    memcpy(out, start, len);
+    out[len] = '\0';
+    if (*this->current == this->END_OF_VAL) (void)strReaderAdvance(this);
+    return out;
+}
+
+static char
+strReaderAdvance(StrReader *this) {
+    this->current += 1;
+    return this->current[-1];
+}
+
 static void
 pageFreeProps(Page *this) {
     FREE_STR(this->url);
 }
 
-void templateArrayInit(TemplateArray *this) {
+static void templateArrayInit(TemplateArray *this) {
     arrayInit(Template, 0);
 }
-void templateArrayPush(TemplateArray *this, Template value) {
+static void templateArrayPush(TemplateArray *this, Template value) {
     arrayPush(Template, value);
 }
-void templateArrayFreeProps(TemplateArray *this) {
+static void templateArrayFreeProps(TemplateArray *this) {
     for (unsigned i = 0; i < this->length; ++i) {
         FREE_STR(this->values[i].fileName);
     }

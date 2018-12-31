@@ -4,7 +4,6 @@
 #include <math.h> // log10
 #include "common/array.h"
 #include "common/hashmap.h"
-#include "str-reader.h" // strReaderRead*() etc.
 #include "v-tree.h"
 
 typedef struct {
@@ -37,6 +36,11 @@ struct PageRef {
     Page *ptr; // borrowed from SiteGraph.pages
     PageRef *next;
 };
+
+typedef struct {
+    char *current;
+    char END_OF_VAL; // like a \0, but for values inside the string
+} StrReader;
 
 void
 siteGraphInit(SiteGraph *this);
@@ -94,9 +98,5 @@ siteGraphGetTemplate(SiteGraph *this, int idx);
  */
 Template*
 siteGraphAddTemplate(SiteGraph *this, char *fileName);
-
-void templateArrayInit(TemplateArray *this);
-void templateArrayPush(TemplateArray *this, Template value);
-void templateArrayFreeProps(TemplateArray *this);
 
 #endif
