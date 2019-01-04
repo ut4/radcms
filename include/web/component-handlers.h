@@ -2,7 +2,6 @@
 #define insn_componentHandlers_h
 
 #include "../component-mapper.h"
-#include "web-app.h"
 
 /**
  * Responds to POST /component. Payload:

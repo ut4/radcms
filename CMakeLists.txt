@@ -17,10 +17,14 @@ include_directories(${INSN_DEP_INCLUDES})
 
 # == insane.exe ================================================================
 set(SOURCE_FILES
-    include/core-script-bindings.hpp src/core-script-bindings.cpp
+    include/app-context.hpp src/app-context.cpp
+    include/core-handlers.hpp src/core-handlers.cpp
     include/db.hpp
     include/duk.hpp src/duk.cpp
     include/dom-tree.hpp src/dom-tree.cpp
+    include/js-environment.hpp src/js-environment.cpp
+    include/my-fs.hpp src/my-fs.cpp
+    include/web-app.hpp src/web-app.cpp
 )
 add_executable(insane ${SOURCE_FILES} main.cpp)
 target_compile_options(insane PUBLIC ${INSN_COMPILE_OPTIONS})

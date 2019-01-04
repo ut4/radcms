@@ -1,12 +1,12 @@
-#include "../../include/web/core-handlers.h"
+#include "../../include/core-handlers.hpp"
 
 unsigned
 coreHandlersHandleStaticFileRequest(void *myPtr, void *myDataPtr, const char *method,
                                     const char *url, struct MHD_Connection *conn,
-                                    struct MHD_Response **response, char *err) {
+                                    struct MHD_Response **response, std::string &err) {
     if (strcmp(method, "GET") != 0) return 0;
     // Must have an extension
-    char *ext = strrchr(url, '.');
+    const char *ext = strrchr(url, '.');
     if (!ext) return 0;
     // Mustn't contain ".."
     if (strstr(url, "..")) return MHD_HTTP_NOT_FOUND;
@@ -21,9 +21,11 @@ coreHandlersHandleStaticFileRequest(void *myPtr, void *myDataPtr, const char *me
     int fd;
     struct stat sbuf;
     bool isUserFile = strstr(url, "/frontend/") != url;
-    char *rootPath = isUserFile ? ((WebApp*)myPtr)->sitePath : ((WebApp*)myPtr)->appPath;
-    STR_CONCAT(path, rootPath, url);
-    if ((fd = open(path, O_RDONLY)) == -1 || fstat(fd, &sbuf) != 0) {
+    std::string &rootPath = isUserFile
+        ? static_cast<WebApp*>(myPtr)->cfg.sitePath
+        : static_cast<WebApp*>(myPtr)->cfg.appPath;
+    std::string path = rootPath + std::string(&url[1]);
+    if ((fd = open(path.c_str(), O_RDONLY)) == -1 || fstat(fd, &sbuf) != 0) {
         if (fd != -1) (void)close(fd);
         return MHD_HTTP_INTERNAL_SERVER_ERROR;
     }
@@ -39,14 +41,13 @@ coreHandlersHandleStaticFileRequest(void *myPtr, void *myDataPtr, const char *me
 unsigned
 coreHandlersHandleScriptRouteRequest(void *myPtr, void *myDataPtr, const char *method,
                                      const char *url, struct MHD_Connection *conn,
-                                     struct MHD_Response **response, char *err) {
-    if (strstr(url, "/api/") != url) return 0;
+                                     struct MHD_Response **response, std::string &err) {
     unsigned out = MHD_HTTP_NOT_FOUND;
-    duk_context *ctx = myPtr;
-    ASSERT(duk_get_top(ctx) == 0, "Duk stack not empty.");
+    auto *ctx = static_cast<duk_context*>(myPtr);
+    assert(duk_get_top(ctx) == 0 && "Duk stack not empty.");
     duk_push_global_stash(ctx);                     // [stash]
-    commonScriptBindingsPushApp(ctx, -1);           // [stash app]
-    duk_get_prop_string(ctx, -1, "_routes");        // [stash app routes]
+    jsEnvironmentPushCommonService(ctx, "app");     // [stash app]
+    duk_get_prop_string(ctx, -1, "_routeMatchers"); // [stash app routes]
     duk_size_t l = duk_get_length(ctx, -1);
     for (duk_size_t i = 0; i < l; ++i) {
         duk_get_prop_index(ctx, -1, i);             // [stash app routes fn]
@@ -95,7 +96,7 @@ coreHandlersHandleScriptRouteRequest(void *myPtr, void *myDataPtr, const char *m
             duk_pop_n(ctx, 3);                      // [stash app routes]
         } else {
             if (didReturnObj) duk_pop(ctx);         // [stash app routes]
-            putError("A handler must return new Response(<statusCode>, <bodyStr>)");
+            err = "A handler must return new Response(<statusCode>, <bodyStr>)";
             out = MHD_HTTP_INTERNAL_SERVER_ERROR;
         }
         break;

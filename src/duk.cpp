@@ -29,7 +29,7 @@ myDukCreate(std::string &errBuf) {
 bool
 dukUtilsCompileStrToFn(duk_context *ctx, const char *code, const char *fileName,
                        std::string &err) {
-    duk_pcompile_string(ctx, DUK_COMPILE_FUNCTION, code);
+    duk_pcompile_string(ctx, DUK_COMPILE_FUNCTION, code); // fn|err
     if (!duk_is_function(ctx, -1)) {
         dukUtilsPutDetailedError(ctx, -1, fileName, err);
         return false;
@@ -122,4 +122,5 @@ myDukHandleFatalErr(void *myPtr, const char *msg) {
     err->append("*** FATAL JS ERROR: ");
     err->append(msg ? msg : "no message");
     err->append("\n");
+    std::cerr << *err;
 }
