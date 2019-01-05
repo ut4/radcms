@@ -15,7 +15,10 @@ myDukCreate(std::string &errBuf) {
         static_cast<void*>(&errBuf), // myPtr to myDukHandleFatalErr
         myDukHandleFatalErr
     );
-    if (!out) return nullptr;
+    if (!out) {
+        errBuf = "Failed to myDukCreate()";
+        return nullptr;
+    }
     duk_module_duktape_init(out);
     duk_push_c_lightfunc(out, myPrint, DUK_VARARGS, 0, 0);
     duk_put_global_string(out, "print");

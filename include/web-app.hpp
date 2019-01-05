@@ -3,6 +3,7 @@
 #include <array>
 #include <cstring>
 #include <iostream>
+#include <unistd.h> // getcwd
 #if defined(INSN_IS_WIN)
 #include <winsock2.h>
 #elif defined(INSN_IS_LINUX)
@@ -61,11 +62,11 @@ struct RequestHandler {
 
 class WebApp {
 public:
-    AppContext cfg;
+    AppContext ctx;
     struct MHD_Daemon *daemon = nullptr;
     std::array<RequestHandler, 2> handlers;
     /**
-     * Fills in $this->cfg.
+     * Fills in $this->ctx.
      */
     bool
     init(const char *sitePath);

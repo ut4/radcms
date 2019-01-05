@@ -42,14 +42,14 @@ jsEnvironmentPushCommonService(duk_context *ctx, const char *serviceName) {
 static duk_ret_t
 myModSearchFn(duk_context *ctx) {
     constexpr int REQUIRE_IS_AT = 1;
-    const char *id = duk_get_string(ctx, 0);
+    const auto id = std::string(duk_get_string(ctx, 0));
     /*
      * Read the file
      */
     std::string code;
     duk_push_global_stash(ctx);                    // [id req exp mod stash]
     auto *app = jsEnvironmentPullAppContext(ctx, -1);
-    std::string filePath = app->appPath + "js/" + std::string(id);
+    std::string filePath = app->appPath + "js/" + id;
     if (!myFsRead(filePath, code, app->errBuf)) {
         return duk_error(ctx, DUK_ERR_TYPE_ERROR,
                          ("Module '" + filePath + "' not found.").c_str());
@@ -57,7 +57,7 @@ myModSearchFn(duk_context *ctx) {
     /*
      * Fill in the @native methods ...
      */
-    if (strcmp(id, JS_FILE_COMMON_SERVICES) == 0) {
+    if (id == JS_FILE_COMMON_SERVICES) {
         code = "function(require,module){var exports=module.exports;" + code + "}";
         if (!dukUtilsCompileStrToFn(ctx, code.c_str(), filePath.c_str(),
                                     app->errBuf)) { // [id req exp mod stash ptr fn]

@@ -18,12 +18,14 @@ include_directories(${INSN_DEP_INCLUDES})
 # == insane.exe ================================================================
 set(SOURCE_FILES
     include/app-context.hpp src/app-context.cpp
+    include/common-services-js-bindings.hpp src/common-services-js-bindings.cpp
     include/core-handlers.hpp src/core-handlers.cpp
-    include/db.hpp
+    include/db.hpp src/db.cpp
     include/duk.hpp src/duk.cpp
     include/dom-tree.hpp src/dom-tree.cpp
     include/js-environment.hpp src/js-environment.cpp
     include/my-fs.hpp src/my-fs.cpp
+    include/static-data.hpp src/static-data.cpp
     include/web-app.hpp src/web-app.cpp
 )
 add_executable(insane ${SOURCE_FILES} main.cpp)
@@ -32,7 +34,8 @@ target_compile_features(insane PUBLIC ${INSN_COMPILE_FEATURES})
 target_link_libraries(insane ${INSN_DEP_LIBS})
 
 # == tests.exe =================================================================
-add_executable(tests ${SOURCE_FILES} tests-main.cpp)
+set(TESTS_FILES tests/test-utils.hpp tests/test-utils.cpp)
+add_executable(tests ${SOURCE_FILES} ${TESTS_FILES} tests-main.cpp)
 target_compile_options(tests PUBLIC ${INSN_COMPILE_OPTIONS})
 target_compile_features(tests PUBLIC ${INSN_COMPILE_FEATURES})
-target_link_libraries(tests duktape)
+target_link_libraries(tests ${INSN_DEP_LIBS})

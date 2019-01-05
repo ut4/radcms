@@ -53,26 +53,22 @@ static int
 validatePostReqHeaders(void *myPtr, enum MHD_ValueKind kind, const char *key,
                        const char *value);
 
-static std::string
-defaultResolveModuleBasePath(const std::string &appPath, const char *moduleId);
-
 bool
 WebApp::init(const char *sitePath) {
-    this->cfg.sitePath = sitePath;
-    myFsNormalizePath(this->cfg.sitePath);
+    this->ctx.sitePath = sitePath;
+    myFsNormalizePath(this->ctx.sitePath);
     constexpr int MAX_FILENAME_LEN = 40;
-    if (this->cfg.sitePath.size() + MAX_FILENAME_LEN > FILENAME_MAX) {
-        this->cfg.errBuf = "Sitepath too long.\n";
+    if (this->ctx.sitePath.size() + MAX_FILENAME_LEN > FILENAME_MAX) {
+        this->ctx.errBuf = "Sitepath too long.\n";
         return false;
     }
     char cwd[FILENAME_MAX];
     if (!getcwd(cwd, FILENAME_MAX)) {
-        this->cfg.errBuf = "Failed to getcwd().\n";
+        this->ctx.errBuf = "Failed to getcwd().\n";
         return false;
     }
-    this->cfg.appPath = cwd;
-    myFsNormalizePath(this->cfg.appPath);
-    this->cfg.resolveModuleBasePath = defaultResolveModuleBasePath;
+    this->ctx.appPath = cwd;
+    myFsNormalizePath(this->ctx.appPath);
     return true;
 }
 
@@ -98,7 +94,7 @@ WebApp::run() {
         while (!isCtrlCTyped) nanosleep(&t, nullptr);
         return true;
     }
-    this->cfg.errBuf = "Failed to start the server.";
+    this->ctx.errBuf = "Failed to start the server.";
     return false;
 }
 
@@ -124,7 +120,7 @@ handleRequest(void *myPtr, struct MHD_Connection *conn, const char *url,
         unsigned statusCode = MHD_HTTP_NOT_FOUND;
         for (RequestHandler &h: app->handlers) {
             unsigned ret = h.handlerFn(h.myPtr, nullptr, method, url, conn,
-                                       &response, app->cfg.errBuf);
+                                       &response, app->ctx.errBuf);
             // Wasn't the right handler
             if (ret == MHD_NO) continue;
             // Was MHD_YES, setup *perConnPtr
@@ -136,7 +132,7 @@ handleRequest(void *myPtr, struct MHD_Connection *conn, const char *url,
             statusCode = ret;
             break;
         }
-        return respond(statusCode, conn, response, app->cfg.errBuf);
+        return respond(statusCode, conn, response, app->ctx.errBuf);
     }
     auto *connInfo = static_cast<PerConnInfo*>(*perConnPtr);
     /*
@@ -150,13 +146,13 @@ handleRequest(void *myPtr, struct MHD_Connection *conn, const char *url,
     * Last iteration of POST -> respond
     */
     if (connInfo->statusCode > 1) { // had errors
-        return respond(connInfo->statusCode, conn, nullptr, app->cfg.errBuf);
+        return respond(connInfo->statusCode, conn, nullptr, app->ctx.errBuf);
     }
     RequestHandler *h = connInfo->reqHandler;
     connInfo->statusCode = h->handlerFn(h->myPtr, h->formDataHandlers->myPtr,
                                         method, url, conn, &response,
-                                        app->cfg.errBuf);
-    return respond(connInfo->statusCode, conn, response, app->cfg.errBuf);
+                                        app->ctx.errBuf);
+    return respond(connInfo->statusCode, conn, response, app->ctx.errBuf);
 }
 
 void
@@ -287,10 +283,4 @@ validatePostReqHeaders(void *myPtr, enum MHD_ValueKind kind, const char *key,
         return MHD_NO;
     }
     return MHD_YES; // Keep processing
-}
-
-static std::string
-defaultResolveModuleBasePath(const std::string &appPath, const char *moduleId) {
-    std::cout << "calling base" << std::endl;
-    return appPath + "js/" + std::string(moduleId);
 }

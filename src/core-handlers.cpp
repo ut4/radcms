@@ -22,8 +22,8 @@ coreHandlersHandleStaticFileRequest(void *myPtr, void *myDataPtr, const char *me
     struct stat sbuf;
     bool isUserFile = strstr(url, "/frontend/") != url;
     std::string &rootPath = isUserFile
-        ? static_cast<WebApp*>(myPtr)->cfg.sitePath
-        : static_cast<WebApp*>(myPtr)->cfg.appPath;
+        ? static_cast<WebApp*>(myPtr)->ctx.sitePath
+        : static_cast<WebApp*>(myPtr)->ctx.appPath;
     std::string path = rootPath + std::string(&url[1]);
     if ((fd = open(path.c_str(), O_RDONLY)) == -1 || fstat(fd, &sbuf) != 0) {
         if (fd != -1) (void)close(fd);

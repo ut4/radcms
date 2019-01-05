@@ -32,14 +32,16 @@ static int
 handleRun(const char *sitePath) {
     //
     WebApp webApp;
+    Db db;
     duk_context *ctx;
     int out = EXIT_FAILURE;
     if (!webApp.init(sitePath)) goto done;
-    ctx = myDukCreate(webApp.cfg.errBuf);
-    if (!ctx) { webApp.cfg.errBuf = "Failed to myDukCreate()"; goto done; }
-    jsEnvironmentConfigure(ctx, &webApp.cfg);
+    if (!db.open(webApp.ctx.sitePath + "data.db", webApp.ctx.errBuf)) goto done;
+    webApp.ctx.db = &db;
+    if (!(ctx = myDukCreate(webApp.ctx.errBuf))) goto done;
+    jsEnvironmentConfigure(ctx, &webApp.ctx);
     if (!dukUtilsCompileAndRunStrGlobal(ctx, "require('website-handlers.js')",
-                                        "main.js", webApp.cfg.errBuf)) {
+                                        "main.js", webApp.ctx.errBuf)) {
         goto done;
     }
     //
@@ -51,7 +53,7 @@ handleRun(const char *sitePath) {
     done:
     if (ctx) duk_destroy_heap(ctx);
     if (out != EXIT_SUCCESS) {
-        std::cerr << "[Fatal]: " << webApp.cfg.errBuf << "\n";
+        std::cerr << "[Fatal]: " << webApp.ctx.errBuf << "\n";
         return EXIT_FAILURE;
     }
     return out;

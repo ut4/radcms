@@ -1,33 +1,50 @@
 #include <iostream>
+#include <memory>
 #include <string>
-#include "tests/core-script-bindings-tests.cpp"
-#include "tests/dom-tree-tests.cpp"
+#include "include/db.hpp"
+#include "include/duk.hpp"
+#include "include/js-environment.hpp"
+#include "tests/test-utils.hpp"
 
-static unsigned
-runIf(const std::string &arg, const std::string &match, void (*suite)()) {
-    if (arg == match || arg == "all") {
-        suite();
-        std::cout << match << "Tests done.\n";
-        return 1;
-    }
-    return 0;
+static void
+myAtExit() {
+    std::cout << "[Info]: Tests exited cleanly.\n";
 }
 
 int main(int argc, const char* argv[]) {
     if (argc < 2) {
-        std::cerr << "Usage: tests testname|all\n";
-        exit(EXIT_FAILURE);
+        std::cerr << "Usage: tests suitename|all\n";
+        return EXIT_FAILURE;
     }
-    const std::string testSuiteName = argv[1];
-    int testSuitesRan = 0;
-    testSuitesRan += runIf(testSuiteName, "coreScriptBindings", coreScriptBindingsTestsRun);
-    testSuitesRan += runIf(testSuiteName, "domTree", domTreeTestsRun);
-    if (testSuitesRan > 0) {
-        std::cout << "------------------------\nRan " << testSuitesRan <<
-                     " test suites.\n";
-        exit(EXIT_SUCCESS);
-    } else {
-        std::cerr << "Unknown test suite " << testSuiteName;
-        exit(EXIT_FAILURE);
+    atexit(myAtExit);
+    AppContext testJsEnv;
+    Db db;
+    duk_context *ctx;
+    int out = EXIT_FAILURE;
+    if (!testUtilsSetupTestDb(&db, testJsEnv.errBuf)) goto done;
+    testJsEnv.db = &db;
+    if (!(ctx = myDukCreate(testJsEnv.errBuf))) goto done;
+    jsEnvironmentConfigure(ctx, &testJsEnv);
+    //
+    {
+        const std::string testSuiteName = argv[1];
+        if (testSuiteName != "all" &&
+            testSuiteName != "common-services") {
+            testJsEnv.errBuf = "Unknown test suite '" + testSuiteName + "'";
+            goto done;
+        }
+        if (dukUtilsCompileAndRunStrGlobal(ctx, ("require('tests/main.js').main('" +
+            testSuiteName + "')").c_str(),
+            "tests/main.js", testJsEnv.errBuf)) {
+            out = EXIT_SUCCESS;
+        }
     }
+    //
+    done:
+    if (ctx) duk_destroy_heap(ctx);
+    if (out != EXIT_SUCCESS) {
+        std::cerr << "[Fatal]: " << testJsEnv.errBuf << "\n";
+        return EXIT_FAILURE;
+    }
+    return out;
 }

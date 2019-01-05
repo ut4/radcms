@@ -12,7 +12,12 @@ exports.app = {
 };
 
 exports.db = {
-    /** @native */
+    /**
+     * @native
+     * @param {string} sql
+     * @param {(stmt: Stmt): void} bindFn
+     * @returns int sqlite3_last_insert_rowid()
+     */
     insert: function(sql, bindFn) {}
 };
 
