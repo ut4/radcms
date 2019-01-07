@@ -2,7 +2,7 @@ var commons = require('common-services.js');
 var testLib = require('tests/testlib.js').testLib;
 
 testLib.module('[\'common-services.js\'].db', function() {
-    testLib.test('insert() valid', function(assert) {
+    testLib.test('insert() inserts data', function(assert) {
         assert.expect(4);
         var sql = 'insert into componentTypes values (?,?),(?,?)';
         var success = commons.db.insert(sql, function bind(stmt) {
@@ -12,17 +12,17 @@ testLib.module('[\'common-services.js\'].db', function() {
             stmt.bindString(3, 'bar');
         });
         //
-        assert.ok(success, 'returns succesfully');
+        assert.ok(success, 'should return succesfully');
         //
         var actuallyInserted = [];
-        commons.db.selectAll('select id, `name` from componentTypes', function map(row) {
+        commons.db.select('select id, `name` from componentTypes', function map(row) {
             actuallyInserted.push({id: row.getInt(0), name: row.getString(1)});
         });
-        assert.equal(actuallyInserted.length, 2, 'inserts 2 rows');
+        assert.equal(actuallyInserted.length, 2, 'should insert 2 rows');
         assert.deepEqual(actuallyInserted[0], {id: 1, name: 'foo'});
         assert.deepEqual(actuallyInserted[1], {id: 2, name: 'bar'});
     });
-    testLib.test('insert() invalid', function(assert) {
+    testLib.test('insert() validates stuff', function(assert) {
         assert.expect(3);
         var runInvalid = function(bindFn) {
             try {
@@ -42,7 +42,7 @@ testLib.module('[\'common-services.js\'].db', function() {
             stmt.bindString(0, {});
         }), 'TypeError: string required, found [object Object] (stack index 1)');
     });
-    testLib.test('selectAll() valid', function(assert) {
+    testLib.test('select() fetches data', function(assert) {
         assert.expect(4);
         var sql = 'insert into websites values (?,?),(?,?),(?,?)';
         var testData = [
@@ -60,15 +60,15 @@ testLib.module('[\'common-services.js\'].db', function() {
         })) throw new Error('Failed to insert test data');
         //
         var selected = [];
-        var sql = 'select id, `graph` from websites order by id';
-        commons.db.selectAll(sql, function map(row, nthRow) {
+        var sql2 = 'select id, `graph` from websites order by id';
+        commons.db.select(sql2, function map(row, nthRow) {
             selected.push({
                 id: row.getInt(0),
                 graph: row.getString(1),
                 nthRow: nthRow
             });
         });
-        assert.equal(selected.length, 3, 'selects 3 rows');
+        assert.equal(selected.length, 3, 'should map 3 rows');
         testData[0].nthRow = 1;
         testData[1].nthRow = 0;
         testData[2].nthRow = 2;
@@ -76,21 +76,80 @@ testLib.module('[\'common-services.js\'].db', function() {
         assert.deepEqual(selected[1], testData[0]);
         assert.deepEqual(selected[2], testData[2]);
     });
-    testLib.test('selectAll() invalid', function(assert) {
+    testLib.test('select() validates stuff', function(assert) {
         assert.expect(2);
         //
         var runInvalid = function(sql, mapFn) {
             try {
-                commons.db.selectAll(sql, mapFn);
+                commons.db.select(sql, mapFn);
             } catch (e) {
                 return e.message;
             }
         };
         assert.equal(runInvalid('select id from websites', function map(row) {
             row.getInt(45);
-        }), 'RangeError: col index 45 too large (max 0)');
-        assert.equal(runInvalid('select foo from bar', function map(_) {
+        }), 'RangeError: Col index 45 too large (max 0)');
+        assert.equal(runInvalid('select foo from bar', function map() {
             //
         }), 'Failed to create stmt: no such table: bar');
+    });
+});
+
+testLib.module('[\'common-services.js\'].DomTree', function() {
+    testLib.test('render() renders basic tree', function(assert) {
+        assert.expect(1);
+        var domTree = new commons.DomTree();
+        var rootElemRef = domTree.createElement('div', null, [ // multiple nodes as children
+            domTree.createElement('h2', null,                  // single node as a children
+                domTree.createElement('span', null, 'foo')     // text as a children
+            ),
+            domTree.createElement('p', null, 'bar')
+        ]);
+        assert.equal(domTree.render(rootElemRef),
+            '<div><h2><span>foo</span></h2><p>bar</p></div>'
+        );
+    });
+    testLib.test('render() flattens nested child-arrays', function(assert) {
+        assert.expect(1);
+        var domTree = new commons.DomTree();
+        var rootElemRef = domTree.createElement('div', null, [' a ', [
+            domTree.createElement('i', null, 'i1'),
+            domTree.createElement('i', null, 'i2')
+        ], ' b ']);
+        assert.equal(domTree.render(rootElemRef),
+            '<div> a <i>i1</i><i>i2</i> b </div>'
+        );
+    });
+    testLib.test('render() renders attributes', function(assert) {
+        assert.expect(1);
+        var domTree = new commons.DomTree();
+        var rootElemRef = domTree.createElement('div', {foo: 'bar'}, [
+            domTree.createElement('div', {baz: 'naz', gas: 'maz foo'}, 'Foo'),
+            domTree.createElement('div', {foo: null, bar: undefined}, '')
+        ]);
+        assert.equal(domTree.render(rootElemRef),
+            '<div foo="bar">' +
+                '<div baz="naz" gas="maz foo">Foo</div>' +
+                '<div foo="null" bar="undefined"></div>' +
+            '</div>'
+        );
+    });
+    testLib.test('render() strigifies non-string children', function(assert) {
+        assert.expect(1);
+        var domTree = new commons.DomTree();
+        var rootElemRef = domTree.createElement('div', null, [
+            domTree.createElement('p', null, []),
+            domTree.createElement('p', null, null),
+            domTree.createElement('p', null, undefined),
+            domTree.createElement('p', null, true)
+        ]);
+        assert.equal(domTree.render(rootElemRef),
+            '<div>' +
+                '<p></p>' +
+                '<p>null</p>' +
+                '<p>undefined</p>' +
+                '<p>true</p>' +
+            '</div>'
+        );
     });
 });

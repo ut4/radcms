@@ -26,7 +26,7 @@ const app = {
      * @param {string} name
      * @returns {Object|undefined}
      */
-    getDirectiveImpl: function (name) {
+    getDirectiveImpl: function(name) {
         return this._directiveImpls[name];
     }
 };

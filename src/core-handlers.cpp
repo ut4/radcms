@@ -4,10 +4,10 @@ unsigned
 coreHandlersHandleStaticFileRequest(void *myPtr, void *myDataPtr, const char *method,
                                     const char *url, struct MHD_Connection *conn,
                                     struct MHD_Response **response, std::string &err) {
-    if (strcmp(method, "GET") != 0) return 0;
+    if (strcmp(method, "GET") != 0) return MHD_NO;
     // Must have an extension
     const char *ext = strrchr(url, '.');
-    if (!ext) return 0;
+    if (!ext) return MHD_NO;
     // Mustn't contain ".."
     if (strstr(url, "..")) return MHD_HTTP_NOT_FOUND;
     // Must end with .(js|html|css|svg)
@@ -51,8 +51,8 @@ coreHandlersHandleScriptRouteRequest(void *myPtr, void *myDataPtr, const char *m
     duk_size_t l = duk_get_length(ctx, -1);
     for (duk_size_t i = 0; i < l; ++i) {
         duk_get_prop_index(ctx, -1, i);             // [stash app routes fn]
-        duk_push_string(ctx, method);               // [stash app routes fn str]
-        duk_push_string(ctx, url);                  // [stash app routes fn str str]
+        duk_push_string(ctx, url);                  // [stash app routes fn str]
+        duk_push_string(ctx, method);               // [stash app routes fn str str]
         /*
          * Call the matcher function.
          */
@@ -70,7 +70,11 @@ coreHandlersHandleScriptRouteRequest(void *myPtr, void *myDataPtr, const char *m
         /*
          * Got a handler function, call it.
          */
-        if (duk_pcall(ctx, 0) != DUK_EXEC_SUCCESS) {// [stash app routes obj|err]
+        jsEnvironmentPushModuleProp(ctx, "http.js", "Request"); // [stash app routes fn Req]
+        duk_push_string(ctx, url);                  // [stash app routes Req fn str str]
+        duk_push_string(ctx, method);               // [stash app routes Req fn str]
+        duk_new(ctx, 2);                            // [stash app routes req]
+        if (duk_pcall(ctx, 1) != DUK_EXEC_SUCCESS) {// [stash app routes obj|err]
             dukUtilsPutDetailedError(ctx, -1, url, err); // [stash app routes]
             out = MHD_HTTP_INTERNAL_SERVER_ERROR;
             goto done;

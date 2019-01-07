@@ -1,7 +1,18 @@
 /**
+ * @native
+ * @param {string} url
+ * @param {string} method
+ * @constructor
+ */
+exports.Request = function(url, method) {
+    this.url = url;
+    this.method = method;
+};
+
+/**
  * @param {number} statusCode
  * @param {string} body
- * @param {headers} statusCode
+ * @param {Object} headers
  * @constructor
  */
 exports.Response = function(statusCode, body, headers) {

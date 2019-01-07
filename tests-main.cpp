@@ -29,7 +29,8 @@ int main(int argc, const char* argv[]) {
     {
         const std::string testSuiteName = argv[1];
         if (testSuiteName != "all" &&
-            testSuiteName != "common-services") {
+            testSuiteName != "common-services" &&
+            testSuiteName != "website-handlers") {
             testJsEnv.errBuf = "Unknown test suite '" + testSuiteName + "'";
             goto done;
         }

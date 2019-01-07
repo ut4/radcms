@@ -88,26 +88,32 @@ exports.testLib = {
      */
     start: function(moduleNames) {
         var mods = this.modules;
+        var stats = {numPasses: 0, numFails: 0};
         (moduleNames || Object.keys(this.modules)).forEach(function(moduleName) {
             var mod = mods[moduleName];
             if (!mod) throw new Error('Testmodule \'' + moduleName + '\' not found.');
             mod.fn();
-            runModuleTests(moduleName, mod);
+            runModuleTests(moduleName, mod, stats);
         });
+        console.log('== Test results ========');
+        console.log(stats.numFails + ' failures, ' + stats.numPasses + ' passes');
     }
 };
 
-function runModuleTests(modName, mod) {
+function runModuleTests(modName, mod, stats) {
     mod.tests.forEach(function(test) {
         var assert = new Asserter();
         test.fn(assert);
         assert.results.forEach(function(result) {
-            if (result.ok)
+            if (result.ok) {
                console.log(modName + ': ' + test.desc + ': ok');
-            else
+               stats.numPasses++;
+            } else {
                console.log(modName + ': ' + test.desc + ': ' +
                            (result.message || 'fail') +
                            (result.details ? ': ' + result.details : ''));
+                stats.numFails++;
+            }
         });
         if (assert.expectNAssertions !== undefined &&
             assert.expectNAssertions != assert.results.length) {
