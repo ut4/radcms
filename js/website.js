@@ -65,13 +65,7 @@ exports.siteGraph = {
 };
 
 exports.website = {
-    siteGraph: exports.siteGraph.parseFrom((function() {
-        var graph;
-        commons.db.select('select `graph` from websites', function(row) {
-            graph = row.getString(0);
-        });
-        return graph;
-    }())),
+    siteGraph: (exports.siteGraph.parseFrom(), exports.siteGraph),
     /**
      * @param {(renderedHtml: string): bool} onEach
      * @returns {number} Number of succeful writes

@@ -108,7 +108,7 @@ dukUtilsPutDetailedError(duk_context *ctx, int errorObjIdAt,
         err += duk_safe_to_string(ctx, -1);
         err += "\n";
     }
-    duk_pop_n(ctx, 2); // error, stacktrace|undefined
+    duk_pop_2(ctx); // error, stacktrace|undefined
 }
 
 static duk_ret_t myPrint(duk_context *ctx) {

@@ -33,4 +33,28 @@ testLib.module('website-handlers.js', function() {
         assert.equal(body.totalPages, website.siteGraph.pageCount);
         assert.equal(body.issues.length, 0);
     });
+    testLib.test('POST \'/api/website/upload\' generates and uploads the site', function(assert) {
+        assert.expect(8);
+        var websiteHandlersMatcherFn = commons.app._routeMatchers[0];
+        var req = new http.Request('/api/website/upload', 'POST');
+        var handleUploadReqFn = websiteHandlersMatcherFn(req.url, req.method);
+        //
+        var response = handleUploadReqFn(req);
+        assert.ok(response instanceof http.ChunkedResponse,
+            'should return new ChunkedResponse()');
+        assert.equal(response.statusCode, 200);
+        var generatedPages = response.chunkFnState.generatedPages;
+        assert.equal(generatedPages.length, 4, 'should generate the site');
+        // Simulate MHD's MHD_ContentReaderCallback calls
+        var chunk1 = response.getNextChunk(response.chunkFnState);
+        assert.equal(chunk1, generatedPages[0].url + '|000');
+        var chunk2 = response.getNextChunk(response.chunkFnState);
+        assert.equal(chunk2, generatedPages[1].url + '|000');
+        var chunk3 = response.getNextChunk(response.chunkFnState);
+        assert.equal(chunk3, generatedPages[2].url + '|000');
+        var chunk4 = response.getNextChunk(response.chunkFnState);
+        assert.equal(chunk4, generatedPages[3].url + '|000');
+        var chunk5 = response.getNextChunk(response.chunkFnState);
+        assert.equal(chunk5, '');
+    });
 });

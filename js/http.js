@@ -31,3 +31,27 @@ exports.Response = function(statusCode, body, headers) {
         this.headers = {};
     }
 };
+
+/**
+ * @param {number} statusCode
+ * @param {(): string} chunkFn
+ * @param {any?} chunkFnState default null
+ * @param {number?} chunkSizeMax default 512
+ * @throws {TypeError}
+ * @constructor
+ */
+exports.ChunkedResponse = function(statusCode, chunkFn, chunkFnState, chunkSizeMax) {
+    if (statusCode < 100) {
+        throw new TypeError('Not valid status code: ' + statusCode);
+    }
+    this.statusCode = statusCode;
+    if (typeof chunkFn != 'function') {
+        throw new TypeError('chunkFn not a function');
+    }
+    this.getNextChunk = chunkFn;
+    this.chunkFnState = chunkFnState;
+    this.chunkSizeMax = chunkSizeMax ? parseInt(chunkSizeMax) : 512;
+    if (!this.chunkSizeMax || isNaN(this.chunkSizeMax)) {
+        throw new TypeError('Invalid chunkSizeMax ' + this.chunkSizeMax);
+    }
+};

@@ -55,6 +55,17 @@ exports.fileWatcher = {
 };
 
 
+// == Uploader ====
+// =============================================================================
+exports.Uploader = function() {};
+exports.Uploader.UPLOAD_LOGIN_DENIED = 1;
+/** @native */
+exports.Uploader.prototype.upload = function(filePath, contents) {
+    console.log('Uploading ' + contents + '...');
+    return 0;
+};
+
+
 // == DomTree ====
 // =============================================================================
 /** @constructor */
