@@ -64,6 +64,21 @@ function getAt() {
     return new Error().stack.split('\n')[3].substr(4);
 }
 
+function Hooks() {
+    this.beforeAllFn = null;
+    this.afterAllFn = null;
+    this.beforeEachFn = null;
+    this.afterEachFn = null;
+}
+Hooks.prototype.before = function(fn) { this.beforeAllFn = fn; };
+Hooks.prototype.after = function(fn) { this.afterAllFn = fn; };
+Hooks.prototype.beforeEach = function(fn) { this.beforeEachFn = fn; };
+Hooks.prototype.afterEach = function(fn) { this.afterEachFn = fn; };
+Hooks.prototype.runBeforeAllClb = function() { if (this.beforeAllFn) this.beforeAllFn(); };
+Hooks.prototype.runAfterAllClb = function() { if (this.afterAllFn) this.afterAllFn(); };
+Hooks.prototype.runBeforeEachClb = function() { if (this.beforeEachFn) this.beforeEachFn(); };
+Hooks.prototype.runAfterEachClb = function() { if (this.afterEachFn) this.afterEachFn(); };
+
 exports.testLib = {
     modules: [],
     tests: [],
@@ -74,7 +89,6 @@ exports.testLib = {
      */
     module: function(name, fn) {
         this.modules[name] = {fn: fn, tests: []};
-        this.curMod = this.modules[name];
     },
     /**
      * @param {string} desc
@@ -87,23 +101,28 @@ exports.testLib = {
      * @param {string[]?} moduleNames
      */
     start: function(moduleNames) {
-        var mods = this.modules;
+        var self = this;
         var stats = {numPasses: 0, numFails: 0};
-        (moduleNames || Object.keys(this.modules)).forEach(function(moduleName) {
-            var mod = mods[moduleName];
-            if (!mod) throw new Error('Testmodule \'' + moduleName + '\' not found.');
-            mod.fn();
-            runModuleTests(moduleName, mod, stats);
+        (moduleNames || Object.keys(self.modules)).forEach(function(moduleName) {
+            self.curMod = self.modules[moduleName];
+            if (!self.curMod) throw new Error('Testmodule \'' + moduleName + '\' not found.');
+            var hooks = new Hooks();
+            self.curMod.fn(hooks);
+            hooks.runBeforeAllClb();
+            runModuleTests(moduleName, self.curMod, hooks, stats);
+            hooks.runAfterAllClb();
         });
         console.log('== Test results ========');
         console.log(stats.numFails + ' failures, ' + stats.numPasses + ' passes');
     }
 };
 
-function runModuleTests(modName, mod, stats) {
+function runModuleTests(modName, mod, hooks, stats) {
     mod.tests.forEach(function(test) {
         var assert = new Asserter();
+        hooks.runBeforeEachClb();
         test.fn(assert);
+        hooks.runAfterEachClb();
         assert.results.forEach(function(result) {
             if (result.ok) {
                console.log(modName + ': ' + test.desc + ': ok');

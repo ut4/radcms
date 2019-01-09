@@ -1,7 +1,7 @@
 #include "../../include/core-handlers.hpp"
 
 constexpr const char* KEY_CUR_CHUNK_RESP_OBJ = "_curChunkRespJsObj";
-constexpr const char* KEY_HAD_ERROR_PROP = DUK_HIDDEN_SYMBOL("_hadError");
+constexpr const char* KEY_HAD_ERROR = DUK_HIDDEN_SYMBOL("_hadError");
 constexpr const int MIN_CHUNK_LIMIT = 64;
 
 static unsigned processAndQueueBasicResponse(duk_context*, struct MHD_Response**);
@@ -144,7 +144,7 @@ processAndQueueChunkedResponse(duk_context *ctx, struct MHD_Response **response)
     if (chunkSizeMax < MIN_CHUNK_LIMIT) chunkSizeMax = MIN_CHUNK_LIMIT;
     duk_pop_n(ctx, 4);                            // [stash app routes res]
     duk_push_boolean(ctx, false);                 // [stash app routes res bool]
-    duk_put_prop_string(ctx, -2, KEY_HAD_ERROR_PROP); // [stash app routes res]
+    duk_put_prop_string(ctx, -2, KEY_HAD_ERROR);  // [stash app routes res]
     duk_put_prop_string(ctx, -4, KEY_CUR_CHUNK_RESP_OBJ); // [stash app routes]
     *response = MHD_create_response_from_callback(MHD_SIZE_UNKNOWN, chunkSizeMax,
                                                   pullAndSendChunkFromJs, ctx,
@@ -179,7 +179,7 @@ pullAndSendChunkFromJs(void *myPtr, uint64_t pos, char *responseBuf, size_t max)
     auto *ctx = static_cast<duk_context*>(myPtr);
     duk_push_global_stash(ctx);                           // [stash]
     duk_get_prop_string(ctx, -1, KEY_CUR_CHUNK_RESP_OBJ); // [stash req]
-    duk_get_prop_string(ctx, -1, KEY_HAD_ERROR_PROP);     // [stash req bool]
+    duk_get_prop_string(ctx, -1, KEY_HAD_ERROR);          // [stash req bool]
     // Previous getNextChunk() had an error -> end the response
     if (duk_get_boolean(ctx, -1)) {
         duk_pop_3(ctx);                                   // []
@@ -211,7 +211,7 @@ pullAndSendChunkFromJs(void *myPtr, uint64_t pos, char *responseBuf, size_t max)
                                                  responseBuf, false);
         buf.clear();
         duk_push_boolean(ctx, true);                      // [stash req true]
-        duk_put_prop_string(ctx, -2, KEY_HAD_ERROR_PROP); // [stash req]
+        duk_put_prop_string(ctx, -2, KEY_HAD_ERROR);      // [stash req]
         duk_pop_2(ctx);                                   // []
         return totalChunkLen;
     }

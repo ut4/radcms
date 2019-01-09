@@ -1,6 +1,7 @@
 #include <cstring>
 #include <iostream>
 #include <memory>
+#include <jsx-transpiler.hpp>
 #include "include/core-handlers.hpp"
 #include "include/duk.hpp"
 #include "include/js-environment.hpp"
@@ -33,15 +34,18 @@ handleRun(const char *sitePath) {
     //
     WebApp webApp;
     Db db;
-    duk_context *ctx;
+    duk_context *ctx = nullptr;
     int out = EXIT_FAILURE;
     if (!webApp.init(sitePath)) goto done;
     if (!db.open(webApp.ctx.sitePath + "data.db", webApp.ctx.errBuf)) goto done;
     webApp.ctx.db = &db;
     if (!(ctx = myDukCreate(webApp.ctx.errBuf))) goto done;
+    transpilerInit();
+    transpilerSetPrintErrors(false); // use transpilerGetLastError() instead.
     jsEnvironmentConfigure(ctx, &webApp.ctx);
-    if (!dukUtilsCompileAndRunStrGlobal(ctx, "require('website-handlers.js')",
-                                        "main.js", webApp.ctx.errBuf)) {
+    if (!dukUtilsCompileAndRunStrGlobal(ctx, "require('website.js').website.init();"
+                                        "require('website-handlers.js');", "main.js",
+                                        webApp.ctx.errBuf)) {
         goto done;
     }
     //
@@ -52,6 +56,7 @@ handleRun(const char *sitePath) {
     }
     done:
     if (ctx) duk_destroy_heap(ctx);
+    transpilerFreeProps();
     if (out != EXIT_SUCCESS) {
         std::cerr << "[Fatal]: " << webApp.ctx.errBuf << "\n";
         return EXIT_FAILURE;

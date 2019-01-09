@@ -25,6 +25,13 @@ jsEnvironmentConfigure(duk_context *ctx, AppContext *appContext) {
     duk_push_global_stash(ctx);                        // [stash]
     jsEnvironmentPutAppContext(ctx, appContext, -1);
     duk_pop(ctx);                                      // []
+    // global.insnEnv
+    duk_push_bare_object(ctx);                         // [insnEnv]
+    duk_push_string(ctx, appContext->sitePath.c_str());// [insnEnv string]
+    duk_put_prop_string(ctx, -2, "sitePath");          // [insnEnv]
+    duk_push_string(ctx, appContext->appPath.c_str()); // [insnEnv string]
+    duk_put_prop_string(ctx, -2, "appPath");           // [insnEnv]
+    duk_put_global_string(ctx, "insnEnv");             // []
 }
 
 void

@@ -1,6 +1,7 @@
 #include <iostream>
 #include <memory>
 #include <string>
+#include <unistd.h> // getcwd
 #include "include/db.hpp"
 #include "include/duk.hpp"
 #include "include/js-environment.hpp"
@@ -18,6 +19,14 @@ int main(int argc, const char* argv[]) {
     }
     atexit(myAtExit);
     AppContext testJsEnv;
+    char cwd[FILENAME_MAX];
+    if (!getcwd(cwd, FILENAME_MAX)) {
+        testJsEnv.errBuf = "Failed to getcwd().\n";
+        return false;
+    }
+    testJsEnv.appPath = cwd;
+    myFsNormalizePath(testJsEnv.appPath);
+    testJsEnv.sitePath = testJsEnv.appPath + "js/tests/testsite/";
     Db db;
     duk_context *ctx;
     int out = EXIT_FAILURE;

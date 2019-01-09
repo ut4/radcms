@@ -1,4 +1,4 @@
-#include "../../include/jsx/jsx-scanner.h"
+#include "../include/jsx-scanner.h"
 
 struct Scanner {
     const char *cursor;

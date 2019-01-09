@@ -59,7 +59,7 @@ Db::insert(const char *sql, bindValsFn myBindFn, void *data, std::string &err) {
         if (sqlite3_errcode(this->conn) != SQLITE_OK)
             err = "myBindFn() failed: " +
                 std::string(sqlite3_errmsg(this->conn));
-        // else myBindFn wants to set the error manually
+        // else myBindFn had an non-sqlite error
         goto done;
     }
     // 3. Execute
@@ -82,7 +82,7 @@ int
 Db::update(const char *sql, bindValsFn myBindFn, void *myPtr, std::string &err) {
     // 1. Create a prepared statement
     sqlite3_stmt *stmt;
-    int updateRowCount = -1;
+    int out = -1;
     if (sqlite3_prepare_v2(this->conn, sql, -1, &stmt, NULL) != SQLITE_OK) {
         err = "Failed to create stmt: " +
             std::string(sqlite3_errmsg(this->conn));
@@ -90,24 +90,27 @@ Db::update(const char *sql, bindValsFn myBindFn, void *myPtr, std::string &err) 
     }
     // 2. Call the binder function
     if (!myBindFn(stmt, myPtr)) {
-        err = "myBindFn() failed: " +
-            std::string(sqlite3_errmsg(this->conn));
+        if (sqlite3_errcode(this->conn) != SQLITE_OK)
+            err = "myBindFn() failed: " +
+                std::string(sqlite3_errmsg(this->conn));
+        // else myBindFn had an non-sqlite error
         goto done;
     }
     // 3. Execute
-    if (sqlite3_step(stmt) != SQLITE_DONE) {
+    if (sqlite3_step(stmt) == SQLITE_DONE) {
+        out = sqlite3_changes(this->conn);
+    } else {
         err = "Failed to execute update stmt: " +
             std::string(sqlite3_errmsg(this->conn));
         goto done;
     }
-    updateRowCount = sqlite3_changes(this->conn);
     // 4. Clean up
     done:
     if (sqlite3_finalize(stmt) != SQLITE_OK) {
         std::cerr << "[Warn]: Failed to finalize stmt: " <<
                      sqlite3_errmsg(this->conn) << "\n";
     }
-    return updateRowCount;
+    return out;
 }
 
 bool

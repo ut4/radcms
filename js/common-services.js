@@ -23,7 +23,13 @@ exports.db = {
      * @param {(stmt: Stmt): void} bindFn
      * @returns int sqlite3_last_insert_rowid()
      */
-    insert: function(sql, bindFn) {}
+    insert: function(sql, bindFn) {},
+    /**
+     * @native
+     * @param {string} sql
+     * @param {(row: ResultRow, nthRow: number): void} mapFn
+     */
+    select: function(sql, mapFn) {}
 };
 
 
@@ -31,19 +37,28 @@ exports.db = {
 // =============================================================================
 exports.fs = {
     /** @native */
-    write: function(path, str) { console.log('Writing ' + str + '...'); return true; },
-    /** @native */
+    write: function(path, str) {},
+    /**
+     * @native
+     * @param {string} path
+     * @returns {str}
+     */
     read: function(path) {},
     /** @native */
-    makeDirs: function(path) { console.log('Creating dirs ' + path + '...'); return true; },
+    makeDirs: function(path) {},
 };
 
 
 // == transpiler-singleton ====
 // =============================================================================
 exports.transpiler = {
-    /** @native */
-    transpile: function(code) {}
+    /**
+     * @native
+     * @param {string} code
+     * @returns {Function}
+     * @throws {Error}
+     */
+    transpileToFn: function(code) {}
 };
 
 
@@ -90,33 +105,11 @@ exports.DomTree.prototype.render = function(elemRef) {};
 // == templateCache-singleton ====
 // =============================================================================
 exports.templateCache = {
-    put: function(fname, fn) {},
+    _fns: [],
+    put: function(fname, fn) {
+        this._fns[fname] = fn;
+    },
     get: function(fname) {
-        if (fname == 'main-layout.jsx.htm') return function(ddc, url) {
-            var arts = ddc.fetchAll('Article');
-            return function(domTree) {
-                arts = ddc.getDataFor(arts);
-                return domTree.createElement('html', null, [
-                    domTree.createElement('title', null, 'Hello'),
-                    domTree.createElement('body', null, arts.map(function(art) {
-                        return domTree.createElement('article', null, [
-                            domTree.createElement('h2', null, art.title),
-                            domTree.createElement('a', {href:art.cmp.name,
-                                layoutFileName:'article-layout.jsx.htm'}, "Read more"),
-                        ])
-                    }))
-                ]);
-            };
-        };
-        if (fname == 'article-layout.jsx.htm') return function(ddc, url) {
-            var art = ddc.fetchOne('Article').where('name=\'' + url + '\'');
-            return function(domTree) {
-                art = ddc.getDataFor(art);
-                return domTree.createElement('html', null, [
-                    domTree.createElement('title', null, 'Hello'),
-                    domTree.createElement('body', null, 'Art'+url)
-                ]);
-            };
-        };
+        return this._fns[fname];
     }
 };

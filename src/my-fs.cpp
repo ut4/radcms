@@ -1,10 +1,10 @@
 #include "../include/my-fs.hpp"
 
 bool
-myFsRead(const std::string &path, std::string &to, std::string &err) {
+myFsRead(const char *path, std::string &to, std::string &err) {
     std::ifstream ifs(path);
     if (!ifs.is_open()) {
-        err.assign("Failed to open file '" + path + "'");
+        err.assign("Failed to open file '" + std::string(path) + "'");
         return false;
     }
     to.assign(
@@ -13,6 +13,11 @@ myFsRead(const std::string &path, std::string &to, std::string &err) {
     );
     ifs.close();
     return !ifs.bad();
+}
+
+bool
+myFsRead(const std::string &path, std::string &to, std::string &err) {
+    return myFsRead(path.c_str(), to, err);
 }
 
 void

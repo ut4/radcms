@@ -1,8 +1,8 @@
 #include <assert.h>
 #include <stdbool.h>
 #include <string.h>
-#include "../../include/jsx/jsx-producer.h"
-#include "../../include/common/memory.h"
+#include "../include/jsx-producer.h"
+#include "../include/memory.h"
 
 struct MyStr result;
 

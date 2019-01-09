@@ -2,10 +2,10 @@
 #include <ctype.h> // tolower
 #include <strings.h> // strncasecmp
 #include <string.h> // strncmp, strncpy etc.
-#include "../../include/jsx/jsx-transpiler.h"
-#include "../../include/jsx/jsx-scanner.h"
-#include "../../include/jsx/jsx-producer.h"
-#include "../../include/common/memory.h"
+#include "../include/jsx-transpiler.h"
+#include "../include/jsx-scanner.h"
+#include "../include/jsx-producer.h"
+#include "../include/memory.h"
 
 #define ERR_MAX_LEN 128
 
@@ -541,126 +541,111 @@ comment() {
 
 /*
  * dataConfigs -> varDecl?
- * varDecl     -> "@" IDENTIFIER "=" methodCall
- * methodCall  -> ( IDENTIFIER "(" TEXT ")" "."? )*
+ * varDecl     -> "{" "@" IDENTIFIER "=" JS_EXPRESSION "}"
  *
  * Example input:
  * ```
- * @foo = fetchAll('SomeType').where('foo=1')
- * @another = fetchAll('SomeType').where('bar=2')
+ * {@foo = fetchAll('SomeType').where('foo=1')}
+ * {@another = fetchAll('SomeType').where('bar=2')}
  * ```
  *
  * Produces:
  * ```
  * function(ddc, url) {
- *     ddc.fetchAll('SomeType').where('foo=1');
- *     ddc.fetchAll('SomeType').where('bar=2');
- *     return function(vTree, pageData, foo, another) {
+ *     var foo = ddc.fetchAll('SomeType').where('foo=1');
+ *     var another ddc.fetchAll('SomeType').where('bar=2');
+ *     return function(vTree, pageData) {
+ *         foo = ddc.getDataFor(foo);
+ *         anther = ddc.getDataFor(foo);
  * ```
  */
 #define MAX_VARS 64
 #define MAX_VAR_NAME_LEN 128
-#define failAndReturn(err) logError(err); return -1
+#define failAndReturn(err) logError(err); return false
 
-static int varDecl();
-static int methodCall();
+static bool varDecl(unsigned startingLine);
 static bool validateVarName();
 
 static bool
 dataConfigs() {
-    producerAddChars("function(ddc, url) {");
-    #define CLOSE_EXPRS ";return function(vTree, pageData"
-    #define CLOSE_ARGS ") {"
-    if (*transpiler.current.lexemeFrom != '@') {
-        producerAddChars(&CLOSE_EXPRS[1]);
-        producerAddChars(CLOSE_ARGS);
+    #define EXPRS_END "return function(vTree, pageData) {"
+    producerAddChars("function(ddc, url) {var fetchAll=ddc.fetchAll.bind(ddc);var fetchOne=ddc.fetchOne.bind(ddc);");
+    if (transpiler.current.type != TOKEN_LBRACE) {
+        producerAddChars(EXPRS_END);
         return true;
     }
-    advance(true, SCAN_NAME);
-    if (!validateVarName()) return false;
+    unsigned startingLine = scannerGetCurrentLine();
     const char *start = transpiler.current.lexemeFrom;
     const unsigned maxNameArrLen = MAX_VARS * 2;
     unsigned vNamePositions[maxNameArrLen];
     unsigned vNameI = 0;
-    bool isVar = true;
-    while (transpiler.current.type != TOKEN_LT) {
-        if (transpiler.current.type == TOKEN_NAME) {
-            if (isVar) { // @foo
-                if (vNameI >= maxNameArrLen) { failAndReturn("TOO_MANY_VARS"); }
-                vNamePositions[vNameI] = transpiler.current.lexemeFrom - start;
-                vNamePositions[vNameI + 1] = transpiler.current.lexemeLen;
-                vNameI += 2;
-                if (varDecl() < 0) return false;
-                isVar = false;
-            } else { // method(
-                if (methodCall() < 0) return false;
-                char c = *transpiler.current.lexemeFrom;
-                if ((isVar = c == '@')) {
-                    advance(true, SCAN_NAME);
-                    producerAddChar(';');
-                } else if (c == '.') {
-                    advance(true, SCAN_NAME);
-                    producerAddChar('.');
-                }
-            }
-        } else if (transpiler.current.type == TOKEN_EOF) {
-            failAndReturn("Unexpected EOF");
-        } else {
-            makeLexeme(lex, transpiler.current);
-            failAndReturn(makeError("Unexpected '%s'", lex));
-        }
+    // Produce each {@name = ...}
+    while (advanceIf(TOKEN_LBRACE, true, SCAN_NAME)) {
+        if (vNameI >= maxNameArrLen) { failAndReturn("TOO_MANY_VARS"); }
+        if (*transpiler.current.lexemeFrom != '@') { failAndReturn("Expected '@' after '{'"); }
+        advance(true, SCAN_NAME); // '@' after '{'
+        if (!validateVarName()) return false;
+        vNamePositions[vNameI] = transpiler.current.lexemeFrom - start;
+        vNamePositions[vNameI + 1] = transpiler.current.lexemeLen;
+        vNameI += 2;
+        if (!varDecl(startingLine)) return false;
     }
-    producerAddChars(CLOSE_EXPRS);
+    producerAddChars(EXPRS_END);
+    // Produce each name = ddc.getDataFor(name);...
     for (unsigned i = 0; i < vNameI; i += 2) {
         const unsigned vNameLen = vNamePositions[i + 1];
         if (vNameLen > MAX_VAR_NAME_LEN) { failAndReturn("VAR_NAME_TOO_LONG"); }
-        char varName[2 + vNameLen + 1]; // ', ' (2) foo (vNameLen) \0 (1)
-        memcpy(varName, ", ", 2);
-        memcpy(&varName[2], &start[vNamePositions[i]], vNameLen);
-        varName[2 + vNameLen] = '\0';
-        producerAddChars(varName);
+        //
+        char vName[vNameLen];
+        memcpy(vName, &start[vNamePositions[i]], vNameLen);
+        vName[vNameLen] = '\0';
+        //
+        const char *fmt = "%s=ddc.getDataFor(%s);";
+        const unsigned l = vNameLen * 2 + strlen(fmt) - 4 + 1;
+        char toDataCall[l]; // <varname>=ddc.getData(<varname>);
+        snprintf(toDataCall, l, fmt, vName, vName);
+        producerAddChars(toDataCall);
     }
-    producerAddChars(CLOSE_ARGS);
+    producerAddChars("return ");
     return true;
-    #undef CLOSE_EXPRS
-    #undef CLOSE_ARGS
+    #undef EXPRS_END
 }
 
-static int
-varDecl() {
-    if (!validateVarName()) return -1;
-    advance(true, SCAN_NAME); // 'foo' after @
+static bool
+varDecl(unsigned startingLine) {
+    advance(true, SCAN_NAME); // 'foo' after '@'
     if (transpiler.current.type != TOKEN_EQUAL) {
         makeLexeme(lex, transpiler.previous);
         failAndReturn(makeError("Expected '=' after '@%s'", lex));
     }
-    advance(true, SCAN_NAME);
-    producerAddChars("ddc.");
-    return 0;
-}
-
-static int
-methodCall() {
-    struct Token nameToken = transpiler.current;
-    advance(true, SCAN_NAME);
-    if (*transpiler.current.lexemeFrom != '(') {
-        makeLexeme(lex, transpiler.previous);
-        failAndReturn(makeError("Expected '(' after '%s'", lex));
-    }
-    advance(true, SCAN_NAME);
-    unsigned nest = 1;
+    producerAddChars("var ");
+    producerProduceCode(&transpiler.previous);
+    producerAddChars(" = ");
+    advance(true, SCAN_TEXT); // stuff after '='
+    unsigned braceLevel = 1;
     while (true) {
-        char c = *transpiler.current.lexemeFrom;
-        if (c == '(') { nest += 1; }
-        else if (c == ')') { if ((--nest) == 0) break; }
-        else if (transpiler.current.type == TOKEN_EOF) {
-            failAndReturn("Unexpected EOF"); }
-        advance(true, SCAN_NAME);
+        if (advanceIf(TOKEN_TEXT, false, SCAN_TEXT)) {
+            producerProduceCode(&transpiler.previous);
+        } else if (transpiler.current.type == TOKEN_GT ||
+                   transpiler.current.type == TOKEN_LBRACE ||
+                   transpiler.current.type == TOKEN_LT) {
+            if (transpiler.current.type == TOKEN_LBRACE) braceLevel += 1;
+            producerProduceCode(&transpiler.current);
+            advance(false, SCAN_TEXT);
+        } else if (transpiler.current.type == TOKEN_RBRACE && braceLevel > 1) {
+            braceLevel -= 1;
+            producerProduceCode(&transpiler.current);
+            advance(false, SCAN_TEXT);
+        } else {
+            break;
+        }
     }
-    nameToken.lexemeLen = transpiler.current.lexemeFrom - nameToken.lexemeFrom + 1;
-    producerProduceCode(&nameToken);
-    advance(true, SCAN_NAME);
-    return 0;
+    const char *err = makeError("Expected '}' after data declaration on line %u",
+                                startingLine);
+    if (transpiler.previous.lexemeLen &&
+        transpiler.previous.lexemeFrom[transpiler.previous.lexemeLen-1] != ';')
+            producerAddChar(';');
+    return consumeOr(TOKEN_RBRACE, err, true, SCAN_TEXT);
 }
 
 static bool

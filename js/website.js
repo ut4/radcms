@@ -21,17 +21,19 @@ Page.prototype.render = function() {
     var outerFn = commons.templateCache.get(this.layoutFileName);
     var ddc = new documentData.DDC();
     var innerFn = outerFn(ddc, this.url);
-    if (this.url == '/') {
-        ddc.setComponents([
-            {title: 'Art1', cmp: {name: '/art1'}, dbcId: 1},
-            {title: 'Art2', cmp: {name: '/art2'}, dbcId: 1},
-            {title: 'Art3', cmp: {name: '/art3'}, dbcId: 1},
-        ]);
-    } else {
-        ddc.setComponents([
-            {title: 'Art1', cmp: {name: this.url}, dbcId: 1},
-        ]);
+    //
+    if (ddc.batchCount) {
+        var components = [];
+        commons.db.select(ddc.toSql(), function(row) {
+            var component = JSON.parse(row.getString(2));
+            component.id = row.getInt(0);
+            component.name = row.getString(1);
+            component.dataBatchConfigId = row.getInt(3);
+            components.push(component);
+        });
+        ddc.setComponents(components);
     }
+    //
     var domTree = new commons.DomTree();
     return domTree.render(innerFn(domTree));
 };
@@ -65,7 +67,16 @@ exports.siteGraph = {
 };
 
 exports.website = {
-    siteGraph: (exports.siteGraph.parseFrom(), exports.siteGraph),
+    siteGraph: exports.siteGraph,
+    /** */
+    init: function() {
+        this.siteGraph.parseFrom();
+        for (var fname in this.siteGraph.templates) {
+            commons.templateCache.put(fname, commons.transpiler.transpileToFn(
+                commons.fs.read(insnEnv.sitePath + fname)
+            ));
+        }
+    },
     /**
      * @param {(renderedHtml: string): bool} onEach
      * @returns {number} Number of succeful writes

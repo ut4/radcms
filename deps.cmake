@@ -1,6 +1,20 @@
 # Requires VENDOR_ROOT, INSN_IS_WIN|INSN_IS_LINUX
 # Defines INSN_DEP_INCLUDES, INSN_DEP_LIBS
 
+# -- inih ----
+add_library(inih STATIC ${VENDOR_ROOT}/inih/ini.c)
+
+# -- cjson ----
+add_library(cjson SHARED ${VENDOR_ROOT}/cjson/cJSON.c)
+
+# -- cjsx ----
+add_library(cjsx STATIC
+    ${VENDOR_ROOT}/cjsx/src/jsx-producer.c
+    ${VENDOR_ROOT}/cjsx/src/jsx-scanner.c
+    ${VENDOR_ROOT}/cjsx/src/jsx-transpiler.c
+    ${VENDOR_ROOT}/cjsx/src/memory.c
+)
+
 if (INSN_IS_WIN)
     # -- microhttpd ----
     add_library(microhttpd SHARED IMPORTED)
@@ -14,9 +28,6 @@ if (INSN_IS_WIN)
         ${VENDOR_ROOT}/duktape/duk_module_duktape.c
     )
 
-    # -- inih ----
-    add_library(inih STATIC ${VENDOR_ROOT}/inih/ini.c)
-
     # -- sqlite ----
     add_library(sqlite3 SHARED IMPORTED)
     set_target_properties(sqlite3 PROPERTIES
@@ -29,9 +40,6 @@ if (INSN_IS_WIN)
         IMPORTED_IMPLIB ${CMAKE_BINARY_DIR}/libcurl-x64.dll
     )
 
-    # -- cjson ----
-    add_library(cjson SHARED ${VENDOR_ROOT}/cjson/cJSON.c)
-
     set(INSN_DEP_INCLUDES
         ${VENDOR_ROOT}/microhttpd/include
         ${VENDOR_ROOT}/duktape
@@ -40,6 +48,7 @@ if (INSN_IS_WIN)
         ${VENDOR_ROOT}/openssl
         ${VENDOR_ROOT}/curl
         ${VENDOR_ROOT}/cjson
+        ${VENDOR_ROOT}/cjsx/include
     )
     set(INSN_DEP_LIBS
         microhttpd
@@ -48,6 +57,7 @@ if (INSN_IS_WIN)
         sqlite3
         curl
         cjson
+        cjsx
     )
 elseif(INSN_IS_LINUX)
     # -- microhttpd provided by libmicrohttpd-dev ----
@@ -59,21 +69,16 @@ elseif(INSN_IS_LINUX)
     )
     target_link_libraries(duktape m) # m = math
 
-    # -- inih ----
-    add_library(inih STATIC ${VENDOR_ROOT}/inih/ini.c)
-
     # -- sqlite provided by libsqlite3-dev ----
 
     # -- openssl & crypto provided by libssl-dev ----
     # -- curl provided by libcurl4-openssl-dev ----
 
-    # -- cjson ----
-    add_library(cjson SHARED ${VENDOR_ROOT}/cjson/cJSON.c)
-
     set(INSN_DEP_INCLUDES
         ${VENDOR_ROOT}/duktape
         ${VENDOR_ROOT}/inih
         ${VENDOR_ROOT}/cjson
+        ${VENDOR_ROOT}/cjsx/include
     )
     set(INSN_DEP_LIBS
         m
@@ -86,6 +91,7 @@ elseif(INSN_IS_LINUX)
         ssl
         curl
         cjson
+        cjsx
     )
 else()
     message(FATAL_ERROR "INSN_IS_WIN or INSN_IS_LINUX must be SET() before including deps.cmake.")

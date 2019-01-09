@@ -1,11 +1,17 @@
 #include "../../include/common-services-js-bindings.hpp"
 
+static duk_ret_t dbInsertOrUpdate(duk_context *ctx, bool isInsert);
 static duk_ret_t dbInsert(duk_context *ctx);
 static duk_ret_t dbSelect(duk_context *ctx);
+static duk_ret_t dbUpdate(duk_context *ctx);
 static duk_ret_t dbStmtBindInt(duk_context *ctx);
 static duk_ret_t dbStmtBindString(duk_context *ctx);
 static duk_ret_t dbResRowGetInt(duk_context *ctx);
 static duk_ret_t dbResRowGetString(duk_context *ctx);
+static duk_ret_t fsWrite(duk_context *ctx);
+static duk_ret_t fsRead(duk_context *ctx);
+static duk_ret_t fsMakeDirs(duk_context *ctx);
+static duk_ret_t transpilerTranspileToFn(duk_context *ctx);
 static duk_ret_t domTreeConstruct(duk_context *ctx);
 static duk_ret_t domTreeFree(duk_context *ctx);
 static duk_ret_t domTreeCreateElement(duk_context *ctx);
@@ -13,9 +19,9 @@ static duk_ret_t domTreeRender(duk_context *ctx);
 
 constexpr const char* KEY_STMT_JS_PROTO = "_StmtProto";
 constexpr const char* KEY_RES_ROW_JS_PROTO = "_ResRowProto";
-constexpr const char* KEY_CUR_ROW_COL_COUNT = "_curResultRowColCount";
-constexpr const char* KEY_CUR_STMT_PTR = "_curSqliteStmtPtr";
-constexpr const char* KEY_CUR_STMT_MAX_BIND_IDX = DUK_HIDDEN_SYMBOL("_curStmtMaxPlaceholderIdx");
+constexpr const char* KEY_ROW_COL_COUNT = DUK_HIDDEN_SYMBOL("_colCount");
+constexpr const char* KEY_STMT_PTR = DUK_HIDDEN_SYMBOL("_sqliteStmtPtr");
+constexpr const char* KEY_STMT_MAX_BIND_IDX = DUK_HIDDEN_SYMBOL("_maxPlaceholderIdx");
 constexpr const char* KEY_DOM_TREE_PTR = DUK_HIDDEN_SYMBOL("_domTreePtr");
 
 void
@@ -26,6 +32,24 @@ commonServicesJsModuleInit(duk_context *ctx, const int exportsIsAt) {
     duk_put_prop_string(ctx, -2, "insert");             // [? db]
     duk_push_c_lightfunc(ctx, dbSelect, 2, 0, 0);       // [? db lightfn]
     duk_put_prop_string(ctx, -2, "select");             // [? db]
+    duk_push_c_lightfunc(ctx, dbUpdate, 2, 0, 0);       // [? db lightfn]
+    duk_put_prop_string(ctx, -2, "update");             // [? db]
+    duk_get_prop_string(ctx, -1, "update");             // [? db lightfn]
+    duk_put_prop_string(ctx, -2, "delete");             // [? db]
+    duk_pop(ctx);                                       // [?]
+    // module.fs
+    duk_get_prop_string(ctx, exportsIsAt, "fs");        // [? fs]
+    duk_push_c_lightfunc(ctx, fsWrite, 2, 0, 0);        // [? fs lightfn]
+    duk_put_prop_string(ctx, -2, "write");              // [? fs]
+    duk_push_c_lightfunc(ctx, fsRead, 1, 0, 0);         // [? fs lightfn]
+    duk_put_prop_string(ctx, -2, "read");               // [? fs]
+    duk_push_c_lightfunc(ctx, fsMakeDirs, 1, 0, 0);     // [? fs lightfn]
+    duk_put_prop_string(ctx, -2, "makeDirs");           // [? fs]
+    duk_pop(ctx);                                       // [?]
+    // module.transpiler
+    duk_get_prop_string(ctx, exportsIsAt, "transpiler");// [? transpiler]
+    duk_push_c_lightfunc(ctx, transpilerTranspileToFn, 1, 0, 0); // [? transpiler lightfn]
+    duk_put_prop_string(ctx, -2, "transpileToFn");      // [? transpiler]
     duk_pop(ctx);                                       // [?]
     // dukStash._StmtJsPrototype
     duk_push_global_stash(ctx);                         // [? stash]
@@ -60,12 +84,12 @@ callJsStmtBindFn(sqlite3_stmt *stmt, void *myPtr) {
     auto *ctx = static_cast<duk_context*>(myPtr);
     // Push new Stmt();
     duk_push_bare_object(ctx);                        // [str stash fn stmt]
+    duk_push_pointer(ctx, stmt);                      // [str stash fn stmt ptr]
+    duk_put_prop_string(ctx, -2, KEY_STMT_PTR);       // [str stash fn stmt]
+    duk_push_int(ctx, sqlite3_bind_parameter_count(stmt) - 1);// [str stash fn stmt int]
+    duk_put_prop_string(ctx, -2, KEY_STMT_MAX_BIND_IDX);// [str stash fn stmt]
     duk_get_prop_string(ctx, -3, KEY_STMT_JS_PROTO);  // [str stash fn stmt proto]
     duk_set_prototype(ctx, -2);                       // [str stash fn stmt]
-    duk_push_pointer(ctx, stmt);                      // [str stash fn stmt ptr]
-    duk_put_prop_string(ctx, -2, KEY_CUR_STMT_PTR);
-    duk_push_int(ctx, sqlite3_bind_parameter_count(stmt) - 1);// [str stash fn stmt int]
-    duk_put_prop_string(ctx, -2, KEY_CUR_STMT_MAX_BIND_IDX);
     // call bindFn(stmt)
     bool ok = duk_pcall(ctx, 1) == DUK_EXEC_SUCCESS;  // [str stash undefined|err]
     if (ok) { duk_pop(ctx); }                         // [str stash]
@@ -73,19 +97,31 @@ callJsStmtBindFn(sqlite3_stmt *stmt, void *myPtr) {
 }
 
 static duk_ret_t
-dbInsert(duk_context *ctx) {
+dbInsertOrUpdate(duk_context *ctx, bool isInsert) {
     const char *sql = duk_require_string(ctx, 0);
     duk_require_function(ctx, 1);
     duk_push_global_stash(ctx);                  // [str fn stash]
     AppContext* app = jsEnvironmentPullAppContext(ctx, -1);
     duk_swap_top(ctx, -2);                       // [str stash fn]
-    int res = app->db->insert(sql, callJsStmtBindFn, ctx, app->errBuf);
+    int res = isInsert
+        ? app->db->insert(sql, callJsStmtBindFn, ctx, app->errBuf)
+        : app->db->update(sql, callJsStmtBindFn, ctx, app->errBuf);
     if (res > -1) {                              // [str stash]
         duk_push_int(ctx, res);                  // [str stash insertId]
         return 1;
     }                                            // [str stash err]
-    return duk_error(ctx, DUK_ERR_ERROR, "%s",
-                     !app->errBuf.empty() ? app->errBuf.c_str() : duk_safe_to_string(ctx, -1));
+    if (!app->errBuf.empty()) {
+        duk_push_error_object(ctx, DUK_ERR_TYPE_ERROR, "%s", app->errBuf.c_str());
+        app->errBuf.clear();
+        return duk_throw(ctx);
+    } else {
+        return duk_error(ctx, DUK_ERR_ERROR, "%s", duk_safe_to_string(ctx, -1));
+    }
+}
+
+static duk_ret_t
+dbInsert(duk_context *ctx) {
+    return dbInsertOrUpdate(ctx, true);
 }
 
 static bool
@@ -93,19 +129,17 @@ callJsResultRowMapFn(sqlite3_stmt *stmt, void *myPtr, unsigned nthRow) {
                                                       // [str fn stash]
     auto *ctx = static_cast<duk_context*>(myPtr);
     duk_dup(ctx, -2);                                 // [str fn stash fn]
-    duk_push_int(ctx, sqlite3_column_count(stmt));    // [str fn stash fn int]
-    duk_put_prop_string(ctx, -3, KEY_CUR_ROW_COL_COUNT); // [str fn stash fn]
-    duk_push_pointer(ctx, stmt);                      // [str fn stash fn ptr]
-    duk_put_prop_string(ctx, -3, KEY_CUR_STMT_PTR);   // [str fn stash fn]
     // Push new ResultRow();
     duk_push_bare_object(ctx);                        // [str fn stash fn row]
+    duk_push_int(ctx, sqlite3_column_count(stmt));    // [str fn stash fn row int]
+    duk_put_prop_string(ctx, -2, KEY_ROW_COL_COUNT);  // [str fn stash fn row]
+    duk_push_pointer(ctx, stmt);                      // [str fn stash fn row ptr]
+    duk_put_prop_string(ctx, -2, KEY_STMT_PTR);       // [str fn stash fn row]
     duk_get_prop_string(ctx, -3, KEY_RES_ROW_JS_PROTO);// [str fn stash fn row proto]
     duk_set_prototype(ctx, -2);                       // [str fn stash fn row]
     duk_push_uint(ctx, nthRow);                       // [str fn stash fn row int]
     // call mapFn(row)
     bool ok = duk_pcall(ctx, 2) == DUK_EXEC_SUCCESS;  // [str fn stash undefined|err]
-    duk_del_prop_string(ctx, -2, KEY_CUR_STMT_PTR);
-    duk_del_prop_string(ctx, -2, KEY_CUR_ROW_COL_COUNT);
     if (ok) { duk_pop(ctx); }                         // [str fn stash]
     return ok;                                        // [str fn stash err?]
 }
@@ -120,17 +154,27 @@ dbSelect(duk_context *ctx) {
         duk_push_boolean(ctx, true);            // [str fn stash bool]
         return 1;
     }                                           // [str fn stash err]
-    return duk_error(ctx, DUK_ERR_ERROR, "%s",
-                     !app->errBuf.empty() ? app->errBuf.c_str() : duk_safe_to_string(ctx, -1));
+    if (!app->errBuf.empty()) {
+        duk_push_error_object(ctx, DUK_ERR_TYPE_ERROR, "%s", app->errBuf.c_str());
+        app->errBuf.clear();
+        return duk_throw(ctx);
+    } else {
+        return duk_error(ctx, DUK_ERR_ERROR, "%s", duk_safe_to_string(ctx, -1));
+    }
+}
+
+static duk_ret_t
+dbUpdate(duk_context *ctx) {
+    return dbInsertOrUpdate(ctx, false);
 }
 
 #define pullInsertStmt(stmt, placeholderIdx) \
     duk_push_this(ctx); \
-    duk_get_prop_string(ctx, -1, KEY_CUR_STMT_MAX_BIND_IDX); \
+    duk_get_prop_string(ctx, -1, KEY_STMT_MAX_BIND_IDX); \
     if (placeholderIdx > duk_get_uint(ctx, -1)) return duk_error(ctx, \
         DUK_ERR_RANGE_ERROR, "Bind index %u too large (max %u)", \
         placeholderIdx, duk_get_int(ctx, -1)); \
-    duk_get_prop_string(ctx, -2, KEY_CUR_STMT_PTR); \
+    duk_get_prop_string(ctx, -2, KEY_STMT_PTR); \
     stmt = static_cast<sqlite3_stmt*>(duk_get_pointer(ctx, -1))
 
 static duk_ret_t
@@ -157,10 +201,10 @@ dbStmtBindString(duk_context *ctx) {
 
 #define getVal(dukPushFn, sqliteGetterFn) \
     int colIdx = duk_require_int(ctx, 0); \
-    duk_push_global_stash(ctx); \
-    duk_get_prop_string(ctx, -1, KEY_CUR_STMT_PTR); \
+    duk_push_this(ctx); \
+    duk_get_prop_string(ctx, -1, KEY_STMT_PTR); \
     auto *stmt = static_cast<sqlite3_stmt*>(duk_get_pointer(ctx, -1)); \
-    duk_get_prop_string(ctx, -2, KEY_CUR_ROW_COL_COUNT);  \
+    duk_get_prop_string(ctx, -2, KEY_ROW_COL_COUNT); \
     if (colIdx < duk_get_int(ctx, -1)) { \
         dukPushFn(ctx, sqliteGetterFn(stmt, colIdx)); \
     } else { \
@@ -177,6 +221,52 @@ dbResRowGetInt(duk_context *ctx) {
 static duk_ret_t
 dbResRowGetString(duk_context *ctx) {
     getVal(duk_push_string, (const char*)sqlite3_column_text);
+}
+
+// == fs ====
+// =============================================================================
+static duk_ret_t
+fsWrite(duk_context *ctx) {
+    return duk_error(ctx, DUK_ERR_ERROR, "Not implemented");
+}
+
+static duk_ret_t
+fsRead(duk_context *ctx) {
+    const char* path = duk_require_string(ctx, 0);
+    std::string out;
+    duk_push_global_stash(ctx);
+    auto &errBuf = jsEnvironmentPullAppContext(ctx, -1)->errBuf;
+    if (myFsRead(path, out, errBuf)) {
+        duk_push_string(ctx, out.c_str());
+    } else {
+        duk_push_error_object(ctx, DUK_ERR_TYPE_ERROR, "%s", errBuf.c_str());
+        errBuf.clear();
+        return duk_throw(ctx);
+    }
+    return 1;
+}
+
+static duk_ret_t
+fsMakeDirs(duk_context *ctx) {
+    return duk_error(ctx, DUK_ERR_ERROR, "Not implemented");
+}
+
+// == transpiler ====
+// =============================================================================
+static duk_ret_t
+transpilerTranspileToFn(duk_context *ctx) {
+    char *js = transpilerTranspileIsx(duk_require_string(ctx, 0));
+    duk_push_global_stash(ctx);                                  // [stash]
+    auto &errBuf = jsEnvironmentPullAppContext(ctx, -1)->errBuf;
+    if (js) {
+        if (dukUtilsCompileStrToFn(ctx, js, "source", errBuf)) { // [stash fn]
+            return 1;
+        }
+        duk_push_error_object(ctx, DUK_ERR_TYPE_ERROR, "%s", errBuf.c_str());
+        errBuf.clear();
+        return duk_throw(ctx);
+    }
+    return duk_error(ctx, DUK_ERR_TYPE_ERROR, "%s", transpilerGetLastError());
 }
 
 // == DomTree ====

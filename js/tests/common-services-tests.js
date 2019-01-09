@@ -1,19 +1,23 @@
 var commons = require('common-services.js');
 var testLib = require('tests/testlib.js').testLib;
 
-testLib.module('[\'common-services.js\'].db', function() {
+testLib.module('[\'common-services.js\'].db', function(hooks) {
+    hooks.afterEach(function() {
+        if (commons.db.delete('delete from componentTypes where id >= ?',
+            function(stmt) { stmt.bindInt(0, 1); }) < 0
+        ) throw new Error('Failed to clean test data.');
+    });
     testLib.test('insert() inserts data', function(assert) {
         assert.expect(4);
         var sql = 'insert into componentTypes values (?,?),(?,?)';
-        var success = commons.db.insert(sql, function bind(stmt) {
+        var insertId = commons.db.insert(sql, function(stmt) {
             stmt.bindInt(0, 1);
             stmt.bindString(1, 'foo');
             stmt.bindInt(2, 2);
             stmt.bindString(3, 'bar');
         });
         //
-        assert.ok(success, 'should return succesfully');
-        //
+        assert.equal(insertId, 2, 'should return insertId');
         var actuallyInserted = [];
         commons.db.select('select id, `name` from componentTypes', function map(row) {
             actuallyInserted.push({id: row.getInt(0), name: row.getString(1)});
@@ -32,39 +36,39 @@ testLib.module('[\'common-services.js\'].db', function() {
                 return e.message;
             }
         };
-        assert.equal(runInvalid(function bind(stmt) {
+        assert.equal(runInvalid(function(stmt) {
             stmt.bindInt(2,1);
         }), 'RangeError: Bind index 2 too large (max 0)');
-        assert.equal(runInvalid(function bind(stmt) {
+        assert.equal(runInvalid(function(stmt) {
             stmt.bindInt(0, "notAnInt");
         }), 'TypeError: number required, found \'notAnInt\' (stack index 1)');
-        assert.equal(runInvalid(function bind(stmt) {
+        assert.equal(runInvalid(function(stmt) {
             stmt.bindString(0, {});
         }), 'TypeError: string required, found [object Object] (stack index 1)');
     });
     testLib.test('select() fetches data', function(assert) {
         assert.expect(4);
-        var sql = 'insert into websites values (?,?),(?,?),(?,?)';
+        var sql = 'insert into componentTypes values (?,?),(?,?),(?,?)';
         var testData = [
-            {id: 45, graph: 'graph1'},
-            {id: 23, graph: 'graph2'},
-            {id: 76, graph: 'graph3'}
+            {id: 45, name: 'type1'},
+            {id: 23, name: 'type2'},
+            {id: 76, name: 'type3'}
         ];
-        if (!commons.db.insert(sql, function bind(stmt) {
+        if (commons.db.insert(sql, function(stmt) {
             stmt.bindInt(0, testData[0].id);
-            stmt.bindString(1, testData[0].graph);
+            stmt.bindString(1, testData[0].name);
             stmt.bindInt(2, testData[1].id);
-            stmt.bindString(3, testData[1].graph);
+            stmt.bindString(3, testData[1].name);
             stmt.bindInt(4, testData[2].id);
-            stmt.bindString(5, testData[2].graph);
-        })) throw new Error('Failed to insert test data');
+            stmt.bindString(5, testData[2].name);
+        }) < 1) throw new Error('Failed to insert test data');
         //
         var selected = [];
-        var sql2 = 'select id, `graph` from websites order by id';
+        var sql2 = 'select id, `name` from componentTypes order by id';
         commons.db.select(sql2, function map(row, nthRow) {
             selected.push({
                 id: row.getInt(0),
-                graph: row.getString(1),
+                name: row.getString(1),
                 nthRow: nthRow
             });
         });
@@ -86,12 +90,59 @@ testLib.module('[\'common-services.js\'].db', function() {
                 return e.message;
             }
         };
-        assert.equal(runInvalid('select id from websites', function map(row) {
+        assert.equal(runInvalid('select 1', function map(row) {
             row.getInt(45);
         }), 'RangeError: Col index 45 too large (max 0)');
         assert.equal(runInvalid('select foo from bar', function map() {
             //
         }), 'Failed to create stmt: no such table: bar');
+    });
+    testLib.test('update() updates data', function(assert) {
+        assert.expect(2);
+        if (commons.db.insert('insert into componentTypes values (?,?)', function(stmt) {
+            stmt.bindInt(0, 1);
+            stmt.bindString(1, 'foo');
+        }) < 1) throw new Error('Failed to insert test data');
+        //
+        var sql = 'update componentTypes set `name` = ? where id = ?';
+        var numAffected = commons.db.update(sql, function(stmt) {
+            stmt.bindString(0, 'bar');
+            stmt.bindInt(1, 1);
+        });
+        //
+        assert.equal(numAffected, 1, 'should return numAffectedRows');
+        var actuallyUpdated = '';
+        commons.db.select('select `name` from componentTypes', function map(row) {
+            actuallyUpdated = row.getString(0);
+        });
+        assert.equal(actuallyUpdated, 'bar', 'should update data');
+    });
+    testLib.test('update() validates stuff', function(assert) {
+        assert.expect(4);
+        if (commons.db.insert('insert into componentTypes(`name`) values (?)',
+            function(stmt) { stmt.bindString(0, 'foo'); }
+        ) < 1) throw new Error('Failed to insert test data.');
+        //
+        var runInvalid = function(sql, bindFn) {
+            try {
+                commons.db.update(sql, bindFn);
+            } catch (e) {
+                return e.message;
+            }
+        };
+        var sql = 'update componentTypes set name = ? where id = ?';
+        assert.equal(runInvalid(sql, function(stmt) {
+            stmt.bindInt(2,1);
+        }), 'RangeError: Bind index 2 too large (max 1)');
+        assert.equal(runInvalid(sql, function(stmt) {
+            stmt.bindInt(0, "notAnInt");
+        }), 'TypeError: number required, found \'notAnInt\' (stack index 1)');
+        assert.equal(runInvalid(sql, function(stmt) {
+            stmt.bindString(0, {});
+        }), 'TypeError: string required, found [object Object] (stack index 1)');
+        assert.equal(runInvalid('update from componentTypes', function() {
+            //
+        }), 'Failed to create stmt: near "from": syntax error');
     });
 });
 

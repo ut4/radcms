@@ -4,16 +4,44 @@ var testLib = require('tests/testlib.js').testLib;
 var website = require('website.js');
 var http = require('http.js');
 
-testLib.module('website-handlers.js', function() {
+testLib.module('website-handlers.js', function(hooks) {
+    var genericCmpType = {id:1,name:'Generic'};
+    var footerCmp = {name:'footer',json:{content:'MySite'},componentTypeId:1};
+    hooks.before(function() {
+        // Reads and caches templates from /js/tests/testsite/
+        website.website.init();
+        //
+        if (commons.db.insert('insert into componentTypes values (?,?)', function(stmt) {
+                stmt.bindInt(0, genericCmpType.id);
+                stmt.bindString(1, genericCmpType.name);
+            }) < 1 ||
+            commons.db.insert('insert into components values (?,?,?,?)', function(stmt) {
+                stmt.bindInt(0, 1);
+                stmt.bindString(1, footerCmp.name);
+                stmt.bindString(2, JSON.stringify(footerCmp.json));
+                stmt.bindInt(3, footerCmp.componentTypeId);
+            }) < 1
+        ) throw new Error('Failed to insert test data.');
+    });
+    hooks.after(function() {
+        if (commons.db.delete('delete from components where componentTypeId = ?',
+                function(stmt) { stmt.bindInt(0, genericCmpType.id); }) < 1 ||
+            commons.db.delete('delete from componentTypes where id = ?',
+                function(stmt) { stmt.bindInt(0, genericCmpType.id); }) < 1
+        ) throw new Error('Failed to clean test data.');
+    });
     testLib.test('GET \'/<url>\' serves a page', function(assert) {
-        assert.expect(6);
+        assert.expect(7);
         var websiteHandlersMatcherFn = commons.app._routeMatchers[0];
         var handlePageRequestFn = websiteHandlersMatcherFn('/', 'GET');
         //
         var response = handlePageRequestFn(new http.Request('/', 'GET'));
         assert.equal(response.statusCode, 200);
-        assert.ok(response.body.indexOf('<h2>Art1') > -1, 'should contain "<h2>Art1"');
+        assert.ok(response.body.indexOf('<h1>Hello') > -1,
+            'should serve js/tests/testsite/main-layout.jsx.htm');
         assert.ok(response.body.indexOf('<iframe') > -1, 'should contain "<iframe"');
+        assert.ok(response.body.indexOf('<footer>' + footerCmp.json.content) > -1,
+            'should render footer');
         //
         var response2 = handlePageRequestFn(new http.Request('/404', 'GET'));
         assert.equal(response2.statusCode, 404);

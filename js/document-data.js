@@ -1,26 +1,5 @@
-// == DataBatchConfig ====
-// =============================================================================
-/**
- * @param {string} componentTypeName
- * @param {bool} isFetchAll
- * @param {number} id
- */
-exports.DBC = function(componentTypeName, isFetchAll, id) {
-    this.componentTypeNameName = componentTypeName;
-    this.isFetchAll = isFetchAll;
-    this.id = id;
-};
-/**
- * @param {string} where
- */
-exports.DBC.prototype.where = function(where) {
-    this.where = where;
-    return this;
-};
-
 // == DocumentDataConfig ====
 // =============================================================================
-/** */
 exports.DDC = function() {
     this.batches = [];
     this.batchCount = 0;
@@ -49,9 +28,14 @@ exports.DDC.prototype.fetchOne = function(componentTypeName) {
  * @param {Component[]}
  */
 exports.DDC.prototype.getDataFor = function(dbc) {
-    return this.data.filter(function(component) {
-        return component.dbcId == dbc.id;
+    if (dbc.isFetchAll) return this.data.filter(function(component) {
+        return component.dataBatchConfigId == dbc.id;
     });
+    var l = this.data.length;
+    for (var i = 0; i < l; ++i) {
+        if (this.data[i].dataBatchConfigId == dbc.id) return this.data[i];
+    }
+    return null;
 };
 /**
  * @param {Component[]} allComponents
@@ -63,18 +47,49 @@ exports.DDC.prototype.setComponents = function(allComponents) {
  * @returns {string}
  * @throws {TypeError}
  */
-exports.DBC.prototype.toSql = function() {
+exports.DDC.prototype.toSql = function() {
     if (!this.batches.length) {
         throw new TypeError('Can\'t generate from empty config.');
     }
-    var out = 'select `id`,`name`,`json`,`dbcId` from (';
-    this.batches.forEach(function(batch, i) {
-        if (i > 0) out += ' union all ';
-        out += 'select * from (' +
-            'select `id`,`name`,`json`, ' + batch.id + ' as `dbcId` ' +
-            'from components where ' + batch.where +
-        ')';
-    });
-    out += ')';
-    return out;
+    return 'select `id`,`name`,`json`,`dbcId` from (' +
+        this.batches.map(function(batch) {
+            return 'select * from (' +
+                'select `id`,`name`,`json`, ' + batch.id + ' as `dbcId` ' +
+                'from components where ' + batch.toSql() +
+            ')';
+        }).join(' union all ') +
+    ')';
+};
+
+// == DataBatchConfig ====
+// =============================================================================
+/**
+ * @param {string} componentTypeName
+ * @param {bool} isFetchAll
+ * @param {number} id
+ */
+exports.DBC = function(componentTypeName, isFetchAll, id) {
+    this.componentTypeName = componentTypeName;
+    this.isFetchAll = isFetchAll;
+    this.id = id;
+    this.whereExpr = null;
+};
+/**
+ * @param {string} whereExpr
+ */
+exports.DBC.prototype.where = function(whereExpr) {
+    this.whereExpr = whereExpr;
+    return this;
+};
+/**
+ * @returns {string}
+ */
+exports.DBC.prototype.toSql = function() {
+    if (this.whereExpr && !this.isFetchAll) {
+        return this.whereExpr;
+    } else if (this.isFetchAll) {
+        return '`componentTypeId` = (select `id` from componentTypes where `name` = \''+
+            this.componentTypeName + '\')';
+    }
+    throw new Error("Not implemented yet.");
 };
