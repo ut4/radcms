@@ -46,15 +46,14 @@ exports.siteGraph = {
     /** @native */
     parseFrom: function(_) {
         this.pages = {
-            '/': new Page('/', 'main-layout.jsx.htm'),
-            '/art1': new Page('/art1', 'article-layout.jsx.htm'),
-            '/art2': new Page('/art2', 'article-layout.jsx.htm'),
-            '/art3': new Page('/art3', 'article-layout.jsx.htm'),
+            '/': new Page('/', 'home-layout.jsx.htm'),
+            '/page2': new Page('/page2', 'page-layout.jsx.htm'),
+            '/page3': new Page('/page3', 'page-layout.jsx.htm'),
         };
-        this.pageCount = 4;
+        this.pageCount = 3;
         this.templates = {
-            'main-layout.jsx.htm': {},
-            'article-layout.jsx.htm': {},
+            'home-layout.jsx.htm': {},
+            'page-layout.jsx.htm': {},
         };
         this.templateCount = 2;
     },
@@ -72,6 +71,7 @@ exports.website = {
     init: function() {
         this.siteGraph.parseFrom();
         for (var fname in this.siteGraph.templates) {
+            if (commons.templateCache.has(fname)) continue;
             commons.templateCache.put(fname, commons.transpiler.transpileToFn(
                 commons.fs.read(insnEnv.sitePath + fname)
             ));
@@ -82,14 +82,14 @@ exports.website = {
      * @returns {number} Number of succeful writes
      */
     generate: function(onEach) {
-        var numSuccesfulWrites = 0;
+        var numSuccesfulIterations = 0;
         for (var url in this.siteGraph.pages) {
             var page = this.siteGraph.pages[url];
             if (onEach(page.render(), page))
-                numSuccesfulWrites++;
+                numSuccesfulIterations++;
             else
-                return numSuccesfulWrites;
+                return numSuccesfulIterations;
         }
-        return numSuccesfulWrites;
+        return numSuccesfulIterations;
     }
 };

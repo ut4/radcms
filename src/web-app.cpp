@@ -58,12 +58,12 @@ WebApp::init(const char *sitePath) {
     this->ctx.sitePath = sitePath;
     myFsNormalizePath(this->ctx.sitePath);
     constexpr int MAX_FILENAME_LEN = 40;
-    if (this->ctx.sitePath.size() + MAX_FILENAME_LEN > FILENAME_MAX) {
+    if (this->ctx.sitePath.size() + MAX_FILENAME_LEN > PATH_MAX) {
         this->ctx.errBuf = "Sitepath too long.\n";
         return false;
     }
-    char cwd[FILENAME_MAX];
-    if (!getcwd(cwd, FILENAME_MAX)) {
+    char cwd[PATH_MAX];
+    if (!getcwd(cwd, PATH_MAX)) {
         this->ctx.errBuf = "Failed to getcwd().\n";
         return false;
     }

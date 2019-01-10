@@ -65,17 +65,17 @@ testLib.module('[\'common-services.js\'].db', function(hooks) {
         //
         var selected = [];
         var sql2 = 'select id, `name` from componentTypes order by id';
-        commons.db.select(sql2, function map(row, nthRow) {
+        commons.db.select(sql2, function map(row, rowIdx) {
             selected.push({
                 id: row.getInt(0),
                 name: row.getString(1),
-                nthRow: nthRow
+                rowIdx: rowIdx
             });
         });
         assert.equal(selected.length, 3, 'should map 3 rows');
-        testData[0].nthRow = 1;
-        testData[1].nthRow = 0;
-        testData[2].nthRow = 2;
+        testData[0].rowIdx = 1;
+        testData[1].rowIdx = 0;
+        testData[2].rowIdx = 2;
         assert.deepEqual(selected[0], testData[1]);
         assert.deepEqual(selected[1], testData[0]);
         assert.deepEqual(selected[2], testData[2]);

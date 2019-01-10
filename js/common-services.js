@@ -27,7 +27,7 @@ exports.db = {
     /**
      * @native
      * @param {string} sql
-     * @param {(row: ResultRow, nthRow: number): void} mapFn
+     * @param {(row: ResultRow, rowIdx: number): void} mapFn
      */
     select: function(sql, mapFn) {}
 };
@@ -36,15 +36,25 @@ exports.db = {
 // == fs-singleton ====
 // =============================================================================
 exports.fs = {
-    /** @native */
-    write: function(path, str) {},
+    /**
+     * @native
+     * @param {string} path
+     * @param {string} contents
+     * @returns {bool}
+     * @throws {Error}
+     */
+    write: function(path, contents) {},
     /**
      * @native
      * @param {string} path
      * @returns {str}
      */
     read: function(path) {},
-    /** @native */
+    /**
+     * @native
+     * @param {string} path
+     * @returns {bool}
+     */
     makeDirs: function(path) {},
 };
 
@@ -105,11 +115,14 @@ exports.DomTree.prototype.render = function(elemRef) {};
 // == templateCache-singleton ====
 // =============================================================================
 exports.templateCache = {
-    _fns: [],
+    _fns: {},
     put: function(fname, fn) {
         this._fns[fname] = fn;
     },
     get: function(fname) {
         return this._fns[fname];
+    },
+    has: function(fname) {
+        return this._fns.hasOwnProperty(fname);
     }
 };

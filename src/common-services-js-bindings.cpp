@@ -19,6 +19,7 @@ static duk_ret_t domTreeRender(duk_context *ctx);
 
 constexpr const char* KEY_STMT_JS_PROTO = "_StmtProto";
 constexpr const char* KEY_RES_ROW_JS_PROTO = "_ResRowProto";
+constexpr const char* KEY_CUR_ROW_MAP_FN = "_currentRowMapFn";
 constexpr const char* KEY_ROW_COL_COUNT = DUK_HIDDEN_SYMBOL("_colCount");
 constexpr const char* KEY_STMT_PTR = DUK_HIDDEN_SYMBOL("_sqliteStmtPtr");
 constexpr const char* KEY_STMT_MAX_BIND_IDX = DUK_HIDDEN_SYMBOL("_maxPlaceholderIdx");
@@ -80,43 +81,40 @@ commonServicesJsModuleInit(duk_context *ctx, const int exportsIsAt) {
 
 static bool
 callJsStmtBindFn(sqlite3_stmt *stmt, void *myPtr) {
-                                                      // [str stash fn]
+                                                      // [sql stash fn]
     auto *ctx = static_cast<duk_context*>(myPtr);
     // Push new Stmt();
-    duk_push_bare_object(ctx);                        // [str stash fn stmt]
-    duk_push_pointer(ctx, stmt);                      // [str stash fn stmt ptr]
-    duk_put_prop_string(ctx, -2, KEY_STMT_PTR);       // [str stash fn stmt]
-    duk_push_int(ctx, sqlite3_bind_parameter_count(stmt) - 1);// [str stash fn stmt int]
-    duk_put_prop_string(ctx, -2, KEY_STMT_MAX_BIND_IDX);// [str stash fn stmt]
-    duk_get_prop_string(ctx, -3, KEY_STMT_JS_PROTO);  // [str stash fn stmt proto]
-    duk_set_prototype(ctx, -2);                       // [str stash fn stmt]
+    duk_push_bare_object(ctx);                        // [sql stash fn stmt]
+    duk_push_pointer(ctx, stmt);                      // [sql stash fn stmt ptr]
+    duk_put_prop_string(ctx, -2, KEY_STMT_PTR);       // [sql stash fn stmt]
+    duk_push_int(ctx, sqlite3_bind_parameter_count(stmt) - 1);// [sql stash fn stmt int]
+    duk_put_prop_string(ctx, -2, KEY_STMT_MAX_BIND_IDX);// [sql stash fn stmt]
+    duk_get_prop_string(ctx, -3, KEY_STMT_JS_PROTO);  // [sql stash fn stmt proto]
+    duk_set_prototype(ctx, -2);                       // [sql stash fn stmt]
     // call bindFn(stmt)
-    bool ok = duk_pcall(ctx, 1) == DUK_EXEC_SUCCESS;  // [str stash undefined|err]
-    if (ok) { duk_pop(ctx); }                         // [str stash]
-    return ok;                                        // [str stash err?]
+    bool ok = duk_pcall(ctx, 1) == DUK_EXEC_SUCCESS;  // [sql stash undefined|err]
+    if (ok) { duk_pop(ctx); }                         // [sql stash]
+    return ok;                                        // [sql stash err?]
 }
 
 static duk_ret_t
 dbInsertOrUpdate(duk_context *ctx, bool isInsert) {
     const char *sql = duk_require_string(ctx, 0);
     duk_require_function(ctx, 1);
-    duk_push_global_stash(ctx);                  // [str fn stash]
+    duk_push_global_stash(ctx);                  // [sql fn stash]
     AppContext* app = jsEnvironmentPullAppContext(ctx, -1);
-    duk_swap_top(ctx, -2);                       // [str stash fn]
+    duk_swap_top(ctx, -2);                       // [sql stash fn]
+    std::string err;
     int res = isInsert
-        ? app->db->insert(sql, callJsStmtBindFn, ctx, app->errBuf)
-        : app->db->update(sql, callJsStmtBindFn, ctx, app->errBuf);
-    if (res > -1) {                              // [str stash]
-        duk_push_int(ctx, res);                  // [str stash insertId]
+        ? app->db->insert(sql, callJsStmtBindFn, ctx, err)
+        : app->db->update(sql, callJsStmtBindFn, ctx, err);
+    if (res > -1) {                              // [sql stash]
+        duk_push_int(ctx, res);                  // [sql stash insertId]
         return 1;
-    }                                            // [str stash err]
-    if (!app->errBuf.empty()) {
-        duk_push_error_object(ctx, DUK_ERR_TYPE_ERROR, "%s", app->errBuf.c_str());
-        app->errBuf.clear();
-        return duk_throw(ctx);
-    } else {
-        return duk_error(ctx, DUK_ERR_ERROR, "%s", duk_safe_to_string(ctx, -1));
-    }
+    }                                            // [sql stash err]
+    return duk_error(ctx, DUK_ERR_ERROR, "%s", !err.empty()
+        ? err.c_str()
+        : duk_safe_to_string(ctx, -1));
 }
 
 static duk_ret_t
@@ -125,42 +123,44 @@ dbInsert(duk_context *ctx) {
 }
 
 static bool
-callJsResultRowMapFn(sqlite3_stmt *stmt, void *myPtr, unsigned nthRow) {
-                                                      // [str fn stash]
+callJsResultRowMapFn(sqlite3_stmt *stmt, void *myPtr, unsigned rowIdx) {
+                                                      // [sql stash]
     auto *ctx = static_cast<duk_context*>(myPtr);
-    duk_dup(ctx, -2);                                 // [str fn stash fn]
+    duk_get_prop_string(ctx, -1, KEY_CUR_ROW_MAP_FN); // [sql stash fn]
     // Push new ResultRow();
-    duk_push_bare_object(ctx);                        // [str fn stash fn row]
-    duk_push_int(ctx, sqlite3_column_count(stmt));    // [str fn stash fn row int]
-    duk_put_prop_string(ctx, -2, KEY_ROW_COL_COUNT);  // [str fn stash fn row]
-    duk_push_pointer(ctx, stmt);                      // [str fn stash fn row ptr]
-    duk_put_prop_string(ctx, -2, KEY_STMT_PTR);       // [str fn stash fn row]
-    duk_get_prop_string(ctx, -3, KEY_RES_ROW_JS_PROTO);// [str fn stash fn row proto]
-    duk_set_prototype(ctx, -2);                       // [str fn stash fn row]
-    duk_push_uint(ctx, nthRow);                       // [str fn stash fn row int]
+    duk_push_bare_object(ctx);                        // [sql stash fn row]
+    duk_push_int(ctx, sqlite3_column_count(stmt));    // [sql stash fn row int]
+    duk_put_prop_string(ctx, -2, KEY_ROW_COL_COUNT);  // [sql stash fn row]
+    duk_push_pointer(ctx, stmt);                      // [sql stash fn row ptr]
+    duk_put_prop_string(ctx, -2, KEY_STMT_PTR);       // [sql stash fn row]
+    duk_get_prop_string(ctx, -3, KEY_RES_ROW_JS_PROTO);// [sql stash fn row proto]
+    duk_set_prototype(ctx, -2);                       // [sql stash fn row]
+    duk_push_uint(ctx, rowIdx);                       // [sql stash fn row int]
     // call mapFn(row)
-    bool ok = duk_pcall(ctx, 2) == DUK_EXEC_SUCCESS;  // [str fn stash undefined|err]
-    if (ok) { duk_pop(ctx); }                         // [str fn stash]
-    return ok;                                        // [str fn stash err?]
+    bool ok = duk_pcall(ctx, 2) == DUK_EXEC_SUCCESS;  // [sql stash undefined|err]
+    if (ok) { duk_pop(ctx); }                         // [sql stash]
+    return ok;                                        // [sql stash err?]
 }
 
 static duk_ret_t
 dbSelect(duk_context *ctx) {
     const char *sql = duk_require_string(ctx, 0);
-    duk_push_global_stash(ctx);                 // [str fn stash]
+    duk_require_function(ctx, 1);
+    duk_push_global_stash(ctx);                 // [sql fn stash]
     AppContext *app = jsEnvironmentPullAppContext(ctx, -1);
-    bool res = app->db->select(sql, callJsResultRowMapFn, ctx, app->errBuf);
-    if (res) {                                  // [str fn stash]
-        duk_push_boolean(ctx, true);            // [str fn stash bool]
+    duk_swap_top(ctx, -2);                      // [sql stash fn]
+    duk_put_prop_string(ctx, -2, KEY_CUR_ROW_MAP_FN); // [sql stash]
+    std::string err;
+    bool res = app->db->select(sql, callJsResultRowMapFn, ctx, err);
+    duk_push_null(ctx);
+    duk_put_prop_string(ctx, 1, KEY_CUR_ROW_MAP_FN);
+    if (res) {                                  // [sql stash]
+        duk_push_boolean(ctx, true);            // [sql stash bool]
         return 1;
-    }                                           // [str fn stash err]
-    if (!app->errBuf.empty()) {
-        duk_push_error_object(ctx, DUK_ERR_TYPE_ERROR, "%s", app->errBuf.c_str());
-        app->errBuf.clear();
-        return duk_throw(ctx);
-    } else {
-        return duk_error(ctx, DUK_ERR_ERROR, "%s", duk_safe_to_string(ctx, -1));
     }
+    return duk_error(ctx, DUK_ERR_ERROR, "%s", !err.empty()
+        ? err.c_str()
+        : duk_safe_to_string(ctx, -1));
 }
 
 static duk_ret_t
@@ -195,7 +195,7 @@ dbStmtBindString(duk_context *ctx) {
     sqlite3_stmt *stmt;
     pullInsertStmt(stmt, placeholderIdx);
     duk_push_boolean(ctx, sqlite3_bind_text(stmt, placeholderIdx + 1, value, -1,
-                                            SQLITE_STATIC) == SQLITE_OK);
+                                            SQLITE_TRANSIENT) == SQLITE_OK);
     return 1;
 }
 
@@ -227,28 +227,37 @@ dbResRowGetString(duk_context *ctx) {
 // =============================================================================
 static duk_ret_t
 fsWrite(duk_context *ctx) {
-    return duk_error(ctx, DUK_ERR_ERROR, "Not implemented");
+    const char* path = duk_require_string(ctx, 0);
+    const std::string contents = duk_require_string(ctx, 1);
+    std::string err;
+    if (myFsWrite(path, contents, err)) {
+        duk_push_boolean(ctx, true);
+        return 1;
+    }
+    return duk_error(ctx, DUK_ERR_ERROR, "%s", err.c_str());
 }
 
 static duk_ret_t
 fsRead(duk_context *ctx) {
     const char* path = duk_require_string(ctx, 0);
     std::string out;
-    duk_push_global_stash(ctx);
-    auto &errBuf = jsEnvironmentPullAppContext(ctx, -1)->errBuf;
-    if (myFsRead(path, out, errBuf)) {
+    std::string err;
+    if (myFsRead(path, out, err)) {
         duk_push_string(ctx, out.c_str());
-    } else {
-        duk_push_error_object(ctx, DUK_ERR_TYPE_ERROR, "%s", errBuf.c_str());
-        errBuf.clear();
-        return duk_throw(ctx);
+        return 1;
     }
-    return 1;
+    return duk_error(ctx, DUK_ERR_ERROR, "%s", err.c_str());
 }
 
 static duk_ret_t
 fsMakeDirs(duk_context *ctx) {
-    return duk_error(ctx, DUK_ERR_ERROR, "Not implemented");
+    const char* path = duk_require_string(ctx, 0);
+    std::string err;
+    if (myFsMakeDirs(path, err)) {
+        duk_push_boolean(ctx, true);
+        return 1;
+    }
+    return duk_error(ctx, DUK_ERR_ERROR, "%s", err.c_str());
 }
 
 // == transpiler ====
@@ -256,15 +265,12 @@ fsMakeDirs(duk_context *ctx) {
 static duk_ret_t
 transpilerTranspileToFn(duk_context *ctx) {
     char *js = transpilerTranspileIsx(duk_require_string(ctx, 0));
-    duk_push_global_stash(ctx);                                  // [stash]
-    auto &errBuf = jsEnvironmentPullAppContext(ctx, -1)->errBuf;
+    std::string err;
     if (js) {
-        if (dukUtilsCompileStrToFn(ctx, js, "source", errBuf)) { // [stash fn]
+        if (dukUtilsCompileStrToFn(ctx, js, "source", err)) { // [stash fn]
             return 1;
         }
-        duk_push_error_object(ctx, DUK_ERR_TYPE_ERROR, "%s", errBuf.c_str());
-        errBuf.clear();
-        return duk_throw(ctx);
+        return duk_error(ctx, DUK_ERR_ERROR, "%s", err.c_str());
     }
     return duk_error(ctx, DUK_ERR_TYPE_ERROR, "%s", transpilerGetLastError());
 }

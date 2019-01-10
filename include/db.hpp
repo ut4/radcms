@@ -14,9 +14,9 @@ typedef bool (*bindValsFn)(sqlite3_stmt *stmt, void *myPtr);
  *
  * @param {sqlite3_stmt} *stmt
  * @param {void} *myPtr
- * @param {unsigned} nthRow Current row index, zero-based
+ * @param {unsigned} rowIdx Current row index, zero-based
  */
-typedef bool (*mapRowFn)(sqlite3_stmt *stmt, void *myPtr, unsigned nthRow);
+typedef bool (*mapRowFn)(sqlite3_stmt *stmt, void *myPtr, unsigned rowIdx);
 
 struct Db {
     sqlite3 *conn = nullptr;
@@ -48,7 +48,7 @@ struct Db {
     insert(const char *sql, bindValsFn myBindFn, void *data, std::string &err);
     /**
      * Usage:
-     * bool myMapFn(sqlite3_stmt *stmt, void *myPtr, unsigned nthRow) {
+     * bool myMapFn(sqlite3_stmt *stmt, void *myPtr, unsigned rowIdx) {
      *     MyData *d = ALLOCATE(MyData);
      *     d->prop = copyString((const char*)sqlite3_column_text(stmt, 0));
      *     d->prop2 = copyString((const char*)sqlite3_column_text(stmt, 1));

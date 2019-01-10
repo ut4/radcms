@@ -19,7 +19,10 @@ commons.app.addRoute(function(url, method) {
 });
 
 /**
- * Responds to GET <any> eg. "/" or "/foo/bar/baz".
+ * GET /api/website/pages: lists all pages. Example response: [
+ *     {"url":"/","layoutFileName":"foo.jsx.htm","uploadStatus":0},
+ *     {"url":"/foo","layoutFileName":"foo.jsx.htm","uploadStatus":0}
+ * ]
  */
 function handleGetPagesRequest(req) {
     var statuses = {};
@@ -39,7 +42,7 @@ function handleGetPagesRequest(req) {
 }
 
 /**
- * Responds to GET <any> eg. "/" or "/foo/bar/baz".
+ * GET <any> eg. "/" or "/foo/bar/baz": renders a page.
  */
 function handlePageRequest(req) {
     var page = website.siteGraph.getPage(req.url);
@@ -52,7 +55,7 @@ function handlePageRequest(req) {
 }
 
 /**
- * Responds to GET /api/website/generate.
+ * GET /api/website/generate: writes all pages to disk.
  */
 function handleGenerateRequest() {
     var out = {
@@ -64,19 +67,24 @@ function handleGenerateRequest() {
         issues: []
     };
     out.wrotePagesNum = website.website.generate(function(renderedOutput, page) {
-        var dirPath = 'out/path/' + page.url;
+        // 'path/out' + '/foo', 'path/out' + '/'
+        var dirPath = insnEnv.sitePath + 'out' + page.url;
         return commons.fs.makeDirs(dirPath) &&
                 commons.fs.write(
-                    dirPath + page.url.length > 1 ? '/index.html' : 'index.html',
+                    // 'path/out/foo' + '/index.html', 'path/out/' + 'index.html'
+                    dirPath + (page.url.length > 1 ? '/index.html' : 'index.html'),
                     renderedOutput
                 );
     });
     out.tookSecs = (performance.now() - out.tookSecs) / 1000;
-    return new http.Response(200, JSON.stringify(out), {'Content-Type': 'application/json'});
+    return new http.Response(200, JSON.stringify(out),
+        {'Content-Type': 'application/json'}
+    );
 }
 
 /**
- * Responds to GET /api/website/upload. Payload:
+ * GET /api/website/upload: renders all pages, and uploads them to a server
+ * using FTP. Payload:
  * remoteUrl=str|required&
  * username=str|required&
  * password=str|required
@@ -103,7 +111,7 @@ function handleUploadRequest(req) {
         if (!state.hadStopError) {
             var gen = state.generatedPages[state.nthPage - 1];
             var uploadRes = state.uploader.upload(state.formData.remoteUrl +
-                (gen.url.length > 1 ? gen.url : '_') + '.html', gen.html);
+                (gen.url.length > 1 ? gen.url : 'index') + '.html', gen.html);
             state.hadStopError = uploadRes == commons.Uploader.UPLOAD_LOGIN_DENIED;
             state.nthPage++;
             return gen.url + '|' + ('000' + uploadRes).slice(-3);
@@ -114,7 +122,7 @@ function handleUploadRequest(req) {
         nthPage: 1,
         totalIncomingPages: generated.length,
         generatedPages: generated,
-        formData: {remoteUrl: 'foo/'},
+        formData: {remoteUrl: 'foo'},
         uploader: new commons.Uploader(),
         hadStopError: false
     });
@@ -125,7 +133,7 @@ function rejectUploadRequest() {
 }
 
 /**
- * Responds to GET /api/website/num-pending-changes.
+ * GET /api/website/num-pending-changes.
  */
 function handleGetNumPendingChanges() {
     return new http.Response(200, '4', {'Content-Type': 'application/json'});
