@@ -3,11 +3,13 @@ var documentData = require('document-data.js');
 
 /**
  * @param {string} url
+ * @param {number} parentId
  * @param {string} layoutFileName
  * @constructor
  */
-function Page(url, layoutFileName) {
+function Page(url, parentId, layoutFileName) {
     this.url = url;
+    this.parentId = parentId;
     this.layoutFileName = layoutFileName;
 }
 /**
@@ -38,30 +40,41 @@ Page.prototype.render = function() {
     return domTree.render(innerFn(domTree));
 };
 
+function Template(fileName) {
+    this.fileName = fileName;
+    this.exists = true;
+}
+
 exports.siteGraph = {
     pages: {},
     pageCount: 0,
-    templates: {},
+    templates: [],
     templateCount: 0,
-    /** @native */
-    parseFrom: function(_) {
-        this.pages = {
-            '/': new Page('/', 'home-layout.jsx.htm'),
-            '/page2': new Page('/page2', 'page-layout.jsx.htm'),
-            '/page3': new Page('/page3', 'page-layout.jsx.htm'),
-        };
-        this.pageCount = 3;
-        this.templates = {
-            'home-layout.jsx.htm': {},
-            'page-layout.jsx.htm': {},
-        };
-        this.templateCount = 2;
+    /**
+     * @param {string} serialized '{
+     *     "pages":[["/",0,0],["/foo",0,1]], // [[<url>,<parentId>,<templateIdx>]...]
+     *     "templates":["1.htm","2.htm"]     // [<filename>,...]
+     * }'
+     */
+    parseAndLoadFrom: function(serialized) {
+        var json = JSON.parse(serialized);
+        this.pageCount = json.pages.length;
+        this.templateCount = json.templates.length;
+        for (var i = 0; i < this.pageCount; ++i) {
+            var data = json.pages[i];
+            if (!json.templates[data[2]])
+                throw new Error('Invalid template idx ' + data[2]);
+            this.pages[data[0]] = new Page(data[0], data[1], json.templates[data[2]]);
+        }
+        this.templates = json.templates.map(function(fileName) {
+            return new Template(fileName);
+        });
     },
     getPage: function(url) {
         return this.pages[url];
     },
-    getTemplate: function(fname) {
-        return this.templates[fname];
+    getTemplate: function(idx) {
+        return this.templates[idx];
     }
 };
 
@@ -69,13 +82,16 @@ exports.website = {
     siteGraph: exports.siteGraph,
     /** */
     init: function() {
-        this.siteGraph.parseFrom();
-        for (var fname in this.siteGraph.templates) {
-            if (commons.templateCache.has(fname)) continue;
-            commons.templateCache.put(fname, commons.transpiler.transpileToFn(
-                commons.fs.read(insnEnv.sitePath + fname)
+        var siteGraph = this.siteGraph;
+        commons.db.select('select `graph` from websites limit 1', function(row) {
+            siteGraph.parseAndLoadFrom(row.getString(0));
+        });
+        this.siteGraph.templates.forEach(function(t) {
+            if (commons.templateCache.has(t.fileName)) return;
+            commons.templateCache.put(t.fileName, commons.transpiler.transpileToFn(
+                commons.fs.read(insnEnv.sitePath + t.fileName)
             ));
-        }
+        });
     },
     /**
      * @param {(renderedHtml: string): bool} onEach

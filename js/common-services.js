@@ -116,13 +116,13 @@ exports.DomTree.prototype.render = function(elemRef) {};
 // =============================================================================
 exports.templateCache = {
     _fns: {},
-    put: function(fname, fn) {
-        this._fns[fname] = fn;
+    put: function(fileName, fn) {
+        this._fns[fileName] = fn;
     },
-    get: function(fname) {
-        return this._fns[fname];
+    get: function(fileName) {
+        return this._fns[fileName];
     },
-    has: function(fname) {
-        return this._fns.hasOwnProperty(fname);
+    has: function(fileName) {
+        return this._fns.hasOwnProperty(fileName);
     }
 };

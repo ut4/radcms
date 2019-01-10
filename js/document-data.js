@@ -35,7 +35,7 @@ exports.DDC.prototype.getDataFor = function(dbc) {
     for (var i = 0; i < l; ++i) {
         if (this.data[i].dataBatchConfigId == dbc.id) return this.data[i];
     }
-    return null;
+    return {};
 };
 /**
  * @param {Component[]} allComponents

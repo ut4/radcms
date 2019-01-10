@@ -27,6 +27,7 @@ set(SOURCE_FILES
     include/my-fs.hpp src/my-fs.cpp
     include/static-data.hpp src/static-data.cpp
     include/web-app.hpp src/web-app.cpp
+    include/website.hpp src/website.cpp
 )
 add_executable(insane ${SOURCE_FILES} main.cpp)
 target_compile_options(insane PUBLIC ${INSN_COMPILE_OPTIONS})

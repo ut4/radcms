@@ -5,13 +5,15 @@
 #include "include/core-handlers.hpp"
 #include "include/duk.hpp"
 #include "include/js-environment.hpp"
+#include "include/static-data.hpp"
 #include "include/web-app.hpp"
+#include "include/website.hpp"
 
 static int
 handleRun(const char *sitePath);
 
 static int
-handleInit(const char *sitePath, const char *sampleDataName);
+handleInit(const std::string &sampleDataName, const char *sitePath);
 
 static int
 printCmdInstructions();
@@ -65,7 +67,28 @@ handleRun(const char *sitePath) {
 }
 
 static int
-handleInit(const char *sitePath, const char *sampleDataName) {
+handleInit(const std::string &sampleDataName, const char *sitePathIn) {
+    SampleData *sampleData = getSampleData(sampleDataName);
+    if (!sampleData) {
+        std::cerr << "[Fatal]: " << sampleDataName <<
+                     " is not valid sample data name.\n";
+        return EXIT_FAILURE;
+    }
+    std::string err;
+    Db db;
+    std::string sitePath = sitePathIn;
+    myFsNormalizePath(sitePath);
+    if (!db.open(sitePath + "data.db", err)) {
+        std::cerr << "[Fatal]: " << err << "\n";
+        return EXIT_FAILURE;
+    }
+    //
+    std::cout << "[Info]: Starting to write sample data '" << sampleDataName <<
+                 "' to '" << sitePath << "'...\n";
+    if (!websiteInstall(sitePath, sampleData, &db, err)) {
+        std::cerr << "[Fatal]: " << err << "\n";
+    }
+    std::cout << "[Info]: Wrote sample data.\n";
     return EXIT_SUCCESS;
 }
 

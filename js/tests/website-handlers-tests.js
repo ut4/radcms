@@ -3,44 +3,49 @@ var commons = require('common-services.js');
 var testLib = require('tests/testlib.js').testLib;
 var website = require('website.js');
 var http = require('http.js');
+var NO_PARENT = 0;
+var LAYOUT_0 = 0;
+var LAYOUT_1 = 1;
 
 testLib.module('website-handlers.js', function(hooks) {
     var genericCmpType = {id:1,name:'Generic'};
     var homeContentCmp = {name:'home',json:{content:'Hello'},componentTypeId:1};
     var page2ContentCmp = {name:'/page2',json:{content:'Page2'},componentTypeId:1};
     var page3ContentCmp = {name:'/page3',json:{content:'Page3'},componentTypeId:1};
+    var websiteData = {id: 1, graph: JSON.stringify({
+        pages: [['/', NO_PARENT, LAYOUT_0], ['/page2', NO_PARENT, LAYOUT_1],
+                ['/page3', NO_PARENT, LAYOUT_1]],
+        templates: ['home-layout.jsx.htm', 'page-layout.jsx.htm']
+    })};
     hooks.before(function() {
-        // Reads and caches templates from /js/tests/testsite/
-        website.website.init();
-        //
-        var c = '(?,?,?,?)';
-        if (commons.db.insert('insert into componentTypes values (?,?)', function(stmt) {
+        var sql3 = 'insert into components values (?,?,?,?),(?,?,?,?),(?,?,?,?)';
+        if (commons.db.insert('insert into websites values (?,?)', function(stmt) {
+                stmt.bindInt(0, websiteData.id);
+                stmt.bindString(1, websiteData.graph);
+            }) < 1 ||
+            commons.db.insert('insert into componentTypes values (?,?)', function(stmt) {
                 stmt.bindInt(0, genericCmpType.id);
                 stmt.bindString(1, genericCmpType.name);
             }) < 1 ||
-            commons.db.insert('insert into components values '+c+','+c+','+c, function(stmt) {
-                stmt.bindInt(0, 1);
-                stmt.bindString(1, homeContentCmp.name);
-                stmt.bindString(2, JSON.stringify(homeContentCmp.json));
-                stmt.bindInt(3, homeContentCmp.componentTypeId);
-                //
-                stmt.bindInt(4, 2);
-                stmt.bindString(5, page2ContentCmp.name);
-                stmt.bindString(6, JSON.stringify(page2ContentCmp.json));
-                stmt.bindInt(7, page2ContentCmp.componentTypeId);
-                //
-                stmt.bindInt(8, 3);
-                stmt.bindString(9, page3ContentCmp.name);
-                stmt.bindString(10, JSON.stringify(page3ContentCmp.json));
-                stmt.bindInt(11, page3ContentCmp.componentTypeId);
+            commons.db.insert(sql3, function(stmt) {
+                [homeContentCmp,page2ContentCmp,page3ContentCmp].forEach(function(cmp, i) {
+                    stmt.bindInt(i*4, i+1);
+                    stmt.bindString(i*4+1, cmp.name);
+                    stmt.bindString(i*4+2, JSON.stringify(cmp.json));
+                    stmt.bindInt(i*4+3, cmp.componentTypeId);
+                });
             }) < 1
         ) throw new Error('Failed to insert test data.');
+        // Initializes siteGraph, and reads & caches templates from /js/tests/testsite/
+        website.website.init();
     });
     hooks.after(function() {
         if (commons.db.delete('delete from components where componentTypeId = ?',
                 function(stmt) { stmt.bindInt(0, genericCmpType.id); }) < 1 ||
             commons.db.delete('delete from componentTypes where id = ?',
-                function(stmt) { stmt.bindInt(0, genericCmpType.id); }) < 1
+                function(stmt) { stmt.bindInt(0, genericCmpType.id); }) < 1 ||
+            commons.db.delete('delete from websites where id = ?',
+                function(stmt) { stmt.bindInt(0, websiteData.id); }) < 1
         ) throw new Error('Failed to clean test data.');
     });
     testLib.test('GET \'/<url>\' serves a page', function(assert) {
