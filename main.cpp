@@ -1,6 +1,5 @@
 #include <cstring>
 #include <iostream>
-#include <memory>
 #include <jsx-transpiler.hpp>
 #include "include/core-handlers.hpp"
 #include "include/duk.hpp"
@@ -46,16 +45,19 @@ handleRun(const char *sitePath) {
     transpilerSetPrintErrors(false); // use transpilerGetLastError() instead.
     jsEnvironmentConfigure(ctx, &webApp.ctx);
     if (!dukUtilsCompileAndRunStrGlobal(ctx, "require('website.js').website.init();"
+                                        "require('component-handlers.js');"
                                         "require('website-handlers.js');", "main.js",
                                         webApp.ctx.errBuf)) {
         goto done;
     }
     //
     webApp.handlers[0] = {coreHandlersHandleStaticFileRequest, &webApp, nullptr};
-    webApp.handlers[1] = {coreHandlersHandleScriptRouteRequest, ctx, nullptr};
+    webApp.handlers[1] = {coreHandlersHandleScriptRouteRequest, ctx,
+                          coreHandlersGetScriptRoutePostDataHandlers(ctx)};
     if (webApp.run()) {
         out = EXIT_SUCCESS;
     }
+    free(webApp.handlers[1].formDataHandlers);
     done:
     if (ctx) duk_destroy_heap(ctx);
     transpilerFreeProps();

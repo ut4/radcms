@@ -24,3 +24,6 @@ unsigned
 coreHandlersHandleScriptRouteRequest(void *myPtr, void *myDataPtr, const char *method,
                                      const char *url, struct MHD_Connection *conn,
                                      struct MHD_Response **response, std::string &err);
+
+FormDataHandlers*
+coreHandlersGetScriptRoutePostDataHandlers(duk_context *dukCtx);

@@ -50,10 +50,10 @@ testLib.module('website-handlers.js', function(hooks) {
     });
     testLib.test('GET \'/<url>\' serves a page', function(assert) {
         assert.expect(11);
-        var websiteHandlersMatcherFn = commons.app._routeMatchers[0];
-        var handlePageRequestFn = websiteHandlersMatcherFn('/', 'GET');
+        var req = new http.Request('/', 'GET');
+        var handlePageRequestFn = commons.app.getHandler(req.url, req.method);
         //
-        var response = handlePageRequestFn(new http.Request('/', 'GET'));
+        var response = handlePageRequestFn(req);
         assert.equal(response.statusCode, 200);
         assert.ok(response.body.indexOf('<title>Hello home') > -1,
             'should serve js/tests/testsite/home-layout.jsx.htm');
@@ -83,9 +83,8 @@ testLib.module('website-handlers.js', function(hooks) {
         commons.fs.write = function(a,b) { writeLog.push({path:a,contents:b}); return true; };
         commons.fs.makeDirs = function(a) { makeDirsLog.push({path:a}); return true; };
         //
-        var websiteHandlersMatcherFn = commons.app._routeMatchers[0];
         var req = new http.Request('/api/website/generate', 'POST');
-        var handleGenerateReqFn = websiteHandlersMatcherFn(req.url, req.method);
+        var handleGenerateReqFn = commons.app.getHandler(req.url, req.method);
         //
         var response = handleGenerateReqFn(req);
         assert.equal(response.statusCode, 200);
@@ -119,9 +118,8 @@ testLib.module('website-handlers.js', function(hooks) {
             this.upload = function(a,b) { uploadLog.push({path:a,contents:b});return 0; };
         };
         //
-        var websiteHandlersMatcherFn = commons.app._routeMatchers[0];
         var req = new http.Request('/api/website/upload', 'POST');
-        var handleUploadReqFn = websiteHandlersMatcherFn(req.url, req.method);
+        var handleUploadReqFn = commons.app.getHandler(req.url, req.method);
         //
         var response = handleUploadReqFn(req);
         assert.ok(response instanceof http.ChunkedResponse,

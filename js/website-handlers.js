@@ -19,7 +19,10 @@ commons.app.addRoute(function(url, method) {
 });
 
 /**
- * GET /api/website/pages: lists all pages. Example response: [
+ * GET /api/website/pages: lists all pages.
+ *
+ * Example response:
+ * [
  *     {"url":"/","layoutFileName":"foo.jsx.htm","uploadStatus":0},
  *     {"url":"/foo","layoutFileName":"foo.jsx.htm","uploadStatus":0}
  * ]
@@ -86,10 +89,15 @@ function handleGenerateRequest() {
 
 /**
  * GET /api/website/upload: renders all pages, and uploads them to a server
- * using FTP. Payload:
+ * using FTP.
+ *
+ * Payload:
  * remoteUrl=str|required&
  * username=str|required&
  * password=str|required
+ *
+ * Example response:
+ * /some/page|000
  */
 function handleUploadRequest(req) {
     uploadHandlerIsBusy = true;

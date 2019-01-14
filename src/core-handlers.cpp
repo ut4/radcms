@@ -1,13 +1,20 @@
 #include "../../include/core-handlers.hpp"
 
 constexpr const char* KEY_CUR_CHUNK_RESP_OBJ = "_curChunkRespJsObj";
+constexpr const char* KEY_CUR_REQ_OBJ = "_currentReqObj";
+constexpr const char* KEY_CUR_REQ_HANDLER_FN = "_currentReqJsHandlerFn";
 constexpr const char* KEY_HAD_ERROR = DUK_HIDDEN_SYMBOL("_hadError");
 constexpr const int MIN_CHUNK_LIMIT = 64;
 
+static unsigned callScriptHandler(duk_context *ctx, const char *url,
+                                  struct MHD_Response **response, std::string &err);
 static unsigned processAndQueueBasicResponse(duk_context*, struct MHD_Response**);
 static unsigned processAndQueueChunkedResponse(duk_context*, struct MHD_Response**);
 static ssize_t pullAndSendChunkFromJs(void*, uint64_t , char*, size_t);
 static void finalizeChunkedReq(void*);
+static void initJsFormData(void **myPtr);
+static bool putJsFormDataVal(const char *key, const char *value, void *myPtr);
+static void cleanJsFormData(void *myPtr);
 
 unsigned
 coreHandlersHandleStaticFileRequest(void *myPtr, void *myDataPtr, const char *method,
@@ -54,98 +61,161 @@ coreHandlersHandleScriptRouteRequest(void *myPtr, void *myDataPtr, const char *m
     unsigned out = MHD_HTTP_NOT_FOUND;
     auto *ctx = static_cast<duk_context*>(myPtr);
     assert(duk_get_top(ctx) == 0 && "Duk stack not empty.");
-    duk_push_global_stash(ctx);                     // [stash]
-    jsEnvironmentPushCommonService(ctx, "app");     // [stash app]
-    duk_get_prop_string(ctx, -1, "_routeMatchers"); // [stash app routes]
-    duk_size_t l = duk_get_length(ctx, -1);
-    for (duk_size_t i = 0; i < l; ++i) {
-        duk_get_prop_index(ctx, -1, i);             // [stash app routes fn]
-        duk_push_string(ctx, url);                  // [stash app routes fn str]
-        duk_push_string(ctx, method);               // [stash app routes fn str str]
-        /*
-         * Call the matcher function.
-         */
-        if (duk_pcall(ctx, 2) != DUK_EXEC_SUCCESS) {// [stash app routes fn|null|err]
-            dukUtilsPutDetailedError(ctx, -1, url, err); // [stash app routes]
-            goto done;
+    duk_push_global_stash(ctx);                         // [stash]
+    // First iteration
+    if (!myDataPtr) {
+        jsEnvironmentPushCommonService(ctx, "app");     // [stash app]
+        duk_get_prop_string(ctx, -1, "_routeMatchers"); // [stash app routes]
+        duk_size_t l = duk_get_length(ctx, -1);
+        for (duk_size_t i = 0; i < l; ++i) {
+            duk_get_prop_index(ctx, -1, i);             // [stash app routes fn]
+            duk_push_string(ctx, url);                  // [stash app routes fn str]
+            duk_push_string(ctx, method);               // [stash app routes fn str str]
+            // Call the matcher function.
+            if (duk_pcall(ctx, 2) != DUK_EXEC_SUCCESS) {// [stash app routes fn|null|err]
+                dukUtilsPutDetailedError(ctx, -1, url, err); // [stash app routes]
+                break;
+            }
+            // Wasn't interested.
+            if (!duk_is_function(ctx, -1)) {
+                duk_pop(ctx);                           // [stash app routes]
+                continue;
+            }
+            // Got a handler function ...
+            duk_replace(ctx, -3);                       // [stash fn routes]
+            duk_pop(ctx);                               // [stash fn]
+            jsEnvironmentPushModuleProp(ctx, "http.js", "Request"); // [stash fn Req]
+            duk_push_string(ctx, url);                  // [stash fn Req str str]
+            duk_push_string(ctx, method);               // [stash fn Req str]
+            duk_new(ctx, 2);                            // [stash fn req]
+            // ... GET -> call immediately
+            if (strcmp(method, "GET") == 0) {
+                out = callScriptHandler(ctx, url, response, err); // [stash ?]
+            // ... POST|PUT -> continue to the data collecting -iteration
+            } else {
+                out = MHD_YES;
+                duk_put_prop_string(ctx, -3,            // [stash fn]
+                    KEY_CUR_REQ_OBJ);
+                duk_put_prop_string(ctx, -2,            // [stash]
+                    KEY_CUR_REQ_HANDLER_FN);
+            }
+            break;
         }
-        /*
-         * Wasn't interested.
-         */
-        if (!duk_is_function(ctx, -1)) {
-            duk_pop(ctx);                           // [stash app routes]
-            continue;
-        }
-        /*
-         * Got a handler function, call it.
-         */
-        jsEnvironmentPushModuleProp(ctx, "http.js", "Request"); // [stash app routes fn Req]
-        duk_push_string(ctx, url);                  // [stash app routes Req fn str str]
-        duk_push_string(ctx, method);               // [stash app routes Req fn str]
-        duk_new(ctx, 2);                            // [stash app routes req]
-        if (duk_pcall(ctx, 1) != DUK_EXEC_SUCCESS) {// [stash app routes obj|err]
-            dukUtilsPutDetailedError(ctx, -1, url, err); // [stash app routes]
-            out = MHD_HTTP_INTERNAL_SERVER_ERROR;
-            goto done;
-        }
-        /*
-         * Process the response.
-         */
-        jsEnvironmentPushModuleProp(ctx, "http.js", "Response"); // [stash app routes res Resp]
-        if (duk_instanceof(ctx, -2, -1)) {
-            out = processAndQueueBasicResponse(ctx, response); // [stash app routes]
-        } else if (jsEnvironmentPushModuleProp(ctx, "http.js", // [stash app routes res Resp ChunkedResp]
-                                               "ChunkedResponse"),
-                   duk_instanceof(ctx, -3, -1)) {
-            out = processAndQueueChunkedResponse(ctx, response); // [stash app routes]
-        } else {
-            duk_pop_3(ctx);                         // [stash app routes]
-            err = "A handler must return new Response(<statusCode>, <bodyStr>),"
-                    " or new ChunkedResponse(<statusCode>, <chunkFn>, <any>)";
-            out = MHD_HTTP_INTERNAL_SERVER_ERROR;
-        }
-        break;
+        // none of the matchers returned a function -> 404
+    } else {
+        // Second iteration, post-data is now populated
+        duk_get_prop_string(ctx, -1, KEY_CUR_REQ_HANDLER_FN); // [stash fn]
+        duk_get_prop_string(ctx, -2, KEY_CUR_REQ_OBJ);  // [stash fn req]
+        out = callScriptHandler(ctx, url, response, err); // [stash ?]
     }
-    done:
-    duk_pop_3(ctx);                                 // []
+    duk_set_top(ctx, 0);                                // []
     return out;
 }
 
+FormDataHandlers*
+coreHandlersGetScriptRoutePostDataHandlers(duk_context *dukCtx) {
+    FormDataHandlers *out = new FormDataHandlers;
+    out->init = initJsFormData;
+    out->receiveVal = putJsFormDataVal;
+    out->cleanup = cleanJsFormData;
+    out->myPtr = dukCtx;
+    return out;
+}
+
+/** Calls the js handler at the top of the stack, and processes its return
+ * value (new Response(...)).*/
+static unsigned
+callScriptHandler(duk_context *ctx, const char *url,
+                  struct MHD_Response **response, std::string &err) {
+                                                              // [stash fn req]
+    if (duk_pcall(ctx, 1) != DUK_EXEC_SUCCESS) {              // [stash res|err]
+        dukUtilsPutDetailedError(ctx, -1, url, err);          // [stash]
+        return MHD_HTTP_INTERNAL_SERVER_ERROR;
+    }
+    jsEnvironmentPushModuleProp(ctx, "http.js", "Response");  // [stash res Resp]
+    if (duk_instanceof(ctx, -2, -1)) {
+        return processAndQueueBasicResponse(ctx, response);   // [stash ?]
+    }
+    jsEnvironmentPushModuleProp(ctx, "http.js",               // [stash res Resp ChunkedResp]
+                                    "ChunkedResponse");
+    if (duk_instanceof(ctx, -3, -1)) {
+        return processAndQueueChunkedResponse(ctx, response); // [stash ?]
+    }
+    err = "A handler must return new Response(<statusCode>, <bodyStr>),"
+          " or new ChunkedResponse(<statusCode>, <chunkFn>, <any>)";
+    return MHD_HTTP_INTERNAL_SERVER_ERROR;
+}
+
+/* dukStash._pendingReqObj.data = {} */
+static void
+initJsFormData(void **myPtr) {
+    auto *ctx = static_cast<duk_context*>(*myPtr);
+    duk_push_global_stash(ctx);                    // [stash]
+    duk_get_prop_string(ctx, -1, KEY_CUR_REQ_OBJ); // [stash req]
+    duk_push_object(ctx);                          // [stash req data]
+    duk_put_prop_string(ctx, -2, "data");          // [stash req]
+    duk_pop_2(ctx);                                // []
+}
+
+/* dukStash._pendingReqObj.data[key] = value */
+static bool
+putJsFormDataVal(const char *key, const char *value, void *myPtr) {
+    auto *ctx = static_cast<duk_context*>(myPtr);
+    duk_push_global_stash(ctx);                    // [stash]
+    duk_get_prop_string(ctx, -1, KEY_CUR_REQ_OBJ); // [stash req]
+    duk_get_prop_string(ctx, -1, "data");          // [stash req data]
+    duk_push_string(ctx, value);                   // [stash req data value]
+    duk_put_prop_string(ctx, -2, key);             // [stash req data]
+    duk_pop_3(ctx);                                // []
+    return true;
+}
+
+/* dukStash._pendingReqObj = null, dukStash._pendingJsHandlerFn = null */
+static void
+cleanJsFormData(void *myPtr) {
+    auto *ctx = static_cast<duk_context*>(myPtr);
+    duk_push_global_stash(ctx);                           // [stash]
+    duk_push_null(ctx);                                   // [stash null]
+    duk_put_prop_string(ctx, -2, KEY_CUR_REQ_OBJ);        // [stash]
+    duk_push_null(ctx);                                   // [stash null]
+    duk_put_prop_string(ctx, -2, KEY_CUR_REQ_HANDLER_FN); // [stash]
+    duk_pop(ctx);                                         // []
+}
+
 /** Validates new Response() (a return value of some js handler), and passes its
- * .body to MHD_create_response_from_buffer() */
+ * .body to MHD_create_response_from_buffer(). Returns an http status code. */
 static unsigned
 processAndQueueBasicResponse(duk_context *ctx, struct MHD_Response **response) {
-    duk_get_prop_string(ctx, -2, "statusCode"); // [stash app routes res Resp int]
+    duk_get_prop_string(ctx, -2, "statusCode");      // [stash res Resp int]
     unsigned out = duk_to_uint(ctx, -1);
-    duk_get_prop_string(ctx, -3, "body");   // [stash app routes res Resp int body]
+    duk_get_prop_string(ctx, -3, "body");            // [stash res Resp int body]
     const char *body = duk_to_string(ctx, -1);
     *response = MHD_create_response_from_buffer(strlen(body), (void*)body,
                                                 MHD_RESPMEM_MUST_COPY);
-    duk_pop_3(ctx);                         // [stash app routes res]
-    duk_get_prop_string(ctx, -1, "headers");// [stash app routes res headers]
-    duk_enum(ctx, -1, DUK_ENUM_OWN_PROPERTIES_ONLY); // [stash app routes res headers enum]
-    while (duk_next(ctx, -1, true)) {       // [stash app routes res headers enum key val]
+    duk_pop_3(ctx);                                  // [stash res]
+    duk_get_prop_string(ctx, -1, "headers");         // [stash res headers]
+    duk_enum(ctx, -1, DUK_ENUM_OWN_PROPERTIES_ONLY); // [stash res headers enum]
+    while (duk_next(ctx, -1, true)) {                // [stash res headers enum key val]
         MHD_add_response_header(*response, duk_get_string(ctx, -2),
                                 duk_require_string(ctx, -1));
-        duk_pop_2(ctx);                     // [stash app routes res headers enum]
+        duk_pop_2(ctx);                              // [stash res headers enum]
     }
-    duk_pop_3(ctx);                         // [stash app routes]
     return out;
 }
 
 /** Validates new ChunkedResponse(), stores it to a duktape stash, and calls
- * MHD_create_response_from_callback() */
+ * MHD_create_response_from_callback(). Returns an http status code. */
 static unsigned
 processAndQueueChunkedResponse(duk_context *ctx, struct MHD_Response **response) {
-    duk_get_prop_string(ctx, -3, "statusCode");   // [stash app routes res Resp ChunkedResp int]
+    duk_get_prop_string(ctx, -3, "statusCode");   // [stash res Resp ChunkedResp int]
     unsigned out = duk_get_uint(ctx, -1);
-    duk_get_prop_string(ctx, -4, "chunkSizeMax"); // [stash app routes res Resp ChunkedResp int int]
+    duk_get_prop_string(ctx, -4, "chunkSizeMax"); // [stash res Resp ChunkedResp int int]
     int chunkSizeMax = duk_get_int(ctx, -1);
     if (chunkSizeMax < MIN_CHUNK_LIMIT) chunkSizeMax = MIN_CHUNK_LIMIT;
-    duk_pop_n(ctx, 4);                            // [stash app routes res]
-    duk_push_boolean(ctx, false);                 // [stash app routes res bool]
-    duk_put_prop_string(ctx, -2, KEY_HAD_ERROR);  // [stash app routes res]
-    duk_put_prop_string(ctx, -4, KEY_CUR_CHUNK_RESP_OBJ); // [stash app routes]
+    duk_pop_n(ctx, 4);                            // [stash res]
+    duk_push_boolean(ctx, false);                 // [stash res bool]
+    duk_put_prop_string(ctx, -2, KEY_HAD_ERROR);  // [stash res]
+    duk_put_prop_string(ctx, -2, KEY_CUR_CHUNK_RESP_OBJ); // [stash]
     *response = MHD_create_response_from_callback(MHD_SIZE_UNKNOWN, chunkSizeMax,
                                                   pullAndSendChunkFromJs, ctx,
                                                   &finalizeChunkedReq);

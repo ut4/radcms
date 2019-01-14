@@ -40,6 +40,7 @@ int main(int argc, const char* argv[]) {
         const std::string useVerboseLogging = argc < 3 ? "false" : "true";
         if (testSuiteName != "all" &&
             testSuiteName != "common-services" &&
+            testSuiteName != "component-handlers" &&
             testSuiteName != "website-handlers") {
             testJsEnv.errBuf = "Unknown test suite '" + testSuiteName + "'";
             goto done;

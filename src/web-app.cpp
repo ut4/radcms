@@ -162,7 +162,7 @@ finishRequest(void *cls, struct MHD_Connection *conn, void **perConnMyPtr,
     if (!connInfo) return;
     (void)MHD_destroy_post_processor(connInfo->postProcessor);
     if (connInfo->reqHandler->formDataHandlers->myPtr) {
-        connInfo->reqHandler->formDataHandlers->formDataFreeFn(
+        connInfo->reqHandler->formDataHandlers->cleanup(
             connInfo->reqHandler->formDataHandlers->myPtr);
     }
     free(connInfo);
@@ -223,8 +223,7 @@ preparePostRequest(struct MHD_Response **response, struct MHD_Connection *conn,
     PerConnInfo *connInfo = new PerConnInfo;
     connInfo->reqHandler = h;
     connInfo->postProcessor = MHD_create_post_processor(
-        conn, FORM_DATA_ITER_BUF_LEN, iterateFormDataBasic,
-        h->formDataHandlers);
+        conn, FORM_DATA_ITER_BUF_LEN, iterateFormDataBasic, h->formDataHandlers);
     if (!connInfo->postProcessor) {
         std::cerr << "[Error]: preparePostRequest: Failed to MHD_create_post_processor().\n";
         free(connInfo);
@@ -246,9 +245,9 @@ processPostData(const char *uploadData, size_t *uploadDataSize,
     }
     //
     auto *connInfo = static_cast<PerConnInfo*>(*perConnMyPtr);
-    FormDataHandlers *formHandlers = connInfo->reqHandler->formDataHandlers;
-    formHandlers->myPtr = formHandlers->formDataInitFn();
-    if (!formHandlers->myPtr) {
+    FormDataHandlers *handlers = connInfo->reqHandler->formDataHandlers;
+    handlers->init(&handlers->myPtr);
+    if (!handlers->myPtr) {
         std::cerr << "[Error]: preparePostRequest: formDataInitFn returned nullPtr.\n";
         return MHD_HTTP_INTERNAL_SERVER_ERROR;
     }
@@ -266,7 +265,7 @@ iterateFormDataBasic(void *myPPPtr, enum MHD_ValueKind kind, const char *key,
     if (size == 0) return MHD_NO;
     if (size <= MAX_POST_SIZE) {
         auto *h = static_cast<FormDataHandlers*>(myPPPtr);
-        return (int)h->formDataReceiverFn(key, data, h->myPtr);
+        return (int)h->receiveVal(key, data, h->myPtr);
     }
     std::cerr << "[Error]: POST|PUT field too large (max " << MAX_POST_SIZE <<
                  ", is " << size << "), ignoring.\n";
