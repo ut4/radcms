@@ -1,5 +1,6 @@
 var commons = require('common-services.js');
 var documentData = require('document-data.js');
+var directives = require('directives.js');
 
 /**
  * @param {string} url
@@ -13,31 +14,45 @@ function Page(url, parentId, layoutFileName) {
     this.layoutFileName = layoutFileName;
 }
 /**
+ * @param {Object?} pageData
  * @returns {string}
  */
-Page.prototype.render = function() {
-    // function cachedTemplate(url, ddc) {  <-- outer
+Page.prototype.render = function(pageData) {
+    // function cachedTemplate(fetchAll, fetchOne, url) {           <-- outer
     //     var data1 = ddc.fetchAll()...
-    //     return function(domTree) {...};  <-- inner
+    //     return function(domTree, getDataFor, directives) {...};  <-- inner
     // }
     var outerFn = commons.templateCache.get(this.layoutFileName);
     var ddc = new documentData.DDC();
-    var innerFn = outerFn(ddc, this.url);
+    var innerFn = outerFn(ddc.fetchAll.bind(ddc), ddc.fetchOne.bind(ddc), this.url);
     //
     if (ddc.batchCount) {
         var components = [];
         commons.db.select(ddc.toSql(), function(row) {
             var component = JSON.parse(row.getString(2));
-            component.id = row.getInt(0);
-            component.name = row.getString(1);
-            component.dataBatchConfigId = row.getInt(3);
+            component.cmp = {
+                id: row.getInt(0),
+                name: row.getString(1),
+                dataBatchConfigId: row.getInt(3)
+            };
             components.push(component);
         });
         ddc.setComponents(components);
     }
     //
     var domTree = new commons.DomTree();
-    return domTree.render(innerFn(domTree));
+    if (!pageData) {
+        return domTree.render(innerFn(domTree, ddc.getDataFor.bind(ddc), directives));
+    }
+    var html = domTree.render(innerFn(domTree, ddc.getDataFor.bind(ddc), directives));
+    pageData.allComponents = ddc.data;
+    pageData.directiveInstances = domTree.getRenderedFnComponents()
+        .map(function(fnData) {
+            if (fnData.fn == directives.ArticleList) {
+                return {type: 'ArticleList', components: fnData.props.articles};
+            }
+        });
+    return html;
 };
 
 function Template(fileName) {

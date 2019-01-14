@@ -38,7 +38,7 @@ producerProduceObjStringVal(struct Token *keyToken, struct Token *valueToken);
 
 /** Appends '$keyToken->lexeme': $valueToken->lexeme, */
 bool
-producerProduceObjCodeVal(struct Token *keyToken, struct Token *valueToken);
+producerProduceObjCodeVal(struct Token *keyToken, const char *code, unsigned codeLen);
 
 bool
 producerProduceCommentOrDoctype(struct Token *contentsToken,
@@ -58,6 +58,9 @@ producerAddChar(char c);
 
 bool
 producerAddChars(const char *str);
+
+bool
+producerAddNChars(const char *str, unsigned amount);
 
 unsigned
 producerAddComma();

@@ -16,6 +16,8 @@ static duk_ret_t domTreeConstruct(duk_context *ctx);
 static duk_ret_t domTreeFree(duk_context *ctx);
 static duk_ret_t domTreeCreateElement(duk_context *ctx);
 static duk_ret_t domTreeRender(duk_context *ctx);
+static duk_ret_t domTreeGetRenderedFnComponents(duk_context *ctx);
+static unsigned domTreeCallCmpFn(FuncNode *me, std::string &err);
 
 constexpr const char* KEY_STMT_JS_PROTO = "_StmtProto";
 constexpr const char* KEY_RES_ROW_JS_PROTO = "_ResRowProto";
@@ -24,6 +26,7 @@ constexpr const char* KEY_ROW_COL_COUNT = DUK_HIDDEN_SYMBOL("_colCount");
 constexpr const char* KEY_STMT_PTR = DUK_HIDDEN_SYMBOL("_sqliteStmtPtr");
 constexpr const char* KEY_STMT_MAX_BIND_IDX = DUK_HIDDEN_SYMBOL("_maxPlaceholderIdx");
 constexpr const char* KEY_DOM_TREE_PTR = DUK_HIDDEN_SYMBOL("_domTreePtr");
+constexpr const char* KEY_CMP_FUNCS = DUK_HIDDEN_SYMBOL("_domTreeCmpFuncs");
 
 void
 commonServicesJsModuleInit(duk_context *ctx, const int exportsIsAt) {
@@ -75,6 +78,8 @@ commonServicesJsModuleInit(duk_context *ctx, const int exportsIsAt) {
     duk_put_prop_string(ctx, -2, "createElement");      // [? DomTree proto]
     duk_push_c_lightfunc(ctx, domTreeRender, 1, 0, 0);  // [? DomTree proto lightfn]
     duk_put_prop_string(ctx, -2, "render");             // [? DomTree proto]
+    duk_push_c_lightfunc(ctx, domTreeGetRenderedFnComponents, 0, 0, 0); // [? DomTree proto lightfn]
+    duk_put_prop_string(ctx, -2, "getRenderedFnComponents"); // [? DomTree proto]
     duk_put_prop_string(ctx, -2, "prototype");          // [? DomTree]
     duk_put_prop_string(ctx, exportsIsAt, "DomTree");   // [?]
 }
@@ -264,7 +269,7 @@ fsMakeDirs(duk_context *ctx) {
 // =============================================================================
 static duk_ret_t
 transpilerTranspileToFn(duk_context *ctx) {
-    char *js = transpilerTranspileIsx(duk_require_string(ctx, 0));
+    char *js = transpilerTranspile(duk_require_string(ctx, 0));
     std::string err;
     if (js) {
         if (dukUtilsCompileStrToFn(ctx, js, "source", err)) { // [stash fn]
@@ -278,7 +283,7 @@ transpilerTranspileToFn(duk_context *ctx) {
 // == DomTree ====
 // =============================================================================
 static DomTree*
-domTreePushSelf(duk_context *ctx) {
+domTreeGetSelfPtr(duk_context *ctx) {
     duk_push_this(ctx);
     duk_get_prop_string(ctx, -1, KEY_DOM_TREE_PTR);
     auto *out = static_cast<DomTree*>(duk_get_pointer(ctx, -1));
@@ -325,8 +330,8 @@ collectElemChildren(duk_context *ctx, int valueIsAt,
 
 static void
 collectElemProps(duk_context *ctx, std::vector<ElemProp> &to) {
-    duk_enum(ctx, 1, DUK_ENUM_OWN_PROPERTIES_ONLY); // [str props children enum]
-    while (duk_next(ctx, -1, true)) {               // [str props children enum key val]
+    duk_enum(ctx, 1, DUK_ENUM_OWN_PROPERTIES_ONLY); // [str props children dtree enum]
+    while (duk_next(ctx, -1, true)) {               // [str props children dtree enum key val]
         to.emplace_back(duk_to_string(ctx, -2), duk_to_string(ctx, -1));
         duk_pop_2(ctx);                             // [str props children enum]
     }
@@ -341,6 +346,8 @@ domTreeConstruct(duk_context *ctx) {
     duk_put_prop_string(ctx, -2, KEY_DOM_TREE_PTR); // [this]
     duk_push_c_function(ctx, domTreeFree, 1);       // [this cfunc]
     duk_set_finalizer(ctx, -2);                     // [this]
+    duk_push_bare_object(ctx);                      // [this obj]
+    duk_put_prop_string(ctx, -2, KEY_CMP_FUNCS);    // [this]
 	return 0;
 }
 
@@ -356,35 +363,101 @@ domTreeCreateElement(duk_context *ctx) {
     if (duk_get_top(ctx) != 3) return duk_error(ctx, DUK_ERR_TYPE_ERROR,
         "createElement expects exactly 3 arguments");
     #define createElem(props) \
-        auto *domTree = domTreePushSelf(ctx); \
+        auto *domTree = domTreeGetSelfPtr(ctx); \
         std::vector<unsigned> children; \
         collectElemChildren(ctx, 2, children, *domTree); \
         duk_push_uint(ctx, domTree->createElemNode(tagName, props, &children))
     //
-    const char *tagName = duk_require_string(ctx, 0);
-    if (duk_is_object_coercible(ctx, 1))  {
-        std::vector<ElemProp> props;
-        collectElemProps(ctx, props);
-        createElem(&props);
+    if (duk_is_string(ctx, 0)) {
+        const char *tagName = duk_require_string(ctx, 0);
+        if (duk_is_object_coercible(ctx, 1))  {
+            std::vector<ElemProp> props;
+            collectElemProps(ctx, props);
+            createElem(&props);
+        } else {
+            createElem(nullptr);
+        }
+    } else if (duk_is_function(ctx, 0)) {
+        auto *domTree = domTreeGetSelfPtr(ctx);
+        unsigned ref = domTree->createFuncNode(domTreeCallCmpFn, ctx);
+        // Does this.fnMap[newIndex] = {fn: fnArg, props: propsArg}
+        duk_push_this(ctx);                            // [fn ... this]
+        duk_get_prop_string(ctx, -1, KEY_CMP_FUNCS);   // [fn ... this fnMap]
+        duk_push_bare_object(ctx);                     // [fn ... this fnMap fnData]
+        duk_dup(ctx, 0);                               // [fn ... this fnMap fnData fn]
+        duk_put_prop_string(ctx, -2, "fn");            // [fn ... this fnMap fnData]
+        duk_dup(ctx, 1);                               // [fn ... this fnMap fnData props]
+        duk_put_prop_string(ctx, -2, "props");         // [fn ... this fnMap fnData]
+        duk_put_prop_index(ctx, -2, domTree->funcNodes.size()); // [fn ... this fnMap]
+        duk_push_uint(ctx, ref);                       // [fn ... this fnMap elemRef]
     } else {
-        createElem(nullptr);
+        return duk_error(ctx, DUK_ERR_TYPE_ERROR, "#1 arg of createElement must"
+                         " be a string or function");
     }
     return 1;
 }
 
 static duk_ret_t
 domTreeRender(duk_context *ctx) {
-    unsigned ref = duk_require_uint(ctx, 0);          // Arg #1
-    auto *domTree = domTreePushSelf(ctx);             // [elemRef]
-    ElemNode *el = domTree->getElemNode(ref);
-    if (!el) return duk_error(ctx, DUK_ERR_TYPE_ERROR, "Invalid node ref.", ref);
+    unsigned ref = duk_require_uint(ctx, 0);
+    auto *domTree = domTreeGetSelfPtr(ctx);
+    ElemNode *el = nullptr;
+    if (DomTree::getNodeType(ref) != NODE_TYPE_ELEM ||
+        !(el = domTree->getElemNode(ref))) return duk_error(ctx, DUK_ERR_TYPE_ERROR,
+                                                    "Invalid rootNodeRef.", ref);
     domTree->rootElemIndex = el->id - 1;
-    duk_push_global_stash(ctx);
-    std::string &errBuf = jsEnvironmentPullAppContext(ctx, -1)->errBuf;
-    std::string *html = domTree->render(errBuf);
+    duk_push_this(ctx);         // [this]
+    std::string err;
+    std::string *html = domTree->render(err);
     if (html) {
         duk_push_string(ctx, html->c_str());
         return 1;
     }
-    return duk_error(ctx, DUK_ERR_TYPE_ERROR, errBuf.c_str());
+    return duk_error(ctx, DUK_ERR_TYPE_ERROR, err.c_str());
+}
+
+static duk_ret_t
+domTreeGetRenderedFnComponents(duk_context *ctx) {
+    duk_push_this(ctx);                          // [this]
+    duk_get_prop_string(ctx, -1, KEY_CMP_FUNCS); // [this fnMap]
+    duk_push_array(ctx);                         // [this fnMap out]
+    auto *domTree = domTreeGetSelfPtr(ctx);
+    std::string err;
+    if (domTree->traverse([](NodeType type, unsigned nodeId, void *myPtr) -> bool {
+        if (type == NODE_TYPE_FUNC) {
+            duk_context *ctx = static_cast<duk_context*>(myPtr);
+            duk_get_prop_index(ctx, -2, nodeId); // [this fnMap out funcData]
+            assert(!duk_is_null_or_undefined(ctx, -1) && "A component function has vanished!!");
+            duk_put_prop_index(ctx, -2, duk_get_length(ctx, -2)); // [this fnMap out]
+        }
+        return true;
+    }, ctx, err)) {
+        return 1;
+    }
+    return duk_error(ctx, DUK_ERR_ERROR, "%s", err.c_str());
+}
+
+static unsigned
+domTreeCallCmpFn(FuncNode *me, std::string &err) {
+                                                 // [ref domTree]
+    auto *ctx = static_cast<duk_context*>(me->myPtr);
+    duk_get_prop_string(ctx, -1, KEY_CMP_FUNCS); // [ref domTree fnMap]
+    duk_get_prop_index(ctx, -1, me->id);         // [ref domTree fnMap funcData]
+    assert(!duk_is_null_or_undefined(ctx, -1) && "A component function has vanished!!");
+    duk_get_prop_string(ctx, -1, "fn");          // [ref domTree fnMap funcData fn]
+    duk_dup(ctx, -4);                            // [ref domTree fnMap funcData fn domTree]
+    duk_get_prop_string(ctx, -3, "props");       // [ref domTree fnMap funcData fn domTree props]
+    if (duk_pcall(ctx, 2) == DUK_EXEC_SUCCESS) { // [ref domTree fnMap funcData elemRef]
+        if (duk_is_number(ctx, -1)) {
+            unsigned out = duk_get_number(ctx, -1);
+            duk_pop_3(ctx);                      // [ref domTree]
+            return out;
+        } else {
+            err = "A component function must return domTree.createElement(...).";
+            return 0;
+        }
+    }                                            // [ref domTree fnMap funcData err]
+    err = duk_safe_to_string(ctx, -1);
+    duk_pop_3(ctx);                              // [ref domTree]
+    return 0;
 }

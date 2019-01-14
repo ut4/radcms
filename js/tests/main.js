@@ -1,4 +1,4 @@
-exports.main = function(suite) {
+exports.main = function(suite, logAssertions) {
     var modules = [];
     var isAll = suite == 'all';
     if (isAll || suite == 'common-services') {
@@ -10,5 +10,5 @@ exports.main = function(suite) {
         require('tests/website-handlers-tests.js');
         modules.push('website-handlers.js');
     }
-    require('tests/testlib.js').testLib.start(!isAll ? modules : null);
+    require('tests/testlib.js').testLib.start(!isAll ? modules : null, logAssertions);
 };

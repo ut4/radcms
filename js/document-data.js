@@ -29,11 +29,11 @@ exports.DDC.prototype.fetchOne = function(componentTypeName) {
  */
 exports.DDC.prototype.getDataFor = function(dbc) {
     if (dbc.isFetchAll) return this.data.filter(function(component) {
-        return component.dataBatchConfigId == dbc.id;
+        return component.cmp.dataBatchConfigId == dbc.id;
     });
     var l = this.data.length;
     for (var i = 0; i < l; ++i) {
-        if (this.data[i].dataBatchConfigId == dbc.id) return this.data[i];
+        if (this.data[i].cmp.dataBatchConfigId == dbc.id) return this.data[i];
     }
     return {};
 };

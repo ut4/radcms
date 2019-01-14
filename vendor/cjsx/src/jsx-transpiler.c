@@ -8,6 +8,15 @@
 #include "../include/memory.h"
 
 #define ERR_MAX_LEN 128
+#define MAX_DATA_CONF_VARS 64
+#define MAX_VAR_NAME_LEN 128
+#define ISX_OUTER_START "function(fetchAll, fetchOne, url) { "
+//                           var batch = fetchAll().where() calls here...
+#define ISX_INNER_START     "return function(domTree, getDataFor, directives) { "
+//                               batch = getDataFor(batch) calls here...
+#define ISX_INNER_END          " return"
+//                               domTree.createElement(...,batch.foo)... calls here
+#define ISX_OUTER_END       "}; }"
 
 struct Transpiler {
     struct Token previous;
@@ -21,10 +30,25 @@ struct Transpiler transpiler;
 struct Token emptyToken;
 char sharedErr[ERR_MAX_LEN];
 
-enum TagType {TYPE_SELF_CLOSING, TYPE_SCRIPT, TYPE_STYLE, TYPE_NONE};
+enum TagType {
+    TAG_TYPE_NORMAL,
+    TAG_TYPE_SELF_CLOSING,
+    TAG_TYPE_SCRIPT,
+    TAG_TYPE_STYLE,
+    TAG_TYPE_COMMENT,
+    TAG_TYPE_DOCTYPE,
+    TAG_TYPE_NONE,
+};
+
+typedef struct {
+    unsigned posFromFileStart;
+    unsigned varNameLen;
+} DataConfVar;
 
 /*
-fragment  -> ( element | comment | doctype )? EOF ;
+input     -> ( code | html )? EOF ;
+code      -> TEXT
+html      -> ( element | comment | doctype )? ;
 element   -> startTag ( TEXT | element | codeBlock | comment )* endTag?
 startTag  -> "<" NAME attr* "/"? ">"
 attr      -> NAME ( "=" ( "'" | """ | "{" ) TEXT ( "'" | """ | "}" ) )?
@@ -32,19 +56,22 @@ endTag    -> "<" "/" NAME ">"
 codeBlock -> "{" ( TEXT | element )+ "}"
 comment   -> "<" "!" "-" "-" TEXT? "-" "-" ">"
 */
-static void fragment();
+static bool html(enum TagType alreadyConsumedStartEl);
+static unsigned code();
 static bool element(bool startAlreadyConsumed);
-static bool commentOrDoctype();
+static bool doctypeOrComment(bool startAlreadyConsumed);
 static bool scriptOrStyleElement(const char *elName);
-static bool codeBlock();
+static bool codeBlock(struct Token *previous);
 static unsigned startTag(bool startAlreadyConsumed, enum TagType *outType);
 static bool attrs();
-static bool attrCodeBlock(struct Token *keyToken);
-static bool tryStartTag();
+static bool tryStartTag(bool autoProduce);
 static bool closingTag();
-static bool comment();
-static bool dataConfigs();
+static bool comment(bool startAlreadyConsumed);
+static enum TagType tryCommentOrDoctype();
 //
+static const char* appendVar(DataConfVar *vars, unsigned varsCount,
+                             const char *curCodeStart, const char *fileStart);
+static bool endVars(DataConfVar *vars, unsigned varsCount, const char *fileStart);
 static struct Token* advance(bool consumeWhiteSpace, enum ScanMode scanMode);
 static bool advanceIf(enum TokenType type, bool consumeWhiteSpace,
                       enum ScanMode scanMode);
@@ -75,31 +102,26 @@ transpilerFreeProps() {
     producerFreeProps();
 }
 
-#define resetTranspiler() \
-    transpiler.hadError = false; \
-    transpiler.lastErr[0] = '\0'; \
-    sharedErr[0] = '\0'; \
-    scannerInit(code); \
-    producerClear()
 
 char*
-transpilerTranspile(const char *code) {
-    resetTranspiler();
-    (void)advance(true, SCAN_NAME);
-    if (transpiler.current.type != TOKEN_EOF) fragment();
-    return !transpiler.hadError ? producerGetResult() : NULL;
-}
-
-char*
-transpilerTranspileIsx(const char *code) {
-    resetTranspiler();
+transpilerTranspile(const char *src) {
+    transpiler.hadError = false;
+    transpiler.lastErr[0] = '\0';
+    sharedErr[0] = '\0';
+    scannerInit(src);
+    producerClear();
     (void)advance(true, SCAN_NAME);
     if (transpiler.current.type != TOKEN_EOF) {
-        if (dataConfigs()) {
-            fragment();
-            producerAddChars("};}");
+        producerAddChars(ISX_OUTER_START);
+        if (transpiler.current.type == TOKEN_LT) {
+            producerAddChars(ISX_INNER_START);
+            producerAddChars(ISX_INNER_END);
+            html(TAG_TYPE_NONE);
+        } else {
+            code();
         }
     }
+    producerAddChars(ISX_OUTER_END);
     return !transpiler.hadError ? producerGetResult() : NULL;
 }
 
@@ -113,32 +135,136 @@ transpilerSetPrintErrors(bool printErrors) {
     transpiler.printErrors = printErrors;
 }
 
-static void
-fragment() {
+static bool
+html(enum TagType alreadyConsumedStartEl) {
     unsigned numRoots = 0;
     unsigned lastCommaPos = 0;
+    unsigned p = 0;
     producerAddChar(' ');
+    if (alreadyConsumedStartEl != TAG_TYPE_NONE) {
+        numRoots = 1;
+        p = producerGetLength() - 1;
+        if ((alreadyConsumedStartEl == TAG_TYPE_NORMAL && element(true)) ||
+            (alreadyConsumedStartEl == TAG_TYPE_DOCTYPE && doctypeOrComment(true)) ||
+            (alreadyConsumedStartEl == TAG_TYPE_COMMENT && comment(true))) {
+            if ((lastCommaPos = producerAddComma()) == 0) return false;
+        } else {
+            return false;
+        }
+    }
     while (transpiler.current.type == TOKEN_LT) {
-        if (!(scannerPeek(false) != '!' ? element(false) : commentOrDoctype()) ||
-            (lastCommaPos = producerAddComma()) == 0) return;
+        if (scannerPeek(false) != '!') {
+            if (!element(false)) return false;
+        } else if (!doctypeOrComment(false)) return false;
+        if ((lastCommaPos = producerAddComma()) == 0) return false;
         numRoots += 1;
     }
     if (numRoots == 1) {
         producerReplaceChar(lastCommaPos, ' ');
     } else if (numRoots > 1) {
-        producerReplaceChar(0, '[');
+        producerReplaceChar(p, '[');
         producerAddChar(']');
     }
+    return true;
+}
+
+static const char*
+appendVar(DataConfVar *vars, unsigned varsCount, const char *curCodeStart,
+          const char *fileStart) {
+    if (varsCount >= MAX_DATA_CONF_VARS) {
+        logError("TOO_MANY_VARS"); return NULL;
+    }
+    producerAddNChars(curCodeStart, transpiler.current.lexemeFrom - curCodeStart);
+    producerAddChars("var ");
+    curCodeStart = transpiler.current.lexemeFrom + 1;
+    advance(true, SCAN_NAME); // @
+    if (transpiler.current.type != TOKEN_NAME) {
+        logError("Expected variable name after '@'"); return NULL;
+    }
+    if (transpiler.current.lexemeLen <= MAX_VAR_NAME_LEN) {
+        vars[varsCount] = (DataConfVar){
+            .posFromFileStart = transpiler.current.lexemeFrom - fileStart,
+            .varNameLen = transpiler.current.lexemeLen
+        };
+    } else {
+        logError("VAR_NAME_TOO_LONG"); return NULL;
+    }
+    return curCodeStart;
+}
+
+static bool
+endVars(DataConfVar *vars, unsigned varsCount, const char *fileStart) {
+    if (!producerAddChars(ISX_INNER_START)) return false;
+    for (unsigned i = 0; i < varsCount; ++i) {
+        const unsigned vNameLen = vars[i].varNameLen;
+        char vName[vNameLen];
+        memcpy(vName, &fileStart[vars[i].posFromFileStart], vNameLen);
+        vName[vNameLen] = '\0';
+        //
+        const char *fmt = "%s=getDataFor(%s);";
+        const unsigned l = vNameLen * 2 + strlen(fmt) - 4 + 1; // 4 == %s%s, 1 == \0
+        char toDataCall[l]; // <varname>=getDataFor(<varname>);
+        snprintf(toDataCall, l, fmt, vName, vName);
+        producerAddNChars(toDataCall, l - 1);
+    }
+    return producerAddChars(ISX_INNER_END);
+}
+
+static unsigned
+code() {
+    const char *fileStart = transpiler.current.lexemeFrom;
+    const char *curCodeStart = transpiler.current.lexemeFrom;
+    DataConfVar vars[MAX_DATA_CONF_VARS];
+    unsigned varsCount = 0;
+    bool varsEnded = false;
+    bool sQuot = false;
+    bool dQuot = false;
+    while (transpiler.current.type != TOKEN_EOF) {
+        bool notInStr = !sQuot && !dQuot;
+        if (transpiler.current.type == TOKEN_LT && notInStr) {
+            const char *ltStart = transpiler.current.lexemeFrom;
+            enum TagType t = TAG_TYPE_NONE;
+            if (scannerPeek(false) == '!') {
+                t = tryCommentOrDoctype();
+            } else if (tryStartTag(false)) {
+                t = TAG_TYPE_NORMAL;
+            }
+            if (t != TAG_TYPE_NONE) {
+                producerAddNChars(curCodeStart, ltStart - curCodeStart);
+                if (!varsEnded && !(varsEnded = endVars(vars, varsCount, fileStart))) return 0;
+                if (html(t)) { curCodeStart = transpiler.current.lexemeFrom; continue; }
+                else return 0;
+            }
+        } else if (transpiler.current.type == TOKEN_SQUOT && !dQuot) {
+            if (!sQuot) sQuot = true;
+            else if (transpiler.current.lexemeFrom[-1] != '\\') sQuot = false;
+        } else if (transpiler.current.type == TOKEN_DQUOT && !sQuot) {
+            if (!dQuot) dQuot = true;
+            else if (transpiler.current.lexemeFrom[-1] != '\\') dQuot = false;
+        } else if (!varsEnded && notInStr &&
+            transpiler.current.type == TOKEN_UNKNOWN &&
+            *transpiler.current.lexemeFrom == '@') {
+            curCodeStart = appendVar(vars, varsCount, curCodeStart, fileStart);
+            if (curCodeStart) varsCount += 1;
+            else return false;
+            continue;
+        }
+        advance(false, SCAN_NAME);
+    }
+    if (transpiler.current.lexemeFrom != curCodeStart) {
+        producerAddNChars(curCodeStart, transpiler.current.lexemeFrom - curCodeStart);
+    }
+    return varsCount;
 }
 
 static bool
 element(bool startAlreadyConsumed) {
-    enum TagType etype = TYPE_NONE;
+    enum TagType etype = TAG_TYPE_NONE;
     unsigned startTagEndPos = startTag(startAlreadyConsumed, &etype);
     if (startTagEndPos == 0) return false;
-    if (etype == TYPE_SELF_CLOSING) return true;
-    if (etype == TYPE_SCRIPT) return scriptOrStyleElement("script");
-    if (etype == TYPE_STYLE) return scriptOrStyleElement("style");
+    if (etype == TAG_TYPE_SELF_CLOSING) return true;
+    if (etype == TAG_TYPE_SCRIPT) return scriptOrStyleElement("script");
+    if (etype == TAG_TYPE_STYLE) return scriptOrStyleElement("style");
     unsigned childCount = 0;
     unsigned lastCommaPos = 0;
     while (true) {
@@ -151,7 +277,7 @@ element(bool startAlreadyConsumed) {
             if (p == '/') break;
             if (p == '!') {
                 advance(false, SCAN_NAME); // !
-                if (!comment()) return false;
+                if (!comment(false)) return false;
                 else childCount += 1;
                 continue;
             }
@@ -159,7 +285,7 @@ element(bool startAlreadyConsumed) {
             if (!element(false)) return false;
         } else if (transpiler.current.type == TOKEN_LBRACE) {
             childCount += 1;
-            if (!codeBlock()) return false;
+            if (!codeBlock(NULL)) return false;
         } else {
             break;
         }
@@ -177,30 +303,6 @@ element(bool startAlreadyConsumed) {
         producerReplaceChar(lastCommaPos, ']');
     }
     return closingTag();
-}
-
-static bool
-commentOrDoctype() {
-    advance(false, SCAN_NAME); // !
-    if (scannerPeek(false) == '-') return comment();
-    //
-    advance(true, SCAN_NAME);
-    if (strncasecmp(transpiler.current.lexemeFrom, "DOCTYPE", 7) != 0) {
-        logError("Expected 'DOCTYPE' after '<!'");
-        return false;
-    }
-    advance(true, SCAN_NAME);
-    if (strncasecmp(transpiler.current.lexemeFrom, "html", 4) != 0) {
-        logError("Expected 'html' after '<!DOCTYPE '");
-        return false;
-    }
-    advance(true, TOKEN_TEXT);
-    if (transpiler.current.lexemeFrom[transpiler.current.lexemeLen-1] != '>') {
-        logError("Expected '>' after doctype");
-        return false;
-    }
-    advance(true, SCAN_TEXT);
-    return producerProduceCommentOrDoctype(&emptyToken, "!doctype");
 }
 
 static bool
@@ -293,15 +395,15 @@ startTag(bool startAlreadyConsumed, enum TagType *outType) {
     struct Token tagNameToken = transpiler.previous;
     if (!attrs()) return false;
     unsigned pos = producerGetLength() - 1;
-    if (strncasecmp(tagNameToken.lexemeFrom, "script", 6) == 0) *outType = TYPE_SCRIPT;
-    else if (strncasecmp(tagNameToken.lexemeFrom, "style", 5) == 0) *outType = TYPE_STYLE;
+    if (strncasecmp(tagNameToken.lexemeFrom, "script", 6) == 0) *outType = TAG_TYPE_SCRIPT;
+    else if (strncasecmp(tagNameToken.lexemeFrom, "style", 5) == 0) *outType = TAG_TYPE_STYLE;
     else if (transpiler.current.type != TOKEN_SLASH) {
         if (isVoidElement(&tagNameToken)) {
-            *outType = TYPE_SELF_CLOSING;
+            *outType = TAG_TYPE_SELF_CLOSING;
             producerCloseSelfClosingTag();
         } // else was regular element
     } else {
-        *outType = TYPE_SELF_CLOSING;
+        *outType = TAG_TYPE_SELF_CLOSING;
         advance(true, SCAN_NAME); // '/'
         producerCloseSelfClosingTag();
     }
@@ -349,7 +451,7 @@ attrs() {
             advance(true, SCAN_NAME); // closing
         // "{"
         } else if (transpiler.current.type == TOKEN_LBRACE) {
-            if (!attrCodeBlock(&keyToken)) return false;
+            if (!codeBlock(&keyToken)) return false;
         } else {
             logError(makeError("Unexpected '%c' after '='",
                                *transpiler.current.lexemeFrom));
@@ -361,44 +463,9 @@ attrs() {
 }
 
 static bool
-attrCodeBlock(struct Token *keyToken) {
-    advance(true, SCAN_TEXT); // "{"
-    if (!consumeOr(TOKEN_TEXT, "Expected stuff inside attr {}", false,
-                   SCAN_NAME)) return false;
-    struct Token startingToken = transpiler.previous;
-    unsigned braceLevel = 1;
-    while (true) {
-        if (
-            transpiler.current.type == TOKEN_TEXT ||
-            transpiler.current.type == TOKEN_LT ||
-            transpiler.current.type == TOKEN_GT
-        ) {
-            advance(false, SCAN_TEXT);
-        } else if (transpiler.current.type == TOKEN_LBRACE) {
-            braceLevel++;
-            advance(false, SCAN_TEXT);
-        } else if (transpiler.current.type == TOKEN_RBRACE) {
-            if (--braceLevel < 1) {
-                advance(true, SCAN_NAME);
-                startingToken.lexemeLen += transpiler.previous.lexemeLen-1;
-                goto done;
-            } else {
-                advance(false, SCAN_TEXT);
-            }
-        } else {
-            logError("Expected TEXT, '{', '}', '<', or '>'");
-            return false;
-        }
-        startingToken.lexemeLen += transpiler.previous.lexemeLen;
-    }
-    done:
-    return producerProduceObjCodeVal(keyToken, &startingToken);
-}
-
-static bool
-tryStartTag() {
+tryStartTag(bool autoProduce) {
     if (!scannerIsAlpha(scannerPeek(true))) {
-        producerAddChar('<');
+        if (autoProduce) producerAddChar('<');
         advance(false, SCAN_TEXT);
         return false;
     }
@@ -406,7 +473,7 @@ tryStartTag() {
     advance(true, SCAN_NAME); // "<"
     a.lexemeLen += transpiler.current.lexemeLen + 1;
     if (transpiler.current.type != TOKEN_NAME) { // wasn't '<foo', append as code
-        producerProduceCode(&a);
+        if (autoProduce) producerProduceCode(&a);
         return false;
     }
     char p = scannerPeek(true);
@@ -420,7 +487,7 @@ tryStartTag() {
     }
     // was '<foo$somethingElse', append as code
     advance(false, SCAN_TEXT);
-    producerProduceCode(&a);
+    if (autoProduce) producerProduceCode(&a);
     return false;
 }
 
@@ -438,46 +505,69 @@ closingTag() {
 }
 
 static bool
-codeBlock() {
+codeBlock(struct Token *previous) {
     unsigned startingLine = scannerGetCurrentLine();
-    advance(true, SCAN_TEXT); // "{"
-    unsigned braceLevel = 1;
-    unsigned childCount = 0;
-    while (true) {
-        if (advanceIf(TOKEN_TEXT, false, SCAN_TEXT)) {
-            producerProduceCode(&transpiler.previous);
-        } else if (transpiler.current.type == TOKEN_GT ||
-                   transpiler.current.type == TOKEN_LBRACE) {
-            if (transpiler.current.type == TOKEN_LBRACE) braceLevel += 1;
-            producerProduceCode(&transpiler.current);
-            advance(true, SCAN_TEXT);
-        } else if (transpiler.current.type == TOKEN_LT) {
-            if (tryStartTag() && // was start tag
-                !element(true)) return false;
-            // else do nothing, lexemes already processed at tryStartTag
-        } else if (transpiler.current.type == TOKEN_RBRACE && braceLevel > 1) {
-            braceLevel -= 1;
-            producerProduceCode(&transpiler.current);
-            advance(false, SCAN_TEXT);
-        } else {
-            break;
-        }
-        childCount += 1;
-    }
-    if (childCount == 0) {
-        logError("Expected stuff inside { }");
+    advance(true, SCAN_NAME); // "{"
+    bool isAttr = previous != NULL;
+    if (transpiler.current.type == TOKEN_RBRACE) {
+        if (!isAttr) logError("Expected stuff inside { }");
+        else logError("Expected stuff inside attr { }");
         return false;
     }
-    const char *err = makeError("Expected '}' after code block on line %u",
-                                startingLine);
-    return consumeOr(TOKEN_RBRACE, err, false, SCAN_TEXT);
+    const char *start = transpiler.current.lexemeFrom;
+    unsigned braceLevel = 1;
+    bool sQuot = false;
+    bool dQuot = false;
+    while (transpiler.current.type != TOKEN_EOF) {
+        bool notInStr = !sQuot && !dQuot;
+        if (transpiler.current.type == TOKEN_LBRACE && notInStr) {
+            braceLevel += 1;
+        } else if (!isAttr && transpiler.current.type == TOKEN_LT && notInStr) {
+            const char *ltStart = transpiler.current.lexemeFrom;
+            if (tryStartTag(false)) { // was tag
+                producerAddNChars(start, ltStart - start);
+                if (element(true)) start = transpiler.current.lexemeFrom;
+                else return false;
+            } // wasn't comment, doctype nor element
+            continue;
+        } else if (transpiler.current.type == TOKEN_RBRACE && notInStr) {
+            if (braceLevel > 1) braceLevel -= 1;
+            else break;
+        } else if (transpiler.current.type == TOKEN_SQUOT && !dQuot) {
+            if (!sQuot) sQuot = true;
+            else if (transpiler.current.lexemeFrom[-1] != '\\') sQuot = false;
+        } else if (transpiler.current.type == TOKEN_DQUOT && !sQuot) {
+            if (!dQuot) dQuot = true;
+            else if (transpiler.current.lexemeFrom[-1] != '\\') dQuot = false;
+        }
+        advance(false, SCAN_NAME);
+    }
+    if (transpiler.current.lexemeFrom != start) {
+        if (!isAttr) {
+            producerAddNChars(start, transpiler.current.lexemeFrom - start);
+        } else {
+            producerProduceObjCodeVal(previous, start,
+                                      transpiler.current.lexemeFrom - start);
+        }
+    }
+    if (transpiler.current.type == TOKEN_RBRACE) {
+        if (!isAttr) advance(false, SCAN_TEXT);
+        else advance(true, SCAN_NAME);
+        return true;
+    }
+    logError(makeError("%s %scode block on line %u",
+                       !dQuot && !sQuot ? "Expected '}' after" : "Unterminated string in",
+                       !isAttr ? "" : "attr ", startingLine));
+    return false;
 }
 
 static bool
-comment() {
-    advance(false, SCAN_NAME); // -
-    if (!consumeOr(TOKEN_DASH, "Expected '-' after '!'", false,
-                   SCAN_NAME)) return false;
+comment(bool startAlreadyConsumed) {
+    if (!startAlreadyConsumed) {
+        advance(false, SCAN_NAME); // -
+        if (!consumeOr(TOKEN_DASH, "Expected '-' after '!'", false,
+                       SCAN_NAME)) return false;
+    }
     if (!consumeOr(TOKEN_DASH, "Expected '-' after '-'", false,
                    SCAN_COMMENT)) return false;
     struct Token f = transpiler.current;
@@ -537,145 +627,57 @@ comment() {
     return producerProduceCommentOrDoctype(&f, "!--");
 }
 
-// Isx /////////////////////////////////////////////////////////////////////////
-
-/*
- * dataConfigs -> varDecl?
- * varDecl     -> "{" "@" IDENTIFIER "=" JS_EXPRESSION "}"
- *
- * Example input:
- * ```
- * {@foo = fetchAll('SomeType').where('foo=1')}
- * {@another = fetchAll('SomeType').where('bar=2')}
- * ```
- *
- * Produces:
- * ```
- * function(ddc, url) {
- *     var foo = ddc.fetchAll('SomeType').where('foo=1');
- *     var another ddc.fetchAll('SomeType').where('bar=2');
- *     return function(vTree, pageData) {
- *         foo = ddc.getDataFor(foo);
- *         anther = ddc.getDataFor(foo);
- * ```
- */
-#define MAX_VARS 64
-#define MAX_VAR_NAME_LEN 128
-#define failAndReturn(err) logError(err); return false
-
-static bool varDecl(unsigned startingLine);
-static bool validateVarName();
-
 static bool
-dataConfigs() {
-    #define EXPRS_END "return function(vTree, pageData) {"
-    producerAddChars("function(ddc, url) {var fetchAll=ddc.fetchAll.bind(ddc);var fetchOne=ddc.fetchOne.bind(ddc);");
-    if (transpiler.current.type != TOKEN_LBRACE) {
-        producerAddChars(EXPRS_END);
-        return true;
-    }
-    unsigned startingLine = scannerGetCurrentLine();
-    const char *start = transpiler.current.lexemeFrom;
-    const unsigned maxNameArrLen = MAX_VARS * 2;
-    unsigned vNamePositions[maxNameArrLen];
-    unsigned vNameI = 0;
-    // Produce each {@name = ...}
-    while (advanceIf(TOKEN_LBRACE, true, SCAN_NAME)) {
-        if (vNameI >= maxNameArrLen) { failAndReturn("TOO_MANY_VARS"); }
-        if (*transpiler.current.lexemeFrom != '@') { failAndReturn("Expected '@' after '{'"); }
-        advance(true, SCAN_NAME); // '@' after '{'
-        if (!validateVarName()) return false;
-        vNamePositions[vNameI] = transpiler.current.lexemeFrom - start;
-        vNamePositions[vNameI + 1] = transpiler.current.lexemeLen;
-        vNameI += 2;
-        if (!varDecl(startingLine)) return false;
-    }
-    producerAddChars(EXPRS_END);
-    // Produce each name = ddc.getDataFor(name);...
-    for (unsigned i = 0; i < vNameI; i += 2) {
-        const unsigned vNameLen = vNamePositions[i + 1];
-        if (vNameLen > MAX_VAR_NAME_LEN) { failAndReturn("VAR_NAME_TOO_LONG"); }
+doctypeOrComment(bool startAlreadyConsumed) {
+    if (!startAlreadyConsumed) {
+        advance(false, SCAN_NAME); // !
+        if (scannerPeek(false) == '-') return comment(false);
         //
-        char vName[vNameLen];
-        memcpy(vName, &start[vNamePositions[i]], vNameLen);
-        vName[vNameLen] = '\0';
-        //
-        const char *fmt = "%s=ddc.getDataFor(%s);";
-        const unsigned l = vNameLen * 2 + strlen(fmt) - 4 + 1;
-        char toDataCall[l]; // <varname>=ddc.getData(<varname>);
-        snprintf(toDataCall, l, fmt, vName, vName);
-        producerAddChars(toDataCall);
-    }
-    producerAddChars("return ");
-    return true;
-    #undef EXPRS_END
-}
-
-static bool
-varDecl(unsigned startingLine) {
-    advance(true, SCAN_NAME); // 'foo' after '@'
-    if (transpiler.current.type != TOKEN_EQUAL) {
-        makeLexeme(lex, transpiler.previous);
-        failAndReturn(makeError("Expected '=' after '@%s'", lex));
-    }
-    producerAddChars("var ");
-    producerProduceCode(&transpiler.previous);
-    producerAddChars(" = ");
-    advance(true, SCAN_TEXT); // stuff after '='
-    unsigned braceLevel = 1;
-    while (true) {
-        if (advanceIf(TOKEN_TEXT, false, SCAN_TEXT)) {
-            producerProduceCode(&transpiler.previous);
-        } else if (transpiler.current.type == TOKEN_GT ||
-                   transpiler.current.type == TOKEN_LBRACE ||
-                   transpiler.current.type == TOKEN_LT) {
-            if (transpiler.current.type == TOKEN_LBRACE) braceLevel += 1;
-            producerProduceCode(&transpiler.current);
-            advance(false, SCAN_TEXT);
-        } else if (transpiler.current.type == TOKEN_RBRACE && braceLevel > 1) {
-            braceLevel -= 1;
-            producerProduceCode(&transpiler.current);
-            advance(false, SCAN_TEXT);
-        } else {
-            break;
-        }
-    }
-    const char *err = makeError("Expected '}' after data declaration on line %u",
-                                startingLine);
-    if (transpiler.previous.lexemeLen &&
-        transpiler.previous.lexemeFrom[transpiler.previous.lexemeLen-1] != ';')
-            producerAddChar(';');
-    return consumeOr(TOKEN_RBRACE, err, true, SCAN_TEXT);
-}
-
-static bool
-validateVarName() {
-    if (transpiler.current.type != TOKEN_NAME ||
-        transpiler.current.lexemeLen == 0) {
-        logError("Expected variable name after '@'");
-        return false;
-    }
-    if (!scannerIsAlpha(transpiler.current.lexemeFrom[0])) {
-        makeLexeme(lex, transpiler.current);
-        logError(makeError("'%s' is not valid variable name", lex));
-        return false;
-    }
-    unsigned i = 1;
-    while (i < transpiler.current.lexemeLen) {
-        char c = transpiler.current.lexemeFrom[i];
-        if (!scannerIsAlpha(c) && !(c > '0' && c < '9')) {
-            makeLexeme(lex, transpiler.current);
-            logError(makeError("'%s' is not valid variable name", lex));
+        advance(true, SCAN_NAME);
+        if (strncasecmp(transpiler.current.lexemeFrom, "DOCTYPE", 7) != 0) {
+            logError("Expected 'DOCTYPE' after '<!'");
             return false;
         }
-        i += 1;
+        advance(true, SCAN_NAME);
+        if (strncasecmp(transpiler.current.lexemeFrom, "html", 4) != 0) {
+            logError("Expected 'html' after '<!DOCTYPE '");
+            return false;
+        }
+        advance(true, SCAN_NAME);
     }
-    return true;
+    if (transpiler.current.type != TOKEN_GT &&
+        transpiler.current.type != TOKEN_EOF) {
+        advance(true, SCAN_TEXT);
+        if (scannerPeek(false) == '>') advance(false, SCAN_NAME);
+    }
+    if (transpiler.current.type != TOKEN_GT) {
+        logError("Expected '>' after doctype");
+        return false;
+    }
+    advance(true, SCAN_TEXT);
+    return producerProduceCommentOrDoctype(&emptyToken, "!doctype");
 }
 
-#undef MAX_VARS
-#undef MAX_VAR_NAME_LEN
-#undef failAndReturn
+static enum TagType
+tryCommentOrDoctype() {
+    advance(false, SCAN_NAME); // <
+    advance(false, SCAN_NAME); // !
+    if (transpiler.current.type == TOKEN_DASH) {
+        advance(false, SCAN_NAME);
+        return TAG_TYPE_COMMENT;
+    }
+    if (transpiler.current.type == TOKEN_SPACE) advance(true, SCAN_NAME);
+    if (transpiler.current.type == TOKEN_NAME &&
+        strncasecmp(transpiler.current.lexemeFrom, "DOCTYPE", 7) == 0) {
+        advance(true, SCAN_NAME);
+        if (transpiler.current.type == TOKEN_NAME &&
+            strncasecmp(transpiler.current.lexemeFrom, "html", 4) == 0) {
+            advance(true, SCAN_TEXT);
+            return TAG_TYPE_DOCTYPE;
+        }
+    }
+    return TAG_TYPE_NONE;
+}
 
 // Private helpers /////////////////////////////////////////////////////////////
 

@@ -47,10 +47,12 @@ function handleGetPagesRequest(req) {
 function handlePageRequest(req) {
     var page = website.siteGraph.getPage(req.url);
     if (page) {
-        return new http.Response(200, injectControlPanelIFrame(page.render()));
+        var pageData = {};
+        var html = page.render(pageData);
+        return new http.Response(200, injectControlPanelIFrame(html, pageData));
     } else {
         return new http.Response(404, injectControlPanelIFrame(
-            '<!DOCTYPE html><html><title>Not found</title><body>Not found'));
+            '<!DOCTYPE html><html><title>Not found</title><body>Not found', null));
     }
 }
 
@@ -141,13 +143,17 @@ function handleGetNumPendingChanges() {
 
 /**
  * @param {string} html <html>body><p>foo</p>...
+ * @param {Object?} pageData {
+ *     directiveInstances: [{...}...]
+ *     allComponents: [{...,cmp:{id:<id>,name:<name>...}}]
+ * }
  * @returns {string} <html>body><iframe...<p>foo</p>...
  */
-function injectControlPanelIFrame(html) {
+function injectControlPanelIFrame(html, pageData) {
     var pos = html.indexOf('<body>');
     if (pos > -1) {
         var bodyInnerStart = pos + 6;
-        return html.substr(0, bodyInnerStart) + '<iframe src="/frontend/cpanel.html" id="insn-cpanel-iframe" style="position:fixed;border:none;height:100%;width:200px;right:4px;top:4px;"></iframe><script>function setIframeVisible(setVisible) { document.getElementById(\'insn-cpanel-iframe\').style.width = setVisible ? \'80%\' : \'200px\'; } function getCurrentPageData() { return {directiveInstances:[],allComponents: []}; }</script>' + html.substr(bodyInnerStart);
+        return html.substr(0, bodyInnerStart) + '<iframe src="/frontend/cpanel.html" id="insn-cpanel-iframe" style="position:fixed;border:none;height:100%;width:200px;right:4px;top:4px;"></iframe><script>function setIframeVisible(setVisible) { document.getElementById(\'insn-cpanel-iframe\').style.width = setVisible ? \'80%\' : \'200px\'; } function getCurrentPageData() { return ' + JSON.stringify(pageData) + '; }</script>' + html.substr(bodyInnerStart);
     }
     return html;
 }

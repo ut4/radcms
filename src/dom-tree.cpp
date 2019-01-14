@@ -37,13 +37,13 @@ DomTree::createElemNode(const char *tagName, std::vector<ElemProp> *props,
     ElemNode &newElem = this->elemNodes.emplace_back();
     newElem.id = this->elemNodes.size();
     newElem.tagName = tagName;
-    this->renderLen += strlen(tagName) * 2 + strlen("<></>");
+    this->renderLenHint += strlen(tagName) * 2 + strlen("<></>");
     if (props) {
         newElem.properties.insert(newElem.properties.begin(),
                                   std::make_move_iterator(props->begin()), 
                                   std::make_move_iterator(props->end()));
         for (const ElemProp &prop: newElem.properties) {
-            this->renderLen += prop.first.size() + prop.second.size() +
+            this->renderLenHint += prop.first.size() + prop.second.size() +
                                strlen(" =\"\"");
         }
     }
@@ -64,10 +64,23 @@ DomTree::createTextNode(const char *text) {
     TextNode &newElem = this->textNodes.emplace_back();
     newElem.id = this->textNodes.size();
     newElem.chars = text;
-    this->renderLen += strlen(text);
+    this->renderLenHint += strlen(text);
     //
     unsigned out = 0;
     SET_NODETYPE(out, NODE_TYPE_TEXT);
+    SET_NODEID(out, newElem.id);
+    return out;
+}
+
+unsigned
+DomTree::createFuncNode(fnComponentFn fn, void *fnMyPtr) {
+    FuncNode &newElem = this->funcNodes.emplace_back();
+    newElem.id = this->funcNodes.size();
+    newElem.fn = fn;
+    newElem.myPtr = fnMyPtr;
+    //
+    unsigned out = 0;
+    SET_NODETYPE(out, NODE_TYPE_FUNC);
     SET_NODEID(out, newElem.id);
     return out;
 }
@@ -78,26 +91,50 @@ DomTree::render(std::string &err) {
         err.assign("Cannot render an empty domTree.\n");
         return nullptr;
     }
-    this->renderedHtml.reserve(this->renderLen);
-    this->doRender(&this->elemNodes[this->rootElemIndex]);
-    return &this->renderedHtml;
+    this->renderedHtml.reserve(this->renderLenHint);
+    if (this->doRender(&this->elemNodes[this->rootElemIndex], err)) {
+        return &this->renderedHtml;
+    }
+    return nullptr;
+}
+
+bool
+DomTree::traverse(domTreeTraverseFn fn, void *myPtr, std::string &err) {
+    if (this->elemNodes.empty() || this->rootElemIndex < 0) {
+        err.assign("Cannot traverse an empty domTree.\n");
+        return false;
+    }
+    this->doTraverse(fn, myPtr, this->elemNodes[this->rootElemIndex]);
+    return true;
 }
 
 ElemNode*
 DomTree::getElemNode(unsigned ref) {
     unsigned idx = GET_NODEID(ref) - 1;
-    return idx < this->elemNodes.size() ? &this->elemNodes[idx] : NULL;
+    return idx < this->elemNodes.size() ? &this->elemNodes[idx] : nullptr;
 }
 
 TextNode*
 DomTree::getTextNode(unsigned ref) {
     unsigned idx = GET_NODEID(ref) - 1;
-    return idx < this->textNodes.size() ? &this->textNodes[idx] : NULL;
+    return idx < this->textNodes.size() ? &this->textNodes[idx] : nullptr;
 }
 
-void
-DomTree::doRender(const ElemNode *node) {
+FuncNode*
+DomTree::getFuncNode(unsigned ref) {
+    unsigned idx = GET_NODEID(ref) - 1;
+    return idx < this->funcNodes.size() ? &this->funcNodes[idx] : nullptr;
+}
+
+/*static*/ NodeType
+DomTree::getNodeType(unsigned ref) {
+    return static_cast<NodeType>(GET_NODETYPE(ref));
+}
+
+/*private*/ bool
+DomTree::doRender(const ElemNode *node, std::string &err) {
     std::string &r = this->renderedHtml;
+    unsigned nidx = node->id - 1;
     r += "<";
     r += node->tagName;
     for (const ElemProp &prop: node->properties) {
@@ -109,17 +146,46 @@ DomTree::doRender(const ElemNode *node) {
     }
     r += ">";
     for (unsigned ref: node->children) {
-        if (GET_NODETYPE(ref) == NODE_TYPE_ELEM) {
+        const unsigned type = GET_NODETYPE(ref);
+        if (type == NODE_TYPE_ELEM) {
             ElemNode *n = this->getElemNode(ref);
             assert(n != nullptr && "getElemNode() == nullptr");
-            this->doRender(n);
-        } else {
+            if (!this->doRender(n, err)) return false;
+        } else if (type == NODE_TYPE_TEXT) {
             TextNode *n = this->getTextNode(ref);
             assert(n != nullptr && "getTextNode() == nullptr");
             r += n->chars;
+        } else {
+            FuncNode *n = this->getFuncNode(ref);
+            assert(n != nullptr && "getFuncNode() == nullptr");
+            unsigned componentRootElemRef = n->fn(n, err);
+            if (componentRootElemRef > 0) {
+                ElemNode *componentRootElem = this->getElemNode(componentRootElemRef);
+                assert(componentRootElem != nullptr && "getElemNode() == nullptr");
+                if (!doRender(componentRootElem, err)) return false;
+            } else {
+                return false;
+            }
         }
     }
     r += "</";
-    r += node->tagName;
+    r += this->elemNodes[nidx].tagName;
     r += ">";
+    return true;
+}
+
+/*private*/ bool
+DomTree::doTraverse(domTreeTraverseFn fn, void *myPtr, ElemNode &e) {
+    if (!fn(NODE_TYPE_ELEM, e.id, myPtr)) return false;
+    for (unsigned ref: e.children) {
+        const unsigned type = GET_NODETYPE(ref);
+        if (type == NODE_TYPE_ELEM) {
+            ElemNode *n = this->getElemNode(ref);
+            assert(n != nullptr && "getElemNode() == nullptr");
+            this->doTraverse(fn, myPtr, *n);
+        } else if (!fn(static_cast<NodeType>(type), GET_NODEID(ref), myPtr)) {
+            return false;
+        }
+    }
+    return true;
 }

@@ -203,4 +203,47 @@ testLib.module('[\'common-services.js\'].DomTree', function() {
             '</div>'
         );
     });
+    testLib.test('render() renders function components', function(assert) {
+        assert.expect(1);
+        var domTree = new commons.DomTree();
+        var myFnComponent = function(domTreeRef, props) {
+            return domTreeRef.createElement('p', null, 'Hello ' + props.key);
+        };
+        var another = function(domTreeRef, props) {
+            return domTreeRef.createElement('span', null,
+                domTreeRef.createElement('b', null, 'Bello ' + props.letter)
+            );
+        };
+        var rootElemRef = domTree.createElement('div', null, [
+            domTree.createElement(myFnComponent, {key: 'val'}, null),
+        ].concat(['a', 'b'].map(function(letter) {
+            return domTree.createElement('p', null,
+                domTree.createElement(another, {letter: letter}, null)
+            );
+        })));
+        assert.equal(domTree.render(rootElemRef),
+            '<div>'+
+            '<p>Hello val</p>'+
+            '<p><span><b>Bello a</b></span></p>'+
+            '<p><span><b>Bello b</b></span></p>'+
+            '</div>'
+        );
+    });
+    testLib.test('getRenderedFnComponents() returns func cmp nodes', function(assert) {
+        assert.expect(3);
+        var domTree = new commons.DomTree();
+        var myFnComponent = function(domTreeRef) {
+            return domTreeRef.createElement('p', null, 'Hello');
+        };
+        var rootElemRef = domTree.createElement('div', null,
+            domTree.createElement(myFnComponent, {foo: 'bar'}, null)
+        );
+        if (!domTree.render(rootElemRef).length) {
+            throw new Error('Failed to render domTree.');
+        }
+        var funcs = domTree.getRenderedFnComponents();
+        assert.equal(funcs.length, 1, 'Should return 1 component func');
+        assert.deepEqual(funcs[0].props, {foo:'bar'}, 'funcNode1.props == props');
+        assert.ok(funcs[0].fn, myFnComponent, 'funcNode1.fn == myFunc');
+    });
 });

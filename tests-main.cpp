@@ -14,7 +14,7 @@ myAtExit() {
 
 int main(int argc, const char* argv[]) {
     if (argc < 2) {
-        std::cerr << "Usage: tests suitename|all\n";
+        std::cerr << "Usage: tests suitename|all verbose?\n";
         return EXIT_FAILURE;
     }
     atexit(myAtExit);
@@ -37,6 +37,7 @@ int main(int argc, const char* argv[]) {
     //
     {
         const std::string testSuiteName = argv[1];
+        const std::string useVerboseLogging = argc < 3 ? "false" : "true";
         if (testSuiteName != "all" &&
             testSuiteName != "common-services" &&
             testSuiteName != "website-handlers") {
@@ -44,7 +45,7 @@ int main(int argc, const char* argv[]) {
             goto done;
         }
         if (dukUtilsCompileAndRunStrGlobal(ctx, ("require('tests/main.js').main('" +
-            testSuiteName + "')").c_str(),
+            testSuiteName + "'," + useVerboseLogging + ")").c_str(),
             "tests/main.js", testJsEnv.errBuf)) {
             out = EXIT_SUCCESS;
         }

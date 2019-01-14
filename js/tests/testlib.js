@@ -99,17 +99,19 @@ exports.testLib = {
     },
     /**
      * @param {string[]?} moduleNames
+     * @param {bool?} logAssertions
      */
-    start: function(moduleNames) {
+    start: function(moduleNames, logAssertions) {
         var self = this;
         var stats = {numPasses: 0, numFails: 0};
+        var verboseLogFn = !logAssertions ? function() {} : console.log;
         (moduleNames || Object.keys(self.modules)).forEach(function(moduleName) {
             self.curMod = self.modules[moduleName];
             if (!self.curMod) throw new Error('Testmodule \'' + moduleName + '\' not found.');
             var hooks = new Hooks();
             self.curMod.fn(hooks);
             hooks.runBeforeAllClb();
-            runModuleTests(moduleName, self.curMod, hooks, stats);
+            runModuleTests(moduleName, self.curMod, hooks, stats, verboseLogFn);
             hooks.runAfterAllClb();
         });
         console.log('== Test results ========');
@@ -117,7 +119,7 @@ exports.testLib = {
     }
 };
 
-function runModuleTests(modName, mod, hooks, stats) {
+function runModuleTests(modName, mod, hooks, stats, verboseLogFn) {
     mod.tests.forEach(function(test) {
         var assert = new Asserter();
         hooks.runBeforeEachClb();
@@ -125,20 +127,20 @@ function runModuleTests(modName, mod, hooks, stats) {
         hooks.runAfterEachClb();
         assert.results.forEach(function(result) {
             if (result.ok) {
-               console.log(modName + ': ' + test.desc + ': ok');
+                verboseLogFn(modName + ': ' + test.desc + ': ok');
                stats.numPasses++;
             } else {
-               console.log(modName + ': ' + test.desc + ': ' +
-                           (result.message || 'fail') +
-                           (result.details ? ': ' + result.details : ''));
+                verboseLogFn(modName + ': ' + test.desc + ': ' +
+                            (result.message || 'fail') +
+                            (result.details ? ': ' + result.details : ''));
                 stats.numFails++;
             }
         });
         if (assert.expectNAssertions !== undefined &&
             assert.expectNAssertions != assert.results.length) {
-            console.log(modName + ': ' + test.desc + ': Expected ' +
-                        assert.expectNAssertions + ' assertions, but actually' +
-                        ' ran ' + assert.results.length);
+            verboseLogFn(modName + ': ' + test.desc + ': Expected ' +
+                         assert.expectNAssertions + ' assertions, but actually' +
+                         ' ran ' + assert.results.length);
         }
     });
 }

@@ -44,7 +44,7 @@ producerGetResult() {
 
 static bool
 doProduceStartTag(const char *name, unsigned nameLen) {
-    const char *a = "vTree.createElement('";
+    const char *a = "domTree.createElement('";
     const char *b = "', ";
     const unsigned aLen = strlen(a);
     const unsigned bLen = strlen(b);
@@ -147,13 +147,13 @@ producerProduceObjStringVal(struct Token *keyToken, struct Token *valueToken) {
 }
 
 bool
-producerProduceObjCodeVal(struct Token *keyToken, struct Token *valueToken) {
+producerProduceObjCodeVal(struct Token *keyToken, const char *code, unsigned codeLen) {
     char *tail = myStrMakeSpace(&result, result.length + keyToken->lexemeLen +
-                                         valueToken->lexemeLen + 4); // ': ' + quote*2
+                                         codeLen + 4); // ': ' + quote*2
     appendChar('\'');
     appendStr(keyToken->lexemeFrom, keyToken->lexemeLen);
     appendStr("': ", 3);
-    appendStr(valueToken->lexemeFrom, valueToken->lexemeLen);
+    appendStr(code, codeLen);
     (void)producerAddComma();
     return true;
 }
@@ -202,6 +202,13 @@ producerAddChars(const char *str) {
     const unsigned len = strlen(str);
     char *tail = myStrMakeSpace(&result, result.length + len);
     appendStr(str, len);
+    return true;
+}
+
+bool
+producerAddNChars(const char *str, unsigned amount) {
+    char *tail = myStrMakeSpace(&result, result.length + amount);
+    appendStr(str, amount);
     return true;
 }
 

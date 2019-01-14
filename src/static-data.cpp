@@ -93,7 +93,7 @@ static std::vector<SampleData> sampleData = {
                                "        <title>Hello</title>\n"
                                "    </head>\n"
                                "    <body>\n"
-                               "        { pageData.callDirective(\"ArticleList\", vTree, arts) }\n"
+                               "        { vTree.createElement(directives.ArticleList, {articles: arts}, null) }\n"
                                "        <footer>{ footer.content }</footer>\n"
                                "    </body>\n"
                                "</html>"},

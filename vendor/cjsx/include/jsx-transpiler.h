@@ -10,10 +10,7 @@ void
 transpilerFreeProps();
 
 char*
-transpilerTranspile(const char *code);
-
-char*
-transpilerTranspileIsx(const char *code);
+transpilerTranspile(const char *src);
 
 char*
 transpilerGetLastError();
