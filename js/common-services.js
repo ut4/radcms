@@ -75,8 +75,20 @@ exports.transpiler = {
 // == fileWatcher-singleton ====
 // =============================================================================
 exports.fileWatcher = {
-    /** @native */
-    watch: function(dir, fn) {}
+    EventAdded: 0,
+    EventModified: 1,
+    EventDeleted: 2,
+    EventOther: 3,
+    _watchFn: null,
+    /**
+     * @param ((eventType: number, fileName: string): void) fn
+     */
+    setWatchFn: function(fn) {
+        if (typeof fn != 'function') {
+            throw new TypeError('watchFn must be a function.');
+        }
+        this._watchFn = fn;
+    }
 };
 
 

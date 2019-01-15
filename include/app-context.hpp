@@ -3,22 +3,14 @@
 #include <string>
 #include "db.hpp"
 #include "duk.hpp"
+#include "../c-libs/fwatcher/include/file-watcher.hpp"
 
 struct AppContext {
     std::string sitePath; // An absolute path to the website source dir, always ends with "/"
     std::string appPath; // An absolute path to the app/binary dir, always ends with "/"
     std::string errBuf; // A shared error buffer
-    Db *db; // Borrowed from main
+    // Borrowed from main.cpp
+    Db *db;
+    duk_context *dukCtx;
+    FileWatcher *fileWatcher;
 };
-
-/**
- * Puts AppContext to a duktape stash.
- */
-void
-jsEnvironmentPutAppContext(duk_context *ctx, AppContext* app, const int stashIsAt);
-
-/**
- * Retrieves AppContext from a duktape stash.
- */
-AppContext*
-jsEnvironmentPullAppContext(duk_context *ctx, const int stashIsAt);

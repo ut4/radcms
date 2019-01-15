@@ -2,22 +2,13 @@
 
 static char *unicodeFileNameToMb(FILE_NOTIFY_INFORMATION *info, char *to);
 
-void
-fileWatcherInit(FileWatcher *this, onFWEvent onEventFn) {
-    this->onEventFn = onEventFn;
-}
-
-void
-fileWatcherFreeProps(FileWatcher *this) {
-    //
-}
-
-bool
-fileWatcherWatch(FileWatcher *this, const char *dir, fileNameMatcher matcherFn,
-                 void *myPtr, char *err) {
+char*
+fileWatcherWatch(FileWatcher *self, const char *dir, onFWEvent onEventFn,
+                 fileNameMatcher matcherFn, void *myPtr) {
     #define MIN_TIME_BETWEEN_EVENTS 0.12 // 120ms
     #define FILE_LOCK_WAIT_TIME 100000000L // 100ms
     #define NOTIFY_BUFFER_ELEM_COUNT 8
+    self->onEventFn = onEventFn;
     HANDLE handle = CreateFile(
         dir,
         FILE_LIST_DIRECTORY,                                    // dwDesiredAccess
@@ -29,8 +20,9 @@ fileWatcherWatch(FileWatcher *this, const char *dir, fileNameMatcher matcherFn,
     );
     FILE_NOTIFY_INFORMATION notifyBuffer[NOTIFY_BUFFER_ELEM_COUNT];
     if (handle == INVALID_HANDLE_VALUE) {
-        putError("WinFileWatcher: Failed to open '%s'.\n", dir);
-        return false;
+        snprintf(self->errBuf, FW_ERR_MAX, "WinFileWatcher: Failed to open '%s'.",
+                 dir);
+        return self->errBuf;
     }
     DWORD bytesReturned = 0;
     char fileName[MAX_PATH + 1];
@@ -57,7 +49,7 @@ fileWatcherWatch(FileWatcher *this, const char *dir, fileNameMatcher matcherFn,
             } else if (incomingDword == FILE_ACTION_REMOVED) {
                 incomingEvent = FW_EVENT_DELETED;
             } else {
-                printToStdErr("[Warn]: Unsupported fw event type.\n");
+                fprintf(stderr, "[Warn]: Unsupported fw event type.\n");
                 continue;
             }
             //
@@ -73,14 +65,15 @@ fileWatcherWatch(FileWatcher *this, const char *dir, fileNameMatcher matcherFn,
             nanosleep(&fileLockWaitTime, NULL);
             lastEvent = incomingEvent;
             timerStart();
-            this->onEventFn(incomingEvent, fileName, myPtr);
+            self->onEventFn(incomingEvent, fileName, myPtr);
         } else {
-            putError("Failed to ReadDirectoryChangesW(): %lu.\n",
+            snprintf(self->errBuf, FW_ERR_MAX,
+                     "Failed to ReadDirectoryChangesW(): %lu.",
                      GetLastError());
-            return false;
+            return self->errBuf;
         }
     }
-    return true;
+    return NULL;
     #undef MIN_TIME_BETWEEN_EVENTS
     #undef FILE_LOCK_WAIT_TIME
     #undef NOTIFY_BUFFER_ELEM_COUNT

@@ -247,10 +247,6 @@ processPostData(const char *uploadData, size_t *uploadDataSize,
     auto *connInfo = static_cast<PerConnInfo*>(*perConnMyPtr);
     FormDataHandlers *handlers = connInfo->reqHandler->formDataHandlers;
     handlers->init(&handlers->myPtr);
-    if (!handlers->myPtr) {
-        std::cerr << "[Error]: preparePostRequest: formDataInitFn returned nullPtr.\n";
-        return MHD_HTTP_INTERNAL_SERVER_ERROR;
-    }
     //
     (void)MHD_post_process(connInfo->postProcessor, uploadData, l);
     *uploadDataSize = 0;

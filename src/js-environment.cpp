@@ -34,24 +34,6 @@ jsEnvironmentConfigure(duk_context *ctx, AppContext *appContext) {
     duk_put_global_string(ctx, "insnEnv");             // []
 }
 
-void
-jsEnvironmentPushModuleProp(duk_context *ctx, const char *moduleId,
-                            const char *propName) {
-    duk_get_global_string(ctx, "Duktape");     // [duk]
-    duk_get_prop_string(ctx, -1, "modLoaded"); // [duk mods]
-    bool foundModule = duk_get_prop_string(ctx, -1, moduleId); // [duk mods mod]
-    assert(foundModule && "no such module");
-    duk_get_prop_string(ctx, -1, "exports");   // [duk mods mod exp]
-    duk_get_prop_string(ctx, -1, propName);    // [duk mods mod exp out]
-    duk_swap_top(ctx, -5);                     // [out mods srvcs exp duk]
-    duk_pop_n(ctx, 4);                         // [out]
-}
-
-void
-jsEnvironmentPushCommonService(duk_context *ctx, const char *serviceName) {
-    jsEnvironmentPushModuleProp(ctx, JS_FILE_COMMON_SERVICES, serviceName);
-}
-
 static duk_ret_t
 myModSearchFn(duk_context *ctx) {
     constexpr int REQUIRE_IS_AT = 1;

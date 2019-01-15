@@ -461,3 +461,23 @@ domTreeCallCmpFn(FuncNode *me, std::string &err) {
     duk_pop_3(ctx);                              // [ref domTree]
     return 0;
 }
+
+// == fwatcher ====
+// =============================================================================
+void
+commonServicesCallJsFWFn(FWEventType type, const char *fileName, void *myPtr) {
+    auto *appCtx = static_cast<AppContext*>(myPtr);
+    duk_context *ctx = appCtx->dukCtx;
+    jsEnvironmentPushCommonService(ctx, "fileWatcher"); // [fw]
+    if (duk_get_prop_string(ctx, -1, "_watchFn")) {  // [fw fn]
+        duk_push_uint(ctx, type);                    // [fw fn arg1(type)]
+        duk_push_string(ctx, fileName);              // [fw fn arg1(type) arg2(fileName)]
+        if (duk_pcall(ctx, 2) != DUK_EXEC_SUCCESS) { // [fw err|none]
+            dukUtilsPutDetailedError(ctx, -1, "fwFatchFn", appCtx->errBuf); // [fw]
+            duk_push_error_object(ctx, DUK_ERR_ERROR, "%s", appCtx->errBuf);
+            std::cerr << appCtx->errBuf << "\n";
+            appCtx->errBuf.clear();
+        }
+    }                                                // [fw null]
+    duk_pop_2(ctx);                                  // []
+}

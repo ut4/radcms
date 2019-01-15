@@ -76,7 +76,7 @@ testLib.module('component-handlers.js', function(hooks) {
                 json: row.getString(2), componentTypeId: row.getInt(3)};
         });
         assert.equal(response.statusCode, 200);
-        assert.equal(response.body, actuallyInserted.id);
+        assert.equal(response.body, JSON.stringify({insertId:actuallyInserted.id}));
         assert.equal(actuallyInserted.name, req.data.name);
         assert.equal(actuallyInserted.json, req.data.json);
         assert.equal(actuallyInserted.componentTypeId, req.data.componentTypeId);

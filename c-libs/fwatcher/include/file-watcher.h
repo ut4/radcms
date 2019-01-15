@@ -2,6 +2,7 @@
 #define insn_fileWatcher_h
 
 #include <stdbool.h>
+#include <stdio.h> // sprintf
 #include <time.h> // struct timespec
 #if defined(INSN_IS_WIN)
 #include <stdlib.h>  // wcstombs, wchar_t
@@ -10,8 +11,9 @@
 #include <unistd.h> // close()
 #include <sys/inotify.h>
 #endif
-#include "common/memory.h"
-#include "common/timer.h" // timerStart() etc.
+#include "timer.h" // timerStart() etc.
+
+#define FW_ERR_MAX 256
 
 typedef enum {
     FW_EVENT_ADDED,
@@ -24,22 +26,16 @@ typedef void (*onFWEvent)(FWEventType type, const char *fileName, void *myPtr);
 
 typedef struct {
     onFWEvent onEventFn;
+    char errBuf[FW_ERR_MAX];
 } FileWatcher;
 
-void
-fileWatcherInit(FileWatcher *this, onFWEvent onEventFn);
-
-void
-fileWatcherFreeProps(FileWatcher *this);
-
 /**
- * A function that returns false if the changes of $fileName should be ignored,
- * or true if accepted.
+ * @returns {bool} true == accept, false == ignore
  */
 typedef bool (*fileNameMatcher)(const char *fileName);
 
-bool
-fileWatcherWatch(FileWatcher *this, const char *path, fileNameMatcher matcherFn,
-                 void *myPtr, char *err);
+char*
+fileWatcherWatch(FileWatcher *self, const char *path, onFWEvent onEventFn,
+                 fileNameMatcher matcherFn, void *myPtr);
 
 #endif

@@ -7,14 +7,6 @@ add_library(inih STATIC ${VENDOR_ROOT}/inih/ini.c)
 # -- cjson ----
 add_library(cjson SHARED ${VENDOR_ROOT}/cjson/cJSON.c)
 
-# -- cjsx ----
-add_library(cjsx STATIC
-    ${VENDOR_ROOT}/cjsx/src/jsx-producer.c
-    ${VENDOR_ROOT}/cjsx/src/jsx-scanner.c
-    ${VENDOR_ROOT}/cjsx/src/jsx-transpiler.c
-    ${VENDOR_ROOT}/cjsx/src/memory.c
-)
-
 if (INSN_IS_WIN)
     # -- microhttpd ----
     add_library(microhttpd SHARED IMPORTED)
@@ -48,7 +40,6 @@ if (INSN_IS_WIN)
         ${VENDOR_ROOT}/openssl
         ${VENDOR_ROOT}/curl
         ${VENDOR_ROOT}/cjson
-        ${VENDOR_ROOT}/cjsx/include
     )
     set(INSN_DEP_LIBS
         microhttpd
@@ -57,7 +48,6 @@ if (INSN_IS_WIN)
         sqlite3
         curl
         cjson
-        cjsx
     )
 elseif(INSN_IS_LINUX)
     # -- microhttpd provided by libmicrohttpd-dev ----
@@ -78,7 +68,6 @@ elseif(INSN_IS_LINUX)
         ${VENDOR_ROOT}/duktape
         ${VENDOR_ROOT}/inih
         ${VENDOR_ROOT}/cjson
-        ${VENDOR_ROOT}/cjsx/include
     )
     set(INSN_DEP_LIBS
         m
@@ -91,7 +80,6 @@ elseif(INSN_IS_LINUX)
         ssl
         curl
         cjson
-        cjsx
     )
 else()
     message(FATAL_ERROR "INSN_IS_WIN or INSN_IS_LINUX must be SET() before including deps.cmake.")

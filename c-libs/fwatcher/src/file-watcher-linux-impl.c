@@ -1,27 +1,18 @@
 #include "../include/file-watcher.h"
 
-void
-fileWatcherInit(FileWatcher *this, onFWEvent onEventFn) {
-    this->onEventFn = onEventFn;
-}
-
-void
-fileWatcherFreeProps(FileWatcher *this) {
-    //
-}
-
-bool
-fileWatcherWatch(FileWatcher *this, const char *path, fileNameMatcher matcherFn,
-                 void *myPtr, char *err) {
+char*
+fileWatcherWatch(FileWatcher *self, const char *path, onFWEvent onEventFn,
+                 fileNameMatcher matcherFn, void *myPtr) {
+    self->onEventFn = onEventFn;
     int fd = inotify_init();
     if (fd < 0) {
-        putError("Failed to inotify_init().\n");
-        return false;
+        sprintf(self->errBuf, "Failed to inotify_init().");
+        return self->errBuf;
     }
     int wd = inotify_add_watch(fd, path, IN_MODIFY | IN_CREATE | IN_DELETE);
     if (wd == -1) {
-        putError("LinuxFileWatcher: inotify_add_watch().\n");
-        return false;
+        sprintf(self->errBuf, "LinuxFileWatcher: inotify_add_watch().\n");
+        return self->errBuf;
     }
     #define MIN_TIME_BETWEEN_EVENTS 0.12 // 120ms
     #define FILE_LOCK_WAIT_TIME 100000000L // 100ms
@@ -38,8 +29,9 @@ fileWatcherWatch(FileWatcher *this, const char *path, fileNameMatcher matcherFn,
     while (true) {
         int len = read(fd, buf, BUF_LEN);
         if (len < 0) {
-            putError("LinuxFileWatcher: Failed to read '%s'.\n", path);
-            return false;
+            snprintf(self->errBuf, FW_ERR_MAX,
+                     "LinuxFileWatcher: Failed to read '%s'.", path);
+            return self->errBuf;
         }
         for (char *ptr = buf; ptr < buf + len; ptr += EVENT_SIZE + event->len) {
             event = (const struct inotify_event*)ptr;
@@ -51,7 +43,7 @@ fileWatcherWatch(FileWatcher *this, const char *path, fileNameMatcher matcherFn,
             } else if (event->mask & IN_DELETE) {
                 incomingEvent = FW_EVENT_DELETED;
             } else {
-                printToStdErr("[Warn]: Unsupported fw event type.\n");
+                fprintf(stderr, "[Warn]: Unsupported fw event type.\n");
                 continue;
             }
             //
@@ -66,14 +58,14 @@ fileWatcherWatch(FileWatcher *this, const char *path, fileNameMatcher matcherFn,
             nanosleep(&fileLockWaitTime, NULL);
             lastEvent = incomingEvent;
             timerStart();
-            this->onEventFn(incomingEvent, event->name, myPtr);
+            self->onEventFn(incomingEvent, event->name, myPtr);
         }
     }
     //
     if (inotify_rm_watch(fd, wd) != 0 || close(fd) != 0) {
         perror("LinuxFileWatcher: Failed to close handle(s).\n");
     }
-    return true;
+    return NULL;
     #undef MIN_TIME_BETWEEN_EVENTS
     #undef FILE_LOCK_WAIT_TIME
     #undef NOTIFY_BUFFER_ELEM_COUNT
