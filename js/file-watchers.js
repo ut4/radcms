@@ -1,5 +1,7 @@
 var commons = require('common-services.js');
 var fileWatcher = commons.fileWatcher;
+var website = require('website.js');
+var siteGraph = website.siteGraph;
 
 /**
  * Receives all file events.
@@ -17,7 +19,91 @@ function handleFWEvent(type, fileName) {
  * @param {string} fileName
  */
 function handleFileModifyEvent(fileName) {
-    console.log('Got', fileName);
+    var layout = siteGraph.findTemplate(fileName);
+    if (!layout) {
+        print('[Notice]: An unknown file "' + fileName + '" was modified, skipping.');
+        return;
+    }
+    if (website.website.compileAndCacheTemplate(layout)) {
+        print('[Info]: Cached ' + fileName);
+    }
+    var diff = layout.samplePage.dryRun(processSiteGraph);
+    if (!diff) {
+        return;
+    }
+    if (diff.staticFiles.length) {
+        saveStaticFileUrlsToDb(diff.staticFiles);
+    }
+    if (diff.newPages) {
+        saveWebsiteToDb(siteGraph);
+    }
+    print('[Info]: Rescanned \'' + layout.samplePage.url + '\': ' +
+          (diff.newPages ? 'added page(s), ' : 'no page changes, ') +
+          (diff.staticFiles.length ? 'detected' : 'no') + ' file resources.');
+}
+
+/**
+ * @throws {Error}
+ */
+function saveStaticFileUrlsToDb(urls) {
+    commons.db.insert(
+        'insert or replace into staticFileResources values ' +
+        urls.map(function() { return '(?)'; }).join(','),
+        function(stmt) {
+            urls.forEach(function(url, i) { stmt.bindString(i, url); });
+        }
+    );
+}
+
+/**
+ * @throws {Error}
+ */
+function saveWebsiteToDb(siteGraph) {
+    commons.db.update('update websites set `graph` = ?', function(stmt) {
+        stmt.bindString(0, siteGraph.serialize());
+    });
+}
+
+function processSiteGraph(domTree) {
+    var out = {newPages: [], staticFiles: []};
+    var els = domTree.getRenderedElements();
+    var l = els.length;
+    for (var i = 0; i < l; ++i) {
+        var el = els[i];
+        var layoutFileName = null;
+        /*
+         * Handle <a href=<path>...
+         */
+        if (el.tagName == 'a' && (layoutFileName = el.props.layoutFileName)) {
+            var href = el.props.href;
+            var scriptSrc = null;
+            var styleHref = null;
+            if (href) {
+                if (href.charAt(0) != '/') href = '/' + href;
+            } else {
+                print('[Error]: Can\'t follow link without href.');
+                return;
+            }
+            // Page already in the site-graph -> skip
+            if (siteGraph.getPage(href)) continue;
+            // New page -> add it
+            var newPage = siteGraph.addPage(href, 0, 0);
+            newPage.layoutIdx = (siteGraph.findTemplate(layoutFileName) ||
+                                 siteGraph.addTemplate(layoutFileName, newPage)).idx;
+            out.newPages.push(newPage);
+        /*
+         * Handle <script src=<path>...
+         */
+        } else if (el.tagName == 'script' && (scriptSrc = el.props.src)) {
+            out.staticFiles.push(scriptSrc);
+        /*
+         * Handle <link href=<path>...
+         */
+        } else if (el.tagName == 'link' && (styleHref = el.props.href)) {
+            out.staticFiles.push(styleHref);
+        }
+    }
+    return out;
 }
 
 exports.init = function() {

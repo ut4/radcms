@@ -63,7 +63,7 @@ handleRun(const char *sitePath) {
     if (webApp.run()) {
         out = EXIT_SUCCESS;
     }
-    free(webApp.handlers[1].formDataHandlers);
+    delete webApp.handlers[1].formDataHandlers;
     done:
     if (ctx) duk_destroy_heap(ctx);
     transpilerFreeProps();

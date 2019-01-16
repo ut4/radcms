@@ -176,14 +176,14 @@ DomTree::doRender(const ElemNode *node, std::string &err) {
 
 /*private*/ bool
 DomTree::doTraverse(domTreeTraverseFn fn, void *myPtr, ElemNode &e) {
-    if (!fn(NODE_TYPE_ELEM, e.id, myPtr)) return false;
+    if (!fn(this, NODE_TYPE_ELEM, e.id, myPtr)) return false;
     for (unsigned ref: e.children) {
         const unsigned type = GET_NODETYPE(ref);
         if (type == NODE_TYPE_ELEM) {
             ElemNode *n = this->getElemNode(ref);
             assert(n != nullptr && "getElemNode() == nullptr");
             this->doTraverse(fn, myPtr, *n);
-        } else if (!fn(static_cast<NodeType>(type), GET_NODEID(ref), myPtr)) {
+        } else if (!fn(this, static_cast<NodeType>(type), GET_NODEID(ref), myPtr)) {
             return false;
         }
     }

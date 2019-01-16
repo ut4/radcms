@@ -14,8 +14,8 @@ fileWatcherWatch(FileWatcher *self, const char *path, onFWEvent onEventFn,
         sprintf(self->errBuf, "LinuxFileWatcher: inotify_add_watch().\n");
         return self->errBuf;
     }
-    #define MIN_TIME_BETWEEN_EVENTS 0.12 // 120ms
-    #define FILE_LOCK_WAIT_TIME 100000000L // 100ms
+    #define MIN_TIME_BETWEEN_EVENTS 0.16 // 160ms
+    #define FILE_LOCK_WAIT_TIME 120000000L // 120ms
     #define NOTIFY_BUFFER_ELEM_COUNT 8
     #define FLEXIBLE_STR_MAX 260
     const size_t EVENT_SIZE = sizeof(struct inotify_event);

@@ -165,7 +165,7 @@ finishRequest(void *cls, struct MHD_Connection *conn, void **perConnMyPtr,
         connInfo->reqHandler->formDataHandlers->cleanup(
             connInfo->reqHandler->formDataHandlers->myPtr);
     }
-    free(connInfo);
+    delete connInfo;
     *perConnMyPtr = NULL;
 }
 

@@ -123,6 +123,16 @@ exports.DomTree.prototype.createElement = function(tagName, props, children) {};
  * @throws {TypeError}
  */
 exports.DomTree.prototype.render = function(elemRef) {};
+/**
+ * @native
+ * @returns {{tagName: {string}, props: {Object}}[]} elements
+ */
+exports.DomTree.prototype.getRenderedElements = function() {};
+/**
+ * @native
+ * @returns {{props: {Object}, fn: {Function}}[]} function components
+ */
+exports.DomTree.prototype.getRenderedFnComponents = function() {};
 
 // == templateCache-singleton ====
 // =============================================================================

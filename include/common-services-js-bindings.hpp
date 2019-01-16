@@ -21,6 +21,7 @@
  *    - DomTree()
  *    - DomTree.prototype.createElement()
  *    - DomTree.prototype.render()
+ *    - DomTree.prototype.getRenderedElements()
  *    - DomTree.prototype.getRenderedFnComponents()
  * ) */
 void

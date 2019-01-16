@@ -35,8 +35,10 @@ enum NodeType {
     NODE_TYPE_FUNC,
 };
 
+class DomTree;
 /** If return value == false -> break else -> continue */
-typedef bool (*domTreeTraverseFn)(NodeType nodeType, unsigned nodeId, void *myPtr);
+typedef bool (*domTreeTraverseFn)(DomTree *self, NodeType nodeType,
+                                  unsigned nodeId, void *myPtr);
 
 class DomTree {
 public:

@@ -5,40 +5,35 @@ var directives = require('directives.js');
 /**
  * @param {string} url
  * @param {number} parentId
- * @param {string} layoutFileName
+ * @param {number} layoutIdx siteGraph.templates.indexOf(<layout>)
  * @constructor
  */
-function Page(url, parentId, layoutFileName) {
+function Page(url, parentId, layoutIdx) {
     this.url = url;
     this.parentId = parentId;
-    this.layoutFileName = layoutFileName;
+    this.layoutIdx = layoutIdx;
 }
 /**
  * @param {Object?} pageData
+ * @param {Array?} issues
  * @returns {string}
  */
-Page.prototype.render = function(pageData) {
+Page.prototype.render = function(pageData, issues) {
+    var layout;
+    if (issues && (layout = exports.siteGraph.templates[this.layoutIdx], !layout.exists)) {
+        var message = 'Layout file \'' + layout.fileName + '\' doesn\'t exists yet.';
+        issues.push(this.url + '>' + message);
+        return '<html><body>' + message + '</body></html>';
+    }
     // function cachedTemplate(fetchAll, fetchOne, url) {           <-- outer
     //     var data1 = ddc.fetchAll()...
     //     return function(domTree, getDataFor, directives) {...};  <-- inner
     // }
-    var outerFn = commons.templateCache.get(this.layoutFileName);
+    var outerFn = commons.templateCache.get(this.layoutIdx);
     var ddc = new documentData.DDC();
     var innerFn = outerFn(ddc.fetchAll.bind(ddc), ddc.fetchOne.bind(ddc), this.url);
     //
-    if (ddc.batchCount) {
-        var components = [];
-        commons.db.select(ddc.toSql(), function(row) {
-            var component = JSON.parse(row.getString(2));
-            component.cmp = {
-                id: row.getInt(0),
-                name: row.getString(1),
-                dataBatchConfigId: row.getInt(3)
-            };
-            components.push(component);
-        });
-        ddc.setComponents(components);
-    }
+    fetchData(ddc);
     //
     var domTree = new commons.DomTree();
     if (!pageData) {
@@ -54,10 +49,51 @@ Page.prototype.render = function(pageData) {
         });
     return html;
 };
+/**
+ * @param {(tree: DomTree): any} inspectFn
+ * @returns {any}
+ */
+Page.prototype.dryRun = function(inspectFn) {
+    var outerFn = commons.templateCache.get(this.layoutIdx);
+    var ddc = new documentData.DDC();
+    var innerFn = outerFn(ddc.fetchAll.bind(ddc), ddc.fetchOne.bind(ddc), this.url);
+    //
+    fetchData(ddc);
+    //
+    var domTree = new commons.DomTree();
+    innerFn(domTree, ddc.getDataFor.bind(ddc), directives);
+    return inspectFn(domTree);
+};
 
-function Template(fileName) {
+/**
+ * @param {DDC} ddc
+ */
+function fetchData(ddc) {
+    if (ddc.batchCount) {
+        var components = [];
+        commons.db.select(ddc.toSql(), function(row) {
+            var component = JSON.parse(row.getString(2));
+            component.cmp = {
+                id: row.getInt(0),
+                name: row.getString(1),
+                dataBatchConfigId: row.getInt(3)
+            };
+            components.push(component);
+        });
+        ddc.setComponents(components);
+    }
+}
+
+/**
+ * @param {string} fileName
+ * @param {number} idx
+ * @param {Page?} samplePage
+ */
+function Template(fileName, idx, samplePage) {
     this.fileName = fileName;
+    this.idx = idx;
     this.exists = true;
+    this.samplePage = samplePage;
 }
 
 exports.siteGraph = {
@@ -79,17 +115,52 @@ exports.siteGraph = {
             var data = json.pages[i];
             if (!json.templates[data[2]])
                 throw new Error('Invalid template idx ' + data[2]);
-            this.pages[data[0]] = new Page(data[0], data[1], json.templates[data[2]]);
+            this.pages[data[0]] = new Page(data[0], data[1], data[2]);
         }
-        this.templates = json.templates.map(function(fileName) {
-            return new Template(fileName);
-        });
+        for (i = 0; i < this.templateCount; ++i) {
+            var t = new Template(json.templates[i], i);
+            for (var url in this.pages) {
+                if (this.pages[url].layoutIdx == t.idx) {
+                    t.samplePage = this.pages[url]; break;
+                }
+            }
+            this.templates.push(t);
+        }
+    },
+    /**
+     * @returns {string}
+     */
+    serialize: function() {
+        var ir = {
+            pages: [],
+            templates: this.templates.map(function(t) { return t.fileName; })
+        };
+        for (var url in this.pages) {
+            ir.pages.push([url, 0, this.pages[url].layoutIdx]);
+        }
+        return JSON.stringify(ir);
     },
     getPage: function(url) {
         return this.pages[url];
     },
     getTemplate: function(idx) {
         return this.templates[idx];
+    },
+    findTemplate: function(fileName) {
+        var l = this.templates.length;
+        for (var i = 0; i < l; ++i) {
+            if (this.templates[i].fileName == fileName) return this.templates[i];
+        }
+        return null;
+    },
+    addPage: function(url, parentId, layoutIdx) {
+        this.pages[url] = new Page(url, parentId, layoutIdx);
+        return this.pages[url];
+    },
+    addTemplate: function(fileName, samplePage) {
+        var t = new Template(fileName, this.templates.length, samplePage);
+        t.exists = false;
+        return this.templates[this.templates.push(t) - 1];
     }
 };
 
@@ -102,25 +173,34 @@ exports.website = {
             siteGraph.parseAndLoadFrom(row.getString(0));
         });
         this.siteGraph.templates.forEach(function(t) {
-            if (commons.templateCache.has(t.fileName)) return;
-            commons.templateCache.put(t.fileName, commons.transpiler.transpileToFn(
-                commons.fs.read(insnEnv.sitePath + t.fileName)
-            ));
-        });
+            if (commons.templateCache.has(t.idx)) return;
+            this.compileAndCacheTemplate(t);
+        }, this);
     },
     /**
      * @param {(renderedHtml: string): bool} onEach
+     * @param {Array?} issues
      * @returns {number} Number of succeful writes
      */
-    generate: function(onEach) {
+    generate: function(onEach, issues) {
         var numSuccesfulIterations = 0;
         for (var url in this.siteGraph.pages) {
-            var page = this.siteGraph.pages[url];
-            if (onEach(page.render(), page))
+            var page = this.siteGraph.getPage(url);
+            if (onEach(page.render(null, issues), page))
                 numSuccesfulIterations++;
             else
                 return numSuccesfulIterations;
         }
         return numSuccesfulIterations;
+    },
+    /**
+     * @param {Template} template
+     * @throws {Error}
+     */
+    compileAndCacheTemplate: function(template) {
+        commons.templateCache.put(template.idx, commons.transpiler.transpileToFn(
+            commons.fs.read(insnEnv.sitePath + template.fileName)
+        ));
+        return true;
     }
 };

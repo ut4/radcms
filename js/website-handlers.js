@@ -27,7 +27,7 @@ commons.app.addRoute(function(url, method) {
  *     {"url":"/foo","layoutFileName":"foo.jsx.htm","uploadStatus":0}
  * ]
  */
-function handleGetPagesRequest(req) {
+function handleGetPagesRequest() {
     var statuses = {};
     commons.db.select('select `url`, `status` from uploadStatuses', function(row) {
         statuses[row.getString(0)] = row.getInt(1);
@@ -61,6 +61,16 @@ function handlePageRequest(req) {
 
 /**
  * GET /api/website/generate: writes all pages to disk.
+ *
+ * Example response:
+ * {
+ *     wrotePagesNum: 5,
+ *     tookSecs: 0.002672617,
+ *     totalPages: 6,
+ *     sitePath: '/some/path/',
+ *     outDir: 'my/dir',
+ *     issues: ['/some-url>Some error.']
+ * }
  */
 function handleGenerateRequest() {
     var out = {
@@ -80,7 +90,7 @@ function handleGenerateRequest() {
                     dirPath + (page.url.length > 1 ? '/index.html' : 'index.html'),
                     renderedOutput
                 );
-    });
+    }, out.issues);
     out.tookSecs = (performance.now() - out.tookSecs) / 1000;
     return new http.Response(200, JSON.stringify(out),
         {'Content-Type': 'application/json'}
@@ -99,7 +109,7 @@ function handleGenerateRequest() {
  * Example response:
  * /some/page|000
  */
-function handleUploadRequest(req) {
+function handleUploadRequest() {
     uploadHandlerIsBusy = true;
     // validateUploadFormData()
     // if errors return 500

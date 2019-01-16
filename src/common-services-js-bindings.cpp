@@ -16,6 +16,7 @@ static duk_ret_t domTreeConstruct(duk_context *ctx);
 static duk_ret_t domTreeFree(duk_context *ctx);
 static duk_ret_t domTreeCreateElement(duk_context *ctx);
 static duk_ret_t domTreeRender(duk_context *ctx);
+static duk_ret_t domTreeGetRenderedElems(duk_context *ctx);
 static duk_ret_t domTreeGetRenderedFnComponents(duk_context *ctx);
 static unsigned domTreeCallCmpFn(FuncNode *me, std::string &err);
 
@@ -78,6 +79,8 @@ commonServicesJsModuleInit(duk_context *ctx, const int exportsIsAt) {
     duk_put_prop_string(ctx, -2, "createElement");      // [? DomTree proto]
     duk_push_c_lightfunc(ctx, domTreeRender, 1, 0, 0);  // [? DomTree proto lightfn]
     duk_put_prop_string(ctx, -2, "render");             // [? DomTree proto]
+    duk_push_c_lightfunc(ctx, domTreeGetRenderedElems, 0, 0, 0); // [? DomTree proto lightfn]
+    duk_put_prop_string(ctx, -2, "getRenderedElements");// [? DomTree proto]
     duk_push_c_lightfunc(ctx, domTreeGetRenderedFnComponents, 0, 0, 0); // [? DomTree proto lightfn]
     duk_put_prop_string(ctx, -2, "getRenderedFnComponents"); // [? DomTree proto]
     duk_put_prop_string(ctx, -2, "prototype");          // [? DomTree]
@@ -354,7 +357,7 @@ domTreeConstruct(duk_context *ctx) {
 static duk_ret_t
 domTreeFree(duk_context *ctx) {
     duk_get_prop_string(ctx, 0, KEY_DOM_TREE_PTR); // [ptr]
-    free(duk_get_pointer(ctx, -1));
+    delete static_cast<DomTree*>(duk_get_pointer(ctx, -1));
     return 0;
 }
 
@@ -416,6 +419,42 @@ domTreeRender(duk_context *ctx) {
     return duk_error(ctx, DUK_ERR_TYPE_ERROR, err.c_str());
 }
 
+static bool
+buildElemArray(DomTree *self, NodeType type, unsigned nodeId, void *myPtr) {
+                                                              // [out]
+    if (type == NODE_TYPE_ELEM) {
+        auto *ctx = static_cast<duk_context*>(myPtr);
+        duk_push_object(ctx);                                 // [out el]
+        ElemNode *el = &self->elemNodes[nodeId - 1];
+        duk_push_string(ctx, el->tagName.c_str());            // [out el str]
+        duk_put_prop_string(ctx, -2, "tagName");              // [out el]
+        if (!el->properties.empty()) {
+            duk_push_object(ctx);                             // [out el props]
+            for (const ElemProp &prop: el->properties) {
+                duk_push_string(ctx, prop.second.c_str());    // [out el props val]
+                duk_put_prop_string(ctx, -2, prop.first.c_str());
+            }
+            duk_put_prop_string(ctx, -2, "props");            // [out el]
+        } else {
+            duk_push_null(ctx);                               // [out el null]
+            duk_put_prop_string(ctx, -2, "props");            // [out el]
+        }
+        duk_put_prop_index(ctx, -2, duk_get_length(ctx, -2)); // [out]
+    }
+                                                              // [out]
+    return true;
+}
+
+static duk_ret_t
+domTreeGetRenderedElems(duk_context *ctx) {
+    duk_push_array(ctx);
+    auto *domTree = domTreeGetSelfPtr(ctx);
+    std::string err;
+    if (domTree->rootElemIndex < 0) domTree->rootElemIndex = domTree->elemNodes.size() - 1;
+    if (domTree->traverse(buildElemArray, ctx, err)) return 1;
+    return duk_error(ctx, DUK_ERR_ERROR, "%s", err.c_str());
+}
+
 static duk_ret_t
 domTreeGetRenderedFnComponents(duk_context *ctx) {
     duk_push_this(ctx);                          // [this]
@@ -423,7 +462,7 @@ domTreeGetRenderedFnComponents(duk_context *ctx) {
     duk_push_array(ctx);                         // [this fnMap out]
     auto *domTree = domTreeGetSelfPtr(ctx);
     std::string err;
-    if (domTree->traverse([](NodeType type, unsigned nodeId, void *myPtr) -> bool {
+    if (domTree->traverse([](DomTree *self, NodeType type, unsigned nodeId, void *myPtr) -> bool {
         if (type == NODE_TYPE_FUNC) {
             duk_context *ctx = static_cast<duk_context*>(myPtr);
             duk_get_prop_index(ctx, -2, nodeId); // [this fnMap out funcData]
