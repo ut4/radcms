@@ -29,6 +29,7 @@ set(SOURCE_FILES
     include/core-handlers.hpp src/core-handlers.cpp
     include/db.hpp src/db.cpp
     include/duk.hpp src/duk.cpp
+    include/http-js-bindings.hpp src/http-js-bindings.cpp
     include/dom-tree.hpp src/dom-tree.cpp
     include/js-environment.hpp src/js-environment.cpp
     include/js-environment-stash.hpp src/js-environment-stash.cpp

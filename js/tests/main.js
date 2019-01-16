@@ -21,6 +21,10 @@ exports.main = function(suite, logAssertions) {
         require('tests/component-handlers-tests.js');
         modules.push('component-handlers.js');
     }
+    if (isAll || suite == 'document-data') {
+        require('tests/document-data-tests.js');
+        modules.push('document-data.js');
+    }
     if (isAll || suite == 'file-watchers') {
         require('tests/file-watchers-tests.js');
         modules.push('file-watchers.js');

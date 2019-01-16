@@ -1,5 +1,4 @@
 /**
- * @native
  * @param {string} url
  * @param {string} method
  * @constructor
@@ -7,7 +6,14 @@
 exports.Request = function(url, method) {
     this.url = url;
     this.method = method;
+    /* @native this.data = {} */
 };
+/**
+ * @native
+ * @param {string} name
+ * @returns {string|null}
+ */
+exports.Request.prototype.getUrlParam = function(name) {};
 
 /**
  * @param {number} statusCode

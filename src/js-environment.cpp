@@ -1,18 +1,11 @@
 #include "../../include/js-environment.hpp"
 
-static constexpr const char* JS_FILE_COMMON_SERVICES = "common-services.js";
 static constexpr int EXPORTS_IS_AT = 2;
 static constexpr int MODULE_IS_AT = 3;
 
 /** Implements <global>.require() */
 static duk_ret_t
 myModSearchFn(duk_context *ctx);
-
-/** A function that adds a bunch of @native methods to a module $moduleId at
- * stack[MODULE_IS_AT].
- */
-static bool
-fillInNativeMethods(duk_context *ctx, const std::string &moduleId);
 
 void
 jsEnvironmentConfigure(duk_context *ctx, AppContext *appContext) {
@@ -52,7 +45,10 @@ myModSearchFn(duk_context *ctx) {
     /*
      * Fill in the @native methods ...
      */
-    if (id == JS_FILE_COMMON_SERVICES) {
+    bool isCommonServices = false;
+    bool isHttp = false;
+    if ((isCommonServices = id == "common-services.js") ||
+        (isHttp = id == "http.js")) {
         code = "function(require,module){var exports=module.exports;" + code + "}";
         if (!dukUtilsCompileStrToFn(ctx, code.c_str(), filePath.c_str(),
                                     app->errBuf)) { // [id req exp mod stash ptr fn]
@@ -64,8 +60,9 @@ myModSearchFn(duk_context *ctx) {
             dukUtilsPutDetailedError(ctx, -1, filePath.c_str(), app->errBuf);
             return duk_error(ctx, DUK_ERR_TYPE_ERROR, app->errBuf.c_str());
         }
-        fillInNativeMethods(ctx, id);
-        duk_push_null(ctx);                         // [id req exp mod stash null]
+        if (isCommonServices) commonServicesJsModuleInit(ctx, EXPORTS_IS_AT);
+        else if (isHttp) httpJsModuleInit(ctx, EXPORTS_IS_AT);
+        duk_push_null(ctx);                         // [id req exp mod stash foundIt]
     /*
      * ... or return the file contents as is (plain ES5 code).
      */
@@ -73,12 +70,4 @@ myModSearchFn(duk_context *ctx) {
         duk_push_string(ctx, code.c_str());
     }
     return 1;
-}
-
-static bool
-fillInNativeMethods(duk_context *ctx, const std::string &moduleId) {
-    if (moduleId == "common-services.js") {
-        commonServicesJsModuleInit(ctx, EXPORTS_IS_AT);
-    }
-    return true;
 }

@@ -85,11 +85,40 @@ exports.DBC.prototype.where = function(whereExpr) {
  * @returns {string}
  */
 exports.DBC.prototype.toSql = function() {
-    if (this.whereExpr && !this.isFetchAll) {
-        return this.whereExpr;
-    } else if (this.isFetchAll) {
-        return '`componentTypeId` = (select `id` from componentTypes where `name` = \''+
-            this.componentTypeName + '\')';
+    var errors;
+    if ((errors = dbcValidate(this))) {
+        throw new TypeError(errors);
     }
-    throw new Error("Not implemented yet.");
+    if (!this.isFetchAll) {
+        return this.whereExpr;
+    }
+    return '`componentTypeId` = (select `id` from componentTypes where `name` = \''+
+        this.componentTypeName + '\')';
 };
+/**
+ * @returns {string|null}
+ */
+function dbcValidate(dbc) {
+    var errors = [];
+    var MAX_CMP_TYPE_NAME_LEN = 64;
+    var MAX_WHERE_LEN = 2048;
+    if (!dbc.componentTypeName) {
+        throw new TypeError('Component type name is required');
+    } else if (dbc.componentTypeName.length > MAX_CMP_TYPE_NAME_LEN) {
+        errors.push('Component type name too long (max ' +
+        MAX_CMP_TYPE_NAME_LEN + ', was ' + dbc.componentTypeName.length + ').');
+    }
+    if (!dbc.isFetchAll) {
+        if (!dbc.whereExpr) {
+            errors.push('fetchOne(...).where() is required.');
+        } else if (dbc.whereExpr.length > MAX_WHERE_LEN) {
+            errors.push('fetchOne(...).where() too long (max ' +
+            MAX_WHERE_LEN + ', was ' + dbc.whereExpr.length + ').');
+        }
+    } else {
+        if (dbc.whereExpr) {
+            errors.push('fetchAll().where() not implemented yet.');
+        }
+    }
+    return errors.length ? errors.join('\n') : null;
+}

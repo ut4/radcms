@@ -84,10 +84,7 @@ coreHandlersHandleScriptRouteRequest(void *myPtr, void *myDataPtr, const char *m
             // Got a handler function ...
             duk_replace(ctx, -3);                       // [stash fn routes]
             duk_pop(ctx);                               // [stash fn]
-            jsEnvironmentPushModuleProp(ctx, "http.js", "Request"); // [stash fn Req]
-            duk_push_string(ctx, url);                  // [stash fn Req str str]
-            duk_push_string(ctx, method);               // [stash fn Req str]
-            duk_new(ctx, 2);                            // [stash fn req]
+            httpJsBindingsPushNewRequest(ctx, conn, url, method); // [stash fn req]
             // ... GET -> call immediately
             if (strcmp(method, "GET") == 0) {
                 out = callScriptHandler(ctx, url, response, err); // [stash ?]

@@ -2,6 +2,7 @@
 
 #include <cassert>
 #include <string>
+#include "http-js-bindings.hpp"
 #include "app-context.hpp"
 #include "common-services-js-bindings.hpp"
 #include "duk.hpp"
