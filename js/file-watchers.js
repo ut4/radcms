@@ -3,14 +3,19 @@ var fileWatcher = commons.fileWatcher;
 var website = require('website.js');
 var siteGraph = website.siteGraph;
 
+exports.init = function() {
+    fileWatcher.setWatchFn(handleFWEvent);
+    commons.signals.listen('sitegraphRescanRequested', performRescan);
+};
+
 /**
  * Receives all file events.
  *
- * @param {number} type commons.fileWatcher.EventAdded|Modified etc.
+ * @param {number} type commons.fileWatcher.EVENT_*.
  * @param {string} fileName
  */
 function handleFWEvent(type, fileName) {
-    if (type == fileWatcher.EventModified) {
+    if (type == fileWatcher.EVENT_MODIFIED) {
         handleFileModifyEvent(fileName);
     }
 }
@@ -27,7 +32,14 @@ function handleFileModifyEvent(fileName) {
     if (website.website.compileAndCacheTemplate(layout)) {
         print('[Info]: Cached ' + fileName);
     }
-    var diff = layout.samplePage.dryRun(processSiteGraph);
+    performRescan(layout.samplePage);
+}
+
+/**
+ * @param {Page} page
+ */
+function performRescan(page) {
+    var diff = page.dryRun(processSiteGraph);
     if (!diff) {
         return;
     }
@@ -37,7 +49,7 @@ function handleFileModifyEvent(fileName) {
     if (diff.newPages) {
         saveWebsiteToDb(siteGraph);
     }
-    print('[Info]: Rescanned \'' + layout.samplePage.url + '\': ' +
+    print('[Info]: Rescanned \'' + page.url + '\': ' +
           (diff.newPages ? 'added page(s), ' : 'no page changes, ') +
           (diff.staticFiles.length ? 'detected' : 'no') + ' file resources.');
 }
@@ -84,7 +96,7 @@ function processSiteGraph(domTree) {
                 print('[Error]: Can\'t follow link without href.');
                 return;
             }
-            // Page already in the site-graph -> skip
+            // Page already in the sitegraph -> skip
             if (siteGraph.getPage(href)) continue;
             // New page -> add it
             var newPage = siteGraph.addPage(href, 0, 0);
@@ -105,7 +117,3 @@ function processSiteGraph(domTree) {
     }
     return out;
 }
-
-exports.init = function() {
-    fileWatcher.setWatchFn(handleFWEvent);
-};

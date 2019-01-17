@@ -12,8 +12,11 @@ static duk_ret_t fsWrite(duk_context *ctx);
 static duk_ret_t fsRead(duk_context *ctx);
 static duk_ret_t fsMakeDirs(duk_context *ctx);
 static duk_ret_t transpilerTranspileToFn(duk_context *ctx);
+static duk_ret_t uploaderConstruct(duk_context *ctx);
+static duk_ret_t uploaderFinalize(duk_context *ctx);
+static duk_ret_t uploaderUpload(duk_context *ctx);
 static duk_ret_t domTreeConstruct(duk_context *ctx);
-static duk_ret_t domTreeFree(duk_context *ctx);
+static duk_ret_t domTreeFinalize(duk_context *ctx);
 static duk_ret_t domTreeCreateElement(duk_context *ctx);
 static duk_ret_t domTreeRender(duk_context *ctx);
 static duk_ret_t domTreeGetRenderedElems(duk_context *ctx);
@@ -26,7 +29,8 @@ constexpr const char* KEY_CUR_ROW_MAP_FN = "_currentRowMapFn";
 constexpr const char* KEY_ROW_COL_COUNT = DUK_HIDDEN_SYMBOL("_colCount");
 constexpr const char* KEY_STMT_PTR = DUK_HIDDEN_SYMBOL("_sqliteStmtPtr");
 constexpr const char* KEY_STMT_MAX_BIND_IDX = DUK_HIDDEN_SYMBOL("_maxPlaceholderIdx");
-constexpr const char* KEY_DOM_TREE_PTR = DUK_HIDDEN_SYMBOL("_domTreePtr");
+constexpr const char* KEY_UPLOADER_PTR = DUK_HIDDEN_SYMBOL("_uploaderInstancePtr");
+constexpr const char* KEY_DOM_TREE_PTR = DUK_HIDDEN_SYMBOL("_domTreeInstancePtr");
 constexpr const char* KEY_CMP_FUNCS = DUK_HIDDEN_SYMBOL("_domTreeCmpFuncs");
 
 void
@@ -72,9 +76,16 @@ commonServicesJsModuleInit(duk_context *ctx, const int exportsIsAt) {
     duk_put_prop_string(ctx, -2, "getString");          // [? stash RowProto]
     duk_put_prop_string(ctx, -2, KEY_RES_ROW_JS_PROTO); // [? stash]
     duk_pop(ctx);                                       // [?]
+    // module.Uploader
+    duk_push_c_function(ctx, uploaderConstruct, 2);     // [? Uploader]
+    duk_push_bare_object(ctx);                          // [? Uploader proto]
+    duk_push_c_lightfunc(ctx, uploaderUpload, 2, 0, 0); // [? Uploader proto lightfn]
+    duk_put_prop_string(ctx, -2, "upload");             // [? Uploader proto]
+    duk_put_prop_string(ctx, -2, "prototype");          // [? Uploader]
+    duk_put_prop_string(ctx, exportsIsAt, "Uploader");  // [?]
     // module.DomTree
-    duk_push_c_function(ctx, domTreeConstruct, 1);     // [? DomTree]
-    duk_push_bare_object(ctx);                         // [? DomTree proto]
+    duk_push_c_function(ctx, domTreeConstruct, 0);      // [? DomTree]
+    duk_push_bare_object(ctx);                          // [? DomTree proto]
     duk_push_c_lightfunc(ctx, domTreeCreateElement, DUK_VARARGS, 0, 0); // [? DomTree proto lightfn]
     duk_put_prop_string(ctx, -2, "createElement");      // [? DomTree proto]
     duk_push_c_lightfunc(ctx, domTreeRender, 1, 0, 0);  // [? DomTree proto lightfn]
@@ -283,6 +294,47 @@ transpilerTranspileToFn(duk_context *ctx) {
     return duk_error(ctx, DUK_ERR_TYPE_ERROR, "%s", transpilerGetLastError());
 }
 
+// == Uploader ====
+// =============================================================================
+static duk_ret_t
+uploaderConstruct(duk_context *ctx) {
+    if (!duk_is_constructor_call(ctx)) return DUK_RET_TYPE_ERROR;
+    auto *self = new CurlUploader{
+        {nullptr, 0},               // pendingUploadState
+        nullptr,                    // curl
+        duk_require_string(ctx, 0), // username
+        duk_require_string(ctx, 1)  // password
+    };
+    std::string err;
+    if (!self->init(err)) {
+        return duk_error(ctx, DUK_ERR_ERROR, "%s", err.c_str());
+    }
+    duk_push_this(ctx);                             // [this]
+    duk_push_pointer(ctx, self);                    // [this ptr]
+    duk_put_prop_string(ctx, -2, KEY_UPLOADER_PTR); // [this]
+    duk_push_c_function(ctx, uploaderFinalize, 1);  // [this cfunc]
+    duk_set_finalizer(ctx, -2);                     // [this]
+	return 0;
+}
+
+static duk_ret_t
+uploaderFinalize(duk_context *ctx) {
+                                                   // [this]
+    duk_get_prop_string(ctx, 0, KEY_UPLOADER_PTR); // [this ptr]
+    delete static_cast<CurlUploader*>(duk_get_pointer(ctx, -1));
+    return 0;
+}
+
+static duk_ret_t
+uploaderUpload(duk_context *ctx) {
+    duk_push_this(ctx);                             // [fileName contents this]
+    duk_get_prop_string(ctx, -1, KEY_UPLOADER_PTR); // [fileName contents this ptr]
+    auto *self = static_cast<CurlUploader*>(duk_get_pointer(ctx, -1));
+    int res = self->upload(duk_require_string(ctx, 0), duk_require_string(ctx, 1));
+    duk_push_uint(ctx, res);                        // [fileName contents this ptr out]
+    return 1;
+}
+
 // == DomTree ====
 // =============================================================================
 static DomTree*
@@ -347,7 +399,7 @@ domTreeConstruct(duk_context *ctx) {
     duk_push_this(ctx);                             // [this]
     duk_push_pointer(ctx, new DomTree);             // [this ptr]
     duk_put_prop_string(ctx, -2, KEY_DOM_TREE_PTR); // [this]
-    duk_push_c_function(ctx, domTreeFree, 1);       // [this cfunc]
+    duk_push_c_function(ctx, domTreeFinalize, 1);   // [this cfunc]
     duk_set_finalizer(ctx, -2);                     // [this]
     duk_push_bare_object(ctx);                      // [this obj]
     duk_put_prop_string(ctx, -2, KEY_CMP_FUNCS);    // [this]
@@ -355,8 +407,9 @@ domTreeConstruct(duk_context *ctx) {
 }
 
 static duk_ret_t
-domTreeFree(duk_context *ctx) {
-    duk_get_prop_string(ctx, 0, KEY_DOM_TREE_PTR); // [ptr]
+domTreeFinalize(duk_context *ctx) {
+                                                   // [this]
+    duk_get_prop_string(ctx, 0, KEY_DOM_TREE_PTR); // [this ptr]
     delete static_cast<DomTree*>(duk_get_pointer(ctx, -1));
     return 0;
 }

@@ -25,6 +25,7 @@ set(C_FILES
 )
 set(SOURCE_FILES
     include/app-context.hpp
+    include/common-services.hpp src/common-services.cpp
     include/common-services-js-bindings.hpp src/common-services-js-bindings.cpp
     include/core-handlers.hpp src/core-handlers.cpp
     include/db.hpp src/db.cpp

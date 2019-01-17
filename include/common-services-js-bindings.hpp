@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../c-libs/jsx/include/jsx-transpiler.hpp"
+#include "common-services.hpp"
 #include "app-context.hpp"
 #include "db.hpp"
 #include "dom-tree.hpp"

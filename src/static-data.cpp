@@ -53,7 +53,7 @@ static std::vector<SampleData> sampleData = {
         "insert into components values (1, 'footer', '{\"content\":\"(c) 2034 MySite\"}', 1);",
         // files
         {
-            {"main-layout.jsx.htm", "{@footer = fetchOne(\"Generic\").where(\"name='footer'\")}\n"
+            {"main-layout.jsx.htm", "@footer = fetchOne(\"Generic\").where(\"name='footer'\")\n"
                                     "<html>\n"
                                     "    <head>\n"
                                     "        <title>Hello</title>\n"
@@ -86,19 +86,19 @@ static std::vector<SampleData> sampleData = {
         "  (4, 'art3', '{\"title\":\"Article 3\",\"body\":\"Hello from article 3\"}', 2);",
         // files
         {
-            {"main-layout.jsx.htm", "{@arts = fetchAll(\"Article\")}\n"
-                               "{@footer = fetchOne(\"Generic\").where(\"name='footer'\")}\n"
+            {"main-layout.jsx.htm", "@arts = fetchAll(\"Article\")\n"
+                               "@footer = fetchOne(\"Generic\").where(\"name='footer'\")\n"
                                "<html>\n"
                                "    <head>\n"
                                "        <title>Hello</title>\n"
                                "    </head>\n"
                                "    <body>\n"
-                               "        { vTree.createElement(directives.ArticleList, {articles: arts}, null) }\n"
+                               "        { domTree.createElement(directives.ArticleList, {articles: arts}, null) }\n"
                                "        <footer>{ footer.content }</footer>\n"
                                "    </body>\n"
                                "</html>"},
-            {"article-layout.jsx.htm", "{@art = fetchOne(\"Article\").where(\"name='\" + url.substr(1) + \"'\")}\n"
-                                  "{@footer = fetchOne(\"Generic\").where(\"name='footer'\")}\n"
+            {"article-layout.jsx.htm", "@art = fetchOne(\"Article\").where(\"name='\" + url.substr(1) + \"'\")\n"
+                                  "@footer = fetchOne(\"Generic\").where(\"name='footer'\")\n"
                                   "<html>\n"
                                   "    <head>\n"
                                   "        <title>{ art.title }</title>\n"

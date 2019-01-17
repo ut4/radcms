@@ -165,6 +165,8 @@ exports.siteGraph = {
 };
 
 exports.website = {
+    fs: commons.fs,
+    Uploader: commons.Uploader,
     siteGraph: exports.siteGraph,
     /** */
     init: function() {
@@ -199,7 +201,7 @@ exports.website = {
      */
     compileAndCacheTemplate: function(template) {
         commons.templateCache.put(template.idx, commons.transpiler.transpileToFn(
-            commons.fs.read(insnEnv.sitePath + template.fileName)
+            this.fs.read(insnEnv.sitePath + template.fileName)
         ));
         return true;
     }

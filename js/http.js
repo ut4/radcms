@@ -13,7 +13,7 @@ exports.Request = function(url, method) {
  * @param {string} name
  * @returns {string|null}
  */
-exports.Request.prototype.getUrlParam = function(name) {};
+exports.Request.prototype.getUrlParam = function(/*name*/) {};
 
 /**
  * @param {number} statusCode

@@ -50,6 +50,9 @@ function handleGetPagesRequest() {
 function handlePageRequest(req) {
     var page = website.siteGraph.getPage(req.url);
     if (page) {
+        if (req.getUrlParam('rescan')) {
+            commons.signals.emit('sitegraphRescanRequested', page);
+        }
         var pageData = {};
         var html = page.render(pageData);
         return new http.Response(200, injectControlPanelIFrame(html, pageData));
@@ -84,8 +87,8 @@ function handleGenerateRequest() {
     out.wrotePagesNum = website.website.generate(function(renderedOutput, page) {
         // 'path/out' + '/foo', 'path/out' + '/'
         var dirPath = insnEnv.sitePath + 'out' + page.url;
-        return commons.fs.makeDirs(dirPath) &&
-                commons.fs.write(
+        return website.website.fs.makeDirs(dirPath) &&
+                website.website.fs.write(
                     // 'path/out/foo' + '/index.html', 'path/out/' + 'index.html'
                     dirPath + (page.url.length > 1 ? '/index.html' : 'index.html'),
                     renderedOutput
@@ -109,17 +112,24 @@ function handleGenerateRequest() {
  * Example response:
  * /some/page|000
  */
-function handleUploadRequest() {
+function handleUploadRequest(req) {
     uploadHandlerIsBusy = true;
-    // validateUploadFormData()
-    // if errors return 500
-    // generate all pages
+    //
+    var errs = [];
+    if (!req.data.remoteUrl) errs.push('Remote url is required.');
+    if (!req.data.username) errs.push('Username is required.');
+    if (!req.data.password) errs.push('Password is required.');
+    if (errs.length) return new http.Response(400, errs.join('\n'));
+    //
     var generated = [];
+    var issues = [];
     website.website.generate(function(renderedOutput, page) {
         generated.push({url: page.url, html: renderedOutput});
         return true;
-    });
-    // if had issues return 500
+    }, issues);
+    if (issues.length) {
+        return new http.Response(400, issues.join('\n'));
+    }
     //
     return new http.ChunkedResponse(200, function getNewChunk(state) {
         // We're done
@@ -129,12 +139,13 @@ function handleUploadRequest() {
         }
         // Upload the next page
         if (!state.hadStopError) {
-            var gen = state.generatedPages[state.nthPage - 1];
-            var uploadRes = state.uploader.upload(state.formData.remoteUrl +
-                (gen.url.length > 1 ? gen.url : 'index') + '.html', gen.html);
+            var cur = state.generatedPages[state.nthPage - 1];
+            var url = cur.url.length > 1 ? cur.url : 'index';
+            var uploadRes = state.uploader.upload(state.remoteUrl +
+                (url.charAt(0) == '/' ? url.substr(1) : url) + '.html', cur.html);
             state.hadStopError = uploadRes == commons.Uploader.UPLOAD_LOGIN_DENIED;
-            state.nthPage++;
-            return gen.url + '|' + ('000' + uploadRes).slice(-3);
+            state.nthPage += 1;
+            return cur.url + '|' + ('000' + uploadRes).slice(-3);
         }
         // Previous upload had a problem -> abort
         throw new Error('...');
@@ -142,8 +153,9 @@ function handleUploadRequest() {
         nthPage: 1,
         totalIncomingPages: generated.length,
         generatedPages: generated,
-        formData: {remoteUrl: 'foo'},
-        uploader: new commons.Uploader(),
+        remoteUrl: req.data.remoteUrl.charAt(req.data.remoteUrl.length - 1) == '/'
+            ? req.data.remoteUrl : req.data.remoteUrl + '/',
+        uploader: new website.website.Uploader(req.data.username, req.data.password),
         hadStopError: false
     });
 }
@@ -156,7 +168,15 @@ function rejectUploadRequest() {
  * GET /api/website/num-pending-changes.
  */
 function handleGetNumPendingChanges() {
-    return new http.Response(200, '4', {'Content-Type': 'application/json'});
+    var count = 0;
+    var UPLOAD_STATUS_UPLOADED = 2;
+    commons.db.select('select count(`url`) from uploadStatuses where `status` = ' +
+        UPLOAD_STATUS_UPLOADED, function(row) {
+        count = row.getInt(0);
+    });
+    //
+    return new http.Response(200, website.siteGraph.pageCount - count,
+        {'Content-Type': 'application/json'});
 }
 
 /**

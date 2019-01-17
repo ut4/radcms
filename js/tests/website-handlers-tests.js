@@ -17,6 +17,8 @@ testLib.module('website-handlers.js', function(hooks) {
                 ['/page3', NO_PARENT, LAYOUT_1]],
         templates: ['home-layout.jsx.htm', 'page-layout.jsx.htm']
     })};
+    var writeLog = [];
+    var makeDirsLog = [];
     hooks.before(function() {
         var sql3 = 'insert into components values (?,?,?,?),(?,?,?,?),(?,?,?,?)';
         if (commons.db.insert('insert into websites values (?,?)', function(stmt) {
@@ -38,8 +40,14 @@ testLib.module('website-handlers.js', function(hooks) {
         ) throw new Error('Failed to insert test data.');
         // Initializes siteGraph, and reads & caches templates from /js/tests/testsite/
         website.website.init();
+        //
+        website.website.fs = {
+            write: function(a,b) { writeLog.push({path:a,contents:b}); return true; },
+            makeDirs: function(a) { makeDirsLog.push({path:a}); return true; }
+        };
     });
     hooks.after(function() {
+        website.website.fs = commons.fs;
         if (commons.db.delete('delete from components where componentTypeId = ?',
                 function(stmt) { stmt.bindInt(0, genericCmpType.id); }) < 1 ||
             commons.db.delete('delete from componentTypes where id = ?',
@@ -47,6 +55,10 @@ testLib.module('website-handlers.js', function(hooks) {
             commons.db.delete('delete from websites where id = ?',
                 function(stmt) { stmt.bindInt(0, websiteData.id); }) < 1
         ) throw new Error('Failed to clean test data.');
+    });
+    hooks.afterEach(function() {
+        writeLog = [];
+        makeDirsLog = [];
     });
     testLib.test('GET \'/<url>\' serves a page', function(assert) {
         assert.expect(11);
@@ -76,12 +88,6 @@ testLib.module('website-handlers.js', function(hooks) {
     });
     testLib.test('POST \'/api/website/generate\' generates the site', function(assert) {
         assert.expect(15);
-        var originalFsWrite = commons.fs.write;
-        var originalFsMakeDirs = commons.fs.makeDirs;
-        var writeLog = [];
-        var makeDirsLog = [];
-        commons.fs.write = function(a,b) { writeLog.push({path:a,contents:b}); return true; };
-        commons.fs.makeDirs = function(a) { makeDirsLog.push({path:a}); return true; };
         //
         var req = new http.Request('/api/website/generate', 'POST');
         var handleGenerateReqFn = commons.app.getHandler(req.url, req.method);
@@ -106,47 +112,49 @@ testLib.module('website-handlers.js', function(hooks) {
             'should write the contents of \'/page2\'');
         assert.ok(writeLog[2].contents.indexOf('<p>'+page3ContentCmp.json.content) > -1,
             'should write the contents of \'/page3\'');
-        //
-        commons.fs.write = originalFsWrite;
-        commons.fs.makeDirs = originalFsMakeDirs;
     });
     testLib.test('POST \'/api/website/upload\' generates and uploads the site', function(assert) {
-        assert.expect(16);
-        var origUploader = commons.Uploader;
+        assert.expect(17);
+        var uploaderCredentials = {};
         var uploadLog = [];
-        commons.Uploader = function() {
+        website.website.Uploader = function(a,b) {
+            uploaderCredentials = {username: a, password: b};
             this.upload = function(a,b) { uploadLog.push({path:a,contents:b});return 0; };
         };
         //
         var req = new http.Request('/api/website/upload', 'POST');
+        req.data = {remoteUrl: 'ftp://ftp.site.net', username: 'ftp@mysite.net',
+                    password: 'bar'};
         var handleUploadReqFn = commons.app.getHandler(req.url, req.method);
         //
         var response = handleUploadReqFn(req);
+        assert.deepEqual(uploaderCredentials, {username: req.data.username,
+            password: req.data.password},
+            'should pass req.data.username&pass to new Uploader()');
         assert.ok(response instanceof http.ChunkedResponse,
             'should return new ChunkedResponse()');
         assert.equal(response.statusCode, 200);
         var generatedPages = response.chunkFnState.generatedPages;
         assert.equal(generatedPages.length, 3, 'should generate the site');
-        var remoteUrlTemp = 'foo';
         // Simulate MHD's MHD_ContentReaderCallback calls
         var chunk1 = response.getNextChunk(response.chunkFnState);
         assert.equal(chunk1, generatedPages[0].url + '|000');
         assert.equal(uploadLog.length, 1, 'should upload page #1');
-        assert.equal(uploadLog[0].path, remoteUrlTemp+'index.html');
+        assert.equal(uploadLog[0].path, req.data.remoteUrl+'/index.html');
         assert.equal(uploadLog[0].contents, generatedPages[0].html);
         var chunk2 = response.getNextChunk(response.chunkFnState);
         assert.equal(chunk2, generatedPages[1].url + '|000');
         assert.equal(uploadLog.length, 2, 'should upload page #2');
-        assert.equal(uploadLog[1].path, remoteUrlTemp+generatedPages[1].url+'.html');
+        assert.equal(uploadLog[1].path, req.data.remoteUrl+generatedPages[1].url+'.html');
         assert.equal(uploadLog[1].contents, generatedPages[1].html);
         var chunk3 = response.getNextChunk(response.chunkFnState);
         assert.equal(chunk3, generatedPages[2].url + '|000');
         assert.equal(uploadLog.length, 3, 'should upload page #3');
-        assert.equal(uploadLog[2].path, remoteUrlTemp+generatedPages[2].url+'.html');
+        assert.equal(uploadLog[2].path, req.data.remoteUrl+generatedPages[2].url+'.html');
         assert.equal(uploadLog[2].contents, generatedPages[2].html);
         var chunk4 = response.getNextChunk(response.chunkFnState);
         assert.equal(chunk4, '');
         //
-        commons.Uploader = origUploader;
+        website.website.Uploader = commons.Uploader;
     });
 });

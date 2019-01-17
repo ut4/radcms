@@ -23,13 +23,13 @@ exports.db = {
      * @param {(stmt: Stmt): void} bindFn
      * @returns int sqlite3_last_insert_rowid()
      */
-    insert: function(sql, bindFn) {},
+    insert: function(/*sql, bindFn*/) {},
     /**
      * @native
      * @param {string} sql
      * @param {(row: ResultRow, rowIdx: number): void} mapFn
      */
-    select: function(sql, mapFn) {}
+    select: function(/*sql, mapFn*/) {}
 };
 
 
@@ -43,19 +43,45 @@ exports.fs = {
      * @returns {bool}
      * @throws {Error}
      */
-    write: function(path, contents) {},
+    write: function(/*path, contents*/) {},
     /**
      * @native
      * @param {string} path
      * @returns {str}
      */
-    read: function(path) {},
+    read: function(/*path*/) {},
     /**
      * @native
      * @param {string} path
      * @returns {bool}
      */
-    makeDirs: function(path) {},
+    makeDirs: function(/*path*/) {},
+};
+
+
+// == signals-singleton ====
+// =============================================================================
+exports.signals = {
+    _listeners: [],
+    /**
+     * @param {string} whichSignal
+     * @param {function} fn
+     */
+    listen: function(whichSignal, fn) {
+        this._listeners.push({listeningTo: whichSignal, fn: fn});
+    },
+    /**
+     * @param {string} whichSignal
+     * @param {any?} arg
+     */
+    emit: function(whichSignal, arg) {
+        var l = this._listeners.length;
+        for (var i = 0; i < l; ++i) {
+            var listener = this._listeners[i];
+            if (listener.listeningTo == whichSignal &&
+                listener.fn(arg) === false) break;
+        }
+    }
 };
 
 
@@ -68,17 +94,17 @@ exports.transpiler = {
      * @returns {Function}
      * @throws {Error}
      */
-    transpileToFn: function(code) {}
+    transpileToFn: function(/*code*/) {}
 };
 
 
 // == fileWatcher-singleton ====
 // =============================================================================
 exports.fileWatcher = {
-    EventAdded: 0,
-    EventModified: 1,
-    EventDeleted: 2,
-    EventOther: 3,
+    EVENT_ADDED: 0,
+    EVENT_MODIFIED: 1,
+    EVENT_DELETED: 2,
+    EVENT_OTHER: 3,
     _watchFn: null,
     /**
      * @param ((eventType: number, fileName: string): void) fn
@@ -94,19 +120,31 @@ exports.fileWatcher = {
 
 // == Uploader ====
 // =============================================================================
-exports.Uploader = function() {};
+/**
+ * @native
+ * @param {string} username
+ * @param {string} password
+ * @constructor
+ */
+exports.Uploader = function(/*username, password*/) {};
+exports.Uploader.UPLOAD_OK = 0;
 exports.Uploader.UPLOAD_LOGIN_DENIED = 1;
-/** @native */
-exports.Uploader.prototype.upload = function(filePath, contents) {
-    console.log('Uploading ' + contents + '...');
-    return 0;
-};
+/**
+ * @native
+ * @param {url} eg. 'ftp://ftp.mysite.net/public_html/file.html'
+ * @param {contents}
+ * @returns {number} eg. Uploader.UPLOAD_*
+ */
+exports.Uploader.prototype.upload = function(/*url, contents*/) {};
 
 
 // == DomTree ====
 // =============================================================================
-/** @constructor */
-exports.DomTree = function() {}
+/**
+ * @native
+ * @constructor
+ */
+exports.DomTree = function() {};
 /**
  * @native
  * @param {string} tagName
@@ -115,14 +153,14 @@ exports.DomTree = function() {}
  * @returns {number} A reference to the new element
  * @throws {TypeError}
  */
-exports.DomTree.prototype.createElement = function(tagName, props, children) {};
+exports.DomTree.prototype.createElement = function(/*tagName, props, children*/) {};
 /**
  * @native
  * @param {number} elemRef
  * @returns {string}
  * @throws {TypeError}
  */
-exports.DomTree.prototype.render = function(elemRef) {};
+exports.DomTree.prototype.render = function(/*elemRef*/) {};
 /**
  * @native
  * @returns {{tagName: {string}, props: {Object}}[]} elements
@@ -134,17 +172,18 @@ exports.DomTree.prototype.getRenderedElements = function() {};
  */
 exports.DomTree.prototype.getRenderedFnComponents = function() {};
 
+
 // == templateCache-singleton ====
 // =============================================================================
 exports.templateCache = {
     _fns: {},
-    put: function(fileName, fn) {
-        this._fns[fileName] = fn;
+    put: function(key, fn) {
+        this._fns[key] = fn;
     },
-    get: function(fileName) {
-        return this._fns[fileName];
+    get: function(key) {
+        return this._fns[key];
     },
-    has: function(fileName) {
-        return this._fns.hasOwnProperty(fileName);
+    has: function(key) {
+        return this._fns.hasOwnProperty(key);
     }
 };
