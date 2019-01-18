@@ -1,6 +1,5 @@
 #pragma once
 
-#include "../c-libs/jsx/include/jsx-transpiler.hpp"
 #include "duk.hpp"
 #include "web-app.hpp" // MHD_Connection
 #include "js-environment-stash.hpp"

@@ -8,6 +8,7 @@
 #include "duk.hpp"
 #include "my-fs.hpp"
 #include "js-environment-stash.hpp"
+#include "website-js-bindings.hpp"
 
 /**
  * Configures global.require() (Duktape.modSearch()).

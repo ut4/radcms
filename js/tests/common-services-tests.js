@@ -3,13 +3,13 @@ var testLib = require('tests/testlib.js').testLib;
 
 testLib.module('[\'common-services.js\'].db', function(hooks) {
     hooks.afterEach(function() {
-        if (commons.db.delete('delete from componentTypes where id >= ?',
+        if (commons.db.delete('delete from websites where id >= ?',
             function(stmt) { stmt.bindInt(0, 1); }) < 0
         ) throw new Error('Failed to clean test data.');
     });
     testLib.test('insert() inserts data', function(assert) {
         assert.expect(4);
-        var sql = 'insert into componentTypes values (?,?),(?,?)';
+        var sql = 'insert into websites values (?,?),(?,?)';
         var insertId = commons.db.insert(sql, function(stmt) {
             stmt.bindInt(0, 1);
             stmt.bindString(1, 'foo');
@@ -19,12 +19,12 @@ testLib.module('[\'common-services.js\'].db', function(hooks) {
         //
         assert.equal(insertId, 2, 'should return insertId');
         var actuallyInserted = [];
-        commons.db.select('select id, `name` from componentTypes', function map(row) {
-            actuallyInserted.push({id: row.getInt(0), name: row.getString(1)});
+        commons.db.select('select id, `graph` from websites', function map(row) {
+            actuallyInserted.push({id: row.getInt(0), graph: row.getString(1)});
         });
         assert.equal(actuallyInserted.length, 2, 'should insert 2 rows');
-        assert.deepEqual(actuallyInserted[0], {id: 1, name: 'foo'});
-        assert.deepEqual(actuallyInserted[1], {id: 2, name: 'bar'});
+        assert.deepEqual(actuallyInserted[0], {id: 1, graph: 'foo'});
+        assert.deepEqual(actuallyInserted[1], {id: 2, graph: 'bar'});
     });
     testLib.test('insert() validates stuff', function(assert) {
         assert.expect(3);
@@ -48,27 +48,27 @@ testLib.module('[\'common-services.js\'].db', function(hooks) {
     });
     testLib.test('select() fetches data', function(assert) {
         assert.expect(4);
-        var sql = 'insert into componentTypes values (?,?),(?,?),(?,?)';
+        var sql = 'insert into websites values (?,?),(?,?),(?,?)';
         var testData = [
-            {id: 45, name: 'type1'},
-            {id: 23, name: 'type2'},
-            {id: 76, name: 'type3'}
+            {id: 45, graph: 'graph1'},
+            {id: 23, graph: 'graph2'},
+            {id: 76, graph: 'graph3'}
         ];
         if (commons.db.insert(sql, function(stmt) {
             stmt.bindInt(0, testData[0].id);
-            stmt.bindString(1, testData[0].name);
+            stmt.bindString(1, testData[0].graph);
             stmt.bindInt(2, testData[1].id);
-            stmt.bindString(3, testData[1].name);
+            stmt.bindString(3, testData[1].graph);
             stmt.bindInt(4, testData[2].id);
-            stmt.bindString(5, testData[2].name);
+            stmt.bindString(5, testData[2].graph);
         }) < 1) throw new Error('Failed to insert test data');
         //
         var selected = [];
-        var sql2 = 'select id, `name` from componentTypes order by id';
+        var sql2 = 'select id, `graph` from websites order by id';
         commons.db.select(sql2, function map(row, rowIdx) {
             selected.push({
                 id: row.getInt(0),
-                name: row.getString(1),
+                graph: row.getString(1),
                 rowIdx: rowIdx
             });
         });
@@ -99,12 +99,12 @@ testLib.module('[\'common-services.js\'].db', function(hooks) {
     });
     testLib.test('update() updates data', function(assert) {
         assert.expect(2);
-        if (commons.db.insert('insert into componentTypes values (?,?)', function(stmt) {
+        if (commons.db.insert('insert into websites values (?,?)', function(stmt) {
             stmt.bindInt(0, 1);
             stmt.bindString(1, 'foo');
         }) < 1) throw new Error('Failed to insert test data');
         //
-        var sql = 'update componentTypes set `name` = ? where id = ?';
+        var sql = 'update websites set `graph` = ? where id = ?';
         var numAffected = commons.db.update(sql, function(stmt) {
             stmt.bindString(0, 'bar');
             stmt.bindInt(1, 1);
@@ -112,14 +112,14 @@ testLib.module('[\'common-services.js\'].db', function(hooks) {
         //
         assert.equal(numAffected, 1, 'should return numAffectedRows');
         var actuallyUpdated = '';
-        commons.db.select('select `name` from componentTypes', function map(row) {
+        commons.db.select('select `graph` from websites', function map(row) {
             actuallyUpdated = row.getString(0);
         });
         assert.equal(actuallyUpdated, 'bar', 'should update data');
     });
     testLib.test('update() validates stuff', function(assert) {
         assert.expect(4);
-        if (commons.db.insert('insert into componentTypes(`name`) values (?)',
+        if (commons.db.insert('insert into websites(`graph`) values (?)',
             function(stmt) { stmt.bindString(0, 'foo'); }
         ) < 1) throw new Error('Failed to insert test data.');
         //
@@ -130,7 +130,7 @@ testLib.module('[\'common-services.js\'].db', function(hooks) {
                 return e.message;
             }
         };
-        var sql = 'update componentTypes set name = ? where id = ?';
+        var sql = 'update websites set graph = ? where id = ?';
         assert.equal(runInvalid(sql, function(stmt) {
             stmt.bindInt(2,1);
         }), 'RangeError: Bind index 2 too large (max 1)');
@@ -140,7 +140,7 @@ testLib.module('[\'common-services.js\'].db', function(hooks) {
         assert.equal(runInvalid(sql, function(stmt) {
             stmt.bindString(0, {});
         }), 'TypeError: string required, found [object Object] (stack index 1)');
-        assert.equal(runInvalid('update from componentTypes', function() {
+        assert.equal(runInvalid('update from websites', function() {
             //
         }), 'Failed to create stmt: near "from": syntax error');
     });

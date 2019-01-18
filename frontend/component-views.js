@@ -68,7 +68,7 @@ class AddComponentView extends preact.Component {
             headers: {'Content-Type': 'application/x-www-form-urlencoded'},
             data: 'name=' + encodeURIComponent(this.state.name) +
                    '&json=' + encodeURIComponent(collectCmpKeyVals(this.state)) +
-                   '&componentTypeId=' + encodeURIComponent(this.state.selectedCmpType.id)
+                   '&componentTypeName=' + encodeURIComponent(this.state.selectedCmpType.name)
         }).then(() => {
             myRedirect('/?rescan=1', true);
         }, () => {
@@ -83,28 +83,28 @@ class AddComponentView extends preact.Component {
     }
     getInputElsForCmpTypeProps(props) {
         var inputEls = []
-        props.forEach(prop => {
-            var stateKey = 'val-' + prop.name;
+        for (var propName in props) {
+            var stateKey = 'val-' + propName;
             if (!this.state.hasOwnProperty(stateKey)) {
                 this.state[stateKey] = null;
             }
             inputEls.push($el('label', null, [
-                $el('span', '', prop.name.toUpperCase()[0] + prop.name.substr(1)),
-                $el(prop.contentType == 'richtext' ? 'textarea' : 'input', {
+                $el('span', '', propName.toUpperCase()[0] + propName.substr(1)),
+                $el(props[propName] == 'richtext' ? 'textarea' : 'input', {
                     name: stateKey,
                     value: this.state[stateKey],
                     onChange: e => this.receiveInputValue(e)
                 }, null)
             ]));
-        });
+        }
         return $el('div', null, inputEls);
     }
 }
 function collectCmpKeyVals(state) {
     var out = {};
-    state.selectedCmpType.props.forEach(prop => {
-        out[prop.name] = state['val-' + prop.name];
-    });
+    for (var propName in state.selectedCmpType.props) {
+        out[propName] = state['val-' + propName];
+    }
     return JSON.stringify(out);
 }
 

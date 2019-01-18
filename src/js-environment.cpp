@@ -47,8 +47,10 @@ myModSearchFn(duk_context *ctx) {
      */
     bool isCommonServices = false;
     bool isHttp = false;
+    bool isWebsite = false;
     if ((isCommonServices = id == "common-services.js") ||
-        (isHttp = id == "http.js")) {
+        (isHttp = id == "http.js") ||
+        (isWebsite = id == "website.js")) {
         code = "function(require,module){var exports=module.exports;" + code + "}";
         if (!dukUtilsCompileStrToFn(ctx, code.c_str(), filePath.c_str(),
                                     app->errBuf)) { // [id req exp mod stash ptr fn]
@@ -62,6 +64,7 @@ myModSearchFn(duk_context *ctx) {
         }
         if (isCommonServices) commonServicesJsModuleInit(ctx, EXPORTS_IS_AT);
         else if (isHttp) httpJsModuleInit(ctx, EXPORTS_IS_AT);
+        else if (isWebsite) websiteJsModuleInit(ctx, EXPORTS_IS_AT);
         duk_push_null(ctx);                         // [id req exp mod stash foundIt]
     /*
      * ... or return the file contents as is (plain ES5 code).

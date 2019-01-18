@@ -1,5 +1,6 @@
 var commons = require('common-services.js');
 var http = require('http.js');
+var website = require('website.js');
 
 commons.app.addRoute(function(url, method) {
     if (method == 'GET' && url == '/api/component-type')
@@ -13,35 +14,11 @@ commons.app.addRoute(function(url, method) {
  *
  * Example response:
  * [
- *     {"id":2,"name":"Article","props":[
- *          {"id":1,"name":"title","contentType":"text","componentTypeId":2},
- *          {"id":1,"name":"body","contentType":"richtext","componentTypeId":2},
- *     ]}
+ *     {"id":2,"name":"Article","props":{"title":"text","body":"richtext"}}
  * ]
  */
 function handleGetComponentTypesRequest() {
-    var p = {};
-    var out = [];
-    commons.db.select(
-        'select ct.id, ct.`name`, ctp.id, ctp.`key`, ctp.contentType ' +
-        'from componentTypes ct ' +
-        'join componentTypeProps ctp on (ctp.componentTypeId = ct.id)', function(row) {
-        var typeId = row.getInt(0);
-        var idx = !p.hasOwnProperty(typeId) ? -1 : p[typeId];
-        if (idx < 0) {
-            idx = out.length;
-            p[typeId] = out.length;
-            out.push({id: typeId, name: row.getString(1), props: []});
-        }
-        out[idx].props.push({
-            id: row.getInt(2),
-            name: row.getString(3),
-            contentType: row.getString(4),
-            componentTypeId: typeId
-        });
-    });
-    //
-    return new http.Response(200, JSON.stringify(out), {
+    return new http.Response(200, JSON.stringify(website.siteConfig.componentTypes), {
         'Content-Type': 'application/json'
     });
 }
@@ -52,7 +29,7 @@ function handleGetComponentTypesRequest() {
  * Payload:
  * name=str|required&
  * json=str|required&
- * componentTypeId=uint|required
+ * componentTypeName=string|required
  *
  * Example response:
  * {"insertId":1}
@@ -61,15 +38,15 @@ function handleCreateComponentRequest(req) {
     var errs = [];
     if (!req.data.name) errs.push('Name is required.');
     if (!req.data.json) errs.push('Json is required.');
-    if (!req.data.componentTypeId) errs.push('Component type id is required.');
+    if (!req.data.componentTypeName) errs.push('ComponentTypeName is required.');
     if (errs.length) return new http.Response(400, errs.join('\n'));
     //
     var insertId = commons.db.insert(
-        'insert into components (`name`, `json`, `componentTypeId`) values (?, ?, ?)',
+        'insert into components (`name`, `json`, `componentTypeName`) values (?, ?, ?)',
         function(stmt) {
         stmt.bindString(0, req.data.name);
         stmt.bindString(1, req.data.json);
-        stmt.bindInt(2, parseInt(req.data.componentTypeId));
+        stmt.bindString(2, req.data.componentTypeName);
     });
     //
     return new http.Response(200, '{"insertId":'+insertId+'}', {

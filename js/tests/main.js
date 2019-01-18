@@ -33,5 +33,9 @@ exports.main = function(suite, logAssertions) {
         require('tests/website-handlers-tests.js');
         modules.push('website-handlers.js');
     }
+    if (isAll || suite == 'website') {
+        require('tests/website-tests.js');
+        modules.push('[\'website.js\'].siteConfig');
+    }
     require('tests/testlib.js').testLib.start(!isAll ? modules : null, logAssertions);
 };

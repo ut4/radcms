@@ -2,6 +2,8 @@ var commons = require('common-services.js');
 var documentData = require('document-data.js');
 var directives = require('directives.js');
 
+// == Page ====
+// =============================================================================
 /**
  * @param {string} url
  * @param {number} parentId
@@ -84,6 +86,9 @@ function fetchData(ddc) {
     }
 }
 
+
+// == Template ====
+// =============================================================================
 /**
  * @param {string} fileName
  * @param {number} idx
@@ -96,6 +101,9 @@ function Template(fileName, idx, samplePage) {
     this.samplePage = samplePage;
 }
 
+
+// == siteGraph-singleton ====
+// =============================================================================
 exports.siteGraph = {
     pages: {},
     pageCount: 0,
@@ -164,12 +172,30 @@ exports.siteGraph = {
     }
 };
 
+
+// == siteConfig-singleton: stores the values of site.ini ====
+// =============================================================================
+exports.siteConfig = {
+    name: '',
+    componentTypes: [],
+    /**
+     * @native
+     * @throws {Error}
+     */
+    loadFromDisk: function() {}
+};
+
+
+// == website-singleton ====
+// =============================================================================
 exports.website = {
     fs: commons.fs,
     Uploader: commons.Uploader,
     siteGraph: exports.siteGraph,
+    config: exports.siteConfig,
     /** */
     init: function() {
+        this.config.loadFromDisk();
         var siteGraph = this.siteGraph;
         commons.db.select('select `graph` from websites limit 1', function(row) {
             siteGraph.parseAndLoadFrom(row.getString(0));

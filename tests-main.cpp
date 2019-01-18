@@ -43,7 +43,8 @@ int main(int argc, const char* argv[]) {
             testSuiteName != "component-handlers" &&
             testSuiteName != "document-data" &&
             testSuiteName != "file-watchers" &&
-            testSuiteName != "website-handlers") {
+            testSuiteName != "website-handlers" &&
+            testSuiteName != "website") {
             testJsEnv.errBuf = "Unknown test suite '" + testSuiteName + "'";
             goto done;
         }

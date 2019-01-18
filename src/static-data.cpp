@@ -3,36 +3,22 @@
 const char *schemaSql =
 "drop table if exists uploadStatuses;"
 "drop table if exists staticFileResources;"
+"drop index if exists componentTypeNameIdx;"
 "drop index if exists componentNameIdx;"
 "drop table if exists components;"
-"drop table if exists componentTypeProps;"
-"drop index if exists componentTypeNameIdx;"
-"drop table if exists componentTypes;"
 "drop table if exists websites;"
 "create table websites ("
 "    `id` integer primary key autoincrement,"
 "    `graph` json"
 ");"
-"create table componentTypes ("
-"    `id` integer primary key autoincrement,"
-"    `name` varchar(64)"
-");"
-"create unique index componentTypeNameIdx on componentTypes(`name`);"
-"create table componentTypeProps ("
-"    `id` integer primary key autoincrement,"
-"    `key` varchar(32) not null,"
-"    `contentType` varchar(8) not null," // -- text, richtext
-"    componentTypeId integer not null,"
-"    foreign key (componentTypeId) references componentTypes(id)"
-");"
 "create table components ("
 "    `id` integer primary key autoincrement,"
 "    `name` varchar(32) not null,"
 "    `json` json,"
-"    componentTypeId integer not null,"
-"    foreign key (componentTypeId) references componentTypes(id)"
+"    componentTypeName varchar(64) not null"
 ");"
 "create unique index componentNameIdx on components(`name`);"
+"create index componentTypeNameIdx on components(`componentTypeName`);"
 "create table staticFileResources ("
 "    `url` varchar(512) primary key"
 ");"
@@ -48,11 +34,11 @@ static std::vector<SampleData> sampleData = {
         "minimal",
         // installSql
         "insert into websites values (1, '{\"pages\":[[\"/\",0,0]],\"templates\":[\"main-layout.jsx.htm\"]}');"
-        "insert into componentTypes values (1, 'Generic');"
-        "insert into componentTypeProps values (1, 'content', 'richtext', 1);"
-        "insert into components values (1, 'footer', '{\"content\":\"(c) 2034 MySite\"}', 1);",
+        "insert into components values (1, 'footer', '{\"content\":\"(c) 2034 MySite\"}', 'Generic');",
         // files
         {
+            {"site.ini", "[ComponentType:Generic]\n"
+                         "content=text"},
             {"main-layout.jsx.htm", "@footer = fetchOne(\"Generic\").where(\"name='footer'\")\n"
                                     "<html>\n"
                                     "    <head>\n"
@@ -72,20 +58,19 @@ static std::vector<SampleData> sampleData = {
         "insert into websites values"
         "  (1, '{\"pages\":[[\"/\",0,0],[\"/art1\",0,1],[\"/art2\",0,1],[\"/art3\",0,1]],"
                 "\"templates\":[\"main-layout.jsx.htm\",\"article-layout.jsx.htm\"]}');"
-        "insert into componentTypes values"
-        "  (1, 'Generic'),"
-        "  (2, 'Article');"
-        "insert into componentTypeProps values"
-        "  (1, 'content', 'richtext', 1),"
-        "  (2, 'title', 'text', 2),"
-        "  (3, 'body', 'richtext', 2);"
         "insert into components values"
-        "  (1, 'footer', '{\"content\":\"(c) 2034 MySite\"}', 1),"
-        "  (2, 'art1', '{\"title\":\"Article 1\",\"body\":\"Hello from article 1\"}', 2),"
-        "  (3, 'art2', '{\"title\":\"Article 2\",\"body\":\"Hello from article 2\"}', 2),"
-        "  (4, 'art3', '{\"title\":\"Article 3\",\"body\":\"Hello from article 3\"}', 2);",
+        "  (1, 'footer', '{\"content\":\"(c) 2034 MySite\"}', 'Generic'),"
+        "  (2, 'art1', '{\"title\":\"Article 1\",\"body\":\"Hello from article 1\"}', 'Article'),"
+        "  (3, 'art2', '{\"title\":\"Article 2\",\"body\":\"Hello from article 2\"}', 'Article'),"
+        "  (4, 'art3', '{\"title\":\"Article 3\",\"body\":\"Hello from article 3\"}', 'Article');",
         // files
         {
+            {"site.ini", "[ComponentType:Generic]\n"
+                         "content=text\n"
+                         "\n"
+                         "[ComponentType:Article]\n"
+                         "title=text\n"
+                         "body=richtext"},
             {"main-layout.jsx.htm", "@arts = fetchAll(\"Article\")\n"
                                "@footer = fetchOne(\"Generic\").where(\"name='footer'\")\n"
                                "<html>\n"

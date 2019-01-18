@@ -92,8 +92,7 @@ exports.DBC.prototype.toSql = function() {
     if (!this.isFetchAll) {
         return this.whereExpr;
     }
-    return '`componentTypeId` = (select `id` from componentTypes where `name` = \''+
-        this.componentTypeName + '\')';
+    return '`componentTypeName` = \'' + this.componentTypeName + '\'';
 };
 /**
  * @returns {string|null}

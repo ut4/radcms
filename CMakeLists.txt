@@ -38,6 +38,7 @@ set(SOURCE_FILES
     include/static-data.hpp src/static-data.cpp
     include/web-app.hpp src/web-app.cpp
     include/website.hpp src/website.cpp
+    include/website-js-bindings.hpp src/website-js-bindings.cpp
 )
 add_executable(insane ${SOURCE_FILES} ${C_FILES} main.cpp)
 target_compile_options(insane PUBLIC ${INSN_COMPILE_OPTIONS})
