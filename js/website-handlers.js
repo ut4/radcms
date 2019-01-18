@@ -70,8 +70,7 @@ function handlePageRequest(req) {
  *     wrotePagesNum: 5,
  *     tookSecs: 0.002672617,
  *     totalPages: 6,
- *     sitePath: '/some/path/',
- *     outDir: 'my/dir',
+ *     outPath: '/my/site/path/out',
  *     issues: ['/some-url>Some error.']
  * }
  */
@@ -80,13 +79,12 @@ function handleGenerateRequest() {
         wrotePagesNum: 0,
         tookSecs: performance.now(),
         totalPages: website.siteGraph.pageCount,
-        sitePath: '/some/path/',
-        outDir: 'out',
+        outPath: insnEnv.sitePath + 'out',
         issues: []
     };
     out.wrotePagesNum = website.website.generate(function(renderedOutput, page) {
         // 'path/out' + '/foo', 'path/out' + '/'
-        var dirPath = insnEnv.sitePath + 'out' + page.url;
+        var dirPath = out.outPath + page.url;
         return website.website.fs.makeDirs(dirPath) &&
                 website.website.fs.write(
                     // 'path/out/foo' + '/index.html', 'path/out/' + 'index.html'
@@ -110,7 +108,7 @@ function handleGenerateRequest() {
  * password=str|required
  *
  * Example response:
- * /some/page|000
+ * /some/page|0
  */
 function handleUploadRequest(req) {
     uploadHandlerIsBusy = true;
@@ -145,7 +143,7 @@ function handleUploadRequest(req) {
                 (url.charAt(0) == '/' ? url.substr(1) : url) + '.html', cur.html);
             state.hadStopError = uploadRes == commons.Uploader.UPLOAD_LOGIN_DENIED;
             state.nthPage += 1;
-            return cur.url + '|' + ('000' + uploadRes).slice(-3);
+            return cur.url + '|' + uploadRes;
         }
         // Previous upload had a problem -> abort
         throw new Error('...');

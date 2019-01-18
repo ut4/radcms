@@ -1,6 +1,6 @@
 
 class Form extends preact.Component {
-    /** 
+    /**
      * @param {Object} props {
      *     onConfirm: (e: Event) => any;
      *     onCancel?: (e: Event) => any;

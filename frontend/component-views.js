@@ -62,7 +62,7 @@ class AddComponentView extends preact.Component {
             )
         ));
     }
-    confirm(e) {
+    confirm() {
         return services.myFetch('/api/component', {
             method: 'POST',
             headers: {'Content-Type': 'application/x-www-form-urlencoded'},
@@ -82,7 +82,7 @@ class AddComponentView extends preact.Component {
         this.setState({selectedCmpType: this.state.componentTypes[e.target.value]});
     }
     getInputElsForCmpTypeProps(props) {
-        var inputEls = []
+        var inputEls = [];
         for (var propName in props) {
             var stateKey = 'val-' + propName;
             if (!this.state.hasOwnProperty(stateKey)) {

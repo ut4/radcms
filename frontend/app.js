@@ -96,7 +96,7 @@ class InsaneControlPanel extends preact.Component {
                             $el('div', {
                                 className: !this.state.visibleMenuItems[nth]?'hidden':''
                             }, impl.getMenuItems(directive))
-                        ])
+                        ]);
                     })),
                     $el('div', null,
                         $el('h4', null, [

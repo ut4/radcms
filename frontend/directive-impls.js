@@ -17,7 +17,7 @@ class ArticleListDirectiveWebUIImpl extends preact.Component {
                     e.preventDefault();
                     myRedirect('/edit-component');
                 }}, 'Edit')
-            ])
+            ]);
         }).concat([
             $el('a', {
                 href:'#/add-component/Article',
@@ -35,7 +35,7 @@ class StaticMenuAddPageView {
         return $el('div', {className: 'view'},
             $el('div', null, [
                 $el('p', null, '...'),
-                $el('button', {onClick: e => myRedirect('/')}, 'x')
+                $el('button', {onClick: () => myRedirect('/')}, 'x')
             ])
         );
     }
@@ -55,7 +55,7 @@ class StaticMenuDirectiveWebUIImpl extends preact.Component {
     }
     static getMenuItems(directive) {
         return directive.components.map(article => {
-            return $el('span', null, article.title)
+            return $el('span', null, article.title);
         }).concat([
             $el('a', {
                 href:'#static-menu-add-page',

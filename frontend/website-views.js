@@ -17,7 +17,7 @@ class WebsiteGenerateView extends preact.Component {
         } else if (!this.unexpectedError) {
             content = [
                 $el('div', null, ['Wrote ', g.wrotePagesNum, '/', g.totalPages,
-                                  ' pages to "', g.sitePath, g.outDir,
+                                  ' pages to "', g.outPath,
                                   '", but had the following issues:'].join('')),
                 g.issues.map(str => {
                     const [url, ...message] = str.split('>');
@@ -43,7 +43,7 @@ class WebsiteGenerateView extends preact.Component {
             const g = JSON.parse(req.responseText);
             if (!g.issues.length) {
                 toast(['Wrote ', g.wrotePagesNum, '/', g.totalPages, ' pages to "',
-                       g.sitePath, g.outDir, '" in ', g.tookSecs.toFixed(6),
+                       g.outPath, '" in ', g.tookSecs.toFixed(6),
                        ' secs.'].join(''), 'success');
                 myRedirect('/');
             } else {
@@ -133,7 +133,7 @@ class WebsiteUploadView extends preact.Component {
                         $el('th', null, 'Page'),
                         $el('th', null, 'Uploaded'),
                     ])),
-                    $el('tbody', null, this.state.pages.map((page, i) => $el('tr', null, [
+                    $el('tbody', null, this.state.pages.map(page => $el('tr', null, [
                         $el('td', null, page.url),
                         $el('td', null, UStatusToStr[page.uploadStatus]),
                     ])))
@@ -168,7 +168,7 @@ class WebsiteUploadView extends preact.Component {
                 for (let i = 0; i < pcs.length - 1; i += 2) {
                     const [url, uploadResult] = pcs[i + 1].split('|');
                     const idx = this.state.pages.findIndex(p => p.url === url);
-                    pages[idx].uploadStatus = uploadResult === '000' ? UStatus.UPLOADED : UStatus.ERROR;
+                    pages[idx].uploadStatus = uploadResult === '0' ? UStatus.UPLOADED : UStatus.ERROR;
                 }
                 this.setState({pages});
             }

@@ -83,7 +83,7 @@ testLib.module('website-handlers.js', function(hooks) {
         assert.ok(response3.body.indexOf('<iframe') > -1, 'should contain "<iframe"');
     });
     testLib.test('POST \'/api/website/generate\' generates the site', function(assert) {
-        assert.expect(15);
+        assert.expect(16);
         //
         var req = new http.Request('/api/website/generate', 'POST');
         var handleGenerateReqFn = commons.app.getHandler(req.url, req.method);
@@ -93,6 +93,7 @@ testLib.module('website-handlers.js', function(hooks) {
         var body = JSON.parse(response.body);
         assert.equal(body.wrotePagesNum, 3);
         assert.equal(body.totalPages, website.siteGraph.pageCount);
+        assert.equal(body.outPath, insnEnv.sitePath + 'out');
         assert.equal(body.issues.length, 0);
         assert.equal(makeDirsLog.length, 3, 'should make dirs for all pages');
         assert.equal(makeDirsLog[0].path, insnEnv.sitePath+'out/');
@@ -134,17 +135,17 @@ testLib.module('website-handlers.js', function(hooks) {
         assert.equal(generatedPages.length, 3, 'should generate the site');
         // Simulate MHD's MHD_ContentReaderCallback calls
         var chunk1 = response.getNextChunk(response.chunkFnState);
-        assert.equal(chunk1, generatedPages[0].url + '|000');
+        assert.equal(chunk1, generatedPages[0].url + '|0');
         assert.equal(uploadLog.length, 1, 'should upload page #1');
         assert.equal(uploadLog[0].path, req.data.remoteUrl+'/index.html');
         assert.equal(uploadLog[0].contents, generatedPages[0].html);
         var chunk2 = response.getNextChunk(response.chunkFnState);
-        assert.equal(chunk2, generatedPages[1].url + '|000');
+        assert.equal(chunk2, generatedPages[1].url + '|0');
         assert.equal(uploadLog.length, 2, 'should upload page #2');
         assert.equal(uploadLog[1].path, req.data.remoteUrl+generatedPages[1].url+'.html');
         assert.equal(uploadLog[1].contents, generatedPages[1].html);
         var chunk3 = response.getNextChunk(response.chunkFnState);
-        assert.equal(chunk3, generatedPages[2].url + '|000');
+        assert.equal(chunk3, generatedPages[2].url + '|0');
         assert.equal(uploadLog.length, 3, 'should upload page #3');
         assert.equal(uploadLog[2].path, req.data.remoteUrl+generatedPages[2].url+'.html');
         assert.equal(uploadLog[2].contents, generatedPages[2].html);

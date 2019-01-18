@@ -2,13 +2,10 @@ import {AddComponentView} from './../app.js';
 import services from './../common-services.js';
 import utils from './my-test-utils.js';
 const itu = Inferno.TestUtils;
-const testComponentTypes = [{id: 1, name: 'Generic', props: [
-    {id: 1, name: 'content', contentType: 'richtext'}
-]},
-{id: 2, name: 'Article', props: [
-    {id: 2, name: 'title', contentType: 'text'},
-    {id: 3, name: 'body', contentType: 'richtext'}
-]}];
+const testComponentTypes = [
+    {name: 'Generic', props: {content: 'richtext'}},
+    {name: 'Article', props: {title: 'text', body: 'richtext'}}
+];
 
 QUnit.module('AddComponentViewComponent', hooks => {
     let httpStub;
@@ -53,7 +50,7 @@ QUnit.module('AddComponentViewComponent', hooks => {
                 '&json=' + encodeURIComponent(
                     JSON.stringify({title: titleInput.value, body: bodyInput.value})
                 ) +
-                '&componentTypeId=2'
+                '&componentTypeName=Article'
             );
             postCall.returnValue.then(() => {
                 assert.ok(redirectSpy.calledAfter(httpStub), 'Should redirect');

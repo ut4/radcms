@@ -13,8 +13,7 @@ QUnit.module('WebsiteGenerateViewComponent', hooks => {
     });
     QUnit.test('sends request to backend', assert => {
         const responseText = JSON.stringify({
-            sitePath: '/some/path/',
-            outDir: 'my/dir',
+            outPath: '/my/site/path/out',
             wrotePagesNum: 5,
             tookSecs: 0.002672617,
             totalPages: 6,
@@ -38,7 +37,7 @@ QUnit.module('WebsiteGenerateViewComponent', hooks => {
             const r = JSON.parse(responseText);
             assert.equal(toastSpy.getCall(0).args[0], [
                 'Wrote ', r.wrotePagesNum, '/', r.totalPages, ' pages to "',
-                r.sitePath, r.outDir, '" in ', r.tookSecs.toFixed(6), ' secs.'
+                r.outPath, '" in ', r.tookSecs.toFixed(6), ' secs.'
             ].join(''));
             assert.ok(redirectSpy.calledAfter(toastSpy), 'Should redirect');
             toastSpy.restore();
@@ -48,8 +47,7 @@ QUnit.module('WebsiteGenerateViewComponent', hooks => {
     });
     QUnit.test('displays issues and warnings', assert => {
         const responseText = JSON.stringify({
-            sitePath: '/some/path/',
-            outDir: '/my/dir',
+            outPath: '/my/site/path/out',
             wrotePagesNum: 5,
             tookSecs: 0.002672617,
             totalPages: 6,
@@ -72,7 +70,7 @@ QUnit.module('WebsiteGenerateViewComponent', hooks => {
             const firstError = form.children[1].children[1];
             const g = JSON.parse(responseText);
             assert.equal(mainContent.textContent, ['Wrote ', g.wrotePagesNum, '/',
-                g.totalPages, ' pages to "', g.sitePath, g.outDir,
+                g.totalPages, ' pages to "', g.outPath,
                 '", but had the following issues:'].join(''));
             assert.equal(firstError.textContent, '/some-url: Some error.');
             done();
@@ -139,7 +137,7 @@ QUnit.module('WebsiteUploadViewComponent', hooks => {
             );
             // Simulate xhr.onprogress calls
             const progressClb = postCall.args[1].progress;
-            const successCode = '000';
+            const successCode = '0';
             const chunkify = str => `${parseFloat(str.length).toString(16)}\r\n${str}\r\n`;
             // first call <l1>\r\n<body1>\r\n
             const fakeResponse1 = {responseText: chunkify(testPages[1].url + '|' + successCode)};
@@ -196,8 +194,8 @@ QUnit.module('WebsiteUploadViewComponent', hooks => {
             const postCall = httpStub.getCall(1);
             // Simulate xhr.onprogress calls
             const progressClb = postCall.args[1].progress;
-            const successCode = '000';
-            const someErrorCode = '023';
+            const successCode = '0';
+            const someErrorCode = '198';
             const chunkify = str => `${parseFloat(str.length).toString(16)}\r\n${str}\r\n`;
             const fakeResponse1 = {responseText: chunkify(testPages[0].url + '|' + successCode)};
             const fakeResponse2 = {responseText: fakeResponse1.responseText +

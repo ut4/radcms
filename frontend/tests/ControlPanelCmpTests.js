@@ -33,7 +33,7 @@ QUnit.module('ControlPanelComponent', hooks => {
         const getMenuItemsSpy = sinon.spy(app._directiveImpls['TestDirective'], 'getMenuItems');
         const cpanel = $el(InsaneControlPanel, {currentPageData}, null);
         //
-        const rendered = itu.renderIntoContainer(cpanel); 
+        const rendered = itu.renderIntoContainer(cpanel);
         const directiveList = itu.findRenderedDOMElementWithClass(rendered,
             'current-page-directive-list').children;
         assert.strictEqual(directiveList.length, 1, 'Should list directives');
