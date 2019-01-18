@@ -2,6 +2,57 @@ var documentData = require('document-data.js');
 var testLib = require('tests/testlib.js').testLib;
 
 testLib.module('document-data.js', function() {
+    testLib.test('DDC.toSql() generates queries for fetchOne()s', function(assert) {
+        assert.expect(2);
+        //
+        var ddc1 = new documentData.DDC();
+        ddc1.fetchOne('Generic').where('name=\'Foo\'');
+        assert.equal(ddc1.toSql(), 'select `id`,`name`,`json`,`dbcId` from ('+
+            'select * from (select `id`,`name`,`json`, 1 as `dbcId` from components where name=\'Foo\')'+
+        ')');
+        //
+        var ddc2 = new documentData.DDC();
+        ddc2.fetchOne('Generic').where('name=\'Foo\'');
+        ddc2.fetchOne('Generic').where('name=\'Bar\'');
+        ddc2.fetchOne('Artible').where('name=\'Naz\'');
+        assert.equal(ddc2.toSql(), 'select `id`,`name`,`json`,`dbcId` from ('+
+            'select * from ('+
+                'select `id`,`name`,`json`, 1 as `dbcId` from components where name=\'Foo\''+
+            ') union all '+
+            'select * from ('+
+                'select `id`,`name`,`json`, 2 as `dbcId` from components where name=\'Bar\''+
+            ') union all '+
+            'select * from ('+
+                'select `id`,`name`,`json`, 3 as `dbcId` from components where name=\'Naz\''+
+            ')'+
+        ')');
+    });
+    testLib.test('DDC.toSql() generates queries for fetchAll()s', function(assert) {
+        assert.expect(2);
+        //
+        var ddc1 = new documentData.DDC();
+        ddc1.fetchAll('Article');
+        assert.equal(ddc1.toSql(), 'select `id`,`name`,`json`,`dbcId` from ('+
+            'select * from ('+
+                'select `id`,`name`,`json`, 1 as `dbcId` from components where '+
+                '`componentTypeName` = \'Article\''+
+            ')'+
+        ')');
+        //
+        var ddc2 = new documentData.DDC();
+        ddc2.fetchAll('Article');
+        ddc2.fetchAll('Other');
+        assert.equal(ddc2.toSql(), 'select `id`,`name`,`json`,`dbcId` from ('+
+            'select * from ('+
+                'select `id`,`name`,`json`, 1 as `dbcId` from components where '+
+                '`componentTypeName` = \'Article\''+
+            ') union all '+
+            'select * from ('+
+                'select `id`,`name`,`json`, 2 as `dbcId` from components where '+
+                '`componentTypeName` = \'Other\''+
+            ')'+
+        ')');
+    });
     testLib.test('<dataBathConfig>.toSql() validates itself', function(assert) {
         assert.expect(4);
         var runInvalid = function(dbc) {

@@ -24,22 +24,3 @@ testUtilsExecSql(Db *db, const char *sql) {
     }
     return true;
 }
-
-bool
-testUtilsCompileAndCache(duk_context *ctx, const char *code, char *key,
-                         std::string &err) {
-    duk_push_global_stash(ctx);
-    if (!dukUtilsCompileStrToFn(ctx, code, key, err)) return false;
-    duk_put_prop_string(ctx, -2, key);
-    duk_pop(ctx); // stash
-    return true;
-}
-
-bool
-testUtilsReadAndRunGlobal(duk_context *ctx, const std::string &appPath,
-                          const std::string &fileName, std::string &err) {
-    std::string code;
-    if (!myFsRead(appPath + fileName, code, err)) return false;
-    return dukUtilsCompileAndRunStrGlobal(ctx, code.c_str(),
-                                          fileName.c_str(), err);
-}
