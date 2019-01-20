@@ -1,9 +1,6 @@
 #include <iostream>
 #include <memory>
 #include <string>
-#include <unistd.h> // getcwd
-#include "include/db.hpp"
-#include "include/duk.hpp"
 #include "include/js-environment.hpp"
 #include "tests/test-utils.hpp"
 
@@ -19,21 +16,11 @@ int main(int argc, const char* argv[]) {
     }
     atexit(myAtExit);
     AppContext testJsEnv;
-    char cwd[FILENAME_MAX];
-    if (!getcwd(cwd, FILENAME_MAX)) {
-        testJsEnv.errBuf = "Failed to getcwd().\n";
-        return false;
-    }
-    testJsEnv.appPath = cwd;
-    myFsNormalizePath(testJsEnv.appPath);
+    testJsEnv.init("");
     testJsEnv.sitePath = testJsEnv.appPath + "js/tests/testsite/";
-    Db db;
-    duk_context *ctx;
     int out = EXIT_FAILURE;
-    if (!testUtilsSetupTestDb(&db, testJsEnv.errBuf)) goto done;
-    testJsEnv.db = &db;
-    if (!(ctx = myDukCreate(testJsEnv.errBuf))) goto done;
-    jsEnvironmentConfigure(ctx, &testJsEnv);
+    if (!testUtilsSetupTestDb(&testJsEnv.db, testJsEnv.errBuf)) goto done;
+    jsEnvironmentConfigure(testJsEnv.dukCtx, &testJsEnv);
     //
     {
         const std::string testSuiteName = argv[1];
@@ -48,15 +35,15 @@ int main(int argc, const char* argv[]) {
             testJsEnv.errBuf = "Unknown test suite '" + testSuiteName + "'";
             goto done;
         }
-        if (dukUtilsCompileAndRunStrGlobal(ctx, ("require('tests/main.js').main('" +
-            testSuiteName + "'," + useVerboseLogging + ")").c_str(),
+        if (dukUtilsCompileAndRunStrGlobal(testJsEnv.dukCtx,
+            ("require('tests/main.js').main('" + testSuiteName + "'," +
+            useVerboseLogging + ")").c_str(),
             "tests/main.js", testJsEnv.errBuf)) {
             out = EXIT_SUCCESS;
         }
     }
     //
     done:
-    if (ctx) duk_destroy_heap(ctx);
     if (out != EXIT_SUCCESS) {
         std::cerr << "[Fatal]: " << testJsEnv.errBuf << "\n";
         return EXIT_FAILURE;

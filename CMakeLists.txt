@@ -24,7 +24,7 @@ set(C_FILES
     c-libs/jsx/include/memory.h c-libs/jsx/src/memory.c
 )
 set(SOURCE_FILES
-    include/app-context.hpp
+    include/app-context.hpp src/app-context.cpp
     include/common-services.hpp src/common-services.cpp
     include/common-services-js-bindings.hpp src/common-services-js-bindings.cpp
     include/core-handlers.hpp src/core-handlers.cpp
@@ -39,6 +39,7 @@ set(SOURCE_FILES
     include/web-app.hpp src/web-app.cpp
     include/website.hpp src/website.cpp
     include/website-js-bindings.hpp src/website-js-bindings.cpp
+    include/xml-reader-js-bindings.hpp src/xml-reader-js-bindings.cpp
 )
 add_executable(insane ${SOURCE_FILES} ${C_FILES} main.cpp)
 target_compile_options(insane PUBLIC ${INSN_COMPILE_OPTIONS})

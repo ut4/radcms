@@ -2,16 +2,16 @@
 #include <iostream>
 #include <pthread.h>
 #include "include/core-handlers.hpp"
-#include "include/duk.hpp"
 #include "include/js-environment.hpp"
 #include "include/static-data.hpp"
 #include "include/web-app.hpp"
 #include "include/website.hpp"
 #include "c-libs/fwatcher/include/file-watcher.hpp"
-#include "c-libs/jsx/include/jsx-transpiler.hpp"
 
-static int handleRun(const char *sitePath);
+static int handleRun(const std::string &sitePath);
 static int handleInit(const std::string &sampleDataName, const char *sitePath);
+static int handleImport(const std::string &importType, const char *arg,
+                        const std::string &sitePath);
 static void* startFileWatcher(void *myPtr);
 static int printCmdInstructions();
 static void myAtExit();
@@ -20,31 +20,31 @@ int
 main(int argc, char *argv[]) {
     if (argc < 3) return printCmdInstructions();
     bool doInit = strcmp(argv[1], "init") == 0;
+    bool doImport = !doInit && strcmp(argv[1], "import") == 0;
     if (doInit && argc < 4) return printCmdInstructions();
+    if (doImport && argc < 5) return printCmdInstructions();
     atexit(myAtExit);
     //
-    return !doInit ? handleRun(argv[2]) : handleInit(argv[2], argv[3]);
+    if (doInit) {
+        return handleInit(argv[2], argv[3]);
+    }
+    if (doImport) {
+        return handleImport(argv[2], argv[3], argv[4]);
+    }
+    return handleRun(argv[2]);
 }
 
 static int
-handleRun(const char *sitePath) {
+handleRun(const std::string &sitePath) {
     //
+    AppContext appCtx;
     WebApp webApp;
-    Db db;
-    FileWatcher fileWatcher;
-    duk_context *ctx = nullptr;
     int out = EXIT_FAILURE;
-    if (!webApp.init(sitePath)) goto done;
-    if (!db.open(webApp.ctx.sitePath + "data.db", webApp.ctx.errBuf)) goto done;
-    webApp.ctx.db = &db;
-    if (!(ctx = myDukCreate(webApp.ctx.errBuf))) goto done;
-    webApp.ctx.dukCtx = ctx;
-    transpilerInit();
-    transpilerSetPrintErrors(false); // use transpilerGetLastError() instead.
-    webApp.ctx.fileWatcher = &fileWatcher;
-    jsEnvironmentConfigure(ctx, &webApp.ctx);
-    if (!dukUtilsCompileAndRunStrGlobal(ctx, "require('main.js')", "main.js",
-                                        webApp.ctx.errBuf)) {
+    if (!appCtx.init(sitePath)) goto done;
+    webApp.ctx = &appCtx;
+    jsEnvironmentConfigure(appCtx.dukCtx, &appCtx);
+    if (!dukUtilsCompileAndRunStrGlobal(appCtx.dukCtx, "require('main.js')",
+                                        "main.js", appCtx.errBuf)) {
         goto done;
     }
     //
@@ -52,23 +52,21 @@ handleRun(const char *sitePath) {
     if (pthread_create(&fileWatcherThread, nullptr, startFileWatcher,
                        &webApp.ctx) == 0) {
         std::cout << "[Info]: Started watching files at '" <<
-                     webApp.ctx.sitePath << "'.\n";
+                     appCtx.sitePath << "'.\n";
     } else {
-        webApp.ctx.errBuf = "Failed to create the fileWatcher thread.";
+        appCtx.errBuf = "Failed to create the fileWatcher thread.";
         goto done;
     }
-    webApp.handlers[0] = {coreHandlersHandleStaticFileRequest, &webApp, nullptr};
-    webApp.handlers[1] = {coreHandlersHandleScriptRouteRequest, ctx,
-                          coreHandlersGetScriptRoutePostDataHandlers(ctx)};
+    webApp.handlers[0] = {coreHandlersHandleStaticFileRequest, &appCtx, nullptr};
+    webApp.handlers[1] = {coreHandlersHandleScriptRouteRequest, appCtx.dukCtx,
+                          coreHandlersGetScriptRoutePostDataHandlers(appCtx.dukCtx)};
     if (webApp.run()) {
         out = EXIT_SUCCESS;
     }
     delete webApp.handlers[1].formDataHandlers;
     done:
-    if (ctx) duk_destroy_heap(ctx);
-    transpilerFreeProps();
     if (out != EXIT_SUCCESS) {
-        std::cerr << "[Fatal]: " << webApp.ctx.errBuf << "\n";
+        std::cerr << "[Fatal]: " << appCtx.errBuf << "\n";
         return EXIT_FAILURE;
     }
     return out;
@@ -100,10 +98,35 @@ handleInit(const std::string &sampleDataName, const char *sitePathIn) {
     return EXIT_SUCCESS;
 }
 
+static int
+handleImport(const std::string &importType, const char *arg,
+             const std::string &sitePath) {
+    AppContext appCtx;
+    int out = EXIT_FAILURE;
+    if (importType == "wp") {
+        // todo validate arg
+    } else {
+        appCtx.errBuf = "Unknown importer '" + importType + "' (Available: 'wp').";
+        goto done;
+    }
+    if (!appCtx.init(sitePath)) goto done;
+    jsEnvironmentConfigure(appCtx.dukCtx, &appCtx);
+    if (dukUtilsCompileAndRunStrGlobal(appCtx.dukCtx,
+        ("require('data-importers.js').import('" + importType + "','" + arg + "')").c_str(),
+        "data-importer.js", appCtx.errBuf)) {
+        out = EXIT_SUCCESS;
+    }
+    done:
+    if (out != EXIT_SUCCESS) {
+        std::cerr << "[Fatal]: " << appCtx.errBuf << "\n";
+    }
+    return out;
+}
+
 static void*
 startFileWatcher(void *myPtr) {
     auto *appCtx = static_cast<AppContext*>(myPtr);
-    char *err = fileWatcherWatch(appCtx->fileWatcher, appCtx->sitePath.c_str(),
+    char *err = fileWatcherWatch(&appCtx->fileWatcher, appCtx->sitePath.c_str(),
                      commonServicesCallJsFWFn, [](const char *fileName){
                         char *ext = strrchr(fileName, '.');
                         return ext && (
@@ -121,7 +144,8 @@ startFileWatcher(void *myPtr) {
 static int
 printCmdInstructions() {
     std::cerr << "Usage: insane run /path/to/your/project/\n"
-                 "       insane init minimal|blog /path/to/your/project/\n";
+                 "       insane init minimal|blog /path/to/your/project/\n"
+                 "       insane import wp /path/to/exported-wp-site.xml /path/to/your/project/\n";
     return EXIT_FAILURE;
 }
 

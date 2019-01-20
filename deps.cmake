@@ -40,6 +40,7 @@ if (INSN_IS_WIN)
         ${VENDOR_ROOT}/openssl
         ${VENDOR_ROOT}/curl
         ${VENDOR_ROOT}/cjson
+        ${VENDOR_ROOT}/rapidxml
     )
     set(INSN_DEP_LIBS
         microhttpd
@@ -68,6 +69,7 @@ elseif(INSN_IS_LINUX)
         ${VENDOR_ROOT}/duktape
         ${VENDOR_ROOT}/inih
         ${VENDOR_ROOT}/cjson
+        ${VENDOR_ROOT}/rapidxml
     )
     set(INSN_DEP_LIBS
         m

@@ -35,14 +35,9 @@ struct RequestHandler {
 
 class WebApp {
 public:
-    AppContext ctx;
+    AppContext *ctx = nullptr;
     struct MHD_Daemon *daemon = nullptr;
     std::array<RequestHandler, 2> handlers;
-    /**
-     * Fills in $this->ctx.
-     */
-    bool
-    init(const char *sitePath);
     /**
      * Allocates and starts a microhttpd-server.
      */

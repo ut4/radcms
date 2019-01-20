@@ -125,8 +125,8 @@ dbInsertOrUpdate(duk_context *ctx, bool isInsert) {
     duk_swap_top(ctx, -2);                       // [sql stash fn]
     std::string err;
     int res = isInsert
-        ? app->db->insert(sql, callJsStmtBindFn, ctx, err)
-        : app->db->update(sql, callJsStmtBindFn, ctx, err);
+        ? app->db.insert(sql, callJsStmtBindFn, ctx, err)
+        : app->db.update(sql, callJsStmtBindFn, ctx, err);
     if (res > -1) {                              // [sql stash]
         duk_push_int(ctx, res);                  // [sql stash insertId]
         return 1;
@@ -170,7 +170,7 @@ dbSelect(duk_context *ctx) {
     duk_swap_top(ctx, -2);                      // [sql stash fn]
     duk_put_prop_string(ctx, -2, KEY_CUR_ROW_MAP_FN); // [sql stash]
     std::string err;
-    bool res = app->db->select(sql, callJsResultRowMapFn, ctx, err);
+    bool res = app->db.select(sql, callJsResultRowMapFn, ctx, err);
     duk_push_null(ctx);
     duk_put_prop_string(ctx, 1, KEY_CUR_ROW_MAP_FN);
     if (res) {                                  // [sql stash]
