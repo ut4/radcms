@@ -3,22 +3,22 @@
 const char *schemaSql =
 "drop table if exists uploadStatuses;"
 "drop table if exists staticFileResources;"
-"drop index if exists componentTypeNameIdx;"
-"drop index if exists componentNameIdx;"
-"drop table if exists components;"
+"drop index if exists contentNodesContentTypeNameIdx;"
+"drop index if exists contentNodesNameIdx;"
+"drop table if exists contentNodes;"
 "drop table if exists websites;"
 "create table websites ("
 "    `id` integer primary key autoincrement,"
 "    `graph` json"
 ");"
-"create table components ("
+"create table contentNodes ("
 "    `id` integer primary key autoincrement,"
 "    `name` varchar(32) not null,"
 "    `json` json,"
-"    componentTypeName varchar(64) not null"
+"    contentTypeName varchar(64) not null"
 ");"
-"create unique index componentNameIdx on components(`name`);"
-"create index componentTypeNameIdx on components(`componentTypeName`);"
+"create unique index contentNodesNameIdx on contentNodes(`name`);"
+"create index contentNodesContentTypeNameIdx on contentNodes(`contentTypeName`);"
 "create table staticFileResources ("
 "    `url` varchar(512) primary key"
 ");"
@@ -34,10 +34,10 @@ static std::vector<SampleData> sampleData = {
         "minimal",
         // installSql
         "insert into websites values (1, '{\"pages\":[[\"/\",0,0]],\"templates\":[\"main-layout.jsx.htm\"]}');"
-        "insert into components values (1, 'footer', '{\"content\":\"(c) 2034 MySite\"}', 'Generic');",
+        "insert into contentNodes values (1, 'footer', '{\"content\":\"(c) 2034 MySite\"}', 'Generic');",
         // files
         {
-            {"site.ini", "[ComponentType:Generic]\n"
+            {"site.ini", "[ContentType:Generic]\n"
                          "content=text"},
             {"main-layout.jsx.htm", "@footer = fetchOne(\"Generic\").where(\"name='footer'\")\n"
                                     "<html>\n"
@@ -58,17 +58,17 @@ static std::vector<SampleData> sampleData = {
         "insert into websites values"
         "  (1, '{\"pages\":[[\"/\",0,0],[\"/art1\",0,1],[\"/art2\",0,1],[\"/art3\",0,1]],"
                 "\"templates\":[\"main-layout.jsx.htm\",\"article-layout.jsx.htm\"]}');"
-        "insert into components values"
+        "insert into contentNodes values"
         "  (1, 'footer', '{\"content\":\"(c) 2034 MySite\"}', 'Generic'),"
         "  (2, 'art1', '{\"title\":\"Article 1\",\"body\":\"Hello from article 1\"}', 'Article'),"
         "  (3, 'art2', '{\"title\":\"Article 2\",\"body\":\"Hello from article 2\"}', 'Article'),"
         "  (4, 'art3', '{\"title\":\"Article 3\",\"body\":\"Hello from article 3\"}', 'Article');",
         // files
         {
-            {"site.ini", "[ComponentType:Generic]\n"
+            {"site.ini", "[ContentType:Generic]\n"
                          "content=text\n"
                          "\n"
-                         "[ComponentType:Article]\n"
+                         "[ContentType:Article]\n"
                          "title=text\n"
                          "body=richtext"},
             {"main-layout.jsx.htm", "@arts = fetchAll(\"Article\")\n"

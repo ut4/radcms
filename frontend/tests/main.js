@@ -1,4 +1,4 @@
-import './AddComponentViewCmpTests.js';
+import './AddContentViewCmpTests.js';
 import './ControlPanelCmpTests.js';
 import './websiteViewCmpsTests.js';
 

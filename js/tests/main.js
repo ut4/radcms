@@ -17,9 +17,9 @@ exports.main = function(suite, logAssertions) {
         modules.push('[\'common-services.js\'].db');
         modules.push('[\'common-services.js\'].DomTree');
     }
-    if (isAll || suite == 'component-handlers') {
-        require('tests/component-handlers-tests.js');
-        modules.push('component-handlers.js');
+    if (isAll || suite == 'content-handlers') {
+        require('tests/content-handlers-tests.js');
+        modules.push('content-handlers.js');
     }
     if (isAll || suite == 'document-data') {
         require('tests/document-data-tests.js');

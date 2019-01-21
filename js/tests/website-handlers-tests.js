@@ -8,10 +8,10 @@ var LAYOUT_0 = 0;
 var LAYOUT_1 = 1;
 
 testLib.module('website-handlers.js', function(hooks) {
-    var genericCmpType = {id:1,name:'Generic',props:'{"content":"richtext"}'};
-    var homeContentCmp = {name:'home',json:{content:'Hello'},componentTypeName:'Generic'};
-    var page2ContentCmp = {name:'/page2',json:{content:'Page2'},componentTypeName:'Generic'};
-    var page3ContentCmp = {name:'/page3',json:{content:'Page3'},componentTypeName:'Generic'};
+    var genericCntType = {id:1,name:'Generic',fields:'{"content":"richtext"}'};
+    var homeContentCnt = {name:'home',json:{content:'Hello'},contentTypeName:'Generic'};
+    var page2ContentCnt = {name:'/page2',json:{content:'Page2'},contentTypeName:'Generic'};
+    var page3ContentCnt = {name:'/page3',json:{content:'Page3'},contentTypeName:'Generic'};
     var websiteData = {id: 1, graph: JSON.stringify({
         pages: [['/', NO_PARENT, LAYOUT_0], ['/page2', NO_PARENT, LAYOUT_1],
                 ['/page3', NO_PARENT, LAYOUT_1]],
@@ -20,17 +20,17 @@ testLib.module('website-handlers.js', function(hooks) {
     var writeLog = [];
     var makeDirsLog = [];
     hooks.before(function() {
-        var sql3 = 'insert into components values (?,?,?,?),(?,?,?,?),(?,?,?,?)';
+        var sql3 = 'insert into contentNodes values (?,?,?,?),(?,?,?,?),(?,?,?,?)';
         if (commons.db.insert('insert into websites values (?,?)', function(stmt) {
                 stmt.bindInt(0, websiteData.id);
                 stmt.bindString(1, websiteData.graph);
             }) < 1 ||
             commons.db.insert(sql3, function(stmt) {
-                [homeContentCmp,page2ContentCmp,page3ContentCmp].forEach(function(cmp, i) {
+                [homeContentCnt,page2ContentCnt,page3ContentCnt].forEach(function(c, i) {
                     stmt.bindInt(i*4, i+1);
-                    stmt.bindString(i*4+1, cmp.name);
-                    stmt.bindString(i*4+2, JSON.stringify(cmp.json));
-                    stmt.bindString(i*4+3, cmp.componentTypeName);
+                    stmt.bindString(i*4+1, c.name);
+                    stmt.bindString(i*4+2, JSON.stringify(c.json));
+                    stmt.bindString(i*4+3, c.contentTypeName);
                 });
             }) < 1
         ) throw new Error('Failed to insert test data.');
@@ -46,8 +46,8 @@ testLib.module('website-handlers.js', function(hooks) {
     hooks.after(function() {
         website.website.config = website.siteConfig;
         website.website.fs = commons.fs;
-        if (commons.db.delete('delete from components where componentTypeName = ?',
-                function(stmt) { stmt.bindString(0, genericCmpType.name); }) < 1 ||
+        if (commons.db.delete('delete from contentNodes where contentTypeName = ?',
+                function(stmt) { stmt.bindString(0, genericCntType.name); }) < 1 ||
             commons.db.delete('delete from websites where id = ?',
                 function(stmt) { stmt.bindInt(0, websiteData.id); }) < 1
         ) throw new Error('Failed to clean test data.');
@@ -65,7 +65,7 @@ testLib.module('website-handlers.js', function(hooks) {
         assert.equal(response.statusCode, 200);
         assert.ok(response.body.indexOf('<title>Hello home') > -1,
             'should serve js/tests/testsite/home-layout.jsx.htm');
-        assert.ok(response.body.indexOf('<p>'+homeContentCmp.json.content) > -1,
+        assert.ok(response.body.indexOf('<p>'+homeContentCnt.json.content) > -1,
             'should render { mainContent.content }');
         assert.ok(response.body.indexOf('<iframe') > -1, 'should contain "<iframe"');
         //
@@ -73,7 +73,7 @@ testLib.module('website-handlers.js', function(hooks) {
         assert.equal(response2.statusCode, 200);
         assert.ok(response2.body.indexOf('<title>Hello page') > -1,
             'should serve js/tests/testsite/page-layout.jsx.htm');
-        assert.ok(response2.body.indexOf('<p>'+page2ContentCmp.json.content) > -1,
+        assert.ok(response2.body.indexOf('<p>'+page2ContentCnt.json.content) > -1,
             'should render { mainContent.content }');
         assert.ok(response2.body.indexOf('<iframe') > -1, 'should contain "<iframe"');
         //
@@ -103,11 +103,11 @@ testLib.module('website-handlers.js', function(hooks) {
         assert.equal(writeLog[0].path, insnEnv.sitePath+'out/index.html');
         assert.equal(writeLog[1].path, insnEnv.sitePath+'out/page2/index.html');
         assert.equal(writeLog[2].path, insnEnv.sitePath+'out/page3/index.html');
-        assert.ok(writeLog[0].contents.indexOf('<p>'+homeContentCmp.json.content) > -1,
+        assert.ok(writeLog[0].contents.indexOf('<p>'+homeContentCnt.json.content) > -1,
             'should write the contents of \'/\'');
-        assert.ok(writeLog[1].contents.indexOf('<p>'+page2ContentCmp.json.content) > -1,
+        assert.ok(writeLog[1].contents.indexOf('<p>'+page2ContentCnt.json.content) > -1,
             'should write the contents of \'/page2\'');
-        assert.ok(writeLog[2].contents.indexOf('<p>'+page3ContentCmp.json.content) > -1,
+        assert.ok(writeLog[2].contents.indexOf('<p>'+page3ContentCnt.json.content) > -1,
             'should write the contents of \'/page3\'');
     });
     testLib.test('POST \'/api/website/upload\' generates and uploads the site', function(assert) {

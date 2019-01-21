@@ -42,11 +42,11 @@ Page.prototype.render = function(pageData, issues) {
         return domTree.render(innerFn(domTree, ddc.getDataFor.bind(ddc), directives));
     }
     var html = domTree.render(innerFn(domTree, ddc.getDataFor.bind(ddc), directives));
-    pageData.allComponents = ddc.data;
+    pageData.allContentNodes = ddc.data;
     pageData.directiveInstances = domTree.getRenderedFnComponents()
         .map(function(fnData) {
             if (fnData.fn == directives.ArticleList) {
-                return {type: 'ArticleList', components: fnData.props.articles};
+                return {type: 'ArticleList', contentNodes: fnData.props.articles};
             }
         });
     return html;
@@ -72,17 +72,17 @@ Page.prototype.dryRun = function(inspectFn) {
  */
 function fetchData(ddc) {
     if (ddc.batchCount) {
-        var components = [];
+        var cnodes = [];
         commons.db.select(ddc.toSql(), function(row) {
-            var component = JSON.parse(row.getString(2));
-            component.cmp = {
+            var data = JSON.parse(row.getString(2));
+            data.defaults = {
                 id: row.getInt(0),
                 name: row.getString(1),
                 dataBatchConfigId: row.getInt(3)
             };
-            components.push(component);
+            cnodes.push(data);
         });
-        ddc.setComponents(components);
+        ddc.setContentNodes(cnodes);
     }
 }
 
@@ -177,7 +177,7 @@ exports.siteGraph = {
 // =============================================================================
 exports.siteConfig = {
     name: '',
-    componentTypes: [],
+    contentTypes: [],
     /**
      * @native
      * @throws {Error}

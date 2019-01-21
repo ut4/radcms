@@ -25,9 +25,9 @@ QUnit.module('ControlPanelComponent', hooks => {
     QUnit.test('lists current page directives', assert => {
         const currentPageData = {
             directiveInstances: [
-                {type: 'TestDirective', components: [{title:'t',body:'b',cmp:{id:1}}]}
+                {type: 'TestDirective', contentNodes: [{title:'t',body:'b',defaults:{id:1}}]}
             ],
-            allComponents: []
+            allContentNodes: []
         };
         httpStub.onCall(0).returns(Promise.resolve(0));
         const getMenuItemsSpy = sinon.spy(app._directiveImpls['TestDirective'], 'getMenuItems');
@@ -54,7 +54,7 @@ QUnit.module('ControlPanelComponent', hooks => {
         //
         const rendered = itu.renderIntoContainer($el(InsaneControlPanel, {currentPageData: {
             directiveInstances:[],
-            allComponents:[]
+            allContentNodes:[]
         }}, null));
         const uploadButton = itu.scryRenderedDOMElementsWithTag(rendered,
             'button').find(btn => btn.textContent == 'Upload');

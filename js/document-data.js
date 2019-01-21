@@ -6,42 +6,42 @@ exports.DDC = function() {
     this.data = [];
 };
 /**
- * @param {string} componentTypeName
+ * @param {string} contentTypeName eg. 'Article', 'Product', 'Movie', 'Employee'
  * @returns {DBC}
  */
-exports.DDC.prototype.fetchAll = function(componentTypeName) {
-    var len = this.batches.push(new exports.DBC(componentTypeName, true,
+exports.DDC.prototype.fetchAll = function(contentTypeName) {
+    var len = this.batches.push(new exports.DBC(contentTypeName, true,
                                                 ++this.batchCount));
     return this.batches[len - 1];
 };
 /**
- * @param {string} componentTypeName
+ * @param {string} contentTypeName
  * @returns {DBC}
  */
-exports.DDC.prototype.fetchOne = function(componentTypeName) {
-    var len = this.batches.push(new exports.DBC(componentTypeName, false,
+exports.DDC.prototype.fetchOne = function(contentTypeName) {
+    var len = this.batches.push(new exports.DBC(contentTypeName, false,
                                                 ++this.batchCount));
     return this.batches[len - 1];
 };
 /**
  * @param {DBC} dbc
- * @param {Component[]}
+ * @returns {Object[]|Object} The content nodes
  */
 exports.DDC.prototype.getDataFor = function(dbc) {
-    if (dbc.isFetchAll) return this.data.filter(function(component) {
-        return component.cmp.dataBatchConfigId == dbc.id;
+    if (dbc.isFetchAll) return this.data.filter(function(c) {
+        return c.defaults.dataBatchConfigId == dbc.id;
     });
     var l = this.data.length;
     for (var i = 0; i < l; ++i) {
-        if (this.data[i].cmp.dataBatchConfigId == dbc.id) return this.data[i];
+        if (this.data[i].defaults.dataBatchConfigId == dbc.id) return this.data[i];
     }
     return {};
 };
 /**
- * @param {Component[]} allComponents
+ * @param {Object[]} allContentNodes
  */
-exports.DDC.prototype.setComponents = function(allComponents) {
-    this.data = allComponents;
+exports.DDC.prototype.setContentNodes = function(allContentNodes) {
+    this.data = allContentNodes;
 };
 /**
  * @returns {string}
@@ -55,7 +55,7 @@ exports.DDC.prototype.toSql = function() {
         this.batches.map(function(batch) {
             return 'select * from (' +
                 'select `id`,`name`,`json`, ' + batch.id + ' as `dbcId` ' +
-                'from components where ' + batch.toSql() +
+                'from contentNodes where ' + batch.toSql() +
             ')';
         }).join(' union all ') +
     ')';
@@ -64,12 +64,12 @@ exports.DDC.prototype.toSql = function() {
 // == DataBatchConfig ====
 // =============================================================================
 /**
- * @param {string} componentTypeName
+ * @param {string} contentTypeName
  * @param {bool} isFetchAll
  * @param {number} id
  */
-exports.DBC = function(componentTypeName, isFetchAll, id) {
-    this.componentTypeName = componentTypeName;
+exports.DBC = function(contentTypeName, isFetchAll, id) {
+    this.contentTypeName = contentTypeName;
     this.isFetchAll = isFetchAll;
     this.id = id;
     this.whereExpr = null;
@@ -92,20 +92,20 @@ exports.DBC.prototype.toSql = function() {
     if (!this.isFetchAll) {
         return this.whereExpr;
     }
-    return '`componentTypeName` = \'' + this.componentTypeName + '\'';
+    return '`contentTypeName` = \'' + this.contentTypeName + '\'';
 };
 /**
  * @returns {string|null}
  */
 function dbcValidate(dbc) {
     var errors = [];
-    var MAX_CMP_TYPE_NAME_LEN = 64;
+    var MAX_CNT_TYPE_NAME_LEN = 64;
     var MAX_WHERE_LEN = 2048;
-    if (!dbc.componentTypeName) {
-        throw new TypeError('Component type name is required');
-    } else if (dbc.componentTypeName.length > MAX_CMP_TYPE_NAME_LEN) {
-        errors.push('Component type name too long (max ' +
-        MAX_CMP_TYPE_NAME_LEN + ', was ' + dbc.componentTypeName.length + ').');
+    if (!dbc.contentTypeName) {
+        throw new TypeError('contentTypeName is required');
+    } else if (dbc.contentTypeName.length > MAX_CNT_TYPE_NAME_LEN) {
+        errors.push('contentTypeName too long (max ' +
+        MAX_CNT_TYPE_NAME_LEN + ', was ' + dbc.contentTypeName.length + ').');
     }
     if (!dbc.isFetchAll) {
         if (!dbc.whereExpr) {

@@ -11,7 +11,7 @@ exports.import = function(type, arg) {
     if (type == 'wp') data = wpXmlFileToInsaneData(arg);
     errors = _validateData(data);
     if (errors) throw new Error(errors);
-    errors = _insertComponents(data.components);
+    errors = _insertContentNodes(data.contentNodes);
     if (errors) throw new Error(errors);
 };
 
@@ -26,26 +26,26 @@ function wpXmlFileToInsaneData(wpFilePath) {
         !(n = n.getFirstChild('item'))) {
         throw new TypeError('Expected rss > channel > item');
     }
-    var out = {components: []};
+    var out = {contentNodes: []};
     do {
-        var titleNode = n.getFirstChild('title');
-        if (!titleNode) continue;
-        var postNameNode = n.getFirstChild('wp:post_name');
-        if (!postNameNode) continue;
-        var postTypeNode = n.getFirstChild('wp:post_type');
-        if (!postTypeNode) continue;
-        var postType = postTypeNode.getFirstChild().getContent();
+        var titleEl = n.getFirstChild('title');
+        if (!titleEl) continue;
+        var postNameEl = n.getFirstChild('wp:post_name');
+        if (!postNameEl) continue;
+        var postTypeEl = n.getFirstChild('wp:post_type');
+        if (!postTypeEl) continue;
+        var postType = postTypeEl.getFirstChild().getContent();
         if (postType != 'post' && postType != 'page') continue;
-        var contentNode = n.getFirstChild('content:encoded');
-        if (!contentNode) continue;
+        var contentEl = n.getFirstChild('content:encoded');
+        if (!contentEl) continue;
         //
-        out.components.push({
-            name: postNameNode.getFirstChild().getContent(),
+        out.contentNodes.push({
+            name: postNameEl.getFirstChild().getContent(),
             json: {
-                title: titleNode.getContent(),
-                body: contentNode.getFirstChild().getContent()
+                title: titleEl.getContent(),
+                body: contentEl.getFirstChild().getContent()
             },
-            componentTypeName: 'Article'
+            contentTypeName: 'Article'
         });
     } while ((n = n.getNextSibling()) && n.name == 'item');
     return out;
@@ -56,42 +56,42 @@ function wpXmlFileToInsaneData(wpFilePath) {
 @returns {null|string}
 */
 function _validateData(data) {
-	if (!data.components || !data.components.length)
-		return 'data.components must be a non-empty array';
-	if (data.components.length > 40)
-		return 'Batch insert not implemented (too many components)';
-	if (data.componentTypes)
-		console.log('Got data.componentTypes, ignoring');
+	if (!data.contentNodes || !data.contentNodes.length)
+		return 'data.contentNodes must be a non-empty array';
+	if (data.contentNodes.length > 40)
+		return 'Batch insert not implemented (too many contentNodes)';
+	if (data.contentTypes)
+		console.log('Got data.contentTypes, ignoring');
 	var errors = [];
-	if (data.components) {
-		data.components.forEach(function(c, i) {
+	if (data.contentNodes) {
+		data.contentNodes.forEach(function(c, i) {
 			if (!c.name)
-				errors.push('component.name is required (at ['+i+'])');
+				errors.push('content.name is required (at ['+i+'])');
 			if (!c.json)
-				errors.push('component.json is required (at ['+i+'])');
-			if (!c.componentTypeName)
-				errors.push('component.componentTypeName is required (at ['+i+'])');
+				errors.push('content.json is required (at ['+i+'])');
+			if (!c.contentTypeName)
+				errors.push('content.contentTypeName is required (at ['+i+'])');
         });
     }
     return !errors.length ? null : errors.join('\n');
 }
 
 /**
-@param {dict[]} components
+@param {dict[]} nodes
 @returns {null|string}
 */
-function _insertComponents(components) {
-    var sql = 'INSERT INTO components (`name`, `json`, componentTypeName) VALUES ';
-    var holders = components.map(function() { return '(?,?,?)'; });
+function _insertContentNodes(nodes) {
+    var sql = 'INSERT INTO contentNodes (`name`, `json`, contentTypeName) VALUES ';
+    var holders = nodes.map(function() { return '(?,?,?)'; });
     if (commons.db.insert(sql + holders.join(','), function(stmt) {
-            components.forEach(function(c, i) {
+            nodes.forEach(function(c, i) {
                 stmt.bindString(i * 3, c.name);
                 stmt.bindString(i * 3 + 1, JSON.stringify(c.json));
-                stmt.bindString(i * 3 + 2, c.componentTypeName);
+                stmt.bindString(i * 3 + 2, c.contentTypeName);
             });
         }) > 0) {
-        console.log('[Info]: Inserted ' + components.length + ' components.');
+        console.log('[Info]: Inserted ' + nodes.length + ' content nodes.');
         return null;
     }
-    return 'Failed to insert components';
+    return 'Failed to insert content nodes';
 }

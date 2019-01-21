@@ -8,9 +8,9 @@ exports.ArticleList = function(domTree, props) {
             domTree.createElement('div', null, [
                 domTree.createElement('p', null, article.body.substr(0, 6) + '... '),
                 domTree.createElement('a', {
-                    href: article.cmp.name.charAt(0) !== '/'
-                        ? '/' + article.cmp.name
-                        : article.cmp.name,
+                    href: article.defaults.name.charAt(0) !== '/'
+                        ? '/' + article.defaults.name
+                        : article.defaults.name,
                     layoutFileName: 'article-layout.jsx.htm'
                 }, 'Read more')
             ])

@@ -1,7 +1,7 @@
 import services from './common-services.js';
 import {ArticleListDirectiveWebUIImpl,
         StaticMenuDirectiveWebUIImpl} from './directive-impls.js';
-import {AddComponentView, EditComponentView} from './component-views.js';
+import {AddContentView, EditContentView} from './content-views.js';
 import {WebsiteGenerateView, WebsiteUploadView} from './website-views.js';
 
 /*
@@ -48,7 +48,7 @@ class InsaneControlPanel extends preact.Component {
             if (!impl) return;
             this.currentPageDirectiveImpls.push(impl);
         });
-        this.currentPageComponents = props.currentPageData.allComponents;
+        this.currentPageContentNodes = props.currentPageData.allContentNodes;
         this.uploadButtonEl = null;
         this.state = {className: '', visibleMenuItems: {}};
         services.myFetch('/api/website/num-pending-changes')
@@ -107,23 +107,23 @@ class InsaneControlPanel extends preact.Component {
                         ]),
                         $el('ul', {
                             className: !this.state.visibleMenuItems.other?'hidden':''
-                        }, this.currentPageComponents.map(cmp =>
+                        }, this.currentPageContentNodes.map(c =>
                             $el('li', null, [
-                                $el('span', null, cmp.name),
-                                $el('a', {href:'#/edit-component', onClick: e => {
+                                $el('span', null, c.name),
+                                $el('a', {href:'#/edit-content', onClick: e => {
                                     e.preventDefault();
-                                    myRedirect('/edit-component');
+                                    myRedirect('/edit-content');
                                 }}, 'Edit')
                             ])
                         )),
                         $el('div', {
                             className: !this.state.visibleMenuItems.other?'hidden':''
                         }, $el('a', {
-                                href:'#/add-component', onClick: e => {
+                                href:'#/add-content', onClick: e => {
                                 e.preventDefault();
-                                myRedirect('/add-component');
+                                myRedirect('/add-content');
                             }
-                        }, 'Create new component'))
+                        }, 'Create content'))
                     )
                 ])
             ]),
@@ -137,8 +137,8 @@ class InsaneControlPanel extends preact.Component {
                         this.setState({className: !isIndex ? 'open' : ''});
                     }
                 }, [
-                    $el(AddComponentView, {path: '/add-component/:initialComponentTypeName?'}, null),
-                    $el(EditComponentView, {path: '/edit-component'}, null),
+                    $el(AddContentView, {path: '/add-content/:initialContentTypeName?'}, null),
+                    $el(EditContentView, {path: '/edit-content'}, null),
                     $el(WebsiteGenerateView, {path: '/generate-website'}, null),
                     $el(WebsiteUploadView, {path: '/upload-website'}, null)
                 ].concat(...this.currentPageDirectiveImpls.map(dir=>dir.getRoutes()))
@@ -152,4 +152,4 @@ class InsaneControlPanel extends preact.Component {
     }
 }
 
-export {app, InsaneControlPanel, AddComponentView};
+export {app, InsaneControlPanel, AddContentView};

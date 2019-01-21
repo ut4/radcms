@@ -9,21 +9,24 @@ class ArticleListDirectiveWebUIImpl extends preact.Component {
     static getTitle() {
         return 'Article list';
     }
+    /**
+     * @param {{type: {string}, contentNodes: {Object[]}}} directive
+     */
     static getMenuItems(directive) {
-        return directive.components.map(article => {
+        return directive.contentNodes.map(article => {
             return $el('div', null, [
                 $el('span', null, article.title),
-                $el('a', {href:'#/edit-component', onClick: e => {
+                $el('a', {href:'#/edit-content', onClick: e => {
                     e.preventDefault();
-                    myRedirect('/edit-component');
+                    myRedirect('/edit-content');
                 }}, 'Edit')
             ]);
         }).concat([
             $el('a', {
-                href:'#/add-component/Article',
+                href:'#/add-content/Article',
                 onClick: e => {
                     e.preventDefault();
-                    myRedirect('/add-component/Article');
+                    myRedirect('/add-content/Article');
                 }
             }, 'Add article')
         ]);
@@ -53,8 +56,11 @@ class StaticMenuDirectiveWebUIImpl extends preact.Component {
     static getTitle() {
         return 'Static menu';
     }
+    /**
+     * @param {{type: {string}, contentNodes: {Object[]}}} directive
+     */
     static getMenuItems(directive) {
-        return directive.components.map(article => {
+        return directive.contentNodes.map(article => {
             return $el('span', null, article.title);
         }).concat([
             $el('a', {

@@ -8,7 +8,9 @@ testLib.module('document-data.js', function() {
         var ddc1 = new documentData.DDC();
         ddc1.fetchOne('Generic').where('name=\'Foo\'');
         assert.equal(ddc1.toSql(), 'select `id`,`name`,`json`,`dbcId` from ('+
-            'select * from (select `id`,`name`,`json`, 1 as `dbcId` from components where name=\'Foo\')'+
+            'select * from (select `id`,`name`,`json`, 1 as `dbcId` '+
+                'from contentNodes where name=\'Foo\''+
+            ')'+
         ')');
         //
         var ddc2 = new documentData.DDC();
@@ -16,14 +18,14 @@ testLib.module('document-data.js', function() {
         ddc2.fetchOne('Generic').where('name=\'Bar\'');
         ddc2.fetchOne('Artible').where('name=\'Naz\'');
         assert.equal(ddc2.toSql(), 'select `id`,`name`,`json`,`dbcId` from ('+
-            'select * from ('+
-                'select `id`,`name`,`json`, 1 as `dbcId` from components where name=\'Foo\''+
+            'select * from (select `id`,`name`,`json`, 1 as `dbcId` '+
+                'from contentNodes where name=\'Foo\''+
             ') union all '+
-            'select * from ('+
-                'select `id`,`name`,`json`, 2 as `dbcId` from components where name=\'Bar\''+
+            'select * from (select `id`,`name`,`json`, 2 as `dbcId` '+
+                'from contentNodes where name=\'Bar\''+
             ') union all '+
-            'select * from ('+
-                'select `id`,`name`,`json`, 3 as `dbcId` from components where name=\'Naz\''+
+            'select * from (select `id`,`name`,`json`, 3 as `dbcId` '+
+                'from contentNodes where name=\'Naz\''+
             ')'+
         ')');
     });
@@ -34,8 +36,8 @@ testLib.module('document-data.js', function() {
         ddc1.fetchAll('Article');
         assert.equal(ddc1.toSql(), 'select `id`,`name`,`json`,`dbcId` from ('+
             'select * from ('+
-                'select `id`,`name`,`json`, 1 as `dbcId` from components where '+
-                '`componentTypeName` = \'Article\''+
+                'select `id`,`name`,`json`, 1 as `dbcId` from contentNodes where '+
+                '`contentTypeName` = \'Article\''+
             ')'+
         ')');
         //
@@ -44,12 +46,12 @@ testLib.module('document-data.js', function() {
         ddc2.fetchAll('Other');
         assert.equal(ddc2.toSql(), 'select `id`,`name`,`json`,`dbcId` from ('+
             'select * from ('+
-                'select `id`,`name`,`json`, 1 as `dbcId` from components where '+
-                '`componentTypeName` = \'Article\''+
+                'select `id`,`name`,`json`, 1 as `dbcId` from contentNodes where '+
+                '`contentTypeName` = \'Article\''+
             ') union all '+
             'select * from ('+
-                'select `id`,`name`,`json`, 2 as `dbcId` from components where '+
-                '`componentTypeName` = \'Other\''+
+                'select `id`,`name`,`json`, 2 as `dbcId` from contentNodes where '+
+                '`contentTypeName` = \'Other\''+
             ')'+
         ')');
     });
@@ -60,12 +62,12 @@ testLib.module('document-data.js', function() {
         };
         var ddc = new documentData.DDC();
         var dbc1 = ddc.fetchAll();
-        assert.equal(runInvalid(dbc1), 'Component type name is required');
+        assert.equal(runInvalid(dbc1), 'contentTypeName is required');
         var dbc2 = ddc.fetchOne();
-        assert.equal(runInvalid(dbc2), 'Component type name is required');
+        assert.equal(runInvalid(dbc2), 'contentTypeName is required');
         var dbc3 = ddc.fetchOne('foo');
         assert.equal(runInvalid(dbc3), 'fetchOne(...).where() is required.');
         var dbc4 = ddc.fetchOne('-'.repeat(65)).where('1=1');
-        assert.equal(runInvalid(dbc4), 'Component type name too long (max 64, was 65).');
+        assert.equal(runInvalid(dbc4), 'contentTypeName too long (max 64, was 65).');
     });
 });

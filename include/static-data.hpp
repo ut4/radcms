@@ -5,7 +5,7 @@
 
 struct SampleData {
     std::string name; // eg. "minimal" or "blog"
-    std::string installSql; // eg. "insert into components ..."
+    std::string installSql; // eg. "insert into contentNodes ..."
     std::vector<std::pair<std::string, std::string>> files; // eg. {{"foo.htm","<html>..."}...}
 };
 

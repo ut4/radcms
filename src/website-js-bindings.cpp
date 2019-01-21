@@ -4,8 +4,8 @@ static duk_ret_t siteConfigLoadFromDisk(duk_context *ctx);
 
 static int receiveIniVal(void *myPtr, const char *section, const char *key,
                          const char *value);
-static void putComponentTypeProp(duk_context *ctx, const char *componentTypeName,
-                                  const char *propName, const char *contentType);
+static void putContentTypeField(duk_context *ctx, const char *contentTypeName,
+                                const char *fieldName, const char *dataType);
 static bool validateKeyVals(duk_context *ctx);
 
 void
@@ -42,9 +42,9 @@ receiveIniVal(void *myPtr, const char *section, const char *key,
     if (MATCH("Site", "name")) {
         duk_push_string(ctx, value);       // [? siteCfg value]
         duk_put_prop_string(ctx, -2, key); // [? siteCfg]
-    } else if (strstr(section, "ComponentType:") == section) {
-        putComponentTypeProp(ctx, &section[strlen("ComponentType:")], key,
-                              value);      // [? siteCfg]
+    } else if (strstr(section, "ContentType:") == section) {
+        putContentTypeField(ctx, &section[strlen("ContentType:")], key,
+                            value);        // [? siteCfg]
     } else {
         std::cerr << "[Warn]: Unknown site.ini setting [" << section << "]" <<
                      key << ".\n";
@@ -54,65 +54,65 @@ receiveIniVal(void *myPtr, const char *section, const char *key,
 }
 
 static void
-putComponentTypeProp(duk_context *ctx, const char *componentTypeName,
-                     const char *propName, const char *contentType) {
-    duk_get_prop_string(ctx, -1, "componentTypes");  // [? siteCfg arr]
+putContentTypeField(duk_context *ctx, const char *contentTypeName,
+                    const char *fieldName, const char *dataType) {
+    duk_get_prop_string(ctx, -1, "contentTypes");    // [? siteCfg arr]
     duk_size_t l = duk_get_length(ctx, -1);
     if (l > 0) {
         duk_get_prop_index(ctx, -1, l - 1);          // [? siteCfg arr type]
         duk_get_prop_string(ctx, -1, "name");        // [? siteCfg arr type name]
         // Second+ key=val (
-        //    [ComponentType:foo]
+        //    [ContentType:foo]
         //    key=val
         //    key2=val2 <--
         //)
-        if (strcmp(componentTypeName, duk_get_string(ctx, -1)) == 0) {
-            duk_get_prop_string(ctx, -2, "props");  // [? siteCfg arr type name props]
-            duk_push_string(ctx, contentType);      // [? siteCfg arr type name props propVal]
-            duk_put_prop_string(ctx, -2, propName); // [? siteCfg arr type name props]
-            duk_pop_n(ctx, 4);                      // [? siteCfg]
+        if (strcmp(contentTypeName, duk_get_string(ctx, -1)) == 0) {
+            duk_get_prop_string(ctx, -2, "fields");  // [? siteCfg arr type name props]
+            duk_push_string(ctx, dataType);          // [? siteCfg arr type name props propVal]
+            duk_put_prop_string(ctx, -2, fieldName); // [? siteCfg arr type name props]
+            duk_pop_n(ctx, 4);                       // [? siteCfg]
             return;
         }
         // First key=val (
-        //    [ComponentType:foo]
+        //    [ContentType:foo]
         //    key=val <---
         //) -> fallthrough
         duk_pop_2(ctx);                              // [? siteCfg arr]
     }
     duk_push_bare_object(ctx);                       // [? siteCfg arr newType]
-    duk_push_string(ctx, componentTypeName);         // [? siteCfg arr newType name]
+    duk_push_string(ctx, contentTypeName);           // [? siteCfg arr newType name]
     duk_put_prop_string(ctx, -2, "name");            // [? siteCfg arr newType]
     duk_push_object(ctx);                            // [? siteCfg arr newType props]
-    duk_push_string(ctx, contentType);               // [? siteCfg arr newType props propVal]
-    duk_put_prop_string(ctx, -2, propName);          // [? siteCfg arr newType props]
-    duk_put_prop_string(ctx, -2, "props");           // [? siteCfg arr newType]
+    duk_push_string(ctx, dataType);                  // [? siteCfg arr newType props propVal]
+    duk_put_prop_string(ctx, -2, fieldName);         // [? siteCfg arr newType props]
+    duk_put_prop_string(ctx, -2, "fields");          // [? siteCfg arr newType]
     duk_put_prop_index(ctx, -2, l);                  // [? siteCfg arr]
     duk_pop(ctx);                                    // [? siteCfg]
 }
 
 static bool
 validateKeyVals(duk_context *ctx) {
-                                                    // [? siteCfg]
-    duk_get_prop_string(ctx, -1, "componentTypes"); // [? siteCfg arr]
+                                                     // [? siteCfg]
+    duk_get_prop_string(ctx, -1, "contentTypes");    // [? siteCfg arr]
     std::string errors;
     duk_size_t l = duk_get_length(ctx, -1);
     for (duk_size_t i = 0; i < l; ++i) {
-        duk_get_prop_index(ctx, -1, i);             // [? siteCfg arr type]
-        duk_get_prop_string(ctx, -1, "props");      // [? siteCfg arr type props]
-        duk_enum(ctx, -1, DUK_ENUM_OWN_PROPERTIES_ONLY); // [? siteCfg arr type props enum]
-        while (duk_next(ctx, -1, true)) {           // [? siteCfg arr type props enum key val]
-            const char *contentType = duk_get_string(ctx, -1);
-            if (strcmp(contentType, "text") != 0 &&
-                strcmp(contentType, "richtext") != 0) {
-                errors += "'" + std::string(contentType) + "' is not valid content type.\n";
+        duk_get_prop_index(ctx, -1, i);              // [? siteCfg arr type]
+        duk_get_prop_string(ctx, -1, "fields");      // [? siteCfg arr type fields]
+        duk_enum(ctx, -1, DUK_ENUM_OWN_PROPERTIES_ONLY); // [? siteCfg arr type fields enum]
+        while (duk_next(ctx, -1, true)) {            // [? siteCfg arr type fields enum key val]
+            const char *dataType = duk_get_string(ctx, -1);
+            if (strcmp(dataType, "text") != 0 &&
+                strcmp(dataType, "richtext") != 0) {
+                errors += "'" + std::string(dataType) + "' is not valid datatype.\n";
             }
-            duk_pop_2(ctx);                         // [? siteCfg arr type props enum]
+            duk_pop_2(ctx);                          // [? siteCfg arr type fields enum]
         }
-        duk_pop_3(ctx);                             // [? siteCfg arr]
+        duk_pop_3(ctx);                              // [? siteCfg arr]
     }
-    duk_pop(ctx);                                   // [? siteCfg]
+    duk_pop(ctx);                                    // [? siteCfg]
     if (!errors.empty()) {
-        duk_push_string(ctx, errors.c_str());       // [? siteCfg err]
+        duk_push_string(ctx, errors.c_str());        // [? siteCfg err]
         return false;
     }
     return true;

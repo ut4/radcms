@@ -30,7 +30,7 @@ testLib.module('[\'common-services.js\'].db', function(hooks) {
         assert.expect(3);
         var runInvalid = function(bindFn) {
             try {
-                commons.db.insert('insert into components(`name`) values (?)',
+                commons.db.insert('insert into contentNodes(`name`) values (?)',
                                   bindFn);
             } catch (e) {
                 return e.message;
@@ -235,12 +235,9 @@ testLib.module('[\'common-services.js\'].DomTree', function() {
         var myFnComponent = function(domTreeRef) {
             return domTreeRef.createElement('p', null, 'Hello');
         };
-        var rootElemRef = domTree.createElement('div', null,
+        domTree.createElement('div', null,
             domTree.createElement(myFnComponent, {foo: 'bar'}, null)
         );
-        if (!domTree.render(rootElemRef).length) {
-            throw new Error('Failed to render domTree.');
-        }
         var funcs = domTree.getRenderedFnComponents();
         assert.equal(funcs.length, 1, 'Should return 1 component func');
         assert.deepEqual(funcs[0].props, {foo:'bar'}, 'funcNode1.props == props');

@@ -181,7 +181,7 @@ function handleGetNumPendingChanges() {
  * @param {string} html <html>body><p>foo</p>...
  * @param {Object?} pageData {
  *     directiveInstances: [{...}...]
- *     allComponents: [{...,cmp:{id:<id>,name:<name>...}}]
+ *     allContentNodes: [{...,defaults:{id:<id>,name:<name>...}}]
  * }
  * @returns {string} <html>body><iframe...<p>foo</p>...
  */

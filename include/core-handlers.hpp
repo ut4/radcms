@@ -17,7 +17,7 @@ coreHandlersHandleStaticFileRequest(void *myPtr, void *myDataPtr, const char *me
                                     struct MHD_Response **response, std::string &err);
 
 /**
- * Forwards <ANY> <any> eg. GET "/some-page", POST "/component/1" to a
+ * Forwards <ANY> <any> eg. GET "/some-page", POST "/content/1" to a
  * javascript-matcher/handler.
  */
 unsigned
