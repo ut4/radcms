@@ -76,6 +76,7 @@ unsigned
 DomTree::createFuncNode(fnComponentFn fn, void *fnMyPtr) {
     FuncNode &newElem = this->funcNodes.emplace_back();
     newElem.id = this->funcNodes.size();
+    newElem.rootElemNodeRef = 0;
     newElem.fn = fn;
     newElem.myPtr = fnMyPtr;
     //
@@ -104,8 +105,8 @@ DomTree::traverse(domTreeTraverseFn fn, void *myPtr, std::string &err) {
         err.assign("Cannot traverse an empty domTree.\n");
         return false;
     }
-    this->doTraverse(fn, myPtr, this->elemNodes[this->rootElemIndex]);
-    return true;
+    this->doTraverse(fn, myPtr, this->elemNodes[this->rootElemIndex], err);
+    return err.empty();
 }
 
 ElemNode*
@@ -156,16 +157,8 @@ DomTree::doRender(const ElemNode *node, std::string &err) {
             assert(n != nullptr && "getTextNode() == nullptr");
             r += n->chars;
         } else {
-            FuncNode *n = this->getFuncNode(ref);
-            assert(n != nullptr && "getFuncNode() == nullptr");
-            unsigned componentRootElemRef = n->fn(n, err);
-            if (componentRootElemRef > 0) {
-                ElemNode *componentRootElem = this->getElemNode(componentRootElemRef);
-                assert(componentRootElem != nullptr && "getElemNode() == nullptr");
-                if (!doRender(componentRootElem, err)) return false;
-            } else {
-                return false;
-            }
+            ElemNode *rootElem = this->lazilyExecFnCmpFn(ref, err);
+            if ((rootElem && !this->doRender(rootElem, err)) || !rootElem) return false;
         }
     }
     r += "</";
@@ -175,17 +168,39 @@ DomTree::doRender(const ElemNode *node, std::string &err) {
 }
 
 /*private*/ bool
-DomTree::doTraverse(domTreeTraverseFn fn, void *myPtr, ElemNode &e) {
+DomTree::doTraverse(domTreeTraverseFn fn, void *myPtr, ElemNode &e,
+                    std::string &err) {
     if (!fn(this, NODE_TYPE_ELEM, e.id, myPtr)) return false;
     for (unsigned ref: e.children) {
         const unsigned type = GET_NODETYPE(ref);
         if (type == NODE_TYPE_ELEM) {
             ElemNode *n = this->getElemNode(ref);
             assert(n != nullptr && "getElemNode() == nullptr");
-            this->doTraverse(fn, myPtr, *n);
-        } else if (!fn(this, static_cast<NodeType>(type), GET_NODEID(ref), myPtr)) {
+            this->doTraverse(fn, myPtr, *n, err);
+        } else if (type == NODE_TYPE_FUNC) {
+            if (!fn(this, NODE_TYPE_FUNC, GET_NODEID(ref), myPtr))
+                return false;
+            ElemNode *rootElem = this->lazilyExecFnCmpFn(ref, err);
+            if ((rootElem && !this->doTraverse(fn, myPtr, *rootElem, err)) || !rootElem) return false;
+        } else if (!fn(this, NODE_TYPE_TEXT, GET_NODEID(ref), myPtr)) {
             return false;
         }
     }
     return true;
+}
+
+/* private*/ ElemNode*
+DomTree::lazilyExecFnCmpFn(unsigned ref, std::string &err) {
+    FuncNode *n = this->getFuncNode(ref);
+    assert(n != nullptr && "getFuncNode() == nullptr");
+    if (n->rootElemNodeRef == 0) { // Hasn't run yet.
+        n->rootElemNodeRef = n->fn(n, err);
+        if (n->rootElemNodeRef > 0) {
+            ElemNode *rootElem = this->getElemNode(n->rootElemNodeRef);
+            assert(rootElem != nullptr && "getElemNode() == nullptr");
+            return rootElem;
+        }
+        return nullptr;
+    }
+    return this->getElemNode(n->rootElemNodeRef);
 }

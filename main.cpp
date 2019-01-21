@@ -50,7 +50,7 @@ handleRun(const std::string &sitePath) {
     //
     pthread_t fileWatcherThread;
     if (pthread_create(&fileWatcherThread, nullptr, startFileWatcher,
-                       &webApp.ctx) == 0) {
+                       &appCtx) == 0) {
         std::cout << "[Info]: Started watching files at '" <<
                      appCtx.sitePath << "'.\n";
     } else {

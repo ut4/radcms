@@ -24,6 +24,7 @@ typedef unsigned (*fnComponentFn)(FuncNode *me, std::string &err);
 
 struct FuncNode {
     unsigned id;
+    unsigned rootElemNodeRef;
     fnComponentFn fn;
     void *myPtr;
     std::vector<ElemProp> properties;
@@ -118,5 +119,7 @@ private:
     bool
     doRender(const ElemNode *node, std::string &err);
     bool
-    doTraverse(domTreeTraverseFn fn, void *myPtr, ElemNode &e);
+    doTraverse(domTreeTraverseFn fn, void *myPtr, ElemNode &e, std::string &err);
+    ElemNode*
+    lazilyExecFnCmpFn(unsigned ref, std::string &err);
 };

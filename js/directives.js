@@ -11,7 +11,7 @@ exports.ArticleList = function(domTree, props) {
                     href: article.cmp.name.charAt(0) !== '/'
                         ? '/' + article.cmp.name
                         : article.cmp.name,
-                    layoutFileName: 'article-layout.js'
+                    layoutFileName: 'article-layout.jsx.htm'
                 }, 'Read more')
             ])
         ]);
