@@ -32,6 +32,12 @@ if (INSN_IS_WIN)
         IMPORTED_IMPLIB ${CMAKE_BINARY_DIR}/libcurl-x64.dll
     )
 
+    # -- notify ----
+    add_library(notify SHARED IMPORTED)
+    set_target_properties(notify PROPERTIES
+        IMPORTED_IMPLIB ${CMAKE_BINARY_DIR}/notify.dll
+    )
+
     set(INSN_DEP_INCLUDES
         ${VENDOR_ROOT}/microhttpd/include
         ${VENDOR_ROOT}/duktape
@@ -41,6 +47,7 @@ if (INSN_IS_WIN)
         ${VENDOR_ROOT}/curl
         ${VENDOR_ROOT}/cjson
         ${VENDOR_ROOT}/rapidxml
+        ${VENDOR_ROOT}/notify
     )
     set(INSN_DEP_LIBS
         microhttpd
@@ -49,6 +56,7 @@ if (INSN_IS_WIN)
         sqlite3
         curl
         cjson
+        notify
     )
 elseif(INSN_IS_LINUX)
     # -- microhttpd provided by libmicrohttpd-dev ----
@@ -65,11 +73,15 @@ elseif(INSN_IS_LINUX)
     # -- openssl & crypto provided by libssl-dev ----
     # -- curl provided by libcurl4-openssl-dev ----
 
+    # -- notify ----
+    # todo
+
     set(INSN_DEP_INCLUDES
         ${VENDOR_ROOT}/duktape
         ${VENDOR_ROOT}/inih
         ${VENDOR_ROOT}/cjson
         ${VENDOR_ROOT}/rapidxml
+        ${VENDOR_ROOT}/notify
     )
     set(INSN_DEP_LIBS
         m

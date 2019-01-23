@@ -101,10 +101,15 @@ exports.transpiler = {
 // == fileWatcher-singleton ====
 // =============================================================================
 exports.fileWatcher = {
-    EVENT_ADDED: 0,
-    EVENT_MODIFIED: 1,
-    EVENT_DELETED: 2,
-    EVENT_OTHER: 3,
+    EVENT_NOTICE_WRITE: 0,
+    EVENT_NOTICE_REMOVE: 1,
+    EVENT_CREATE: 2,
+    EVENT_WRITE: 3,
+    EVENT_CHMOD: 4,
+    EVENT_REMOVE: 5,
+    EVENT_RENAME: 6,
+    EVENT_RESCAN: 7,
+    EVENT_ERROR: 8,
     _watchFn: null,
     /**
      * @param ((eventType: number, fileName: string): void) fn

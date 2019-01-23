@@ -15,9 +15,24 @@ exports.init = function() {
  * @param {string} fileName
  */
 function handleFWEvent(type, fileName) {
-    if (type == fileWatcher.EVENT_MODIFIED) {
+    if (type == fileWatcher.EVENT_CREATE) {
+        handleFileCreateEvent(fileName);
+    } else if (type == fileWatcher.EVENT_WRITE) {
         handleFileModifyEvent(fileName);
     }
+}
+
+/**
+ * @param {string} fileName
+ */
+function handleFileCreateEvent(fileName) {
+    var layout = siteGraph.findTemplate(fileName);
+    if (!layout) {
+        // Add the layout, and leave its .exists to false
+        siteGraph.addTemplate(fileName, null);
+        saveWebsiteToDb(siteGraph);
+    }
+    // Skip compileAndCache()
 }
 
 /**
@@ -31,8 +46,11 @@ function handleFileModifyEvent(fileName) {
     }
     if (website.website.compileAndCacheTemplate(layout)) {
         print('[Info]: Cached ' + fileName);
+        layout.exists = true;
     }
-    performRescan(layout.samplePage);
+    if (layout.samplePage) {
+        performRescan(layout.samplePage);
+    }
 }
 
 /**
@@ -100,8 +118,13 @@ function processSiteGraph(domTree) {
             if (siteGraph.getPage(href)) continue;
             // New page -> add it
             var newPage = siteGraph.addPage(href, 0, 0);
-            newPage.layoutIdx = (siteGraph.findTemplate(layoutFileName) ||
-                                 siteGraph.addTemplate(layoutFileName, newPage)).idx;
+            var layout = siteGraph.findTemplate(layoutFileName);
+            if (layout) {
+                if (!layout.samplePage) layout.samplePage = newPage;
+            } else {
+                layout = siteGraph.addTemplate(layoutFileName, newPage);
+            }
+            newPage.layoutIdx = layout.idx;
             out.newPages.push(newPage);
         /*
          * Handle <script src=<path>...

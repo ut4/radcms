@@ -17,7 +17,6 @@ include_directories(${INSN_DEP_INCLUDES})
 
 # == insane.exe ================================================================
 set(C_FILES
-    c-libs/fwatcher/include/file-watcher.hpp c-libs/fwatcher/src/file-watcher.c
     c-libs/jsx/include/jsx-producer.h c-libs/jsx/src/jsx-producer.c
     c-libs/jsx/include/jsx-scanner.h c-libs/jsx/src/jsx-scanner.c
     c-libs/jsx/include/jsx-transpiler.hpp c-libs/jsx/src/jsx-transpiler.c

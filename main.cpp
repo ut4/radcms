@@ -1,12 +1,12 @@
 #include <cstring>
 #include <iostream>
 #include <pthread.h>
+#include <passcod-notify.hpp>
 #include "include/core-handlers.hpp"
 #include "include/js-environment.hpp"
 #include "include/static-data.hpp"
 #include "include/web-app.hpp"
 #include "include/website.hpp"
-#include "c-libs/fwatcher/include/file-watcher.hpp"
 
 static int handleRun(const std::string &sitePath);
 static int handleInit(const std::string &sampleDataName, const char *sitePath);
@@ -125,19 +125,25 @@ handleImport(const std::string &importType, const char *arg,
 
 static void*
 startFileWatcher(void *myPtr) {
-    auto *appCtx = static_cast<AppContext*>(myPtr);
-    char *err = fileWatcherWatch(&appCtx->fileWatcher, appCtx->sitePath.c_str(),
-                     commonServicesCallJsFWFn, [](const char *fileName){
-                        char *ext = strrchr(fileName, '.');
-                        return ext && (
-                            strcmp(ext, ".js") == 0 ||
-                            strcmp(ext, ".jsx") == 0 ||
-                            strcmp(ext, ".htm") == 0
-                        );
-                    }, appCtx);
-    if (err) {
-        std::cerr << "Error: " << err << "\n";
-    }
+    fileWatcherWatch(static_cast<AppContext*>(myPtr)->sitePath.c_str(),
+        [](FWEventType type, const char *filePath, void *myPtr) {
+            if (type == FW_EVENT_RESCAN) return;
+            if (type == FW_EVENT_ERROR) {
+                std::cerr << "[Error]: Got an error from fileWatcher\n";
+                return;
+            }
+            char *ext = strrchr(filePath, '.');
+            if (ext && (
+                strcmp(ext, ".js") == 0 ||
+                strcmp(ext, ".jsx") == 0 ||
+                strcmp(ext, ".htm") == 0
+            )) {
+                commonServicesCallJsFWFn(type,
+                    // /full/path/file.js -> file.js
+                    &filePath[static_cast<AppContext*>(myPtr)->sitePathLen],
+                    myPtr);
+            }
+        }, myPtr);
     return NULL;
 }
 

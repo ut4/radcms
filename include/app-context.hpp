@@ -5,7 +5,6 @@
 #include "db.hpp"
 #include "duk.hpp"
 #include "my-fs.hpp"
-#include "../c-libs/fwatcher/include/file-watcher.hpp"
 #include "../c-libs/jsx/include/jsx-transpiler.hpp"
 
 /**
@@ -17,7 +16,7 @@ struct AppContext {
     std::string errBuf; // A shared error buffer
     Db db;
     duk_context *dukCtx = nullptr;
-    FileWatcher fileWatcher;
+    unsigned sitePathLen = 0;
     ~AppContext();
     bool init(const std::string &sitePath);
 };

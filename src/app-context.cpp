@@ -9,8 +9,9 @@ bool
 AppContext::init(const std::string &sitePath) {
     this->sitePath = sitePath;
     myFsNormalizePath(this->sitePath);
+    this->sitePathLen = this->sitePath.size();
     constexpr int MAX_FILENAME_LEN = 40;
-    if (this->sitePath.size() + MAX_FILENAME_LEN > PATH_MAX) {
+    if (this->sitePathLen + MAX_FILENAME_LEN > PATH_MAX) {
         this->errBuf = "Sitepath too long.\n";
         return false;
     }

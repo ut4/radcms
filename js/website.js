@@ -21,10 +21,10 @@ function Page(url, parentId, layoutIdx) {
  * @returns {string}
  */
 Page.prototype.render = function(pageData, issues) {
-    var layout;
-    if (issues && (layout = exports.siteGraph.templates[this.layoutIdx], !layout.exists)) {
-        var message = 'Layout file \'' + layout.fileName + '\' doesn\'t exists yet.';
-        issues.push(this.url + '>' + message);
+    var layout = exports.siteGraph.templates[this.layoutIdx];
+    if (!layout.exists || !layout.samplePage) {
+        var message = 'Layout file \'' + layout.fileName + '\' doesn\'t exists yet, or is empty.';
+        if (issues) issues.push(this.url + '>' + message);
         return '<html><body>' + message + '</body></html>';
     }
     // function cachedTemplate(fetchAll, fetchOne, url) {           <-- outer
@@ -91,7 +91,7 @@ function fetchData(ddc) {
 // =============================================================================
 /**
  * @param {string} fileName
- * @param {number} idx
+ * @param {number} idx siteGraph.templates.indexOf(this)
  * @param {Page?} samplePage
  */
 function Template(fileName, idx, samplePage) {
