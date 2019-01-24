@@ -82,7 +82,7 @@ static std::vector<SampleData> sampleData = {
                                "        <footer>{ footer.content }</footer>\n"
                                "    </body>\n"
                                "</html>"},
-            {"article-layout.jsx.htm", "@art = fetchOne(\"Article\").where(\"name='\" + url.substr(1) + \"'\")\n"
+            {"article-layout.jsx.htm", "@art = fetchOne(\"Article\").where(\"name='\" + url[0] + \"'\")\n"
                                   "@footer = fetchOne(\"Generic\").where(\"name='footer'\")\n"
                                   "<html>\n"
                                   "    <head>\n"

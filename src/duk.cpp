@@ -32,7 +32,8 @@ myDukCreate(std::string &errBuf) {
 bool
 dukUtilsCompileStrToFn(duk_context *ctx, const char *code, const char *fileName,
                        std::string &err) {
-    duk_pcompile_string(ctx, DUK_COMPILE_FUNCTION, code); // fn|err
+    duk_push_string(ctx, fileName);
+    duk_pcompile_string_filename(ctx, DUK_COMPILE_FUNCTION, code); // fn|err
     if (!duk_is_function(ctx, -1)) {
         dukUtilsPutDetailedError(ctx, -1, fileName, err);
         return false;

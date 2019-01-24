@@ -57,7 +57,7 @@ commonServicesJsModuleInit(duk_context *ctx, const int exportsIsAt) {
     duk_pop(ctx);                                       // [?]
     // module.transpiler
     duk_get_prop_string(ctx, exportsIsAt, "transpiler");// [? transpiler]
-    duk_push_c_lightfunc(ctx, transpilerTranspileToFn, 1, 0, 0); // [? transpiler lightfn]
+    duk_push_c_lightfunc(ctx, transpilerTranspileToFn, 2, 0, 0); // [? transpiler lightfn]
     duk_put_prop_string(ctx, -2, "transpileToFn");      // [? transpiler]
     duk_pop(ctx);                                       // [?]
     // dukStash._StmtJsPrototype
@@ -284,9 +284,10 @@ fsMakeDirs(duk_context *ctx) {
 static duk_ret_t
 transpilerTranspileToFn(duk_context *ctx) {
     char *js = transpilerTranspile(duk_require_string(ctx, 0));
+    const char *fileName = duk_require_string(ctx, 1);
     std::string err;
     if (js) {
-        if (dukUtilsCompileStrToFn(ctx, js, "source", err)) { // [stash fn]
+        if (dukUtilsCompileStrToFn(ctx, js, fileName, err)) { // [... fn]
             return 1;
         }
         return duk_error(ctx, DUK_ERR_ERROR, "%s", err.c_str());

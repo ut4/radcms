@@ -4,9 +4,11 @@ var website = require('website.js');
 var siteGraph = website.siteGraph;
 var fileWatcher = commons.fileWatcher;
 var testLib = require('tests/testlib.js').testLib;
+var NO_PARENT = 0;
 
 testLib.module('file-watchers.js', function(hooks) {
-    var mockTemplate = {fname:'a-template.jsx.htm', contents:null};
+    var mockTemplate = {fname:'template-a.jsx.htm', contents:null};
+    var mockTemplate2 = {fname:'template-b.jsx.htm', contents:null};
     var websiteData = {id: 2, graph: ''};
     var writeLog;
     hooks.before(function() {
@@ -16,6 +18,7 @@ testLib.module('file-watchers.js', function(hooks) {
             },
             read: function(a) {
                 if(a==insnEnv.sitePath + mockTemplate.fname) return mockTemplate.contents;
+                if(a==insnEnv.sitePath + mockTemplate2.fname) return mockTemplate2.contents;
             }
         };
         if (commons.db.insert('insert into websites values (?,?)', function(stmt) {
@@ -56,9 +59,9 @@ testLib.module('file-watchers.js', function(hooks) {
     });
     testLib.test('re-caches a modified template', function(assert) {
         assert.expect(1);
-        var samplePage = siteGraph.addPage('/foo', 0, 0);
+        var existingPage = siteGraph.addPage('/foo', NO_PARENT, 0);
         mockTemplate.contents = '<html><body>Hello</body></html>';
-        var t = siteGraph.addTemplate(mockTemplate.fname, samplePage);
+        var t = siteGraph.addTemplate(mockTemplate.fname, existingPage);
         var cachedTemplateFnBefore = commons.templateCache.get(t.idx); // undefined
         // Trigger the listener function
         fileWatcher._watchFn(fileWatcher.EVENT_WRITE, mockTemplate.fname);
@@ -67,28 +70,65 @@ testLib.module('file-watchers.js', function(hooks) {
             'Should cache the modified template');
     });
     testLib.test('scans new links from a modified template', function(assert) {
-        assert.expect(5);
-        var samplePage = siteGraph.addPage('/foo', 0, 0);
-        var newLink = {href: '/bar', layoutFileName: 'foo.jsx.htm'};
+        assert.expect(3);
+        var existingPage = siteGraph.addPage('/foo', NO_PARENT, 0);
+        var existingLayout = siteGraph.addTemplate(mockTemplate.fname, existingPage);
+        var newLink = {href: '/bar', layoutFileName: mockTemplate.fname};
         mockTemplate.contents = '<html><body><a href="' + newLink.href +
             '" layoutFileName="' + newLink.layoutFileName + '"></a></body></html>';
-        siteGraph.addTemplate(mockTemplate.fname, samplePage);
         // Trigger the listener function
         fileWatcher._watchFn(fileWatcher.EVENT_WRITE, mockTemplate.fname);
         // Assert that updated website.siteGraph
         var addedPage = siteGraph.getPage(newLink.href);
         assert.ok(addedPage !== undefined, 'should add a page to website.siteGraph');
         assert.equal(addedPage.url, '/bar');
-        var addedLayout = siteGraph.findTemplate(newLink.layoutFileName);
-        assert.ok(addedLayout !== undefined, 'should add a template to website.siteGraph');
-        assert.equal(addedLayout.fileName, newLink.layoutFileName);
         // Assert that saved the updated sitegraph to the database
         commons.db.select('select `graph` from websites where id = ' + websiteData.id,
             function(row) {
-            assert.equal(row.getString(0), JSON.stringify({pages:[[samplePage.url,
-                samplePage.parentId,samplePage.layoutIdx],[newLink.href,0,addedLayout.idx]],
-                templates:[mockTemplate.fname,newLink.layoutFileName]}),
-                'should store the updated sitegraph to the database');
+            assert.equal(row.getString(0), JSON.stringify({
+                pages:[
+                    [existingPage.url,NO_PARENT,existingLayout.idx],
+                    [newLink.href,NO_PARENT,existingLayout.idx]
+                ],
+                templates:[existingLayout.fileName]
+            }), 'should store the updated sitegraph to the database');
+        });
+    });
+    testLib.test('scans new links recursively', function(assert) {
+        assert.expect(5);
+        var templateALink = {href: '/bar', layoutFileName: mockTemplate2.fname};
+        var templateBLink = {href: '/nar', layoutFileName: mockTemplate.fname};
+        // Existing /foo contains a link to /bar
+        mockTemplate.contents = '<html><body><a href="' + templateALink.href +
+            '" layoutFileName="' + templateALink.layoutFileName + '"></a></body></html>';
+        // New link /bar contains a link to /nar
+        mockTemplate2.contents = '<html><body><a href="' + templateBLink.href +
+            '" layoutFileName="' + templateBLink.layoutFileName + '"></a></body></html>';
+        var existingPage = siteGraph.addPage('/foo', NO_PARENT, 0);
+        var t1 = siteGraph.addTemplate(mockTemplate.fname, existingPage); t1.exists = true;
+        var t2 = siteGraph.addTemplate(mockTemplate2.fname, null); t2.exists = true;
+        website.website.compileAndCacheTemplate(t1);
+        website.website.compileAndCacheTemplate(t2);
+        // Trigger the listener function
+        fileWatcher._watchFn(fileWatcher.EVENT_WRITE, mockTemplate.fname);
+        // Assert that added both pages to website.siteGraph
+        var added1 = siteGraph.getPage(templateALink.href);
+        assert.ok(added1 !== undefined, 'should add page #1 to website.siteGraph');
+        assert.equal(added1.url, '/bar');
+        var added2 = siteGraph.getPage(templateBLink.href);
+        assert.ok(added2 !== undefined, 'should add page #2 to website.siteGraph');
+        assert.equal(added2.url, '/nar');
+        // Assert that saved the updated sitegraph to the database
+        commons.db.select('select `graph` from websites where id = ' + websiteData.id,
+            function(row) {
+            assert.equal(row.getString(0), JSON.stringify({
+                pages: [
+                    [existingPage.url,NO_PARENT,existingPage.layoutIdx],
+                    [templateALink.href,NO_PARENT,existingPage.layoutIdx+1],
+                    [templateBLink.href,NO_PARENT,existingPage.layoutIdx]
+                ],
+                templates:[mockTemplate.fname,mockTemplate2.fname]
+            }), 'should store the updated sitegraph to the database');
         });
     });
 });

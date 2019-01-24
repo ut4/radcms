@@ -2,6 +2,7 @@ var commons = require('common-services.js');
 var fileWatcher = commons.fileWatcher;
 var website = require('website.js');
 var siteGraph = website.siteGraph;
+var MAX_LINK_FOLLOW_COUNT = 65535;
 
 exports.init = function() {
     fileWatcher.setWatchFn(handleFWEvent);
@@ -57,30 +58,41 @@ function handleFileModifyEvent(fileName) {
  * @param {Page} page
  */
 function performRescan(page) {
-    var diff = page.dryRun(processSiteGraph);
-    if (!diff) {
-        return;
+    var diff = {nLinksFollowed: 0, newPages: {}, staticFiles: {}};
+    var domTree = page.dryRun();
+    if (!scanChanges(domTree, page.url, diff)) {
+        console.log('[Error]: Stopped scanning at ' + diff.nLinksFollowed +
+                    'th. link');
     }
-    if (diff.staticFiles.length) {
+    for (var hadStaticFiles in diff.staticFiles) {
         saveStaticFileUrlsToDb(diff.staticFiles);
+        break;
     }
-    if (diff.newPages) {
+    for (var hadNewPages in diff.newPages) {
         saveWebsiteToDb(siteGraph);
+        break;
     }
     print('[Info]: Rescanned \'' + page.url + '\': ' +
-          (diff.newPages ? 'added page(s), ' : 'no page changes, ') +
-          (diff.staticFiles.length ? 'detected' : 'no') + ' file resources.');
+          (hadNewPages ? 'added page(s), ' : 'no page changes, ') +
+          (hadStaticFiles ? 'detected' : 'no') + ' file resources.');
 }
 
 /**
  * @throws {Error}
  */
 function saveStaticFileUrlsToDb(urls) {
+    var holders = [];
+    for (var hadUrls in urls) {
+        holders.push('(?)');
+    }
+    if (!hadUrls) {
+        return;
+    }
     commons.db.insert(
-        'insert or replace into staticFileResources values ' +
-        urls.map(function() { return '(?)'; }).join(','),
+        'insert or replace into staticFileResources values ' + holders.join(','),
         function(stmt) {
-            urls.forEach(function(url, i) { stmt.bindString(i, url); });
+            var i = 0;
+            for (var url in urls) { stmt.bindString(i, url); i += 1; }
         }
     );
 }
@@ -94,8 +106,10 @@ function saveWebsiteToDb(siteGraph) {
     });
 }
 
-function processSiteGraph(domTree) {
-    var out = {newPages: [], staticFiles: []};
+function scanChanges(domTree, url, diff) {
+    if (diff.nLinksFollowed > MAX_LINK_FOLLOW_COUNT) {
+        return false;
+    }
     var els = domTree.getRenderedElements();
     var l = els.length;
     for (var i = 0; i < l; ++i) {
@@ -125,18 +139,24 @@ function processSiteGraph(domTree) {
                 layout = siteGraph.addTemplate(layoutFileName, newPage);
             }
             newPage.layoutIdx = layout.idx;
-            out.newPages.push(newPage);
+            diff.newPages[newPage.url] = newPage;
+            // Follow it
+            if (layout.exists) {
+                var domTree2 = newPage.dryRun();
+                diff.nLinksFollowed += 1;
+                if (!scanChanges(domTree2, newPage.url, diff)) return false;
+            }
         /*
          * Handle <script src=<path>...
          */
         } else if (el.tagName == 'script' && (scriptSrc = el.props.src)) {
-            out.staticFiles.push(scriptSrc);
+            diff.staticFiles[scriptSrc] = 1;
         /*
          * Handle <link href=<path>...
          */
         } else if (el.tagName == 'link' && (styleHref = el.props.href)) {
-            out.staticFiles.push(styleHref);
+            diff.staticFiles[styleHref] = 1;
         }
     }
-    return out;
+    return true;
 }

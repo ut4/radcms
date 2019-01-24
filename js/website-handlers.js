@@ -5,7 +5,7 @@ var uploadHandlerIsBusy = false;
 
 commons.app.addRoute(function(url, method) {
     if (method == 'GET' && url == '/api/website/pages')
-        return handleGetPagesRequest;
+        return handleGetAllPagesRequest;
     if (method == 'POST' && url == '/api/website/generate')
         return handleGenerateRequest;
     if (method == 'POST' && url == '/api/website/upload') {
@@ -27,7 +27,7 @@ commons.app.addRoute(function(url, method) {
  *     {"url":"/foo","layoutFileName":"foo.jsx.htm","uploadStatus":0}
  * ]
  */
-function handleGetPagesRequest() {
+function handleGetAllPagesRequest() {
     var statuses = {};
     commons.db.select('select `url`, `status` from uploadStatuses', function(row) {
         statuses[row.getString(0)] = row.getInt(1);

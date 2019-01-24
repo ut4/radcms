@@ -91,10 +91,11 @@ exports.transpiler = {
     /**
      * @native
      * @param {string} code
+     * @param {string} fileName For debugging
      * @returns {Function}
      * @throws {Error}
      */
-    transpileToFn: function(/*code*/) {}
+    transpileToFn: function(/*code, fileName*/) {}
 };
 
 

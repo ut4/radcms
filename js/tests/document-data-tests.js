@@ -7,17 +7,17 @@ testLib.module('document-data.js', function() {
         //
         var ddc1 = new documentData.DDC();
         ddc1.fetchOne('Generic').where('name=\'Foo\'');
-        assert.equal(ddc1.toSql(), 'select `id`,`name`,`json`,`dbcId` from ('+
+        assert.equal(ddc1.toSql(),
             'select * from (select `id`,`name`,`json`, 1 as `dbcId` '+
                 'from contentNodes where name=\'Foo\''+
-            ')'+
-        ')');
+            ')'
+        );
         //
         var ddc2 = new documentData.DDC();
         ddc2.fetchOne('Generic').where('name=\'Foo\'');
         ddc2.fetchOne('Generic').where('name=\'Bar\'');
         ddc2.fetchOne('Artible').where('name=\'Naz\'');
-        assert.equal(ddc2.toSql(), 'select `id`,`name`,`json`,`dbcId` from ('+
+        assert.equal(ddc2.toSql(),
             'select * from (select `id`,`name`,`json`, 1 as `dbcId` '+
                 'from contentNodes where name=\'Foo\''+
             ') union all '+
@@ -26,25 +26,25 @@ testLib.module('document-data.js', function() {
             ') union all '+
             'select * from (select `id`,`name`,`json`, 3 as `dbcId` '+
                 'from contentNodes where name=\'Naz\''+
-            ')'+
-        ')');
+            ')'
+        );
     });
     testLib.test('DDC.toSql() generates queries for fetchAll()s', function(assert) {
         assert.expect(2);
         //
         var ddc1 = new documentData.DDC();
         ddc1.fetchAll('Article');
-        assert.equal(ddc1.toSql(), 'select `id`,`name`,`json`,`dbcId` from ('+
+        assert.equal(ddc1.toSql(),
             'select * from ('+
                 'select `id`,`name`,`json`, 1 as `dbcId` from contentNodes where '+
                 '`contentTypeName` = \'Article\''+
-            ')'+
-        ')');
+            ')'
+        );
         //
         var ddc2 = new documentData.DDC();
         ddc2.fetchAll('Article');
         ddc2.fetchAll('Other');
-        assert.equal(ddc2.toSql(), 'select `id`,`name`,`json`,`dbcId` from ('+
+        assert.equal(ddc2.toSql(),
             'select * from ('+
                 'select `id`,`name`,`json`, 1 as `dbcId` from contentNodes where '+
                 '`contentTypeName` = \'Article\''+
@@ -52,8 +52,8 @@ testLib.module('document-data.js', function() {
             'select * from ('+
                 'select `id`,`name`,`json`, 2 as `dbcId` from contentNodes where '+
                 '`contentTypeName` = \'Other\''+
-            ')'+
-        ')');
+            ')'
+        );
     });
     testLib.test('<dataBathConfig>.toSql() validates itself', function(assert) {
         assert.expect(4);

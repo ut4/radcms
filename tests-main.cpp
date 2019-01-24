@@ -27,7 +27,7 @@ int main(int argc, const char* argv[]) {
         const std::string useVerboseLogging = argc < 3 ? "false" : "true";
         if (testSuiteName != "all" &&
             testSuiteName != "common-services" &&
-            testSuiteName != "component-handlers" &&
+            testSuiteName != "content-handlers" &&
             testSuiteName != "document-data" &&
             testSuiteName != "file-watchers" &&
             testSuiteName != "website-handlers" &&

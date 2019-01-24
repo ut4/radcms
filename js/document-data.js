@@ -25,7 +25,7 @@ exports.DDC.prototype.fetchOne = function(contentTypeName) {
 };
 /**
  * @param {DBC} dbc
- * @returns {Object[]|Object} The content nodes
+ * @returns {Object[]|Object} The content nodes belonging to $dbc.
  */
 exports.DDC.prototype.getDataFor = function(dbc) {
     if (dbc.isFetchAll) return this.data.filter(function(c) {
@@ -40,7 +40,7 @@ exports.DDC.prototype.getDataFor = function(dbc) {
 /**
  * @param {Object[]} allContentNodes
  */
-exports.DDC.prototype.setContentNodes = function(allContentNodes) {
+exports.DDC.prototype.setData = function(allContentNodes) {
     this.data = allContentNodes;
 };
 /**
@@ -51,14 +51,12 @@ exports.DDC.prototype.toSql = function() {
     if (!this.batches.length) {
         throw new TypeError('Can\'t generate from empty config.');
     }
-    return 'select `id`,`name`,`json`,`dbcId` from (' +
-        this.batches.map(function(batch) {
-            return 'select * from (' +
-                'select `id`,`name`,`json`, ' + batch.id + ' as `dbcId` ' +
-                'from contentNodes where ' + batch.toSql() +
-            ')';
-        }).join(' union all ') +
-    ')';
+    return this.batches.map(function(batch) {
+        return 'select * from (' +
+            'select `id`,`name`,`json`, ' + batch.id + ' as `dbcId` ' +
+            'from contentNodes where ' + batch.toSql() +
+        ')';
+    }).join(' union all ');
 };
 
 // == DataBatchConfig ====
@@ -73,12 +71,45 @@ exports.DBC = function(contentTypeName, isFetchAll, id) {
     this.isFetchAll = isFetchAll;
     this.id = id;
     this.whereExpr = null;
+    this.orderByExpr = null;
+    this.limitExpr = null;
 };
 /**
- * @param {string} whereExpr
+ * @param {string} expr '`someField` = 1'
+ * @returns {this}
  */
-exports.DBC.prototype.where = function(whereExpr) {
-    this.whereExpr = whereExpr;
+exports.DBC.prototype.where = function(expr) {
+    this.whereExpr = expr;
+    return this;
+};
+/**
+ * @param {string} expr '`someField` asc'
+ * @returns {this}
+ */
+exports.DBC.prototype.orderBy = function(expr) {
+    this.orderByExpr = expr;
+    return this;
+};
+/**
+ * @param {string} expr '1' or '10 offset 80'
+ * @returns {this}
+ */
+exports.DBC.prototype.limit = function(expr) {
+    this.limitExpr = expr;
+    return this;
+};
+/**
+ * @param {Object} opts {nthPage: 1, limit: 10}. Note: modifies $opts if it has string-values.
+ * @returns {this}
+ */
+exports.DBC.prototype.paginate = function(opts) {
+    opts.nthPage = opts.nthPage ? parseInt(opts.nthPage) : 1;
+    opts.limit = opts.limit ? parseInt(opts.limit) : 10;
+    if (opts.nthPage > 1) {
+        this.limit(opts.limit + (' offset ' + ((opts.nthPage - 1) * opts.limit)));
+    } else {
+        this.limit(opts.limit);
+    }
     return this;
 };
 /**
@@ -89,10 +120,18 @@ exports.DBC.prototype.toSql = function() {
     if ((errors = dbcValidate(this))) {
         throw new TypeError(errors);
     }
-    if (!this.isFetchAll) {
-        return this.whereExpr;
+    var tail = '';
+    if (this.orderByExpr) {
+        tail += ' order by ' + this.orderByExpr;
     }
-    return '`contentTypeName` = \'' + this.contentTypeName + '\'';
+    if (this.limitExpr) {
+        tail += ' limit ' + this.limitExpr;
+    }
+    if (!this.isFetchAll) {
+        return this.whereExpr + tail;
+    }
+    return '`contentTypeName` = \'' + this.contentTypeName + '\'' +
+            (!this.whereExpr ? '' : ' and ' + this.whereExpr) + tail;
 };
 /**
  * @returns {string|null}
@@ -113,10 +152,6 @@ function dbcValidate(dbc) {
         } else if (dbc.whereExpr.length > MAX_WHERE_LEN) {
             errors.push('fetchOne(...).where() too long (max ' +
             MAX_WHERE_LEN + ', was ' + dbc.whereExpr.length + ').');
-        }
-    } else {
-        if (dbc.whereExpr) {
-            errors.push('fetchAll().where() not implemented yet.');
         }
     }
     return errors.length ? errors.join('\n') : null;

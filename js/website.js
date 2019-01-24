@@ -5,13 +5,14 @@ var directives = require('directives.js');
 // == Page ====
 // =============================================================================
 /**
- * @param {string} url
+ * @param {string} url '/foo' or '/foo/page/2'
  * @param {number} parentId
  * @param {number} layoutIdx siteGraph.templates.indexOf(<layout>)
  * @constructor
  */
 function Page(url, parentId, layoutIdx) {
     this.url = url;
+    this.urlPcs = url.split('/').slice(1); // ['', 'foo'] -> ['foo']
     this.parentId = parentId;
     this.layoutIdx = layoutIdx;
 }
@@ -33,7 +34,7 @@ Page.prototype.render = function(pageData, issues) {
     // }
     var outerFn = commons.templateCache.get(this.layoutIdx);
     var ddc = new documentData.DDC();
-    var innerFn = outerFn(ddc.fetchAll.bind(ddc), ddc.fetchOne.bind(ddc), this.url);
+    var innerFn = outerFn(ddc.fetchAll.bind(ddc), ddc.fetchOne.bind(ddc), this.urlPcs);
     //
     fetchData(ddc);
     //
@@ -52,19 +53,18 @@ Page.prototype.render = function(pageData, issues) {
     return html;
 };
 /**
- * @param {(tree: DomTree): any} inspectFn
- * @returns {any}
+ * @returns {DomTree}
  */
-Page.prototype.dryRun = function(inspectFn) {
+Page.prototype.dryRun = function() {
     var outerFn = commons.templateCache.get(this.layoutIdx);
     var ddc = new documentData.DDC();
-    var innerFn = outerFn(ddc.fetchAll.bind(ddc), ddc.fetchOne.bind(ddc), this.url);
+    var innerFn = outerFn(ddc.fetchAll.bind(ddc), ddc.fetchOne.bind(ddc), this.urlPcs);
     //
     fetchData(ddc);
     //
     var domTree = new commons.DomTree();
     innerFn(domTree, ddc.getDataFor.bind(ddc), directives);
-    return inspectFn(domTree);
+    return domTree;
 };
 
 /**
@@ -82,7 +82,7 @@ function fetchData(ddc) {
             };
             cnodes.push(data);
         });
-        ddc.setContentNodes(cnodes);
+        ddc.setData(cnodes);
     }
 }
 
@@ -227,7 +227,8 @@ exports.website = {
      */
     compileAndCacheTemplate: function(template) {
         commons.templateCache.put(template.idx, commons.transpiler.transpileToFn(
-            this.fs.read(insnEnv.sitePath + template.fileName)
+            this.fs.read(insnEnv.sitePath + template.fileName),
+            template.fileName
         ));
         return true;
     }
