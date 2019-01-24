@@ -33,12 +33,14 @@ static std::vector<SampleData> sampleData = {
         // name
         "minimal",
         // installSql
-        "insert into websites values (1, '{\"pages\":[[\"/\",0,0]],\"templates\":[\"main-layout.jsx.htm\"]}');"
+        "insert into websites values (1, '{\"pages\":[[\"/home\",0,0]],\"templates\":[\"main-layout.jsx.htm\"]}');"
         "insert into contentNodes values (1, 'footer', '{\"content\":\"(c) 2034 MySite\"}', 'Generic');",
         // files
         {
-            {"site.ini", "[ContentType:Generic]\n"
-                         "content=text"},
+            {"site.ini", "[Site]\n"
+                         "homeUrl=/home\n\n"
+                         "[ContentType:Generic]\n"
+                         "content=richtext"},
             {"main-layout.jsx.htm", "@footer = fetchOne(\"Generic\").where(\"name='footer'\")\n"
                                     "<html>\n"
                                     "    <head>\n"
@@ -56,7 +58,7 @@ static std::vector<SampleData> sampleData = {
         "blog",
         // installSql
         "insert into websites values"
-        "  (1, '{\"pages\":[[\"/\",0,0],[\"/art1\",0,1],[\"/art2\",0,1],[\"/art3\",0,1]],"
+        "  (1, '{\"pages\":[[\"/home\",0,0],[\"/art1\",0,1],[\"/art2\",0,1],[\"/art3\",0,1]],"
                 "\"templates\":[\"main-layout.jsx.htm\",\"article-layout.jsx.htm\"]}');"
         "insert into contentNodes values"
         "  (1, 'footer', '{\"content\":\"(c) 2034 MySite\"}', 'Generic'),"
@@ -65,9 +67,10 @@ static std::vector<SampleData> sampleData = {
         "  (4, 'art3', '{\"title\":\"Article 3\",\"body\":\"Hello from article 3\"}', 'Article');",
         // files
         {
-            {"site.ini", "[ContentType:Generic]\n"
-                         "content=text\n"
-                         "\n"
+            {"site.ini", "[Site]\n"
+                         "homeUrl=/home\n\n"
+                         "[ContentType:Generic]\n"
+                         "content=text\n\n"
                          "[ContentType:Article]\n"
                          "title=text\n"
                          "body=richtext"},

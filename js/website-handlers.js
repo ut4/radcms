@@ -48,7 +48,7 @@ function handleGetAllPagesRequest() {
  * GET <any> eg. "/" or "/foo/bar/baz": renders a page.
  */
 function handlePageRequest(req) {
-    var page = website.siteGraph.getPage(req.url);
+    var page = website.siteGraph.getPage(req.url != '/' ? req.url : website.siteConfig.homeUrl);
     if (page) {
         if (req.getUrlParam('rescan')) {
             commons.signals.emit('sitegraphRescanRequested', page);
@@ -83,12 +83,12 @@ function handleGenerateRequest() {
         issues: []
     };
     out.wrotePagesNum = website.website.generate(function(renderedOutput, page) {
-        // 'path/out' + '/foo', 'path/out' + '/'
+        // 'path/out' + '/foo'
         var dirPath = out.outPath + page.url;
         return website.website.fs.makeDirs(dirPath) &&
                 website.website.fs.write(
-                    // 'path/out/foo' + '/index.html', 'path/out/' + 'index.html'
-                    dirPath + (page.url.length > 1 ? '/index.html' : 'index.html'),
+                    // 'path/out/foo' + '/index.html'
+                    dirPath + '/index.html',
                     renderedOutput
                 );
     }, out.issues);
@@ -138,9 +138,11 @@ function handleUploadRequest(req) {
         // Upload the next page
         if (!state.hadStopError) {
             var cur = state.generatedPages[state.nthPage - 1];
-            var url = cur.url.length > 1 ? cur.url : 'index';
-            var uploadRes = state.uploader.upload(state.remoteUrl +
-                (url.charAt(0) == '/' ? url.substr(1) : url) + '.html', cur.html);
+            // /home        -> 'site.net/htdocs/home/index.html'
+            // /home/2      -> 'site.net/htdocs/home/2/index.html'
+            // /home/page/2 -> 'site.net/htdocs/home/page/2/index.html'
+            var uploadRes = state.uploader.upload(state.remoteUrl + cur.url.substr(1) +
+                                                  '/index.html', cur.html);
             state.hadStopError = uploadRes == commons.Uploader.UPLOAD_LOGIN_DENIED;
             state.nthPage += 1;
             return cur.url + '|' + uploadRes;

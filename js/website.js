@@ -111,7 +111,7 @@ exports.siteGraph = {
     templateCount: 0,
     /**
      * @param {string} serialized '{
-     *     "pages":[["/",0,0],["/foo",0,1]], // [[<url>,<parentId>,<templateIdx>]...]
+     *     "pages":[["/home",0,0],["/foo",0,1]], // [[<url>,<parentId>,<templateIdx>]...]
      *     "templates":["1.htm","2.htm"]     // [<filename>,...]
      * }'
      */
@@ -123,7 +123,7 @@ exports.siteGraph = {
             var data = json.pages[i];
             if (!json.templates[data[2]])
                 throw new Error('Invalid template idx ' + data[2]);
-            this.pages[data[0]] = new Page(data[0], data[1], data[2]);
+            this.addPage(data[0], data[1], data[2]);
         }
         for (i = 0; i < this.templateCount; ++i) {
             var t = new Template(json.templates[i], i);
@@ -162,6 +162,7 @@ exports.siteGraph = {
         return null;
     },
     addPage: function(url, parentId, layoutIdx) {
+        if (url.charAt(0) != '/') url = '/' + url;
         this.pages[url] = new Page(url, parentId, layoutIdx);
         return this.pages[url];
     },
@@ -177,6 +178,7 @@ exports.siteGraph = {
 // =============================================================================
 exports.siteConfig = {
     name: '',
+    homeUrl: '',
     contentTypes: [],
     /**
      * @native

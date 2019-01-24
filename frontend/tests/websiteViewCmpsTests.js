@@ -88,7 +88,7 @@ QUnit.module('WebsiteUploadViewComponent', hooks => {
     });
     QUnit.test('sends request to backend and updates upload statuses', assert => {
         const testPages = [
-            {id:1,url:'/',uploadStatus:UploadStatus.NOT_UPLOADED},
+            {id:1,url:'/home',uploadStatus:UploadStatus.NOT_UPLOADED},
             {id:2,url:'/foo',uploadStatus:UploadStatus.NOT_UPLOADED},
             {id:3,url:'/bar',uploadStatus:UploadStatus.NOT_UPLOADED}
         ];
@@ -171,7 +171,7 @@ QUnit.module('WebsiteUploadViewComponent', hooks => {
         });
     });
     QUnit.test('shows error if backend fails', assert => {
-        const testPages = [{id:1,url:'/'},{id:2,url:'/foo'}];
+        const testPages = [{id:1,url:'/home'},{id:2,url:'/foo'}];
         httpStub
             .onCall(0)
                 .returns(Promise.resolve({responseText: JSON.stringify(testPages)}))

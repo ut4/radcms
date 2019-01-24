@@ -13,7 +13,7 @@ testLib.module('website-handlers.js', function(hooks) {
     var page2ContentCnt = {name:'/page2',json:{content:'Page2'},contentTypeName:'Generic'};
     var page3ContentCnt = {name:'/page3',json:{content:'Page3'},contentTypeName:'Generic'};
     var websiteData = {id: 1, graph: JSON.stringify({
-        pages: [['/', NO_PARENT, LAYOUT_0], ['/page2', NO_PARENT, LAYOUT_1],
+        pages: [['/home', NO_PARENT, LAYOUT_0], ['/page2', NO_PARENT, LAYOUT_1],
                 ['/page3', NO_PARENT, LAYOUT_1]],
         templates: ['home-layout.jsx.htm', 'page-layout.jsx.htm']
     })};
@@ -59,6 +59,7 @@ testLib.module('website-handlers.js', function(hooks) {
     testLib.test('GET \'/<url>\' serves a page', function(assert) {
         assert.expect(11);
         var req = new http.Request('/', 'GET');
+        website.siteConfig.homeUrl = '/home';
         var handlePageRequestFn = commons.app.getHandler(req.url, req.method);
         //
         var response = handlePageRequestFn(req);
@@ -96,15 +97,15 @@ testLib.module('website-handlers.js', function(hooks) {
         assert.equal(body.outPath, insnEnv.sitePath + 'out');
         assert.equal(body.issues.length, 0);
         assert.equal(makeDirsLog.length, 3, 'should make dirs for all pages');
-        assert.equal(makeDirsLog[0].path, insnEnv.sitePath+'out/');
+        assert.equal(makeDirsLog[0].path, insnEnv.sitePath+'out/home');
         assert.equal(makeDirsLog[1].path, insnEnv.sitePath+'out/page2');
         assert.equal(makeDirsLog[2].path, insnEnv.sitePath+'out/page3');
         assert.equal(writeLog.length, 3, 'should write all pages to /out');
-        assert.equal(writeLog[0].path, insnEnv.sitePath+'out/index.html');
+        assert.equal(writeLog[0].path, insnEnv.sitePath+'out/home/index.html');
         assert.equal(writeLog[1].path, insnEnv.sitePath+'out/page2/index.html');
         assert.equal(writeLog[2].path, insnEnv.sitePath+'out/page3/index.html');
         assert.ok(writeLog[0].contents.indexOf('<p>'+homeContentCnt.json.content) > -1,
-            'should write the contents of \'/\'');
+            'should write the contents of \'/home\'');
         assert.ok(writeLog[1].contents.indexOf('<p>'+page2ContentCnt.json.content) > -1,
             'should write the contents of \'/page2\'');
         assert.ok(writeLog[2].contents.indexOf('<p>'+page3ContentCnt.json.content) > -1,
@@ -137,17 +138,17 @@ testLib.module('website-handlers.js', function(hooks) {
         var chunk1 = response.getNextChunk(response.chunkFnState);
         assert.equal(chunk1, generatedPages[0].url + '|0');
         assert.equal(uploadLog.length, 1, 'should upload page #1');
-        assert.equal(uploadLog[0].path, req.data.remoteUrl+'/index.html');
+        assert.equal(uploadLog[0].path, req.data.remoteUrl+generatedPages[0].url+'/index.html');
         assert.equal(uploadLog[0].contents, generatedPages[0].html);
         var chunk2 = response.getNextChunk(response.chunkFnState);
         assert.equal(chunk2, generatedPages[1].url + '|0');
         assert.equal(uploadLog.length, 2, 'should upload page #2');
-        assert.equal(uploadLog[1].path, req.data.remoteUrl+generatedPages[1].url+'.html');
+        assert.equal(uploadLog[1].path, req.data.remoteUrl+generatedPages[1].url+'/index.html');
         assert.equal(uploadLog[1].contents, generatedPages[1].html);
         var chunk3 = response.getNextChunk(response.chunkFnState);
         assert.equal(chunk3, generatedPages[2].url + '|0');
         assert.equal(uploadLog.length, 3, 'should upload page #3');
-        assert.equal(uploadLog[2].path, req.data.remoteUrl+generatedPages[2].url+'.html');
+        assert.equal(uploadLog[2].path, req.data.remoteUrl+generatedPages[2].url+'/index.html');
         assert.equal(uploadLog[2].contents, generatedPages[2].html);
         var chunk4 = response.getNextChunk(response.chunkFnState);
         assert.equal(chunk4, '');

@@ -109,7 +109,7 @@ class InsaneControlPanel extends preact.Component {
                             className: !this.state.visibleMenuItems.other?'hidden':''
                         }, this.currentPageContentNodes.map(c =>
                             $el('li', null, [
-                                $el('span', null, c.name),
+                                $el('span', null, c.defaults.name),
                                 $el('a', {href:'#/edit-content', onClick: e => {
                                     e.preventDefault();
                                     myRedirect('/edit-content');

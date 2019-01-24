@@ -10,6 +10,7 @@ exports.DDC = function() {
  * @returns {DBC}
  */
 exports.DDC.prototype.fetchAll = function(contentTypeName) {
+    if (this.data.length) throw new TypeError('.fetchAll() must be called outside the html.');
     var len = this.batches.push(new exports.DBC(contentTypeName, true,
                                                 ++this.batchCount));
     return this.batches[len - 1];
@@ -19,6 +20,7 @@ exports.DDC.prototype.fetchAll = function(contentTypeName) {
  * @returns {DBC}
  */
 exports.DDC.prototype.fetchOne = function(contentTypeName) {
+    if (this.data.length) throw new TypeError('.fetchOne() must be called outside the html.');
     var len = this.batches.push(new exports.DBC(contentTypeName, false,
                                                 ++this.batchCount));
     return this.batches[len - 1];

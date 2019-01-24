@@ -25,6 +25,7 @@ CurlUploader::upload(const char *fullUrl, const char *contents) {
     curl_easy_setopt(curl, CURLOPT_USERNAME, this->username);
     curl_easy_setopt(curl, CURLOPT_PASSWORD, this->password);
     curl_easy_setopt(curl, CURLOPT_UPLOAD, 1L);
+    curl_easy_setopt(curl, CURLOPT_FTP_CREATE_MISSING_DIRS, CURLFTP_CREATE_DIR);
     curl_easy_setopt(curl, CURLOPT_READFUNCTION, myCurlPutChunk);
     this->pendingUploadState = {contents, strlen(contents)};
     curl_easy_setopt(curl, CURLOPT_READDATA, &this->pendingUploadState);

@@ -122,14 +122,12 @@ function scanChanges(domTree, url, diff) {
             var href = el.props.href;
             var scriptSrc = null;
             var styleHref = null;
-            if (href) {
-                if (href.charAt(0) != '/') href = '/' + href;
-            } else {
+            if (typeof href != 'string') {
                 print('[Error]: Can\'t follow link without href.');
                 return;
             }
             // Page already in the sitegraph -> skip
-            if (siteGraph.getPage(href)) continue;
+            if (href == '' || href == '/' || siteGraph.getPage(href)) continue;
             // New page -> add it
             var newPage = siteGraph.addPage(href, 0, 0);
             var layout = siteGraph.findTemplate(layoutFileName);
