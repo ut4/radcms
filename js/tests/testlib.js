@@ -141,6 +141,7 @@ function runModuleTests(modName, mod, hooks, stats, verboseLogFn) {
             verboseLogFn(modName + ': ' + test.desc + ': Expected ' +
                          assert.expectNAssertions + ' assertions, but actually' +
                          ' ran ' + assert.results.length);
+            stats.numFails++;
         }
     });
 }

@@ -46,7 +46,7 @@ function handleFileModifyEvent(fileName) {
         return;
     }
     if (website.website.compileAndCacheTemplate(layout)) {
-        print('[Info]: Cached ' + fileName);
+        print('[Info]: Cached ' + fileName + ' ' + layout.idx);
         layout.exists = true;
     }
     if (layout.samplePage) {
@@ -54,13 +54,115 @@ function handleFileModifyEvent(fileName) {
     }
 }
 
+function Diff() {
+    this.nPagesAdded = 0;   // The number of completely new pages
+    this.nPagesRemoved = 0; // The number of completely removed pages (refCount==0)
+    this.nLinksAdded = 0;   // The number of new links added to the root page
+    this.nLinksRemoved = 0; // The number of links removed from the root page
+    this.staticFiles = {};  // A list of script/css urls
+    this.nLinksFollowed = 0;
+}
+/**
+ * Scans $page for new/removed links+static urls updating website.siteGraph
+ * along the way.
+ */
+Diff.prototype.scanChanges = function(page) {
+    if (this.nLinksFollowed > MAX_LINK_FOLLOW_COUNT) {
+        return false;
+    }
+    var stillLinksTo = null;
+    var nOldLinksFound = 0;
+    var nOldLinks = 0;
+    if (this.nLinksFollowed == 0) {
+        stillLinksTo = {};
+        for (var url in page.linksTo) { stillLinksTo[url] = false; nOldLinks += 1; }
+    }
+    var els = page.dryRun().getRenderedElements();
+    var l = els.length;
+    for (var i = 0; i < l; ++i) {
+        var el = els[i];
+        var layoutFileName = null;
+        /*
+         * Handle <a href=<url>...
+         */
+        if (el.tagName == 'a' && (layoutFileName = el.props.layoutFileName)) {
+            var href = el.props.href;
+            var scriptSrc = null;
+            var styleHref = null;
+            if (typeof href != 'string') {
+                print('[Error]: Can\'t follow link without href.');
+                return;
+            }
+            if (href == '') continue;
+            if (href == '/') href = website.siteConfig.homeUrl;
+            // Page already in the sitegraph
+            if (siteGraph.getPage(href)) {
+                if (stillLinksTo) { stillLinksTo[href] = true; nOldLinksFound += 1; }
+                if (!page.linksTo[href]) this.addNewLink(href, page);
+                continue;
+            }
+            // Totally new page -> add it
+            var newPage = siteGraph.addPage(href, 0, 0);
+            this.addNewLink(href, page, true);
+            var layout = siteGraph.findTemplate(layoutFileName);
+            if (layout) {
+                if (!layout.samplePage) layout.samplePage = newPage;
+            } else {
+                layout = siteGraph.addTemplate(layoutFileName, newPage);
+            }
+            newPage.layoutIdx = layout.idx;
+            // Follow it if it has a valid layout
+            if (layout.exists) {
+                this.nLinksFollowed += 1;
+                if (!this.scanChanges(newPage)) return false;
+            }
+        /*
+         * Handle <script src=<path>...
+         */
+        } else if (el.tagName == 'script' && (scriptSrc = el.props.src)) {
+            this.staticFiles[scriptSrc] = 1;
+        /*
+         * Handle <link href=<path>...
+         */
+        } else if (el.tagName == 'link' && (styleHref = el.props.href)) {
+            this.staticFiles[styleHref] = 1;
+        }
+    }
+    //
+    if (stillLinksTo && nOldLinksFound < nOldLinks) { // At least one link was removed
+        page.linksTo = {}; // Build from scratch
+        for (url in stillLinksTo) {
+            if (stillLinksTo[url]) page.linksTo[url] = 1; // Still there -> add
+            else this.removeLink(url, page); // Was removed -> don't add to linksTo
+        }
+    }
+    return true;
+};
+Diff.prototype.addNewLink = function(url, toPage, isNewPage) {
+    this.nLinksAdded += 1;
+    if (isNewPage) {
+        this.nPagesAdded += 1;
+    }
+    toPage.linksTo[url] = 1;
+    if (toPage.url != url) {
+        siteGraph.pages[url].refCount += 1;
+    }
+};
+Diff.prototype.removeLink = function(url, fromPage) {
+    this.nLinksRemoved += 1;
+    if (url != fromPage.url && --siteGraph.pages[url].refCount < 1 && // Was the last reference
+        url !== website.siteConfig.homeUrl) { // ... and wasn't the home page
+        delete siteGraph.pages[url];
+        this.nPagesRemoved += 1;
+    }
+};
+
 /**
  * @param {Page} page
  */
 function performRescan(page) {
-    var diff = {nLinksFollowed: 0, newPages: {}, staticFiles: {}};
-    var domTree = page.dryRun();
-    if (!scanChanges(domTree, page.url, diff)) {
+    var diff = new Diff();
+    if (!diff.scanChanges(page)) {
         console.log('[Error]: Stopped scanning at ' + diff.nLinksFollowed +
                     'th. link');
     }
@@ -68,12 +170,13 @@ function performRescan(page) {
         saveStaticFileUrlsToDb(diff.staticFiles);
         break;
     }
-    for (var hadNewPages in diff.newPages) {
+    if (diff.nLinksAdded || diff.nLinksRemoved) {
         saveWebsiteToDb(siteGraph);
-        break;
     }
     print('[Info]: Rescanned \'' + page.url + '\': ' +
-          (hadNewPages ? 'added page(s), ' : 'no page changes, ') +
+          (diff.nPagesAdded ? 'added page(s), ' : '') +
+          (diff.nPagesRemoved ? 'removed page(s), ' : '') +
+          (!diff.nPagesAdded && !diff.nPagesRemoved ? 'no page changes, ' : '') +
           (hadStaticFiles ? 'detected' : 'no') + ' file resources.');
 }
 
@@ -104,57 +207,4 @@ function saveWebsiteToDb(siteGraph) {
     commons.db.update('update websites set `graph` = ?', function(stmt) {
         stmt.bindString(0, siteGraph.serialize());
     });
-}
-
-function scanChanges(domTree, url, diff) {
-    if (diff.nLinksFollowed > MAX_LINK_FOLLOW_COUNT) {
-        return false;
-    }
-    var els = domTree.getRenderedElements();
-    var l = els.length;
-    for (var i = 0; i < l; ++i) {
-        var el = els[i];
-        var layoutFileName = null;
-        /*
-         * Handle <a href=<path>...
-         */
-        if (el.tagName == 'a' && (layoutFileName = el.props.layoutFileName)) {
-            var href = el.props.href;
-            var scriptSrc = null;
-            var styleHref = null;
-            if (typeof href != 'string') {
-                print('[Error]: Can\'t follow link without href.');
-                return;
-            }
-            // Page already in the sitegraph -> skip
-            if (href == '' || href == '/' || siteGraph.getPage(href)) continue;
-            // New page -> add it
-            var newPage = siteGraph.addPage(href, 0, 0);
-            var layout = siteGraph.findTemplate(layoutFileName);
-            if (layout) {
-                if (!layout.samplePage) layout.samplePage = newPage;
-            } else {
-                layout = siteGraph.addTemplate(layoutFileName, newPage);
-            }
-            newPage.layoutIdx = layout.idx;
-            diff.newPages[newPage.url] = newPage;
-            // Follow it
-            if (layout.exists) {
-                var domTree2 = newPage.dryRun();
-                diff.nLinksFollowed += 1;
-                if (!scanChanges(domTree2, newPage.url, diff)) return false;
-            }
-        /*
-         * Handle <script src=<path>...
-         */
-        } else if (el.tagName == 'script' && (scriptSrc = el.props.src)) {
-            diff.staticFiles[scriptSrc] = 1;
-        /*
-         * Handle <link href=<path>...
-         */
-        } else if (el.tagName == 'link' && (styleHref = el.props.href)) {
-            diff.staticFiles[styleHref] = 1;
-        }
-    }
-    return true;
 }

@@ -8,13 +8,17 @@ var directives = require('directives.js');
  * @param {string} url '/foo' or '/foo/page/2'
  * @param {number} parentId
  * @param {number} layoutIdx siteGraph.templates.indexOf(<layout>)
+ * @param {Object?} linksTo = {} A map of outbound urls
+ * @param {number?} refCount = 0 The amount of places this page is (referenced from / linked to)
  * @constructor
  */
-function Page(url, parentId, layoutIdx) {
+function Page(url, parentId, layoutIdx, linksTo, refCount) {
     this.url = url;
     this.urlPcs = url.split('/').slice(1); // ['', 'foo'] -> ['foo']
     this.parentId = parentId;
     this.layoutIdx = layoutIdx;
+    this.linksTo = linksTo || {};
+    this.refCount = refCount || 0;
 }
 /**
  * @param {Object?} pageData
@@ -92,12 +96,13 @@ function fetchData(ddc) {
 /**
  * @param {string} fileName
  * @param {number} idx siteGraph.templates.indexOf(this)
- * @param {Page?} samplePage
+ * @param {Page?} samplePage = undefined
+ * @param {bool?} exists = false
  */
-function Template(fileName, idx, samplePage) {
+function Template(fileName, idx, samplePage, exists) {
     this.fileName = fileName;
     this.idx = idx;
-    this.exists = true;
+    this.exists = exists === true;
     this.samplePage = samplePage;
 }
 
@@ -110,10 +115,13 @@ exports.siteGraph = {
     templates: [],
     templateCount: 0,
     /**
-     * @param {string} serialized '{
-     *     "pages":[["/home",0,0],["/foo",0,1]], // [[<url>,<parentId>,<templateIdx>]...]
-     *     "templates":["1.htm","2.htm"]     // [<filename>,...]
-     * }'
+     * @param {string} serialized '{'
+     *     '"pages": [' // [[<url>,<parentId>,<templateIdx>,[<url>,...]],...]
+     *         '["/home",0,0,["/foo"]],'
+     *         '["/foo",0,1,[]]'...
+     *     '],'
+     *     '"templates":["1.htm","2.htm"'...']' // [<filename>,...]
+     * '}'
      */
     parseAndLoadFrom: function(serialized) {
         var json = JSON.parse(serialized);
@@ -123,11 +131,18 @@ exports.siteGraph = {
             var data = json.pages[i];
             if (!json.templates[data[2]])
                 throw new Error('Invalid template idx ' + data[2]);
-            this.addPage(data[0], data[1], data[2]);
+            this.addPage(data[0], data[1], data[2], data[3].reduce(function(o, url) {
+                o[url] = 1; return o;
+            }, {}));
+        }
+        for (var url in this.pages) {
+            for (var outUrl in this.pages[url].linksTo) {
+                this.pages[outUrl].refCount += outUrl != url; // Self-refs don't count
+            }
         }
         for (i = 0; i < this.templateCount; ++i) {
-            var t = new Template(json.templates[i], i);
-            for (var url in this.pages) {
+            var t = new Template(json.templates[i], i, null, true);
+            for (url in this.pages) {
                 if (this.pages[url].layoutIdx == t.idx) {
                     t.samplePage = this.pages[url]; break;
                 }
@@ -144,7 +159,10 @@ exports.siteGraph = {
             templates: this.templates.map(function(t) { return t.fileName; })
         };
         for (var url in this.pages) {
-            ir.pages.push([url, 0, this.pages[url].layoutIdx]);
+            var page = this.pages[url];
+            var linksToAsArr = [];
+            for (var outUrl in page.linksTo) linksToAsArr.push(outUrl);
+            ir.pages.push([url, 0, page.layoutIdx, linksToAsArr]);
         }
         return JSON.stringify(ir);
     },
@@ -161,14 +179,13 @@ exports.siteGraph = {
         }
         return null;
     },
-    addPage: function(url, parentId, layoutIdx) {
+    addPage: function(url, parentId, layoutIdx, outboundUrls, refCount) {
         if (url.charAt(0) != '/') url = '/' + url;
-        this.pages[url] = new Page(url, parentId, layoutIdx);
+        this.pages[url] = new Page(url, parentId, layoutIdx, outboundUrls, refCount);
         return this.pages[url];
     },
-    addTemplate: function(fileName, samplePage) {
-        var t = new Template(fileName, this.templates.length, samplePage);
-        t.exists = false;
+    addTemplate: function(fileName, samplePage, exists) {
+        var t = new Template(fileName, this.templates.length, samplePage, exists);
         return this.templates[this.templates.push(t) - 1];
     }
 };

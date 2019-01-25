@@ -13,8 +13,9 @@ testLib.module('website-handlers.js', function(hooks) {
     var page2ContentCnt = {name:'/page2',json:{content:'Page2'},contentTypeName:'Generic'};
     var page3ContentCnt = {name:'/page3',json:{content:'Page3'},contentTypeName:'Generic'};
     var websiteData = {id: 1, graph: JSON.stringify({
-        pages: [['/home', NO_PARENT, LAYOUT_0], ['/page2', NO_PARENT, LAYOUT_1],
-                ['/page3', NO_PARENT, LAYOUT_1]],
+        pages: [['/home', NO_PARENT, LAYOUT_0, []],
+                ['/page2', NO_PARENT, LAYOUT_1, []],
+                ['/page3', NO_PARENT, LAYOUT_1, []]],
         templates: ['home-layout.jsx.htm', 'page-layout.jsx.htm']
     })};
     var writeLog = [];

@@ -61,7 +61,7 @@ testLib.module('file-watchers.js', function(hooks) {
         assert.expect(1);
         var existingPage = siteGraph.addPage('/foo', NO_PARENT, 0);
         mockTemplate.contents = '<html><body>Hello</body></html>';
-        var t = siteGraph.addTemplate(mockTemplate.fname, existingPage);
+        var t = siteGraph.addTemplate(mockTemplate.fname, existingPage, true);
         var cachedTemplateFnBefore = commons.templateCache.get(t.idx); // undefined
         // Trigger handleFWEvent()
         fileWatcher._watchFn(fileWatcher.EVENT_WRITE, mockTemplate.fname);
@@ -69,26 +69,72 @@ testLib.module('file-watchers.js', function(hooks) {
         assert.ok(commons.templateCache.get(t.idx) !== cachedTemplateFnBefore,
             'Should cache the modified template');
     });
-    testLib.test('scans new links from a modified template', function(assert) {
-        assert.expect(3);
+    testLib.test('spots new links from a modified template', function(assert) {
+        assert.expect(2);
         var existingPage = siteGraph.addPage('/foo', NO_PARENT, 0);
-        var existingLayout = siteGraph.addTemplate(mockTemplate.fname, existingPage);
+        var existingLayout = siteGraph.addTemplate(mockTemplate.fname, existingPage, true);
         var newLink = {href: '/bar', layoutFileName: mockTemplate.fname};
         mockTemplate.contents = '<html><body><a href="' + newLink.href +
+            '" layoutFileName="' + newLink.layoutFileName + '"></a><a href="' + newLink.href +
             '" layoutFileName="' + newLink.layoutFileName + '"></a></body></html>';
         // Trigger handleFWEvent()
         fileWatcher._watchFn(fileWatcher.EVENT_WRITE, mockTemplate.fname);
-        // Assert that updated website.siteGraph
+        // Assert that added the page to website.siteGraph
         var addedPage = siteGraph.getPage(newLink.href);
         assert.ok(addedPage !== undefined, 'should add a page to website.siteGraph');
-        assert.equal(addedPage.url, '/bar');
         // Assert that saved the updated sitegraph to the database
         commons.db.select('select `graph` from websites where id = ' + websiteData.id,
             function(row) {
             assert.equal(row.getString(0), JSON.stringify({
                 pages:[
-                    [existingPage.url,NO_PARENT,existingLayout.idx],
-                    [newLink.href,NO_PARENT,existingLayout.idx]
+                    [existingPage.url,NO_PARENT,existingLayout.idx,[newLink.href]],
+                    [newLink.href,NO_PARENT,existingLayout.idx,[newLink.href]]
+                ],
+                templates:[existingLayout.fileName]
+            }), 'should store the updated sitegraph to the database');
+        });
+    });
+    testLib.test('spots removed links from a modified template', function(assert) {
+        assert.expect(2);
+        var refCount = 1;
+        var existingPage1 = siteGraph.addPage('/foo', NO_PARENT, 0, {'/bar': 1});
+        var existingPage2 = siteGraph.addPage('/bar', NO_PARENT, 0, {}, refCount);
+        var existingLayout = siteGraph.addTemplate(mockTemplate.fname, existingPage1, true);
+        mockTemplate.contents = '<html><body>'/*a link has disappeared*/+'</body></html>';
+        // Trigger handleFWEvent()
+        fileWatcher._watchFn(fileWatcher.EVENT_WRITE, mockTemplate.fname);
+        // Assert that removed the page to website.siteGraph
+        assert.ok(!siteGraph.getPage(existingPage2), 'Should remove a page from website.siteGraph');
+        // Assert that saved the updated sitegraph to the database
+        commons.db.select('select `graph` from websites where id = ' + websiteData.id,
+            function(row) {
+            assert.equal(row.getString(0), JSON.stringify({
+                pages:[
+                    [existingPage1.url,NO_PARENT,existingLayout.idx,[/*doesn't link to anywhere anymore*/]]
+                ],
+                templates:[existingLayout.fileName]
+            }), 'should store the updated sitegraph to the database');
+        });
+    });
+    testLib.test('doesn\'t remove pages that still have references somewhere', function(assert) {
+        assert.expect(2);
+        var refCount = 2;
+        var existingPage1 = siteGraph.addPage('/foo', NO_PARENT, 0, {'/bar': 1});
+        var existingPage2 = siteGraph.addPage('/bar', NO_PARENT, 0, {}, refCount);
+        var existingLayout = siteGraph.addTemplate(mockTemplate.fname, existingPage1, true);
+        mockTemplate.contents = '<html><body>'/*a link has disappeared*/+'</body></html>';
+        // Trigger handleFWEvent()
+        fileWatcher._watchFn(fileWatcher.EVENT_WRITE, mockTemplate.fname);
+        // Assert that didn't remove the page
+        assert.equal(siteGraph.getPage(existingPage2.url), existingPage2,
+            'Should not remove the page');
+        // Assert that saved the updated sitegraph to the database
+        commons.db.select('select `graph` from websites where id = ' + websiteData.id,
+            function(row) {
+            assert.equal(row.getString(0), JSON.stringify({
+                pages:[
+                    [existingPage1.url,NO_PARENT,existingLayout.idx,[/*doesn't link to anywhere anymore*/]],
+                    [existingPage2.url,NO_PARENT,existingLayout.idx,[]]
                 ],
                 templates:[existingLayout.fileName]
             }), 'should store the updated sitegraph to the database');
@@ -105,8 +151,8 @@ testLib.module('file-watchers.js', function(hooks) {
         mockTemplate2.contents = '<html><body><a href="' + templateBLink.href +
             '" layoutFileName="' + templateBLink.layoutFileName + '"></a></body></html>';
         var existingPage = siteGraph.addPage('/foo', NO_PARENT, 0);
-        var t1 = siteGraph.addTemplate(mockTemplate.fname, existingPage); t1.exists = true;
-        var t2 = siteGraph.addTemplate(mockTemplate2.fname, null); t2.exists = true;
+        var t1 = siteGraph.addTemplate(mockTemplate.fname, existingPage, true);
+        var t2 = siteGraph.addTemplate(mockTemplate2.fname, null, true);
         website.website.compileAndCacheTemplate(t1);
         website.website.compileAndCacheTemplate(t2);
         // Trigger handleFWEvent()
@@ -123,25 +169,29 @@ testLib.module('file-watchers.js', function(hooks) {
             function(row) {
             assert.equal(row.getString(0), JSON.stringify({
                 pages: [
-                    [existingPage.url,NO_PARENT,existingPage.layoutIdx],
-                    [templateALink.href,NO_PARENT,existingPage.layoutIdx+1],
-                    [templateBLink.href,NO_PARENT,existingPage.layoutIdx]
+                    [existingPage.url,NO_PARENT,existingPage.layoutIdx,[templateALink.href]],
+                    [templateALink.href,NO_PARENT,existingPage.layoutIdx+1,[templateBLink.href]],
+                    [templateBLink.href,NO_PARENT,existingPage.layoutIdx,[templateALink.href]]
                 ],
                 templates:[mockTemplate.fname,mockTemplate2.fname]
             }), 'should store the updated sitegraph to the database');
         });
     });
     testLib.test('doesn\'t add aliases (<a href=\'/\'>)', function(assert) {
-        assert.expect(1);
-        mockTemplate.contents = '<html><body><a href="/" layoutFileName="' +
-            mockTemplate.fname + '"></a><a href="" layoutFileName="' +
-            mockTemplate.fname + '"></a></body></html>';
+        assert.expect(2);
+        mockTemplate.contents = '<html><body>'+
+            '<a href="" layoutFileName="' + mockTemplate.fname + '"></a>'+
+            '<a href="/" layoutFileName="' + mockTemplate.fname + '"></a>'+
+        '</body></html>';
         var existingPage = siteGraph.addPage('/home', NO_PARENT, 0);
+        var refCountBefore = existingPage.refCount;
         website.siteConfig.homeUrl = '/home';
-        siteGraph.addTemplate(mockTemplate.fname, existingPage);
+        siteGraph.addTemplate(mockTemplate.fname, existingPage, true);
         // Trigger handleFWEvent()
         fileWatcher._watchFn(fileWatcher.EVENT_WRITE, mockTemplate.fname);
         // Assert that didn't add '/'
         assert.ok(!siteGraph.getPage('/'), 'shouldn\'t add \'/\'');
+        assert.equal(siteGraph.getPage('/home').refCount, refCountBefore,
+            'Shouldn\'t increase refCount');
     });
 });
