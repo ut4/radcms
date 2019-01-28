@@ -191,5 +191,8 @@ exports.templateCache = {
     },
     has: function(key) {
         return this._fns.hasOwnProperty(key);
+    },
+    remove: function(key) {
+        delete this._fns[key];
     }
 };

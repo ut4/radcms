@@ -4,8 +4,6 @@ var testLib = require('tests/testlib.js').testLib;
 var website = require('website.js');
 var http = require('http.js');
 var NO_PARENT = 0;
-var LAYOUT_0 = 0;
-var LAYOUT_1 = 1;
 
 testLib.module('website-handlers.js', function(hooks) {
     var genericCntType = {id:1,name:'Generic',fields:'{"content":"richtext"}'};
@@ -13,9 +11,9 @@ testLib.module('website-handlers.js', function(hooks) {
     var page2ContentCnt = {name:'/page2',json:{content:'Page2'},contentTypeName:'Generic'};
     var page3ContentCnt = {name:'/page3',json:{content:'Page3'},contentTypeName:'Generic'};
     var websiteData = {id: 1, graph: JSON.stringify({
-        pages: [['/home', NO_PARENT, LAYOUT_0, []],
-                ['/page2', NO_PARENT, LAYOUT_1, []],
-                ['/page3', NO_PARENT, LAYOUT_1, []]],
+        pages: [['/home', NO_PARENT, 'home-layout.jsx.htm', []],
+                ['/page2', NO_PARENT, 'page-layout.jsx.htm', []],
+                ['/page3', NO_PARENT, 'page-layout.jsx.htm', []]],
         templates: ['home-layout.jsx.htm', 'page-layout.jsx.htm']
     })};
     var writeLog = [];

@@ -20,6 +20,8 @@ function handleFWEvent(type, fileName) {
         handleFileCreateEvent(fileName);
     } else if (type == fileWatcher.EVENT_WRITE) {
         handleFileModifyEvent(fileName);
+    } else if (type == fileWatcher.EVENT_REMOVE) {
+        handleFileDeleteEvent(fileName);
     }
 }
 
@@ -27,11 +29,17 @@ function handleFWEvent(type, fileName) {
  * @param {string} fileName
  */
 function handleFileCreateEvent(fileName) {
-    var layout = siteGraph.findTemplate(fileName);
+    var layout = siteGraph.getTemplate(fileName);
     if (!layout) {
         // Add the layout, and leave its .exists to false
-        siteGraph.addTemplate(fileName, null);
+        var samplePage = null;
+        for (var key in siteGraph.pages)
+            if (siteGraph.pages[key].layoutFileName == fileName) {
+                samplePage = siteGraph.pages[key]; break;
+            }
+        siteGraph.addTemplate(fileName, samplePage);
         saveWebsiteToDb(siteGraph);
+        print('[Info]: Added "' + fileName + '"');
     }
     // Skip compileAndCache()
 }
@@ -40,18 +48,32 @@ function handleFileCreateEvent(fileName) {
  * @param {string} fileName
  */
 function handleFileModifyEvent(fileName) {
-    var layout = siteGraph.findTemplate(fileName);
+    var layout = siteGraph.getTemplate(fileName);
     if (!layout) {
-        print('[Notice]: An unknown file "' + fileName + '" was modified, skipping.');
+        print('[Notice]: An unknown template "' + fileName + '" was modified, skipping.');
         return;
     }
-    if (website.website.compileAndCacheTemplate(layout)) {
-        print('[Info]: Cached ' + fileName + ' ' + layout.idx);
+    if (website.website.compileAndCacheTemplate(fileName)) {
+        print('[Info]: Cached "' + fileName + '"');
         layout.exists = true;
     }
     if (layout.samplePage) {
         performRescan(layout.samplePage);
     }
+}
+
+/**
+ * @param {string} fileName
+ */
+function handleFileDeleteEvent(fileName) {
+    var layout = siteGraph.getTemplate(fileName);
+    if (!layout) {
+        print('[Notice]: An unknown template "' + fileName + '" was deleted, skipping.');
+        return;
+    }
+    website.website.deleteAndUncacheTemplate(layout.fileName);
+    saveWebsiteToDb(siteGraph);
+    print('[Info]: Removed "' + fileName + '"');
 }
 
 function Diff() {
@@ -102,15 +124,14 @@ Diff.prototype.scanChanges = function(page) {
                 continue;
             }
             // Totally new page -> add it
-            var newPage = siteGraph.addPage(href, 0, 0);
+            var newPage = siteGraph.addPage(href, 0, layoutFileName);
             this.addNewLink(href, page, true);
-            var layout = siteGraph.findTemplate(layoutFileName);
+            var layout = siteGraph.getTemplate(layoutFileName);
             if (layout) {
                 if (!layout.samplePage) layout.samplePage = newPage;
             } else {
                 layout = siteGraph.addTemplate(layoutFileName, newPage);
             }
-            newPage.layoutIdx = layout.idx;
             // Follow it if it has a valid layout
             if (layout.exists) {
                 this.nLinksFollowed += 1;
@@ -163,8 +184,7 @@ Diff.prototype.removeLink = function(url, fromPage) {
 function performRescan(page) {
     var diff = new Diff();
     if (!diff.scanChanges(page)) {
-        console.log('[Error]: Stopped scanning at ' + diff.nLinksFollowed +
-                    'th. link');
+        print('[Error]: Stopped scanning at ' + diff.nLinksFollowed + 'th. link');
     }
     for (var hadStaticFiles in diff.staticFiles) {
         saveStaticFileUrlsToDb(diff.staticFiles);

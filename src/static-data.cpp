@@ -33,7 +33,8 @@ static std::vector<SampleData> sampleData = {
         // name
         "minimal",
         // installSql
-        "insert into websites values (1, '{\"pages\":[[\"/home\",0,0,[]]],\"templates\":[\"main-layout.jsx.htm\"]}');"
+        "insert into websites values (1, '{\"pages\":[[\"/home\",0,\"main-layout.jsx.htm\",[]]],"
+                                          "\"templates\":[\"main-layout.jsx.htm\"]}');"
         "insert into contentNodes values (1, 'footer', '{\"content\":\"(c) 2034 MySite\"}', 'Generic');",
         // files
         {
@@ -58,8 +59,10 @@ static std::vector<SampleData> sampleData = {
         "blog",
         // installSql
         "insert into websites values"
-        "  (1, '{\"pages\":[[\"/home\",0,0,[\"/art1\",\"/art2\",\"/art3\"]],"
-                           "[\"/art1\",0,1,[]],[\"/art2\",0,1,[]],[\"/art3\",0,1,[]]],"
+        "  (1, '{\"pages\":[[\"/home\",0,\"main-layout.jsx.htm\",[\"/art1\",\"/art2\",\"/art3\"]],"
+                           "[\"/art1\",0,\"article-layout.jsx.htm\",[]],"
+                           "[\"/art2\",0,\"article-layout.jsx.htm\",[]],"
+                           "[\"/art3\",0,\"article-layout.jsx.htm\",[]]],"
                 "\"templates\":[\"main-layout.jsx.htm\",\"article-layout.jsx.htm\"]}');"
         "insert into contentNodes values"
         "  (1, 'footer', '{\"content\":\"(c) 2034 MySite\"}', 'Generic'),"

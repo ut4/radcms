@@ -7,16 +7,16 @@ var directives = require('directives.js');
 /**
  * @param {string} url '/foo' or '/foo/page/2'
  * @param {number} parentId
- * @param {number} layoutIdx siteGraph.templates.indexOf(<layout>)
+ * @param {string} layoutFileName
  * @param {Object?} linksTo = {} A map of outbound urls
  * @param {number?} refCount = 0 The amount of places this page is (referenced from / linked to)
  * @constructor
  */
-function Page(url, parentId, layoutIdx, linksTo, refCount) {
+function Page(url, parentId, layoutFileName, linksTo, refCount) {
     this.url = url;
     this.urlPcs = url.split('/').slice(1); // ['', 'foo'] -> ['foo']
     this.parentId = parentId;
-    this.layoutIdx = layoutIdx;
+    this.layoutFileName = layoutFileName;
     this.linksTo = linksTo || {};
     this.refCount = refCount || 0;
 }
@@ -26,9 +26,11 @@ function Page(url, parentId, layoutIdx, linksTo, refCount) {
  * @returns {string}
  */
 Page.prototype.render = function(pageData, issues) {
-    var layout = exports.siteGraph.templates[this.layoutIdx];
-    if (!layout.exists || !layout.samplePage) {
-        var message = 'Layout file \'' + layout.fileName + '\' doesn\'t exists yet, or is empty.';
+    var layout = exports.siteGraph.getTemplate(this.layoutFileName);
+    if (!layout || !layout.exists || !layout.samplePage) {
+        var message = layout
+            ? 'The layout file \'' + layout.fileName + '\' doesn\'t exists yet, or is empty.'
+            : 'The layout file of this page has been deleted.';
         if (issues) issues.push(this.url + '>' + message);
         return '<html><body>' + message + '</body></html>';
     }
@@ -36,7 +38,7 @@ Page.prototype.render = function(pageData, issues) {
     //     var data1 = ddc.fetchAll()...
     //     return function(domTree, getDataFor, directives) {...};  <-- inner
     // }
-    var outerFn = commons.templateCache.get(this.layoutIdx);
+    var outerFn = commons.templateCache.get(this.layoutFileName);
     var ddc = new documentData.DDC();
     var innerFn = outerFn(ddc.fetchAll.bind(ddc), ddc.fetchOne.bind(ddc), this.urlPcs);
     //
@@ -60,7 +62,7 @@ Page.prototype.render = function(pageData, issues) {
  * @returns {DomTree}
  */
 Page.prototype.dryRun = function() {
-    var outerFn = commons.templateCache.get(this.layoutIdx);
+    var outerFn = commons.templateCache.get(this.layoutFileName);
     var ddc = new documentData.DDC();
     var innerFn = outerFn(ddc.fetchAll.bind(ddc), ddc.fetchOne.bind(ddc), this.urlPcs);
     //
@@ -95,13 +97,11 @@ function fetchData(ddc) {
 // =============================================================================
 /**
  * @param {string} fileName
- * @param {number} idx siteGraph.templates.indexOf(this)
  * @param {Page?} samplePage = undefined
  * @param {bool?} exists = false
  */
-function Template(fileName, idx, samplePage, exists) {
+function Template(fileName, samplePage, exists) {
     this.fileName = fileName;
-    this.idx = idx;
     this.exists = exists === true;
     this.samplePage = samplePage;
 }
@@ -112,13 +112,13 @@ function Template(fileName, idx, samplePage, exists) {
 exports.siteGraph = {
     pages: {},
     pageCount: 0,
-    templates: [],
+    templates: {},
     templateCount: 0,
     /**
      * @param {string} serialized '{'
-     *     '"pages": [' // [[<url>,<parentId>,<templateIdx>,[<url>,...]],...]
-     *         '["/home",0,0,["/foo"]],'
-     *         '["/foo",0,1,[]]'...
+     *     '"pages": [' // [[<url>,<parentId>,<templateName>,[<url>,...]],...]
+     *         '["/home",0,"1.html",["/foo"]],'
+     *         '["/foo",0,"2.html",[]]'...
      *     '],'
      *     '"templates":["1.htm","2.htm"'...']' // [<filename>,...]
      * '}'
@@ -129,8 +129,6 @@ exports.siteGraph = {
         this.templateCount = json.templates.length;
         for (var i = 0; i < this.pageCount; ++i) {
             var data = json.pages[i];
-            if (!json.templates[data[2]])
-                throw new Error('Invalid template idx ' + data[2]);
             this.addPage(data[0], data[1], data[2], data[3].reduce(function(o, url) {
                 o[url] = 1; return o;
             }, {}));
@@ -141,13 +139,13 @@ exports.siteGraph = {
             }
         }
         for (i = 0; i < this.templateCount; ++i) {
-            var t = new Template(json.templates[i], i, null, true);
+            var t = new Template(json.templates[i], null, true);
             for (url in this.pages) {
-                if (this.pages[url].layoutIdx == t.idx) {
+                if (this.pages[url].layoutFileName == t.fileName) {
                     t.samplePage = this.pages[url]; break;
                 }
             }
-            this.templates.push(t);
+            this.templates[t.fileName] = t;
         }
     },
     /**
@@ -156,37 +154,31 @@ exports.siteGraph = {
     serialize: function() {
         var ir = {
             pages: [],
-            templates: this.templates.map(function(t) { return t.fileName; })
+            templates: Object.keys(this.templates)
         };
         for (var url in this.pages) {
             var page = this.pages[url];
             var linksToAsArr = [];
             for (var outUrl in page.linksTo) linksToAsArr.push(outUrl);
-            ir.pages.push([url, 0, page.layoutIdx, linksToAsArr]);
+            ir.pages.push([url, 0, page.layoutFileName, linksToAsArr]);
         }
         return JSON.stringify(ir);
     },
     getPage: function(url) {
         return this.pages[url];
     },
-    getTemplate: function(idx) {
-        return this.templates[idx];
+    getTemplate: function(fileName) {
+        return this.templates[fileName];
     },
-    findTemplate: function(fileName) {
-        var l = this.templates.length;
-        for (var i = 0; i < l; ++i) {
-            if (this.templates[i].fileName == fileName) return this.templates[i];
-        }
-        return null;
-    },
-    addPage: function(url, parentId, layoutIdx, outboundUrls, refCount) {
+    addPage: function(url, parentId, layoutFileName, outboundUrls, refCount) {
         if (url.charAt(0) != '/') url = '/' + url;
-        this.pages[url] = new Page(url, parentId, layoutIdx, outboundUrls, refCount);
+        this.pages[url] = new Page(url, parentId, layoutFileName, outboundUrls, refCount);
         return this.pages[url];
     },
     addTemplate: function(fileName, samplePage, exists) {
-        var t = new Template(fileName, this.templates.length, samplePage, exists);
-        return this.templates[this.templates.push(t) - 1];
+        var t = new Template(fileName, samplePage, exists);
+        this.templates[fileName] = t;
+        return this.templates[fileName];
     }
 };
 
@@ -219,11 +211,11 @@ exports.website = {
         commons.db.select('select `graph` from websites limit 1', function(row) {
             siteGraph.parseAndLoadFrom(row.getString(0));
         });
-        this.siteGraph.templates.forEach(function(t) {
-            if (commons.templateCache.has(t.idx)) return;
-            try { this.compileAndCacheTemplate(t); }
-            catch (e) { t.exists = false; }
-        }, this);
+        for (var fileName in siteGraph.templates) {
+            if (commons.templateCache.has(fileName)) return;
+            try { this.compileAndCacheTemplate(fileName); }
+            catch (e) { siteGraph.templates[fileName].exists = false; }
+        }
     },
     /**
      * @param {(renderedHtml: string): bool} onEach
@@ -242,14 +234,21 @@ exports.website = {
         return numSuccesfulIterations;
     },
     /**
-     * @param {Template} template
+     * @param {string} fileName
      * @throws {Error}
      */
-    compileAndCacheTemplate: function(template) {
-        commons.templateCache.put(template.idx, commons.transpiler.transpileToFn(
-            this.fs.read(insnEnv.sitePath + template.fileName),
-            template.fileName
+    compileAndCacheTemplate: function(fileName) {
+        commons.templateCache.put(fileName, commons.transpiler.transpileToFn(
+            this.fs.read(insnEnv.sitePath + fileName),
+            fileName
         ));
         return true;
+    },
+    /**
+     * @param {string} fileName
+     */
+    deleteAndUncacheTemplate: function(fileName) {
+        commons.templateCache.remove(fileName);
+        delete this.siteGraph.templates[fileName];
     }
 };
