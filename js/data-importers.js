@@ -90,7 +90,7 @@ function _insertContentNodes(nodes) {
                 stmt.bindString(i * 3 + 2, c.contentTypeName);
             });
         }) > 0) {
-        console.log('[Info]: Inserted ' + nodes.length + ' content nodes.');
+        print('[Info]: Inserted ' + nodes.length + ' content nodes.');
         return null;
     }
     return 'Failed to insert content nodes';

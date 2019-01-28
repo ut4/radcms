@@ -47,6 +47,9 @@ scannerPeek(bool skipWhiteSpace);
 bool
 scannerIsAlpha(char c);
 
+bool
+scannerIsWhiteSpace(char c);
+
 unsigned
 scannerGetCurrentLine();
 

@@ -104,7 +104,7 @@ exports.testLib = {
     start: function(moduleNames, logAssertions) {
         var self = this;
         var stats = {numPasses: 0, numFails: 0};
-        var verboseLogFn = !logAssertions ? function() {} : console.log;
+        var verboseLogFn = !logAssertions ? function() {} : print;
         (moduleNames || Object.keys(self.modules)).forEach(function(moduleName) {
             self.curMod = self.modules[moduleName];
             if (!self.curMod) throw new Error('Testmodule \'' + moduleName + '\' not found.');
@@ -114,8 +114,8 @@ exports.testLib = {
             runModuleTests(moduleName, self.curMod, hooks, stats, verboseLogFn);
             hooks.runAfterAllClb();
         });
-        console.log('== Test results ========');
-        console.log(stats.numFails + ' failures, ' + stats.numPasses + ' passes');
+        print('== Test results ========');
+        print(stats.numFails + ' failures, ' + stats.numPasses + ' passes');
     }
 };
 

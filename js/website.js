@@ -221,7 +221,8 @@ exports.website = {
         });
         this.siteGraph.templates.forEach(function(t) {
             if (commons.templateCache.has(t.idx)) return;
-            this.compileAndCacheTemplate(t);
+            try { this.compileAndCacheTemplate(t); }
+            catch (e) { t.exists = false; }
         }, this);
     },
     /**

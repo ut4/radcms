@@ -1,5 +1,5 @@
 body {
-    margin: 30px 6px 6px;
+    margin: 0 6px 6px;
 }
 .hidden {
     display: none;
@@ -208,16 +208,19 @@ table .input-set input {
 }
 
 /* == App =================================================================== */
-.view { float: right; padding: 1px; margin: 10px 185px 0 0; border-radius: 1px; }
-.view > div:first-of-type, .view > form:first-of-type { padding: 15px; }
-.view h2 { margin: -50px 0 24px -8px; font-size: 21px; }
-nav { position: absolute; max-width: 200px; padding: 1px; margin-top: 10px;
-    right: 5px; }
-nav > h1 { float: left; margin: -35px 0 0 0; letter-spacing: -1px;
+.view { float: right; padding: 40px 1px 1px; margin: 10px 170px 0 0; border-radius: 1px;
+    box-shadow: 3px 2px 1px rgba(0,0,0,0.04); }
+.view > div:first-of-type, .view > form:first-of-type { padding: 15px; border-radius: 1px; }
+.view h2 { margin: -48px 0 24px -13px; font-size: 21px; }
+nav { position: absolute; max-width: 200px; padding: 40px 1px 1px;
+    margin-top: 10px; right: 5px; border-radius: 1px; box-shadow: 3px 2px 1px rgba(0,0,0,0.04); }
+nav > h1 { float: left; margin: -33px 0 0 2px; letter-spacing: -1px;
     font-size: 20px; }
 nav > div { padding: 15px 15px 0; }
-nav > div:first-of-type { padding-top: 15px; }
-nav > div:last-of-type { padding-bottom: 15px; }
+nav > div:first-of-type { padding-top: 15px; border-top-left-radius: 1px;
+    border-top-right-radius: 1px; }
+nav > div:last-of-type { padding-bottom: 15px; border-bottom-left-radius: 1px;
+    border-bottom-right-radius: 1px; }
 nav h3 { margin-top: 0; font-size: 18px; }
 nav h4 { margin: 0; font-size: 16px; }
 .nice-button[data-num-pending-changes]::after { position: absolute; width: 16px;
@@ -226,9 +229,9 @@ nav h4 { margin: 0; font-size: 16px; }
     border-radius: 50%; background-color: #ff8b8b;
     box-shadow: 0px 1px 1px rgba(0,0,0,0.4); }
 /**/
-.light { background-color: rgba(255,255,255,0.85); color: rgb(62,62,62); }
-.light .view { background: linear-gradient(#939393,#bababa) }
+.light { color: rgb(62,62,62); }
+.light .view { background: linear-gradient(#bababa,#c6c6c6); }
 .light .view > div:first-of-type, .light .view > form:first-of-type {
     background-color: #fff; }
-.light nav { background: linear-gradient(#939393,#bababa) }
+.light nav { background: linear-gradient(#bababa,#c6c6c6); }
 .light nav > div { background-color: #fff; }

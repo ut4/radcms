@@ -9,7 +9,6 @@ struct Scanner scanner;
 
 static char advance();
 static void consumeWhiteSpace();
-static bool isWhiteSpace(char c);
 static struct Token makeSingleCharToken(enum TokenType type);
 static struct Token makeNameToken();
 static struct Token makeTextToken(const char excludeA, const char excludeB);
@@ -64,13 +63,18 @@ scannerPeek(bool skipWhiteSpace) {
     char c = *scanner.cursor;
     if (!skipWhiteSpace) return c;
     unsigned i = 0;
-    while (isWhiteSpace(c)) c = scanner.cursor[++i];
+    while (scannerIsWhiteSpace(c)) c = scanner.cursor[++i];
     return c;
 }
 
 bool
 scannerIsAlpha(char c) {
     return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
+}
+
+bool
+scannerIsWhiteSpace(char c) {
+    return c == ' ' || c == '\n' || c == '\r' || c == '\t';
 }
 
 unsigned
@@ -89,16 +93,11 @@ advance() {
 static void
 consumeWhiteSpace() {
     char c = scannerPeek(false);
-    while (isWhiteSpace(c)) {
+    while (scannerIsWhiteSpace(c)) {
         if (c == '\n') scanner.line += 1;
         (void)advance();
         c = scannerPeek(false);
     }
-}
-
-static bool
-isWhiteSpace(char c) {
-    return c == ' ' || c == '\n' || c == '\r' || c == '\t';
 }
 
 static struct Token

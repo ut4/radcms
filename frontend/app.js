@@ -48,7 +48,11 @@ class InsaneControlPanel extends preact.Component {
             if (!impl) return;
             this.currentPageDirectiveImpls.push(impl);
         });
-        this.currentPageContentNodes = props.currentPageData.allContentNodes;
+        this.looseContentNodes = props.currentPageData.allContentNodes.filter(n =>
+            !props.currentPageData.directiveInstances.some(ins =>
+                ins.contentNodes.some(n2 => n.defaults.name == n2.defaults.name)
+            )
+        );
         this.uploadButtonEl = null;
         this.state = {className: '', visibleMenuItems: {}};
         services.myFetch('/api/website/num-pending-changes')
@@ -107,7 +111,7 @@ class InsaneControlPanel extends preact.Component {
                         ]),
                         $el('ul', {
                             className: !this.state.visibleMenuItems.other?'hidden':''
-                        }, this.currentPageContentNodes.map(c =>
+                        }, this.looseContentNodes.map(c =>
                             $el('li', null, [
                                 $el('span', null, c.defaults.name),
                                 $el('a', {href:'#/edit-content', onClick: e => {

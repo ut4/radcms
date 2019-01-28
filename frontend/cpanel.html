@@ -3,6 +3,7 @@
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
         <link rel="stylesheet" href="/frontend/cpanel-main.css">
+        <base href="">
     </head>
     <body class="light">
         <div id="app"></div>
@@ -36,10 +37,12 @@
             //
             var parentUrlPcs = window.parent.location.href.split('#');
             if (parentUrlPcs[0].indexOf('?rescan=1') > -1) {
-                window.parent.history.replaceState(null, window.parent.document.title,
-                    window.parent.location.href.replace('?rescan=1', ''));
+                const r = window.parent.location.href.replace('?rescan=1', '');
+                window.parent.history.replaceState(null, window.parent.document.title, r);
+                document.querySelector('base').href = r;
             } else if (parentUrlPcs[1]) {
                 window.location.hash = parentUrlPcs[1];
+                document.querySelector('base').href = parentUrlPcs[0];
             }
             //
             window.parent.addEventListener('hashchange', e => {
