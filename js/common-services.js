@@ -21,7 +21,7 @@ exports.db = {
      * @native
      * @param {string} sql
      * @param {(stmt: Stmt): void} bindFn
-     * @returns int sqlite3_last_insert_rowid()
+     * @returns int lastInsertId
      */
     insert: function(/*sql, bindFn*/) {},
     /**
@@ -29,7 +29,18 @@ exports.db = {
      * @param {string} sql
      * @param {(row: ResultRow, rowIdx: number): void} mapFn
      */
-    select: function(/*sql, mapFn*/) {}
+    select: function(/*sql, mapFn*/) {},
+    /**
+     * @native
+     * @param {string} sql
+     * @param {(stmt: Stmt): void} bindFn
+     * @returns int numAffectedRows
+     */
+    update: function(/*sql, bindFn*/) {},
+    /**
+     * @see update
+     */
+    delete: function(/*sql, bindFn*/) {},
 };
 
 

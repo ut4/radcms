@@ -2,6 +2,7 @@ var commons = require('common-services.js');
 var fileWatcher = commons.fileWatcher;
 var website = require('website.js');
 var siteGraph = website.siteGraph;
+var directives = require('directives.js');
 var MAX_LINK_FOLLOW_COUNT = 65535;
 
 exports.init = function() {
@@ -99,62 +100,63 @@ Diff.prototype.scanChanges = function(page) {
         stillLinksTo = {};
         for (var url in page.linksTo) { stillLinksTo[url] = false; nOldLinks += 1; }
     }
-    var els = page.dryRun().getRenderedElements();
-    var l = els.length;
+    var domTree = page.dryRun();
+    var fnCmps = domTree.getRenderedFnComponents();
+    var hrefPage = null;
+    var l = fnCmps.length;
     for (var i = 0; i < l; ++i) {
-        var el = els[i];
-        var layoutFileName = null;
-        /*
-         * Handle <a href=<url>...
-         */
-        if (el.tagName == 'a' && (layoutFileName = el.props.layoutFileName)) {
-            var href = el.props.href;
-            var scriptSrc = null;
-            var styleHref = null;
-            if (typeof href != 'string') {
-                print('[Error]: Can\'t follow link without href.');
-                return;
-            }
-            if (href == '') continue;
-            if (href == '/') href = website.siteConfig.homeUrl;
-            // Page already in the sitegraph
-            if (siteGraph.getPage(href)) {
-                if (stillLinksTo) { stillLinksTo[href] = true; nOldLinksFound += 1; }
-                if (!page.linksTo[href]) this.addNewLink(href, page);
-                continue;
-            }
-            // Totally new page -> add it
-            var newPage = siteGraph.addPage(href, 0, layoutFileName);
+        if (fnCmps[i].fn !== directives.Link) continue;
+        var href = fnCmps[i].props.to;
+        var layoutOverride = fnCmps[i].props.layoutOverride;
+        var wasCompletelyNewPage = false;
+        // Page already in the sitegraph
+        if ((hrefPage = siteGraph.getPage(href))) {
+            if (stillLinksTo) { stillLinksTo[href] = true; nOldLinksFound += 1; }
+            if (!page.linksTo[href]) this.addNewLink(href, page);
+        // Totally new page -> add it
+        } else {
+            wasCompletelyNewPage = true;
+            hrefPage = siteGraph.addPage(href, 0,
+                layoutOverride || website.siteConfig.defaultLayout);
             this.addNewLink(href, page, true);
-            var layout = siteGraph.getTemplate(layoutFileName);
-            if (layout) {
-                if (!layout.samplePage) layout.samplePage = newPage;
-            } else {
-                layout = siteGraph.addTemplate(layoutFileName, newPage);
-            }
-            // Follow it if it has a valid layout
-            if (layout.exists) {
-                this.nLinksFollowed += 1;
-                if (!this.scanChanges(newPage)) return false;
-            }
+        }
+        if (!layoutOverride) continue;
+        var layout = siteGraph.getTemplate(layoutOverride);
+        if (layout) {
+            if (!layout.samplePage) layout.samplePage = hrefPage;
+        } else {
+            layout = siteGraph.addTemplate(layoutOverride, hrefPage);
+        }
+        // Follow valid layouts
+        if (wasCompletelyNewPage && layout.exists) {
+            this.nLinksFollowed += 1;
+            if (!this.scanChanges(hrefPage)) return false;
+        }
+    }
+    //
+    if (stillLinksTo && nOldLinksFound < nOldLinks) { // At least one link was removed
+        page.linksTo = {}; // Rebuild from scratch
+        for (url in stillLinksTo) {
+            if (stillLinksTo[url]) page.linksTo[url] = 1; // Still there -> add
+            else this.removeLink(url, page); // Was removed -> don't add to linksTo
+        }
+    }
+    var els = domTree.getRenderedElements();
+    var scriptSrc = null;
+    var styleHref = null;
+    l = els.length;
+    for (i = 0; i < l; ++i) {
+        var el = els[i];
         /*
          * Handle <script src=<path>...
          */
-        } else if (el.tagName == 'script' && (scriptSrc = el.props.src)) {
+        if (el.tagName == 'script' && (scriptSrc = el.props.src)) {
             this.staticFiles[scriptSrc] = 1;
         /*
          * Handle <link href=<path>...
          */
         } else if (el.tagName == 'link' && (styleHref = el.props.href)) {
             this.staticFiles[styleHref] = 1;
-        }
-    }
-    //
-    if (stillLinksTo && nOldLinksFound < nOldLinks) { // At least one link was removed
-        page.linksTo = {}; // Build from scratch
-        for (url in stillLinksTo) {
-            if (stillLinksTo[url]) page.linksTo[url] = 1; // Still there -> add
-            else this.removeLink(url, page); // Was removed -> don't add to linksTo
         }
     }
     return true;

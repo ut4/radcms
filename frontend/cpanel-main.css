@@ -208,30 +208,41 @@ table .input-set input {
 }
 
 /* == App =================================================================== */
-.view { float: right; padding: 40px 1px 1px; margin: 10px 170px 0 0; border-radius: 1px;
-    box-shadow: 3px 2px 1px rgba(0,0,0,0.04); }
-.view > div:first-of-type, .view > form:first-of-type { padding: 15px; border-radius: 1px; }
+.view { float: right; padding: 42px 1px 1px; margin: 10px 200px 0 0;
+    border-radius: 1px; box-shadow: 3px 2px 1px rgba(0,0,0,0.04); }
+.view > div:nth-of-type(1), .view > form:first-of-type { padding: 15px;
+    border-radius: 1px; }
 .view h2 { margin: -48px 0 24px -13px; font-size: 21px; }
-nav { position: absolute; max-width: 200px; padding: 40px 1px 1px;
-    margin-top: 10px; right: 5px; border-radius: 1px; box-shadow: 3px 2px 1px rgba(0,0,0,0.04); }
-nav > h1 { float: left; margin: -33px 0 0 2px; letter-spacing: -1px;
-    font-size: 20px; }
-nav > div { padding: 15px 15px 0; }
-nav > div:first-of-type { padding-top: 15px; border-top-left-radius: 1px;
-    border-top-right-radius: 1px; }
-nav > div:last-of-type { padding-bottom: 15px; border-bottom-left-radius: 1px;
-    border-bottom-right-radius: 1px; }
-nav h3 { margin-top: 0; font-size: 18px; }
-nav h4 { margin: 0; font-size: 16px; }
-.nice-button[data-num-pending-changes]::after { position: absolute; width: 16px;
-    height: 16px; content: attr(data-num-pending-changes); margin: -15px 0 0 2px;
+
+#control-panel { position: absolute; min-width: 190px; max-width: 200px;
+    padding: 40px 1px 1px; margin-top: 10px; right: 5px; border-radius: 1px;
+    box-shadow: 3px 2px 1px rgba(0,0,0,0.04); }
+#control-panel > h1 { float: right; margin: -37px 3px 0 0; letter-spacing: -1px;
+    font-size: 14px; }
+.tab-links { position: relative; top: 0px; margin-top: -18px; }
+.tab-links button { padding: 2px 8px; border-bottom: none; }
+.tab-links button.current { box-shadow: 2px 0 1px rgba(0,0,0,0.15); }
+.tab-links button:last-of-type.current { box-shadow: -2px 0 1px rgba(0,0,0,0.05); }
+#control-panel > div:not(.tab-links) { padding: 15px; border-radius: 1px; }
+#control-panel h3 { margin-top: 0; font-size: 18px; }
+#control-panel h3 > span { font-size: 11px; font-weight: normal; display: block;
+    line-height: 11px; }
+#control-panel h4 { margin: 0; font-size: 16px; }
+#control-panel .nice-button[data-num-pending-changes]::after {
+    position: absolute; width: 16px; height: 16px;
+    content: attr(data-num-pending-changes); margin: -15px 0 0 2px;
     line-height: 16px; font-size: 10px; font-weight: bold; color: #fff;
     border-radius: 50%; background-color: #ff8b8b;
     box-shadow: 0px 1px 1px rgba(0,0,0,0.4); }
+
 /**/
 .light { color: rgb(62,62,62); }
 .light .view { background: linear-gradient(#bababa,#c6c6c6); }
 .light .view > div:first-of-type, .light .view > form:first-of-type {
     background-color: #fff; }
-.light nav { background: linear-gradient(#bababa,#c6c6c6); }
-.light nav > div { background-color: #fff; }
+.light #control-panel { background: linear-gradient(#bababa,#c6c6c6); }
+.light #control-panel > div:not(.tab-links) { background-color: #fff; }
+.light #control-panel > h1 { color: #555; }
+.light #control-panel h3 > span { color: #888; }
+.light .tab-links button { background-color: rgba(255,255,255,0.6); }
+.light .tab-links button.current { background-color: #fff; }

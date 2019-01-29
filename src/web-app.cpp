@@ -15,7 +15,7 @@ constexpr int SEND_TMPL_ERRORS_TO_BROWSER = 1;
 static volatile int isCtrlCTyped = 0;
 static void onCtrlC(int _) { isCtrlCTyped = 1; }
 
-// Used on every POST-request.
+// Used on every POST|PUT-request.
 struct PerConnInfo {
     struct MHD_PostProcessor *postProcessor;
     RequestHandler *reqHandler; // borrowed from app->handlers
@@ -117,14 +117,14 @@ handleRequest(void *myPtr, struct MHD_Connection *conn, const char *url,
     }
     auto *connInfo = static_cast<PerConnInfo*>(*perConnPtr);
     /*
-    * Second iteration of POST -> process the form data and set connInfo->statusCode
+    * Second iteration of POST|PUT -> process the form data and set connInfo->statusCode
     */
     if (connInfo->statusCode == 0) {
         connInfo->statusCode = processPostData(uploadData, uploadDataSize, perConnPtr);
         return MHD_YES;
     }
     /*
-    * Last iteration of POST -> respond
+    * Last iteration of POST|PUT -> respond
     */
     if (connInfo->statusCode > 1) { // had errors
         return respond(connInfo->statusCode, conn, nullptr, app->ctx->errBuf);
@@ -220,7 +220,7 @@ processPostData(const char *uploadData, size_t *uploadDataSize,
                 void **perConnMyPtr) {
     size_t l = *uploadDataSize;
     if (l == 0 || l > MAX_POST_SIZE) {
-        std::cerr << "[Error]: POST body length out of range (max " <<
+        std::cerr << "[Error]: POST|PUT body length out of range (max " <<
                      MAX_POST_SIZE << ", was " << l << ").\n";
         return MHD_HTTP_BAD_REQUEST;
     }

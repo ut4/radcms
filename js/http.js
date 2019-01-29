@@ -18,7 +18,7 @@ exports.Request.prototype.getUrlParam = function(/*name*/) {};
 /**
  * @param {number} statusCode
  * @param {string} body
- * @param {Object} headers
+ * @param {Object?} headers = {'Content-Type': 'text/html;charset=utf-8'}
  * @constructor
  */
 exports.Response = function(statusCode, body, headers) {
@@ -35,6 +35,9 @@ exports.Response = function(statusCode, body, headers) {
        this.headers = headers;
     } else {
         this.headers = {};
+    }
+    if (!this.headers['Content-Type']) {
+        this.headers['Content-Type'] = 'text/html;charset=utf-8';
     }
 };
 

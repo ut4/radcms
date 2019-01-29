@@ -3,6 +3,8 @@ var commons = require('common-services.js');
 var testLib = require('tests/testlib.js').testLib;
 var website = require('website.js');
 var http = require('http.js');
+var LAYOUT_1 = 'home-layout.jsx.htm';
+var LAYOUT_2 = 'page-layout.jsx.htm';
 var NO_PARENT = 0;
 
 testLib.module('website-handlers.js', function(hooks) {
@@ -11,10 +13,10 @@ testLib.module('website-handlers.js', function(hooks) {
     var page2ContentCnt = {name:'/page2',json:{content:'Page2'},contentTypeName:'Generic'};
     var page3ContentCnt = {name:'/page3',json:{content:'Page3'},contentTypeName:'Generic'};
     var websiteData = {id: 1, graph: JSON.stringify({
-        pages: [['/home', NO_PARENT, 'home-layout.jsx.htm', []],
-                ['/page2', NO_PARENT, 'page-layout.jsx.htm', []],
-                ['/page3', NO_PARENT, 'page-layout.jsx.htm', []]],
-        templates: ['home-layout.jsx.htm', 'page-layout.jsx.htm']
+        pages: [['/home', NO_PARENT, LAYOUT_1, []],
+                ['/page2', NO_PARENT, LAYOUT_2, []],
+                ['/page3', NO_PARENT, LAYOUT_2, []]],
+        templates: [LAYOUT_1, LAYOUT_2]
     })};
     var writeLog = [];
     var makeDirsLog = [];
@@ -153,5 +155,25 @@ testLib.module('website-handlers.js', function(hooks) {
         assert.equal(chunk4, '');
         //
         website.website.Uploader = commons.Uploader;
+    });
+    testLib.test('PUT \'/api/website/page\' updates a page', function(assert) {
+        assert.expect(3);
+        //
+        var req = new http.Request('/api/website/page', 'PUT');
+        var handlePageUpdateReqFn = commons.app.getHandler(req.url, req.method);
+        // Emulate the request
+        req.data = {url: '/page2', layoutFileName: LAYOUT_1};
+        var response = handlePageUpdateReqFn(req);
+        assert.equal(response.statusCode, 200);
+        assert.equal(response.body, '{"numAffectedRows":1}');
+        // Assert that changed layoutFileName and saved the changes to the database
+        commons.db.select('select `graph` from websites limit 1', function(row) {
+            var updatedPData = JSON.parse(row.getString(0)).pages; // [[<url>,<parent>,<layoutFilename>...]]
+            var savedFileName = null;
+            for (var i = 0; i < updatedPData.length; ++i) {
+                if (updatedPData[i][0] == req.data.url) { savedFileName = updatedPData[i][2]; break; }
+            }
+            assert.equal(savedFileName, LAYOUT_1);
+        });
     });
 });

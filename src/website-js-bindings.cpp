@@ -40,7 +40,8 @@ receiveIniVal(void *myPtr, const char *section, const char *key,
     #define MATCH(s, n) (strcmp(section, s) == 0 && strcmp(key, n) == 0)
     auto *ctx = static_cast<duk_context*>(myPtr);
     if (MATCH("Site", "name") ||
-        MATCH("Site", "homeUrl")) {
+        MATCH("Site", "homeUrl") ||
+        MATCH("Site", "defaultLayout")) {
         duk_push_string(ctx, value);       // [? siteCfg value]
         duk_put_prop_string(ctx, -2, key); // [? siteCfg]
     } else if (strstr(section, "ContentType:") == section) {
@@ -95,10 +96,12 @@ static bool
 validateSiteConfig(duk_context *ctx) {
                                                      // [? siteCfg]
     std::string errors;
+    constexpr const char* DEFAULT_DEFAULT_LAYOUT = "main-layout.jsx.htm";
     /*
      * [Site] homeUrl
      */
-    if (duk_get_prop_string(ctx, -1, "homeUrl")) {   // [? siteCfg val]
+    if (duk_get_prop_string(ctx, -1, "homeUrl") &&
+        duk_get_length(ctx, -1) > 1) {               // [? siteCfg val]
         const char *homeUrl = duk_get_string(ctx, -1);
         if (*homeUrl != '/') {
             duk_push_string(ctx, "/");               // [? siteCfg val slash]
@@ -112,6 +115,15 @@ validateSiteConfig(duk_context *ctx) {
         errors += "homeUrl is required";
         duk_pop(ctx);                                // [? siteCfg]
     }
+    /*
+     * [Site] defaultLayout
+     */
+    if (!duk_get_prop_string(ctx, -1, "defaultLayout") ||
+        duk_get_length(ctx, -1) == 0) {              // [? siteCfg val|null]
+        duk_push_string(ctx, DEFAULT_DEFAULT_LAYOUT);// [? siteCfg null str]
+        duk_put_prop_string(ctx, -3, "defaultLayout");// [? siteCfg null]
+    }
+    duk_pop(ctx);                                    // [? siteCfg]
     /*
      * [ContentType:Foo] field=val
      */

@@ -21,16 +21,15 @@ function Page(url, parentId, layoutFileName, linksTo, refCount) {
     this.refCount = refCount || 0;
 }
 /**
- * @param {Object?} pageData
+ * @param {Object?} dataToFrontend
  * @param {Array?} issues
  * @returns {string}
  */
-Page.prototype.render = function(pageData, issues) {
+Page.prototype.render = function(dataToFrontend, issues) {
     var layout = exports.siteGraph.getTemplate(this.layoutFileName);
     if (!layout || !layout.exists || !layout.samplePage) {
-        var message = layout
-            ? 'The layout file \'' + layout.fileName + '\' doesn\'t exists yet, or is empty.'
-            : 'The layout file of this page has been deleted.';
+        var message = 'The layout file \'' + this.layoutFileName + '\' doesn\'t exists' +
+                      (layout ? ' yet, or is empty.' : '.');
         if (issues) issues.push(this.url + '>' + message);
         return '<html><body>' + message + '</body></html>';
     }
@@ -45,17 +44,20 @@ Page.prototype.render = function(pageData, issues) {
     fetchData(ddc);
     //
     var domTree = new commons.DomTree();
-    if (!pageData) {
+    if (!dataToFrontend) {
         return domTree.render(innerFn(domTree, ddc.getDataFor.bind(ddc), directives));
     }
     var html = domTree.render(innerFn(domTree, ddc.getDataFor.bind(ddc), directives));
-    pageData.allContentNodes = ddc.data;
-    pageData.directiveInstances = domTree.getRenderedFnComponents()
-        .map(function(fnData) {
-            if (fnData.fn == directives.ArticleList) {
-                return {type: 'ArticleList', contentNodes: fnData.props.articles};
-            }
-        });
+    dataToFrontend.page = {url: this.url, layoutFileName: this.layoutFileName};
+    dataToFrontend.allContentNodes = ddc.data;
+    dataToFrontend.directiveInstances = [];
+    domTree.getRenderedFnComponents().forEach(function(fnData) {
+        if (fnData.fn == directives.ArticleList) {
+            dataToFrontend.directiveInstances.push(
+                {type: 'ArticleList', contentNodes: fnData.props.articles}
+            );
+        }
+    });
     return html;
 };
 /**
@@ -188,6 +190,7 @@ exports.siteGraph = {
 exports.siteConfig = {
     name: '',
     homeUrl: '',
+    defaultLayout: '',
     contentTypes: [],
     /**
      * @native

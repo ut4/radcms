@@ -6,6 +6,8 @@ var uploadHandlerIsBusy = false;
 commons.app.addRoute(function(url, method) {
     if (method == 'GET' && url == '/api/website/pages')
         return handleGetAllPagesRequest;
+    if (method == 'GET' && url == '/api/website/templates')
+        return handleGetAllTemplatesRequest;
     if (method == 'POST' && url == '/api/website/generate')
         return handleGenerateRequest;
     if (method == 'POST' && url == '/api/website/upload') {
@@ -14,9 +16,29 @@ commons.app.addRoute(function(url, method) {
     }
     if (method == 'GET' && url == '/api/website/num-pending-changes')
         return handleGetNumPendingChanges;
+    if (method == 'PUT' && url == '/api/website/page')
+        return handleUpdatePageRequest;
     if (method == 'GET')
         return handlePageRequest;
 });
+
+/**
+ * GET <any> eg. "/" or "/foo/bar/baz": renders a page.
+ */
+function handlePageRequest(req) {
+    var page = website.siteGraph.getPage(req.url != '/' ? req.url : website.siteConfig.homeUrl);
+    if (page) {
+        if (req.getUrlParam('rescan')) {
+            commons.signals.emit('sitegraphRescanRequested', page);
+        }
+        var dataToFrontend = {};
+        var html = page.render(dataToFrontend);
+        return new http.Response(200, injectControlPanelIFrame(html, dataToFrontend));
+    } else {
+        return new http.Response(404, injectControlPanelIFrame(
+            '<!DOCTYPE html><html><title>Not found</title><body>Not found', null));
+    }
+}
 
 /**
  * GET /api/website/pages: lists all pages.
@@ -45,21 +67,21 @@ function handleGetAllPagesRequest() {
 }
 
 /**
- * GET <any> eg. "/" or "/foo/bar/baz": renders a page.
+ * GET /api/website/template: lists all templates.
+ *
+ * Example response:
+ * [
+ *     {"fileName":"foo.jsx.htm"},
+ *     {"fileName":"bar.jsx.htm"}
+ * ]
  */
-function handlePageRequest(req) {
-    var page = website.siteGraph.getPage(req.url != '/' ? req.url : website.siteConfig.homeUrl);
-    if (page) {
-        if (req.getUrlParam('rescan')) {
-            commons.signals.emit('sitegraphRescanRequested', page);
-        }
-        var pageData = {};
-        var html = page.render(pageData);
-        return new http.Response(200, injectControlPanelIFrame(html, pageData));
-    } else {
-        return new http.Response(404, injectControlPanelIFrame(
-            '<!DOCTYPE html><html><title>Not found</title><body>Not found', null));
-    }
+function handleGetAllTemplatesRequest() {
+    var templates = [];
+    for (var fileName in website.siteGraph.templates)
+        templates.push({fileName: fileName});
+    return new http.Response(200, JSON.stringify(templates),
+        {'Content-Type': 'application/json'}
+    );
 }
 
 /**
@@ -67,11 +89,11 @@ function handlePageRequest(req) {
  *
  * Example response:
  * {
- *     wrotePagesNum: 5,
- *     tookSecs: 0.002672617,
- *     totalPages: 6,
- *     outPath: '/my/site/path/out',
- *     issues: ['/some-url>Some error.']
+ *     "wrotePagesNum": 5,
+ *     "tookSecs": 0.002672617,
+ *     "totalPages": 6,
+ *     "outPath": "/my/site/path/out",
+ *     "issues": ["/some-url>Some error."]
  * }
  */
 function handleGenerateRequest() {
@@ -99,7 +121,7 @@ function handleGenerateRequest() {
 }
 
 /**
- * GET /api/website/upload: renders all pages, and uploads them to a server
+ * POST /api/website/upload: renders all pages, and uploads them to a server
  * using FTP.
  *
  * Payload:
@@ -114,9 +136,9 @@ function handleUploadRequest(req) {
     uploadHandlerIsBusy = true;
     //
     var errs = [];
-    if (!req.data.remoteUrl) errs.push('Remote url is required.');
-    if (!req.data.username) errs.push('Username is required.');
-    if (!req.data.password) errs.push('Password is required.');
+    if (!req.data.remoteUrl) errs.push('remoteUrl is required.');
+    if (!req.data.username) errs.push('username is required.');
+    if (!req.data.password) errs.push('password is required.');
     if (errs.length) return new http.Response(400, errs.join('\n'));
     //
     var generated = [];
@@ -180,18 +202,50 @@ function handleGetNumPendingChanges() {
 }
 
 /**
+ * PUT /api/website/page: updates siteGraph.pages[$req.data.url].
+ *
+ * Payload:
+ * url=string|required&
+ * layoutFileName=string|required
+ *
+ * Example response:
+ * {"numAffectedRows": 1}
+ */
+function handleUpdatePageRequest(req) {
+    var errs = [];
+    if (req.data.url) {
+        var page = website.siteGraph.getPage(req.data.url);
+        if (!page) errs.push('Page' + req.data.url + ' not found.');
+    } else {
+        errs.push('url is required.');
+    }
+    if (!req.data.layoutFileName) errs.push('layoutFileName is required.');
+    if (errs.length) return new http.Response(400, errs.join('\n'));
+    //
+    page.layoutFileName = req.data.layoutFileName;
+    var layout = website.siteGraph.getTemplate(req.data.layoutFileName);
+    if (layout && !layout.samplePage) layout.samplePage = page;
+    var ok = commons.db.update('update websites set `graph` = ?', function(stmt) {
+        stmt.bindString(0, website.siteGraph.serialize());
+    });
+    return new http.Response(200, JSON.stringify({numAffectedRows: ok}),
+        {'Content-Type': 'application/json'});
+}
+
+/**
  * @param {string} html <html>body><p>foo</p>...
- * @param {Object?} pageData {
- *     directiveInstances: [{...}...]
+ * @param {Object?} dataToFrontend {
+ *     page: {url: <str>, layoutFileName: <str>},
+ *     directiveInstances: [{type: <str>, contentNodes: [<cnode>...]}...]
  *     allContentNodes: [{...,defaults:{id:<id>,name:<name>...}}]
  * }
  * @returns {string} <html>body><iframe...<p>foo</p>...
  */
-function injectControlPanelIFrame(html, pageData) {
+function injectControlPanelIFrame(html, dataToFrontend) {
     var pos = html.indexOf('<body>');
     if (pos > -1) {
         var bodyInnerStart = pos + 6;
-        return html.substr(0, bodyInnerStart) + '<iframe src="/frontend/cpanel.html" id="insn-cpanel-iframe" style="position:fixed;border:none;height:100%;width:200px;right:4px;top:4px;"></iframe><script>function setIframeVisible(setVisible) { document.getElementById(\'insn-cpanel-iframe\').style.width = setVisible ? \'80%\' : \'200px\'; } function getCurrentPageData() { return ' + JSON.stringify(pageData) + '; }</script>' + html.substr(bodyInnerStart);
+        return html.substr(0, bodyInnerStart) + '<iframe src="/frontend/cpanel.html" id="insn-cpanel-iframe" style="position:fixed;border:none;height:100%;width:200px;right:4px;top:4px;"></iframe><script>function setIframeVisible(setVisible) { document.getElementById(\'insn-cpanel-iframe\').style.width = setVisible ? \'80%\' : \'200px\'; } function getCurrentPageData() { return ' + JSON.stringify(dataToFrontend) + '; }</script>' + html.substr(bodyInnerStart);
     }
     return html;
 }

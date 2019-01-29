@@ -39,7 +39,8 @@ static std::vector<SampleData> sampleData = {
         // files
         {
             {"site.ini", "[Site]\n"
-                         "homeUrl=/home\n\n"
+                         "homeUrl=/home\n"
+                         "defaultLayout=main-layout.jsx.htm\n\n"
                          "[ContentType:Generic]\n"
                          "content=richtext"},
             {"main-layout.jsx.htm", "@footer = fetchOne(\"Generic\").where(\"name='footer'\")\n"
@@ -72,7 +73,8 @@ static std::vector<SampleData> sampleData = {
         // files
         {
             {"site.ini", "[Site]\n"
-                         "homeUrl=/home\n\n"
+                         "homeUrl=/home\n"
+                         "defaultLayout=main-layout.jsx.htm\n\n"
                          "[ContentType:Generic]\n"
                          "content=text\n\n"
                          "[ContentType:Article]\n"
@@ -85,7 +87,7 @@ static std::vector<SampleData> sampleData = {
                                "        <title>Hello</title>\n"
                                "    </head>\n"
                                "    <body>\n"
-                               "        { domTree.createElement(directives.ArticleList, {articles: arts}, null) }\n"
+                               "        <directives.ArticleList articles={arts}/>\n"
                                "        <footer>{ footer.content }</footer>\n"
                                "    </body>\n"
                                "</html>"},

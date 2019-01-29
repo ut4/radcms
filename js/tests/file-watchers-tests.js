@@ -8,17 +8,16 @@ var NO_PARENT = 0;
 
 testLib.module('file-watchers.js', function(hooks) {
     var mockTemplate = {fname:'template-a.jsx.htm', contents:null};
-    var mockTemplate2 = {fname:'template-b.jsx.htm', contents:null};
     var websiteData = {id: 2, graph: ''};
     var writeLog;
     hooks.before(function() {
+        website.siteConfig.defaultLayout = mockTemplate.fname;
         website.website.fs = {
             write:function(a,b) {
                 writeLog.push({path:a,contents:b}); return true;
             },
             read: function(a) {
                 if(a==insnEnv.sitePath + mockTemplate.fname) return mockTemplate.contents;
-                if(a==insnEnv.sitePath + mockTemplate2.fname) return mockTemplate2.contents;
             }
         };
         if (commons.db.insert('insert into websites values (?,?)', function(stmt) {
@@ -73,22 +72,23 @@ testLib.module('file-watchers.js', function(hooks) {
         assert.expect(2);
         var existingPage = siteGraph.addPage('/foo', NO_PARENT, mockTemplate.fname);
         var existingLayout = siteGraph.addTemplate(mockTemplate.fname, existingPage, true);
-        var newLink = {href: '/bar', layoutFileName: mockTemplate.fname};
-        mockTemplate.contents = '<html><body><a href="' + newLink.href +
-            '" layoutFileName="' + newLink.layoutFileName + '"></a><a href="' + newLink.href +
-            '" layoutFileName="' + newLink.layoutFileName + '"></a></body></html>';
+        var newLinkUrl = '/bar';
+        mockTemplate.contents = '<html><body>'+
+            '<directives.Link to="' + newLinkUrl + '"/>' +
+            '<directives.Link to="' + newLinkUrl + '"/>'+ // dupes shouldn't matter
+        '</body></html>';
         // Trigger handleFWEvent()
         fileWatcher._watchFn(fileWatcher.EVENT_WRITE, mockTemplate.fname);
         // Assert that added the page to website.siteGraph
-        var addedPage = siteGraph.getPage(newLink.href);
+        var addedPage = siteGraph.getPage(newLinkUrl);
         assert.ok(addedPage !== undefined, 'should add a page to website.siteGraph');
         // Assert that saved the updated sitegraph to the database
         commons.db.select('select `graph` from websites where id = ' + websiteData.id,
             function(row) {
             assert.equal(row.getString(0), JSON.stringify({
                 pages:[
-                    [existingPage.url,NO_PARENT,existingLayout.fileName,[newLink.href]],
-                    [newLink.href,NO_PARENT,existingLayout.fileName,[newLink.href]]
+                    [existingPage.url,NO_PARENT,existingLayout.fileName,[newLinkUrl]],
+                    [newLinkUrl,NO_PARENT,existingLayout.fileName,[]]
                 ],
                 templates:[existingLayout.fileName]
             }), 'should store the updated sitegraph to the database');
@@ -142,28 +142,25 @@ testLib.module('file-watchers.js', function(hooks) {
             }), 'should store the updated sitegraph to the database');
         });
     });
-    testLib.test('scans new links recursively', function(assert) {
+    testLib.test('adds pages recursively', function(assert) {
         assert.expect(5);
-        var templateALink = {href: '/bar', layoutFileName: mockTemplate2.fname};
-        var templateBLink = {href: '/nar', layoutFileName: mockTemplate.fname};
-        // Existing /foo contains a link to /bar
-        mockTemplate.contents = '<html><body><a href="' + templateALink.href +
-            '" layoutFileName="' + templateALink.layoutFileName + '"></a></body></html>';
-        // New link /bar contains a link to /nar
-        mockTemplate2.contents = '<html><body><a href="' + templateBLink.href +
-            '" layoutFileName="' + templateBLink.layoutFileName + '"></a></body></html>';
+        var linkAHref = '/bar';
+        var linkBHref = '/nar';
+        // Existing /foo has a link to a new page /bar
+        // New page /bar has a link to another new page /nar
+        mockTemplate.contents = '<html><body>{ url[0] == "foo" ? <directives.Link to="' +
+            linkAHref + '" layoutOverride="'+mockTemplate.fname+'"/> : <directives.Link to="' +
+            linkBHref + '" layoutOverride="'+mockTemplate.fname+'"/> }</body></html>';
         var existingPage = siteGraph.addPage('/foo', NO_PARENT, mockTemplate.fname);
         var t1 = siteGraph.addTemplate(mockTemplate.fname, existingPage, true);
-        var t2 = siteGraph.addTemplate(mockTemplate2.fname, null, true);
         website.website.compileAndCacheTemplate(t1.fileName);
-        website.website.compileAndCacheTemplate(t2.fileName);
         // Trigger handleFWEvent()
         fileWatcher._watchFn(fileWatcher.EVENT_WRITE, mockTemplate.fname);
         // Assert that added both pages to website.siteGraph
-        var added1 = siteGraph.getPage(templateALink.href);
+        var added1 = siteGraph.getPage(linkAHref);
         assert.ok(added1 !== undefined, 'should add page #1 to website.siteGraph');
         assert.equal(added1.url, '/bar');
-        var added2 = siteGraph.getPage(templateBLink.href);
+        var added2 = siteGraph.getPage(linkBHref);
         assert.ok(added2 !== undefined, 'should add page #2 to website.siteGraph');
         assert.equal(added2.url, '/nar');
         // Assert that saved the updated sitegraph to the database
@@ -171,19 +168,18 @@ testLib.module('file-watchers.js', function(hooks) {
             function(row) {
             assert.equal(row.getString(0), JSON.stringify({
                 pages: [
-                    [existingPage.url,NO_PARENT,mockTemplate.fname,[templateALink.href]],
-                    [templateALink.href,NO_PARENT,mockTemplate2.fname,[templateBLink.href]],
-                    [templateBLink.href,NO_PARENT,mockTemplate.fname,[templateALink.href]]
+                    [existingPage.url,NO_PARENT,mockTemplate.fname,[linkAHref]],
+                    [linkAHref,NO_PARENT,mockTemplate.fname,[linkBHref]],
+                    [linkBHref,NO_PARENT,mockTemplate.fname,[linkBHref]]
                 ],
-                templates:[mockTemplate.fname,mockTemplate2.fname]
+                templates:[mockTemplate.fname]
             }), 'should store the updated sitegraph to the database');
         });
     });
-    testLib.test('doesn\'t add aliases (<a href=\'/\'>)', function(assert) {
+    testLib.test('doesn\'t add aliases (<Link to="/"/>)', function(assert) {
         assert.expect(2);
         mockTemplate.contents = '<html><body>'+
-            '<a href="" layoutFileName="' + mockTemplate.fname + '"></a>'+
-            '<a href="/" layoutFileName="' + mockTemplate.fname + '"></a>'+
+            '<directives.Link to="/"/>'+
         '</body></html>';
         var existingPage = siteGraph.addPage('/home', NO_PARENT, mockTemplate.fname);
         var refCountBefore = existingPage.refCount;

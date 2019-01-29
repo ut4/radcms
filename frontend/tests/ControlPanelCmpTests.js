@@ -1,10 +1,11 @@
 import {app, InsaneControlPanel} from './../app.js';
 import services from './../common-services.js';
+import utils from './my-test-utils.js';
 const itu = Inferno.TestUtils;
 
 const testDirectiveImpl = {
     getTitle: () => 'Test',
-    getMenuItems: self => '...',
+    getMenuItems: _self => '...',
     getRoutes: () => []
 };
 
@@ -24,6 +25,7 @@ QUnit.module('ControlPanelComponent', hooks => {
     });
     QUnit.test('lists current page directives', assert => {
         const currentPageData = {
+            page: null,
             directiveInstances: [
                 {type: 'TestDirective', contentNodes: [{title:'t',body:'b',defaults:{id:1}}]}
             ],
@@ -53,6 +55,7 @@ QUnit.module('ControlPanelComponent', hooks => {
         const done = assert.async();
         //
         const rendered = itu.renderIntoContainer($el(InsaneControlPanel, {currentPageData: {
+            page: null,
             directiveInstances:[],
             allContentNodes:[]
         }}, null));
@@ -69,7 +72,51 @@ QUnit.module('ControlPanelComponent', hooks => {
                          mockNumPendingChanges);
             httpStub.restore();
             done();
-        }).catch(err => { console.log('err');
+        });
+    });
+    QUnit.test('handles a layout change', assert => {
+        assert.expect(6);
+        httpStub
+            .onCall(0).returns(Promise.resolve({responseText:'0'}))
+            .onCall(1).returns(Promise.resolve({responseText:'[{"fileName":"a.jsx.htm"},{"fileName":"b.jsx.htm"}]'}))
+            .onCall(2).returns(Promise.resolve({responseText:'{"numAffectedRows":1}'}));
+        const redirectSpy = sinon.spy(window, 'myRedirect');
+        //
+        const originalLayout = 'b.jsx.htm';
+        const currentPage = {url: '/foo', layoutFileName: originalLayout};
+        const newLayout = 'a.jsx.htm';
+        const done = assert.async();
+        const rendered = itu.renderIntoContainer($el(InsaneControlPanel, {currentPageData: {
+            page: currentPage,
+            directiveInstances:[],
+            allContentNodes:[],
+        }}, null));
+        // Wait until the constructor has loaded all data
+        httpStub.getCall(0).returnValue // GET /num-pending-changes
+        .then(() => httpStub.getCall(1).returnValue) // GET /website/templates
+        .then(() => {
+            // Open the dev tab
+            const devTabButton = itu.findRenderedDOMElementWithClass(rendered,
+                'tab-links').children[1]; // [0]==Content,[1]==For devs
+            devTabButton.click();
+            // Change the layout from the dropdown
+            const layoutSelectEl = itu.findRenderedDOMElementWithTag(rendered,
+                'select');
+            utils.setDropdownIndex(0, layoutSelectEl); // Change from 1 to 0
+            //
+            assert.ok(httpStub.calledThrice);
+            const args = httpStub.getCall(2).args;
+            assert.equal(args[0], '/api/website/page');
+            assert.equal(args[1].method, 'PUT');
+            assert.equal(args[1].data,
+                'url=' + encodeURIComponent(currentPage.url) +
+                '&layoutFileName=' + encodeURIComponent(newLayout));
+            return httpStub.getCall(2).returnValue;
+        }).then(() => {
+            assert.ok(redirectSpy.calledAfter(httpStub), 'Should redirect');
+            assert.equal(redirectSpy.firstCall.args[0], currentPage.url+'?rescan=1');
+            redirectSpy.restore();
+            done();
         });
     });
 });

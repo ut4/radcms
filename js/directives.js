@@ -1,9 +1,28 @@
+var website = require('website.js');
+
+/*
+ * Usage:
+ * <html>
+ *     ...
+ *     <directives.Link to="/page" text="Read more" domAttr1="foo" another="bar"/>
+ *     ...
+ * </html>
+ */
+exports.Link = function(domTree, props) {
+    if (!props.to) throw new TypeError('<Link to=""/> can\'t be empty');
+    else if (props.to == '/') props.to = website.siteConfig.homeUrl;
+    //
+    var p = {href: props.to};
+    for (var key in props) if (key != 'to' && key != 'text') p[key] = props[key];
+    return domTree.createElement('a', p, props.text || '');
+};
+
 /*
  * Usage:
  * @arts = fetchAll("Article")
  * <html>
  *     ...
- *     { domTree.createElement(directives.ArticleList, {articles: arts}, null) }
+ *     <directives.ArticleList articles={ arts }/>
  *     ...
  * </html>
  *
@@ -12,11 +31,10 @@
  * @arts = fetchAll("Article").paginate(paginationOpts)
  * <html>
  *     ...
- *     { domTree.createElement(directives.ArticleList, {
- *         articles: arts,
- *         paginationOptions: paginationOpts,
- *         url: url
- *     }, null) }
+ *     <directives.ArticleList
+ *         articles={ arts }
+ *         paginationOptions={ paginationOpts }
+ *         url={ url }/>
  *     ...
  * </html>
  *
@@ -30,12 +48,12 @@ exports.ArticleList = function(domTree, props) {
                 domTree.createElement('h2', null, art.title),
                 domTree.createElement('div', null, [
                     domTree.createElement('p', null, art.body.substr(0, 6) + '... '),
-                    domTree.createElement('a', {
-                        href: art.defaults.name.charAt(0) !== '/'
+                    domTree.createElement(exports.Link, {
+                        to: art.defaults.name.charAt(0) !== '/'
                             ? '/' + art.defaults.name
                             : art.defaults.name,
-                        layoutFileName: 'article-layout.jsx.htm'
-                    }, 'Read more')
+                        text: 'Read more'
+                    }, null)
                 ])
             ]);
         }).concat(buildPaginationLinks(domTree, props, false)));
@@ -50,16 +68,18 @@ function buildPaginationLinks(domTree, props, isLast) {
     if (!opts) return [''];
     var out = [];
     if (opts.nthPage > 1) {
-        out.push(domTree.createElement('a', {
-            href: '/' + props.url[0] + (opts.nthPage > 2 ? ('/' + (opts.nthPage - 1)) : ''),
-            layoutFileName: 'main-layout.jsx.htm'
-        }, 'Prev'));
+        out.push(domTree.createElement(exports.Link, {
+            to: '/' + props.url[0] + (opts.nthPage > 2 ? ('/' + (opts.nthPage - 1)) : ''),
+            layoutOverride: props.layout || website.siteConfig.defaultLayout,
+            text: 'Prev'
+        }, null));
     }
     if (!isLast) {
-        out.push(domTree.createElement('a', {
-            href: '/' + props.url[0] + '/' + (opts.nthPage + 1),
-            layoutFileName: 'main-layout.jsx.htm'
-        }, 'Next'));
+        out.push(domTree.createElement(exports.Link, {
+            to: '/' + props.url[0] + '/' + (opts.nthPage + 1),
+            layoutOverride: props.layout || website.siteConfig.defaultLayout,
+            text: 'Next'
+        }, null));
     }
     return domTree.createElement('div', null, out);
 }

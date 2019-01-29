@@ -36,9 +36,9 @@ function handleGetContentTypesRequest() {
  */
 function handleCreateContentRequest(req) {
     var errs = [];
-    if (!req.data.name) errs.push('Name is required.');
-    if (!req.data.json) errs.push('Json is required.');
-    if (!req.data.contentTypeName) errs.push('ContentTypeName is required.');
+    if (!req.data.name) errs.push('name is required.');
+    if (!req.data.json) errs.push('json is required.');
+    if (!req.data.contentTypeName) errs.push('contentTypeName is required.');
     if (errs.length) return new http.Response(400, errs.join('\n'));
     //
     var insertId = commons.db.insert(
