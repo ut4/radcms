@@ -31,9 +31,9 @@ QUnit.module('AddContentViewComponent', hooks => {
             const form = itu.findRenderedDOMElementWithTag(tree, 'form');
             const formButtons = itu.findRenderedDOMElementWithClass(tree, 'form-buttons');
             const submitButton = formButtons.querySelector('input[type="submit"]');
-            const cnodeNameInput = form.querySelector('input[name="name"]');
-            const titleInput = form.querySelector('input[name="val-title"]');
-            const bodyInput = form.querySelector('textarea[name="val-body"]');
+            const cnodeNameInput = form.querySelector('input[name="defs.name"]');
+            const titleInput = form.querySelector('input[name="title"]');
+            const bodyInput = form.querySelector('textarea[name="body"]');
             // Fill out the form
             utils.setInputValue('/new-article', cnodeNameInput);
             utils.setInputValue('New article', titleInput);
@@ -73,8 +73,8 @@ QUnit.module('AddContentViewComponent', hooks => {
             const form = itu.findRenderedDOMElementWithTag(tree, 'form');
             const formButtons = itu.findRenderedDOMElementWithClass(tree, 'form-buttons');
             const submitButton = formButtons.querySelector('input[type="submit"]');
-            const cnodeNameInput = form.querySelector('input[name="name"]');
-            const contentInput = form.querySelector('textarea[name="val-content"]');
+            const cnodeNameInput = form.querySelector('input[name="defs.name"]');
+            const contentInput = form.querySelector('textarea[name="content"]');
             // Fill out the form
             utils.setInputValue('/new-article', cnodeNameInput);
             utils.setInputValue('Generic content content', contentInput);

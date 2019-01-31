@@ -14,7 +14,8 @@ Db::~Db() {
 }
 
 bool
-Db::select(const char *sql, mapRowFn onRow, void *myPtr, std::string &err) {
+Db::select(const char *sql, mapRowFn onEachRow, bindValsFn myWhereBindFn,
+           void *myPtr, std::string &err) {
     // 1. Create a prepared statement
     sqlite3_stmt *stmt;
     int status = sqlite3_prepare_v2(this->conn, sql, -1, &stmt, NULL);
@@ -23,12 +24,19 @@ Db::select(const char *sql, mapRowFn onRow, void *myPtr, std::string &err) {
               std::string(sqlite3_errmsg(this->conn));
         return false;
     }
-    bool ret = 1;
-    // 2. Bind values to the smtm
-    // 3. Execute the smtm
+    bool ret = false;
     unsigned i = 0;
+    // 2. Call the binder function
+    if (myWhereBindFn && !myWhereBindFn(stmt, myPtr)) {
+        if (sqlite3_errcode(this->conn) != SQLITE_OK)
+            err = "myWhereBindFn() failed: " +
+                std::string(sqlite3_errmsg(this->conn));
+        // else myBindFn had an non-sqlite error
+        goto done;
+    }
+    // 3. Execute the smtm
     while ((status = sqlite3_step(stmt)) == SQLITE_ROW) {
-        if (!(ret = onRow(stmt, myPtr, i))) { status = SQLITE_DONE; break; }
+        if (!(ret = onEachRow(stmt, myPtr, i))) { status = SQLITE_DONE; break; }
         i += 1;
     }
     if (status != SQLITE_DONE) {
@@ -37,6 +45,7 @@ Db::select(const char *sql, mapRowFn onRow, void *myPtr, std::string &err) {
               std::string(sqlite3_errmsg(this->conn));
     }
     // 4. Clean up
+    done:
     if (sqlite3_finalize(stmt) != SQLITE_OK) {
         std::cerr << "[Warn]: Failed to finalize stmt: " <<
                      sqlite3_errmsg(this->conn) << "\n";

@@ -1,4 +1,5 @@
 import services from './common-services.js';
+import {contentNodeList} from './common-components.js';
 import {ArticleListDirectiveWebUIImpl,
         StaticMenuDirectiveWebUIImpl} from './directive-impls.js';
 import {AddContentView, EditContentView} from './content-views.js';
@@ -58,8 +59,8 @@ class InsaneControlPanel extends preact.Component {
             )
         );
         this.uploadButtonEl = null;
-        this.state = {className: '', visibleMenuItems: {}, templates: [],
-                      selectedTemplateIdx: null, tabA: true};
+        this.state = {className: '', templates: [], selectedTemplateIdx: null,
+                      tabA: true};
         services.myFetch('/api/website/num-pending-changes')
             .then(res => {
                 const len = parseInt(res.responseText);
@@ -73,8 +74,8 @@ class InsaneControlPanel extends preact.Component {
             }, () => {
                 console.error('Failed to fetch pending changes.');
             }).then(res => {
-                var templates = JSON.parse(res.responseText);
-                var fname = props.currentPageData.page.layoutFileName;
+                const templates = JSON.parse(res.responseText);
+                const fname = props.currentPageData.page.layoutFileName;
                 this.setState({templates: templates,
                     selectedTemplateIdx: templates.findIndex(t => t.fileName == fname)});
             }, () => {
@@ -102,14 +103,14 @@ class InsaneControlPanel extends preact.Component {
                 {
                     history: History.createHashHistory(),
                     onChange: e => {
-                        var isIndex = e.url === '/';
+                        const isIndex = e.url === '/';
                         if (!e.current && !isIndex) return;
                         window.parent.setIframeVisible(!isIndex);
                         this.setState({className: !isIndex ? 'open' : ''});
                     }
                 }, [
                     $el(AddContentView, {path: '/add-content/:initialContentTypeName?'}, null),
-                    $el(EditContentView, {path: '/edit-content'}, null),
+                    $el(EditContentView, {path: '/edit-content/:contentNodeId'}, null),
                     $el(WebsiteGenerateView, {path: '/generate-website'}, null),
                     $el(WebsiteUploadView, {path: '/upload-website'}, null)
                 ].concat(...this.currentPageDirectiveImpls.map(dir=>dir.getRoutes()))
@@ -131,49 +132,21 @@ class InsaneControlPanel extends preact.Component {
             ]),
             $el('div', null, [
                 $el('h3', null, 'On this page:'),
-                $el('div', {
-                    className: 'current-page-directive-list'
-                }, this.currentPageDirectiveImpls.map((impl, i) => {
-                    var nth = i.toString();
-                    var directive = this.props.currentPageData.directiveInstances[i];
-                    return $el('div', {className: 'directive-' + directive.type}, [
-                        $el('h4', null, [
-                            $el('span', null, impl.getTitle()),
-                            $el('button', {onClick:()=>this.toggleMenuItem(nth)},
-                                '['+(!this.state.visibleMenuItems[nth]?'+':'-')+']'
-                            )
-                        ]),
-                        $el('div', {
-                            className: !this.state.visibleMenuItems[nth]?'hidden':''
-                        }, impl.getMenuItems(directive))
-                    ]);
-                })),
-                $el('div', null,
-                    $el('h4', null, [
-                        $el('span', null, 'Other'),
-                        $el('button', {onClick:()=>this.toggleMenuItem('other')},
-                            '['+(!this.state.visibleMenuItems.other?'+':'-')+']'
-                        )
-                    ]),
-                    $el('ul', {
-                        className: !this.state.visibleMenuItems.other?'hidden':''
-                    }, this.looseContentNodes.map(c =>
-                        $el('li', null, [
-                            $el('span', null, c.defaults.name),
-                            $el('a', {href: '#/edit-content', onClick: e => {
-                                e.preventDefault();
-                                myRedirect('/edit-content');
-                            }}, 'Edit')
-                        ])
-                    )),
-                    $el('div', {
-                        className: !this.state.visibleMenuItems.other?'hidden':''
-                    }, $el('a', {
-                            href: '#/add-content', onClick: e => {
-                            e.preventDefault();
-                            myRedirect('/add-content');
-                        }
-                    }, 'Create content'))
+                $el('div', {className: 'current-page-directive-list'},
+                    this.currentPageDirectiveImpls.map((impl, i) => {
+                        const directive = this.props.currentPageData.directiveInstances[i];
+                        return $el(ControlPanelSection, {
+                            title: impl.getTitle(),
+                            className: 'directive directive-' + directive.type
+                        }, impl.getMenuItems(directive, this.props));
+                    }).concat($el(ControlPanelSection, {
+                        title: 'Other',
+                        className: ''
+                    }, contentNodeList({
+                        cnodes: this.looseContentNodes,
+                        createLinkText: 'Create Content',
+                        currentPageUrl: this.props.currentPageData.page.url
+                    })))
                 )
             ])
         ];
@@ -195,7 +168,7 @@ class InsaneControlPanel extends preact.Component {
     }
     handleCurrentPageTemplateChange(e) {
         this.setState({selectedTemplateIdx: parseInt(e.target.value)});
-        var u = this.props.currentPageData.page.url;
+        const u = this.props.currentPageData.page.url;
         services.myFetch('/api/website/page', {
             method: 'PUT',
             headers: {'Content-Type': 'application/x-www-form-urlencoded'},
@@ -203,17 +176,32 @@ class InsaneControlPanel extends preact.Component {
                   '&layoutFileName=' + encodeURIComponent(
                       this.state.templates[this.state.selectedTemplateIdx].fileName)
         }).then(res => {
-            var d = JSON.parse(res.responseText);
+            const d = JSON.parse(res.responseText);
             if (d.numAffectedRows > 0) myRedirect(u + '?rescan=1', true);
             else throw new Error('');
         }, () => {
             toast('Failed to change the template.', 'error');
         });
     }
-    toggleMenuItem(name) {
-        let visibleMenuItems = this.state.visibleMenuItems;
-        visibleMenuItems[name] = !visibleMenuItems[name];
-        this.setState({visibleMenuItems});
+}
+
+class ControlPanelSection extends preact.Component {
+    constructor(props) {
+        super(props);
+        this.state = {collapsed: false};
+    }
+    render() {
+        return $el('div', {className: this.props.className}, [
+            $el('h4', null, [
+                $el('span', null, this.props.title),
+                $el('button', {onClick: () => this.setState({collapsed: !this.state.collapsed})},
+                    '[' + (!this.state.collapsed ? '-' : '+') + ']'
+                )
+            ]),
+            $el('div', {
+                className: !this.state.collapsed ? '' : 'hidden'
+            }, this.props.children)
+        ]);
     }
 }
 

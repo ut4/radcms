@@ -21,6 +21,8 @@ static duk_ret_t domTreeCreateElement(duk_context *ctx);
 static duk_ret_t domTreeRender(duk_context *ctx);
 static duk_ret_t domTreeGetRenderedElems(duk_context *ctx);
 static duk_ret_t domTreeGetRenderedFnComponents(duk_context *ctx);
+static duk_ret_t domTreeSetContext(duk_context *ctx);
+static duk_ret_t domTreeGetContext(duk_context *ctx);
 static unsigned domTreeCallCmpFn(FuncNode *me, std::string &err);
 
 constexpr const char* KEY_STMT_JS_PROTO = "_StmtProto";
@@ -39,7 +41,7 @@ commonServicesJsModuleInit(duk_context *ctx, const int exportsIsAt) {
     duk_get_prop_string(ctx, exportsIsAt, "db");        // [? db]
     duk_push_c_lightfunc(ctx, dbInsert, 2, 0, 0);       // [? db lightfn]
     duk_put_prop_string(ctx, -2, "insert");             // [? db]
-    duk_push_c_lightfunc(ctx, dbSelect, 2, 0, 0);       // [? db lightfn]
+    duk_push_c_lightfunc(ctx, dbSelect, DUK_VARARGS, 0, 0);// [? db lightfn]
     duk_put_prop_string(ctx, -2, "select");             // [? db]
     duk_push_c_lightfunc(ctx, dbUpdate, 2, 0, 0);       // [? db lightfn]
     duk_put_prop_string(ctx, -2, "update");             // [? db]
@@ -94,6 +96,10 @@ commonServicesJsModuleInit(duk_context *ctx, const int exportsIsAt) {
     duk_put_prop_string(ctx, -2, "getRenderedElements");// [? DomTree proto]
     duk_push_c_lightfunc(ctx, domTreeGetRenderedFnComponents, 0, 0, 0); // [? DomTree proto lightfn]
     duk_put_prop_string(ctx, -2, "getRenderedFnComponents"); // [? DomTree proto]
+    duk_push_c_lightfunc(ctx, domTreeSetContext, 1, 0, 0); // [? DomTree proto lightfn]
+    duk_put_prop_string(ctx, -2, "setContext");         // [? DomTree proto]
+    duk_push_c_lightfunc(ctx, domTreeGetContext, 0, 0, 0); // [? DomTree proto lightfn]
+    duk_put_prop_string(ctx, -2, "getContext");         // [? DomTree proto]
     duk_put_prop_string(ctx, -2, "prototype");          // [? DomTree]
     duk_put_prop_string(ctx, exportsIsAt, "DomTree");   // [?]
 }
@@ -165,12 +171,14 @@ static duk_ret_t
 dbSelect(duk_context *ctx) {
     const char *sql = duk_require_string(ctx, 0);
     duk_require_function(ctx, 1);
-    duk_push_global_stash(ctx);                 // [sql fn stash]
+    bool hasWhereBinder = duk_get_top(ctx) > 2 && duk_is_function(ctx, 2);
+    duk_push_global_stash(ctx);                 // [sql rowFn bindFn? stash]
     AppContext *app = jsEnvironmentPullAppContext(ctx, -1);
-    duk_swap_top(ctx, -2);                      // [sql stash fn]
-    duk_put_prop_string(ctx, -2, KEY_CUR_ROW_MAP_FN); // [sql stash]
+    duk_swap_top(ctx, 1);                       // [sql stash bindFn? rowFn]
+    duk_put_prop_string(ctx, 1, KEY_CUR_ROW_MAP_FN); // [sql stash bindFn?]
     std::string err;
-    bool res = app->db.select(sql, callJsResultRowMapFn, ctx, err);
+    bool res = app->db.select(sql, callJsResultRowMapFn,
+                              hasWhereBinder ? callJsStmtBindFn : nullptr, ctx, err);
     duk_push_null(ctx);
     duk_put_prop_string(ctx, 1, KEY_CUR_ROW_MAP_FN);
     if (res) {                                  // [sql stash]
@@ -534,6 +542,21 @@ domTreeGetRenderedFnComponents(duk_context *ctx) {
         return 1;
     }
     return duk_error(ctx, DUK_ERR_ERROR, "%s", err.c_str());
+}
+
+static duk_ret_t
+domTreeSetContext(duk_context *ctx) {
+    duk_push_this(ctx);                          // [val this]
+    duk_swap_top(ctx, -2);                       // [this val]
+    duk_put_prop_string(ctx, -2, "context");     // [this]
+    return 0;
+}
+
+static duk_ret_t
+domTreeGetContext(duk_context *ctx) {
+    duk_push_this(ctx);                          // [this]
+    duk_get_prop_string(ctx, -1, "context");     // [this ctx]
+    return 1;
 }
 
 static unsigned

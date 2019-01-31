@@ -25,7 +25,7 @@ QUnit.module('ControlPanelComponent', hooks => {
     });
     QUnit.test('lists current page directives', assert => {
         const currentPageData = {
-            page: null,
+            page: {url: '/home'},
             directiveInstances: [
                 {type: 'TestDirective', contentNodes: [{title:'t',body:'b',defaults:{id:1}}]}
             ],
@@ -36,8 +36,8 @@ QUnit.module('ControlPanelComponent', hooks => {
         const cpanel = $el(InsaneControlPanel, {currentPageData}, null);
         //
         const rendered = itu.renderIntoContainer(cpanel);
-        const directiveList = itu.findRenderedDOMElementWithClass(rendered,
-            'current-page-directive-list').children;
+        const directiveList = itu.scryRenderedDOMElementsWithClass(rendered,
+            'directive');
         assert.strictEqual(directiveList.length, 1, 'Should list directives');
         const renderedTestDir = itu.findRenderedDOMElementWithClass(rendered,
             'directive-TestDirective');
@@ -55,7 +55,7 @@ QUnit.module('ControlPanelComponent', hooks => {
         const done = assert.async();
         //
         const rendered = itu.renderIntoContainer($el(InsaneControlPanel, {currentPageData: {
-            page: null,
+            page: {url: '/home'},
             directiveInstances:[],
             allContentNodes:[]
         }}, null));

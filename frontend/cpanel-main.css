@@ -219,10 +219,14 @@ table .input-set input {
     box-shadow: 3px 2px 1px rgba(0,0,0,0.04); }
 #control-panel > h1 { float: right; margin: -37px 3px 0 0; letter-spacing: -1px;
     font-size: 14px; }
+#control-panel ul { margin: 5px 0; padding: 0; list-style: none; }
+#control-panel li { padding: 1px 5px 5px; background-color: rgba(0,0,0,0.05);}
+#control-panel li:nth-of-type(2n) { background-color: transparent; }
 .tab-links { position: relative; top: 0px; margin-top: -18px; }
 .tab-links button { padding: 2px 8px; border-bottom: none; }
 .tab-links button.current { box-shadow: 2px 0 1px rgba(0,0,0,0.15); }
 .tab-links button:last-of-type.current { box-shadow: -2px 0 1px rgba(0,0,0,0.05); }
+.current-page-directive-list > div:not(:last-of-type) { margin: 15px 0; }
 #control-panel > div:not(.tab-links) { padding: 15px; border-radius: 1px; }
 #control-panel h3 { margin-top: 0; font-size: 18px; }
 #control-panel h3 > span { font-size: 11px; font-weight: normal; display: block;

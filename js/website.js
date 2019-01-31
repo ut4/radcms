@@ -44,6 +44,7 @@ Page.prototype.render = function(dataToFrontend, issues) {
     fetchData(ddc);
     //
     var domTree = new commons.DomTree();
+    domTree.setContext(this);
     if (!dataToFrontend) {
         return domTree.render(innerFn(domTree, ddc.getDataFor.bind(ddc), directives));
     }
@@ -71,6 +72,7 @@ Page.prototype.dryRun = function() {
     fetchData(ddc);
     //
     var domTree = new commons.DomTree();
+    domTree.setContext(this);
     innerFn(domTree, ddc.getDataFor.bind(ddc), directives);
     return domTree;
 };

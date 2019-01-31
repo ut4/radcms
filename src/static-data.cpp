@@ -76,7 +76,7 @@ static std::vector<SampleData> sampleData = {
                          "homeUrl=/home\n"
                          "defaultLayout=main-layout.jsx.htm\n\n"
                          "[ContentType:Generic]\n"
-                         "content=text\n\n"
+                         "content=richtext\n\n"
                          "[ContentType:Article]\n"
                          "title=text\n"
                          "body=richtext"},

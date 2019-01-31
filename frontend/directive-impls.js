@@ -1,3 +1,5 @@
+import {contentNodeList} from './common-components.js';
+
 /*
  * Implements end-user management views (editing articles, creating new articles
  * etc.) for <ArticleList/> directives.
@@ -11,25 +13,14 @@ class ArticleListDirectiveWebUIImpl extends preact.Component {
     }
     /**
      * @param {{type: {string}, contentNodes: {Object[]}}} directive
+     * @param {Object} ctx
      */
-    static getMenuItems(directive) {
-        return directive.contentNodes.map(article => {
-            return $el('div', null, [
-                $el('span', null, article.title),
-                $el('a', {href:'#/edit-content', onClick: e => {
-                    e.preventDefault();
-                    myRedirect('/edit-content');
-                }}, 'Edit')
-            ]);
-        }).concat([
-            $el('a', {
-                href:'#/add-content/Article',
-                onClick: e => {
-                    e.preventDefault();
-                    myRedirect('/add-content/Article');
-                }
-            }, 'Add article')
-        ]);
+    static getMenuItems(directive, ctx) {
+        return contentNodeList({
+            cnodes: directive.contentNodes,
+            createLinkText: 'Add Article',
+            currentPageUrl: ctx.currentPageData.page.url
+        });
     }
 }
 
@@ -43,6 +34,7 @@ class StaticMenuAddPageView {
         );
     }
 }
+
 /*
  * Implements end-user management views (adding links, reordering links etc.)
  * for <StaticMenu/> directives.
@@ -58,19 +50,18 @@ class StaticMenuDirectiveWebUIImpl extends preact.Component {
     }
     /**
      * @param {{type: {string}, contentNodes: {Object[]}}} directive
+     * @param {Object} ctx
      */
     static getMenuItems(directive) {
         return directive.contentNodes.map(article => {
             return $el('span', null, article.title);
-        }).concat([
-            $el('a', {
-                href:'#static-menu-add-page',
-                onClick: e => {
-                    e.preventDefault();
-                    myRedirect('/static-menu-add-page');
-                }
-            }, 'Add page')
-        ]);
+        }).concat($el('a', {
+            href:'#static-menu-add-page',
+            onClick: e => {
+                e.preventDefault();
+                myRedirect('/static-menu-add-page');
+            }
+        }, 'Add page'));
     }
 }
 

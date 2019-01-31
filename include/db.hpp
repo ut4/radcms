@@ -57,12 +57,13 @@ struct Db {
      *     return true; // true == keep going, false == stop
      * }
      * MyData *data = NULL;
-     * if (db.select("SELECT * FROM foo limit 1", myMapFn, &data, err)) {
+     * if (db.select("SELECT * FROM foo limit 1", myMapFn, NULL, &data, err)) {
      *     // ok, each row was passed to myMapFn
      * }
      */
     bool
-    select(const char *sql, mapRowFn onRow, void *myPtr, std::string &err);
+    select(const char *sql, mapRowFn onEachRow, bindValsFn myWhereBindFn,
+           void *myPtr, std::string &err);
     /**
      * Usage:
      * bool myBindFn(sqlite3_stmt *stmt, void *myPtr) {

@@ -52,6 +52,7 @@ exports.ArticleList = function(domTree, props) {
                         to: art.defaults.name.charAt(0) !== '/'
                             ? '/' + art.defaults.name
                             : art.defaults.name,
+                        layoutOverride: props.layout || 'article-layout.jsx.htm',
                         text: 'Read more'
                     }, null)
                 ])
@@ -67,17 +68,18 @@ function buildPaginationLinks(domTree, props, isLast) {
     var opts = props.paginationOptions;
     if (!opts) return [''];
     var out = [];
+    var currentPage = domTree.getContext();
     if (opts.nthPage > 1) {
         out.push(domTree.createElement(exports.Link, {
             to: '/' + props.url[0] + (opts.nthPage > 2 ? ('/' + (opts.nthPage - 1)) : ''),
-            layoutOverride: props.layout || website.siteConfig.defaultLayout,
+            layoutOverride: currentPage.layoutFileName,
             text: 'Prev'
         }, null));
     }
     if (!isLast) {
         out.push(domTree.createElement(exports.Link, {
             to: '/' + props.url[0] + '/' + (opts.nthPage + 1),
-            layoutOverride: props.layout || website.siteConfig.defaultLayout,
+            layoutOverride: currentPage.layoutFileName,
             text: 'Next'
         }, null));
     }

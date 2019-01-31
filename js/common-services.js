@@ -29,7 +29,7 @@ exports.db = {
      * @param {string} sql
      * @param {(row: ResultRow, rowIdx: number): void} mapFn
      */
-    select: function(/*sql, mapFn*/) {},
+    select: function(/*sql, mapFn[, whereBindFn]*/) {},
     /**
      * @native
      * @param {string} sql

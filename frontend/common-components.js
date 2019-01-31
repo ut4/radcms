@@ -1,4 +1,3 @@
-
 class Form extends preact.Component {
     /**
      * @param {Object} props {
@@ -62,4 +61,26 @@ class Form extends preact.Component {
     }
 }
 
-export {Form};
+function contentNodeList(props) {
+    return [
+        $el('ul', null, props.cnodes.map(c =>
+            $el('li', null, [
+                $el('span', null, c.defaults.name),
+                $el('a', {href: '#/edit-content', onClick: e => {
+                    e.preventDefault();
+                    myRedirect('/edit-content/' + c.defaults.id +
+                        '?returnTo=' + encodeURIComponent(props.currentPageUrl));
+                }}, 'Edit')
+            ])
+        )),
+        $el('div', null, $el('a', {
+            href: '#/add-content', onClick: e => {
+                e.preventDefault();
+                myRedirect('/add-content' + props.cnodes[0].defaults.contentTypeName + '?returnTo=' +
+                    encodeURIComponent(props.currentPageUrl));
+            }
+        }, props.createLinkText || 'Create content'))
+    ];
+}
+
+export {Form, contentNodeList};
