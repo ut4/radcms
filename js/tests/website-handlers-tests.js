@@ -16,7 +16,8 @@ testLib.module('website-handlers.js', function(hooks) {
         pages: [['/home', NO_PARENT, LAYOUT_1, []],
                 ['/page2', NO_PARENT, LAYOUT_2, []],
                 ['/page3', NO_PARENT, LAYOUT_2, []]],
-        templates: [LAYOUT_1, LAYOUT_2]
+        templates: [LAYOUT_1, LAYOUT_2],
+        linkSpawners: []
     })};
     var writeLog = [];
     var makeDirsLog = [];

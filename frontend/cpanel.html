@@ -36,10 +36,10 @@
             }, null), document.getElementById("app"));
             //
             var parentUrlPcs = window.parent.location.href.split('#');
-            if (parentUrlPcs[0].indexOf('?rescan=1') > -1) {
-                const r = window.parent.location.href.replace('?rescan=1', '');
-                window.parent.history.replaceState(null, window.parent.document.title, r);
-                document.querySelector('base').href = r;
+            var tmp = parentUrlPcs[0].split('?rescan=');
+            if (tmp[1]) {
+                window.parent.history.replaceState(null, window.parent.document.title, tmp[0]);
+                document.querySelector('base').href = tmp[0];
             } else if (parentUrlPcs[1]) {
                 window.location.hash = parentUrlPcs[1];
                 document.querySelector('base').href = parentUrlPcs[0];

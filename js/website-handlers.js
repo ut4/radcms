@@ -28,8 +28,11 @@ commons.app.addRoute(function(url, method) {
 function handlePageRequest(req) {
     var page = website.siteGraph.getPage(req.url != '/' ? req.url : website.siteConfig.homeUrl);
     if (page) {
-        if (req.getUrlParam('rescan')) {
-            commons.signals.emit('sitegraphRescanRequested', page);
+        var rescanRootPageUrl = req.getUrlParam('rescan');
+        if (rescanRootPageUrl) {
+            commons.signals.emit('sitegraphRescanRequested',
+                rescanRootPageUrl == 'current-page' ? page :
+                    website.siteGraph.getPage(rescanRootPageUrl));
         }
         var dataToFrontend = {};
         var html = page.render(dataToFrontend);
@@ -236,8 +239,8 @@ function handleUpdatePageRequest(req) {
  * @param {string} html <html>body><p>foo</p>...
  * @param {Object?} dataToFrontend {
  *     page: {url: <str>, layoutFileName: <str>},
- *     directiveInstances: [{type: <str>, contentNodes: [<cnode>...]}...]
- *     allContentNodes: [{...,defaults:{id:<id>,name:<name>...}}]
+ *     directiveInstances: [{type: <str>, contentNodes: [<cnode>...]...}...],
+ *     allContentNodes: [{..., defaults: {id: <id>, name: <name>...}}],
  * }
  * @returns {string} <html>body><iframe...<p>foo</p>...
  */

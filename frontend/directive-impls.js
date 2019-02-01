@@ -12,14 +12,16 @@ class ArticleListDirectiveWebUIImpl extends preact.Component {
         return 'Article list';
     }
     /**
-     * @param {{type: {string}, contentNodes: {Object[]}}} directive
+     * @param {{type: string; contentNodes: Object[]; origin: string;}} directive
      * @param {Object} ctx
      */
     static getMenuItems(directive, ctx) {
         return contentNodeList({
             cnodes: directive.contentNodes,
             createLinkText: 'Add Article',
-            currentPageUrl: ctx.currentPageData.page.url
+            currentPageUrl: ctx.currentPageData.page.url,
+            contentType: 'Article',
+            urlToRescanAfterSubmit: directive.origin
         });
     }
 }
@@ -49,7 +51,7 @@ class StaticMenuDirectiveWebUIImpl extends preact.Component {
         return 'Static menu';
     }
     /**
-     * @param {{type: {string}, contentNodes: {Object[]}}} directive
+     * @param {{type: string; contentNodes: Object[];}} directive
      * @param {Object} ctx
      */
     static getMenuItems(directive) {

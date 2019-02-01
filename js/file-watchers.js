@@ -82,7 +82,9 @@ function Diff() {
     this.nPagesRemoved = 0; // The number of completely removed pages (refCount==0)
     this.nLinksAdded = 0;   // The number of new links added to the root page
     this.nLinksRemoved = 0; // The number of links removed from the root page
+    this.nLinkSpawnersAdded = 0; // The number of new <ArticleLists/>'s etc.
     this.staticFiles = {};  // A list of script/css urls
+    this.followedUrls = {};
     this.nLinksFollowed = 0;
 }
 /**
@@ -93,48 +95,49 @@ Diff.prototype.scanChanges = function(page) {
     if (this.nLinksFollowed > MAX_LINK_FOLLOW_COUNT) {
         return false;
     }
-    var stillLinksTo = null;
+    var stillLinksTo = {};
     var nOldLinksFound = 0;
     var nOldLinks = 0;
-    if (this.nLinksFollowed == 0) {
-        stillLinksTo = {};
-        for (var url in page.linksTo) { stillLinksTo[url] = false; nOldLinks += 1; }
-    }
+    for (var url in page.linksTo) { stillLinksTo[url] = false; nOldLinks += 1;}
     var domTree = page.dryRun();
     var fnCmps = domTree.getRenderedFnComponents();
-    var hrefPage = null;
     var l = fnCmps.length;
     for (var i = 0; i < l; ++i) {
+        var props = fnCmps[i].props;
+        if (fnCmps[i].fn === directives.ArticleList &&
+            !siteGraph.getLinkSpawner(props.name)) {
+            siteGraph.addLinkSpawner(props.name, page.url);
+            this.nLinkSpawnersAdded += 1;
+        }
         if (fnCmps[i].fn !== directives.Link) continue;
-        var href = fnCmps[i].props.to;
-        var layoutOverride = fnCmps[i].props.layoutOverride;
-        var wasCompletelyNewPage = false;
+        var href = props.to;
+        var hrefPage = null;
         // Page already in the sitegraph
         if ((hrefPage = siteGraph.getPage(href))) {
-            if (stillLinksTo) { stillLinksTo[href] = true; nOldLinksFound += 1; }
-            if (!page.linksTo[href]) this.addNewLink(href, page);
+            stillLinksTo[href] = true; nOldLinksFound += 1;
+            if (!page.linksTo[href]) this.addLink(href, page);
         // Totally new page -> add it
         } else {
-            wasCompletelyNewPage = true;
             hrefPage = siteGraph.addPage(href, 0,
-                layoutOverride || website.siteConfig.defaultLayout);
-            this.addNewLink(href, page, true);
+                props.layoutOverride || website.siteConfig.defaultLayout);
+            this.addLink(href, page, true);
         }
-        if (!layoutOverride) continue;
-        var layout = siteGraph.getTemplate(layoutOverride);
-        if (layout) {
-            if (!layout.samplePage) layout.samplePage = hrefPage;
-        } else {
-            layout = siteGraph.addTemplate(layoutOverride, hrefPage);
+        if (props.layoutOverride) {
+            var layout = siteGraph.getTemplate(props.layoutOverride);
+            if (layout) {
+                if (!layout.samplePage) layout.samplePage = hrefPage;
+            } else {
+                layout = siteGraph.addTemplate(props.layoutOverride, hrefPage);
+            }
         }
-        // Follow valid layouts
-        if (wasCompletelyNewPage && layout.exists) {
+        if (props.follow && !this.followedUrls[href]) {
             this.nLinksFollowed += 1;
+            this.followedUrls[href] = 1;
             if (!this.scanChanges(hrefPage)) return false;
         }
     }
     //
-    if (stillLinksTo && nOldLinksFound < nOldLinks) { // At least one link was removed
+    if (nOldLinksFound < nOldLinks) { // At least one link was removed
         page.linksTo = {}; // Rebuild from scratch
         for (url in stillLinksTo) {
             if (stillLinksTo[url]) page.linksTo[url] = 1; // Still there -> add
@@ -161,7 +164,7 @@ Diff.prototype.scanChanges = function(page) {
     }
     return true;
 };
-Diff.prototype.addNewLink = function(url, toPage, isNewPage) {
+Diff.prototype.addLink = function(url, toPage, isNewPage) {
     this.nLinksAdded += 1;
     if (isNewPage) {
         this.nPagesAdded += 1;
@@ -192,7 +195,7 @@ function performRescan(page) {
         saveStaticFileUrlsToDb(diff.staticFiles);
         break;
     }
-    if (diff.nLinksAdded || diff.nLinksRemoved) {
+    if (diff.nLinksAdded || diff.nLinksRemoved || diff.nLinkSpawnersAdded) {
         saveWebsiteToDb(siteGraph);
     }
     print('[Info]: Rescanned \'' + page.url + '\': ' +

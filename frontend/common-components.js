@@ -61,6 +61,15 @@ class Form extends preact.Component {
     }
 }
 
+/**
+ * @param {Object} props {
+ *     cnodes: Object[];
+ *     createLinkText: string;
+ *     currentPageUrl: string;
+ *     contentType?: string;
+ *     urlToRescanAfterSubmit?: string;
+ * }
+ */
 function contentNodeList(props) {
     return [
         $el('ul', null, props.cnodes.map(c =>
@@ -76,8 +85,14 @@ function contentNodeList(props) {
         $el('div', null, $el('a', {
             href: '#/add-content', onClick: e => {
                 e.preventDefault();
-                myRedirect('/add-content' + props.cnodes[0].defaults.contentTypeName + '?returnTo=' +
-                    encodeURIComponent(props.currentPageUrl));
+                myRedirect(
+                    '/add-content' +
+                    (!props.contentType ? '' : '/' + props.contentType) +
+                    '?returnTo=' + encodeURIComponent(props.currentPageUrl) +
+                    (props.urlToRescanAfterSubmit
+                        ? '&urlToRescanAfterSubmit=' + encodeURIComponent(props.urlToRescanAfterSubmit)
+                        : '')
+                );
             }
         }, props.createLinkText || 'Create content'))
     ];

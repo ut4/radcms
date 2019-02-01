@@ -39,9 +39,9 @@ class InsaneControlPanel extends preact.Component {
     /**
      * @param {Object} props {
      *     currentPageData: {
-     *         page: {url: <url>, layoutFileName: <str>},
-     *         directiveInstances: [{type: <str>, contentNodes: [<cnode>...]}...],
-     *         allContentNodes: [<cnode>...]
+     *         page: {url: <str>, layoutFileName: <str>},
+     *         directiveInstances: [{type: <str>, contentNodes: [<cnode>...]...}...],
+     *         allContentNodes: [{..., defaults: {id: <id>, name: <name>...}}],
      *     };
      * }
      */
@@ -177,7 +177,7 @@ class InsaneControlPanel extends preact.Component {
                       this.state.templates[this.state.selectedTemplateIdx].fileName)
         }).then(res => {
             const d = JSON.parse(res.responseText);
-            if (d.numAffectedRows > 0) myRedirect(u + '?rescan=1', true);
+            if (d.numAffectedRows > 0) myRedirect(u + '?rescan=current-page', true);
             else throw new Error('');
         }, () => {
             toast('Failed to change the template.', 'error');

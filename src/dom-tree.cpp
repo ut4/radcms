@@ -194,7 +194,9 @@ DomTree::lazilyExecFnCmpFn(unsigned ref, std::string &err) {
     FuncNode *n = this->getFuncNode(ref);
     assert(n != nullptr && "getFuncNode() == nullptr");
     if (n->rootElemNodeRef == 0) { // Hasn't run yet.
-        n->rootElemNodeRef = n->fn(n, err);
+        unsigned r = n->fn(n, err); // Run it. Usually invalidates n.
+        n = this->getFuncNode(ref);
+        n->rootElemNodeRef = r;
         if (n->rootElemNodeRef > 0) {
             ElemNode *rootElem = this->getElemNode(n->rootElemNodeRef);
             assert(rootElem != nullptr && "getElemNode() == nullptr");

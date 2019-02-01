@@ -34,7 +34,8 @@ static std::vector<SampleData> sampleData = {
         "minimal",
         // installSql
         "insert into websites values (1, '{\"pages\":[[\"/home\",0,\"main-layout.jsx.htm\",[]]],"
-                                          "\"templates\":[\"main-layout.jsx.htm\"]}');"
+                                          "\"templates\":[\"main-layout.jsx.htm\"],"
+                                          "\"linkSpawners\":[]}');"
         "insert into contentNodes values (1, 'footer', '{\"content\":\"(c) 2034 MySite\"}', 'Generic');",
         // files
         {
@@ -64,7 +65,8 @@ static std::vector<SampleData> sampleData = {
                            "[\"/art1\",0,\"article-layout.jsx.htm\",[]],"
                            "[\"/art2\",0,\"article-layout.jsx.htm\",[]],"
                            "[\"/art3\",0,\"article-layout.jsx.htm\",[]]],"
-                "\"templates\":[\"main-layout.jsx.htm\",\"article-layout.jsx.htm\"]}');"
+                "\"templates\":[\"main-layout.jsx.htm\",\"article-layout.jsx.htm\"],"
+                "\"linkSpawners\":[[\"arts\",\"/home\"]]}');"
         "insert into contentNodes values"
         "  (1, 'footer', '{\"content\":\"(c) 2034 MySite\"}', 'Generic'),"
         "  (2, 'art1', '{\"title\":\"Article 1\",\"body\":\"Hello from article 1\"}', 'Article'),"
@@ -87,7 +89,7 @@ static std::vector<SampleData> sampleData = {
                                "        <title>Hello</title>\n"
                                "    </head>\n"
                                "    <body>\n"
-                               "        <directives.ArticleList articles={arts}/>\n"
+                               "        <directives.ArticleList name=\"arts\" articles={arts}/>\n"
                                "        <footer>{ footer.content }</footer>\n"
                                "    </body>\n"
                                "</html>"},

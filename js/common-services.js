@@ -124,7 +124,7 @@ exports.fileWatcher = {
     EVENT_ERROR: 8,
     _watchFn: null,
     /**
-     * @param ((eventType: number, fileName: string): void) fn
+     * @param {(eventType: number, fileName: string): void} fn
      */
     setWatchFn: function(fn) {
         if (typeof fn != 'function') {

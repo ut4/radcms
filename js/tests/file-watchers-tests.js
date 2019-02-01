@@ -38,6 +38,7 @@ testLib.module('file-watchers.js', function(hooks) {
         siteGraph.pageCount = 0;
         siteGraph.templates = {};
         siteGraph.templateCount = 0;
+        siteGraph.linkSpawners = {};
         commons.templateCache._fns = {};
     });
     testLib.test('adds a template', function(assert) {
@@ -52,7 +53,7 @@ testLib.module('file-watchers.js', function(hooks) {
         commons.db.select('select `graph` from websites where id = ' + websiteData.id,
             function(row) {
             assert.equal(row.getString(0), JSON.stringify({pages:[],
-                templates:[mockTemplate.fname]}),
+                templates:[mockTemplate.fname],linkSpawners:[]}),
                 'should store the updated sitegraph to the database');
         });
     });
@@ -90,7 +91,8 @@ testLib.module('file-watchers.js', function(hooks) {
                     [existingPage.url,NO_PARENT,existingLayout.fileName,[newLinkUrl]],
                     [newLinkUrl,NO_PARENT,existingLayout.fileName,[]]
                 ],
-                templates:[existingLayout.fileName]
+                templates:[existingLayout.fileName],
+                linkSpawners:[]
             }), 'should store the updated sitegraph to the database');
         });
     });
@@ -113,7 +115,8 @@ testLib.module('file-watchers.js', function(hooks) {
                     [existingPage1.url,NO_PARENT,existingLayout.fileName,
                      [/*doesn't link to anywhere anymore*/]]
                 ],
-                templates:[existingLayout.fileName]
+                templates:[existingLayout.fileName],
+                linkSpawners:[]
             }), 'should store the updated sitegraph to the database');
         });
     });
@@ -138,19 +141,22 @@ testLib.module('file-watchers.js', function(hooks) {
                      [/*doesn't link to anywhere anymore*/]],
                     [existingPage2.url,NO_PARENT,existingLayout.fileName,[]]
                 ],
-                templates:[existingLayout.fileName]
+                templates:[existingLayout.fileName],
+                linkSpawners:[]
             }), 'should store the updated sitegraph to the database');
         });
     });
-    testLib.test('adds pages recursively', function(assert) {
+    testLib.test('follows links', function(assert) {
         assert.expect(5);
         var linkAHref = '/bar';
         var linkBHref = '/nar';
+        var commonAttrs = '" layoutOverride="'+mockTemplate.fname+'" follow="true"';
         // Existing /foo has a link to a new page /bar
         // New page /bar has a link to another new page /nar
-        mockTemplate.contents = '<html><body>{ url[0] == "foo" ? <directives.Link to="' +
-            linkAHref + '" layoutOverride="'+mockTemplate.fname+'"/> : <directives.Link to="' +
-            linkBHref + '" layoutOverride="'+mockTemplate.fname+'"/> }</body></html>';
+        mockTemplate.contents = '<html><body>{ url[0] == "foo" ? '+
+            '<directives.Link to="' + linkAHref + commonAttrs + '/> : '+
+            '<directives.Link to="' + linkBHref + commonAttrs + '/> }'+
+        '</body></html>';
         var existingPage = siteGraph.addPage('/foo', NO_PARENT, mockTemplate.fname);
         var t1 = siteGraph.addTemplate(mockTemplate.fname, existingPage, true);
         website.website.compileAndCacheTemplate(t1.fileName);
@@ -172,7 +178,8 @@ testLib.module('file-watchers.js', function(hooks) {
                     [linkAHref,NO_PARENT,mockTemplate.fname,[linkBHref]],
                     [linkBHref,NO_PARENT,mockTemplate.fname,[linkBHref]]
                 ],
-                templates:[mockTemplate.fname]
+                templates:[mockTemplate.fname],
+                linkSpawners:[]
             }), 'should store the updated sitegraph to the database');
         });
     });
@@ -205,7 +212,8 @@ testLib.module('file-watchers.js', function(hooks) {
             function(row) {
             assert.equal(row.getString(0), JSON.stringify({
                 pages: [],
-                templates:[]
+                templates:[],
+                linkSpawners:[]
             }), 'should store the updated sitegraph to the database');
         });
     });
