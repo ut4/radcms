@@ -115,7 +115,7 @@ QUnit.module('ControlPanelComponent', hooks => {
         }).then(() => {
             assert.ok(redirectSpy.calledAfter(httpStub), 'Should redirect');
             assert.equal(redirectSpy.firstCall.args[0],
-                         currentPage.url + '?rescan=current-page');
+                         currentPage.url + '?rescan=full');
             redirectSpy.restore();
             done();
         });

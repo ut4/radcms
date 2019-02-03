@@ -2,19 +2,17 @@ import {Form} from './common-components.js';
 import services from './common-services.js';
 
 /**
- * #/add-content[/:initialComponentTypeName?returnto=<url>&urlToRescanAfterSubmit=<url>]
+ * #/add-content[/:initialComponentTypeName?returnto=<url>]
  */
 class AddContentView extends preact.Component {
     /**
      * @param {Object} props {
      *     initialContentTypeName?: string;
      *     returnTo?: string;
-     *     urlToRescanAfterSubmit?: string;
      * }
      */
     constructor(props) {
         super(props);
-        this.rescanQueryParam = '?rescan=' + (props.urlToRescanAfterSubmit || 'current-page');
         this.state = {
             contentNode: {name: '', contentTypeName: ''},
             fieldsData: null,
@@ -166,7 +164,7 @@ function sendCnodeToBackend(method, self) {
               '&json=' + encodeURIComponent(JSON.stringify(self.state.fieldsData)) +
               '&contentTypeName=' + encodeURIComponent(self.state.contentNode.contentTypeName)
     }).then(() => {
-        myRedirect((self.props.returnTo || '/') + (self.rescanQueryParam || ''), true);
+        myRedirect((self.props.returnTo || '/') + '?rescan=full', true);
     }, () => {
         toast('Failed to create the content.', 'error');
     });

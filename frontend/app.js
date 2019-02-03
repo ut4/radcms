@@ -177,7 +177,7 @@ class InsaneControlPanel extends preact.Component {
                       this.state.templates[this.state.selectedTemplateIdx].fileName)
         }).then(res => {
             const d = JSON.parse(res.responseText);
-            if (d.numAffectedRows > 0) myRedirect(u + '?rescan=current-page', true);
+            if (d.numAffectedRows > 0) myRedirect(u + '?rescan=full', true);
             else throw new Error('');
         }, () => {
             toast('Failed to change the template.', 'error');

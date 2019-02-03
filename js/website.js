@@ -6,16 +6,16 @@ var directives = require('directives.js');
 // =============================================================================
 /**
  * @param {string} url '/foo' or '/foo/page/2'
- * @param {number} parentId
+ * @param {string} parentUrl
  * @param {string} layoutFileName
  * @param {Object?} linksTo = {} A map of outbound urls
  * @param {number?} refCount = 0 The amount of places this page is (referenced from / linked to)
  * @constructor
  */
-function Page(url, parentId, layoutFileName, linksTo, refCount) {
+function Page(url, parentUrl, layoutFileName, linksTo, refCount) {
     this.url = url;
     this.urlPcs = url.split('/').slice(1); // ['', 'foo'] -> ['foo']
-    this.parentId = parentId;
+    this.parentUrl = parentUrl;
     this.layoutFileName = layoutFileName;
     this.linksTo = linksTo || {};
     this.refCount = refCount || 0;
@@ -27,7 +27,7 @@ function Page(url, parentId, layoutFileName, linksTo, refCount) {
  */
 Page.prototype.render = function(dataToFrontend, issues) {
     var layout = exports.siteGraph.getTemplate(this.layoutFileName);
-    if (!layout || !layout.exists || !layout.samplePage) {
+    if (!layout || !layout.exists) {
         var message = 'The layout file \'' + this.layoutFileName + '\' doesn\'t exists' +
                       (layout ? ' yet, or is empty.' : '.');
         if (issues) issues.push(this.url + '>' + message);
@@ -55,8 +55,7 @@ Page.prototype.render = function(dataToFrontend, issues) {
     domTree.getRenderedFnComponents().forEach(function(fnData) {
         if (fnData.fn == directives.ArticleList) {
             dataToFrontend.directiveInstances.push(
-                {type: 'ArticleList', contentNodes: fnData.props.articles,
-                 origin: exports.siteGraph.getLinkSpawner(fnData.props.name).url}
+                {type: 'ArticleList', contentNodes: fnData.props.articles}
             );
         }
     });
@@ -102,13 +101,11 @@ function fetchData(ddc) {
 // =============================================================================
 /**
  * @param {string} fileName
- * @param {Page?} samplePage = undefined
  * @param {bool?} exists = false
  */
-function Template(fileName, samplePage, exists) {
+function Template(fileName, exists) {
     this.fileName = fileName;
     this.exists = exists === true;
-    this.samplePage = samplePage;
 }
 
 
@@ -119,15 +116,13 @@ exports.siteGraph = {
     pageCount: 0,
     templates: {},
     templateCount: 0,
-    linkSpawners: {},
     /**
      * @param {string} serialized '{'
-     *     '"pages": [' // [[<url>,<parentId>,<templateName>,[<url>,...]],...]
+     *     '"pages": [' // [[<url>,<parentUrl>,<templateName>,[<url>,...]],...]
      *         '["/home",0,"1.html",["/foo"]],'
      *         '["/foo",0,"2.html",[]]'
      *     '],'
      *     '"templates":["1.htm","2.htm"]' // [<filename>,...]
-     *     '"linkSpawners":[["News","/home"]]' // [[<name>,<origin>],...]
      * '}'
      */
     parseAndLoadFrom: function(serialized) {
@@ -140,22 +135,15 @@ exports.siteGraph = {
                 o[url] = 1; return o;
             }, {}));
         }
+        this.pages[exports.siteConfig.homeUrl].refCount += 1;
         for (var url in this.pages) {
             for (var outUrl in this.pages[url].linksTo) {
                 this.pages[outUrl].refCount += outUrl != url; // Self-refs don't count
             }
         }
         for (i = 0; i < this.templateCount; ++i) {
-            var t = new Template(json.templates[i], null, true);
-            for (url in this.pages) {
-                if (this.pages[url].layoutFileName == t.fileName) {
-                    t.samplePage = this.pages[url]; break;
-                }
-            }
+            var t = new Template(json.templates[i], true);
             this.templates[t.fileName] = t;
-        }
-        for (i = 0; i < json.linkSpawners.length; ++i) {
-            this.addLinkSpawner.apply(this, json.linkSpawners[i]);
         }
     },
     /**
@@ -164,17 +152,13 @@ exports.siteGraph = {
     serialize: function() {
         var ir = {
             pages: [],
-            templates: Object.keys(this.templates),
-            linkSpawners: []
+            templates: Object.keys(this.templates)
         };
         for (var url in this.pages) {
             var page = this.pages[url];
             var linksToAsArr = [];
             for (var outUrl in page.linksTo) linksToAsArr.push(outUrl);
-            ir.pages.push([url, 0, page.layoutFileName, linksToAsArr]);
-        }
-        for (var name in this.linkSpawners) {
-            ir.linkSpawners.push([name, this.linkSpawners[name].url]);
+            ir.pages.push([url, page.parentUrl, page.layoutFileName, linksToAsArr]);
         }
         return JSON.stringify(ir);
     },
@@ -184,21 +168,15 @@ exports.siteGraph = {
     getTemplate: function(fileName) {
         return this.templates[fileName];
     },
-    getLinkSpawner: function(name) {
-        return this.linkSpawners[name];
-    },
-    addPage: function(url, parentId, layoutFileName, outboundUrls, refCount) {
+    addPage: function(url, parentUrl, layoutFileName, outboundUrls, refCount) {
         if (url.charAt(0) != '/') url = '/' + url;
-        this.pages[url] = new Page(url, parentId, layoutFileName, outboundUrls, refCount);
+        this.pages[url] = new Page(url, parentUrl, layoutFileName, outboundUrls, refCount);
         return this.pages[url];
     },
-    addTemplate: function(fileName, samplePage, exists) {
-        var t = new Template(fileName, samplePage, exists);
+    addTemplate: function(fileName, exists) {
+        var t = new Template(fileName, exists);
         this.templates[fileName] = t;
         return this.templates[fileName];
-    },
-    addLinkSpawner: function(name, url) {
-        this.linkSpawners[name] = {url: url};
     }
 };
 

@@ -21,6 +21,10 @@ exports.main = function(suite, logAssertions) {
         require('tests/content-handlers-tests.js');
         modules.push('content-handlers.js');
     }
+    if (isAll || suite == 'diff') {
+        require('tests/diff-tests.js');
+        modules.push('diff');
+    }
     if (isAll || suite == 'document-data') {
         require('tests/document-data-tests.js');
         modules.push('document-data.js');

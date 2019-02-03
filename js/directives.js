@@ -40,7 +40,6 @@ exports.Link = function(domTree, props) {
  * </html>
  */
 exports.ArticleList = function(domTree, props) {
-    if (!props.name) throw new TypeError('ArticleList must have a name.');
     if (props.articles.length) {
         return domTree.createElement('div', null, props.articles.map(function(art) {
             return domTree.createElement('article', null, [
@@ -79,7 +78,6 @@ function buildPaginationLinks(domTree, props, isLast) {
         out.push(domTree.createElement(exports.Link, {
             to: '/' + props.url[0] + '/' + (opts.nthPage + 1),
             layoutOverride: currentPage.layoutFileName,
-            follow: true,
             text: 'Next'
         }, null));
     }

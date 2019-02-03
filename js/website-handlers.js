@@ -28,11 +28,9 @@ commons.app.addRoute(function(url, method) {
 function handlePageRequest(req) {
     var page = website.siteGraph.getPage(req.url != '/' ? req.url : website.siteConfig.homeUrl);
     if (page) {
-        var rescanRootPageUrl = req.getUrlParam('rescan');
-        if (rescanRootPageUrl) {
-            commons.signals.emit('sitegraphRescanRequested',
-                rescanRootPageUrl == 'current-page' ? page :
-                    website.siteGraph.getPage(rescanRootPageUrl));
+        var rescanType = req.getUrlParam('rescan');
+        if (rescanType) {
+            commons.signals.emit('sitegraphRescanRequested', rescanType);
         }
         var dataToFrontend = {};
         var html = page.render(dataToFrontend);
@@ -226,8 +224,6 @@ function handleUpdatePageRequest(req) {
     if (errs.length) return new http.Response(400, errs.join('\n'));
     //
     page.layoutFileName = req.data.layoutFileName;
-    var layout = website.siteGraph.getTemplate(req.data.layoutFileName);
-    if (layout && !layout.samplePage) layout.samplePage = page;
     var ok = commons.db.update('update websites set `graph` = ?', function(stmt) {
         stmt.bindString(0, website.siteGraph.serialize());
     });

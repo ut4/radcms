@@ -5,7 +5,7 @@ var website = require('website.js');
 var http = require('http.js');
 var LAYOUT_1 = 'home-layout.jsx.htm';
 var LAYOUT_2 = 'page-layout.jsx.htm';
-var NO_PARENT = 0;
+var NO_PARENT = '';
 
 testLib.module('website-handlers.js', function(hooks) {
     var genericCntType = {id:1,name:'Generic',fields:'{"content":"richtext"}'};
@@ -16,8 +16,7 @@ testLib.module('website-handlers.js', function(hooks) {
         pages: [['/home', NO_PARENT, LAYOUT_1, []],
                 ['/page2', NO_PARENT, LAYOUT_2, []],
                 ['/page3', NO_PARENT, LAYOUT_2, []]],
-        templates: [LAYOUT_1, LAYOUT_2],
-        linkSpawners: []
+        templates: [LAYOUT_1, LAYOUT_2]
     })};
     var writeLog = [];
     var makeDirsLog = [];
@@ -36,6 +35,7 @@ testLib.module('website-handlers.js', function(hooks) {
                 });
             }) < 1
         ) throw new Error('Failed to insert test data.');
+        website.siteConfig.homeUrl = '/home';
         website.website.config = {loadFromDisk: function() {}};
         // Initializes siteGraph, and reads & caches templates from /js/tests/testsite/
         website.website.init();
@@ -61,7 +61,6 @@ testLib.module('website-handlers.js', function(hooks) {
     testLib.test('GET \'/<url>\' serves a page', function(assert) {
         assert.expect(11);
         var req = new http.Request('/', 'GET');
-        website.siteConfig.homeUrl = '/home';
         var handlePageRequestFn = commons.app.getHandler(req.url, req.method);
         //
         var response = handlePageRequestFn(req);

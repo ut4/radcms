@@ -28,6 +28,7 @@ int main(int argc, const char* argv[]) {
         if (testSuiteName != "all" &&
             testSuiteName != "common-services" &&
             testSuiteName != "content-handlers" &&
+            testSuiteName != "diff" &&
             testSuiteName != "document-data" &&
             testSuiteName != "file-watchers" &&
             testSuiteName != "website-handlers" &&
