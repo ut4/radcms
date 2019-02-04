@@ -27,17 +27,18 @@ commons.app.addRoute(function(url, method) {
  */
 function handlePageRequest(req) {
     var page = website.siteGraph.getPage(req.url != '/' ? req.url : website.siteConfig.homeUrl);
+    var dataToFrontend = {directiveInstances: [], allContentNodes: [], page: {}};
     if (page) {
         var rescanType = req.getUrlParam('rescan');
         if (rescanType) {
             commons.signals.emit('sitegraphRescanRequested', rescanType);
         }
-        var dataToFrontend = {};
         var html = page.render(dataToFrontend);
         return new http.Response(200, injectControlPanelIFrame(html, dataToFrontend));
     } else {
         return new http.Response(404, injectControlPanelIFrame(
-            '<!DOCTYPE html><html><title>Not found</title><body>Not found', null));
+            '<!DOCTYPE html><html><title>Not found</title><body>Not found</body></htm>',
+            dataToFrontend));
     }
 }
 
@@ -72,14 +73,15 @@ function handleGetAllPagesRequest() {
  *
  * Example response:
  * [
- *     {"fileName":"foo.jsx.htm"},
- *     {"fileName":"bar.jsx.htm"}
+ *     {"fileName":"foo.jsx.htm", "isValid": true},
+ *     {"fileName":"bar.jsx.htm", "isValid": false}
  * ]
  */
 function handleGetAllTemplatesRequest() {
     var templates = [];
-    for (var fileName in website.siteGraph.templates)
-        templates.push({fileName: fileName});
+    var all = website.siteGraph.templates;
+    for (var fileName in all)
+        templates.push({fileName: fileName, isValid: all[fileName].exists});
     return new http.Response(200, JSON.stringify(templates),
         {'Content-Type': 'application/json'}
     );
@@ -232,19 +234,18 @@ function handleUpdatePageRequest(req) {
 }
 
 /**
- * @param {string} html <html>body><p>foo</p>...
- * @param {Object?} dataToFrontend {
+ * @param {string} html <html>...<p>foo</p></body>...
+ * @param {Object} dataToFrontend {
  *     page: {url: <str>, layoutFileName: <str>},
  *     directiveInstances: [{type: <str>, contentNodes: [<cnode>...]...}...],
  *     allContentNodes: [{..., defaults: {id: <id>, name: <name>...}}],
  * }
- * @returns {string} <html>body><iframe...<p>foo</p>...
+ * @returns {string} <html>...<p>foo</p><iframe...</body>...
  */
 function injectControlPanelIFrame(html, dataToFrontend) {
-    var pos = html.indexOf('<body>');
-    if (pos > -1) {
-        var bodyInnerStart = pos + 6;
-        return html.substr(0, bodyInnerStart) + '<iframe src="/frontend/cpanel.html" id="insn-cpanel-iframe" style="position:fixed;border:none;height:100%;width:220px;right:4px;top:4px;"></iframe><script>function setIframeVisible(setVisible) { document.getElementById(\'insn-cpanel-iframe\').style.width = setVisible ? \'80%\' : \'200px\'; } function getCurrentPageData() { return ' + JSON.stringify(dataToFrontend) + '; }</script>' + html.substr(bodyInnerStart);
+    var bodyEnd = html.indexOf('</body>');
+    if (bodyEnd > -1) {
+        return html.substr(0, bodyEnd) + '<iframe src="/frontend/cpanel.html" id="insn-cpanel-iframe" style="position:fixed;border:none;height:100%;width:220px;right:4px;top:4px;"></iframe><script>function setIframeVisible(setVisible) { document.getElementById(\'insn-cpanel-iframe\').style.width = setVisible ? \'80%\' : \'200px\'; } function getCurrentPageData() { return ' + JSON.stringify(dataToFrontend) + '; }</script>' + html.substr(bodyEnd);
     }
     return html;
 }

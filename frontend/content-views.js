@@ -84,7 +84,7 @@ class AddContentView extends preact.Component {
         for (let name in newState.selectedContentType.fields) {
             newState.fieldsData[name] = '';
         }
-        this.setState({newState});
+        this.setState(newState);
     }
     confirm() {
         this.state.contentNode.contentTypeName = this.state.selectedContentType.name;

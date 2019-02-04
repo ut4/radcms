@@ -67,7 +67,7 @@ testLib.module('diff', function(hooks) {
                     [existingPage.url,NO_PARENT,existingLayout.fileName,[newLinkUrl]],
                     [newLinkUrl,NO_PARENT,existingLayout.fileName,[newLinkUrl]]
                 ],
-                templates:[existingLayout.fileName]
+                templates:[[existingLayout.fileName,1]]
             }), 'should store the updated sitegraph to the database');
         });
     });
@@ -91,7 +91,7 @@ testLib.module('diff', function(hooks) {
                 pages:[
                     [existingPage1.url,NO_PARENT,existingLayout.fileName,[]]
                 ],
-                templates:[existingLayout.fileName]
+                templates:[[existingLayout.fileName,1]]
             }), 'should store the updated sitegraph to the database');
         });
     });
@@ -115,7 +115,7 @@ testLib.module('diff', function(hooks) {
                     [existingPage1.url,NO_PARENT,existingLayout.fileName,[]],
                     [existingPage2.url,NO_PARENT,existingLayout.fileName,[]]
                 ],
-                templates:[existingLayout.fileName]
+                templates:[[existingLayout.fileName,1]]
             }), 'should store the updated sitegraph to the database');
         });
     });
@@ -132,7 +132,7 @@ testLib.module('diff', function(hooks) {
                 ['/art3',NO_PARENT,mockTemplate2.fname,['/news']],
                 ['/art4',NO_PARENT,mockTemplate2.fname,['/news']],
             ],
-            templates: [mockTemplate.fname, mockTemplate2.fname]
+            templates: [[mockTemplate.fname,1], [mockTemplate2.fname,1]]
         }));
         mockTemplate.contents = '<html><body>{ !url[1] '+
             // /news - news/2 has disappeared, and /art3 and /art4 has appeared
@@ -161,7 +161,7 @@ testLib.module('diff', function(hooks) {
                     ['/art3',NO_PARENT,mockTemplate2.fname,['/news']],
                     ['/art4',NO_PARENT,mockTemplate2.fname,['/news']],
                 ],
-                templates:[mockTemplate.fname,mockTemplate2.fname]
+                templates:[[mockTemplate.fname,1],[mockTemplate2.fname,1]]
             }), 'should store the updated sitegraph to the database');
         });
         website.siteConfig.homeUrl = '/home';
@@ -174,7 +174,7 @@ testLib.module('diff', function(hooks) {
                 ['/home/books','/home',mockTemplate.fname,['/home','/home/books/a-book']],
                 ['/home/books/a-book','/home/books',mockTemplate.fname,['/home','/home/books']],
             ],
-            templates: [mockTemplate.fname]
+            templates: [[mockTemplate.fname,1]]
         }));
         mockTemplate.contents = '<html><body>{'+
             '({'+
@@ -194,12 +194,12 @@ testLib.module('diff', function(hooks) {
             function(row) {
             assert.equal(row.getString(0), JSON.stringify({
                 pages:[['/home','',mockTemplate.fname,['/home']]],
-                templates:[mockTemplate.fname]
+                templates:[[mockTemplate.fname,1]]
             }), 'should store the updated sitegraph to the database');
         });
     });
     testLib.test('swaps a parent page', function(assert) {
-        assert.expect(3);
+        assert.expect(4);
         website.siteConfig.homeUrl = '/starters';
         siteGraph.parseAndLoadFrom(JSON.stringify({
             pages: [
@@ -208,7 +208,7 @@ testLib.module('diff', function(hooks) {
                 ['/main','',mockTemplate.fname,['/main/dish2']],
                 ['/main/dish2','/main',mockTemplate.fname,['/main']],
             ],
-            templates: [mockTemplate.fname]
+            templates: [[mockTemplate.fname,1]]
         }));
         mockTemplate.contents = '<html><body>{'+
             '({'+
@@ -235,6 +235,7 @@ testLib.module('diff', function(hooks) {
                        ['/main','',mockTemplate.fname,['/main/dish2','/main/dish1']],
                        ['/main/dish2','/main',mockTemplate.fname,['/main']],
                        ['/main/dish1','/main',mockTemplate.fname,['/main']]],
+                templates:[[mockTemplate.fname,1]]
             }), 'should store the updated sitegraph to the database');
         });
         website.siteConfig.homeUrl = '/home';
@@ -273,7 +274,7 @@ testLib.module('diff', function(hooks) {
                     [linkAHref,NO_PARENT,mockTemplate.fname,[linkBHref]],
                     [linkBHref,NO_PARENT,mockTemplate.fname,[linkBHref]]
                 ],
-                templates:[mockTemplate.fname]
+                templates:[[mockTemplate.fname,1]]
             }), 'should store the updated sitegraph to the database');
         });
     });

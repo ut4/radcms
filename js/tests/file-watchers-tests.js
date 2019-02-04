@@ -46,7 +46,7 @@ testLib.module('file-watchers.js', function(hooks) {
         commons.db.select('select `graph` from websites where id = ' + websiteData.id,
             function(row) {
             assert.equal(row.getString(0), JSON.stringify({pages:[],
-                templates:[mockTemplate.fname]}),
+                templates:[[mockTemplate.fname,0]]}),
                 'should store the updated sitegraph to the database');
         });
     });

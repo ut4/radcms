@@ -24,7 +24,7 @@ Db::select(const char *sql, mapRowFn onEachRow, bindValsFn myWhereBindFn,
               std::string(sqlite3_errmsg(this->conn));
         return false;
     }
-    bool ret = false;
+    bool ret = true;
     unsigned i = 0;
     // 2. Call the binder function
     if (myWhereBindFn && !myWhereBindFn(stmt, myPtr)) {

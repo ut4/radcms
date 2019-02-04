@@ -16,7 +16,7 @@ testLib.module('website-handlers.js', function(hooks) {
         pages: [['/home', NO_PARENT, LAYOUT_1, []],
                 ['/page2', NO_PARENT, LAYOUT_2, []],
                 ['/page3', NO_PARENT, LAYOUT_2, []]],
-        templates: [LAYOUT_1, LAYOUT_2]
+        templates: [[LAYOUT_1, 1], [LAYOUT_2, 1]]
     })};
     var writeLog = [];
     var makeDirsLog = [];
@@ -83,6 +83,29 @@ testLib.module('website-handlers.js', function(hooks) {
         assert.equal(response3.statusCode, 404);
         assert.ok(response3.body.indexOf('Not found') > -1, 'should contain "Not found"');
         assert.ok(response3.body.indexOf('<iframe') > -1, 'should contain "<iframe"');
+    });
+    testLib.test('GET \'/<url>\' embeds info about the page in <script>', function(assert) {
+        assert.expect(4);
+        var req = new http.Request('/home', 'GET');
+        var handlePageRequestFn = commons.app.getHandler(req.url, req.method);
+        //
+        var response = handlePageRequestFn(req);
+        var pcs = response.body.split('function getCurrentPageData() { return ');
+        assert.ok(pcs.length == 2, 'Should contain getCurrentPageData() declaration');
+        var expectedPageData = JSON.stringify({
+            directiveInstances:[],
+            allContentNodes:[{content:'Hello',defaults:{id:1,name:'home',dataBatchConfigId:1}}],
+            page:{url:req.url,layoutFileName:LAYOUT_1}
+        });
+        var actualPageData = pcs[1] ? pcs[1].substr(0, expectedPageData.length) : '';
+        assert.equal(actualPageData, expectedPageData);
+        //
+        var response2 = handlePageRequestFn(new http.Request('/404', 'GET'));
+        var pcs2 = response2.body.split('function getCurrentPageData() { return ');
+        assert.ok(pcs2.length == 2, 'Should contain getCurrentPageData() declaration');
+        var expectedPageData2 = JSON.stringify({directiveInstances:[],allContentNodes:[],page:{}});
+        var actualPageData2 = pcs2[1] ? pcs2[1].substr(0, expectedPageData2.length) : '';
+        assert.equal(actualPageData2, expectedPageData2);
     });
     testLib.test('POST \'/api/website/generate\' generates the site', function(assert) {
         assert.expect(16);

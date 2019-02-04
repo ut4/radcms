@@ -72,14 +72,14 @@ class InsaneControlPanel extends preact.Component {
                 }
                 return services.myFetch('/api/website/templates');
             }, () => {
-                console.error('Failed to fetch pending changes.');
+                toast('Failed to fetch pending changes.', 'error');
             }).then(res => {
                 const templates = JSON.parse(res.responseText);
                 const fname = props.currentPageData.page.layoutFileName;
                 this.setState({templates: templates,
                     selectedTemplateIdx: templates.findIndex(t => t.fileName == fname)});
             }, () => {
-                console.error('Failed to fetch templates.');
+                toast('Failed to fetch templates.', 'error');
             });
     }
     render() {
@@ -169,17 +169,19 @@ class InsaneControlPanel extends preact.Component {
     handleCurrentPageTemplateChange(e) {
         this.setState({selectedTemplateIdx: parseInt(e.target.value)});
         const u = this.props.currentPageData.page.url;
-        const fileName = encodeURIComponent(
-            this.state.templates[this.state.selectedTemplateIdx].fileName);
+        const selectedTmpl = this.state.templates[this.state.selectedTemplateIdx];
+        const fileName = encodeURIComponent(selectedTmpl.fileName);
         services.myFetch('/api/website/page', {
             method: 'PUT',
             headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-            data: 'url=' + encodeURIComponent(u) +
-                  '&layoutFileName=' + fileName
+            data: 'url=' + encodeURIComponent(u) + '&layoutFileName=' + fileName
         }).then(res => {
             const d = JSON.parse(res.responseText);
-            if (d.numAffectedRows > 0) myRedirect(u + '?rescan=usersOf:' + fileName, true);
-            else throw new Error('');
+            if (d.numAffectedRows > 0) {
+                myRedirect(u + (selectedTmpl.isValid ? '?rescan=usersOf:' + fileName : ''), true);
+            } else {
+                throw new Error('');
+            }
         }, () => {
             toast('Failed to change the template.', 'error');
         });

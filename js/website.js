@@ -51,7 +51,6 @@ Page.prototype.render = function(dataToFrontend, issues) {
     var html = domTree.render(innerFn(domTree, ddc.getDataFor.bind(ddc), directives));
     dataToFrontend.page = {url: this.url, layoutFileName: this.layoutFileName};
     dataToFrontend.allContentNodes = ddc.data;
-    dataToFrontend.directiveInstances = [];
     domTree.getRenderedFnComponents().forEach(function(fnData) {
         if (fnData.fn == directives.ArticleList) {
             dataToFrontend.directiveInstances.push(
@@ -122,7 +121,7 @@ exports.siteGraph = {
      *         '["/home",0,"1.html",["/foo"]],'
      *         '["/foo",0,"2.html",[]]'
      *     '],'
-     *     '"templates":["1.htm","2.htm"]' // [<filename>,...]
+     *     '"templates":[["1.htm",1],["2.htm",0]]' // [[<filename>,<isOk>],...]
      * '}'
      */
     parseAndLoadFrom: function(serialized) {
@@ -142,7 +141,8 @@ exports.siteGraph = {
             }
         }
         for (i = 0; i < this.templateCount; ++i) {
-            var t = new Template(json.templates[i], true);
+            data = json.templates[i];
+            var t = new Template(data[0], data[1] === 1);
             this.templates[t.fileName] = t;
         }
     },
@@ -152,13 +152,16 @@ exports.siteGraph = {
     serialize: function() {
         var ir = {
             pages: [],
-            templates: Object.keys(this.templates)
+            templates: []
         };
         for (var url in this.pages) {
             var page = this.pages[url];
             var linksToAsArr = [];
             for (var outUrl in page.linksTo) linksToAsArr.push(outUrl);
             ir.pages.push([url, page.parentUrl, page.layoutFileName, linksToAsArr]);
+        }
+        for (var fileName in this.templates) {
+            ir.templates.push([fileName, this.templates[fileName].exists ? 1 : 0]);
         }
         return JSON.stringify(ir);
     },
@@ -211,8 +214,8 @@ exports.website = {
             siteGraph.parseAndLoadFrom(row.getString(0));
         });
         for (var fileName in siteGraph.templates) {
-            if (commons.templateCache.has(fileName)) return;
-            try { this.compileAndCacheTemplate(fileName); }
+            if (commons.templateCache.has(fileName)) continue;
+            try { siteGraph.templates[fileName].exists = this.compileAndCacheTemplate(fileName); }
             catch (e) { siteGraph.templates[fileName].exists = false; }
         }
     },
