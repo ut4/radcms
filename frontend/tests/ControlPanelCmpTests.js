@@ -78,7 +78,8 @@ QUnit.module('ControlPanelComponent', hooks => {
         assert.expect(6);
         httpStub
             .onCall(0).returns(Promise.resolve({responseText:'0'}))
-            .onCall(1).returns(Promise.resolve({responseText:'[{"fileName":"a.jsx.htm"},{"fileName":"b.jsx.htm"}]'}))
+            .onCall(1).returns(Promise.resolve({responseText:'[{"fileName":'+
+                '"a.jsx.htm","isValid":true},{"fileName":"b.jsx.htm","isValid":true}]'}))
             .onCall(2).returns(Promise.resolve({responseText:'{"numAffectedRows":1}'}));
         const redirectSpy = sinon.spy(window, 'myRedirect');
         //
@@ -115,7 +116,7 @@ QUnit.module('ControlPanelComponent', hooks => {
         }).then(() => {
             assert.ok(redirectSpy.calledAfter(httpStub), 'Should redirect');
             assert.equal(redirectSpy.firstCall.args[0],
-                         currentPage.url + '?rescan=full');
+                         currentPage.url + '?rescan=usersOf:' + newLayout);
             redirectSpy.restore();
             done();
         });

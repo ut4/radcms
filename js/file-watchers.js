@@ -53,7 +53,7 @@ function handleFileModifyEvent(fileName) {
         print('[Info]: Cached "' + fileName + '"');
         layout.exists = true;
     }
-    performRescan('full');
+    performRescan('usersOf:' + fileName);
 }
 
 /**
@@ -84,12 +84,13 @@ function Diff() {
  * along the way.
  *
  * @param {Page[]} pages
+ * @param {string} usersOfLayout '' == scan all pages, 'foo.jsx.htm' == scan only pages rendered by 'foo.jsx.htm'
  */
-Diff.prototype.scanChanges = function(pages) {
+Diff.prototype.scanChanges = function(pages, usersOfLayout) {
     var completelyNewPages = {};
     for (var url in pages) {
         var page = pages[url];
-        if (page.refCount < 1) continue;
+        if (page.refCount < 1 || (usersOfLayout && page.layoutFileName != usersOfLayout)) continue;
         var newLinksTo = {};
         var domTree = page.dryRun();
         var fnCmps = domTree.getRenderedFnComponents();
@@ -179,12 +180,11 @@ Diff.prototype.deleteUnreachablePages = function() {
 };
 
 /**
- * @param {string} type 'full'
+ * @param {string} type 'full' or 'usersOf:some-template.jsx.htm'
  */
 function performRescan(type) {
-    if (type !== 'full') throw new TypeError('Not implemented.');
     var diff = new Diff();
-    diff.scanChanges(siteGraph.pages);
+    diff.scanChanges(siteGraph.pages, type == 'full' ? '' : type.split(':')[1]);
     diff.deleteUnreachablePages();
     for (var hadStaticFiles in diff.staticFiles) {
         saveStaticFileUrlsToDb(diff.staticFiles);

@@ -198,6 +198,47 @@ testLib.module('diff', function(hooks) {
             }), 'should store the updated sitegraph to the database');
         });
     });
+    testLib.test('swaps a parent page', function(assert) {
+        assert.expect(3);
+        website.siteConfig.homeUrl = '/starters';
+        siteGraph.parseAndLoadFrom(JSON.stringify({
+            pages: [
+                ['/starters','',mockTemplate.fname,['/starters/dish1']],
+                ['/starters/dish1','/starters',mockTemplate.fname,['/starters']],
+                ['/main','',mockTemplate.fname,['/main/dish2']],
+                ['/main/dish2','/main',mockTemplate.fname,['/main']],
+            ],
+            templates: [mockTemplate.fname]
+        }));
+        mockTemplate.contents = '<html><body>{'+
+            '({'+
+                '"starters":""' + // /starters/dish1 has disappeared
+                ',"starters/dish1":' + makeLinks('/starters') +
+                ',"main":' + makeLinks('/main/dish2','/main/dish1') + // main/dish1 has appeared
+                ',"main/dish2":' + makeLinks('/main') +
+                ',"main/dish1":' + makeLinks('/main') +
+            '})[url.join("/")]'+
+        '}</body></html>';
+        website.website.compileAndCacheTemplate(mockTemplate.fname);
+        // Trigger handleFWEvent()
+        fileWatcher._watchFn(fileWatcher.EVENT_WRITE, mockTemplate.fname);
+        // Assert that removed /starters/dish1 and added /main/dish1
+        assert.ok(!siteGraph.getPage('/starters/dish1'), 'Should remove /starters/dish1');
+        var newDish1 = siteGraph.getPage('/main/dish1');
+        assert.ok(newDish1 !== undefined, 'Should add /main/dish1');
+        assert.equal(newDish1.parentUrl, '/main', 'Should update .parentUrl /starters -> /main');
+        //
+        commons.db.select('select `graph` from websites where id = ' + websiteData.id,
+            function(row) {
+            assert.equal(row.getString(0), JSON.stringify({
+                pages:[['/starters','',mockTemplate.fname,[]],
+                       ['/main','',mockTemplate.fname,['/main/dish2','/main/dish1']],
+                       ['/main/dish2','/main',mockTemplate.fname,['/main']],
+                       ['/main/dish1','/main',mockTemplate.fname,['/main']]],
+            }), 'should store the updated sitegraph to the database');
+        });
+        website.siteConfig.homeUrl = '/home';
+    });
     testLib.test('follows new pages recursively', function(assert) {
         assert.expect(5);
         var linkAHref = '/bar';
