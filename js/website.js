@@ -27,8 +27,8 @@ function Page(url, parentUrl, layoutFileName, linksTo, refCount) {
  */
 Page.prototype.render = function(dataToFrontend, issues) {
     var layout = exports.siteGraph.getTemplate(this.layoutFileName);
-    if (!layout || !layout.exists) {
-        var message = 'The layout file \'' + this.layoutFileName + '\' doesn\'t exists' +
+    if (!layout || !layout.isOk) {
+        var message = 'The layout file \'' + this.layoutFileName + '\' doesn\'t exist' +
                       (layout ? ' yet, or is empty.' : '.');
         if (issues) issues.push(this.url + '>' + message);
         return '<html><body>' + message + '</body></html>';
@@ -49,7 +49,6 @@ Page.prototype.render = function(dataToFrontend, issues) {
         return domTree.render(innerFn(domTree, ddc.getDataFor.bind(ddc), directives));
     }
     var html = domTree.render(innerFn(domTree, ddc.getDataFor.bind(ddc), directives));
-    dataToFrontend.page = {url: this.url, layoutFileName: this.layoutFileName};
     dataToFrontend.allContentNodes = ddc.data;
     domTree.getRenderedFnComponents().forEach(function(fnData) {
         if (fnData.fn == directives.ArticleList) {
@@ -100,11 +99,13 @@ function fetchData(ddc) {
 // =============================================================================
 /**
  * @param {string} fileName
- * @param {bool?} exists = false
+ * @param {bool?} isOk = false
+ * @param {bool?} isInUse = false
  */
-function Template(fileName, exists) {
+function Template(fileName, isOk, isInUse) {
     this.fileName = fileName;
-    this.exists = exists === true;
+    this.isOk = isOk === true;
+    this.isInUse = isInUse === true;
 }
 
 
@@ -142,7 +143,7 @@ exports.siteGraph = {
         }
         for (i = 0; i < this.templateCount; ++i) {
             data = json.templates[i];
-            var t = new Template(data[0], data[1] === 1);
+            var t = new Template(data[0], data[1] === 1, data[2] === 1);
             this.templates[t.fileName] = t;
         }
     },
@@ -161,25 +162,54 @@ exports.siteGraph = {
             ir.pages.push([url, page.parentUrl, page.layoutFileName, linksToAsArr]);
         }
         for (var fileName in this.templates) {
-            ir.templates.push([fileName, this.templates[fileName].exists ? 1 : 0]);
+            var t = this.templates[fileName];
+            ir.templates.push([fileName, t.isOk ? 1 : 0, t.isInUse ? 1 : 0]);
         }
         return JSON.stringify(ir);
     },
+    /**
+     * @param {string} url
+     * @returns {Page|undefined}
+     */
     getPage: function(url) {
         return this.pages[url];
     },
+    /**
+     * @param {string} fileName
+     * @returns {Template|undefined}
+     */
     getTemplate: function(fileName) {
         return this.templates[fileName];
     },
+    /**
+     * @see Page
+     * @returns {Page}
+     */
     addPage: function(url, parentUrl, layoutFileName, outboundUrls, refCount) {
         if (url.charAt(0) != '/') url = '/' + url;
         this.pages[url] = new Page(url, parentUrl, layoutFileName, outboundUrls, refCount);
         return this.pages[url];
     },
-    addTemplate: function(fileName, exists) {
-        var t = new Template(fileName, exists);
-        this.templates[fileName] = t;
+    /**
+     * @see Template
+     * @returns {Template}
+     */
+    addTemplate: function(fileName, isOk, isInUse) {
+        this.templates[fileName] = new Template(fileName, isOk, isInUse);
         return this.templates[fileName];
+    },
+    /**
+     * @param {string} layoutFileName
+     * @returns {bool}
+     */
+    layoutHasUsers: function(layoutFileName) {
+        var inUse = false;
+        for (var url in this.pages) {
+            if (this.pages[url].layoutFileName == layoutFileName) {
+                inUse = true; break;
+            }
+        }
+        return inUse;
     }
 };
 
@@ -208,15 +238,49 @@ exports.website = {
     config: exports.siteConfig,
     /** */
     init: function() {
+        // Populate exports.siteConfig
         this.config.loadFromDisk();
+        // Populate exports.siteGraph
         var siteGraph = this.siteGraph;
         commons.db.select('select `graph` from websites limit 1', function(row) {
             siteGraph.parseAndLoadFrom(row.getString(0));
         });
-        for (var fileName in siteGraph.templates) {
-            if (commons.templateCache.has(fileName)) continue;
-            try { siteGraph.templates[fileName].exists = this.compileAndCacheTemplate(fileName); }
-            catch (e) { siteGraph.templates[fileName].exists = false; }
+        // Sync siteGraph.templates and populate commons.templateCache
+        var filesOnDisk = {};
+        var tmplDiff = {added: 0, removed: 0, validityChanged: 0};
+        this.fs.readDir(insnEnv.sitePath, function(fname) {
+            var lastDotPos = fname.lastIndexOf('.');
+            if (lastDotPos > -1 && fname.substr(lastDotPos) == '.htm') {
+                filesOnDisk[fname] = 1;
+                if (!siteGraph.templates[fname]) {
+                    siteGraph.addTemplate(fname, false, siteGraph.layoutHasUsers(fname));
+                    tmplDiff.added += 1;
+                }
+            }
+        });
+        for (var fname in siteGraph.templates) {
+            var t = siteGraph.templates[fname];
+            var stillExists = filesOnDisk.hasOwnProperty(fname);
+            if (stillExists && t.isInUse) {
+                try {
+                    this.compileAndCacheTemplate(fname);
+                    if (!t.isOk) tmplDiff.validityChanged += 1; // from invalid to ok
+                    t.isOk = true;
+                } catch (e) {
+                    if (t.isOk) tmplDiff.validityChanged += 1; // from ok to invalid
+                    t.isOk = false;
+                }
+            } else if (!stillExists) {
+                delete siteGraph.templates[fname];
+                tmplDiff.removed += 1;
+            }
+        }
+        var message = [];
+        if (tmplDiff.added) message.push('discovered ' + tmplDiff.added + ' new templates');
+        if (tmplDiff.removed) message.push('unregistered ' + tmplDiff.removed + ' templates');
+        if (message.length || tmplDiff.validityChanged) {
+            exports.saveToDb(siteGraph);
+            if (message.length) print('[Info]: ' + message.join(', '));
         }
     },
     /**
@@ -253,4 +317,13 @@ exports.website = {
         commons.templateCache.remove(fileName);
         delete this.siteGraph.templates[fileName];
     }
+};
+
+/**
+ * @throws {Error}
+ */
+exports.saveToDb = function(siteGraph) {
+   commons.db.update('update websites set `graph` = ?', function(stmt) {
+       stmt.bindString(0, siteGraph.serialize());
+   });
 };

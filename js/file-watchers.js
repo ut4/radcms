@@ -30,11 +30,10 @@ function handleFWEvent(type, fileName) {
  * @param {string} fileName
  */
 function handleFileCreateEvent(fileName) {
-    var layout = siteGraph.getTemplate(fileName);
-    if (!layout) {
-        // Add the layout, and leave its .exists to false
+    if (!siteGraph.getTemplate(fileName)) {
+        // Add the layout, and leave its .isOk to false
         siteGraph.addTemplate(fileName);
-        saveWebsiteToDb(siteGraph);
+        website.saveToDb(siteGraph);
         print('[Info]: Added "' + fileName + '"');
     }
     // Skip compileAndCache()
@@ -51,7 +50,7 @@ function handleFileModifyEvent(fileName) {
     }
     if (website.website.compileAndCacheTemplate(fileName)) {
         print('[Info]: Cached "' + fileName + '"');
-        layout.exists = true;
+        layout.isOk = true;
     }
     performRescan('usersOf:' + fileName);
 }
@@ -66,7 +65,7 @@ function handleFileDeleteEvent(fileName) {
         return;
     }
     website.website.deleteAndUncacheTemplate(layout.fileName);
-    saveWebsiteToDb(siteGraph);
+    website.saveToDb(siteGraph);
     print('[Info]: Removed "' + fileName + '"');
 }
 
@@ -84,7 +83,7 @@ function Diff() {
  * along the way.
  *
  * @param {Page[]} pages
- * @param {string} usersOfLayout '' == scan all pages, 'foo.jsx.htm' == scan only pages rendered by 'foo.jsx.htm'
+ * @param {string?} usersOfLayout '' == scan all pages, 'foo.jsx.htm' == scan only pages rendered by 'foo.jsx.htm'
  */
 Diff.prototype.scanChanges = function(pages, usersOfLayout) {
     var completelyNewPages = {};
@@ -113,7 +112,7 @@ Diff.prototype.scanChanges = function(pages, usersOfLayout) {
             if (props.layoutOverride) {
                 var layout = siteGraph.getTemplate(props.layoutOverride);
                 if (!layout) {
-                    layout = siteGraph.addTemplate(props.layoutOverride);
+                    layout = siteGraph.addTemplate(props.layoutOverride, false, true);
                 }
             }
         }
@@ -183,15 +182,20 @@ Diff.prototype.deleteUnreachablePages = function() {
  * @param {string} type 'full' or 'usersOf:some-template.jsx.htm'
  */
 function performRescan(type) {
+    var usersOf = '', t;
+    if (type != 'full') {
+        usersOf = type.split(':')[1];
+        if (!(t = siteGraph.getTemplate(usersOf)) || !t.isOk) return;
+    }
     var diff = new Diff();
-    diff.scanChanges(siteGraph.pages, type == 'full' ? '' : type.split(':')[1]);
+    diff.scanChanges(siteGraph.pages, usersOf);
     diff.deleteUnreachablePages();
     for (var hadStaticFiles in diff.staticFiles) {
         saveStaticFileUrlsToDb(diff.staticFiles);
         break;
     }
     if (diff.nLinksAdded || diff.nLinksRemoved) {
-        saveWebsiteToDb(siteGraph);
+        website.saveToDb(siteGraph);
     }
     print('[Info]: Rescanned the site: ' +
           (diff.nPagesAdded ? 'added ' + diff.nPagesAdded + ' page(s), ' : '') +
@@ -218,13 +222,4 @@ function saveStaticFileUrlsToDb(urls) {
             for (var url in urls) { stmt.bindString(i, url); i += 1; }
         }
     );
-}
-
-/**
- * @throws {Error}
- */
-function saveWebsiteToDb(siteGraph) {
-    commons.db.update('update websites set `graph` = ?', function(stmt) {
-        stmt.bindString(0, siteGraph.serialize());
-    });
 }

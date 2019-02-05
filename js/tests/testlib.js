@@ -130,9 +130,9 @@ function runModuleTests(modName, mod, hooks, stats, verboseLogFn) {
                 verboseLogFn(modName + ': ' + test.desc + ': ok');
                stats.numPasses++;
             } else {
-                verboseLogFn(modName + ': ' + test.desc + ': ' +
-                            (result.message || 'fail') +
-                            (result.details ? ': ' + result.details : ''));
+                print(modName + ': ' + test.desc + ': ' +
+                      (result.message || 'fail') +
+                      (result.details ? ': ' + result.details : ''));
                 stats.numFails++;
             }
         });

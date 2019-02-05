@@ -104,6 +104,22 @@ myFsMakeDirs(const char *path, std::string &err) {
     return true;
 }
 
+bool
+myFsReadDir(const char *path, bool (*onEach)(const char *fileName, void *myPtr),
+            void *myPtr, std::string &err) {
+    DIR *dir = opendir(path);
+    if (!dir) {
+        err.assign("Failed to open dir '" + std::string(path) + "'");
+        return false;
+    }
+    struct dirent *ent = nullptr;
+    while ((ent = readdir(dir))) {
+        if (!onEach(ent->d_name, myPtr)) break;
+    }
+    closedir(dir);
+    return true;
+}
+
 void
 myFsNormalizePath(std::string &path) {
     int l = path.size();

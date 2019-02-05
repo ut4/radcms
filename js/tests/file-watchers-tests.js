@@ -28,10 +28,7 @@ testLib.module('file-watchers.js', function(hooks) {
         ) throw new Error('Failed to clean test data.');
     });
     hooks.afterEach(function() {
-        siteGraph.pages = {};
-        siteGraph.pageCount = 0;
-        siteGraph.templates = {};
-        siteGraph.templateCount = 0;
+        siteGraph.clear();
         commons.templateCache._fns = {};
     });
     testLib.test('EVENT_CREATE <newLayout>.jsx.htm updates siteGraph.templates', function(assert) {
@@ -46,7 +43,7 @@ testLib.module('file-watchers.js', function(hooks) {
         commons.db.select('select `graph` from websites where id = ' + websiteData.id,
             function(row) {
             assert.equal(row.getString(0), JSON.stringify({pages:[],
-                templates:[[mockTemplate.fname,0]]}),
+                templates:[[mockTemplate.fname,0,0]]}),
                 'should store the updated sitegraph to the database');
         });
     });

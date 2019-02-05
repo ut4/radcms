@@ -34,6 +34,7 @@ function handlePageRequest(req) {
             commons.signals.emit('sitegraphRescanRequested', rescanType);
         }
         var html = page.render(dataToFrontend);
+        dataToFrontend.page = {url: page.url, layoutFileName: page.layoutFileName};
         return new http.Response(200, injectControlPanelIFrame(html, dataToFrontend));
     } else {
         return new http.Response(404, injectControlPanelIFrame(
@@ -73,15 +74,16 @@ function handleGetAllPagesRequest() {
  *
  * Example response:
  * [
- *     {"fileName":"foo.jsx.htm", "isValid": true},
- *     {"fileName":"bar.jsx.htm", "isValid": false}
+ *     {"fileName":"foo.jsx.htm", "isOk": true, "isInUse": true},
+ *     {"fileName":"bar.jsx.htm", "isOk": false, "isInUse": true}
  * ]
  */
 function handleGetAllTemplatesRequest() {
     var templates = [];
     var all = website.siteGraph.templates;
     for (var fileName in all)
-        templates.push({fileName: fileName, isValid: all[fileName].exists});
+        templates.push({fileName: fileName, isOk: all[fileName].isOk,
+                        isInUse: all[fileName].isInUse});
     return new http.Response(200, JSON.stringify(templates),
         {'Content-Type': 'application/json'}
     );
@@ -226,11 +228,21 @@ function handleUpdatePageRequest(req) {
     if (errs.length) return new http.Response(400, errs.join('\n'));
     //
     page.layoutFileName = req.data.layoutFileName;
+    setLayoutAsUsed(page.layoutFileName);
     var ok = commons.db.update('update websites set `graph` = ?', function(stmt) {
         stmt.bindString(0, website.siteGraph.serialize());
     });
     return new http.Response(200, JSON.stringify({numAffectedRows: ok}),
         {'Content-Type': 'application/json'});
+}
+
+function setLayoutAsUsed(fileName) {
+    var t = website.siteGraph.getTemplate(fileName);
+    t.isInUse = true;
+    if (!t.isOk) {
+        try { t.isOk = website.website.compileAndCacheTemplate(t.fileName); }
+        catch(e) { t.isOk = false; }
+    }
 }
 
 /**

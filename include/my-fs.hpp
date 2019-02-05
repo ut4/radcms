@@ -2,6 +2,7 @@
 
 #include <fstream>
 #include <cstring>
+#include <dirent.h> // opendir
 #include <sys/stat.h> // mkdir, S_IRWXU etc.
 #if defined(INSN_IS_WIN)
 #include <limits.h> // PATH_MAX
@@ -18,6 +19,10 @@ bool
 myFsRead(const char *path, std::string &to, std::string &err);
 bool
 myFsRead(const std::string &path, std::string &to, std::string &err);
+
+bool
+myFsReadDir(const char *path, bool (*onEach)(const char *fileName, void *myPtr),
+            void *myPtr, std::string &err);
 
 bool
 myFsMakeDirs(const char *path, std::string &err);

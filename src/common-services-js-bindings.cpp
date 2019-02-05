@@ -10,6 +10,7 @@ static duk_ret_t dbResRowGetInt(duk_context *ctx);
 static duk_ret_t dbResRowGetString(duk_context *ctx);
 static duk_ret_t fsWrite(duk_context *ctx);
 static duk_ret_t fsRead(duk_context *ctx);
+static duk_ret_t fsReadDir(duk_context *ctx);
 static duk_ret_t fsMakeDirs(duk_context *ctx);
 static duk_ret_t transpilerTranspileToFn(duk_context *ctx);
 static duk_ret_t uploaderConstruct(duk_context *ctx);
@@ -54,6 +55,8 @@ commonServicesJsModuleInit(duk_context *ctx, const int exportsIsAt) {
     duk_put_prop_string(ctx, -2, "write");              // [? fs]
     duk_push_c_lightfunc(ctx, fsRead, 1, 0, 0);         // [? fs lightfn]
     duk_put_prop_string(ctx, -2, "read");               // [? fs]
+    duk_push_c_lightfunc(ctx, fsReadDir, 2, 0, 0);      // [? fs lightfn]
+    duk_put_prop_string(ctx, -2, "readDir");            // [? fs]
     duk_push_c_lightfunc(ctx, fsMakeDirs, 1, 0, 0);     // [? fs lightfn]
     duk_put_prop_string(ctx, -2, "makeDirs");           // [? fs]
     duk_pop(ctx);                                       // [?]
@@ -274,6 +277,31 @@ fsRead(duk_context *ctx) {
         return 1;
     }
     return duk_error(ctx, DUK_ERR_ERROR, "%s", err.c_str());
+}
+
+static duk_ret_t
+fsReadDir(duk_context *ctx) {
+    const char* dirPath = duk_require_string(ctx, 0);
+    duk_require_function(ctx, 1);
+    std::string err;
+    if (myFsReadDir(dirPath, [](const char *fileName, void *myPtr) -> bool {
+        if (strcmp(fileName, ".") == 0 || strcmp(fileName, "..") == 0) return true;
+        auto ctx = static_cast<duk_context*>(myPtr);
+        duk_dup(ctx, -1);                             // [dirPath fn fn]
+        duk_push_string(ctx, fileName);               // [dirPath fn fn fname]
+        if (duk_pcall(ctx, 1) == DUK_EXEC_SUCCESS) {  // [dirPath fn bool|none]
+            bool doContinue = duk_get_boolean_default(ctx, -1, true);
+            duk_pop(ctx);                             // [dirPath fn]
+            return doContinue;
+        }                                             // [dirPath fn err]
+        return false;
+    }, ctx, err)) {
+        duk_push_boolean(ctx, true);
+        return 1;
+    }
+    return duk_error(ctx, DUK_ERR_ERROR, "%s", !err.empty()
+        ? err.c_str()
+        : duk_safe_to_string(ctx, -1));
 }
 
 static duk_ret_t

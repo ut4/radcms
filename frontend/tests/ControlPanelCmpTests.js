@@ -79,7 +79,7 @@ QUnit.module('ControlPanelComponent', hooks => {
         httpStub
             .onCall(0).returns(Promise.resolve({responseText:'0'}))
             .onCall(1).returns(Promise.resolve({responseText:'[{"fileName":'+
-                '"a.jsx.htm","isValid":true},{"fileName":"b.jsx.htm","isValid":true}]'}))
+                '"a.jsx.htm","isOk":true},{"fileName":"b.jsx.htm","isOk":true}]'}))
             .onCall(2).returns(Promise.resolve({responseText:'{"numAffectedRows":1}'}));
         const redirectSpy = sinon.spy(window, 'myRedirect');
         //

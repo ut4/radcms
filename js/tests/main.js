@@ -1,4 +1,5 @@
 var commons = require('common-services.js');
+var website = require('website.js');
 
 commons.app.getHandler = function(url, method) {
     var fn;
@@ -7,6 +8,13 @@ commons.app.getHandler = function(url, method) {
         if ((fn = this._routeMatchers[i](url, method))) return fn;
     }
     throw new Error('Didn\'t find handler for ' + method + ' ' + url);
+};
+
+website.siteGraph.clear = function() {
+    this.pages = {};
+    this.pageCount = 0;
+    this.templates = {};
+    this.templateCount = 0;
 };
 
 exports.main = function(suite, logAssertions) {
@@ -39,6 +47,7 @@ exports.main = function(suite, logAssertions) {
     }
     if (isAll || suite == 'website') {
         require('tests/website-tests.js');
+        modules.push('[\'website.js\'].website');
         modules.push('[\'website.js\'].siteConfig');
     }
     require('tests/testlib.js').testLib.start(!isAll ? modules : null, logAssertions);

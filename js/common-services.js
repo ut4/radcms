@@ -64,6 +64,13 @@ exports.fs = {
     /**
      * @native
      * @param {string} path
+     * @param {(fileName: string): void|bool} onEach return false == break, anything else == continue
+     * @returns {bool}
+     */
+    readDir: function(/*path, onEach*/) {},
+    /**
+     * @native
+     * @param {string} path
      * @returns {bool}
      */
     makeDirs: function(/*path*/) {},

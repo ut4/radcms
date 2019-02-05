@@ -6,6 +6,8 @@ var http = require('http.js');
 var LAYOUT_1 = 'home-layout.jsx.htm';
 var LAYOUT_2 = 'page-layout.jsx.htm';
 var NO_PARENT = '';
+var IS_OK = 1;
+var IS_IN_USE = 1;
 
 testLib.module('website-handlers.js', function(hooks) {
     var genericCntType = {id:1,name:'Generic',fields:'{"content":"richtext"}'};
@@ -16,7 +18,7 @@ testLib.module('website-handlers.js', function(hooks) {
         pages: [['/home', NO_PARENT, LAYOUT_1, []],
                 ['/page2', NO_PARENT, LAYOUT_2, []],
                 ['/page3', NO_PARENT, LAYOUT_2, []]],
-        templates: [[LAYOUT_1, 1], [LAYOUT_2, 1]]
+        templates: [[LAYOUT_1, IS_OK, IS_IN_USE], [LAYOUT_2, IS_OK, IS_IN_USE]]
     })};
     var writeLog = [];
     var makeDirsLog = [];
@@ -48,6 +50,7 @@ testLib.module('website-handlers.js', function(hooks) {
     hooks.after(function() {
         website.website.config = website.siteConfig;
         website.website.fs = commons.fs;
+        website.siteGraph.clear();
         if (commons.db.delete('delete from contentNodes where contentTypeName = ?',
                 function(stmt) { stmt.bindString(0, genericCntType.name); }) < 1 ||
             commons.db.delete('delete from websites where id = ?',

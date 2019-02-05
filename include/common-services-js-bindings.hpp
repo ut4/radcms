@@ -17,6 +17,7 @@
  *    - db.delete()
  *    - fs.write()
  *    - fs.read()
+ *    - fs.readDir()
  *    - fs.makeDirs()
  *    - transpiler.transpileToFn()
  *    - DomTree()
