@@ -116,6 +116,7 @@ exports.siteGraph = {
     pageCount: 0,
     templates: {},
     templateCount: 0,
+    hasUnsavedChanges: false,
     /**
      * @param {string} serialized '{'
      *     '"pages": [' // [[<url>,<parentUrl>,<templateName>,[<url>,...]],...]
@@ -279,9 +280,11 @@ exports.website = {
         if (tmplDiff.added) message.push('discovered ' + tmplDiff.added + ' new templates');
         if (tmplDiff.removed) message.push('unregistered ' + tmplDiff.removed + ' templates');
         if (message.length || tmplDiff.validityChanged) {
-            exports.saveToDb(siteGraph);
-            if (message.length) print('[Info]: ' + message.join(', '));
+            if (message.length) commons.log('[Info]: ' + message.join(', '));
         }
+        // Rescan for new/deleted links and save the siteGraph to the database
+        exports.siteGraph.hasUnsavedChanges = message.length || tmplDiff.validityChanged;
+        commons.signals.emit('sitegraphRescanRequested', 'full');
     },
     /**
      * @param {(renderedHtml: string): bool} onEach

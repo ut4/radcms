@@ -1,6 +1,8 @@
 var commons = require('common-services.js');
 var website = require('website.js');
 
+commons.log = function() {};
+
 commons.app.getHandler = function(url, method) {
     var fn;
     var l = this._routeMatchers.length;

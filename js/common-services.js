@@ -214,3 +214,5 @@ exports.templateCache = {
         delete this._fns[key];
     }
 };
+
+exports.log = print;

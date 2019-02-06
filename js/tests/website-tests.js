@@ -1,4 +1,5 @@
 var commons = require('common-services.js');
+require('file-watchers.js').init();
 var website = require('website.js');
 var testLib = require('tests/testlib.js').testLib;
 var IS_OK = 1;
