@@ -178,8 +178,11 @@ table th {
 table th:first-child {
     padding-left: 6px;
 }
-table.striped tr:nth-of-type(2n) td, .striped > *:nth-of-type(2n) {
+table.striped tr td {
     background-color: rgba(0,0,0,0.05);
+}
+table.striped tr:nth-of-type(2n) td {
+    background-color: transparent;
 }
 table td {
     padding: 6px 10px 6px 0;
@@ -241,10 +244,10 @@ table .input-set input {
 
 /**/
 .light { color: rgb(62,62,62); }
-.light .view { background: linear-gradient(#bababa,#c6c6c6); }
+.light .view { background: linear-gradient(#bababae6,#c6c6c6); }
 .light .view > div:first-of-type, .light .view > form:first-of-type {
     background-color: #fff; }
-.light #control-panel { background: linear-gradient(#bababa,#c6c6c6); }
+.light #control-panel { background: linear-gradient(#bababae6,#c6c6c6); }
 .light #control-panel > div:not(.tab-links) { background-color: #fff; }
 .light #control-panel > h1 { color: #555; }
 .light #control-panel h3 > span { color: #888; }

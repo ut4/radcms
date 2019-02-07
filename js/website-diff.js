@@ -93,7 +93,8 @@ Diff.prototype.scanChanges = function(pages, usersOfLayout) {
             var el = els[i];
             if (el.tagName == 'script' && (scriptSrc = el.props.src)) {
                 this.staticFiles[scriptSrc] = 1;
-            } else if (el.tagName == 'link' && (styleHref = el.props.href)) {
+            } else if (el.tagName == 'link' && (styleHref = el.props.href) &&
+                       el.props.rel == 'stylesheet') {
                 this.staticFiles[styleHref] = 1;
             }
         }

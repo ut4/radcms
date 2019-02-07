@@ -14,6 +14,7 @@ testLib.module('website-handlers.js', function(hooks) {
     var homeContentCnt = {name:'home',json:{content:'Hello'},contentTypeName:'Generic'};
     var page2ContentCnt = {name:'/page2',json:{content:'Page2'},contentTypeName:'Generic'};
     var page3ContentCnt = {name:'/page3',json:{content:'Page3'},contentTypeName:'Generic'};
+    var mockFiles = {'foo.css': 'foo', 'bar.js': 'bar'};
     var websiteData = {id: 1, graph: JSON.stringify({
         pages: [['/home', NO_PARENT, LAYOUT_1, []],
                 ['/page2', NO_PARENT, LAYOUT_2, []],
@@ -44,6 +45,7 @@ testLib.module('website-handlers.js', function(hooks) {
         //
         website.website.fs = {
             write: function(a,b) { writeLog.push({path:a,contents:b}); return true; },
+            read: function(fpath) { return mockFiles[fpath.replace(insnEnv.sitePath,'')]; },
             makeDirs: function(a) { makeDirsLog.push({path:a}); return true; }
         };
     });
@@ -139,17 +141,21 @@ testLib.module('website-handlers.js', function(hooks) {
             'should write the contents of \'/page3\'');
     });
     testLib.test('POST \'/api/website/upload\' generates and uploads the site', function(assert) {
-        assert.expect(17);
+        assert.expect(20);
         var uploaderCredentials = {};
         var uploadLog = [];
+        var UPLOAD_OK = 0;
         website.website.Uploader = function(a,b) {
             uploaderCredentials = {username: a, password: b};
-            this.upload = function(a,b) { uploadLog.push({path:a,contents:b});return 0; };
+            this.uploadString = function(a,b) { uploadLog.push({url:a,contents:b});return UPLOAD_OK; };
+            this.uploadFile = function(a,b) { uploadLog.push({url:a,localFilePath:b});return UPLOAD_OK; };
         };
         //
         var req = new http.Request('/api/website/upload', 'POST');
+        var fileNames = Object.keys(mockFiles);
         req.data = {remoteUrl: 'ftp://ftp.site.net', username: 'ftp@mysite.net',
-                    password: 'bar'};
+                    password: 'bar', 'fileNames[0]': fileNames[0],
+                    'fileNames[1]': fileNames[1]};
         var handleUploadReqFn = commons.app.getHandler(req.url, req.method);
         //
         var response = handleUploadReqFn(req);
@@ -163,22 +169,42 @@ testLib.module('website-handlers.js', function(hooks) {
         assert.equal(generatedPages.length, 3, 'should generate the site');
         // Simulate MHD's MHD_ContentReaderCallback calls
         var chunk1 = response.getNextChunk(response.chunkFnState);
-        assert.equal(chunk1, generatedPages[0].url + '|0');
-        assert.equal(uploadLog.length, 1, 'should upload page #1');
-        assert.equal(uploadLog[0].path, req.data.remoteUrl+generatedPages[0].url+'/index.html');
-        assert.equal(uploadLog[0].contents, generatedPages[0].html);
+        assert.equal(chunk1, 'file|' + req.data['fileNames[0]'] + '|' + UPLOAD_OK);
+        assert.equal(uploadLog.length, 1, 'should upload file #1');
+        assert.deepEqual(uploadLog[0], {
+            url: req.data.remoteUrl+'/'+req.data['fileNames[0]'],
+            localFilePath: insnEnv.sitePath + req.data['fileNames[0]']
+        });
         var chunk2 = response.getNextChunk(response.chunkFnState);
-        assert.equal(chunk2, generatedPages[1].url + '|0');
-        assert.equal(uploadLog.length, 2, 'should upload page #2');
-        assert.equal(uploadLog[1].path, req.data.remoteUrl+generatedPages[1].url+'/index.html');
-        assert.equal(uploadLog[1].contents, generatedPages[1].html);
+        assert.equal(chunk2, 'file|' + req.data['fileNames[1]'] + '|' + UPLOAD_OK);
+        assert.equal(uploadLog.length, 2, 'should upload file #2');
+        assert.deepEqual(uploadLog[1], {
+            url: req.data.remoteUrl+'/'+req.data['fileNames[1]'],
+            localFilePath: insnEnv.sitePath + req.data['fileNames[1]']
+        });
         var chunk3 = response.getNextChunk(response.chunkFnState);
-        assert.equal(chunk3, generatedPages[2].url + '|0');
-        assert.equal(uploadLog.length, 3, 'should upload page #3');
-        assert.equal(uploadLog[2].path, req.data.remoteUrl+generatedPages[2].url+'/index.html');
-        assert.equal(uploadLog[2].contents, generatedPages[2].html);
+        assert.equal(chunk3, 'page|' + generatedPages[0].url + '|' + UPLOAD_OK);
+        assert.equal(uploadLog.length, 3, 'should upload page #1');
+        assert.deepEqual(uploadLog[2], {
+            url: req.data.remoteUrl+generatedPages[0].url+'/index.html',
+            contents: generatedPages[0].html,
+        });
         var chunk4 = response.getNextChunk(response.chunkFnState);
-        assert.equal(chunk4, '');
+        assert.equal(chunk4, 'page|' + generatedPages[1].url + '|' + UPLOAD_OK);
+        assert.equal(uploadLog.length, 4, 'should upload page #2');
+        assert.deepEqual(uploadLog[3], {
+            url: req.data.remoteUrl+generatedPages[1].url+'/index.html',
+            contents: generatedPages[1].html,
+        });
+        var chunk5 = response.getNextChunk(response.chunkFnState);
+        assert.equal(chunk5, 'page|' + generatedPages[2].url + '|' + UPLOAD_OK);
+        assert.equal(uploadLog.length, 5, 'should upload page #3');
+        assert.deepEqual(uploadLog[4], {
+            url: req.data.remoteUrl+generatedPages[2].url+'/index.html',
+            contents: generatedPages[2].html,
+        });
+        var chunk6 = response.getNextChunk(response.chunkFnState);
+        assert.equal(chunk6, '');
         //
         website.website.Uploader = commons.Uploader;
     });

@@ -138,9 +138,9 @@ function runModuleTests(modName, mod, hooks, stats, verboseLogFn) {
         });
         if (assert.expectNAssertions !== undefined &&
             assert.expectNAssertions != assert.results.length) {
-            verboseLogFn(modName + ': ' + test.desc + ': Expected ' +
-                         assert.expectNAssertions + ' assertions, but actually' +
-                         ' ran ' + assert.results.length);
+            print(modName + ': ' + test.desc + ': Expected ' +
+                  assert.expectNAssertions + ' assertions, but actually' +
+                  ' ran ' + assert.results.length);
             stats.numFails++;
         }
     });

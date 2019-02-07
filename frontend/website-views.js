@@ -82,13 +82,15 @@ class WebsiteUploadView extends preact.Component {
             username: 'ftp@mysite.net',
             password: '',
             uploading: false,
-            pages: []
+            pages: [],
+            files: []
         };
-        services.myFetch('/api/website/pages').then(
+        services.myFetch('/api/website/upload-statuses').then(
             res => {
-                this.setState({pages: JSON.parse(res.responseText)});
+                var data = JSON.parse(res.responseText);
+                this.setState({pages: data.pages, files: data.files});
             },
-            () => { toast('Failed to fetch pages.', 'error'); }
+            () => { toast('Failed to fetch pending changes.', 'error'); }
         );
     }
     render() {
@@ -128,16 +130,8 @@ class WebsiteUploadView extends preact.Component {
                         }, null)
                     ])
                 ]),
-                this.state.pages.length ? $el('div', null, $el('table', {className: 'striped'}, [
-                    $el('thead', null, $el('tr', null, [
-                        $el('th', null, 'Page'),
-                        $el('th', null, 'Uploaded'),
-                    ])),
-                    $el('tbody', null, this.state.pages.map(page => $el('tr', null, [
-                        $el('td', null, page.url),
-                        $el('td', null, UStatusToStr[page.uploadStatus]),
-                    ])))
-                ])) : ''
+                this.state.pages.length ? uploadList(this.state.pages, 'Page') : '',
+                this.state.files.length ? uploadList(this.state.files, 'File') : ''
             ])
         ));
     }
@@ -146,44 +140,75 @@ class WebsiteUploadView extends preact.Component {
     }
     confirm() {
         const pendingPages = [];
+        const pendingFiles = [];
         this.setState({uploading: true, pages: this.state.pages.map(page => {
             if (page.uploadStatus != UStatus.UPLOADED) {
                 page.uploadStatus = UStatus.UPLOADING;
                 pendingPages.push(page);
             }
             return page;
+        }), files: this.state.files.map(file => {
+            if (file.uploadStatus != UStatus.UPLOADED) {
+                file.uploadStatus = UStatus.UPLOADING;
+                pendingFiles.push(file);
+            }
+            return file;
         })});
+        let lenAlreadyProcessed = 0;
         services.myFetch('/api/website/upload', {
             method: 'POST',
             headers: {'Content-Type': 'application/x-www-form-urlencoded'},
             data: 'remoteUrl=' + encodeURIComponent(this.state.remoteUrl) +
                     '&username=' + encodeURIComponent(this.state.username) +
-                    '&password=' + encodeURIComponent(this.state.password),
-            progress: (res, percent) => {
+                    '&password=' + encodeURIComponent(this.state.password) +
+                    pendingFiles.map((file, i) =>
+                        '&fileNames[' + i + ']=' + encodeURIComponent(file.url)
+                    ).join(''),
+            progress: (res, _percent) => {
                 if (!res.responseText.length) return;
-                const pages = this.state.pages;
-                const pcs = res.responseText.split('\r\n');
-                // Note: loops all chunks every time, because backend may return
-                // multiple chunks at once
+                // <fromPrevIteration>...<lastChunk> -> <lastChunk>
+                const lastChunks = res.responseText.substr(lenAlreadyProcessed);
+                lenAlreadyProcessed += lastChunks.length;
+                const pcs = lastChunks.split('\r\n');
                 for (let i = 0; i < pcs.length - 1; i += 2) {
-                    const [url, uploadResult] = pcs[i + 1].split('|');
-                    const idx = this.state.pages.findIndex(p => p.url === url);
-                    pages[idx].uploadStatus = uploadResult === '0' ? UStatus.UPLOADED : UStatus.ERROR;
+                    const [resourceType, url, uploadResult] = pcs[i + 1].split('|');
+                    const list = resourceType == 'page' ? this.state.pages : this.state.files;
+                    const idx = list.findIndex(pageOrFile => pageOrFile.url === url);
+                    list[idx].uploadStatus = uploadResult === '0' ? UStatus.UPLOADED : UStatus.ERROR;
                 }
-                this.setState({pages});
+                this.setState({pages: this.state.pages, files: this.state.files});
             }
         }).then(() => {
             this.setState({uploading: false});
             const nSuccesfulUploads = pendingPages.reduce(
                 (n, page) => n + (page.uploadStatus === UStatus.UPLOADED), 0
+            ) + pendingFiles.reduce(
+                (n, file) => n + (file.uploadStatus === UStatus.UPLOADED), 0
             );
-            const nTotal = pendingPages.length;
-            toast('Uploaded ' + nSuccesfulUploads + '/' + nTotal + ' pages.',
+            const nTotal = pendingPages.length + pendingFiles.length;
+            toast('Uploaded ' + nSuccesfulUploads + '/' + nTotal + ' items.',
                   nSuccesfulUploads === nTotal ? 'success' : 'error');
         }, () => {
-            toast('Failed to upload pages.', 'error');
+            toast('Failed to upload items.', 'error');
         });
     }
+}
+
+/**
+ * @param {{url: string; uploadStatus: number;}[]} items
+ * @param {string} name
+ */
+function uploadList(items, name) {
+    return $el('div', null, $el('table', {className: 'striped'}, [
+        $el('thead', null, $el('tr', null, [
+            $el('th', null, name),
+            $el('th', null, 'Uploaded'),
+        ])),
+        $el('tbody', null, items.map(item => $el('tr', null, [
+            $el('td', null, item.url),
+            $el('td', null, UStatusToStr[item.uploadStatus]),
+        ])))
+    ]));
 }
 
 export {WebsiteGenerateView, WebsiteUploadView, UStatus as UploadStatus};

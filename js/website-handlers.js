@@ -4,22 +4,25 @@ var http = require('http.js');
 var uploadHandlerIsBusy = false;
 
 commons.app.addRoute(function(url, method) {
-    if (method == 'GET' && url == '/api/website/pages')
-        return handleGetAllPagesRequest;
-    if (method == 'GET' && url == '/api/website/templates')
-        return handleGetAllTemplatesRequest;
-    if (method == 'POST' && url == '/api/website/generate')
-        return handleGenerateRequest;
-    if (method == 'POST' && url == '/api/website/upload') {
-        if (!uploadHandlerIsBusy) return handleUploadRequest;
-        else return rejectUploadRequest;
+    if (method == 'GET') {
+        if (url == '/api/website/num-pending-changes')
+            return handleGetNumPendingChanges;
+        if (url == '/api/website/templates')
+            return handleGetAllTemplatesRequest;
+        if (url == '/api/website/upload-statuses')
+            return handleGetUploadStatusesRequest;
+        return handlePageRequest;
     }
-    if (method == 'GET' && url == '/api/website/num-pending-changes')
-        return handleGetNumPendingChanges;
+    if (method == 'POST') {
+        if (url == '/api/website/generate')
+            return handleGenerateRequest;
+        if (url == '/api/website/upload') {
+            if (!uploadHandlerIsBusy) return handleUploadRequest;
+            else return rejectUploadRequest;
+        }
+    }
     if (method == 'PUT' && url == '/api/website/page')
         return handleUpdatePageRequest;
-    if (method == 'GET')
-        return handlePageRequest;
 });
 
 /**
@@ -44,25 +47,35 @@ function handlePageRequest(req) {
 }
 
 /**
- * GET /api/website/pages: lists all pages.
+ * GET /api/website/upload-statuses: Returns all pages and files, and their
+ * upload statuses.
  *
  * Example response:
- * [
- *     {"url":"/","layoutFileName":"foo.jsx.htm","uploadStatus":0},
- *     {"url":"/foo","layoutFileName":"foo.jsx.htm","uploadStatus":0}
- * ]
+ * {
+ *     "pages": [
+ *         {"url":"/","layoutFileName":"foo.jsx.htm","uploadStatus":0},
+ *         {"url":"/foo","layoutFileName":"foo.jsx.htm","uploadStatus":0}
+ *     ],
+ *     "files": [
+ *         {"url:"theme.css","uploadStatus":0}
+ *     ]
+ * }
  */
-function handleGetAllPagesRequest() {
+function handleGetUploadStatusesRequest() {
+    var out = {pages: [], files: []};
     var statuses = {};
     commons.db.select('select `url`, `status` from uploadStatuses', function(row) {
         statuses[row.getString(0)] = row.getInt(1);
     });
+    commons.db.select('select `url` from staticFileResources', function(row) {
+        var url = row.getString(0);
+        out.files.push({url: url, uploadStatus: statuses[url] ? statuses[url].uploadStatus : 0});
+    });
     //
-    var out = [];
     for (var url in website.siteGraph.pages) {
         var page = website.siteGraph.pages[url];
         page.uploadStatus = statuses[url] ? statuses[url].uploadStatus : 0;
-        out.push(page);
+        out.pages.push(page);
     }
     return new http.Response(200, JSON.stringify(out),
         {'Content-Type': 'application/json'}
@@ -132,10 +145,13 @@ function handleGenerateRequest() {
  * Payload:
  * remoteUrl=str|required&
  * username=str|required&
- * password=str|required
+ * password=str|required&
+ * fileNames[0-n]=str
  *
- * Example response:
- * /some/page|0
+ * Example response chunk:
+ * file|some-file.css|0
+ * - or -
+ * page|/some/url|0
  */
 function handleUploadRequest(req) {
     uploadHandlerIsBusy = true;
@@ -153,42 +169,71 @@ function handleUploadRequest(req) {
         return true;
     }, issues);
     if (issues.length) {
+        uploadHandlerIsBusy = false;
         return new http.Response(400, issues.join('\n'));
     }
     //
     return new http.ChunkedResponse(200, function getNewChunk(state) {
-        // We're done
-        if (state.nthPage > state.totalIncomingPages) {
-            uploadHandlerIsBusy = false;
-            return '';
-        }
-        // Upload the next page
-        if (!state.hadStopError) {
-            var cur = state.generatedPages[state.nthPage - 1];
-            // /home        -> 'site.net/htdocs/home/index.html'
-            // /home/2      -> 'site.net/htdocs/home/2/index.html'
-            // /home/page/2 -> 'site.net/htdocs/home/page/2/index.html'
-            var uploadRes = state.uploader.upload(state.remoteUrl + cur.url.substr(1) +
-                                                  '/index.html', cur.html);
-            state.hadStopError = uploadRes == commons.Uploader.UPLOAD_LOGIN_DENIED;
-            state.nthPage += 1;
-            return cur.url + '|' + uploadRes;
-        }
+        var resourceTypePrefix, url, uploadRes;
         // Previous upload had a problem -> abort
-        throw new Error('...');
-    }, {
-        nthPage: 1,
-        totalIncomingPages: generated.length,
-        generatedPages: generated,
-        remoteUrl: req.data.remoteUrl.charAt(req.data.remoteUrl.length - 1) == '/'
-            ? req.data.remoteUrl : req.data.remoteUrl + '/',
-        uploader: new website.website.Uploader(req.data.username, req.data.password),
-        hadStopError: false
-    });
+        if (state.hadStopError) {
+            uploadHandlerIsBusy = false;
+            throw new Error('...');
+        }
+        // Upload the files first
+        var idx = state.nthItem - 1;
+        if (idx < state.totalIncomingFiles) {
+            resourceTypePrefix = 'file|';
+            url = state.fileNames[idx];
+            uploadRes = state.uploader.uploadFile(state.remoteUrl + url,
+                insnEnv.sitePath + url);
+            // Was last
+            if (state.nthItem === state.totalIncomingFiles) {
+                state.totalIncomingFiles = -1;
+                state.nthItem = 0;
+            }
+        // Files ok, check if there's pages
+        } else {
+            if (idx < state.totalIncomingPages) {
+                resourceTypePrefix = 'page|';
+                var curPage = state.generatedPages[idx];
+                url = curPage.url;
+                uploadRes = state.uploader.uploadString(state.remoteUrl +
+                    url.substr(1) + '/index.html', curPage.html);
+            } else {
+                // We're done
+                uploadHandlerIsBusy = false;
+                return '';
+            }
+        }
+        state.hadStopError = uploadRes == commons.Uploader.UPLOAD_LOGIN_DENIED;
+        state.nthItem += 1;
+        return resourceTypePrefix + url + '|' + uploadRes;
+    }, makeUploadState(req.data, generated));
 }
 
 function rejectUploadRequest() {
     return new http.Response(409, 'The upload process has already started.');
+}
+
+function makeUploadState(reqData, generatedHtmls) {
+    var state = {
+        nthItem: 1,
+        totalIncomingPages: generatedHtmls.length,
+        generatedPages: generatedHtmls,
+        remoteUrl: reqData.remoteUrl.charAt(reqData.remoteUrl.length - 1) == '/'
+            ? reqData.remoteUrl : reqData.remoteUrl + '/',
+        uploader: new website.website.Uploader(reqData.username, reqData.password),
+        fileNames: [],
+        totalIncomingFiles: 0,
+        hadStopError: false
+    };
+    var fname;
+    while ((fname = reqData['fileNames[' + state.totalIncomingFiles + ']'])) {
+        state.fileNames.push(fname);
+        state.totalIncomingFiles += 1;
+    }
+    return state;
 }
 
 /**

@@ -15,7 +15,8 @@ static duk_ret_t fsMakeDirs(duk_context *ctx);
 static duk_ret_t transpilerTranspileToFn(duk_context *ctx);
 static duk_ret_t uploaderConstruct(duk_context *ctx);
 static duk_ret_t uploaderFinalize(duk_context *ctx);
-static duk_ret_t uploaderUpload(duk_context *ctx);
+static duk_ret_t uploaderUploadString(duk_context *ctx);
+static duk_ret_t uploaderUploadFile(duk_context *ctx);
 static duk_ret_t domTreeConstruct(duk_context *ctx);
 static duk_ret_t domTreeFinalize(duk_context *ctx);
 static duk_ret_t domTreeCreateElement(duk_context *ctx);
@@ -84,8 +85,10 @@ commonServicesJsModuleInit(duk_context *ctx, const int exportsIsAt) {
     // module.Uploader
     duk_push_c_function(ctx, uploaderConstruct, 2);     // [? Uploader]
     duk_push_bare_object(ctx);                          // [? Uploader proto]
-    duk_push_c_lightfunc(ctx, uploaderUpload, 2, 0, 0); // [? Uploader proto lightfn]
-    duk_put_prop_string(ctx, -2, "upload");             // [? Uploader proto]
+    duk_push_c_lightfunc(ctx, uploaderUploadString, 2, 0, 0); // [? Uploader proto lightfn]
+    duk_put_prop_string(ctx, -2, "uploadString");       // [? Uploader proto]
+    duk_push_c_lightfunc(ctx, uploaderUploadFile, 2, 0, 0); // [? Uploader proto lightfn]
+    duk_put_prop_string(ctx, -2, "uploadFile");         // [? Uploader proto]
     duk_put_prop_string(ctx, -2, "prototype");          // [? Uploader]
     duk_put_prop_string(ctx, exportsIsAt, "Uploader");  // [?]
     // module.DomTree
@@ -337,7 +340,7 @@ static duk_ret_t
 uploaderConstruct(duk_context *ctx) {
     if (!duk_is_constructor_call(ctx)) return DUK_RET_TYPE_ERROR;
     auto *self = new CurlUploader{
-        {nullptr, 0},               // pendingUploadState
+        {nullptr, nullptr, 0},      // pendingUploadState
         nullptr,                    // curl
         duk_require_string(ctx, 0), // username
         duk_require_string(ctx, 1)  // password
@@ -363,12 +366,22 @@ uploaderFinalize(duk_context *ctx) {
 }
 
 static duk_ret_t
-uploaderUpload(duk_context *ctx) {
-    duk_push_this(ctx);                             // [fileName contents this]
-    duk_get_prop_string(ctx, -1, KEY_UPLOADER_PTR); // [fileName contents this ptr]
+uploaderUploadString(duk_context *ctx) {
+    duk_push_this(ctx);                             // [remoteUrl contents this]
+    duk_get_prop_string(ctx, -1, KEY_UPLOADER_PTR); // [remoteUrl contents this ptr]
     auto *self = static_cast<CurlUploader*>(duk_get_pointer(ctx, -1));
-    int res = self->upload(duk_require_string(ctx, 0), duk_require_string(ctx, 1));
-    duk_push_uint(ctx, res);                        // [fileName contents this ptr out]
+    int res = self->uploadFromMem(duk_require_string(ctx, 0), duk_require_string(ctx, 1));
+    duk_push_uint(ctx, res);                        // [remoteUrl contents this ptr out]
+    return 1;
+}
+
+static duk_ret_t
+uploaderUploadFile(duk_context *ctx) {
+    duk_push_this(ctx);                             // [remoteUrl localFilePath this]
+    duk_get_prop_string(ctx, -1, KEY_UPLOADER_PTR); // [remoteUrl localFilePath this ptr]
+    auto *self = static_cast<CurlUploader*>(duk_get_pointer(ctx, -1));
+    int res = self->uploadFromDisk(duk_require_string(ctx, 0), duk_require_string(ctx, 1));
+    duk_push_uint(ctx, res);                        // [remoteUrl localFilePath this ptr out]
     return 1;
 }
 

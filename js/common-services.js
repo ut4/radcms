@@ -152,14 +152,22 @@ exports.fileWatcher = {
  */
 exports.Uploader = function(/*username, password*/) {};
 exports.Uploader.UPLOAD_OK = 0;
-exports.Uploader.UPLOAD_LOGIN_DENIED = 1;
+exports.Uploader.UPLOAD_COULDNT_READ_FILE = 37; // these values are same as CURLE_*
+exports.Uploader.UPLOAD_LOGIN_DENIED = 67;
 /**
  * @native
- * @param {url} eg. 'ftp://ftp.mysite.net/public_html/file.html'
- * @param {contents}
+ * @param {string} url eg. 'ftp://ftp.mysite.net/public_html/file.html'
+ * @param {string} string
  * @returns {number} eg. Uploader.UPLOAD_*
  */
-exports.Uploader.prototype.upload = function(/*url, contents*/) {};
+exports.Uploader.prototype.uploadString = function(/*url, string*/) {};
+/**
+ * @native
+ * @param {string} url
+ * @param {string} filePath eg. 'c:/foo/file.txt'
+ * @returns {number}
+ */
+exports.Uploader.prototype.uploadFile = function(/*url, filePath*/) {};
 
 
 // == DomTree ====
