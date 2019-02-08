@@ -1,6 +1,7 @@
 #include "../include/static-data.hpp"
 
 const char *schemaSql =
+"drop trigger if exists onUploadStatusesInsertFileTrigger;"
 "drop table if exists uploadStatuses;"
 "drop table if exists staticFileResources;"
 "drop index if exists contentNodesContentTypeNameIdx;"
@@ -8,25 +9,30 @@ const char *schemaSql =
 "drop table if exists contentNodes;"
 "drop table if exists websites;"
 "create table websites ("
-"    `id` integer primary key autoincrement,"
-"    `graph` json"
+    "`id` integer primary key autoincrement,"
+    "`graph` json"
 ");"
 "create table contentNodes ("
-"    `id` integer primary key autoincrement,"
-"    `name` varchar(32) not null,"
-"    `json` json,"
-"    contentTypeName varchar(64) not null"
+    "`id` integer primary key autoincrement,"
+    "`name` varchar(32) not null,"
+    "`json` json,"
+    "contentTypeName varchar(64) not null"
 ");"
 "create unique index contentNodesNameIdx on contentNodes(`name`);"
 "create index contentNodesContentTypeNameIdx on contentNodes(`contentTypeName`);"
 "create table staticFileResources ("
-"    `url` varchar(512) primary key"
+    "`url` varchar(512) primary key"
 ");"
 "create table uploadStatuses ("
-"    `url` varchar(512) primary key,"
-"    `hash` varchar(32) default null,"
-"    `status` integer default 0" // 0 = not uploaded, 1 = uploaded but outdated, 2 = uploaded
-");";
+    "`url` varchar(512) primary key,"
+    "`hash` varchar(32) default null,"
+    "`status` integer default 0," // 0 = not uploaded, 1 = uploaded but outdated, 2 = uploaded
+    "`isFile` integer default 0" // 0 == page, 1 = file
+");"
+"create trigger onUploadStatusesInsertFileTrigger after insert on uploadStatuses "
+"when new.isFile = 1 begin "
+    "insert into staticFileResources values(new.url);"
+"end;";
 
 static std::vector<SampleData> sampleData = {
     {

@@ -31,10 +31,6 @@ exports.main = function(suite, logAssertions) {
         require('tests/content-handlers-tests.js');
         modules.push('content-handlers.js');
     }
-    if (isAll || suite == 'diff') {
-        require('tests/diff-tests.js');
-        modules.push('diff');
-    }
     if (isAll || suite == 'document-data') {
         require('tests/document-data-tests.js');
         modules.push('document-data.js');
@@ -42,6 +38,14 @@ exports.main = function(suite, logAssertions) {
     if (isAll || suite == 'file-watchers') {
         require('tests/file-watchers-tests.js');
         modules.push('file-watchers.js');
+    }
+    if (isAll || suite == 'link-diff') {
+        require('tests/link-diff-tests.js');
+        modules.push('link-diff');
+    }
+    if (isAll || suite == 'resource-diff') {
+        require('tests/resource-diff-tests.js');
+        modules.push('resource-diff');
     }
     if (isAll || suite == 'website-handlers') {
         require('tests/website-handlers-tests.js');

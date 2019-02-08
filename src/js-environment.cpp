@@ -31,16 +31,21 @@ static duk_ret_t
 myModSearchFn(duk_context *ctx) {
     constexpr int REQUIRE_IS_AT = 1;
     const auto id = std::string(duk_get_string(ctx, 0));
-    /*
-     * Read the file
-     */
     std::string code;
-    duk_push_global_stash(ctx);                    // [id req exp mod stash]
+    duk_push_global_stash(ctx);                     // [id req exp mod stash]
     auto *app = jsEnvironmentPullAppContext(ctx, -1);
     std::string filePath = app->appPath + "js/" + id;
-    if (!myFsRead(filePath, code, app->errBuf)) {
-        return duk_error(ctx, DUK_ERR_TYPE_ERROR,
-                         ("Module '" + filePath + "' not found.").c_str());
+    bool isCrypto = false;
+    bool isXmlReader = false;
+    /*
+    * Read the file (if not native-only)
+    */
+    if (!(isCrypto = id == "crypto.js") &&
+        !(isXmlReader = id == "xml-reader.js")) {
+        if (!myFsRead(filePath, code, app->errBuf)) {
+            return duk_error(ctx, DUK_ERR_TYPE_ERROR,
+                             ("Module '" + filePath + "' not found.").c_str());
+        }
     }
     /*
      * Fill in the @native methods ...
@@ -48,11 +53,11 @@ myModSearchFn(duk_context *ctx) {
     bool isCommonServices = false;
     bool isHttp = false;
     bool isWebsite = false;
-    bool isXmlReader = false;
-    if ((isCommonServices = id == "common-services.js") ||
+    if (isCrypto ||
+        isXmlReader ||
+        (isCommonServices = id == "common-services.js") ||
         (isHttp = id == "http.js") ||
-        (isWebsite = id == "website.js") ||
-        (isXmlReader = id == "xml-reader.js")) {
+        (isWebsite = id == "website.js")) {
         code = "function(require,module){var exports=module.exports;" + code + "}";
         if (!dukUtilsCompileStrToFn(ctx, code.c_str(), filePath.c_str(),
                                     app->errBuf)) { // [id req exp mod stash ptr fn]
@@ -67,6 +72,7 @@ myModSearchFn(duk_context *ctx) {
         if (isCommonServices) commonServicesJsModuleInit(ctx, EXPORTS_IS_AT);
         else if (isHttp) httpJsModuleInit(ctx, EXPORTS_IS_AT);
         else if (isWebsite) websiteJsModuleInit(ctx, EXPORTS_IS_AT);
+        else if (isCrypto) cryptoJsModuleInit(ctx, EXPORTS_IS_AT);
         else if (isXmlReader) xmlReaderJsModuleInit(ctx, EXPORTS_IS_AT);
         duk_push_null(ctx);                         // [id req exp mod stash foundIt]
     /*

@@ -1,6 +1,7 @@
 var commons = require('common-services.js');
 var documentData = require('document-data.js');
 var directives = require('directives.js');
+var crypto = require('crypto.js');
 
 // == Page ====
 // =============================================================================
@@ -234,6 +235,7 @@ exports.siteConfig = {
 // =============================================================================
 exports.website = {
     fs: commons.fs,
+    crypto: crypto,
     Uploader: commons.Uploader,
     siteGraph: exports.siteGraph,
     config: exports.siteConfig,
@@ -330,3 +332,9 @@ exports.saveToDb = function(siteGraph) {
        stmt.bindString(0, siteGraph.serialize());
    });
 };
+
+exports.UploadStatus = Object.freeze({
+    NOT_UPLOADED: 0,
+    OUTDATED: 1,
+    UPLOADED: 2
+});

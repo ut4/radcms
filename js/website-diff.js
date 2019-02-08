@@ -16,7 +16,7 @@ exports.performRescan = function(type) {
     diff.scanChanges(siteGraph.pages, usersOf);
     diff.deleteUnreachablePages();
     for (var hadStaticFiles in diff.staticFiles) {
-        saveStaticFileUrlsToDb(diff.staticFiles);
+        saveNewStaticFileUrlsToDb(diff.staticFiles);
         break;
     }
     if (siteGraph.hasUnsavedChanges || diff.nLinksAdded || diff.nLinksRemoved) {
@@ -86,16 +86,29 @@ Diff.prototype.scanChanges = function(pages, usersOfLayout) {
         page.linksTo = newLinksTo;
         //
         var els = domTree.getRenderedElements();
-        var scriptSrc = null;
-        var styleHref = null;
+        var fileUrl = null;
+        var hasBase = false;
         l = els.length;
         for (i = 0; i < l; ++i) {
             var el = els[i];
-            if (el.tagName == 'script' && (scriptSrc = el.props.src)) {
-                this.staticFiles[scriptSrc] = 1;
-            } else if (el.tagName == 'link' && (styleHref = el.props.href) &&
-                       el.props.rel == 'stylesheet') {
-                this.staticFiles[styleHref] = 1;
+            if (((
+                    el.tagName == 'script' &&
+                    (fileUrl = el.props.src)
+                ) || (
+                    el.tagName == 'link' &&
+                    (fileUrl = el.props.href) &&
+                    el.props.rel == 'stylesheet'
+                )) &&
+                fileUrl.indexOf('//') == -1 // reject 'http(s)://foo.js' and '//foo.js'
+            ) {
+                if (fileUrl.charAt(0) == '/' || hasBase) {
+                    this.staticFiles[fileUrl] = 1;
+                } else {
+                    commons.log('[Warn]: The urls of local script/styles should start with \'/\'.');
+                    this.staticFiles['/' + fileUrl] = 1;
+                }
+            } else if (!hasBase && el.tagName == 'base' && (fileUrl = el.href)) {
+                hasBase = fileUrl.charAt(fileUrl.length - 1) == '/';
             }
         }
     }
@@ -155,23 +168,49 @@ Diff.prototype.deleteUnreachablePages = function() {
 };
 
 /**
+ * @param {string[]} urls Always starts with '/' i.e. ['/foo.css', '/bar.js']
  * @throws {Error}
  */
-function saveStaticFileUrlsToDb(urls) {
-    var holders = [];
+function saveNewStaticFileUrlsToDb(urls) {
+    var selectHolders = [];
     for (var hadUrls in urls) {
-        holders.push('(?)');
+        selectHolders.push('?');
     }
     if (!hadUrls) {
         return;
     }
-    commons.db.insert(
-        'insert or replace into staticFileResources values ' + holders.join(','),
-        function(stmt) {
-            var i = 0;
-            for (var url in urls) { stmt.bindString(i, url); i += 1; }
+    // Select urls (that were in the template) from the database
+    var oldUrls = {};
+    commons.db.select('select `url` from staticFileResources where `url` in (' +
+        selectHolders.join(',') + ')', function(row) {
+            oldUrls[row.getString(0)] = 1;
+        }, function(stmt) {
+            var i = 0; for (var url in urls) {
+                stmt.bindString(i++, url);
+            }
+        });
+    // Generate sha1s for urls/files that weren't in the database yet
+    var newUrls = {holders: [], data: []};
+    for (var url in urls) {
+        if (!oldUrls.hasOwnProperty(url)) {
+            newUrls.data.push({url: url, hash: website.website.crypto.sha1(
+                website.website.fs.read(insnEnv.sitePath + url.substr(1))
+            )});
+            newUrls.holders.push('(?,?,?,?)');
         }
-    );
+    }
+    // Insert the new items to uploadStatuses and staticFileResources (by an
+    // sqlite-trigger)
+    if (newUrls.data.length) commons.db.insert(
+        'insert into uploadStatuses values ' + newUrls.holders.join(','),
+        function(stmt) {
+            newUrls.data.forEach(function(item, i) {
+                stmt.bindString(i * 4, item.url);      // url
+                stmt.bindString(i * 4 + 1, item.hash); // hash
+                stmt.bindInt(i * 4 + 2, website.NOT_UPLOADED);
+                stmt.bindInt(i * 4 + 3, 1);            // isFile
+            });
+        });
 }
 
 exports.Diff = Diff;

@@ -32,6 +32,12 @@ if (INSN_IS_WIN)
         IMPORTED_IMPLIB ${CMAKE_BINARY_DIR}/libcurl-x64.dll
     )
 
+    # -- crypto ----
+    add_library(crypto SHARED IMPORTED)
+    set_target_properties(crypto PROPERTIES
+        IMPORTED_IMPLIB ${CMAKE_BINARY_DIR}/libcrypto-1_1-x64.dll
+    )
+
     # -- notify ----
     add_library(notify SHARED IMPORTED)
     set_target_properties(notify PROPERTIES
@@ -55,6 +61,7 @@ if (INSN_IS_WIN)
         inih
         sqlite3
         curl
+        crypto
         cjson
         notify
     )

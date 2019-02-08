@@ -28,9 +28,10 @@ int main(int argc, const char* argv[]) {
         if (testSuiteName != "all" &&
             testSuiteName != "common-services" &&
             testSuiteName != "content-handlers" &&
-            testSuiteName != "diff" &&
             testSuiteName != "document-data" &&
             testSuiteName != "file-watchers" &&
+            testSuiteName != "link-diff" &&
+            testSuiteName != "resource-diff" &&
             testSuiteName != "website-handlers" &&
             testSuiteName != "website") {
             testJsEnv.errBuf = "Unknown test suite '" + testSuiteName + "'";

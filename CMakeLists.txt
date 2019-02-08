@@ -27,6 +27,7 @@ set(SOURCE_FILES
     include/common-services.hpp src/common-services.cpp
     include/common-services-js-bindings.hpp src/common-services-js-bindings.cpp
     include/core-handlers.hpp src/core-handlers.cpp
+    include/crypto-js-bindings.hpp src/crypto-js-bindings.cpp
     include/db.hpp src/db.cpp
     include/duk.hpp src/duk.cpp
     include/http-js-bindings.hpp src/http-js-bindings.cpp
