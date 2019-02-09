@@ -11,6 +11,7 @@ var website = require('website.js');
 exports.Link = function(domTree, props) {
     if (!props.to) throw new TypeError('<Link to=""/> can\'t be empty');
     else if (props.to == '/') props.to = website.siteConfig.homeUrl;
+    else if (props.to.charAt(0) != '/') props.to = '/' + props.to;
     //
     var p = {href: props.to};
     for (var key in props) if (key != 'to' && key != 'text') p[key] = props[key];

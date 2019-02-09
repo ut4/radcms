@@ -44,7 +44,7 @@ testLib.module('resource-diff', function(hooks) {
         //
         var actuallyInsertedStatuses = [];
         var actuallyInsertedFiles = [];
-        commons.db.select('select * from uploadStatuses', function(row) {
+        commons.db.select('select * from uploadStatuses where `isFile` = 1', function(row) {
             actuallyInsertedStatuses.push({url: row.getString(0),
                 hash: row.getString(1), status: row.getInt(2),
                 isFile: row.getInt(3)});

@@ -12,13 +12,10 @@ exports.performRescan = function(type) {
         usersOf = type.split(':')[1];
         if (!(t = siteGraph.getTemplate(usersOf)) || !t.isOk) return;
     }
-    var diff = new Diff();
+    var diff = new LocalDiff();
     diff.scanChanges(siteGraph.pages, usersOf);
     diff.deleteUnreachablePages();
-    for (var hadStaticFiles in diff.staticFiles) {
-        saveNewStaticFileUrlsToDb(diff.staticFiles);
-        break;
-    }
+    diff.remoteDiff.saveStatusesToDb();
     if (siteGraph.hasUnsavedChanges || diff.nLinksAdded || diff.nLinksRemoved) {
         website.saveToDb(siteGraph);
         siteGraph.hasUnsavedChanges = false;
@@ -26,19 +23,114 @@ exports.performRescan = function(type) {
     var m = [];
     if (diff.nPagesAdded) m.push('added ' + diff.nPagesAdded + ' page(s)');
     if (diff.nPagesRemoved) m.push('removed ' + diff.nPagesRemoved + ' page(s)');
-    if (diff.nLinksAdded) m.push('found ' + diff.nLinksAdded + ' new link(s)');
+    if (diff.nLinksAdded) m.push('added ' + diff.nLinksAdded + ' link(s)');
     if (diff.nLinksRemoved) m.push('removed ' + diff.nLinksRemoved + ' link(s)');
-    if (hadStaticFiles) m.push('found new file resources');
-    commons.log('[Info]: Rescanned the site: ' + (m.length ? m.join(', ') : 'no changes'));
+    if (diff.remoteDiff.nFilesAdded) m.push('discovered ' + diff.remoteDiff.nFilesAdded +
+        ' file resources');
+    commons.log('[Info]: Rescanned the site' + (m.length ? ': ' + m.join(', ') : ''));
 };
 
-function Diff() {
+
+// == RemoteDiff ====
+// =============================================================================
+function RemoteDiff() {
+    /** @prop {[string]: {url: string; hash: string; uploadStatus: number; isFile: bool;}} */
+    this.checkables = {};
+    this.nFilesAdded = 0;
+}
+
+/**
+ * @param {Page} page
+ */
+RemoteDiff.prototype.addPageToCheck = function(page) {
+    if (!this.checkables.hasOwnProperty(page.url)) {
+        this.checkables[page.url] = {url: page.url, hash: website.website.crypto.sha1(
+            page.render()), uploadStatus: null, isFile: 0};
+    }
+};
+
+/**
+ * @param {string} url Always starts with '/' i.e. '/foo.css', '/bar.js'
+ */
+RemoteDiff.prototype.addFileToCheck = function(url) {
+    this.checkables[url] = {url: url, hash: null, uploadStatus: null, isFile: 1};
+};
+
+/**
+ * Checks each $this.checkable, determines its upload status (NOT_UPLOADED,
+ * OUTDATED etc.) and saves it to the database if changed.
+ *
+ * @returns {boolean} Had/didn't have changes
+ */
+RemoteDiff.prototype.saveStatusesToDb = function() {
+    var checkables = this.checkables;
+    var selectHolders = [];
+    for (var hadItems in checkables) selectHolders.push('?');
+    if (!hadItems) return false;
+    // Select current statuses from the database
+    var oldHashes = {};
+    commons.db.select('select * from uploadStatuses where `url` in (' +
+        selectHolders.join(',') + ')', function(row) {
+            oldHashes[row.getString(0)] = {hash: row.getString(1),
+                uploadStatus: row.getInt(2), isFile: row.getInt(3)};
+        }, function(stmt) {
+            var i = 0; for (var url in checkables) {
+                stmt.bindString(i++, url);
+            }
+        });
+    // Collect files that were discovered, and pages which contents were changed
+    var newStatuses = {data: [], holders: []};
+    for (var url in checkables) {
+        var c = checkables[url];
+        var oldHash = oldHashes[c.url];
+        if (!c.isFile) {
+            // Page already saved, collect only if differs
+            if (oldHash) {
+                if (oldHash.hash == c.hash) continue;
+                c.uploadStatus = oldHash.uploadStatus;
+                if (c.uploadStatus != website.NOT_UPLOADED) c.uploadStatus = website.OUTDATED;
+            // Not yet saved to the db
+            } else {
+                c.uploadStatus = website.NOT_UPLOADED;
+            }
+        } else if (!oldHash) { // File, not yet saved to the db
+            c.hash = website.website.crypto.sha1(
+                website.website.fs.read(insnEnv.sitePath + c.url.substr(1)));
+            c.uploadStatus = website.NOT_UPLOADED;
+            this.nFilesAdded += 1;
+        } else { // File, already saved
+            continue;
+        }
+        newStatuses.data.push(c);
+        newStatuses.holders.push('(?,?,?,?)');
+    }
+    if (newStatuses.data.length) { commons.db.insert(
+        'insert or replace into uploadStatuses values ' + newStatuses.holders.join(','),
+        function(stmt) {
+            newStatuses.data.forEach(function(item, i) {
+                var stride = i * 4;
+                stmt.bindString(stride, item.url);
+                stmt.bindString(stride + 1, item.hash);
+                stmt.bindInt(stride + 2, item.uploadStatus);
+                stmt.bindInt(stride + 3, item.isFile);
+            });
+        });
+        return true;
+    }
+    return false;
+};
+
+
+// == LocalDiff ====
+// =============================================================================
+function LocalDiff() {
     this.nPagesAdded = 0;   // The number of completely new pages
     this.nPagesRemoved = 0; // The number of completely removed pages (refCount==0)
     this.nLinksAdded = 0;   // The number of new links added to the root page
     this.nLinksRemoved = 0; // The number of links removed from the root page
     this.removedLinkUrls = {};
     this.staticFiles = {};  // A list of script/css urls
+    this.remoteDiff = new exports.RemoteDiff(); // use exports so it can be mocked
 }
 
 /**
@@ -48,13 +140,14 @@ function Diff() {
  * @param {Page[]} pages
  * @param {string?} usersOfLayout '' == scan all pages, 'foo.jsx.htm' == scan only pages rendered by 'foo.jsx.htm'
  */
-Diff.prototype.scanChanges = function(pages, usersOfLayout) {
+LocalDiff.prototype.scanChanges = function(pages, usersOfLayout) {
     var completelyNewPages = {};
     for (var url in pages) {
         var page = pages[url];
         if (page.refCount < 1 || (usersOfLayout && page.layoutFileName != usersOfLayout)) continue;
         var newLinksTo = {};
         var domTree = page.dryRun();
+        this.remoteDiff.addPageToCheck(page);
         var fnCmps = domTree.getRenderedFnComponents();
         var l = fnCmps.length;
         for (var i = 0; i < l; ++i) {
@@ -107,6 +200,7 @@ Diff.prototype.scanChanges = function(pages, usersOfLayout) {
                     commons.log('[Warn]: The urls of local script/styles should start with \'/\'.');
                     this.staticFiles['/' + fileUrl] = 1;
                 }
+                this.remoteDiff.addFileToCheck(fileUrl);
             } else if (!hasBase && el.tagName == 'base' && (fileUrl = el.href)) {
                 hasBase = fileUrl.charAt(fileUrl.length - 1) == '/';
             }
@@ -123,7 +217,7 @@ Diff.prototype.scanChanges = function(pages, usersOfLayout) {
  * @param {Page} toPage
  * @param {bool} isNewPage
  */
-Diff.prototype.addLink = function(url, toPage, isNewPage) {
+LocalDiff.prototype.addLink = function(url, toPage, isNewPage) {
     this.nLinksAdded += 1;
     if (isNewPage) {
         this.nPagesAdded += 1;
@@ -138,7 +232,7 @@ Diff.prototype.addLink = function(url, toPage, isNewPage) {
  * @param {string} url
  * @param {Page} fromPage
  */
-Diff.prototype.removeLink = function(url, fromPage) {
+LocalDiff.prototype.removeLink = function(url, fromPage) {
     if (fromPage.linksTo[url] === 0) return; // Already removed from this page
     this.nLinksRemoved += 1;
     if (url != fromPage.url) {
@@ -156,7 +250,7 @@ Diff.prototype.removeLink = function(url, fromPage) {
     }
 };
 
-Diff.prototype.deleteUnreachablePages = function() {
+LocalDiff.prototype.deleteUnreachablePages = function() {
     var homeUrl = website.siteConfig.homeUrl;
     for (var url in this.removedLinkUrls) {
         var r = siteGraph.pages[url].refCount;
@@ -167,50 +261,4 @@ Diff.prototype.deleteUnreachablePages = function() {
     }
 };
 
-/**
- * @param {string[]} urls Always starts with '/' i.e. ['/foo.css', '/bar.js']
- * @throws {Error}
- */
-function saveNewStaticFileUrlsToDb(urls) {
-    var selectHolders = [];
-    for (var hadUrls in urls) {
-        selectHolders.push('?');
-    }
-    if (!hadUrls) {
-        return;
-    }
-    // Select urls (that were in the template) from the database
-    var oldUrls = {};
-    commons.db.select('select `url` from staticFileResources where `url` in (' +
-        selectHolders.join(',') + ')', function(row) {
-            oldUrls[row.getString(0)] = 1;
-        }, function(stmt) {
-            var i = 0; for (var url in urls) {
-                stmt.bindString(i++, url);
-            }
-        });
-    // Generate sha1s for urls/files that weren't in the database yet
-    var newUrls = {holders: [], data: []};
-    for (var url in urls) {
-        if (!oldUrls.hasOwnProperty(url)) {
-            newUrls.data.push({url: url, hash: website.website.crypto.sha1(
-                website.website.fs.read(insnEnv.sitePath + url.substr(1))
-            )});
-            newUrls.holders.push('(?,?,?,?)');
-        }
-    }
-    // Insert the new items to uploadStatuses and staticFileResources (by an
-    // sqlite-trigger)
-    if (newUrls.data.length) commons.db.insert(
-        'insert into uploadStatuses values ' + newUrls.holders.join(','),
-        function(stmt) {
-            newUrls.data.forEach(function(item, i) {
-                stmt.bindString(i * 4, item.url);      // url
-                stmt.bindString(i * 4 + 1, item.hash); // hash
-                stmt.bindInt(i * 4 + 2, website.NOT_UPLOADED);
-                stmt.bindInt(i * 4 + 3, 1);            // isFile
-            });
-        });
-}
-
-exports.Diff = Diff;
+exports.RemoteDiff = RemoteDiff;

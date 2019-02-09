@@ -31,6 +31,7 @@ int main(int argc, const char* argv[]) {
             testSuiteName != "document-data" &&
             testSuiteName != "file-watchers" &&
             testSuiteName != "link-diff" &&
+            testSuiteName != "page-diff" &&
             testSuiteName != "resource-diff" &&
             testSuiteName != "website-handlers" &&
             testSuiteName != "website") {

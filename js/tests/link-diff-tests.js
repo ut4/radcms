@@ -4,6 +4,7 @@ var website = require('website.js');
 var siteGraph = website.siteGraph;
 var fileWatcher = commons.fileWatcher;
 var testLib = require('tests/testlib.js').testLib;
+var diff = require('website-diff.js');
 var NO_PARENT = '';
 
 var makeLinks = function() {
@@ -16,7 +17,12 @@ testLib.module('link-diff', function(hooks) {
     var mockTemplate = {fname:'template-a.jsx.htm', contents:null};
     var mockTemplate2 = {fname:'template-b.jsx.htm', contents:null};
     var websiteData = {id: 3, graph: ''};
+    var originalRemoteDiff = diff.RemoteDiff;
     hooks.before(function() {
+        diff.RemoteDiff = function(){};
+        diff.RemoteDiff.prototype.addPageToCheck = function(){};
+        diff.RemoteDiff.prototype.addFileToCheck = function(){};
+        diff.RemoteDiff.prototype.saveStatusesToDb = function(){};
         website.siteConfig.homeUrl = '/home';
         website.siteConfig.defaultLayout = mockTemplate.fname;
         website.website.fs = {
@@ -33,6 +39,7 @@ testLib.module('link-diff', function(hooks) {
         ) throw new Error('Failed to insert test data.');
     });
     hooks.after(function() {
+        diff.RemoteDiff = originalRemoteDiff;
         website.website.fs = commons.fs;
         if (commons.db.delete('delete from websites where id = ?',
             function(stmt) { stmt.bindInt(0, websiteData.id); }) < 1

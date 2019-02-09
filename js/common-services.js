@@ -144,6 +144,11 @@ exports.fileWatcher = {
 
 // == Uploader ====
 // =============================================================================
+exports.UploaderStatus = Object.freeze({
+    UPLOAD_OK: 0,
+    UPLOAD_COULDNT_READ_FILE: 37, // these values are same as CURLE_*
+    UPLOAD_LOGIN_DENIED: 67
+});
 /**
  * @native
  * @param {string} username
@@ -151,9 +156,6 @@ exports.fileWatcher = {
  * @constructor
  */
 exports.Uploader = function(/*username, password*/) {};
-exports.Uploader.UPLOAD_OK = 0;
-exports.Uploader.UPLOAD_COULDNT_READ_FILE = 37; // these values are same as CURLE_*
-exports.Uploader.UPLOAD_LOGIN_DENIED = 67;
 /**
  * @native
  * @param {string} url eg. 'ftp://ftp.mysite.net/public_html/file.html'
@@ -168,7 +170,6 @@ exports.Uploader.prototype.uploadString = function(/*url, string*/) {};
  * @returns {number}
  */
 exports.Uploader.prototype.uploadFile = function(/*url, filePath*/) {};
-
 
 // == DomTree ====
 // =============================================================================

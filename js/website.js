@@ -333,8 +333,6 @@ exports.saveToDb = function(siteGraph) {
    });
 };
 
-exports.UploadStatus = Object.freeze({
-    NOT_UPLOADED: 0,
-    OUTDATED: 1,
-    UPLOADED: 2
-});
+exports.NOT_UPLOADED = 0;
+exports.OUTDATED = 1;
+exports.UPLOADED = 2;

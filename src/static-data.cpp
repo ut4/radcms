@@ -41,7 +41,8 @@ static std::vector<SampleData> sampleData = {
         // installSql
         "insert into websites values (1, '{\"pages\":[[\"/home\",0,\"main-layout.jsx.htm\",[]]],"
                                           "\"templates\":[[\"main-layout.jsx.htm\",1,1]]}');"
-        "insert into contentNodes values (1, 'footer', '{\"content\":\"(c) 2034 MySite\"}', 'Generic');",
+        "insert into contentNodes values (1, 'footer', '{\"content\":\"(c) 2034 MySite\"}', 'Generic');"
+        "insert into uploadStatuses values ('/home','4e86b8c03bedc235b9ec52f04d55c11f18574b1c',0,0);",
         // files
         {
             {"site.ini", "[Site]\n"
@@ -72,10 +73,15 @@ static std::vector<SampleData> sampleData = {
                            "[\"/art3\",0,\"article-layout.jsx.htm\",[]]],"
                 "\"templates\":[[\"main-layout.jsx.htm\",1,1],[\"article-layout.jsx.htm\",1,1]]}');"
         "insert into contentNodes values"
-        "  (1, 'footer', '{\"content\":\"(c) 2034 MySite\"}', 'Generic'),"
-        "  (2, 'art1', '{\"title\":\"Article 1\",\"body\":\"Hello from article 1\"}', 'Article'),"
-        "  (3, 'art2', '{\"title\":\"Article 2\",\"body\":\"Hello from article 2\"}', 'Article'),"
-        "  (4, 'art3', '{\"title\":\"Article 3\",\"body\":\"Hello from article 3\"}', 'Article');",
+        " (1,'footer','{\"content\":\"(c) 2034 MySite\"}','Generic'),"
+        " (2,'art1', '{\"title\":\"Article 1\",\"body\":\"Hello from article 1\"}','Article'),"
+        " (3,'art2', '{\"title\":\"Article 2\",\"body\":\"Hello from article 2\"}','Article'),"
+        " (4,'art3', '{\"title\":\"Article 3\",\"body\":\"Hello from article 3\"}','Article');"
+        "insert into uploadStatuses values"
+        " ('/home','69140fce68ae230488b2dd8790052da239635f0f',0,0),"
+        " ('/art1','b1a32abb186dec98beee7ac8046ba3707f1d4837',0,0),"
+        " ('/art2','d07c501d4d239ad675d34a9ec7bacc00d323b474',0,0),"
+        " ('/art3','248f99ff331240f99f0a4688bde33b6b6413d2a6',0,0);",
         // files
         {
             {"site.ini", "[Site]\n"

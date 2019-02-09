@@ -43,6 +43,10 @@ exports.main = function(suite, logAssertions) {
         require('tests/link-diff-tests.js');
         modules.push('link-diff');
     }
+    if (isAll || suite == 'page-diff') {
+        require('tests/page-diff-tests.js');
+        modules.push('page-diff');
+    }
     if (isAll || suite == 'resource-diff') {
         require('tests/resource-diff-tests.js');
         modules.push('resource-diff');
