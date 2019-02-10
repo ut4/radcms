@@ -25,9 +25,33 @@ function myFetch(url, options = {}) {
     });
 }
 
+const signals = {
+    _listeners: [],
+    /**
+     * @param {string} whichSignal
+     * @param {function} fn
+     */
+    listen: function(whichSignal, fn) {
+        this._listeners.push({listeningTo: whichSignal, fn: fn});
+    },
+    /**
+     * @param {string} whichSignal
+     * @param {any?} arg
+     */
+    emit: function(whichSignal, arg) {
+        var l = this._listeners.length;
+        for (var i = 0; i < l; ++i) {
+            var listener = this._listeners[i];
+            if (listener.listeningTo == whichSignal &&
+                listener.fn(arg) === false) break;
+        }
+    }
+};
+
 /** Mockable, application-wide container */
 const services = {
-    myFetch
+    myFetch,
+    signals
 };
 
 export default services;

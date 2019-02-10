@@ -1,4 +1,4 @@
-require('file-watchers.js').init();
+var fileWatchers = require('file-watchers.js');
 var commons = require('common-services.js');
 var website = require('website.js');
 var fileWatcher = commons.fileWatcher;
@@ -17,14 +17,14 @@ testLib.module('page-diff', function(hooks) {
                 if(a==insnEnv.sitePath + mockTemplate.fname) return mockTemplate.contents;
             }
         };
-        website.website.crypto = {
-            sha1: function(str) { return str; }
-        };
+        website.website.crypto = {sha1: function(str) { return str; }};
+        fileWatchers.init();
     });
     hooks.after(function() {
         website.website.fs = commons.fs;
-        website.website.crypto = commons.crypto;
+        website.website.crypto = require('crypto.js');
         website.siteGraph.clear();
+        fileWatchers.clear();
     });
     hooks.afterEach(function() {
         commons.templateCache._fns = {};
@@ -39,11 +39,9 @@ testLib.module('page-diff', function(hooks) {
         mockTemplate.contents = '<html><body>{'+
             'url[0] == "home" ? <directives.Link to="' + newPage.url + '"/> : "Hello"' +
         '}</body></html>';
-        if (commons.db.insert('insert into uploadStatuses values (?,?,?,?)', function(stmt) {
+        if (commons.db.insert('insert into uploadStatuses values (?,?,null,0)', function(stmt) {
             stmt.bindString(0, existingPage.url);
             stmt.bindString(1, existingPageChkSum);
-            stmt.bindInt(2, website.NOT_UPLOADED);
-            stmt.bindInt(3, 0); // isFile
         }) < 1) throw new Error('Failed to setup test data');
         //
         fileWatcher._watchFn(fileWatcher.EVENT_WRITE, mockTemplate.fname);
@@ -54,11 +52,11 @@ testLib.module('page-diff', function(hooks) {
         });
         assert.equal(uploadStatuses.length, 2);
         var existing = uploadStatuses[0];
-        assert.deepEqual(existing, {url: existingPage.url, hash: existingPageChkSum,
-            status: website.NOT_UPLOADED, isFile: 0}, 'Shouldn\'t modify old statuses');
+        assert.deepEqual(existing, {url: existingPage.url, curhash: existingPageChkSum,
+            uphash: null, isFile: 0}, 'Shouldn\'t modify old statuses');
         var inserted = uploadStatuses[1];
-        assert.deepEqual(inserted, {url: newPage.url, hash: expectedNewPageChkSum,
-            status: website.NOT_UPLOADED, isFile: 0});
+        assert.deepEqual(inserted, {url: newPage.url, curhash: expectedNewPageChkSum,
+            uphash: null, isFile: 0});
         //
         if (commons.db.delete('delete from uploadStatuses where `url` in (?,?)',
             function(stmt) {
@@ -74,11 +72,9 @@ testLib.module('page-diff', function(hooks) {
         var newChkSum = website.website.crypto.sha1(
             '<html><body>sss</body></html>');
         mockTemplate.contents = '<html><body>{"s"}ss</body></html>';
-        if (commons.db.insert('insert into uploadStatuses values (?,?,?,?)', function(stmt) {
+        if (commons.db.insert('insert into uploadStatuses values (?,?,null,0)', function(stmt) {
             stmt.bindString(0, existingPage.url);
             stmt.bindString(1, oldChkSum);
-            stmt.bindInt(2, website.NOT_UPLOADED);
-            stmt.bindInt(3, 0); // isFile
         }) < 1) throw new Error('Failed to setup test data');
         //
         fileWatcher._watchFn(fileWatcher.EVENT_WRITE, mockTemplate.fname);
@@ -89,8 +85,8 @@ testLib.module('page-diff', function(hooks) {
         });
         assert.equal(uploadStatuses.length, 1);
         var newStatus = uploadStatuses[0];
-        assert.deepEqual(newStatus, {url: existingPage.url, hash: newChkSum,
-            status: website.NOT_UPLOADED, isFile: 0}, 'Should update the checksum');
+        assert.deepEqual(newStatus, {url: existingPage.url, curhash: newChkSum,
+            uphash: null, isFile: 0}, 'Should update the checksum');
         //
         if (commons.db.delete('delete from uploadStatuses where `url` = ?',
             function(stmt) {
@@ -99,7 +95,7 @@ testLib.module('page-diff', function(hooks) {
         ) throw new Error('Failed to clean test data.');
     });
     function makeUploadStatus(row) {
-        return {url: row.getString(0), hash: row.getString(1),
-                status: row.getInt(2), isFile: row.getInt(3)};
+        return {url: row.getString(0), curhash: row.getString(1),
+                uphash: row.getString(2), isFile: row.getInt(3)};
     }
 });

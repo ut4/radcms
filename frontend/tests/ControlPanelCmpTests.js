@@ -31,7 +31,7 @@ QUnit.module('ControlPanelComponent', hooks => {
             ],
             allContentNodes: []
         };
-        httpStub.onCall(0).returns(Promise.resolve(0));
+        httpStub.onCall(0).returns(Promise.resolve('0'));
         const getMenuItemsSpy = sinon.spy(app._directiveImpls['TestDirective'], 'getMenuItems');
         const cpanel = $el(InsaneControlPanel, {currentPageData}, null);
         //
@@ -51,7 +51,9 @@ QUnit.module('ControlPanelComponent', hooks => {
     });
     QUnit.test('sets data-num-pending-changes attribute', assert => {
         const mockNumPendingChanges = '3';
-        httpStub.onCall(0).returns(Promise.resolve({responseText:mockNumPendingChanges}));
+        httpStub
+            .onCall(0).returns(Promise.resolve({responseText:mockNumPendingChanges}))
+            .onCall(1).returns(Promise.resolve({responseText:'[]'}));
         const done = assert.async();
         //
         const rendered = itu.renderIntoContainer($el(InsaneControlPanel, {currentPageData: {
@@ -67,7 +69,9 @@ QUnit.module('ControlPanelComponent', hooks => {
         //
         const pendingChangesGetCall = httpStub.getCall(0);
         assert.ok(pendingChangesGetCall !== null, "Sanity check ");
-        pendingChangesGetCall.returnValue.then(() => {
+        pendingChangesGetCall.returnValue // GET website/num-pending-changes
+        .then(() => httpStub.getCall(1).returnValue) // GET website/templates
+        .then(() => {
             assert.equal(uploadButton.getAttribute('data-num-pending-changes'),
                          mockNumPendingChanges);
             httpStub.restore();

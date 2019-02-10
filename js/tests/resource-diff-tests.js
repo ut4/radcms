@@ -1,4 +1,4 @@
-require('file-watchers.js').init();
+var fileWatchers = require('file-watchers.js');
 var commons = require('common-services.js');
 var website = require('website.js');
 var siteGraph = website.siteGraph;
@@ -19,13 +19,13 @@ testLib.module('resource-diff', function(hooks) {
                 if(a==insnEnv.sitePath + mockTemplate.fname) return mockTemplate.contents;
             }
         };
-        website.website.crypto = {
-            sha1: function(str) { return str; }
-        };
+        website.website.crypto = {sha1: function(str) { return str; }};
+        fileWatchers.init();
     });
     hooks.after(function() {
         website.website.fs = commons.fs;
-        website.website.crypto = commons.crypto;
+        website.website.crypto = require('crypto.js');
+        fileWatchers.clear();
     });
     hooks.afterEach(function() {
         siteGraph.clear();
@@ -37,7 +37,7 @@ testLib.module('resource-diff', function(hooks) {
         siteGraph.addTemplate(mockTemplate.fname, true, true);
         mockTemplate.contents = '<html><body>'+
             '<link href="' + mockCssFile.url + '" rel="stylesheet">' +
-            '<script src="' + mockJsFile.url + '"></script>' +
+            '<script src="' + mockJsFile.url.substr(1) + '"></script>' +
         '</body></html>';
         //
         fileWatcher._watchFn(fileWatcher.EVENT_WRITE, mockTemplate.fname);
@@ -46,7 +46,7 @@ testLib.module('resource-diff', function(hooks) {
         var actuallyInsertedFiles = [];
         commons.db.select('select * from uploadStatuses where `isFile` = 1', function(row) {
             actuallyInsertedStatuses.push({url: row.getString(0),
-                hash: row.getString(1), status: row.getInt(2),
+                curhash: row.getString(1), uphash: row.getString(2),
                 isFile: row.getInt(3)});
         });
         commons.db.select('select * from staticFileResources', function(row) {
@@ -57,12 +57,12 @@ testLib.module('resource-diff', function(hooks) {
         assert.equal(actuallyInsertedFiles[0].url, mockCssFile.url);
         assert.equal(actuallyInsertedFiles[1].url, mockJsFile.url);
         assert.equal(actuallyInsertedStatuses[0].url, mockCssFile.url);
-        assert.equal(actuallyInsertedStatuses[0].hash, mockCssFile.contents);
-        assert.equal(actuallyInsertedStatuses[0].status, website.NOT_UPLOADED);
+        assert.equal(actuallyInsertedStatuses[0].curhash, mockCssFile.contents);
+        assert.equal(actuallyInsertedStatuses[0].uphash, null);
         assert.equal(actuallyInsertedStatuses[0].isFile, 1);
         assert.equal(actuallyInsertedStatuses[1].url, mockJsFile.url);
-        assert.equal(actuallyInsertedStatuses[1].hash, mockJsFile.contents);
-        assert.equal(actuallyInsertedStatuses[1].status, website.NOT_UPLOADED);
+        assert.equal(actuallyInsertedStatuses[1].curhash, mockJsFile.contents);
+        assert.equal(actuallyInsertedStatuses[1].uphash, null);
         assert.equal(actuallyInsertedStatuses[1].isFile, 1);
         //
         if (

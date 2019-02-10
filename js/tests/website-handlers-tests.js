@@ -2,61 +2,72 @@ require('website-handlers.js');
 var commons = require('common-services.js');
 var testLib = require('tests/testlib.js').testLib;
 var website = require('website.js');
+var siteGraph = website.siteGraph;
 var http = require('http.js');
-var LAYOUT_1 = 'home-layout.jsx.htm';
-var LAYOUT_2 = 'page-layout.jsx.htm';
-var NO_PARENT = '';
-var IS_OK = 1;
-var IS_IN_USE = 1;
+var UPLOAD_OK = commons.UploaderStatus.UPLOAD_OK;
 
 testLib.module('website-handlers.js', function(hooks) {
     var genericCntType = {id:1,name:'Generic',fields:'{"content":"richtext"}'};
     var homeContentCnt = {name:'home',json:{content:'Hello'},contentTypeName:'Generic'};
     var page2ContentCnt = {name:'/page2',json:{content:'Page2'},contentTypeName:'Generic'};
     var page3ContentCnt = {name:'/page3',json:{content:'Page3'},contentTypeName:'Generic'};
-    var mockFiles = {'foo.css': 'foo', 'bar.js': 'bar'};
-    var websiteData = {id: 1, graph: JSON.stringify({
-        pages: [['/home', NO_PARENT, LAYOUT_1, []],
-                ['/page2', NO_PARENT, LAYOUT_2, []],
-                ['/page3', NO_PARENT, LAYOUT_2, []]],
-        templates: [[LAYOUT_1, IS_OK, IS_IN_USE], [LAYOUT_2, IS_OK, IS_IN_USE]]
-    })};
+    var mockFiles = {'/foo.css': 'p {}', '/bar.js': 'var p;'};
+    var pages = [{url:'/home'}, {url:'/page2'}, {url:'/page3'}];
+    var testWebsite = {id: 1};
+    var layout1, layout2, page1, page2, page3;
     var writeLog = [];
     var makeDirsLog = [];
     hooks.before(function() {
-        var sql3 = 'insert into contentNodes values (?,?,?,?),(?,?,?,?),(?,?,?,?)';
+        website.siteConfig.homeUrl = pages[0].url;
+        layout1 = siteGraph.addTemplate('home-layout.jsx.htm', true, true);
+        layout2 = siteGraph.addTemplate('page-layout.jsx.htm', true, true);
+        page1 = siteGraph.addPage(pages[0].url, '', layout1.fileName, {}, 1);
+        page2 = siteGraph.addPage(pages[1].url, '', layout2.fileName, {}, 1);
+        page3 = siteGraph.addPage(pages[2].url, '', layout2.fileName, {}, 1);
+        website.website.compileAndCacheTemplate(layout1.fileName);
+        website.website.compileAndCacheTemplate(layout2.fileName);
+        var q = '(?,?,?,?)';
+        var sql2 = 'insert into contentNodes values '+q+','+q+','+q;
+        var sql3 = 'insert into uploadStatuses values '+q+','+q+','+q+','+q+','+q;
         if (commons.db.insert('insert into websites values (?,?)', function(stmt) {
-                stmt.bindInt(0, websiteData.id);
-                stmt.bindString(1, websiteData.graph);
+                stmt.bindInt(0, testWebsite.id);
+                stmt.bindString(1, siteGraph.serialize());
             }) < 1 ||
-            commons.db.insert(sql3, function(stmt) {
+            commons.db.insert(sql2, function(stmt) {
                 [homeContentCnt,page2ContentCnt,page3ContentCnt].forEach(function(c, i) {
                     stmt.bindInt(i*4, i+1);
                     stmt.bindString(i*4+1, c.name);
                     stmt.bindString(i*4+2, JSON.stringify(c.json));
                     stmt.bindString(i*4+3, c.contentTypeName);
                 });
+            }) < 1 ||
+            commons.db.insert(sql3, function(stmt) {
+                Object.keys(mockFiles).concat(page1, page2, page3).forEach(function(item, i) {
+                    stmt.bindString(i*4, i < 2 ? item : item.url);
+                    stmt.bindString(i*4+1, '');         // curhash
+                    stmt.bindInt(i*4+2, null);          // uphash
+                    stmt.bindInt(i*4+3, i < 2 ? 1 : 0); // isFile
+                });
             }) < 1
         ) throw new Error('Failed to insert test data.');
-        website.siteConfig.homeUrl = '/home';
-        website.website.config = {loadFromDisk: function() {}};
-        // Initializes siteGraph, and reads & caches templates from /js/tests/testsite/
-        website.website.init();
         //
         website.website.fs = {
             write: function(a,b) { writeLog.push({path:a,contents:b}); return true; },
             read: function(fpath) { return mockFiles[fpath.replace(insnEnv.sitePath,'')]; },
             makeDirs: function(a) { makeDirsLog.push({path:a}); return true; }
         };
+        website.website.crypto = {sha1: function(str) { return str; }};
     });
     hooks.after(function() {
-        website.website.config = website.siteConfig;
         website.website.fs = commons.fs;
+        website.website.crypto = require('crypto.js');
         website.siteGraph.clear();
         if (commons.db.delete('delete from contentNodes where contentTypeName = ?',
                 function(stmt) { stmt.bindString(0, genericCntType.name); }) < 1 ||
             commons.db.delete('delete from websites where id = ?',
-                function(stmt) { stmt.bindInt(0, websiteData.id); }) < 1
+                function(stmt) { stmt.bindInt(0, testWebsite.id); }) < 1 ||
+            commons.db.delete('delete from uploadStatuses', function() { }) < 4 ||
+            commons.db.delete('delete from staticFileResources', function() { }) < 2
         ) throw new Error('Failed to clean test data.');
     });
     hooks.afterEach(function() {
@@ -100,7 +111,7 @@ testLib.module('website-handlers.js', function(hooks) {
         var expectedPageData = JSON.stringify({
             directiveInstances:[],
             allContentNodes:[{content:'Hello',defaults:{id:1,name:'home',dataBatchConfigId:1}}],
-            page:{url:req.url,layoutFileName:LAYOUT_1}
+            page:{url:req.url,layoutFileName:layout1.fileName}
         });
         var actualPageData = pcs[1] ? pcs[1].substr(0, expectedPageData.length) : '';
         assert.equal(actualPageData, expectedPageData);
@@ -144,16 +155,14 @@ testLib.module('website-handlers.js', function(hooks) {
         assert.expect(20);
         var uploaderCredentials = {};
         var uploadLog = [];
-        var UPLOAD_OK = 0;
         website.website.Uploader = function(a,b) {
             uploaderCredentials = {username: a, password: b};
             this.uploadString = function(a,b) { uploadLog.push({url:a,contents:b});return UPLOAD_OK; };
-            this.uploadFile = function(a,b) { uploadLog.push({url:a,localFilePath:b});return UPLOAD_OK; };
         };
         //
         var req = new http.Request('/api/website/upload', 'POST');
         var fileNames = Object.keys(mockFiles);
-        req.data = {remoteUrl: 'ftp://ftp.site.net', username: 'ftp@mysite.net',
+        req.data = {remoteUrl: 'ftp://ftp.site.net/', username: 'ftp@mysite.net',
                     password: 'bar', 'fileNames[0]': fileNames[0],
                     'fileNames[1]': fileNames[1]};
         var handleUploadReqFn = commons.app.getHandler(req.url, req.method);
@@ -169,42 +178,80 @@ testLib.module('website-handlers.js', function(hooks) {
         assert.equal(generatedPages.length, 3, 'should generate the site');
         // Simulate MHD's MHD_ContentReaderCallback calls
         var chunk1 = response.getNextChunk(response.chunkFnState);
+        var remUrl = req.data.remoteUrl.substr(0, req.data.remoteUrl.length -1);
         assert.equal(chunk1, 'file|' + req.data['fileNames[0]'] + '|' + UPLOAD_OK);
         assert.equal(uploadLog.length, 1, 'should upload file #1');
         assert.deepEqual(uploadLog[0], {
-            url: req.data.remoteUrl+'/'+req.data['fileNames[0]'],
-            localFilePath: insnEnv.sitePath + req.data['fileNames[0]']
+            url: remUrl+req.data['fileNames[0]'],
+            contents: mockFiles[req.data['fileNames[0]']]
         });
         var chunk2 = response.getNextChunk(response.chunkFnState);
         assert.equal(chunk2, 'file|' + req.data['fileNames[1]'] + '|' + UPLOAD_OK);
         assert.equal(uploadLog.length, 2, 'should upload file #2');
         assert.deepEqual(uploadLog[1], {
-            url: req.data.remoteUrl+'/'+req.data['fileNames[1]'],
-            localFilePath: insnEnv.sitePath + req.data['fileNames[1]']
+            url: remUrl+req.data['fileNames[1]'],
+            contents: mockFiles[req.data['fileNames[1]']]
         });
         var chunk3 = response.getNextChunk(response.chunkFnState);
         assert.equal(chunk3, 'page|' + generatedPages[0].url + '|' + UPLOAD_OK);
         assert.equal(uploadLog.length, 3, 'should upload page #1');
         assert.deepEqual(uploadLog[2], {
-            url: req.data.remoteUrl+generatedPages[0].url+'/index.html',
+            url: remUrl+generatedPages[0].url+'/index.html',
             contents: generatedPages[0].html,
         });
         var chunk4 = response.getNextChunk(response.chunkFnState);
         assert.equal(chunk4, 'page|' + generatedPages[1].url + '|' + UPLOAD_OK);
         assert.equal(uploadLog.length, 4, 'should upload page #2');
         assert.deepEqual(uploadLog[3], {
-            url: req.data.remoteUrl+generatedPages[1].url+'/index.html',
+            url: remUrl+generatedPages[1].url+'/index.html',
             contents: generatedPages[1].html,
         });
         var chunk5 = response.getNextChunk(response.chunkFnState);
         assert.equal(chunk5, 'page|' + generatedPages[2].url + '|' + UPLOAD_OK);
         assert.equal(uploadLog.length, 5, 'should upload page #3');
         assert.deepEqual(uploadLog[4], {
-            url: req.data.remoteUrl+generatedPages[2].url+'/index.html',
+            url: remUrl+generatedPages[2].url+'/index.html',
             contents: generatedPages[2].html,
         });
         var chunk6 = response.getNextChunk(response.chunkFnState);
         assert.equal(chunk6, '');
+        //
+        website.website.Uploader = commons.Uploader;
+        if (commons.db.update('update uploadStatuses set `uphash` = null',
+            function() {}) < 5) throw new Error('Failed to reset test data.');
+    });
+    testLib.test('POST \'/api/website/upload\' updates uploadStatuses', function(assert) {
+        assert.expect(5);
+        website.website.Uploader = function() {};
+        website.website.Uploader.prototype.uploadString = function() {};
+        //
+        var req = new http.Request('/api/website/upload', 'POST');
+        var fileNames = Object.keys(mockFiles);
+        req.data = {remoteUrl: 'ftp://ftp.site.net', username: 'ftp@mysite.net',
+                    password: 'bar', 'fileNames[0]': fileNames[0]};
+        var handleUploadReqFn = commons.app.getHandler(req.url, req.method);
+        //
+        var response = handleUploadReqFn(req);
+        var assertSetStatusToUploaded = function(expected, id) {
+            commons.db.select('select `uphash` from uploadStatuses where `url` = ?',
+                function(row) {
+                    assert.ok(row.getString(0) != null,
+                        'should update uphash of ' + id);
+                }, function(stmt) {
+                    stmt.bindString(0, expected);
+                });
+        };
+        // Simulate MHD's MHD_ContentReaderCallback calls
+        response.getNextChunk(response.chunkFnState);
+        assertSetStatusToUploaded(fileNames[0], 'file #1');
+        response.getNextChunk(response.chunkFnState);
+        assertSetStatusToUploaded(page1.url, 'page #1');
+        response.getNextChunk(response.chunkFnState);
+        assertSetStatusToUploaded(page2.url, 'page #2');
+        response.getNextChunk(response.chunkFnState);
+        assertSetStatusToUploaded(page3.url, 'page #3');
+        var lastChunk = response.getNextChunk(response.chunkFnState);
+        assert.equal(lastChunk, '');
         //
         website.website.Uploader = commons.Uploader;
     });
@@ -214,7 +261,7 @@ testLib.module('website-handlers.js', function(hooks) {
         var req = new http.Request('/api/website/page', 'PUT');
         var handlePageUpdateReqFn = commons.app.getHandler(req.url, req.method);
         // Emulate the request
-        req.data = {url: '/page2', layoutFileName: LAYOUT_1};
+        req.data = {url: '/page2', layoutFileName: layout1.fileName};
         var response = handlePageUpdateReqFn(req);
         assert.equal(response.statusCode, 200);
         assert.equal(response.body, '{"numAffectedRows":1}');
@@ -225,7 +272,7 @@ testLib.module('website-handlers.js', function(hooks) {
             for (var i = 0; i < updatedPData.length; ++i) {
                 if (updatedPData[i][0] == req.data.url) { savedFileName = updatedPData[i][2]; break; }
             }
-            assert.equal(savedFileName, LAYOUT_1);
+            assert.equal(savedFileName, layout1.fileName);
         });
     });
 });

@@ -64,17 +64,22 @@ function handlePageRequest(req) {
 function handleGetUploadStatusesRequest() {
     var out = {pages: [], files: []};
     var statuses = {};
-    commons.db.select('select `url`, `status` from uploadStatuses', function(row) {
-        statuses[row.getString(0)] = row.getInt(1);
+    commons.db.select('select `url`,`curhash`,`uphash` from uploadStatuses', function(row) {
+        var status = 0;
+        var local = row.getString(1);
+        var up = row.getString(2);
+        if (local && up) status = local == up ? website.UPLOADED : website.OUTDATED;
+        statuses[row.getString(0)] = status;
     });
     commons.db.select('select `url` from staticFileResources', function(row) {
         var url = row.getString(0);
-        out.files.push({url: url, uploadStatus: statuses[url] ? statuses[url].uploadStatus : 0});
+        out.files.push({url: url, uploadStatus: statuses[url] ?
+            statuses[url] : website.NOT_UPLOADED});
     });
     //
     for (var url in website.siteGraph.pages) {
         var page = website.siteGraph.pages[url];
-        page.uploadStatus = statuses[url] ? statuses[url].uploadStatus : 0;
+        page.uploadStatus = statuses[url] ? statuses[url] : website.NOT_UPLOADED;
         out.pages.push(page);
     }
     return new http.Response(200, JSON.stringify(out),
@@ -149,12 +154,11 @@ function handleGenerateRequest() {
  * fileNames[0-n]=str
  *
  * Example response chunk:
- * file|some-file.css|0
+ * file|/some-file.css|0
  * - or -
  * page|/some/url|0
  */
 function handleUploadRequest(req) {
-    uploadHandlerIsBusy = true;
     //
     var errs = [];
     if (!req.data.remoteUrl) errs.push('remoteUrl is required.');
@@ -162,6 +166,7 @@ function handleUploadRequest(req) {
     if (!req.data.password) errs.push('password is required.');
     if (errs.length) return new http.Response(400, errs.join('\n'));
     //
+    uploadHandlerIsBusy = true;
     var generated = [];
     var issues = [];
     website.website.generate(function(renderedOutput, page) {
@@ -174,7 +179,7 @@ function handleUploadRequest(req) {
     }
     //
     return new http.ChunkedResponse(200, function getNewChunk(state) {
-        var resourceTypePrefix, url, uploadRes;
+        var resourceTypePrefix, url, contents, uploadRes;
         // Previous upload had a problem -> abort
         if (state.hadStopError) {
             uploadHandlerIsBusy = false;
@@ -185,8 +190,9 @@ function handleUploadRequest(req) {
         if (idx < state.totalIncomingFiles) {
             resourceTypePrefix = 'file|';
             url = state.fileNames[idx];
-            uploadRes = state.uploader.uploadFile(state.remoteUrl + url,
-                insnEnv.sitePath + url);
+            contents = website.website.fs.read(insnEnv.sitePath + url);
+            uploadRes = state.uploader.uploadString(state.remoteUrl + url,
+                contents);
             // Was last
             if (state.nthItem === state.totalIncomingFiles) {
                 state.totalIncomingFiles = -1;
@@ -198,18 +204,30 @@ function handleUploadRequest(req) {
                 resourceTypePrefix = 'page|';
                 var curPage = state.generatedPages[idx];
                 url = curPage.url;
+                contents = curPage.html;
                 uploadRes = state.uploader.uploadString(state.remoteUrl +
-                    url.substr(1) + '/index.html', curPage.html);
+                    url + '/index.html', contents);
             } else {
                 // We're done
                 uploadHandlerIsBusy = false;
                 return '';
             }
         }
-        state.hadStopError = uploadRes == commons.Uploader.UPLOAD_LOGIN_DENIED;
+        state.hadStopError = uploadRes == commons.UploaderStatus.UPLOAD_LOGIN_DENIED;
+        if (!state.hadStopError) saveUploadStatus(url, contents);
         state.nthItem += 1;
         return resourceTypePrefix + url + '|' + uploadRes;
     }, makeUploadState(req.data, generated));
+}
+
+function saveUploadStatus(url, contents) {
+    var sql = 'update uploadStatuses set `uphash` = ? where `url` = ?';
+    if (commons.db.update(sql, function(stmt) {
+        stmt.bindString(0, website.website.crypto.sha1(contents));
+        stmt.bindString(1, url);
+    }) < 0) {
+        commons.log('[Error]: Failed to save uploadStatus of \'' + url + '\'.');
+    }
 }
 
 function rejectUploadRequest() {
@@ -217,12 +235,13 @@ function rejectUploadRequest() {
 }
 
 function makeUploadState(reqData, generatedHtmls) {
+    var l = reqData.remoteUrl.length - 1;
     var state = {
         nthItem: 1,
         totalIncomingPages: generatedHtmls.length,
         generatedPages: generatedHtmls,
-        remoteUrl: reqData.remoteUrl.charAt(reqData.remoteUrl.length - 1) == '/'
-            ? reqData.remoteUrl : reqData.remoteUrl + '/',
+        remoteUrl: reqData.remoteUrl.charAt(l) != '/'
+            ? reqData.remoteUrl : reqData.remoteUrl.substr(0, l),
         uploader: new website.website.Uploader(reqData.username, reqData.password),
         fileNames: [],
         totalIncomingFiles: 0,
@@ -241,14 +260,13 @@ function makeUploadState(reqData, generatedHtmls) {
  */
 function handleGetNumPendingChanges() {
     var count = 0;
-    var UPLOAD_STATUS_UPLOADED = 2;
-    commons.db.select('select count(`url`) from uploadStatuses where `status` = ' +
-        UPLOAD_STATUS_UPLOADED, function(row) {
-        count = row.getInt(0);
-    });
+    commons.db.select('select count(`url`) from uploadStatuses where \
+                       `uphash` is null or `curhash` != `uphash`',
+        function(row) {
+            count = row.getInt(0).toString();
+        });
     //
-    return new http.Response(200, website.siteGraph.pageCount - count,
-        {'Content-Type': 'application/json'});
+    return new http.Response(200, count, {'Content-Type': 'application/json'});
 }
 
 /**

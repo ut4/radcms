@@ -1,4 +1,4 @@
-require('file-watchers.js').init();
+var fileWatchers = require('file-watchers.js');
 var commons = require('common-services.js');
 var website = require('website.js');
 var siteGraph = website.siteGraph;
@@ -37,6 +37,7 @@ testLib.module('link-diff', function(hooks) {
                 stmt.bindString(1, websiteData.graph);
             }) < 1
         ) throw new Error('Failed to insert test data.');
+        fileWatchers.init();
     });
     hooks.after(function() {
         diff.RemoteDiff = originalRemoteDiff;
@@ -44,6 +45,7 @@ testLib.module('link-diff', function(hooks) {
         if (commons.db.delete('delete from websites where id = ?',
             function(stmt) { stmt.bindInt(0, websiteData.id); }) < 1
         ) throw new Error('Failed to clean test data.');
+        fileWatchers.clear();
     });
     hooks.afterEach(function() {
         siteGraph.clear();

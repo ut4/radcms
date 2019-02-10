@@ -141,19 +141,15 @@ class WebsiteUploadView extends preact.Component {
     confirm() {
         const pendingPages = [];
         const pendingFiles = [];
-        this.setState({uploading: true, pages: this.state.pages.map(page => {
-            if (page.uploadStatus != UStatus.UPLOADED) {
-                page.uploadStatus = UStatus.UPLOADING;
-                pendingPages.push(page);
+        const makeUploadable = (item, collectTo) => {
+            if (item.uploadStatus != UStatus.UPLOADED) {
+                item.uploadStatus = UStatus.UPLOADING;
+                collectTo.push(item);
             }
-            return page;
-        }), files: this.state.files.map(file => {
-            if (file.uploadStatus != UStatus.UPLOADED) {
-                file.uploadStatus = UStatus.UPLOADING;
-                pendingFiles.push(file);
-            }
-            return file;
-        })});
+        };
+        this.state.pages.forEach(page => makeUploadable(page, pendingPages));
+        this.state.files.forEach(file => makeUploadable(file, pendingFiles));
+        this.setState({uploading: true, pages: this.state.pages, files: this.state.files});
         let lenAlreadyProcessed = 0;
         services.myFetch('/api/website/upload', {
             method: 'POST',
@@ -174,7 +170,12 @@ class WebsiteUploadView extends preact.Component {
                     const [resourceType, url, uploadResult] = pcs[i + 1].split('|');
                     const list = resourceType == 'page' ? this.state.pages : this.state.files;
                     const idx = list.findIndex(pageOrFile => pageOrFile.url === url);
-                    list[idx].uploadStatus = uploadResult === '0' ? UStatus.UPLOADED : UStatus.ERROR;
+                    if (uploadResult === '0') {
+                        list[idx].uploadStatus = UStatus.UPLOADED;
+                        services.signals.emit('itemUploaded');
+                    } else {
+                        list[idx].uploadStatus = UStatus.ERROR;
+                    }
                 }
                 this.setState({pages: this.state.pages, files: this.state.files});
             }
@@ -189,6 +190,7 @@ class WebsiteUploadView extends preact.Component {
             toast('Uploaded ' + nSuccesfulUploads + '/' + nTotal + ' items.',
                   nSuccesfulUploads === nTotal ? 'success' : 'error');
         }, () => {
+            this.setState({uploading: false});
             toast('Failed to upload items.', 'error');
         });
     }

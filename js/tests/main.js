@@ -1,5 +1,6 @@
 var commons = require('common-services.js');
 var website = require('website.js');
+var fileWatchers = require('file-watchers.js');
 
 commons.log = function() {};
 
@@ -17,6 +18,11 @@ website.siteGraph.clear = function() {
     this.pageCount = 0;
     this.templates = {};
     this.templateCount = 0;
+};
+
+fileWatchers.clear = function() {
+    commons.fileWatcher._watchFn = null;
+    commons.signals._listeners = [];
 };
 
 exports.main = function(suite, logAssertions) {

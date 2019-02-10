@@ -1,5 +1,5 @@
 var commons = require('common-services.js');
-require('file-watchers.js').init();
+var fileWatchers = require('file-watchers.js');
 var website = require('website.js');
 var testLib = require('tests/testlib.js').testLib;
 var IS_OK = 1;
@@ -22,6 +22,7 @@ testLib.module('[\'website.js\'].website', function(hooks) {
             stmt.bindInt(0, 3);
             stmt.bindString(1, '...');
         }) < 1) throw new Error('Failed to insert test data.');
+        fileWatchers.init();
     });
     hooks.after(function() {
         website.website.config = website.siteConfig;
@@ -29,6 +30,7 @@ testLib.module('[\'website.js\'].website', function(hooks) {
         if (commons.db.delete('delete from websites where id = ?', function(stmt) {
             stmt.bindInt(0, 3);
         }) < 1) throw new Error('Failed to clean test data.');
+        fileWatchers.clear();
     });
     hooks.afterEach(function() {
         website.siteGraph.clear();

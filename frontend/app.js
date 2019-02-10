@@ -58,18 +58,14 @@ class InsaneControlPanel extends preact.Component {
                 ins.contentNodes.some(n2 => n.defaults.name == n2.defaults.name)
             )
         );
-        this.uploadButtonEl = null;
         this.state = {className: '', templates: [], selectedTemplateIdx: null,
-                      tabA: true};
+                      tabA: true, numPendingChanges: 0};
+        services.signals.listen('itemUploaded', () => {
+            this.setState({numPendingChanges: this.state.numPendingChanges - 1});
+        });
         services.myFetch('/api/website/num-pending-changes')
             .then(res => {
-                const len = parseInt(res.responseText);
-                if (len > 0) {
-                    this.uploadButtonEl.setAttribute('data-num-pending-changes',
-                                                     len);
-                    this.uploadButtonEl.setAttribute('title', 'Upload ' + len +
-                                                     ' pending files.');
-                }
+                this.state.numPendingChanges = parseInt(res.responseText);
                 return services.myFetch('/api/website/templates');
             }, () => {
                 toast('Failed to fetch pending changes.', 'error');
@@ -77,7 +73,8 @@ class InsaneControlPanel extends preact.Component {
                 const templates = JSON.parse(res.responseText);
                 const fname = props.currentPageData.page.layoutFileName;
                 this.setState({templates: templates,
-                    selectedTemplateIdx: templates.findIndex(t => t.fileName == fname)});
+                    selectedTemplateIdx: templates.findIndex(t => t.fileName == fname),
+                    numPendingChanges: this.state.numPendingChanges});
             }, () => {
                 toast('Failed to fetch templates.', 'error');
             });
@@ -118,13 +115,18 @@ class InsaneControlPanel extends preact.Component {
         ]);
     }
     makeMainTabItems() {
+        const uploadBtnAttrs = {
+            onclick: () => myRedirect('/upload-website'),
+            className: 'nice-button nice-button-primary'
+        };
+        if (this.state.numPendingChanges > 0) {
+            const l = this.state.numPendingChanges;
+            uploadBtnAttrs['data-num-pending-changes'] = l;
+            uploadBtnAttrs['title'] = 'Upload ' + l + ' pending items.';
+        }
         return [
             $el('div', null, [
-                $el('button', {
-                    onclick: () => myRedirect('/upload-website'),
-                    className: 'nice-button nice-button-primary',
-                    ref: el => { this.uploadButtonEl = el; }
-                }, 'Upload'),
+                $el('button', uploadBtnAttrs, 'Upload'),
                 $el('button', {
                     onclick: () => myRedirect('/generate-website'),
                     className: 'nice-button nice-button-primary'

@@ -34,7 +34,7 @@ exports.performRescan = function(type) {
 // == RemoteDiff ====
 // =============================================================================
 function RemoteDiff() {
-    /** @prop {[string]: {url: string; hash: string; uploadStatus: number; isFile: bool;}} */
+    /** @prop {[string]: {url: string; hash: string; uphash: string; isFile: bool;}} */
     this.checkables = {};
     this.nFilesAdded = 0;
 }
@@ -44,8 +44,8 @@ function RemoteDiff() {
  */
 RemoteDiff.prototype.addPageToCheck = function(page) {
     if (!this.checkables.hasOwnProperty(page.url)) {
-        this.checkables[page.url] = {url: page.url, hash: website.website.crypto.sha1(
-            page.render()), uploadStatus: null, isFile: 0};
+        this.checkables[page.url] = {url: page.url, hash: website.website.crypto.
+            sha1(page.render()), uphash: null, isFile: 0};
     }
 };
 
@@ -53,26 +53,24 @@ RemoteDiff.prototype.addPageToCheck = function(page) {
  * @param {string} url Always starts with '/' i.e. '/foo.css', '/bar.js'
  */
 RemoteDiff.prototype.addFileToCheck = function(url) {
-    this.checkables[url] = {url: url, hash: null, uploadStatus: null, isFile: 1};
+    this.checkables[url] = {url: url, hash: null, uphash: null, isFile: 1};
 };
 
 /**
- * Checks each $this.checkable, determines its upload status (NOT_UPLOADED,
- * OUTDATED etc.) and saves it to the database if changed.
- *
- * @returns {boolean} Had/didn't have changes
+ * Checks each $this.checkable, and saves its checksum to the database if
+ * it's changed or not yet stored.
  */
 RemoteDiff.prototype.saveStatusesToDb = function() {
     var checkables = this.checkables;
     var selectHolders = [];
     for (var hadItems in checkables) selectHolders.push('?');
-    if (!hadItems) return false;
+    if (!hadItems) return;
     // Select current statuses from the database
-    var oldHashes = {};
+    var curStatuses = {};
     commons.db.select('select * from uploadStatuses where `url` in (' +
         selectHolders.join(',') + ')', function(row) {
-            oldHashes[row.getString(0)] = {hash: row.getString(1),
-                uploadStatus: row.getInt(2), isFile: row.getInt(3)};
+            curStatuses[row.getString(0)] = {curhash: row.getString(1),
+                uphash: row.getString(2), isFile: row.getInt(3)};
         }, function(stmt) {
             var i = 0; for (var url in checkables) {
                 stmt.bindString(i++, url);
@@ -82,21 +80,17 @@ RemoteDiff.prototype.saveStatusesToDb = function() {
     var newStatuses = {data: [], holders: []};
     for (var url in checkables) {
         var c = checkables[url];
-        var oldHash = oldHashes[c.url];
+        var curStatus = curStatuses[c.url];
         if (!c.isFile) {
-            // Page already saved, collect only if differs
-            if (oldHash) {
-                if (oldHash.hash == c.hash) continue;
-                c.uploadStatus = oldHash.uploadStatus;
-                if (c.uploadStatus != website.NOT_UPLOADED) c.uploadStatus = website.OUTDATED;
-            // Not yet saved to the db
-            } else {
-                c.uploadStatus = website.NOT_UPLOADED;
+            if (curStatus) {
+                // Current content identical with the uploaded content -> skip
+                if (curStatus.uphash && curStatus.uphash == c.hash &&
+                    curStatus.curhash == c.hash) continue;
+                c.uphash = curStatus.uphash;
             }
-        } else if (!oldHash) { // File, not yet saved to the db
-            c.hash = website.website.crypto.sha1(
-                website.website.fs.read(insnEnv.sitePath + c.url.substr(1)));
-            c.uploadStatus = website.NOT_UPLOADED;
+        } else if (!curStatus) { // File, not yet saved to the db
+            c.hash = website.website.crypto.sha1(website.website.fs.read(
+                insnEnv.sitePath + c.url.substr(1)));
             this.nFilesAdded += 1;
         } else { // File, already saved
             continue;
@@ -111,13 +105,11 @@ RemoteDiff.prototype.saveStatusesToDb = function() {
                 var stride = i * 4;
                 stmt.bindString(stride, item.url);
                 stmt.bindString(stride + 1, item.hash);
-                stmt.bindInt(stride + 2, item.uploadStatus);
+                stmt.bindString(stride + 2, item.uphash);
                 stmt.bindInt(stride + 3, item.isFile);
             });
         });
-        return true;
     }
-    return false;
 };
 
 
@@ -194,12 +186,11 @@ LocalDiff.prototype.scanChanges = function(pages, usersOfLayout) {
                 )) &&
                 fileUrl.indexOf('//') == -1 // reject 'http(s)://foo.js' and '//foo.js'
             ) {
-                if (fileUrl.charAt(0) == '/' || hasBase) {
-                    this.staticFiles[fileUrl] = 1;
-                } else {
+                if (fileUrl.charAt(0) != '/' && !hasBase) {
+                    fileUrl = '/' + fileUrl;
                     commons.log('[Warn]: The urls of local script/styles should start with \'/\'.');
-                    this.staticFiles['/' + fileUrl] = 1;
                 }
+                this.staticFiles[fileUrl] = 1;
                 this.remoteDiff.addFileToCheck(fileUrl);
             } else if (!hasBase && el.tagName == 'base' && (fileUrl = el.href)) {
                 hasBase = fileUrl.charAt(fileUrl.length - 1) == '/';

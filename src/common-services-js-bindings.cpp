@@ -213,18 +213,19 @@ dbUpdate(duk_context *ctx) {
 static duk_ret_t
 dbStmtBindInt(duk_context *ctx) {
     unsigned placeholderIdx = duk_require_uint(ctx, 0); // 1st. arg
-    int value = duk_require_int(ctx, 1);                // 2nd. arg
     sqlite3_stmt *stmt;
     pullInsertStmt(stmt, placeholderIdx);
-    duk_push_boolean(ctx, sqlite3_bind_int(stmt, placeholderIdx + 1,
-                                           value) == SQLITE_OK);
+    duk_push_boolean(ctx, (!duk_is_null(ctx, 1) ?        // 2nd. arg
+        sqlite3_bind_int(stmt, placeholderIdx + 1, duk_require_int(ctx, 1)) :
+        sqlite3_bind_null(stmt, placeholderIdx + 1)) == SQLITE_OK);
     return 1;
 }
 
 static duk_ret_t
 dbStmtBindString(duk_context *ctx) {
     unsigned placeholderIdx = duk_require_uint(ctx, 0); // 1st. arg
-    const char *value = duk_require_string(ctx, 1);     // 2nd. arg
+    const char *value = !duk_is_null(ctx, 1) ?          // 2nd. arg
+        duk_require_string(ctx, 1) : nullptr;
     sqlite3_stmt *stmt;
     pullInsertStmt(stmt, placeholderIdx);
     duk_push_boolean(ctx, sqlite3_bind_text(stmt, placeholderIdx + 1, value, -1,
@@ -239,7 +240,10 @@ dbStmtBindString(duk_context *ctx) {
     auto *stmt = static_cast<sqlite3_stmt*>(duk_get_pointer(ctx, -1)); \
     duk_get_prop_string(ctx, -2, KEY_ROW_COL_COUNT); \
     if (colIdx < duk_get_int(ctx, -1)) { \
-        dukPushFn(ctx, sqliteGetterFn(stmt, colIdx)); \
+        if (sqlite3_column_type(stmt, colIdx) != SQLITE_NULL) \
+            dukPushFn(ctx, sqliteGetterFn(stmt, colIdx)); \
+        else \
+            duk_push_null(ctx); \
     } else { \
         return duk_error(ctx, DUK_ERR_RANGE_ERROR, "Col index %d too large " \
                          "(max %d)", colIdx, duk_get_int(ctx, -1)-1); \
