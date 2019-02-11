@@ -49,10 +49,10 @@ QUnit.module('ControlPanelComponent', hooks => {
             'Should pass "self" to testDirective.getMenuItems()');
         getMenuItemsSpy.restore();
     });
-    QUnit.test('sets data-num-pending-changes attribute', assert => {
-        const mockNumPendingChanges = '3';
+    QUnit.test('sets data-num-waiting-uploads attribute', assert => {
+        const mockNum = '3';
         httpStub
-            .onCall(0).returns(Promise.resolve({responseText:mockNumPendingChanges}))
+            .onCall(0).returns(Promise.resolve({responseText:mockNum}))
             .onCall(1).returns(Promise.resolve({responseText:'[]'}));
         const done = assert.async();
         //
@@ -64,16 +64,16 @@ QUnit.module('ControlPanelComponent', hooks => {
         const uploadButton = itu.scryRenderedDOMElementsWithTag(rendered,
             'button').find(btn => btn.textContent == 'Upload');
         assert.ok(uploadButton !== null, "Sanity check uploadButton != null");
-        assert.equal(uploadButton.getAttribute('data-num-pending-changes'), null,
-                     "Sanity check data-num-pending-changes == ''");
+        assert.equal(uploadButton.getAttribute('data-num-waiting-uploads'), null,
+                     "Sanity check data-num-waiting-uploads == ''");
         //
-        const pendingChangesGetCall = httpStub.getCall(0);
-        assert.ok(pendingChangesGetCall !== null, "Sanity check ");
-        pendingChangesGetCall.returnValue // GET website/num-pending-changes
+        const waitingUploadsGetCall = httpStub.getCall(0);
+        assert.ok(waitingUploadsGetCall !== null, "Sanity check ");
+        waitingUploadsGetCall.returnValue // GET website/num-waiting-uploads
         .then(() => httpStub.getCall(1).returnValue) // GET website/templates
         .then(() => {
-            assert.equal(uploadButton.getAttribute('data-num-pending-changes'),
-                         mockNumPendingChanges);
+            assert.equal(uploadButton.getAttribute('data-num-waiting-uploads'),
+                         mockNum);
             httpStub.restore();
             done();
         });
@@ -97,7 +97,7 @@ QUnit.module('ControlPanelComponent', hooks => {
             allContentNodes:[],
         }}, null));
         // Wait until the constructor has loaded all data
-        httpStub.getCall(0).returnValue // GET /num-pending-changes
+        httpStub.getCall(0).returnValue // GET /num-waiting-uploads
         .then(() => httpStub.getCall(1).returnValue) // GET /website/templates
         .then(() => {
             // Open the dev tab

@@ -147,7 +147,10 @@ QUnit.module('WebsiteUploadViewComponent', hooks => {
                 'remoteUrl=' + encodeURIComponent(remoteUrlInput.value) +
                 '&username=' + encodeURIComponent(usernameInput.value) +
                 '&password=' + encodeURIComponent(passwordInput.value) +
-                testFiles.map((file, i) => `&fileNames[${i}]=${file.url}`).join('')
+                testPages.map((page, i) => `&pageUrls[${i}]=${
+                    encodeURIComponent(page.url)}`).join('') +
+                testFiles.map((file, i) => `&fileNames[${i}]=${
+                    encodeURIComponent(file.url)}`).join('')
             );
             // Simulate xhr.onprogress calls
             const progressClb = postCall.args[1].progress;
@@ -198,7 +201,7 @@ QUnit.module('WebsiteUploadViewComponent', hooks => {
             //
             postCall.returnValue.then(() => {
                 assert.ok(toastSpy.calledOnce, 'Should show message');
-                assert.equal(toastSpy.getCall(0).args[0], 'Uploaded 5/5 items.');
+                assert.equal(toastSpy.getCall(0).args[0], 'Uploaded 3/3 pages and 2/2 files.');
                 assert.equal(toastSpy.getCall(0).args[1], 'success');
                 assert.ok(!submitButton.disabled, "Should enable the submit button");
                 toastSpy.restore();
@@ -249,7 +252,7 @@ QUnit.module('WebsiteUploadViewComponent', hooks => {
             //
             postCall.returnValue.then(() => {
                 assert.ok(toastSpy.calledOnce, 'Should show message');
-                assert.equal(toastSpy.getCall(0).args[0], 'Uploaded 1/2 items.');
+                assert.equal(toastSpy.getCall(0).args[0], 'Uploaded 1/2 pages.');
                 assert.equal(toastSpy.getCall(0).args[1], 'error');
                 toastSpy.restore();
                 done();

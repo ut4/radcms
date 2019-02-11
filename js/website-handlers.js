@@ -5,12 +5,12 @@ var uploadHandlerIsBusy = false;
 
 commons.app.addRoute(function(url, method) {
     if (method == 'GET') {
-        if (url == '/api/website/num-pending-changes')
-            return handleGetNumPendingChanges;
+        if (url == '/api/website/num-waiting-uploads')
+            return handleGetNumWaitingUploads;
         if (url == '/api/website/templates')
             return handleGetAllTemplatesRequest;
-        if (url == '/api/website/upload-statuses')
-            return handleGetUploadStatusesRequest;
+        if (url == '/api/website/waiting-uploads')
+            return handleGetWaitingUploadsRequest;
         return handlePageRequest;
     }
     if (method == 'POST') {
@@ -47,41 +47,29 @@ function handlePageRequest(req) {
 }
 
 /**
- * GET /api/website/upload-statuses: Returns all pages and files, and their
- * upload statuses.
+ * GET /api/website/upload-statuses: Returns pages and files waiting for upload.
  *
  * Example response:
  * {
  *     "pages": [
- *         {"url":"/","layoutFileName":"foo.jsx.htm","uploadStatus":0},
- *         {"url":"/foo","layoutFileName":"foo.jsx.htm","uploadStatus":0}
+ *         {"url":"/","uploadStatus":0},
+ *         {"url":"/foo","uploadStatus":0}
  *     ],
  *     "files": [
  *         {"url:"theme.css","uploadStatus":0}
  *     ]
  * }
  */
-function handleGetUploadStatusesRequest() {
+function handleGetWaitingUploadsRequest() {
     var out = {pages: [], files: []};
-    var statuses = {};
-    commons.db.select('select `url`,`curhash`,`uphash` from uploadStatuses', function(row) {
-        var status = 0;
-        var local = row.getString(1);
-        var up = row.getString(2);
-        if (local && up) status = local == up ? website.UPLOADED : website.OUTDATED;
-        statuses[row.getString(0)] = status;
+    commons.db.select('select `url`, `uphash`, `isFile` from uploadStatuses where\
+                      `uphash` is null or `curhash` != `uphash`', function(row) {
+        (row.getInt(2) == 0 ? out.pages : out.files).push({
+            url: row.getString(0),
+            uploadStatus: row.getString(1) !== null ? website.OUTDATED :
+                            website.NOT_UPLOADED
+        });
     });
-    commons.db.select('select `url` from staticFileResources', function(row) {
-        var url = row.getString(0);
-        out.files.push({url: url, uploadStatus: statuses[url] ?
-            statuses[url] : website.NOT_UPLOADED});
-    });
-    //
-    for (var url in website.siteGraph.pages) {
-        var page = website.siteGraph.pages[url];
-        page.uploadStatus = statuses[url] ? statuses[url] : website.NOT_UPLOADED;
-        out.pages.push(page);
-    }
     return new http.Response(200, JSON.stringify(out),
         {'Content-Type': 'application/json'}
     );
@@ -166,13 +154,18 @@ function handleUploadRequest(req) {
     if (!req.data.password) errs.push('password is required.');
     if (errs.length) return new http.Response(400, errs.join('\n'));
     //
+    var pageUrls = {};
+    var uploadState = makeUploadState(req.data, pageUrls);
+    if (uploadState.totalIncomingPages + uploadState.totalIncomingFiles == 0) {
+        return new http.Response(200, 'Nothing to upload.');
+    }
     uploadHandlerIsBusy = true;
-    var generated = [];
     var issues = [];
+    // Render all pages in one go so we can return immediately if there was any issues
     website.website.generate(function(renderedOutput, page) {
-        generated.push({url: page.url, html: renderedOutput});
+        uploadState.generatedPages.push({url: page.url, html: renderedOutput});
         return true;
-    }, issues);
+    }, issues, pageUrls);
     if (issues.length) {
         uploadHandlerIsBusy = false;
         return new http.Response(400, issues.join('\n'));
@@ -217,7 +210,7 @@ function handleUploadRequest(req) {
         if (!state.hadStopError) saveUploadStatus(url, contents);
         state.nthItem += 1;
         return resourceTypePrefix + url + '|' + uploadRes;
-    }, makeUploadState(req.data, generated));
+    }, uploadState);
 }
 
 function saveUploadStatus(url, contents) {
@@ -234,17 +227,17 @@ function rejectUploadRequest() {
     return new http.Response(409, 'The upload process has already started.');
 }
 
-function makeUploadState(reqData, generatedHtmls) {
+function makeUploadState(reqData, pageUrls) {
     var l = reqData.remoteUrl.length - 1;
     var state = {
         nthItem: 1,
-        totalIncomingPages: generatedHtmls.length,
-        generatedPages: generatedHtmls,
+        generatedPages: [],
+        totalIncomingPages: 0,
+        fileNames: [],
+        totalIncomingFiles: 0,
         remoteUrl: reqData.remoteUrl.charAt(l) != '/'
             ? reqData.remoteUrl : reqData.remoteUrl.substr(0, l),
         uploader: new website.website.Uploader(reqData.username, reqData.password),
-        fileNames: [],
-        totalIncomingFiles: 0,
         hadStopError: false
     };
     var fname;
@@ -252,13 +245,18 @@ function makeUploadState(reqData, generatedHtmls) {
         state.fileNames.push(fname);
         state.totalIncomingFiles += 1;
     }
+    var url;
+    while ((url = reqData['pageUrls[' + state.totalIncomingPages + ']'])) {
+        pageUrls[url] = 1;
+        state.totalIncomingPages += 1;
+    }
     return state;
 }
 
 /**
- * GET /api/website/num-pending-changes.
+ * GET /api/website/num-waiting-uploads.
  */
-function handleGetNumPendingChanges() {
+function handleGetNumWaitingUploads() {
     var count = 0;
     commons.db.select('select count(`url`) from uploadStatuses where \
                        `uphash` is null or `curhash` != `uphash`',

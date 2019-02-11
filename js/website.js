@@ -291,11 +291,13 @@ exports.website = {
     /**
      * @param {(renderedHtml: string): bool} onEach
      * @param {Array?} issues
+     * @param {{[string]: any;}?} pages
      * @returns {number} Number of succeful writes
      */
-    generate: function(onEach, issues) {
+    generate: function(onEach, issues, pages) {
         var numSuccesfulIterations = 0;
-        for (var url in this.siteGraph.pages) {
+        if (!pages) pages = this.siteGraph.pages;
+        for (var url in pages) {
             var page = this.siteGraph.getPage(url);
             if (onEach(page.render(null, issues), page))
                 numSuccesfulIterations++;

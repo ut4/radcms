@@ -59,22 +59,22 @@ class InsaneControlPanel extends preact.Component {
             )
         );
         this.state = {className: '', templates: [], selectedTemplateIdx: null,
-                      tabA: true, numPendingChanges: 0};
+                      tabA: true, numWaitingUploads: 0};
         services.signals.listen('itemUploaded', () => {
-            this.setState({numPendingChanges: this.state.numPendingChanges - 1});
+            this.setState({numWaitingUploads: this.state.numWaitingUploads - 1});
         });
-        services.myFetch('/api/website/num-pending-changes')
+        services.myFetch('/api/website/num-waiting-uploads')
             .then(res => {
-                this.state.numPendingChanges = parseInt(res.responseText);
+                this.state.numWaitingUploads = parseInt(res.responseText);
                 return services.myFetch('/api/website/templates');
             }, () => {
-                toast('Failed to fetch pending changes.', 'error');
+                toast('Failed to fetch waiting items.', 'error');
             }).then(res => {
                 const templates = JSON.parse(res.responseText);
                 const fname = props.currentPageData.page.layoutFileName;
                 this.setState({templates: templates,
                     selectedTemplateIdx: templates.findIndex(t => t.fileName == fname),
-                    numPendingChanges: this.state.numPendingChanges});
+                    numWaitingUploads: this.state.numWaitingUploads});
             }, () => {
                 toast('Failed to fetch templates.', 'error');
             });
@@ -119,10 +119,10 @@ class InsaneControlPanel extends preact.Component {
             onclick: () => myRedirect('/upload-website'),
             className: 'nice-button nice-button-primary'
         };
-        if (this.state.numPendingChanges > 0) {
-            const l = this.state.numPendingChanges;
-            uploadBtnAttrs['data-num-pending-changes'] = l;
-            uploadBtnAttrs['title'] = 'Upload ' + l + ' pending items.';
+        if (this.state.numWaitingUploads > 0) {
+            const l = this.state.numWaitingUploads;
+            uploadBtnAttrs['data-num-waiting-uploads'] = l;
+            uploadBtnAttrs['title'] = 'Upload ' + l + ' waiting items.';
         }
         return [
             $el('div', null, [
@@ -185,7 +185,7 @@ class InsaneControlPanel extends preact.Component {
                 throw new Error('');
             }
         }, () => {
-            toast('Failed to change the template.', 'error');
+            toast('Failed to change the layout.', 'error');
         });
     }
 }

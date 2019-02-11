@@ -12,6 +12,7 @@ testLib.module('website-handlers.js', function(hooks) {
     var page2ContentCnt = {name:'/page2',json:{content:'Page2'},contentTypeName:'Generic'};
     var page3ContentCnt = {name:'/page3',json:{content:'Page3'},contentTypeName:'Generic'};
     var mockFiles = {'/foo.css': 'p {}', '/bar.js': 'var p;'};
+    var fileNames = Object.keys(mockFiles);
     var pages = [{url:'/home'}, {url:'/page2'}, {url:'/page3'}];
     var testWebsite = {id: 1};
     var layout1, layout2, page1, page2, page3;
@@ -123,13 +124,51 @@ testLib.module('website-handlers.js', function(hooks) {
         var actualPageData2 = pcs2[1] ? pcs2[1].substr(0, expectedPageData2.length) : '';
         assert.equal(actualPageData2, expectedPageData2);
     });
+    testLib.test('GET \'/api/website/waiting-uploads\'', function(assert) {
+        assert.expect(10);
+        //
+        var sql = 'update uploadStatuses set `curhash`= ?, `uphash` = ? where `url`= ?';
+        if (
+            commons.db.update(sql, function(stmt) {
+                stmt.bindString(0, 'different-hash');
+                stmt.bindString(1, 'same-hash');
+                stmt.bindString(2, pages[1].url);
+            }) < 1 ||
+            commons.db.update(sql, function(stmt) {
+                stmt.bindString(0, 'same-hash');
+                stmt.bindString(1, 'same-hash');
+                stmt.bindString(2, pages[2].url);
+            }) < 1 ||
+            commons.db.update(sql, function(stmt) {
+                stmt.bindString(0, 'same-hash');
+                stmt.bindString(1, 'same-hash');
+                stmt.bindString(2, fileNames[0]);
+            }) < 1
+        ) throw new Error('Failed to setup test data.');
+        //
+        var req = new http.Request('/api/website/waiting-uploads', 'GET');
+        var response = commons.app.getHandler(req.url, req.method)(req);
+        assert.equal(response.statusCode, 200);
+        var resp = JSON.parse(response.body);
+        assert.equal(response.headers['Content-Type'], 'application/json');
+        assert.equal(resp.pages[0].url, pages[0].url);
+        assert.equal(resp.pages[1].url, pages[1].url);
+        assert.ok(resp.pages[2] === undefined, 'shouldn\'t return uploaded pages');
+        assert.equal(resp.pages[0].uploadStatus, website.NOT_UPLOADED);
+        assert.equal(resp.pages[1].uploadStatus, website.OUTDATED);
+        assert.equal(resp.files[0].url, fileNames[1]);
+        assert.ok(resp.files[1] === undefined, 'Shouldn\'t return uploaded files');
+        assert.equal(resp.files[0].uploadStatus, website.NOT_UPLOADED);
+        //
+        if (commons.db.update('update uploadStatuses set `uphash` = null',
+            function() {}) < 5) throw new Error('Failed to reset test data.');
+    });
     testLib.test('POST \'/api/website/generate\' generates the site', function(assert) {
         assert.expect(16);
         //
         var req = new http.Request('/api/website/generate', 'POST');
-        var handleGenerateReqFn = commons.app.getHandler(req.url, req.method);
         //
-        var response = handleGenerateReqFn(req);
+        var response = commons.app.getHandler(req.url, req.method)(req);
         assert.equal(response.statusCode, 200);
         var body = JSON.parse(response.body);
         assert.equal(body.wrotePagesNum, 3);
@@ -151,7 +190,7 @@ testLib.module('website-handlers.js', function(hooks) {
         assert.ok(writeLog[2].contents.indexOf('<p>'+page3ContentCnt.json.content) > -1,
             'should write the contents of \'/page3\'');
     });
-    testLib.test('POST \'/api/website/upload\' generates and uploads the site', function(assert) {
+    testLib.test('POST \'/api/website/upload\' uploads pages and files', function(assert) {
         assert.expect(20);
         var uploaderCredentials = {};
         var uploadLog = [];
@@ -161,13 +200,12 @@ testLib.module('website-handlers.js', function(hooks) {
         };
         //
         var req = new http.Request('/api/website/upload', 'POST');
-        var fileNames = Object.keys(mockFiles);
         req.data = {remoteUrl: 'ftp://ftp.site.net/', username: 'ftp@mysite.net',
-                    password: 'bar', 'fileNames[0]': fileNames[0],
-                    'fileNames[1]': fileNames[1]};
-        var handleUploadReqFn = commons.app.getHandler(req.url, req.method);
+                    password: 'bar', 'pageUrls[0]': pages[0].url,
+                    'pageUrls[1]': pages[1].url, 'pageUrls[2]': pages[2].url,
+                    'fileNames[0]': fileNames[0], 'fileNames[1]': fileNames[1]};
         //
-        var response = handleUploadReqFn(req);
+        var response = commons.app.getHandler(req.url, req.method)(req);
         assert.deepEqual(uploaderCredentials, {username: req.data.username,
             password: req.data.password},
             'should pass req.data.username&pass to new Uploader()');
@@ -175,7 +213,7 @@ testLib.module('website-handlers.js', function(hooks) {
             'should return new ChunkedResponse()');
         assert.equal(response.statusCode, 200);
         var generatedPages = response.chunkFnState.generatedPages;
-        assert.equal(generatedPages.length, 3, 'should generate the site');
+        assert.equal(generatedPages.length, 3, 'should generate the pages beforehand');
         // Simulate MHD's MHD_ContentReaderCallback calls
         var chunk1 = response.getNextChunk(response.chunkFnState);
         var remUrl = req.data.remoteUrl.substr(0, req.data.remoteUrl.length -1);
@@ -221,17 +259,16 @@ testLib.module('website-handlers.js', function(hooks) {
             function() {}) < 5) throw new Error('Failed to reset test data.');
     });
     testLib.test('POST \'/api/website/upload\' updates uploadStatuses', function(assert) {
-        assert.expect(5);
+        assert.expect(3);
         website.website.Uploader = function() {};
         website.website.Uploader.prototype.uploadString = function() {};
         //
         var req = new http.Request('/api/website/upload', 'POST');
-        var fileNames = Object.keys(mockFiles);
         req.data = {remoteUrl: 'ftp://ftp.site.net', username: 'ftp@mysite.net',
-                    password: 'bar', 'fileNames[0]': fileNames[0]};
-        var handleUploadReqFn = commons.app.getHandler(req.url, req.method);
+                    password: 'bar', 'pageUrls[0]': pages[0].url,
+                    'fileNames[0]': fileNames[0]};
         //
-        var response = handleUploadReqFn(req);
+        var response = commons.app.getHandler(req.url, req.method)(req);
         var assertSetStatusToUploaded = function(expected, id) {
             commons.db.select('select `uphash` from uploadStatuses where `url` = ?',
                 function(row) {
@@ -246,10 +283,6 @@ testLib.module('website-handlers.js', function(hooks) {
         assertSetStatusToUploaded(fileNames[0], 'file #1');
         response.getNextChunk(response.chunkFnState);
         assertSetStatusToUploaded(page1.url, 'page #1');
-        response.getNextChunk(response.chunkFnState);
-        assertSetStatusToUploaded(page2.url, 'page #2');
-        response.getNextChunk(response.chunkFnState);
-        assertSetStatusToUploaded(page3.url, 'page #3');
         var lastChunk = response.getNextChunk(response.chunkFnState);
         assert.equal(lastChunk, '');
         //
@@ -259,10 +292,9 @@ testLib.module('website-handlers.js', function(hooks) {
         assert.expect(3);
         //
         var req = new http.Request('/api/website/page', 'PUT');
-        var handlePageUpdateReqFn = commons.app.getHandler(req.url, req.method);
         // Emulate the request
         req.data = {url: '/page2', layoutFileName: layout1.fileName};
-        var response = handlePageUpdateReqFn(req);
+        var response = commons.app.getHandler(req.url, req.method)(req);
         assert.equal(response.statusCode, 200);
         assert.equal(response.body, '{"numAffectedRows":1}');
         // Assert that changed layoutFileName and saved the changes to the database

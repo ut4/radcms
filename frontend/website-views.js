@@ -83,14 +83,16 @@ class WebsiteUploadView extends preact.Component {
             password: '',
             uploading: false,
             pages: [],
-            files: []
+            files: [],
+            noData: false
         };
-        services.myFetch('/api/website/upload-statuses').then(
+        services.myFetch('/api/website/waiting-uploads').then(
             res => {
                 var data = JSON.parse(res.responseText);
-                this.setState({pages: data.pages, files: data.files});
+                this.setState({pages: data.pages, files: data.files,
+                    noData: data.pages.length == 0 && data.files.length == 0});
             },
-            () => { toast('Failed to fetch pending changes.', 'error'); }
+            () => { toast('Failed to fetch waiting uploads.', 'error'); }
         );
     }
     render() {
@@ -98,11 +100,11 @@ class WebsiteUploadView extends preact.Component {
             $el(Form, {
                 onConfirm: () => this.confirm(),
                 confirmButtonText: 'Upload website',
-                doDisableConfirmButton: () => this.state.uploading,
+                doDisableConfirmButton: () => this.state.uploading || this.state.noData,
                 noAutoClose: true
             }, [
                 $el('h2', null, 'Upload website'),
-                $el('div', {className: 'fieldset'}, [
+                !this.state.noData ? [$el('div', {className: 'fieldset'}, [
                     $el('h3', null, 'Credentials'),
                     $el('label', null, [
                         $el('span', null, 'FTP remote url'),
@@ -131,7 +133,8 @@ class WebsiteUploadView extends preact.Component {
                     ])
                 ]),
                 this.state.pages.length ? uploadList(this.state.pages, 'Page') : '',
-                this.state.files.length ? uploadList(this.state.files, 'File') : ''
+                this.state.files.length ? uploadList(this.state.files, 'File') : ''] :
+                'Nothing to upload.'
             ])
         ));
     }
@@ -157,6 +160,9 @@ class WebsiteUploadView extends preact.Component {
             data: 'remoteUrl=' + encodeURIComponent(this.state.remoteUrl) +
                     '&username=' + encodeURIComponent(this.state.username) +
                     '&password=' + encodeURIComponent(this.state.password) +
+                    pendingPages.map((page, i) =>
+                        '&pageUrls[' + i + ']=' + encodeURIComponent(page.url)
+                    ).join('') +
                     pendingFiles.map((file, i) =>
                         '&fileNames[' + i + ']=' + encodeURIComponent(file.url)
                     ).join(''),
@@ -181,14 +187,22 @@ class WebsiteUploadView extends preact.Component {
             }
         }).then(() => {
             this.setState({uploading: false});
-            const nSuccesfulUploads = pendingPages.reduce(
-                (n, page) => n + (page.uploadStatus === UStatus.UPLOADED), 0
-            ) + pendingFiles.reduce(
-                (n, file) => n + (file.uploadStatus === UStatus.UPLOADED), 0
-            );
+            const message = [];
+            let totalSuccesfulUploads = 0;
+            const countSuccesfulUploads = (n, item) => {
+                if (item.uploadStatus === UStatus.UPLOADED) {
+                    totalSuccesfulUploads += 1;
+                    n += 1;
+                }
+                return n;
+            };
+            if (pendingPages.length) message.push(pendingPages.reduce(
+                countSuccesfulUploads, 0) + '/' + pendingPages.length + ' pages');
+            if (pendingFiles.length) message.push(pendingFiles.reduce(
+                countSuccesfulUploads, 0) + '/' + pendingFiles.length + ' files');
             const nTotal = pendingPages.length + pendingFiles.length;
-            toast('Uploaded ' + nSuccesfulUploads + '/' + nTotal + ' items.',
-                  nSuccesfulUploads === nTotal ? 'success' : 'error');
+            toast('Uploaded ' + message.join(' and ') + '.',
+                  totalSuccesfulUploads === nTotal ? 'success' : 'error');
         }, () => {
             this.setState({uploading: false});
             toast('Failed to upload items.', 'error');
