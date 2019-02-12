@@ -36,6 +36,7 @@ exports.performRescan = function(type) {
 function RemoteDiff() {
     /** @prop {[string]: {url: string; hash: string; uphash: string; isFile: bool;}} */
     this.checkables = {};
+    this.deletables = {};
     this.nFilesAdded = 0;
 }
 
@@ -57,13 +58,22 @@ RemoteDiff.prototype.addFileToCheck = function(url) {
 };
 
 /**
- * Checks each $this.checkable, and saves its checksum to the database if
- * it's changed or not yet stored.
+ * @param {string} url
+ */
+RemoteDiff.prototype.addPageToDelete = function(url) {
+    this.deletables[url] = {url: url, hash: null, uphash: null, isFile: 0};
+};
+
+/**
+ * Traverses $this.checkable and $this.deletable, and saves their new checksums
+ * to the database.
  */
 RemoteDiff.prototype.saveStatusesToDb = function() {
     var checkables = this.checkables;
+    var deletables = this.deletables;
     var selectHolders = [];
     for (var hadItems in checkables) selectHolders.push('?');
+    for (hadItems in deletables) selectHolders.push('?');
     if (!hadItems) return;
     // Select current statuses from the database
     var curStatuses = {};
@@ -74,28 +84,40 @@ RemoteDiff.prototype.saveStatusesToDb = function() {
         }, function(stmt) {
             var i = 0; for (var url in checkables) {
                 stmt.bindString(i++, url);
+            } for (url in deletables) {
+                stmt.bindString(i++, url);
             }
         });
-    // Collect files that were discovered, and pages which contents were changed
+    // Collect files that were new, and pages which contents were changed
     var newStatuses = {data: [], holders: []};
     for (var url in checkables) {
         var c = checkables[url];
         var curStatus = curStatuses[c.url];
-        if (!c.isFile) {
+        if (!c.isFile) { // Page
             if (curStatus) {
                 // Current content identical with the uploaded content -> skip
                 if (curStatus.uphash && curStatus.uphash == c.hash &&
                     curStatus.curhash == c.hash) continue;
+                // else -> fall through & save new curhash
                 c.uphash = curStatus.uphash;
             }
-        } else if (!curStatus) { // File, not yet saved to the db
+        } else if (!curStatus) { // File, not yet saved to the db -> fall
+                                 // through & save new curhash
             c.hash = website.website.crypto.sha1(website.website.fs.read(
                 insnEnv.sitePath + c.url.substr(1)));
             this.nFilesAdded += 1;
-        } else { // File, already saved
+        } else { // File, already saved -> skip
             continue;
         }
         newStatuses.data.push(c);
+        newStatuses.holders.push('(?,?,?,?)');
+    }
+    // Collect pages that were removed
+    for (url in deletables) {
+        var item = deletables[url];
+        item.uphash = curStatuses[url].uphash;
+        item.hash = null; // marks as deleted
+        newStatuses.data.push(item);
         newStatuses.holders.push('(?,?,?,?)');
     }
     if (newStatuses.data.length) { commons.db.insert(
@@ -247,6 +269,7 @@ LocalDiff.prototype.deleteUnreachablePages = function() {
         var r = siteGraph.pages[url].refCount;
         if (r < 1 && url != homeUrl) {
             delete siteGraph.pages[url];
+            this.remoteDiff.addPageToDelete(url);
             this.nPagesRemoved += 1;
         }
     }

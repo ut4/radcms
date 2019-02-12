@@ -68,10 +68,7 @@ testLib.module('resource-diff', function(hooks) {
         if (
             commons.db.delete('delete from uploadStatuses', function() {
                 //
-            }) < actuallyInsertedStatuses.length ||
-            commons.db.delete('delete from staticFileResources', function() {
-                //
-            }) < actuallyInsertedFiles.length
+            }) < actuallyInsertedStatuses.length
         ) throw new Error('Failed to clean test data.');
     });
 });

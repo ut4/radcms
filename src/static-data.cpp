@@ -1,6 +1,7 @@
 #include "../include/static-data.hpp"
 
 const char *schemaSql =
+"drop trigger if exists onUploadStatusesDeleteFileTrigger;"
 "drop trigger if exists onUploadStatusesInsertFileTrigger;"
 "drop table if exists uploadStatuses;"
 "drop table if exists staticFileResources;"
@@ -31,7 +32,11 @@ const char *schemaSql =
 ");"
 "create trigger onUploadStatusesInsertFileTrigger after insert on uploadStatuses "
 "when new.isFile = 1 begin "
-    "insert into staticFileResources values(new.url);"
+    "insert into staticFileResources values(new.`url`);"
+"end;"
+"create trigger onUploadStatusesDeleteFileTrigger after delete on uploadStatuses "
+"when old.isFile = 1 begin "
+    "delete from staticFileResources where `url` = old.`url`;"
 "end;";
 
 static std::vector<SampleData> sampleData = {

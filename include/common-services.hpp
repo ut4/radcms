@@ -30,5 +30,9 @@ struct CurlUploader {
     int
     uploadFromDisk(const char *fullUrl, const char *localFilePath);
     int
-    initUploadOpts(const char *fullUrl);
+    deleteItem(const char *serverUrl, const char *itemPath, bool asDir = false);
+    int
+    initUploadOpts(const char *fullUrl, bool isDelete = false);
+    int
+    perform(struct curl_slist *headerlist = nullptr);
 };

@@ -17,6 +17,7 @@ static duk_ret_t uploaderConstruct(duk_context *ctx);
 static duk_ret_t uploaderFinalize(duk_context *ctx);
 static duk_ret_t uploaderUploadString(duk_context *ctx);
 static duk_ret_t uploaderUploadFile(duk_context *ctx);
+static duk_ret_t uploaderDelete(duk_context *ctx);
 static duk_ret_t domTreeConstruct(duk_context *ctx);
 static duk_ret_t domTreeFinalize(duk_context *ctx);
 static duk_ret_t domTreeCreateElement(duk_context *ctx);
@@ -89,6 +90,8 @@ commonServicesJsModuleInit(duk_context *ctx, const int exportsIsAt) {
     duk_put_prop_string(ctx, -2, "uploadString");       // [? Uploader proto]
     duk_push_c_lightfunc(ctx, uploaderUploadFile, 2, 0, 0); // [? Uploader proto lightfn]
     duk_put_prop_string(ctx, -2, "uploadFile");         // [? Uploader proto]
+    duk_push_c_lightfunc(ctx, uploaderDelete, 3, 0, 0); // [? Uploader proto lightfn]
+    duk_put_prop_string(ctx, -2, "delete");             // [? Uploader proto]
     duk_put_prop_string(ctx, -2, "prototype");          // [? Uploader]
     duk_put_prop_string(ctx, exportsIsAt, "Uploader");  // [?]
     // module.DomTree
@@ -386,6 +389,17 @@ uploaderUploadFile(duk_context *ctx) {
     auto *self = static_cast<CurlUploader*>(duk_get_pointer(ctx, -1));
     int res = self->uploadFromDisk(duk_require_string(ctx, 0), duk_require_string(ctx, 1));
     duk_push_uint(ctx, res);                        // [remoteUrl localFilePath this ptr out]
+    return 1;
+}
+
+static duk_ret_t
+uploaderDelete(duk_context *ctx) {
+    duk_push_this(ctx);                             // [serverUrl itemPath bool this]
+    duk_get_prop_string(ctx, -1, KEY_UPLOADER_PTR); // [serverUrl itemPath bool this ptr]
+    auto *self = static_cast<CurlUploader*>(duk_get_pointer(ctx, -1));
+    int res = self->deleteItem(duk_require_string(ctx, 0),
+        duk_require_string(ctx, 1), duk_to_boolean(ctx, 2));
+    duk_push_uint(ctx, res);                        // [serverUrl itemPath bool this ptr out]
     return 1;
 }
 

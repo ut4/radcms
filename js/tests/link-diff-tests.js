@@ -22,6 +22,7 @@ testLib.module('link-diff', function(hooks) {
         diff.RemoteDiff = function(){};
         diff.RemoteDiff.prototype.addPageToCheck = function(){};
         diff.RemoteDiff.prototype.addFileToCheck = function(){};
+        diff.RemoteDiff.prototype.addPageToDelete = function(){};
         diff.RemoteDiff.prototype.saveStatusesToDb = function(){};
         website.siteConfig.homeUrl = '/home';
         website.siteConfig.defaultLayout = mockTemplate.fname;

@@ -289,22 +289,18 @@ exports.website = {
         commons.signals.emit('sitegraphRescanRequested', 'full');
     },
     /**
-     * @param {(renderedHtml: string): bool} onEach
+     * @param {(renderedHtml: string, page: Page): any|bool} onEach
      * @param {Array?} issues
      * @param {{[string]: any;}?} pages
-     * @returns {number} Number of succeful writes
+     * @returns {bool} false if there was issues, true otherwise
      */
     generate: function(onEach, issues, pages) {
-        var numSuccesfulIterations = 0;
         if (!pages) pages = this.siteGraph.pages;
         for (var url in pages) {
             var page = this.siteGraph.getPage(url);
-            if (onEach(page.render(null, issues), page))
-                numSuccesfulIterations++;
-            else
-                return numSuccesfulIterations;
+            if (onEach(page.render(null, issues), page) === false) break;
         }
-        return numSuccesfulIterations;
+        return !issues || issues.length == 0;
     },
     /**
      * @param {string} fileName
@@ -338,3 +334,4 @@ exports.saveToDb = function(siteGraph) {
 exports.NOT_UPLOADED = 0;
 exports.OUTDATED = 1;
 exports.UPLOADED = 2;
+exports.DELETED = 3;

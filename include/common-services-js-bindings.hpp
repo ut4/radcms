@@ -23,6 +23,7 @@
  *    - Uploader()
  *    - Uploader.prototype.uploadString()
  *    - Uploader.prototype.uploadFile()
+ *    - Uploader.prototype.delete()
  *    - DomTree()
  *    - DomTree.prototype.createElement()
  *    - DomTree.prototype.render()

@@ -5,6 +5,7 @@ var website = require('website.js');
 var siteGraph = website.siteGraph;
 var http = require('http.js');
 var UPLOAD_OK = commons.UploaderStatus.UPLOAD_OK;
+var q = '(?,?,?,?)';
 
 testLib.module('website-handlers.js', function(hooks) {
     var genericCntType = {id:1,name:'Generic',fields:'{"content":"richtext"}'};
@@ -27,7 +28,6 @@ testLib.module('website-handlers.js', function(hooks) {
         page3 = siteGraph.addPage(pages[2].url, '', layout2.fileName, {}, 1);
         website.website.compileAndCacheTemplate(layout1.fileName);
         website.website.compileAndCacheTemplate(layout2.fileName);
-        var q = '(?,?,?,?)';
         var sql2 = 'insert into contentNodes values '+q+','+q+','+q;
         var sql3 = 'insert into uploadStatuses values '+q+','+q+','+q+','+q+','+q;
         if (commons.db.insert('insert into websites values (?,?)', function(stmt) {
@@ -67,8 +67,7 @@ testLib.module('website-handlers.js', function(hooks) {
                 function(stmt) { stmt.bindString(0, genericCntType.name); }) < 1 ||
             commons.db.delete('delete from websites where id = ?',
                 function(stmt) { stmt.bindInt(0, testWebsite.id); }) < 1 ||
-            commons.db.delete('delete from uploadStatuses', function() { }) < 4 ||
-            commons.db.delete('delete from staticFileResources', function() { }) < 2
+            commons.db.delete('delete from uploadStatuses', function() { }) < 4
         ) throw new Error('Failed to clean test data.');
     });
     hooks.afterEach(function() {
@@ -201,9 +200,12 @@ testLib.module('website-handlers.js', function(hooks) {
         //
         var req = new http.Request('/api/website/upload', 'POST');
         req.data = {remoteUrl: 'ftp://ftp.site.net/', username: 'ftp@mysite.net',
-                    password: 'bar', 'pageUrls[0]': pages[0].url,
-                    'pageUrls[1]': pages[1].url, 'pageUrls[2]': pages[2].url,
-                    'fileNames[0]': fileNames[0], 'fileNames[1]': fileNames[1]};
+                    password: 'bar',
+                    'pageUrls[0][url]': pages[0].url, 'pageUrls[0][isDeleted]': '0',
+                    'pageUrls[1][url]': pages[1].url, 'pageUrls[1][isDeleted]': '0',
+                    'pageUrls[2][url]': pages[2].url, 'pageUrls[2][isDeleted]': '0',
+                    'fileNames[0][fileName]': fileNames[0], 'fileNames[0][isDeleted]': '0',
+                    'fileNames[1][fileName]': fileNames[1], 'fileNames[1][isDeleted]': '0'};
         //
         var response = commons.app.getHandler(req.url, req.method)(req);
         assert.deepEqual(uploaderCredentials, {username: req.data.username,
@@ -217,18 +219,18 @@ testLib.module('website-handlers.js', function(hooks) {
         // Simulate MHD's MHD_ContentReaderCallback calls
         var chunk1 = response.getNextChunk(response.chunkFnState);
         var remUrl = req.data.remoteUrl.substr(0, req.data.remoteUrl.length -1);
-        assert.equal(chunk1, 'file|' + req.data['fileNames[0]'] + '|' + UPLOAD_OK);
+        assert.equal(chunk1, 'file|' + req.data['fileNames[0][fileName]'] + '|' + UPLOAD_OK);
         assert.equal(uploadLog.length, 1, 'should upload file #1');
         assert.deepEqual(uploadLog[0], {
-            url: remUrl+req.data['fileNames[0]'],
-            contents: mockFiles[req.data['fileNames[0]']]
+            url: remUrl+req.data['fileNames[0][fileName]'],
+            contents: mockFiles[req.data['fileNames[0][fileName]']]
         });
         var chunk2 = response.getNextChunk(response.chunkFnState);
-        assert.equal(chunk2, 'file|' + req.data['fileNames[1]'] + '|' + UPLOAD_OK);
+        assert.equal(chunk2, 'file|' + req.data['fileNames[1][fileName]'] + '|' + UPLOAD_OK);
         assert.equal(uploadLog.length, 2, 'should upload file #2');
         assert.deepEqual(uploadLog[1], {
-            url: remUrl+req.data['fileNames[1]'],
-            contents: mockFiles[req.data['fileNames[1]']]
+            url: remUrl+req.data['fileNames[1][fileName]'],
+            contents: mockFiles[req.data['fileNames[1][fileName]']]
         });
         var chunk3 = response.getNextChunk(response.chunkFnState);
         assert.equal(chunk3, 'page|' + generatedPages[0].url + '|' + UPLOAD_OK);
@@ -265,8 +267,9 @@ testLib.module('website-handlers.js', function(hooks) {
         //
         var req = new http.Request('/api/website/upload', 'POST');
         req.data = {remoteUrl: 'ftp://ftp.site.net', username: 'ftp@mysite.net',
-                    password: 'bar', 'pageUrls[0]': pages[0].url,
-                    'fileNames[0]': fileNames[0]};
+                    password: 'bar',
+                    'pageUrls[0][url]': pages[0].url, 'pageUrls[0][isDeleted]': '0',
+                    'fileNames[0][fileName]': fileNames[0], 'fileNames[0][isDeleted]': '0'};
         //
         var response = commons.app.getHandler(req.url, req.method)(req);
         var assertSetStatusToUploaded = function(expected, id) {
@@ -287,6 +290,68 @@ testLib.module('website-handlers.js', function(hooks) {
         assert.equal(lastChunk, '');
         //
         website.website.Uploader = commons.Uploader;
+        if (commons.db.update('update uploadStatuses set `uphash` = null',
+            function() {}) < 2) throw new Error('Failed to reset test data.');
+    });
+    testLib.test('POST \'/api/website/upload\' deletes pages and files', function(assert) {
+        assert.expect(5);
+        var uploaderDeleteLog = [];
+        var inputPageUrls = [pages[2].url];
+        var inputFileNames = [fileNames[1]];
+        website.website.Uploader = function() {};
+        website.website.Uploader.prototype.uploadString = function() {};
+        website.website.Uploader.prototype.delete = function(a, b, c) {
+            uploaderDeleteLog.push({serverUrl: a, itemPath: b, asDir: c});
+            return UPLOAD_OK;
+        };
+        if (commons.db.update('update uploadStatuses set `curhash` = null,\
+                            `uphash` = \'up\' where `url` in (?,?)', function(stmt) {
+                stmt.bindString(0, inputPageUrls[0]);
+                stmt.bindString(1, inputFileNames[0]);
+            }) < 2) throw new Error('Failed to setup test data.');
+        //
+        var req = new http.Request('/api/website/upload', 'POST');
+        req.data = {remoteUrl: 'ftp://ftp.site.net/dir',
+                    username: 'ftp@mysite.net',
+                    password: 'bar',
+                    'pageUrls[0][url]': inputPageUrls[0],
+                    'pageUrls[0][isDeleted]': '1',
+                    'fileNames[0][fileName]': inputFileNames[0],
+                    'fileNames[0][isDeleted]': '1'};
+        //
+        var response = commons.app.getHandler(req.url, req.method)(req);
+        var assertWipedStatus = function(expected, id) {
+            commons.db.select('select count(`url`) from uploadStatuses where `url` = ?',
+                function(row) {
+                    assert.equal(row.getInt(0), 0, 'should delete ' + id +
+                        ' from uploadStatuses');
+                }, function(stmt) {
+                    stmt.bindString(0, expected);
+                });
+        };
+        // Simulate MHD's MHD_ContentReaderCallback calls
+        response.getNextChunk(response.chunkFnState);
+        assert.deepEqual(uploaderDeleteLog[0], {serverUrl: req.data.remoteUrl,
+            itemPath: inputPageUrls[0]+'/index.html', asDir: true},
+            'Should delete the page first');
+        assertWipedStatus(inputPageUrls[0], 'page #1');
+        response.getNextChunk(response.chunkFnState);
+        assert.deepEqual(uploaderDeleteLog[1], {serverUrl: req.data.remoteUrl,
+            itemPath: inputFileNames[0], asDir: false},
+            'Should delete the file');
+        assertWipedStatus(inputFileNames[0], 'file #1');
+        var lastChunk = response.getNextChunk(response.chunkFnState);
+        assert.equal(lastChunk, '');
+        //
+        website.website.Uploader = commons.Uploader;
+        if (commons.db.insert('insert into uploadStatuses values '+q+','+q, function(stmt) {
+                stmt.bindString(0, inputPageUrls[0]);
+                stmt.bindString(1, '');
+                stmt.bindInt(3, 0);
+                stmt.bindString(4, inputFileNames[0]);
+                stmt.bindString(5, '');
+                stmt.bindInt(7, 1);
+            }) < 1) throw new Error('Failed to reset test data.');
     });
     testLib.test('PUT \'/api/website/page\' updates a page', function(assert) {
         assert.expect(3);

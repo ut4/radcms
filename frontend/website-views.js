@@ -59,16 +59,18 @@ const UStatus = Object.freeze({
     NOT_UPLOADED: 0,
     OUTDATED: 1,
     UPLOADED: 2,
-    UPLOADING: 3,
-    ERROR: 4,
+    DELETED: 3,
+    UPLOADING: 4,
+    ERROR: 5,
 });
 
 const UStatusToStr = [
-    "No",            // UStatus.NOT_UPLOADED(0)
-    "Yes(outdated)", // UStatus.OUTDATED(1)
-    "Yes",           // UStatus.UPLOADED(2)
-    "Uploading...",  // UStatus.UPLOADING(3)
-    "Error",         // UStatus.ERROR(4)
+    "Add",        // UStatus.NOT_UPLOADED(0)
+    "Update",     // UStatus.OUTDATED(1)
+    "Ok",         // UStatus.UPLOADED(2)
+    "Remove",     // UStatus.DELETED(3)
+    "Pending...", // UStatus.UPLOADING(4)
+    "Error",      // UStatus.ERROR(5)
 ];
 
 /**
@@ -78,7 +80,7 @@ class WebsiteUploadView extends preact.Component {
     constructor(props) {
         super(props);
         this.state = {
-            remoteUrl: 'ftp://ftp.mysite.net/public_html/',
+            remoteUrl: 'ftp://ftp.mysite.net/public_html',
             username: 'ftp@mysite.net',
             password: '',
             uploading: false,
@@ -146,6 +148,7 @@ class WebsiteUploadView extends preact.Component {
         const pendingFiles = [];
         const makeUploadable = (item, collectTo) => {
             if (item.uploadStatus != UStatus.UPLOADED) {
+                item.deleted = item.uploadStatus != UStatus.DELETED ? 0 : 1;
                 item.uploadStatus = UStatus.UPLOADING;
                 collectTo.push(item);
             }
@@ -161,10 +164,12 @@ class WebsiteUploadView extends preact.Component {
                     '&username=' + encodeURIComponent(this.state.username) +
                     '&password=' + encodeURIComponent(this.state.password) +
                     pendingPages.map((page, i) =>
-                        '&pageUrls[' + i + ']=' + encodeURIComponent(page.url)
+                        '&pageUrls[' + i + '][url]=' + encodeURIComponent(page.url) +
+                        '&pageUrls[' + i + '][isDeleted]=' + page.deleted
                     ).join('') +
                     pendingFiles.map((file, i) =>
-                        '&fileNames[' + i + ']=' + encodeURIComponent(file.url)
+                        '&fileNames[' + i + '][fileName]=' + encodeURIComponent(file.url) +
+                        '&fileNames[' + i + '][isDeleted]=' + file.deleted
                     ).join(''),
             progress: (res, _percent) => {
                 if (!res.responseText.length) return;
@@ -218,7 +223,7 @@ function uploadList(items, name) {
     return $el('div', null, $el('table', {className: 'striped'}, [
         $el('thead', null, $el('tr', null, [
             $el('th', null, name),
-            $el('th', null, 'Uploaded'),
+            $el('th', null, 'Task to be performed'),
         ])),
         $el('tbody', null, items.map(item => $el('tr', null, [
             $el('td', null, item.url),

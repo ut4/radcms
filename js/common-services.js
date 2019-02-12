@@ -170,6 +170,15 @@ exports.Uploader.prototype.uploadString = function(/*url, string*/) {};
  * @returns {number}
  */
 exports.Uploader.prototype.uploadFile = function(/*url, filePath*/) {};
+/**
+ * @native
+ * @param {string} serverUrl eg. 'ftp://ftp.mysite.net/public_html'
+ * @param {string} itemPath eg. '/file.html'
+ * @param {bool?} asDir = false false = delete only '/foo/file.txt',
+ *                              true = delete also dir '/foo' after deleting '/foo/file.txt'
+ * @returns {number}
+ */
+exports.Uploader.prototype.delete = function(/*serverUrl, itemPath, asDir*/) {};
 
 // == DomTree ====
 // =============================================================================

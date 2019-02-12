@@ -58,6 +58,8 @@ testLib.module('page-diff', function(hooks) {
         assert.deepEqual(inserted, {url: newPage.url, curhash: expectedNewPageChkSum,
             uphash: null, isFile: 0});
         //
+        website.siteGraph.pages[existingPage.url].linksTo = {};
+        delete website.siteGraph.pages[newPage.url];
         if (commons.db.delete('delete from uploadStatuses where `url` in (?,?)',
             function(stmt) {
                 stmt.bindString(0, existingPage.url);

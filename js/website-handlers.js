@@ -62,12 +62,13 @@ function handlePageRequest(req) {
  */
 function handleGetWaitingUploadsRequest() {
     var out = {pages: [], files: []};
-    commons.db.select('select `url`, `uphash`, `isFile` from uploadStatuses where\
-                      `uphash` is null or `curhash` != `uphash`', function(row) {
-        (row.getInt(2) == 0 ? out.pages : out.files).push({
+    commons.db.select('select `url`, `curhash`, `uphash`, `isFile` from uploadStatuses\
+                      where `uphash` is null or `curhash` != `uphash` or\
+                      (`curhash` is null and `uphash` is not null)', function(row) {
+        (row.getInt(3) == 0 ? out.pages : out.files).push({
             url: row.getString(0),
-            uploadStatus: row.getString(1) !== null ? website.OUTDATED :
-                            website.NOT_UPLOADED
+            uploadStatus: !row.getString(2) ? website.NOT_UPLOADED :
+                            row.getString(1) ? website.OUTDATED : website.DELETED
         });
     });
     return new http.Response(200, JSON.stringify(out),
@@ -115,15 +116,19 @@ function handleGenerateRequest() {
         outPath: insnEnv.sitePath + 'out',
         issues: []
     };
-    out.wrotePagesNum = website.website.generate(function(renderedOutput, page) {
+    website.website.generate(function(renderedOutput, page) {
         // 'path/out' + '/foo'
         var dirPath = out.outPath + page.url;
-        return website.website.fs.makeDirs(dirPath) &&
-                website.website.fs.write(
-                    // 'path/out/foo' + '/index.html'
-                    dirPath + '/index.html',
-                    renderedOutput
-                );
+        if (website.website.fs.makeDirs(dirPath) &&
+            website.website.fs.write(
+                // 'path/out/foo' + '/index.html'
+                dirPath + '/index.html',
+                renderedOutput
+            )) {
+            out.wrotePagesNum += 1;
+            return true;
+        }
+        return false;
     }, out.issues);
     out.tookSecs = (performance.now() - out.tookSecs) / 1000;
     return new http.Response(200, JSON.stringify(out),
@@ -139,7 +144,10 @@ function handleGenerateRequest() {
  * remoteUrl=str|required&
  * username=str|required&
  * password=str|required&
- * fileNames[0-n]=str
+ * pageurls[0-n][url]=str&
+ * pageUrls[0-n][isDeleted]=int&
+ * fileNames[0-n][fileName]=str&
+ * fileNames[0-n][isDeleted]=int
  *
  * Example response chunk:
  * file|/some-file.css|0
@@ -156,19 +164,19 @@ function handleUploadRequest(req) {
     //
     var pageUrls = {};
     var uploadState = makeUploadState(req.data, pageUrls);
-    if (uploadState.totalIncomingPages + uploadState.totalIncomingFiles == 0) {
+    if (!uploadState) {
         return new http.Response(200, 'Nothing to upload.');
     }
     uploadHandlerIsBusy = true;
     var issues = [];
     // Render all pages in one go so we can return immediately if there was any issues
-    website.website.generate(function(renderedOutput, page) {
-        uploadState.generatedPages.push({url: page.url, html: renderedOutput});
-        return true;
-    }, issues, pageUrls);
-    if (issues.length) {
-        uploadHandlerIsBusy = false;
-        return new http.Response(400, issues.join('\n'));
+    if (uploadState.uploadPagesLeft) {
+        if (!website.website.generate(function(renderedOutput, page) {
+            uploadState.generatedPages.push({url: page.url, html: renderedOutput});
+        }, issues, pageUrls)) {
+            uploadHandlerIsBusy = false;
+            return new http.Response(400, issues.join('\n'));
+        }
     }
     //
     return new http.ChunkedResponse(200, function getNewChunk(state) {
@@ -178,48 +186,61 @@ function handleUploadRequest(req) {
             uploadHandlerIsBusy = false;
             throw new Error('...');
         }
-        // Upload the files first
         var idx = state.nthItem - 1;
-        if (idx < state.totalIncomingFiles) {
+        // Delete removed pages first ...
+        if (state.deletablePagesLeft > 0) {
+            url = state.deletablePageUrls[idx];
+            uploadRes = state.uploader.delete(state.remoteUrl,
+                url + '/index.html', true);
+            if (--state.deletablePagesLeft == 0) state.nthItem = 0;
+        // Then removed files ...
+        } else if (state.deletableFilesLeft > 0) {
             resourceTypePrefix = 'file|';
-            url = state.fileNames[idx];
+            url = state.deletableFileNames[idx];
+            uploadRes = state.uploader.delete(state.remoteUrl, url, false);
+            if (--state.deletableFilesLeft == 0) state.nthItem = 0;
+        // Then upload new files ...
+        } else if (state.uploadFilesLeft > 0) {
+            resourceTypePrefix = 'file|';
+            url = state.uploadFileNames[idx];
             contents = website.website.fs.read(insnEnv.sitePath + url);
             uploadRes = state.uploader.uploadString(state.remoteUrl + url,
                 contents);
-            // Was last
-            if (state.nthItem === state.totalIncomingFiles) {
-                state.totalIncomingFiles = -1;
-                state.nthItem = 0;
-            }
-        // Files ok, check if there's pages
+            if (--state.uploadFilesLeft == 0) state.nthItem = 0;
+        // And lastly upload new or modified pages
+        } else if (state.uploadPagesLeft > 0) {
+            var curPage = state.generatedPages[idx];
+            url = curPage.url;
+            contents = curPage.html;
+            uploadRes = state.uploader.uploadString(state.remoteUrl +
+                url + '/index.html', contents);
+            state.uploadPagesLeft -= 1;
+        // We're done
         } else {
-            if (idx < state.totalIncomingPages) {
-                resourceTypePrefix = 'page|';
-                var curPage = state.generatedPages[idx];
-                url = curPage.url;
-                contents = curPage.html;
-                uploadRes = state.uploader.uploadString(state.remoteUrl +
-                    url + '/index.html', contents);
-            } else {
-                // We're done
-                uploadHandlerIsBusy = false;
-                return '';
-            }
+            uploadHandlerIsBusy = false;
+            return '';
         }
         state.hadStopError = uploadRes == commons.UploaderStatus.UPLOAD_LOGIN_DENIED;
-        if (!state.hadStopError) saveUploadStatus(url, contents);
+        if (!state.hadStopError) saveOrDeleteUploadStatus(url, contents);
         state.nthItem += 1;
-        return resourceTypePrefix + url + '|' + uploadRes;
+        return (resourceTypePrefix || 'page|') + url + '|' + uploadRes;
     }, uploadState);
 }
 
-function saveUploadStatus(url, contents) {
-    var sql = 'update uploadStatuses set `uphash` = ? where `url` = ?';
-    if (commons.db.update(sql, function(stmt) {
-        stmt.bindString(0, website.website.crypto.sha1(contents));
-        stmt.bindString(1, url);
-    }) < 0) {
-        commons.log('[Error]: Failed to save uploadStatus of \'' + url + '\'.');
+function saveOrDeleteUploadStatus(url, contents) {
+    if (contents) {
+        var sql = 'update uploadStatuses set `uphash` = ? where `url` = ?';
+        if (commons.db.update(sql, function(stmt) {
+            stmt.bindString(0, website.website.crypto.sha1(contents));
+            stmt.bindString(1, url);
+        }) < 0) {
+            commons.log('[Error]: Failed to save uploadStatus of \'' + url + '\'.');
+        }
+    } else {
+        sql = 'delete from uploadStatuses where `url` = ?';
+        if (commons.db.delete(sql, function(stmt) { stmt.bindString(0, url); }) < 0) {
+            commons.log('[Error]: Failed to delete \'' + url + '\' from uploadStatuses.');
+        }
     }
 }
 
@@ -231,26 +252,41 @@ function makeUploadState(reqData, pageUrls) {
     var l = reqData.remoteUrl.length - 1;
     var state = {
         nthItem: 1,
-        generatedPages: [],
-        totalIncomingPages: 0,
-        fileNames: [],
-        totalIncomingFiles: 0,
+        deletablePageUrls: [], deletablePagesLeft: 0,
+        deletableFileNames: [], deletableFilesLeft: 0,
+        generatedPages: [], uploadPagesLeft: 0,
+        uploadFileNames: [], uploadFilesLeft: 0,
         remoteUrl: reqData.remoteUrl.charAt(l) != '/'
             ? reqData.remoteUrl : reqData.remoteUrl.substr(0, l),
         uploader: new website.website.Uploader(reqData.username, reqData.password),
         hadStopError: false
     };
     var fname;
-    while ((fname = reqData['fileNames[' + state.totalIncomingFiles + ']'])) {
-        state.fileNames.push(fname);
-        state.totalIncomingFiles += 1;
+    var i = 0;
+    while ((fname = reqData['fileNames[' + i + '][fileName]'])) {
+        if (reqData['fileNames[' + i + '][isDeleted]'] == '0') {
+            state.uploadFileNames.push(fname);
+            state.uploadFilesLeft += 1;
+        } else {
+            state.deletableFileNames.push(fname);
+            state.deletableFilesLeft += 1;
+        }
+        i += 1;
     }
     var url;
-    while ((url = reqData['pageUrls[' + state.totalIncomingPages + ']'])) {
-        pageUrls[url] = 1;
-        state.totalIncomingPages += 1;
+    i = 0;
+    while ((url = reqData['pageUrls[' + i + '][url]'])) {
+        if (reqData['pageUrls[' + i + '][isDeleted]'] == '0') {
+            pageUrls[url] = 1;
+            state.uploadPagesLeft += 1;
+        } else {
+            state.deletablePageUrls.push(url);
+            state.deletablePagesLeft += 1;
+        }
+        i += 1;
     }
-    return state;
+    return state.uploadPagesLeft + state.uploadFilesLeft +
+            state.deletablePagesLeft + state.deletableFilesLeft > 0 ? state : null;
 }
 
 /**
@@ -259,7 +295,8 @@ function makeUploadState(reqData, pageUrls) {
 function handleGetNumWaitingUploads() {
     var count = 0;
     commons.db.select('select count(`url`) from uploadStatuses where \
-                       `uphash` is null or `curhash` != `uphash`',
+                       `uphash` is null or `curhash` != `uphash` or\
+                       `curhash` is null and `uphash` is not null',
         function(row) {
             count = row.getInt(0).toString();
         });

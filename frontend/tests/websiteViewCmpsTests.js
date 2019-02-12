@@ -89,12 +89,12 @@ QUnit.module('WebsiteUploadViewComponent', hooks => {
     QUnit.test('sends request to backend and updates upload statuses', assert => {
         const testPages = [
             {url:'/home',uploadStatus:UploadStatus.NOT_UPLOADED},
-            {url:'/foo',uploadStatus:UploadStatus.NOT_UPLOADED},
-            {url:'/bar',uploadStatus:UploadStatus.NOT_UPLOADED}
+            {url:'/foo',uploadStatus:UploadStatus.OUTDATED},
+            {url:'/bar',uploadStatus:UploadStatus.DELETED}
         ];
         const testFiles = [
             {url:'foo.css',uploadStatus:UploadStatus.NOT_UPLOADED},
-            {url:'bar.js',uploadStatus:UploadStatus.NOT_UPLOADED}
+            {url:'bar.js',uploadStatus:UploadStatus.DELETED}
         ];
         httpStub
             .onCall(0)
@@ -119,14 +119,14 @@ QUnit.module('WebsiteUploadViewComponent', hooks => {
             const fileTableRows = tables[1].querySelectorAll('tbody tr');
             const submitButton = form.querySelector('input[type="submit"]');
             //
-            assert.equal(remoteUrlInput.value, 'ftp://ftp.mysite.net/public_html/');
+            assert.equal(remoteUrlInput.value, 'ftp://ftp.mysite.net/public_html');
             assert.equal(usernameInput.value, 'ftp@mysite.net');
             assert.equal(pageTableRows.length, testPages.length);
-            assert.equal(pageTableRows[0].textContent, testPages[0].url + 'No');
-            assert.equal(pageTableRows[1].textContent, testPages[1].url + 'No');
-            assert.equal(pageTableRows[2].textContent, testPages[2].url + 'No');
-            assert.equal(fileTableRows[0].textContent, testFiles[0].url + 'No');
-            assert.equal(fileTableRows[1].textContent, testFiles[1].url + 'No');
+            assert.equal(pageTableRows[0].textContent, testPages[0].url + 'Add');
+            assert.equal(pageTableRows[1].textContent, testPages[1].url + 'Update');
+            assert.equal(pageTableRows[2].textContent, testPages[2].url + 'Remove');
+            assert.equal(fileTableRows[0].textContent, testFiles[0].url + 'Add');
+            assert.equal(fileTableRows[1].textContent, testFiles[1].url + 'Remove');
             //
             utils.setInputValue('ftp://ftp.foo.net/htdocs/', remoteUrlInput);
             utils.setInputValue('ftp@foo.net', usernameInput);
@@ -134,11 +134,11 @@ QUnit.module('WebsiteUploadViewComponent', hooks => {
             submitButton.click();
             //
             assert.ok(submitButton.disabled, "Should disable the submit button");
-            assert.equal(pageTableRows[0].textContent, testPages[0].url + 'Uploading...');
-            assert.equal(pageTableRows[1].textContent, testPages[1].url + 'Uploading...');
-            assert.equal(pageTableRows[2].textContent, testPages[2].url + 'Uploading...');
-            assert.equal(fileTableRows[0].textContent, testFiles[0].url + 'Uploading...');
-            assert.equal(fileTableRows[1].textContent, testFiles[1].url + 'Uploading...');
+            assert.equal(pageTableRows[0].textContent, testPages[0].url + 'Pending...');
+            assert.equal(pageTableRows[1].textContent, testPages[1].url + 'Pending...');
+            assert.equal(pageTableRows[2].textContent, testPages[2].url + 'Pending...');
+            assert.equal(fileTableRows[0].textContent, testFiles[0].url + 'Pending...');
+            assert.equal(fileTableRows[1].textContent, testFiles[1].url + 'Pending...');
             const postCall = httpStub.getCall(1);
             assert.ok(postCall !== null, 'Should send request to backend');
             assert.equal(postCall.args[0], '/api/website/upload');
@@ -147,10 +147,14 @@ QUnit.module('WebsiteUploadViewComponent', hooks => {
                 'remoteUrl=' + encodeURIComponent(remoteUrlInput.value) +
                 '&username=' + encodeURIComponent(usernameInput.value) +
                 '&password=' + encodeURIComponent(passwordInput.value) +
-                testPages.map((page, i) => `&pageUrls[${i}]=${
-                    encodeURIComponent(page.url)}`).join('') +
-                testFiles.map((file, i) => `&fileNames[${i}]=${
-                    encodeURIComponent(file.url)}`).join('')
+                testPages.map((page, i) =>
+                    `&pageUrls[${i}][url]=${encodeURIComponent(page.url)}` +
+                    `&pageUrls[${i}][isDeleted]=${page.uploadStatus!=UploadStatus.DELETED?'0':'1'}`
+                ).join('') +
+                testFiles.map((file, i) =>
+                    `&fileNames[${i}][fileName]=${encodeURIComponent(file.url)}` +
+                    `&fileNames[${i}][isDeleted]=${file.uploadStatus!=UploadStatus.DELETED?'0':'1'}`
+                ).join('')
             );
             // Simulate xhr.onprogress calls
             const progressClb = postCall.args[1].progress;
@@ -169,35 +173,35 @@ QUnit.module('WebsiteUploadViewComponent', hooks => {
             const fakeResponse5 = {responseText: fakeResponse4.responseText +
                                                  makeChunkResp(true, testPages[2].url)};
             progressClb(fakeResponse1, 1 / 5);
-            assert.equal(pageTableRows[0].textContent, testPages[0].url + 'Uploading...');
-            assert.equal(pageTableRows[1].textContent, testPages[1].url + 'Uploading...');
-            assert.equal(pageTableRows[2].textContent, testPages[2].url + 'Uploading...');
-            assert.equal(fileTableRows[0].textContent, testFiles[0].url + 'Yes');
-            assert.equal(fileTableRows[1].textContent, testFiles[1].url + 'Uploading...');
+            assert.equal(pageTableRows[0].textContent, testPages[0].url + 'Pending...');
+            assert.equal(pageTableRows[1].textContent, testPages[1].url + 'Pending...');
+            assert.equal(pageTableRows[2].textContent, testPages[2].url + 'Pending...');
+            assert.equal(fileTableRows[0].textContent, testFiles[0].url + 'Ok');
+            assert.equal(fileTableRows[1].textContent, testFiles[1].url + 'Pending...');
             progressClb(fakeResponse2, 2 / 5);
-            assert.equal(pageTableRows[0].textContent, testPages[0].url + 'Uploading...');
-            assert.equal(pageTableRows[1].textContent, testPages[1].url + 'Uploading...');
-            assert.equal(pageTableRows[2].textContent, testPages[2].url + 'Uploading...');
-            assert.equal(fileTableRows[0].textContent, testFiles[0].url + 'Yes');
-            assert.equal(fileTableRows[1].textContent, testFiles[1].url + 'Yes');
+            assert.equal(pageTableRows[0].textContent, testPages[0].url + 'Pending...');
+            assert.equal(pageTableRows[1].textContent, testPages[1].url + 'Pending...');
+            assert.equal(pageTableRows[2].textContent, testPages[2].url + 'Pending...');
+            assert.equal(fileTableRows[0].textContent, testFiles[0].url + 'Ok');
+            assert.equal(fileTableRows[1].textContent, testFiles[1].url + 'Ok');
             progressClb(fakeResponse3, 3 / 5);
-            assert.equal(pageTableRows[0].textContent, testPages[0].url + 'Uploading...');
-            assert.equal(pageTableRows[1].textContent, testPages[1].url + 'Yes');
-            assert.equal(pageTableRows[2].textContent, testPages[2].url + 'Uploading...');
-            assert.equal(fileTableRows[0].textContent, testFiles[0].url + 'Yes');
-            assert.equal(fileTableRows[1].textContent, testFiles[1].url + 'Yes');
+            assert.equal(pageTableRows[0].textContent, testPages[0].url + 'Pending...');
+            assert.equal(pageTableRows[1].textContent, testPages[1].url + 'Ok');
+            assert.equal(pageTableRows[2].textContent, testPages[2].url + 'Pending...');
+            assert.equal(fileTableRows[0].textContent, testFiles[0].url + 'Ok');
+            assert.equal(fileTableRows[1].textContent, testFiles[1].url + 'Ok');
             progressClb(fakeResponse4, 4 / 5);
-            assert.equal(pageTableRows[0].textContent, testPages[0].url + 'Yes');
-            assert.equal(pageTableRows[1].textContent, testPages[1].url + 'Yes');
-            assert.equal(pageTableRows[2].textContent, testPages[2].url + 'Uploading...');
-            assert.equal(fileTableRows[0].textContent, testFiles[0].url + 'Yes');
-            assert.equal(fileTableRows[1].textContent, testFiles[1].url + 'Yes');
+            assert.equal(pageTableRows[0].textContent, testPages[0].url + 'Ok');
+            assert.equal(pageTableRows[1].textContent, testPages[1].url + 'Ok');
+            assert.equal(pageTableRows[2].textContent, testPages[2].url + 'Pending...');
+            assert.equal(fileTableRows[0].textContent, testFiles[0].url + 'Ok');
+            assert.equal(fileTableRows[1].textContent, testFiles[1].url + 'Ok');
             progressClb(fakeResponse5, 5 / 5);
-            assert.equal(pageTableRows[0].textContent, testPages[0].url + 'Yes');
-            assert.equal(pageTableRows[1].textContent, testPages[1].url + 'Yes');
-            assert.equal(pageTableRows[2].textContent, testPages[2].url + 'Yes');
-            assert.equal(fileTableRows[0].textContent, testFiles[0].url + 'Yes');
-            assert.equal(fileTableRows[1].textContent, testFiles[1].url + 'Yes');
+            assert.equal(pageTableRows[0].textContent, testPages[0].url + 'Ok');
+            assert.equal(pageTableRows[1].textContent, testPages[1].url + 'Ok');
+            assert.equal(pageTableRows[2].textContent, testPages[2].url + 'Ok');
+            assert.equal(fileTableRows[0].textContent, testFiles[0].url + 'Ok');
+            assert.equal(fileTableRows[1].textContent, testFiles[1].url + 'Ok');
             //
             postCall.returnValue.then(() => {
                 assert.ok(toastSpy.calledOnce, 'Should show message');
@@ -232,8 +236,8 @@ QUnit.module('WebsiteUploadViewComponent', hooks => {
             //
             submitButton.click();
             //
-            assert.equal(pageTableRows[0].textContent, testPages[0].url + 'Uploading...');
-            assert.equal(pageTableRows[1].textContent, testPages[1].url + 'Uploading...');
+            assert.equal(pageTableRows[0].textContent, testPages[0].url + 'Pending...');
+            assert.equal(pageTableRows[1].textContent, testPages[1].url + 'Pending...');
             const postCall = httpStub.getCall(1);
             // Simulate xhr.onprogress calls
             const progressClb = postCall.args[1].progress;
@@ -244,10 +248,10 @@ QUnit.module('WebsiteUploadViewComponent', hooks => {
             const fakeResponse2 = {responseText: fakeResponse1.responseText +
                                                  chunkify('page|' + testPages[1].url + '|' + someErrorCode)};
             progressClb(fakeResponse1, 1 / 2);
-            assert.equal(pageTableRows[0].textContent, testPages[0].url + 'Yes');
-            assert.equal(pageTableRows[1].textContent, testPages[1].url + 'Uploading...');
+            assert.equal(pageTableRows[0].textContent, testPages[0].url + 'Ok');
+            assert.equal(pageTableRows[1].textContent, testPages[1].url + 'Pending...');
             progressClb(fakeResponse2, 2 / 2);
-            assert.equal(pageTableRows[0].textContent, testPages[0].url + 'Yes');
+            assert.equal(pageTableRows[0].textContent, testPages[0].url + 'Ok');
             assert.equal(pageTableRows[1].textContent, testPages[1].url + 'Error');
             //
             postCall.returnValue.then(() => {
