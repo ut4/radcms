@@ -82,11 +82,9 @@ RemoteDiff.prototype.saveStatusesToDb = function() {
             curStatuses[row.getString(0)] = {curhash: row.getString(1),
                 uphash: row.getString(2), isFile: row.getInt(3)};
         }, function(stmt) {
-            var i = 0; for (var url in checkables) {
-                stmt.bindString(i++, url);
-            } for (url in deletables) {
-                stmt.bindString(i++, url);
-            }
+            var i = 0;
+            for (var url in checkables) stmt.bindString(i++, url);
+            for (url in deletables) stmt.bindString(i++, url);
         });
     // Collect files that were new, and pages which contents were changed
     var newStatuses = {data: [], holders: []};
@@ -113,14 +111,20 @@ RemoteDiff.prototype.saveStatusesToDb = function() {
         newStatuses.holders.push('(?,?,?,?)');
     }
     // Collect pages that were removed
+    var removedStatuses = {urls: [], holders: []};
     for (url in deletables) {
         var item = deletables[url];
         item.uphash = curStatuses[url].uphash;
-        item.hash = null; // marks as deleted
-        newStatuses.data.push(item);
-        newStatuses.holders.push('(?,?,?,?)');
+        if (item.uphash) { // is uploaded -> mark as deletable
+            item.hash = null;
+            newStatuses.data.push(item);
+            newStatuses.holders.push('(?,?,?,?)');
+        } else { // exists only locally -> remove the status completely
+            removedStatuses.urls.push(item.url);
+            removedStatuses.holders.push('?');
+        }
     }
-    if (newStatuses.data.length) { commons.db.insert(
+    if (newStatuses.data.length) commons.db.insert(
         'insert or replace into uploadStatuses values ' + newStatuses.holders.join(','),
         function(stmt) {
             newStatuses.data.forEach(function(item, i) {
@@ -130,8 +134,16 @@ RemoteDiff.prototype.saveStatusesToDb = function() {
                 stmt.bindString(stride + 2, item.uphash);
                 stmt.bindInt(stride + 3, item.isFile);
             });
-        });
-    }
+        }
+    );
+    if (removedStatuses.urls.length) commons.db.delete(
+        'delete from uploadStatuses where url in (' + removedStatuses.holders.join(',') + ')',
+        function(stmt) {
+            removedStatuses.urls.forEach(function(url, i) {
+                stmt.bindString(i, url);
+            });
+        }
+    );
 };
 
 
@@ -252,12 +264,12 @@ LocalDiff.prototype.removeLink = function(url, fromPage) {
         fromPage.linksTo[url] = 0;
         this.removedLinkUrls[url] = 1;
         var p = siteGraph.pages[url];
-        p.refCount -= 1;
-        // Was child-page or doesn't link to anywhere anymore -> recurse
-        if (p.parentUrl == fromPage.url || p.refCount == 0) {
+        // Doesn't link to anywhere anymore -> recurse
+        if (--p.refCount == 0) {
             for (var url2 in p.linksTo) {
-                if (p.linksTo[url2] === 1)
+                if (p.linksTo[url2] === 1 && url2 != p.url) {
                     this.removeLink(url2, p);
+                }
             }
         }
     }

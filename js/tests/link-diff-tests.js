@@ -126,126 +126,48 @@ testLib.module('link-diff', function(hooks) {
             }), 'should store the updated sitegraph to the database');
         });
     });
-    testLib.test('removes an unreachable page', function(assert) {
-        assert.expect(3);
-        website.siteConfig.homeUrl = '/news';
-        siteGraph.parseAndLoadFrom(JSON.stringify({
-            pages: [
-                ['/news',NO_PARENT,mockTemplate.fname,['/news','/art1','/art2','/news/2']],
-                ['/news/2','/news',mockTemplate.fname,['/news','/art3','/art4','/news/3']],
-                ['/news/3','/news/2',mockTemplate.fname,['/news','/news/2']],
-                ['/art1',NO_PARENT,mockTemplate2.fname,['/news']],
-                ['/art2',NO_PARENT,mockTemplate2.fname,['/news']],
-                ['/art3',NO_PARENT,mockTemplate2.fname,['/news']],
-                ['/art4',NO_PARENT,mockTemplate2.fname,['/news']],
-            ],
-            templates: [[mockTemplate.fname,1,1], [mockTemplate2.fname,1,1]]
-        }));
-        mockTemplate.contents = '<html><body>{ !url[1] '+
-            // /news - news/2 has disappeared, and /art3 and /art4 has appeared
-            '? ' + makeLinks('/news','/art1','/art2','/art3','/art4') +
-            // / Same as /news (old: ['/news','/art3','/art4','/news/3'] and ['/news','/news/2'])
-            ': ' + makeLinks('/news','/art1','/art2','/art3','/art4') +
-        '}</body></html>';
-        mockTemplate2.contents = '<html><body><h1>Hello from article</h1>' +
-            makeLinks('/news') +
-        '</body></html>';
-        website.website.compileAndCacheTemplate(mockTemplate.fname);
-        website.website.compileAndCacheTemplate(mockTemplate2.fname);
-        // Trigger handleFWEvent()
-        fileWatcher._watchFn(fileWatcher.EVENT_WRITE, mockTemplate.fname);
-        // Assert that removed /news/2
-        assert.ok(!siteGraph.getPage('/news/2'), 'Should remove /news/2');
-        assert.ok(!siteGraph.getPage('/news/3'), 'Should remove /news/2');
-        //
-        commons.db.select('select `graph` from websites where id = ' + websiteData.id,
-            function(row) {
-            assert.equal(row.getString(0), JSON.stringify({
-                pages:[
-                    ['/news','',mockTemplate.fname,['/news','/art1','/art2','/art3','/art4']],
-                    ['/art1',NO_PARENT,mockTemplate2.fname,['/news']],
-                    ['/art2',NO_PARENT,mockTemplate2.fname,['/news']],
-                    ['/art3',NO_PARENT,mockTemplate2.fname,['/news']],
-                    ['/art4',NO_PARENT,mockTemplate2.fname,['/news']],
-                ],
-                templates:[[mockTemplate.fname,1,1],[mockTemplate2.fname,1,1]]
-            }), 'should store the updated sitegraph to the database');
-        });
-        website.siteConfig.homeUrl = '/home';
-    });
-    testLib.test('removes a branch', function(assert) {
-        assert.expect(3);
-        siteGraph.parseAndLoadFrom(JSON.stringify({
-            pages: [
-                ['/home','',mockTemplate.fname,['/home','/home/books']],
-                ['/home/books','/home',mockTemplate.fname,['/home','/home/books/a-book']],
-                ['/home/books/a-book','/home/books',mockTemplate.fname,['/home','/home/books']],
-            ],
-            templates: [[mockTemplate.fname,1,1]]
-        }));
-        mockTemplate.contents = '<html><body>{'+
-            '({'+
-                '"home":' + makeLinks('/home') + // /home/books has disappeared
-                ',"home/books":' + makeLinks('/home','/home/books/a-book') +
-                ',"home/books/a-book":' + makeLinks('/home','/home/books') +
-            '})[url.join("/")]'+
-        '}</body></html>';
-        website.website.compileAndCacheTemplate(mockTemplate.fname);
-        // Trigger handleFWEvent()
-        fileWatcher._watchFn(fileWatcher.EVENT_WRITE, mockTemplate.fname);
-        // Assert that removed /home/books and its child
-        assert.ok(!siteGraph.getPage('/home/books'), 'Should remove /home/books');
-        assert.ok(!siteGraph.getPage('/home/books/a-book'), 'Should remove /home/books/a-book');
-        //
-        commons.db.select('select `graph` from websites where id = ' + websiteData.id,
-            function(row) {
-            assert.equal(row.getString(0), JSON.stringify({
-                pages:[['/home','',mockTemplate.fname,['/home']]],
-                templates:[[mockTemplate.fname,1,1]]
-            }), 'should store the updated sitegraph to the database');
-        });
-    });
     testLib.test('swaps a parent page', function(assert) {
         assert.expect(4);
-        website.siteConfig.homeUrl = '/starters';
         siteGraph.parseAndLoadFrom(JSON.stringify({
             pages: [
+                ['/home','',mockTemplate.fname,['/starters','/desserts']],
                 ['/starters','',mockTemplate.fname,['/starters/dish1']],
                 ['/starters/dish1','/starters',mockTemplate.fname,['/starters']],
-                ['/main','',mockTemplate.fname,['/main/dish2']],
-                ['/main/dish2','/main',mockTemplate.fname,['/main']],
+                ['/desserts','',mockTemplate.fname,['/desserts/dish2']],
+                ['/desserts/dish2','/desserts',mockTemplate.fname,['/desserts']],
             ],
             templates: [[mockTemplate.fname,1,1]]
         }));
         mockTemplate.contents = '<html><body>{'+
             '({'+
-                '"starters":""' + // /starters/dish1 has disappeared
+                '"home":' + makeLinks('/starters','/desserts') +
+                ',"starters":""' + // /starters/dish1 has disappeared
                 ',"starters/dish1":' + makeLinks('/starters') +
-                ',"main":' + makeLinks('/main/dish2','/main/dish1') + // main/dish1 has appeared
-                ',"main/dish2":' + makeLinks('/main') +
-                ',"main/dish1":' + makeLinks('/main') +
+                ',"desserts":' + makeLinks('/desserts/dish2','/desserts/dish1') + // desserts/dish1 has appeared
+                ',"desserts/dish2":' + makeLinks('/desserts') +
+                ',"desserts/dish1":' + makeLinks('/desserts') +
             '})[url.join("/")]'+
         '}</body></html>';
         website.website.compileAndCacheTemplate(mockTemplate.fname);
         // Trigger handleFWEvent()
         fileWatcher._watchFn(fileWatcher.EVENT_WRITE, mockTemplate.fname);
-        // Assert that removed /starters/dish1 and added /main/dish1
+        // Assert that removed /starters/dish1 and added /desserts/dish1
         assert.ok(!siteGraph.getPage('/starters/dish1'), 'Should remove /starters/dish1');
-        var newDish1 = siteGraph.getPage('/main/dish1');
-        assert.ok(newDish1 !== undefined, 'Should add /main/dish1');
-        assert.equal(newDish1.parentUrl, '/main', 'Should update .parentUrl /starters -> /main');
+        var newDish1 = siteGraph.getPage('/desserts/dish1');
+        assert.ok(newDish1 !== undefined, 'Should add /desserts/dish1');
+        assert.equal(newDish1.parentUrl, '/desserts', 'Should update .parentUrl /starters -> /desserts');
         //
         commons.db.select('select `graph` from websites where id = ' + websiteData.id,
             function(row) {
             assert.equal(row.getString(0), JSON.stringify({
-                pages:[['/starters','',mockTemplate.fname,[]],
-                       ['/main','',mockTemplate.fname,['/main/dish2','/main/dish1']],
-                       ['/main/dish2','/main',mockTemplate.fname,['/main']],
-                       ['/main/dish1','/main',mockTemplate.fname,['/main']]],
+                pages:[['/home','',mockTemplate.fname,['/starters','/desserts']],
+                       ['/starters','',mockTemplate.fname,[]],
+                       ['/desserts','',mockTemplate.fname,['/desserts/dish2','/desserts/dish1']],
+                       ['/desserts/dish2','/desserts',mockTemplate.fname,['/desserts']],
+                       ['/desserts/dish1','/desserts',mockTemplate.fname,['/desserts']]],
                 templates:[[mockTemplate.fname,1,1]]
             }), 'should store the updated sitegraph to the database');
         });
-        website.siteConfig.homeUrl = '/home';
     });
     testLib.test('follows new pages recursively', function(assert) {
         assert.expect(5);

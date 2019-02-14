@@ -1,15 +1,16 @@
 var fileWatchers = require('file-watchers.js');
 var commons = require('common-services.js');
 var website = require('website.js');
+var siteGraph = website.siteGraph;
 var fileWatcher = commons.fileWatcher;
 var testLib = require('tests/testlib.js').testLib;
 
 testLib.module('page-diff', function(hooks) {
     var mockTemplate = {fname:'test.jsx.htm', contents: '<html><body></body></html>'};
-    var existingPage;
+    var homePage;
     hooks.before(function() {
-        existingPage = website.siteGraph.addPage('/home', '', mockTemplate.fname, {}, 1);
-        website.siteGraph.addTemplate(mockTemplate.fname, true, true);
+        homePage = siteGraph.addPage('/home', '', mockTemplate.fname, {}, 1);
+        siteGraph.addTemplate(mockTemplate.fname, true, true);
         website.siteConfig.defaultLayout = mockTemplate.fname;
         website.website.fs = {
             write: function() {},
@@ -23,7 +24,7 @@ testLib.module('page-diff', function(hooks) {
     hooks.after(function() {
         website.website.fs = commons.fs;
         website.website.crypto = require('crypto.js');
-        website.siteGraph.clear();
+        siteGraph.clear();
         fileWatchers.clear();
     });
     hooks.afterEach(function() {
@@ -34,14 +35,14 @@ testLib.module('page-diff', function(hooks) {
         var newPage = {url: '/bar'};
         var expectedNewPageChkSum = website.website.crypto.sha1(
             '<html><body>Hello</body></html>');
-        var existingPageChkSum = website.website.crypto.sha1(
+        var homePageChkSum = website.website.crypto.sha1(
             '<html><body><a href="' + newPage.url + '"></a></body></html>');
         mockTemplate.contents = '<html><body>{'+
             'url[0] == "home" ? <directives.Link to="' + newPage.url + '"/> : "Hello"' +
         '}</body></html>';
         if (commons.db.insert('insert into uploadStatuses values (?,?,null,0)', function(stmt) {
-            stmt.bindString(0, existingPage.url);
-            stmt.bindString(1, existingPageChkSum);
+            stmt.bindString(0, homePage.url);
+            stmt.bindString(1, homePageChkSum);
         }) < 1) throw new Error('Failed to setup test data');
         //
         fileWatcher._watchFn(fileWatcher.EVENT_WRITE, mockTemplate.fname);
@@ -52,17 +53,17 @@ testLib.module('page-diff', function(hooks) {
         });
         assert.equal(uploadStatuses.length, 2);
         var existing = uploadStatuses[0];
-        assert.deepEqual(existing, {url: existingPage.url, curhash: existingPageChkSum,
+        assert.deepEqual(existing, {url: homePage.url, curhash: homePageChkSum,
             uphash: null, isFile: 0}, 'Shouldn\'t modify old statuses');
         var inserted = uploadStatuses[1];
         assert.deepEqual(inserted, {url: newPage.url, curhash: expectedNewPageChkSum,
             uphash: null, isFile: 0});
         //
-        website.siteGraph.pages[existingPage.url].linksTo = {};
-        delete website.siteGraph.pages[newPage.url];
+        homePage.linksTo = {};
+        delete siteGraph.pages[newPage.url];
         if (commons.db.delete('delete from uploadStatuses where `url` in (?,?)',
             function(stmt) {
-                stmt.bindString(0, existingPage.url);
+                stmt.bindString(0, homePage.url);
                 stmt.bindString(1, newPage.url);
             }) < 2
         ) throw new Error('Failed to clean test data.');
@@ -75,7 +76,7 @@ testLib.module('page-diff', function(hooks) {
             '<html><body>sss</body></html>');
         mockTemplate.contents = '<html><body>{"s"}ss</body></html>';
         if (commons.db.insert('insert into uploadStatuses values (?,?,null,0)', function(stmt) {
-            stmt.bindString(0, existingPage.url);
+            stmt.bindString(0, homePage.url);
             stmt.bindString(1, oldChkSum);
         }) < 1) throw new Error('Failed to setup test data');
         //
@@ -87,14 +88,54 @@ testLib.module('page-diff', function(hooks) {
         });
         assert.equal(uploadStatuses.length, 1);
         var newStatus = uploadStatuses[0];
-        assert.deepEqual(newStatus, {url: existingPage.url, curhash: newChkSum,
+        assert.deepEqual(newStatus, {url: homePage.url, curhash: newChkSum,
             uphash: null, isFile: 0}, 'Should update the checksum');
         //
         if (commons.db.delete('delete from uploadStatuses where `url` = ?',
             function(stmt) {
-                stmt.bindString(0, existingPage.url);
+                stmt.bindString(0, homePage.url);
             }) < 1
-        ) throw new Error('Failed to clean test data.');
+        ) throw new Error('Failed to reset test data.');
+    });
+    testLib.test('updates or deletes the checksums of removed pages', function(assert) {
+        assert.expect(2);
+        homePage.linksTo = {'/foo': 1, '/bar': 1};
+        var removedPage = siteGraph.addPage('/foo', '', mockTemplate.fname, {}, 1);
+        var removedUploadedPage = siteGraph.addPage('/bar', '', mockTemplate.fname, {}, 1);
+        mockTemplate.contents = '<html><body>both links gone</body></html>';
+        if (commons.db.insert('insert into uploadStatuses values (?,?,?,0),\
+            (?,\'foo\',null,0),(?,\'foo\',\'foo\',0)',
+            function(stmt) {
+                stmt.bindString(0, homePage.url);
+                stmt.bindString(1, website.website.crypto.sha1(mockTemplate.contents));
+                stmt.bindString(2, website.website.crypto.sha1(mockTemplate.contents));
+                stmt.bindString(3, removedPage.url);
+                stmt.bindString(4, removedUploadedPage.url);
+            }) < 1) throw new Error('Failed to setup test data');
+        //
+        fileWatcher._watchFn(fileWatcher.EVENT_WRITE, mockTemplate.fname);
+        //
+        var uploadStatuses = [];
+        commons.db.select('select * from uploadStatuses where `isFile` = 0 and\
+            `url` != ?', function(row) {
+                uploadStatuses.push(makeUploadStatus(row));
+            }, function(stmt) {
+                stmt.bindString(0, homePage.url);
+            });
+        var status = uploadStatuses[0];
+        assert.deepEqual(status, {url: removedUploadedPage.url, curhash: null,
+            uphash: 'foo', isFile: 0},
+            'Should clear the checksum of the uploaded removed page');
+        assert.ok(uploadStatuses[1] === undefined,
+            'Should remove the non-uploaded page completely');
+        //
+        homePage.linksTo = {};
+        if (commons.db.delete('delete from uploadStatuses where `url` in (?,?)',
+            function(stmt) {
+                stmt.bindString(0, homePage.url);
+                stmt.bindString(1, removedUploadedPage.url);
+            }) < 2
+        ) throw new Error('Failed to reset test data.');
     });
     function makeUploadStatus(row) {
         return {url: row.getString(0), curhash: row.getString(1),
