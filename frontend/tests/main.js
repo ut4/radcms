@@ -1,5 +1,6 @@
 import './AddContentViewCmpTests.js';
 import './ControlPanelCmpTests.js';
+import './siteGraphViewCmpsTests.js';
 import './websiteViewCmpsTests.js';
 
 QUnit.config.autostart = false;

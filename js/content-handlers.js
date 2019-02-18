@@ -51,8 +51,8 @@ function handleGetContentNodeRequest(req) {
  * POST /api/content: inserts a new content node to the database.
  *
  * Payload:
- * name=str|required&
- * json=str|required&
+ * name=string|required&
+ * json=string|required&
  * contentTypeName=string|required
  *
  * Example response:

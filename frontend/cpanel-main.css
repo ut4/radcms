@@ -4,6 +4,9 @@ body {
 .hidden {
     display: none;
 }
+.line-through {
+    text-decoration: line-through;
+}
 
 /* == Buttons =============================================================== */
 button {

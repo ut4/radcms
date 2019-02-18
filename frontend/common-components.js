@@ -62,6 +62,22 @@ class Form extends preact.Component {
 }
 
 /**
+ * Sets parent.window.hash = '#' + $to.
+ *
+ * @param {string} to eg. '/edit-content/1'
+ * @param {text} to eg. 'Edit content'
+ */
+function myLink(to, text) {
+    return $el('a', {
+        href: '#' + to.split('?')[0],
+        onclick: e => {
+            e.preventDefault();
+            myRedirect(to);
+        },
+    }, text);
+}
+
+/**
  * @param {Object} props {
  *     cnodes: Object[];
  *     createLinkText: string;
@@ -75,27 +91,19 @@ function contentNodeList(props) {
         $el('ul', null, props.cnodes.map(c =>
             $el('li', null, [
                 $el('span', null, c.defaults.name),
-                $el('a', {href: '#/edit-content', onClick: e => {
-                    e.preventDefault();
-                    myRedirect('/edit-content/' + c.defaults.id +
-                        '?returnTo=' + encodeURIComponent(props.currentPageUrl));
-                }}, 'Edit')
+                myLink('/edit-content/' + c.defaults.id + '?returnTo=' +
+                       encodeURIComponent(props.currentPageUrl), 'Edit')
             ])
         )),
-        $el('div', null, $el('a', {
-            href: '#/add-content', onClick: e => {
-                e.preventDefault();
-                myRedirect(
-                    '/add-content' +
-                    (!props.contentType ? '' : '/' + props.contentType) +
-                    '?returnTo=' + encodeURIComponent(props.currentPageUrl) +
-                    (props.urlToRescanAfterSubmit
-                        ? '&urlToRescanAfterSubmit=' + encodeURIComponent(props.urlToRescanAfterSubmit)
-                        : '')
-                );
-            }
-        }, props.createLinkText || 'Create content'))
+        $el('div', null, myLink(
+            '/add-content' + (!props.contentType ? '' : '/' + props.contentType) +
+            '?returnTo=' + encodeURIComponent(props.currentPageUrl) +
+            (props.urlToRescanAfterSubmit
+                ? '&urlToRescanAfterSubmit=' + encodeURIComponent(props.urlToRescanAfterSubmit)
+                : ''),
+            props.createLinkText || 'Create content'
+        ))
     ];
 }
 
-export {Form, contentNodeList};
+export {Form, myLink, contentNodeList};

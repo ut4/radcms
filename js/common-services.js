@@ -58,7 +58,7 @@ exports.fs = {
     /**
      * @native
      * @param {string} path
-     * @returns {str}
+     * @returns {string}
      */
     read: function(/*path*/) {},
     /**

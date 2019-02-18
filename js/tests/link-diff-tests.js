@@ -66,7 +66,7 @@ testLib.module('link-diff', function(hooks) {
         // Assert that added the page to website.siteGraph
         var addedPage = siteGraph.getPage(newLinkUrl);
         assert.ok(addedPage !== undefined, 'should add a page to website.siteGraph');
-        // Assert that saved the updated sitegraph to the database
+        // Assert that saved the updated site graph to the database
         commons.db.select('select `graph` from websites where id = ' + websiteData.id,
             function(row) {
             assert.equal(row.getString(0), JSON.stringify({
@@ -75,7 +75,7 @@ testLib.module('link-diff', function(hooks) {
                     [newLinkUrl,NO_PARENT,existingLayout.fileName,[newLinkUrl]]
                 ],
                 templates:[[existingLayout.fileName,1,1]]
-            }), 'should store the updated sitegraph to the database');
+            }), 'should store the updated site graph to the database');
         });
     });
     testLib.test('spots a removed link from a modified template', function(assert) {
@@ -91,7 +91,7 @@ testLib.module('link-diff', function(hooks) {
         fileWatcher._watchFn(fileWatcher.EVENT_WRITE, mockTemplate.fname);
         // Assert that removed the page to website.siteGraph
         assert.ok(!siteGraph.getPage(existingPage2), 'Should remove a page from website.siteGraph');
-        // Assert that saved the updated sitegraph to the database
+        // Assert that saved the updated site graph to the database
         commons.db.select('select `graph` from websites where id = ' + websiteData.id,
             function(row) {
             assert.equal(row.getString(0), JSON.stringify({
@@ -99,7 +99,7 @@ testLib.module('link-diff', function(hooks) {
                     [existingPage1.url,NO_PARENT,existingLayout.fileName,[]]
                 ],
                 templates:[[existingLayout.fileName,1,1]]
-            }), 'should store the updated sitegraph to the database');
+            }), 'should store the updated site graph to the database');
         });
     });
     testLib.test('doesn\'t remove pages that still have references somewhere', function(assert) {
@@ -114,7 +114,7 @@ testLib.module('link-diff', function(hooks) {
         // Assert that didn't remove the page
         assert.equal(siteGraph.getPage(existingPage2.url), existingPage2,
             'Should not remove the page');
-        // Assert that saved the updated sitegraph to the database
+        // Assert that saved the updated site graph to the database
         commons.db.select('select `graph` from websites where id = ' + websiteData.id,
             function(row) {
             assert.equal(row.getString(0), JSON.stringify({
@@ -123,7 +123,7 @@ testLib.module('link-diff', function(hooks) {
                     [existingPage2.url,NO_PARENT,existingLayout.fileName,[]]
                 ],
                 templates:[[existingLayout.fileName,1,1]]
-            }), 'should store the updated sitegraph to the database');
+            }), 'should store the updated site graph to the database');
         });
     });
     testLib.test('swaps a parent page', function(assert) {
@@ -166,7 +166,7 @@ testLib.module('link-diff', function(hooks) {
                        ['/desserts/dish2','/desserts',mockTemplate.fname,['/desserts']],
                        ['/desserts/dish1','/desserts',mockTemplate.fname,['/desserts']]],
                 templates:[[mockTemplate.fname,1,1]]
-            }), 'should store the updated sitegraph to the database');
+            }), 'should store the updated site graph to the database');
         });
     });
     testLib.test('follows new pages recursively', function(assert) {
@@ -194,7 +194,7 @@ testLib.module('link-diff', function(hooks) {
         var added2 = siteGraph.getPage(linkBHref);
         assert.ok(added2 !== undefined, 'should add page #2 to website.siteGraph');
         assert.equal(added2.url, '/nar');
-        // Assert that saved the updated sitegraph to the database
+        // Assert that saved the updated site graph to the database
         commons.db.select('select `graph` from websites where id = ' + websiteData.id,
             function(row) {
             assert.equal(row.getString(0), JSON.stringify({
@@ -204,7 +204,7 @@ testLib.module('link-diff', function(hooks) {
                     [linkBHref,NO_PARENT,mockTemplate.fname,[linkBHref]]
                 ],
                 templates:[[mockTemplate.fname,1,1]]
-            }), 'should store the updated sitegraph to the database');
+            }), 'should store the updated site graph to the database');
         });
     });
     testLib.test('doesn\'t add aliases (<Link to="/"/>)', function(assert) {

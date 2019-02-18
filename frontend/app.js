@@ -1,9 +1,10 @@
 import services from './common-services.js';
-import {contentNodeList} from './common-components.js';
+import {myLink, contentNodeList} from './common-components.js';
 import {ArticleListDirectiveWebUIImpl,
         StaticMenuDirectiveWebUIImpl} from './directive-impls.js';
 import {AddContentView, EditContentView} from './content-views.js';
 import {WebsiteGenerateView, WebsiteUploadView} from './website-views.js';
+import {SiteGraphEditView} from './site-graph-views.js';
 
 /*
  * App-singleton.
@@ -109,7 +110,8 @@ class InsaneControlPanel extends preact.Component {
                     $el(AddContentView, {path: '/add-content/:initialContentTypeName?'}, null),
                     $el(EditContentView, {path: '/edit-content/:contentNodeId'}, null),
                     $el(WebsiteGenerateView, {path: '/generate-website'}, null),
-                    $el(WebsiteUploadView, {path: '/upload-website'}, null)
+                    $el(WebsiteUploadView, {path: '/upload-website'}, null),
+                    $el(SiteGraphEditView, {path: '/edit-site-graph'}, null)
                 ].concat(...this.currentPageDirectiveImpls.map(dir=>dir.getRoutes()))
             )
         ]);
@@ -163,7 +165,8 @@ class InsaneControlPanel extends preact.Component {
                         onChange: e => { this.handleCurrentPageTemplateChange(e); },
                     }, this.state.templates.map((t, i) =>
                         $el('option', {value: i}, t.fileName)
-                    ))
+                    )),
+                    myLink('/edit-site-graph', 'Edit site graph')
                 ])
             ])
         ];

@@ -181,7 +181,7 @@ LocalDiff.prototype.scanChanges = function(pages, usersOfLayout) {
             if (fnCmps[i].fn !== directives.Link) continue;
             var href = props.to;
             newLinksTo[href] = 1;
-            // Page already in the sitegraph
+            // Page already in the site graph
             if (siteGraph.getPage(href)) {
                 if (!page.linksTo[href]) this.addLink(href, page);
             // Totally new page -> add it

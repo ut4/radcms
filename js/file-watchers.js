@@ -6,7 +6,7 @@ var diff = require('website-diff.js');
 
 exports.init = function() {
     fileWatcher.setWatchFn(handleFWEvent);
-    commons.signals.listen('sitegraphRescanRequested', diff.performRescan);
+    commons.signals.listen('siteGraphRescanRequested', diff.performRescan);
 };
 
 /**

@@ -1,4 +1,4 @@
-import {contentNodeList} from './common-components.js';
+import {myLink, contentNodeList} from './common-components.js';
 
 /*
  * Implements end-user management views (editing articles, creating new articles
@@ -57,13 +57,7 @@ class StaticMenuDirectiveWebUIImpl extends preact.Component {
     static getMenuItems(directive) {
         return directive.contentNodes.map(article => {
             return $el('span', null, article.title);
-        }).concat($el('a', {
-            href:'#static-menu-add-page',
-            onClick: e => {
-                e.preventDefault();
-                myRedirect('/static-menu-add-page');
-            }
-        }, 'Add page'));
+        }).concat(myLink('/static-menu-add-page', 'Add page'));
     }
 }
 

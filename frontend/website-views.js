@@ -1,5 +1,5 @@
 import services from './common-services.js';
-import {Form} from './common-components.js';
+import {myLink, Form} from './common-components.js';
 
 /**
  * #/generate-website.
@@ -134,6 +134,7 @@ class WebsiteUploadView extends preact.Component {
                         }, null)
                     ])
                 ]),
+                this.state.pages.length ? myLink('/edit-site-graph', 'Too many pages? Edit them here.') : '',
                 this.state.pages.length ? uploadList(this.state.pages, 'Page') : '',
                 this.state.files.length ? uploadList(this.state.files, 'File') : ''] :
                 'Nothing to upload.'

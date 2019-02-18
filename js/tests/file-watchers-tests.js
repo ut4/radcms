@@ -41,12 +41,12 @@ testLib.module('file-watchers.js', function(hooks) {
         // Assert that added the template to website.siteGraph
         var templateAfter = siteGraph.getTemplate(mockTemplate.fname);
         assert.ok(templateAfter !== templateBefore, 'should add a template to siteGraph');
-        // Assert that saved the updated sitegraph to the database
+        // Assert that saved the updated site graph to the database
         commons.db.select('select `graph` from websites where id = ' + websiteData.id,
             function(row) {
             assert.equal(row.getString(0), JSON.stringify({pages:[],
                 templates:[[mockTemplate.fname,0,0]]}),
-                'should store the updated sitegraph to the database');
+                'should store the updated site graph to the database');
         });
     });
     testLib.test('EVENT_WRITE <existingLayout>.jsx.htm updates siteGraph.templates', function(assert) {
@@ -75,7 +75,7 @@ testLib.module('file-watchers.js', function(hooks) {
             assert.equal(row.getString(0), JSON.stringify({
                 pages: [],
                 templates:[]
-            }), 'should store the updated sitegraph to the database');
+            }), 'should store the updated site graph to the database');
         });
     });
 });

@@ -286,7 +286,7 @@ exports.website = {
         }
         // Rescan for new/deleted links and save the siteGraph to the database
         exports.siteGraph.hasUnsavedChanges = message.length || tmplDiff.validityChanged;
-        commons.signals.emit('sitegraphRescanRequested', 'full');
+        commons.signals.emit('siteGraphRescanRequested', 'full');
     },
     /**
      * @param {(renderedHtml: string, page: Page): any|bool} onEach
@@ -326,9 +326,9 @@ exports.website = {
  * @throws {Error}
  */
 exports.saveToDb = function(siteGraph) {
-   commons.db.update('update websites set `graph` = ?', function(stmt) {
-       stmt.bindString(0, siteGraph.serialize());
-   });
+    commons.db.update('update websites set `graph` = ?', function(stmt) {
+        stmt.bindString(0, siteGraph.serialize());
+    });
 };
 
 exports.NOT_UPLOADED = 0;

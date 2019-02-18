@@ -1,6 +1,14 @@
+/**
+ * == website-handlers.js ====
+ *
+ * This file implements and registers handlers (or controllers) for
+ * GET /<page>, and * /api/website/* http-routes.
+ *
+ */
 var commons = require('common-services.js');
 var website = require('website.js');
 var http = require('http.js');
+var diff = require('website-diff.js');
 var uploadHandlerIsBusy = false;
 
 commons.app.addRoute(function(url, method) {
@@ -11,6 +19,8 @@ commons.app.addRoute(function(url, method) {
             return handleGetAllTemplatesRequest;
         if (url == '/api/website/waiting-uploads')
             return handleGetWaitingUploadsRequest;
+        if (url == '/api/website/site-graph')
+            return handleGetSiteGraphRequest;
         return handlePageRequest;
     }
     if (method == 'POST') {
@@ -34,7 +44,7 @@ function handlePageRequest(req) {
     if (page) {
         var rescanType = req.getUrlParam('rescan');
         if (rescanType) {
-            commons.signals.emit('sitegraphRescanRequested', rescanType);
+            commons.signals.emit('siteGraphRescanRequested', rescanType);
         }
         var html = page.render(dataToFrontend);
         dataToFrontend.page = {url: page.url, layoutFileName: page.layoutFileName};
@@ -44,6 +54,41 @@ function handlePageRequest(req) {
             '<!DOCTYPE html><html><title>Not found</title><body>Not found</body></htm>',
             dataToFrontend));
     }
+}
+
+/**
+ * GET /api/website/num-waiting-uploads.
+ */
+function handleGetNumWaitingUploads() {
+    var count = 0;
+    commons.db.select('select count(`url`) from uploadStatuses where \
+                       `uphash` is null or `curhash` != `uphash` or\
+                       `curhash` is null and `uphash` is not null',
+        function(row) {
+            count = row.getInt(0).toString();
+        });
+    //
+    return new http.Response(200, count, {'Content-Type': 'application/json'});
+}
+
+/**
+ * GET /api/website/template: lists all templates.
+ *
+ * Example response:
+ * [
+ *     {"fileName":"foo.jsx.htm", "isOk": true, "isInUse": true},
+ *     {"fileName":"bar.jsx.htm", "isOk": false, "isInUse": true}
+ * ]
+ */
+function handleGetAllTemplatesRequest() {
+    var templates = [];
+    var all = website.siteGraph.templates;
+    for (var fileName in all)
+        templates.push({fileName: fileName, isOk: all[fileName].isOk,
+                        isInUse: all[fileName].isInUse});
+    return new http.Response(200, JSON.stringify(templates),
+        {'Content-Type': 'application/json'}
+    );
 }
 
 /**
@@ -77,21 +122,23 @@ function handleGetWaitingUploadsRequest() {
 }
 
 /**
- * GET /api/website/template: lists all templates.
+ * GET /api/website/site-graph: Returns the contents of the site graph.
  *
  * Example response:
- * [
- *     {"fileName":"foo.jsx.htm", "isOk": true, "isInUse": true},
- *     {"fileName":"bar.jsx.htm", "isOk": false, "isInUse": true}
- * ]
+ * {
+ *     "pages":[{"url":"/home""layoutFileName":"main-layout.jsx.htm"}],
+ *     "templates":[{"fileName":"main-layout.jsx.htm"}]
+ * }
  */
-function handleGetAllTemplatesRequest() {
-    var templates = [];
-    var all = website.siteGraph.templates;
-    for (var fileName in all)
-        templates.push({fileName: fileName, isOk: all[fileName].isOk,
-                        isInUse: all[fileName].isInUse});
-    return new http.Response(200, JSON.stringify(templates),
+function handleGetSiteGraphRequest() {
+    var out = {pages: [], templates: []};
+    for (var url in website.siteGraph.pages) {
+        out.pages.push({url: url});
+    }
+    for (var fileName in website.siteGraph.templates) {
+        out.templates.push({fileName: fileName});
+    }
+    return new http.Response(200, JSON.stringify(out),
         {'Content-Type': 'application/json'}
     );
 }
@@ -137,16 +184,16 @@ function handleGenerateRequest() {
 }
 
 /**
- * POST /api/website/upload: renders all pages, and uploads them to a server
- * using FTP.
+ * POST /api/website/upload: uploads or deletes the requested pages and files
+ * to / from a server using FTP.
  *
  * Payload:
- * remoteUrl=str|required&
- * username=str|required&
- * password=str|required&
- * pageurls[0-n][url]=str&
+ * remoteUrl=string|required&
+ * username=string|required&
+ * password=string|required&
+ * pageUrls[0-n][url]=string&
  * pageUrls[0-n][isDeleted]=int&
- * fileNames[0-n][fileName]=str&
+ * fileNames[0-n][fileName]=string&
  * fileNames[0-n][isDeleted]=int
  *
  * Example response chunk:
@@ -287,21 +334,6 @@ function makeUploadState(reqData, pageUrls) {
     }
     return state.uploadPagesLeft + state.uploadFilesLeft +
             state.deletablePagesLeft + state.deletableFilesLeft > 0 ? state : null;
-}
-
-/**
- * GET /api/website/num-waiting-uploads.
- */
-function handleGetNumWaitingUploads() {
-    var count = 0;
-    commons.db.select('select count(`url`) from uploadStatuses where \
-                       `uphash` is null or `curhash` != `uphash` or\
-                       `curhash` is null and `uphash` is not null',
-        function(row) {
-            count = row.getInt(0).toString();
-        });
-    //
-    return new http.Response(200, count, {'Content-Type': 'application/json'});
 }
 
 /**
