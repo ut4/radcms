@@ -31,8 +31,12 @@ commons.app.addRoute(function(url, method) {
             else return rejectUploadRequest;
         }
     }
-    if (method == 'PUT' && url == '/api/website/page')
-        return handleUpdatePageRequest;
+    if (method == 'PUT') {
+        if (url == '/api/website/page')
+            return handleUpdatePageRequest;
+        if (url == '/api/website/site-graph')
+            return handleUpdateSiteGraphRequest;
+    }
 });
 
 /**
@@ -376,6 +380,35 @@ function setLayoutAsUsed(fileName) {
 }
 
 /**
+ * PUT /api/website/site-graph: deletes the requested pages from the site graph,
+ * and syncs the changes to the database.
+ *
+ * Payload:
+ * deleted[0-n]=string|required
+ *
+ * Example response:
+ * '{"status":"ok"}'
+ */
+function handleUpdateSiteGraphRequest(req) {
+    var remoteDiff = new diff.RemoteDiff();
+    for (var i = 0; i < req.data.deleted.length; ++i) {
+        var url = req.data.deleted[i];
+        if (!website.siteGraph.getPage(url)) {
+            return new http.Response(400, 'Page \'' + url + '\' not found.');
+        }
+        remoteDiff.addPageToDelete(url);
+        delete website.siteGraph.pages[url];
+    }
+    if (i == 0) return new http.Response(400, 'Nothing to update.');
+    //
+    website.saveToDb(website.siteGraph); // update websites set `graph` = ...
+    remoteDiff.saveStatusesToDb(); // update|delete from uploadStatuses ...
+    return new http.Response(200, '{"status":"ok"}',
+        {'Content-Type': 'application/json'}
+    );
+}
+
+/**
  * @param {string} html <html>...<p>foo</p></body>...
  * @param {Object} dataToFrontend {
  *     page: {url: <str>, layoutFileName: <str>},
@@ -387,7 +420,7 @@ function setLayoutAsUsed(fileName) {
 function injectControlPanelIFrame(html, dataToFrontend) {
     var bodyEnd = html.indexOf('</body>');
     if (bodyEnd > -1) {
-        return html.substr(0, bodyEnd) + '<iframe src="/frontend/cpanel.html" id="insn-cpanel-iframe" style="position:fixed;border:none;height:100%;width:220px;right:4px;top:4px;"></iframe><script>function setIframeVisible(setVisible) { document.getElementById(\'insn-cpanel-iframe\').style.width = setVisible ? \'80%\' : \'200px\'; } function getCurrentPageData() { return ' + JSON.stringify(dataToFrontend) + '; }</script>' + html.substr(bodyEnd);
+        return html.substr(0, bodyEnd) + '<iframe src="/frontend/cpanel.html" id="insn-cpanel-iframe" style="position:fixed;border:none;height:100%;width:240px;right:4px;top:4px;"></iframe><script>function setIframeVisible(setVisible) { document.getElementById(\'insn-cpanel-iframe\').style.width = setVisible ? \'100%\' : \'240px\'; } function getCurrentPageData() { return ' + JSON.stringify(dataToFrontend) + '; }</script>' + html.substr(bodyEnd);
     }
     return html;
 }

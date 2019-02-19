@@ -20,6 +20,7 @@ struct PerConnInfo {
     struct MHD_PostProcessor *postProcessor;
     RequestHandler *reqHandler; // borrowed from app->handlers
     unsigned statusCode;
+    IncomingDataContentType formDataContentType;
 };
 
 static int
@@ -50,7 +51,7 @@ iterateFormDataBasic(void *myPPPtr, enum MHD_ValueKind kind, const char *key,
                      uint64_t off, size_t size);
 
 static int
-validatePostReqHeaders(void *myPtr, enum MHD_ValueKind kind, const char *key,
+getFormDataContentType(void *myPtr, enum MHD_ValueKind kind, const char *key,
                        const char *value);
 
 bool
@@ -81,6 +82,7 @@ WebApp::run() {
 
 WebApp::~WebApp() {
     if (this->daemon) MHD_stop_daemon(this->daemon);
+    for (auto &h: this->handlers) delete h.formDataHandlers;
 }
 
 int
@@ -117,15 +119,15 @@ handleRequest(void *myPtr, struct MHD_Connection *conn, const char *url,
     }
     auto *connInfo = static_cast<PerConnInfo*>(*perConnPtr);
     /*
-    * Second iteration of POST|PUT -> process the form data and set connInfo->statusCode
-    */
+     * Second iteration of POST|PUT -> process the form data and set connInfo->statusCode
+     */
     if (connInfo->statusCode == 0) {
         connInfo->statusCode = processPostData(uploadData, uploadDataSize, perConnPtr);
         return MHD_YES;
     }
     /*
-    * Last iteration of POST|PUT -> respond
-    */
+     * Last iteration of POST|PUT -> respond
+     */
     if (connInfo->statusCode > 1) { // had errors
         return respond(connInfo->statusCode, conn, nullptr, app->ctx->errBuf);
     }
@@ -141,7 +143,9 @@ finishRequest(void *cls, struct MHD_Connection *conn, void **perConnMyPtr,
                       enum MHD_RequestTerminationCode rtc) {
     auto *connInfo = static_cast<PerConnInfo*>(*perConnMyPtr);
     if (!connInfo) return;
-    (void)MHD_destroy_post_processor(connInfo->postProcessor);
+    if (connInfo->formDataContentType == CONTENT_TYPE_URL_ENCODED) {
+        (void)MHD_destroy_post_processor(connInfo->postProcessor);
+    }
     if (connInfo->reqHandler->formDataHandlers->myPtr) {
         connInfo->reqHandler->formDataHandlers->cleanup(
             connInfo->reqHandler->formDataHandlers->myPtr);
@@ -193,24 +197,30 @@ preparePostRequest(struct MHD_Response **response, struct MHD_Connection *conn,
         return MHD_HTTP_NOT_IMPLEMENTED;
     }
     //
-    bool hasRightContentType = false;
-    MHD_get_connection_values(conn, MHD_HEADER_KIND, validatePostReqHeaders,
-                              &hasRightContentType);
-    if (!hasRightContentType) {
-        std::cerr << "[Error]: Expected Content-Type: \"application/x-www-form-urlencoded\".\n";
+    IncomingDataContentType ctype = CONTENT_TYPE_OTHER;
+    MHD_get_connection_values(conn, MHD_HEADER_KIND, getFormDataContentType,
+                              &ctype);
+    if (ctype == CONTENT_TYPE_OTHER) {
+        std::cerr << "[Error]: Expected Content-Type: \"application/json\" or "
+                     "\"application/x-www-form-urlencoded\".\n";
         return MHD_HTTP_BAD_REQUEST;
     }
     //
     PerConnInfo *connInfo = new PerConnInfo;
     connInfo->reqHandler = h;
-    connInfo->postProcessor = MHD_create_post_processor(
-        conn, FORM_DATA_ITER_BUF_LEN, iterateFormDataBasic, h->formDataHandlers);
-    if (!connInfo->postProcessor) {
-        std::cerr << "[Error]: preparePostRequest: Failed to MHD_create_post_processor().\n";
-        free(connInfo);
-        return MHD_HTTP_INTERNAL_SERVER_ERROR;
-    }
+    connInfo->formDataContentType = ctype;
     connInfo->statusCode = 0;
+    if (connInfo->formDataContentType == CONTENT_TYPE_JSON) {
+        connInfo->postProcessor = nullptr;
+    } else {
+        connInfo->postProcessor = MHD_create_post_processor(
+            conn, FORM_DATA_ITER_BUF_LEN, iterateFormDataBasic, h->formDataHandlers);
+        if (!connInfo->postProcessor) {
+            std::cerr << "[Error]: preparePostRequest: Failed to MHD_create_post_processor().\n";
+            delete connInfo;
+            return MHD_HTTP_INTERNAL_SERVER_ERROR;
+        }
+    }
     *perConnPtr = connInfo;
     return MHD_YES;
 }
@@ -227,9 +237,13 @@ processPostData(const char *uploadData, size_t *uploadDataSize,
     //
     auto *connInfo = static_cast<PerConnInfo*>(*perConnMyPtr);
     FormDataHandlers *handlers = connInfo->reqHandler->formDataHandlers;
-    handlers->init(&handlers->myPtr);
+    handlers->init(connInfo->formDataContentType, &handlers->myPtr);
     //
-    (void)MHD_post_process(connInfo->postProcessor, uploadData, l);
+    if (connInfo->formDataContentType == CONTENT_TYPE_JSON) {
+        handlers->receiveVal("<json>", uploadData, handlers->myPtr);
+    } else {
+        (void)MHD_post_process(connInfo->postProcessor, uploadData, l);
+    }
     *uploadDataSize = 0;
     return MHD_YES;
 }
@@ -250,11 +264,13 @@ iterateFormDataBasic(void *myPPPtr, enum MHD_ValueKind kind, const char *key,
 }
 
 static int
-validatePostReqHeaders(void *myPtr, enum MHD_ValueKind kind, const char *key,
+getFormDataContentType(void *myPtr, enum MHD_ValueKind kind, const char *key,
                        const char *value) {
     if (strcmp(key, "Content-Type") == 0) {
-        if (strcmp(value, "application/x-www-form-urlencoded") == 0) {
-            *((bool*)myPtr) = true;
+        if (strcmp(value, "application/json") == 0) {
+            *((IncomingDataContentType*)myPtr) = CONTENT_TYPE_JSON;
+        } else if (strcmp(value, "application/x-www-form-urlencoded") == 0) {
+            *((IncomingDataContentType*)myPtr) = CONTENT_TYPE_URL_ENCODED;
         }
         return MHD_NO;
     }

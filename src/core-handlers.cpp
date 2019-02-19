@@ -12,7 +12,7 @@ static unsigned processAndQueueBasicResponse(duk_context*, struct MHD_Response**
 static unsigned processAndQueueChunkedResponse(duk_context*, struct MHD_Response**);
 static ssize_t pullAndSendChunkFromJs(void*, uint64_t , char*, size_t);
 static void finalizeChunkedReq(void*);
-static void initJsFormData(void **myPtr);
+static void initJsFormData(IncomingDataContentType ctype, void **myPtr);
 static bool putJsFormDataVal(const char *key, const char *value, void *myPtr);
 static void cleanJsFormData(void *myPtr);
 
@@ -145,10 +145,12 @@ callScriptHandler(duk_context *ctx, const char *url,
 
 /* dukStash._pendingReqObj.data = {} */
 static void
-initJsFormData(void **myPtr) {
+initJsFormData(IncomingDataContentType ctype, void **myPtr) {
     auto *ctx = static_cast<duk_context*>(*myPtr);
     duk_push_global_stash(ctx);                    // [stash]
     duk_get_prop_string(ctx, -1, KEY_CUR_REQ_OBJ); // [stash req]
+    duk_push_uint(ctx, ctype);                     // [stash req ctype]
+    duk_put_prop_string(ctx, -2, "_formDataContentType");// [stash req]
     duk_push_object(ctx);                          // [stash req data]
     duk_put_prop_string(ctx, -2, "data");          // [stash req]
     duk_pop_2(ctx);                                // []
@@ -160,10 +162,18 @@ putJsFormDataVal(const char *key, const char *value, void *myPtr) {
     auto *ctx = static_cast<duk_context*>(myPtr);
     duk_push_global_stash(ctx);                    // [stash]
     duk_get_prop_string(ctx, -1, KEY_CUR_REQ_OBJ); // [stash req]
-    duk_get_prop_string(ctx, -1, "data");          // [stash req data]
-    duk_push_string(ctx, value);                   // [stash req data value]
-    duk_put_prop_string(ctx, -2, key);             // [stash req data]
-    duk_pop_3(ctx);                                // []
+    duk_get_prop_string(ctx, -1, "_formDataContentType");// [stash req ctype]
+    if (duk_get_uint(ctx, -1) == CONTENT_TYPE_JSON) {
+        duk_push_string(ctx, value);               // [stash req ctype jsonstr]
+        duk_json_decode(ctx, -1);                  // [stash req ctype jsonobj]
+        duk_put_prop_string(ctx, -3, "data");      // [stash req ctype]
+        duk_pop_3(ctx);                            // []
+    } else {
+        duk_get_prop_string(ctx, -2, "data");      // [stash req ctype data]
+        duk_push_string(ctx, value);               // [stash req ctype data value]
+        duk_put_prop_string(ctx, -2, key);         // [stash req ctype data]
+        duk_pop_n(ctx, 4);                         // []
+    }
     return true;
 }
 

@@ -323,10 +323,11 @@ exports.website = {
 };
 
 /**
+ * @returns {number} numAffectedRows
  * @throws {Error}
  */
 exports.saveToDb = function(siteGraph) {
-    commons.db.update('update websites set `graph` = ?', function(stmt) {
+    return commons.db.update('update websites set `graph` = ?', function(stmt) {
         stmt.bindString(0, siteGraph.serialize());
     });
 };

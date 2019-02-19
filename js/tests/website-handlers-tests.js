@@ -67,7 +67,7 @@ testLib.module('website-handlers.js', function(hooks) {
                 function(stmt) { stmt.bindString(0, genericCntType.name); }) < 1 ||
             commons.db.delete('delete from websites where id = ?',
                 function(stmt) { stmt.bindInt(0, testWebsite.id); }) < 1 ||
-            commons.db.delete('delete from uploadStatuses', function() { }) < 4
+            commons.db.delete('delete from uploadStatuses', function() { }) < 5
         ) throw new Error('Failed to clean test data.');
     });
     hooks.afterEach(function() {
@@ -365,11 +365,67 @@ testLib.module('website-handlers.js', function(hooks) {
         // Assert that changed layoutFileName and saved the changes to the database
         commons.db.select('select `graph` from websites limit 1', function(row) {
             var updatedPData = JSON.parse(row.getString(0)).pages; // [[<url>,<parent>,<layoutFilename>...]]
-            var savedFileName = null;
-            for (var i = 0; i < updatedPData.length; ++i) {
-                if (updatedPData[i][0] == req.data.url) { savedFileName = updatedPData[i][2]; break; }
-            }
-            assert.equal(savedFileName, layout1.fileName);
+            var entry = findPage(updatedPData, req.data.url);
+            assert.equal(entry ? entry[2] : 'nil', layout1.fileName);
         });
     });
+    testLib.test('PUT \'/api/website/site-graph\' deletes pages', function(assert) {
+        assert.expect(8);
+        //
+        var url1 = '/services';
+        var url2 = '/contact';
+        siteGraph.addPage(url1, '', layout1.fileName, {}, 1);
+        siteGraph.addPage(url2, '', layout1.fileName, {}, 1);
+        if (commons.db.insert('insert into uploadStatuses values '+q+','+q, function(stmt) {
+            stmt.bindString(0, url1);
+            stmt.bindString(1, 'hash');
+            stmt.bindString(2, 'hash'); // /services2 is uploaded
+            stmt.bindInt(3, 1);
+            stmt.bindString(4, url2);
+            stmt.bindString(5, 'hash');
+            stmt.bindString(6, null); // /contact2 is not
+            stmt.bindInt(7, 1);
+        }) < 1 || website.saveToDb(siteGraph) < 1) {
+            throw new Error('Failed to setup test data.');
+        }
+        var req = new http.Request('/api/website/site-graph', 'PUT');
+        // Emulate the request
+        req.data = {deleted: [url1, url2]};
+        var response = commons.app.getHandler(req.url, req.method)(req);
+        assert.equal(response.statusCode, 200);
+        assert.equal(response.body, '{"status":"ok"}');
+        //
+        assert.ok(siteGraph.getPage(url1) === undefined,
+            'Should remove /services2 from the site graph');
+        assert.ok(siteGraph.getPage(url2) === undefined,
+            'Should remove /contact2 from the site graph');
+        // Assert that updated websites
+        commons.db.select('select `graph` from websites limit 1', function(row) {
+            var updatedPData = JSON.parse(row.getString(0)).pages;
+            assert.ok(findPage(updatedPData, url1) == null,
+                'Should remove /services2 from the stored site graph');
+            assert.ok(findPage(updatedPData, url2) == null,
+                'Should remove /contact2 from the stored site graph');
+        });
+        // Assert that updated uploadStatuses
+        var statuses = [];
+        commons.db.select('select `url`,`curhash`,`uphash` from uploadStatuses \
+                          where `url` in (?,?)', function(row) {
+            statuses.push({url: row.getString(0), curhash: row.getString(1),
+                uphash: row.getString(2)});
+        }, function(stmt) {
+            stmt.bindString(0, url1);
+            stmt.bindString(1, url2);
+        });
+        assert.deepEqual(statuses[0], {url: url1, curhash: null, uphash: 'hash'},
+            'Should mark /services2 as removed');
+        assert.ok(statuses[1] === undefined,
+            'Should delete the uploadStatus of /contact2 completely');
+    });
+    function findPage(serPages, url) {
+        for (var i = 0; i < serPages.length; ++i) {
+            if (serPages[i][0] == url) return serPages[i];
+        }
+        return null;
+    }
 });

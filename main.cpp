@@ -63,7 +63,6 @@ handleRun(const std::string &sitePath) {
     if (webApp.run()) {
         out = EXIT_SUCCESS;
     }
-    delete webApp.handlers[1].formDataHandlers;
     done:
     if (out != EXIT_SUCCESS) {
         std::cerr << "[Fatal]: " << appCtx.errBuf << "\n";

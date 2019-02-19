@@ -13,8 +13,14 @@
 #include "app-context.hpp"
 #include "my-fs.hpp"
 
+enum IncomingDataContentType {
+    CONTENT_TYPE_JSON,
+    CONTENT_TYPE_URL_ENCODED,
+    CONTENT_TYPE_OTHER
+};
+
 struct FormDataHandlers {
-    void (*init)(void **myPtr);
+    void (*init)(IncomingDataContentType ctype, void **myPtr);
     bool (*receiveVal)(const char *key, const char *value, void *myPtr); // return false == break
     void (*cleanup)(void *myPtr);
     void *myPtr;

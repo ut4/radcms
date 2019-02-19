@@ -11,6 +11,7 @@ QUnit.module('SiteGraphEditComponent', hooks => {
         httpStub.restore();
     });
     QUnit.test('ticks/unticks deletable pages, sends data to backend', assert => {
+        assert.expect(12);
         const testSiteGraph = JSON.stringify({pages:[
             {url:'/home'}, {url:'/news'}, {url:'/contact'}
         ]});
@@ -44,7 +45,8 @@ QUnit.module('SiteGraphEditComponent', hooks => {
             const putCall = httpStub.getCall(1);
             assert.equal(putCall.args[0], '/api/website/site-graph');
             assert.equal(putCall.args[1].method, 'PUT');
-            assert.equal(putCall.args[1].data, 'deleted[0]='+encodeURIComponent('/contact'));
+            assert.equal(putCall.args[1].headers['Content-Type'], 'application/json');
+            assert.equal(putCall.args[1].data, '{"deleted":["/contact"]}');
             putCall.returnValue.then(() => {
                 assert.ok(toastSpy.calledAfter(httpStub), 'Should show success message');
                 assert.equal(toastSpy.getCall(0).args[0], 'Updated the site graph.');

@@ -52,10 +52,10 @@ class SiteGraphEditView extends preact.Component {
     confirm() {
         services.myFetch('/api/website/site-graph', {
             method: 'PUT',
-            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-            data: this.state.pages.filter(p => p.doDelete == true).map((page, i) =>
-                'deleted[' + i + ']=' + encodeURIComponent(page.url)
-            ).join('&')
+            headers: {'Content-Type': 'application/json'},
+            data: JSON.stringify({
+                deleted: this.state.pages.filter(p => p.doDelete).map(p => p.url)
+            })
         }).then(() => {
             toast('Updated the site graph.', 'success');
         }, () => {
