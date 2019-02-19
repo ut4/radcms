@@ -45,13 +45,12 @@ QUnit.module('AddContentViewComponent', hooks => {
             const postCall = httpStub.getCall(1);
             assert.equal(postCall.args[0], '/api/content');
             assert.equal(postCall.args[1].method, 'POST');
-            assert.equal(postCall.args[1].data,
-                'name=' + encodeURIComponent(cnodeNameInput.value) +
-                '&json=' + encodeURIComponent(
-                    JSON.stringify({title: titleInput.value, body: bodyInput.value})
-                ) +
-                '&contentTypeName=Article'
-            );
+            assert.equal(postCall.args[1].headers['Content-Type'], 'application/json');
+            assert.equal(postCall.args[1].data, JSON.stringify({
+                name: cnodeNameInput.value,
+                json: JSON.stringify({title: titleInput.value, body: bodyInput.value}),
+                contentTypeName: 'Article'
+            }));
             postCall.returnValue.then(() => {
                 assert.ok(redirectSpy.calledAfter(httpStub), 'Should redirect');
                 redirectSpy.restore();

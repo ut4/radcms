@@ -200,12 +200,14 @@ testLib.module('website-handlers.js', function(hooks) {
         //
         var req = new http.Request('/api/website/upload', 'POST');
         req.data = {remoteUrl: 'ftp://ftp.site.net/', username: 'ftp@mysite.net',
-                    password: 'bar',
-                    'pageUrls[0][url]': pages[0].url, 'pageUrls[0][isDeleted]': '0',
-                    'pageUrls[1][url]': pages[1].url, 'pageUrls[1][isDeleted]': '0',
-                    'pageUrls[2][url]': pages[2].url, 'pageUrls[2][isDeleted]': '0',
-                    'fileNames[0][fileName]': fileNames[0], 'fileNames[0][isDeleted]': '0',
-                    'fileNames[1][fileName]': fileNames[1], 'fileNames[1][isDeleted]': '0'};
+                    password: 'bar', pageUrls: [
+                        {url: pages[0].url, isDeleted: 0},
+                        {url: pages[1].url, isDeleted: 0},
+                        {url: pages[2].url, isDeleted: 0},
+                    ], fileNames: [
+                        {fileName: fileNames[0], isDeleted: 0},
+                        {fileName: fileNames[1], isDeleted: 0}
+                    ]};
         //
         var response = commons.app.getHandler(req.url, req.method)(req);
         assert.deepEqual(uploaderCredentials, {username: req.data.username,
@@ -219,18 +221,18 @@ testLib.module('website-handlers.js', function(hooks) {
         // Simulate MHD's MHD_ContentReaderCallback calls
         var chunk1 = response.getNextChunk(response.chunkFnState);
         var remUrl = req.data.remoteUrl.substr(0, req.data.remoteUrl.length -1);
-        assert.equal(chunk1, 'file|' + req.data['fileNames[0][fileName]'] + '|' + UPLOAD_OK);
+        assert.equal(chunk1, 'file|' + req.data.fileNames[0].fileName + '|' + UPLOAD_OK);
         assert.equal(uploadLog.length, 1, 'should upload file #1');
         assert.deepEqual(uploadLog[0], {
-            url: remUrl+req.data['fileNames[0][fileName]'],
-            contents: mockFiles[req.data['fileNames[0][fileName]']]
+            url: remUrl+req.data.fileNames[0].fileName,
+            contents: mockFiles[req.data.fileNames[0].fileName]
         });
         var chunk2 = response.getNextChunk(response.chunkFnState);
-        assert.equal(chunk2, 'file|' + req.data['fileNames[1][fileName]'] + '|' + UPLOAD_OK);
+        assert.equal(chunk2, 'file|' + req.data.fileNames[1].fileName + '|' + UPLOAD_OK);
         assert.equal(uploadLog.length, 2, 'should upload file #2');
         assert.deepEqual(uploadLog[1], {
-            url: remUrl+req.data['fileNames[1][fileName]'],
-            contents: mockFiles[req.data['fileNames[1][fileName]']]
+            url: remUrl+req.data.fileNames[1].fileName,
+            contents: mockFiles[req.data.fileNames[1].fileName]
         });
         var chunk3 = response.getNextChunk(response.chunkFnState);
         assert.equal(chunk3, 'page|' + generatedPages[0].url + '|' + UPLOAD_OK);
@@ -268,8 +270,8 @@ testLib.module('website-handlers.js', function(hooks) {
         var req = new http.Request('/api/website/upload', 'POST');
         req.data = {remoteUrl: 'ftp://ftp.site.net', username: 'ftp@mysite.net',
                     password: 'bar',
-                    'pageUrls[0][url]': pages[0].url, 'pageUrls[0][isDeleted]': '0',
-                    'fileNames[0][fileName]': fileNames[0], 'fileNames[0][isDeleted]': '0'};
+                    pageUrls: [{url: pages[0].url, isDeleted: 0}],
+                    fileNames: [{fileName: fileNames[0], isDeleted: 0}]};
         //
         var response = commons.app.getHandler(req.url, req.method)(req);
         var assertSetStatusToUploaded = function(expected, id) {
@@ -314,10 +316,8 @@ testLib.module('website-handlers.js', function(hooks) {
         req.data = {remoteUrl: 'ftp://ftp.site.net/dir',
                     username: 'ftp@mysite.net',
                     password: 'bar',
-                    'pageUrls[0][url]': inputPageUrls[0],
-                    'pageUrls[0][isDeleted]': '1',
-                    'fileNames[0][fileName]': inputFileNames[0],
-                    'fileNames[0][isDeleted]': '1'};
+                    pageUrls: [{url: inputPageUrls[0], isDeleted: 1}],
+                    fileNames: [{fileName: inputFileNames[0], isDeleted: 1}]};
         //
         var response = commons.app.getHandler(req.url, req.method)(req);
         var assertWipedStatus = function(expected, id) {

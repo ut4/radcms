@@ -44,7 +44,7 @@ function handleFileCreateEvent(fileName) {
 function handleFileModifyEvent(fileName) {
     var layout = siteGraph.getTemplate(fileName);
     if (!layout) {
-        commons.log('[Notice]: An unknown template "' + fileName + '" was modified, skipping.');
+        commons.log('[Debug]: An unknown template "' + fileName + '" was modified, skipping.');
         return;
     }
     if (website.website.compileAndCacheTemplate(fileName)) {
@@ -60,7 +60,7 @@ function handleFileModifyEvent(fileName) {
 function handleFileDeleteEvent(fileName) {
     var layout = siteGraph.getTemplate(fileName);
     if (!layout) {
-        commons.log('[Notice]: An unknown template "' + fileName + '" was deleted, skipping.');
+        commons.log('[Debug]: An unknown template "' + fileName + '" was deleted, skipping.');
         return;
     }
     website.website.deleteAndUncacheTemplate(layout.fileName);

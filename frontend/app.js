@@ -174,16 +174,15 @@ class InsaneControlPanel extends preact.Component {
     handleCurrentPageTemplateChange(e) {
         this.setState({selectedTemplateIdx: parseInt(e.target.value)});
         const u = this.props.currentPageData.page.url;
-        const fileName = encodeURIComponent(
-            this.state.templates[this.state.selectedTemplateIdx].fileName);
+        const f = this.state.templates[this.state.selectedTemplateIdx].fileName;
         services.myFetch('/api/website/page', {
             method: 'PUT',
-            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-            data: 'url=' + encodeURIComponent(u) + '&layoutFileName=' + fileName
+            headers: {'Content-Type': 'application/json'},
+            data: JSON.stringify({url: u, layoutFileName: f})
         }).then(res => {
             const d = JSON.parse(res.responseText);
             if (d.numAffectedRows > 0) {
-                myRedirect(u + '?rescan=usersOf:' + fileName, true);
+                myRedirect(u + '?rescan=usersOf:' + encodeURIComponent(f), true);
             } else {
                 throw new Error('');
             }

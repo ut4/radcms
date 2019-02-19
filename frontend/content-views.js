@@ -159,10 +159,12 @@ function buildFieldInputEls(self, fieldsInfo) {
 function sendCnodeToBackend(method, self) {
     return services.myFetch('/api/content', {
         method: method,
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        data: 'name=' + encodeURIComponent(self.state.contentNode.name) +
-              '&json=' + encodeURIComponent(JSON.stringify(self.state.fieldsData)) +
-              '&contentTypeName=' + encodeURIComponent(self.state.contentNode.contentTypeName)
+        headers: {'Content-Type': 'application/json'},
+        data: JSON.stringify({
+            name: self.state.contentNode.name,
+            json: JSON.stringify(self.state.fieldsData),
+            contentTypeName: self.state.contentNode.contentTypeName
+        })
     }).then(() => {
         myRedirect((self.props.returnTo || '/') + '?rescan=full', true);
     }, () => {

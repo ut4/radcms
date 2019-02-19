@@ -1,3 +1,10 @@
+/**
+ * == content-handlers.js ====
+ *
+ * This file implements and registers handlers (or controllers) for
+ * /api/content/* and /api/content-type/* http-routes.
+ *
+ */
 var commons = require('common-services.js');
 var http = require('http.js');
 var website = require('website.js');
@@ -51,9 +58,11 @@ function handleGetContentNodeRequest(req) {
  * POST /api/content: inserts a new content node to the database.
  *
  * Payload:
- * name=string|required&
- * json=string|required&
- * contentTypeName=string|required
+ * {
+ *     name: string;            // required
+ *     json: string;            // required
+ *     contentTypeName: string; // required
+ * }
  *
  * Example response:
  * {"insertId":1}

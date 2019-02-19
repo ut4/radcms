@@ -79,7 +79,7 @@ QUnit.module('ControlPanelComponent', hooks => {
         });
     });
     QUnit.test('handles a layout change', assert => {
-        assert.expect(6);
+        assert.expect(7);
         httpStub
             .onCall(0).returns(Promise.resolve({responseText:'0'}))
             .onCall(1).returns(Promise.resolve({responseText:'[{"fileName":'+
@@ -113,9 +113,11 @@ QUnit.module('ControlPanelComponent', hooks => {
             const args = httpStub.getCall(2).args;
             assert.equal(args[0], '/api/website/page');
             assert.equal(args[1].method, 'PUT');
-            assert.equal(args[1].data,
-                'url=' + encodeURIComponent(currentPage.url) +
-                '&layoutFileName=' + encodeURIComponent(newLayout));
+            assert.equal(args[1].headers['Content-Type'], 'application/json');
+            assert.equal(args[1].data, JSON.stringify({
+                url: currentPage.url,
+                layoutFileName: newLayout
+            }));
             return httpStub.getCall(2).returnValue;
         }).then(() => {
             assert.ok(redirectSpy.calledAfter(httpStub), 'Should redirect');

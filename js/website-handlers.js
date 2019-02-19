@@ -192,13 +192,19 @@ function handleGenerateRequest() {
  * to / from a server using FTP.
  *
  * Payload:
- * remoteUrl=string|required&
- * username=string|required&
- * password=string|required&
- * pageUrls[0-n][url]=string&
- * pageUrls[0-n][isDeleted]=int&
- * fileNames[0-n][fileName]=string&
- * fileNames[0-n][isDeleted]=int
+ * {
+ *     remoteUrl: string; // required
+ *     username: string;  // required
+ *     password: string;  // required
+ *     pageUrls: {        // required if fileNames.length == 0
+ *         url: string;
+ *         isDeleted: number;
+ *     }[];
+ *     fileNames: {       // required if pageUrls.length == 0
+ *         fileName: string;
+ *         isDeleted: number;
+ *     }[];
+ * }
  *
  * Example response chunk:
  * file|/some-file.css|0
@@ -211,13 +217,14 @@ function handleUploadRequest(req) {
     if (!req.data.remoteUrl) errs.push('remoteUrl is required.');
     if (!req.data.username) errs.push('username is required.');
     if (!req.data.password) errs.push('password is required.');
+    if ((!req.data.pageUrls || !req.data.pageUrls.length) &&
+        (!req.data.fileNames || !req.data.fileNames.length)) {
+        errs.push('pageUrls or fileNames is required.');
+    }
     if (errs.length) return new http.Response(400, errs.join('\n'));
     //
     var pageUrls = {};
     var uploadState = makeUploadState(req.data, pageUrls);
-    if (!uploadState) {
-        return new http.Response(200, 'Nothing to upload.');
-    }
     uploadHandlerIsBusy = true;
     var issues = [];
     // Render all pages in one go so we can return immediately if there was any issues
@@ -312,40 +319,37 @@ function makeUploadState(reqData, pageUrls) {
         uploader: new website.website.Uploader(reqData.username, reqData.password),
         hadStopError: false
     };
-    var fname;
-    var i = 0;
-    while ((fname = reqData['fileNames[' + i + '][fileName]'])) {
-        if (reqData['fileNames[' + i + '][isDeleted]'] == '0') {
-            state.uploadFileNames.push(fname);
+    for (var i = 0; i < reqData.fileNames.length; ++i) {
+        var file = reqData.fileNames[i];
+        if (file.isDeleted == 0) {
+            state.uploadFileNames.push(file.fileName);
             state.uploadFilesLeft += 1;
         } else {
-            state.deletableFileNames.push(fname);
+            state.deletableFileNames.push(file.fileName);
             state.deletableFilesLeft += 1;
         }
-        i += 1;
     }
-    var url;
-    i = 0;
-    while ((url = reqData['pageUrls[' + i + '][url]'])) {
-        if (reqData['pageUrls[' + i + '][isDeleted]'] == '0') {
-            pageUrls[url] = 1;
+    for (i = 0; i < reqData.pageUrls.length; ++i) {
+        var page = reqData.pageUrls[i];
+        if (page.isDeleted == 0) {
+            pageUrls[page.url] = 1;
             state.uploadPagesLeft += 1;
         } else {
-            state.deletablePageUrls.push(url);
+            state.deletablePageUrls.push(page.url);
             state.deletablePagesLeft += 1;
         }
-        i += 1;
     }
-    return state.uploadPagesLeft + state.uploadFilesLeft +
-            state.deletablePagesLeft + state.deletableFilesLeft > 0 ? state : null;
+    return state;
 }
 
 /**
  * PUT /api/website/page: updates siteGraph.pages[$req.data.url].
  *
  * Payload:
- * url=string|required&
- * layoutFileName=string|required
+ * {
+ *     url: string;            // required
+ *     layoutFileName: string; // required
+ * }
  *
  * Example response:
  * {"numAffectedRows": 1}
@@ -384,7 +388,9 @@ function setLayoutAsUsed(fileName) {
  * and syncs the changes to the database.
  *
  * Payload:
- * deleted[0-n]=string|required
+ * {
+ *     deleted: string[]; // required
+ * }
  *
  * Example response:
  * '{"status":"ok"}'

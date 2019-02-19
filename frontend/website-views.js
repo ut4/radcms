@@ -37,8 +37,7 @@ class WebsiteGenerateView extends preact.Component {
     confirm() {
         services.myFetch('/api/website/generate', {
             method: 'POST',
-            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-            data: 'a=b'
+            headers: {'Content-Type': 'application/json'}
         }).then(req => {
             const g = JSON.parse(req.responseText);
             if (!g.issues.length) {
@@ -160,18 +159,14 @@ class WebsiteUploadView extends preact.Component {
         let lenAlreadyProcessed = 0;
         services.myFetch('/api/website/upload', {
             method: 'POST',
-            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-            data: 'remoteUrl=' + encodeURIComponent(this.state.remoteUrl) +
-                    '&username=' + encodeURIComponent(this.state.username) +
-                    '&password=' + encodeURIComponent(this.state.password) +
-                    pendingPages.map((page, i) =>
-                        '&pageUrls[' + i + '][url]=' + encodeURIComponent(page.url) +
-                        '&pageUrls[' + i + '][isDeleted]=' + page.deleted
-                    ).join('') +
-                    pendingFiles.map((file, i) =>
-                        '&fileNames[' + i + '][fileName]=' + encodeURIComponent(file.url) +
-                        '&fileNames[' + i + '][isDeleted]=' + file.deleted
-                    ).join(''),
+            headers: {'Content-Type': 'application/json'},
+            data: JSON.stringify({
+                remoteUrl: this.state.remoteUrl,
+                username: this.state.username,
+                password: this.state.password,
+                pageUrls: pendingPages.map(p => ({url: p.url, isDeleted: p.deleted})),
+                fileNames: pendingFiles.map(f => ({fileName: f.url, isDeleted: f.deleted}))
+            }),
             progress: (res, _percent) => {
                 if (!res.responseText.length) return;
                 // <fromPrevIteration>...<lastChunk> -> <lastChunk>

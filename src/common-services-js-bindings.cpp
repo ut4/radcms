@@ -440,7 +440,7 @@ collectElemChildren(duk_context *ctx, int valueIsAt,
                 duk_pop(ctx);
             }
         } else {
-            std::cerr << "[Notice]: got an empty vElem child-array, pushing an "
+            std::cerr << "[Debug]: got an empty vElem child-array, pushing an "
                           "empty string.\n";
             children.push_back(domTree.createTextNode(""));
         }

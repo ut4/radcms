@@ -143,19 +143,20 @@ QUnit.module('WebsiteUploadViewComponent', hooks => {
             assert.ok(postCall !== null, 'Should send request to backend');
             assert.equal(postCall.args[0], '/api/website/upload');
             assert.equal(postCall.args[1].method, 'POST');
-            assert.equal(postCall.args[1].data,
-                'remoteUrl=' + encodeURIComponent(remoteUrlInput.value) +
-                '&username=' + encodeURIComponent(usernameInput.value) +
-                '&password=' + encodeURIComponent(passwordInput.value) +
-                testPages.map((page, i) =>
-                    `&pageUrls[${i}][url]=${encodeURIComponent(page.url)}` +
-                    `&pageUrls[${i}][isDeleted]=${page.uploadStatus!=UploadStatus.DELETED?'0':'1'}`
-                ).join('') +
-                testFiles.map((file, i) =>
-                    `&fileNames[${i}][fileName]=${encodeURIComponent(file.url)}` +
-                    `&fileNames[${i}][isDeleted]=${file.uploadStatus!=UploadStatus.DELETED?'0':'1'}`
-                ).join('')
-            );
+            assert.equal(postCall.args[1].headers['Content-Type'], 'application/json');
+            assert.equal(postCall.args[1].data, JSON.stringify({
+                remoteUrl: remoteUrlInput.value,
+                username: usernameInput.value,
+                password: passwordInput.value,
+                pageUrls: testPages.map(page => ({
+                    url: page.url,
+                    isDeleted: page.uploadStatus!=UploadStatus.DELETED?0:1
+                })),
+                fileNames: testFiles.map(file => ({
+                    fileName: file.url,
+                    isDeleted: file.uploadStatus!=UploadStatus.DELETED?0:1
+                }))
+            }));
             // Simulate xhr.onprogress calls
             const progressClb = postCall.args[1].progress;
             const successCode = '0';
@@ -211,7 +212,6 @@ QUnit.module('WebsiteUploadViewComponent', hooks => {
                 toastSpy.restore();
                 done();
             });
-        }).catch(err => {console.log(err);
         });
     });
     QUnit.test('shows error if backend fails', assert => {

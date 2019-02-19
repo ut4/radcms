@@ -229,7 +229,11 @@ static unsigned
 processPostData(const char *uploadData, size_t *uploadDataSize,
                 void **perConnMyPtr) {
     size_t l = *uploadDataSize;
-    if (l == 0 || l > MAX_POST_SIZE) {
+    if (l == 0) {
+        std::cerr << "[Debug]: empty POST|PUT body.\n";
+        return MHD_YES;
+    }
+    if (l > MAX_POST_SIZE) {
         std::cerr << "[Error]: POST|PUT body length out of range (max " <<
                      MAX_POST_SIZE << ", was " << l << ").\n";
         return MHD_HTTP_BAD_REQUEST;
