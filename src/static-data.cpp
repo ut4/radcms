@@ -2,7 +2,6 @@
 
 const char *schemaSql =
 "drop trigger if exists onUploadStatusesDeleteFileTrigger;"
-"drop trigger if exists onUploadStatusesInsertFileTrigger;"
 "drop table if exists uploadStatuses;"
 "drop table if exists staticFileResources;"
 "drop index if exists contentNodesContentTypeNameIdx;"
@@ -22,7 +21,8 @@ const char *schemaSql =
 "create unique index contentNodesNameIdx on contentNodes(`name`);"
 "create index contentNodesContentTypeNameIdx on contentNodes(`contentTypeName`);"
 "create table staticFileResources ("
-    "`url` varchar(512) primary key"
+    "`url` varchar(512) primary key,"
+    "`isOk` integer default 0"
 ");"
 "create table uploadStatuses ("
     "`url` varchar(512) primary key,"
@@ -30,10 +30,6 @@ const char *schemaSql =
     "`uphash` varchar(40) default null," // latest checksum uploaded to the server
     "`isFile` integer default 0" // 0 == page, 1 = file
 ");"
-"create trigger onUploadStatusesInsertFileTrigger after insert on uploadStatuses "
-"when new.isFile = 1 begin "
-    "insert into staticFileResources values(new.`url`);"
-"end;"
 "create trigger onUploadStatusesDeleteFileTrigger after delete on uploadStatuses "
 "when old.isFile = 1 begin "
     "delete from staticFileResources where `url` = old.`url`;"

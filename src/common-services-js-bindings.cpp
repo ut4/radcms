@@ -560,7 +560,7 @@ buildElemArray(DomTree *self, NodeType type, unsigned nodeId, void *myPtr) {
             }
             duk_put_prop_string(ctx, -2, "props");            // [? out el]
         } else {
-            duk_push_null(ctx);                               // [? out el null]
+            duk_push_bare_object(ctx);                        // [? out el null]
             duk_put_prop_string(ctx, -2, "props");            // [? out el]
         }
         duk_put_prop_index(ctx, -2, duk_get_length(ctx, -2)); // [? out]

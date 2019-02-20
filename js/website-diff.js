@@ -1,3 +1,9 @@
+/**
+ * == website-diff.js ====
+ *
+ * This file contains logic for the automatic page scanning, and the tracking of
+ * remote <-> local content.
+ */
 var commons = require('common-services.js');
 var website = require('website.js');
 var siteGraph = website.siteGraph;
@@ -25,7 +31,7 @@ exports.performRescan = function(type) {
     if (diff.nPagesRemoved) m.push('removed ' + diff.nPagesRemoved + ' page(s)');
     if (diff.nLinksAdded) m.push('added ' + diff.nLinksAdded + ' link(s)');
     if (diff.nLinksRemoved) m.push('removed ' + diff.nLinksRemoved + ' link(s)');
-    if (diff.remoteDiff.nFilesAdded) m.push('discovered ' + diff.remoteDiff.nFilesAdded +
+    if (diff.remoteDiff.nNewFiles) m.push('discovered ' + diff.remoteDiff.nNewFiles +
         ' file resources');
     commons.log('[Info]: Rescanned the site' + (m.length ? ': ' + m.join(', ') : ''));
 };
@@ -37,7 +43,8 @@ function RemoteDiff() {
     /** @prop {[string]: {url: string; hash: string; uphash: string; isFile: bool;}} */
     this.checkables = {};
     this.deletables = {};
-    this.nFilesAdded = 0;
+    this.nNewFiles = 0;
+    this.nNewFilesAdded = 0;
 }
 
 /**
@@ -65,31 +72,20 @@ RemoteDiff.prototype.addPageToDelete = function(url) {
 };
 
 /**
- * Traverses $this.checkable and $this.deletable, and saves their new checksums
- * to the database.
+ * Traverses $this.checkables and $this.deletables, and saves their new
+ * checksums to the database.
  */
 RemoteDiff.prototype.saveStatusesToDb = function() {
-    var checkables = this.checkables;
-    var deletables = this.deletables;
-    var selectHolders = [];
-    for (var hadItems in checkables) selectHolders.push('?');
-    for (hadItems in deletables) selectHolders.push('?');
-    if (!hadItems) return;
-    // Select current statuses from the database
+    // Select current static file urls (css/js) from the database
+    var statics = {};
+    this._syncStaticFileUrlsToDb(statics);
+    // Select current checksums from the database
     var curStatuses = {};
-    commons.db.select('select * from uploadStatuses where `url` in (' +
-        selectHolders.join(',') + ')', function(row) {
-            curStatuses[row.getString(0)] = {curhash: row.getString(1),
-                uphash: row.getString(2), isFile: row.getInt(3)};
-        }, function(stmt) {
-            var i = 0;
-            for (var url in checkables) stmt.bindString(i++, url);
-            for (url in deletables) stmt.bindString(i++, url);
-        });
+    if (!this._getCurrentStatuses(curStatuses)) return;
     // Collect files that were new, and pages which contents were changed
     var newStatuses = {data: [], holders: []};
-    for (var url in checkables) {
-        var c = checkables[url];
+    for (var url in this.checkables) {
+        var c = this.checkables[url];
         var curStatus = curStatuses[c.url];
         if (!c.isFile) { // Page
             if (curStatus) {
@@ -99,11 +95,15 @@ RemoteDiff.prototype.saveStatusesToDb = function() {
                 // else -> fall through & save new curhash
                 c.uphash = curStatus.uphash;
             }
-        } else if (!curStatus) { // File, not yet saved to the db -> fall
-                                 // through & save new curhash
-            c.hash = website.website.crypto.sha1(website.website.fs.read(
-                insnEnv.sitePath + c.url.substr(1)));
-            this.nFilesAdded += 1;
+        } else if (!curStatus) { // File, not yet saved to the db
+            var statc = statics[url];
+            if (statc.isOk) { // Ok -> fall through & save new curhash
+                c.hash = statc.newHash || website.website.crypto.sha1(website.website.fs.read(
+                    insnEnv.sitePath + c.url.substr(1)));
+                this.nNewFilesAdded += 1;
+            } else { // Not ok (doesn't exists etc.) -> skip
+                continue;
+            }
         } else { // File, already saved -> skip
             continue;
         }
@@ -112,8 +112,8 @@ RemoteDiff.prototype.saveStatusesToDb = function() {
     }
     // Collect pages that were removed
     var removedStatuses = {urls: [], holders: []};
-    for (url in deletables) {
-        var item = deletables[url];
+    for (url in this.deletables) {
+        var item = this.deletables[url];
         item.uphash = curStatuses[url].uphash;
         if (item.uphash) { // is uploaded -> mark as deletable
             item.hash = null;
@@ -146,6 +146,76 @@ RemoteDiff.prototype.saveStatusesToDb = function() {
     );
 };
 
+/**
+* Picks all static file urls from $this.checkables, and syncs them to the
+* database.
+*
+* @returns {Object} {url: isOk...}
+*/
+RemoteDiff.prototype._syncStaticFileUrlsToDb = function(currentUrls) {
+    var select = {urls: [], holders: []};
+    for (var url in this.checkables) {
+        if (!this.checkables[url].isFile) continue;
+        select.urls.push(url);
+        select.holders.push('?');
+    }
+    if (!select.urls.length) return;
+    //
+    commons.db.select('select `url`,`isOk` from staticFileResources where `url` in (' +
+                      select.holders.join(',') + ')', function(row) {
+        currentUrls[row.getString(0)] = {isOk: row.getInt(1), newHash: null};
+    }, function(stmt) {
+        select.urls.forEach(function(url, i) {
+            stmt.bindString(i, url);
+        });
+    });
+    // Collect urls that weren't registered yet
+    var insert = {data: [], holders: []};
+    for (var i = 0; i < select.urls.length; ++i) {
+        url = select.urls[i];
+        if (!currentUrls.hasOwnProperty(url)) { // Completely new url
+            try {
+                currentUrls[url] = {isOk: 1, newHash: website.website.crypto.sha1(
+                    website.website.fs.read(insnEnv.sitePath + url.substr(1)))};
+                insert.data.push({url: url, isOk: 1});
+            } catch (e) {
+                currentUrls[url] = {isOk: 0, newHash: null};
+                insert.data.push({url: url, isOk: 0});
+            }
+            insert.holders.push('(?,?)');
+            this.nNewFiles += 1;
+        }
+    }
+    // Save the new urls if any
+    if (insert.data.length) commons.db.insert(
+        'insert into staticFileResources values' + insert.holders.join(','),
+        function(stmt) {
+            insert.data.forEach(function(item, i) {
+                stmt.bindString(i*2, item.url);
+                stmt.bindInt(i*2+1, item.isOk);
+            });
+        });
+};
+
+RemoteDiff.prototype._getCurrentStatuses = function(curStatuses) {
+    var checkables = this.checkables;
+    var deletables = this.deletables;
+    var selectHolders = [];
+    for (var hadItems in checkables) selectHolders.push('?');
+    for (hadItems in deletables) selectHolders.push('?');
+    if (!hadItems) return false;
+    //
+    commons.db.select('select * from uploadStatuses where `url` in (' +
+        selectHolders.join(',') + ')', function(row) {
+            curStatuses[row.getString(0)] = {curhash: row.getString(1),
+                uphash: row.getString(2), isFile: row.getInt(3)};
+        }, function(stmt) {
+            var i = 0;
+            for (var url in checkables) stmt.bindString(i++, url);
+            for (url in deletables) stmt.bindString(i++, url);
+        });
+    return true;
+};
 
 // == LocalDiff ====
 // =============================================================================

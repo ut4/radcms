@@ -30,6 +30,7 @@ testLib.module('website-handlers.js', function(hooks) {
         website.website.compileAndCacheTemplate(layout2.fileName);
         var sql2 = 'insert into contentNodes values '+q+','+q+','+q;
         var sql3 = 'insert into uploadStatuses values '+q+','+q+','+q+','+q+','+q;
+        var sql4 = 'insert into staticFileResources values (?,1),(?,1)';
         if (commons.db.insert('insert into websites values (?,?)', function(stmt) {
                 stmt.bindInt(0, testWebsite.id);
                 stmt.bindString(1, siteGraph.serialize());
@@ -48,6 +49,11 @@ testLib.module('website-handlers.js', function(hooks) {
                     stmt.bindString(i*4+1, '');         // curhash
                     stmt.bindInt(i*4+2, null);          // uphash
                     stmt.bindInt(i*4+3, i < 2 ? 1 : 0); // isFile
+                });
+            }) < 1 ||
+            commons.db.insert(sql4, function(stmt) {
+                Object.keys(mockFiles).forEach(function(url, i) {
+                    stmt.bindString(i, url);
                 });
             }) < 1
         ) throw new Error('Failed to insert test data.');

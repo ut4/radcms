@@ -17,6 +17,7 @@ testLib.module('resource-diff', function(hooks) {
                 if(a==insnEnv.sitePath + mockCssFile.url.substr(1)) return mockCssFile.contents;
                 if(a==insnEnv.sitePath + mockJsFile.url.substr(1)) return mockJsFile.contents;
                 if(a==insnEnv.sitePath + mockTemplate.fname) return mockTemplate.contents;
+                throw new Error('Failed to read the file');
             }
         };
         website.website.crypto = {sha1: function(str) { return str; }};
@@ -32,10 +33,11 @@ testLib.module('resource-diff', function(hooks) {
         commons.templateCache._fns = {};
     });
     testLib.test('spots new css/js from a modified template', function(assert) {
-        assert.expect(12);
+        assert.expect(13);
         siteGraph.addPage('/foo', NO_PARENT, mockTemplate.fname, {}, 1);
         siteGraph.addTemplate(mockTemplate.fname, true, true);
         mockTemplate.contents = '<html><body>'+
+            '<link href="/non-existing.css" rel="stylesheet">' +
             '<link href="' + mockCssFile.url + '" rel="stylesheet">' +
             '<script src="' + mockJsFile.url.substr(1) + '"></script>' +
         '</body></html>';
@@ -50,12 +52,14 @@ testLib.module('resource-diff', function(hooks) {
                 isFile: row.getInt(3)});
         });
         commons.db.select('select * from staticFileResources', function(row) {
-            actuallyInsertedFiles.push({url: row.getString(0)});
+            actuallyInsertedFiles.push({url: row.getString(0), isOk: row.getInt(1)});
         });
-        assert.equal(actuallyInsertedStatuses.length, 2);
-        assert.equal(actuallyInsertedFiles.length, 2);
-        assert.equal(actuallyInsertedFiles[0].url, mockCssFile.url);
-        assert.equal(actuallyInsertedFiles[1].url, mockJsFile.url);
+        assert.equal(actuallyInsertedFiles.length, 3);
+        assert.equal(actuallyInsertedFiles[0].url, '/non-existing.css');
+        assert.equal(actuallyInsertedFiles[1].url, mockCssFile.url);
+        assert.equal(actuallyInsertedFiles[2].url, mockJsFile.url);
+        assert.equal(actuallyInsertedStatuses.length, 2,
+            'should save the checksums of valid files to uploadStatuses');
         assert.equal(actuallyInsertedStatuses[0].url, mockCssFile.url);
         assert.equal(actuallyInsertedStatuses[0].curhash, mockCssFile.contents);
         assert.equal(actuallyInsertedStatuses[0].uphash, null);
