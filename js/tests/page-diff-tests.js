@@ -45,7 +45,7 @@ testLib.module('page-diff', function(hooks) {
             stmt.bindString(1, homePageChkSum);
         }) < 1) throw new Error('Failed to setup test data');
         //
-        fileWatcher._watchFn(fileWatcher.EVENT_WRITE, mockTemplate.fname);
+        fileWatcher._watchFn(fileWatcher.EVENT_WRITE, mockTemplate.fname, 'htm');
         //
         var uploadStatuses = [];
         commons.db.select('select * from uploadStatuses where `isFile` = 0', function(row) {
@@ -80,7 +80,7 @@ testLib.module('page-diff', function(hooks) {
             stmt.bindString(1, oldChkSum);
         }) < 1) throw new Error('Failed to setup test data');
         //
-        fileWatcher._watchFn(fileWatcher.EVENT_WRITE, mockTemplate.fname);
+        fileWatcher._watchFn(fileWatcher.EVENT_WRITE, mockTemplate.fname, 'htm');
         //
         var uploadStatuses = [];
         commons.db.select('select * from uploadStatuses where `isFile` = 0', function(row) {
@@ -113,7 +113,7 @@ testLib.module('page-diff', function(hooks) {
                 stmt.bindString(4, removedUploadedPage.url);
             }) < 1) throw new Error('Failed to setup test data');
         //
-        fileWatcher._watchFn(fileWatcher.EVENT_WRITE, mockTemplate.fname);
+        fileWatcher._watchFn(fileWatcher.EVENT_WRITE, mockTemplate.fname, 'htm');
         //
         var uploadStatuses = [];
         commons.db.select('select * from uploadStatuses where `isFile` = 0 and\

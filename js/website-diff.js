@@ -98,8 +98,7 @@ RemoteDiff.prototype.saveStatusesToDb = function() {
         } else if (!curStatus) { // File, not yet saved to the db
             var statc = statics[url];
             if (statc.isOk) { // Ok -> fall through & save new curhash
-                c.hash = statc.newHash || website.website.crypto.sha1(website.website.fs.read(
-                    insnEnv.sitePath + c.url.substr(1)));
+                c.hash = statc.newHash;
                 this.nNewFilesAdded += 1;
             } else { // Not ok (doesn't exists etc.) -> skip
                 continue;
@@ -175,8 +174,8 @@ RemoteDiff.prototype._syncStaticFileUrlsToDb = function(currentUrls) {
         url = select.urls[i];
         if (!currentUrls.hasOwnProperty(url)) { // Completely new url
             try {
-                currentUrls[url] = {isOk: 1, newHash: website.website.crypto.sha1(
-                    website.website.fs.read(insnEnv.sitePath + url.substr(1)))};
+                currentUrls[url] = {isOk: 1, newHash:
+                    website.website.readFileAndCalcChecksum(url)};
                 insert.data.push({url: url, isOk: 1});
             } catch (e) {
                 currentUrls[url] = {isOk: 0, newHash: null};

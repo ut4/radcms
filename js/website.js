@@ -319,6 +319,14 @@ exports.website = {
     deleteAndUncacheTemplate: function(fileName) {
         commons.templateCache.remove(fileName);
         delete this.siteGraph.templates[fileName];
+    },
+    /**
+     * @param {string} fileUrl
+     * @returns {string} sha1 eg. da39a3ee5e6b4b0d3255bfef95601890afd80709
+     * @throws {Error}
+     */
+    readFileAndCalcChecksum: function(fileUrl) {
+        return this.crypto.sha1(this.fs.read(insnEnv.sitePath + fileUrl.substr(1)));
     }
 };
 

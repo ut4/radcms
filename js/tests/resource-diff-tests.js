@@ -42,7 +42,7 @@ testLib.module('resource-diff', function(hooks) {
             '<script src="' + mockJsFile.url.substr(1) + '"></script>' +
         '</body></html>';
         //
-        fileWatcher._watchFn(fileWatcher.EVENT_WRITE, mockTemplate.fname);
+        fileWatcher._watchFn(fileWatcher.EVENT_WRITE, mockTemplate.fname, 'htm');
         //
         var actuallyInsertedStatuses = [];
         var actuallyInsertedFiles = [];

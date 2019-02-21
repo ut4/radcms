@@ -133,13 +133,16 @@ startFileWatcher(void *myPtr) {
             }
             char *ext = strrchr(filePath, '.');
             if (ext && (
+                strcmp(ext, ".htm") == 0 ||
                 strcmp(ext, ".js") == 0 ||
-                strcmp(ext, ".jsx") == 0 ||
-                strcmp(ext, ".htm") == 0
+                strcmp(ext, ".css") == 0 ||
+                strcmp(ext, ".ini") == 0 ||
+                strcmp(ext, ".jsx") == 0
             )) {
                 commonServicesCallJsFWFn(type,
                     // /full/path/file.js -> file.js
                     &filePath[static_cast<AppContext*>(myPtr)->sitePathLen],
+                    &ext[1],
                     myPtr);
             }
         }, myPtr);

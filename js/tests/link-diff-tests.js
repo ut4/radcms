@@ -62,7 +62,7 @@ testLib.module('link-diff', function(hooks) {
             '<directives.Link to="' + newLinkUrl + '"/>'+ // dupes shouldn't matter
         '</body></html>';
         // Trigger handleFWEvent()
-        fileWatcher._watchFn(fileWatcher.EVENT_WRITE, mockTemplate.fname);
+        fileWatcher._watchFn(fileWatcher.EVENT_WRITE, mockTemplate.fname, 'htm');
         // Assert that added the page to website.siteGraph
         var addedPage = siteGraph.getPage(newLinkUrl);
         assert.ok(addedPage !== undefined, 'should add a page to website.siteGraph');
@@ -88,7 +88,7 @@ testLib.module('link-diff', function(hooks) {
             // a link has disappeared
         '</body></html>';
         // Trigger handleFWEvent()
-        fileWatcher._watchFn(fileWatcher.EVENT_WRITE, mockTemplate.fname);
+        fileWatcher._watchFn(fileWatcher.EVENT_WRITE, mockTemplate.fname, 'htm');
         // Assert that removed the page to website.siteGraph
         assert.ok(!siteGraph.getPage(existingPage2), 'Should remove a page from website.siteGraph');
         // Assert that saved the updated site graph to the database
@@ -110,7 +110,7 @@ testLib.module('link-diff', function(hooks) {
         var existingLayout = siteGraph.addTemplate(mockTemplate.fname, true, true);
         mockTemplate.contents = '<html><body></body></html>';
         // Trigger handleFWEvent()
-        fileWatcher._watchFn(fileWatcher.EVENT_WRITE, mockTemplate.fname);
+        fileWatcher._watchFn(fileWatcher.EVENT_WRITE, mockTemplate.fname, 'htm');
         // Assert that didn't remove the page
         assert.equal(siteGraph.getPage(existingPage2.url), existingPage2,
             'Should not remove the page');
@@ -150,7 +150,7 @@ testLib.module('link-diff', function(hooks) {
         '}</body></html>';
         website.website.compileAndCacheTemplate(mockTemplate.fname);
         // Trigger handleFWEvent()
-        fileWatcher._watchFn(fileWatcher.EVENT_WRITE, mockTemplate.fname);
+        fileWatcher._watchFn(fileWatcher.EVENT_WRITE, mockTemplate.fname, 'htm');
         // Assert that removed /starters/dish1 and added /desserts/dish1
         assert.ok(!siteGraph.getPage('/starters/dish1'), 'Should remove /starters/dish1');
         var newDish1 = siteGraph.getPage('/desserts/dish1');
@@ -186,7 +186,7 @@ testLib.module('link-diff', function(hooks) {
         var t1 = siteGraph.addTemplate(mockTemplate.fname, true, true);
         website.website.compileAndCacheTemplate(t1.fileName);
         // Trigger handleFWEvent()
-        fileWatcher._watchFn(fileWatcher.EVENT_WRITE, mockTemplate.fname);
+        fileWatcher._watchFn(fileWatcher.EVENT_WRITE, mockTemplate.fname, 'htm');
         // Assert that added two new pages to website.siteGraph
         var added1 = siteGraph.getPage(linkAHref);
         assert.ok(added1 !== undefined, 'should add page #1 to website.siteGraph');
@@ -217,7 +217,7 @@ testLib.module('link-diff', function(hooks) {
         website.siteConfig.homeUrl = '/home';
         siteGraph.addTemplate(mockTemplate.fname, true);
         // Trigger handleFWEvent()
-        fileWatcher._watchFn(fileWatcher.EVENT_WRITE, mockTemplate.fname);
+        fileWatcher._watchFn(fileWatcher.EVENT_WRITE, mockTemplate.fname, 'htm');
         // Assert that didn't add '/'
         assert.ok(!siteGraph.getPage('/'), 'shouldn\'t add \'/\'');
         assert.equal(siteGraph.getPage('/home').refCount, refCountBefore,

@@ -37,4 +37,5 @@ commonServicesJsModuleInit(duk_context *ctx, const int exportsIsAt);
  * Forwards events to (common-services.js)fileWatcher._watchFn().
  */
 void
-commonServicesCallJsFWFn(FWEventType type, const char *fileName, void *myPtr);
+commonServicesCallJsFWFn(FWEventType type, const char *fileName,
+                         const char *ext, void *myPtr);
