@@ -37,13 +37,18 @@ function handleFWEvent(type, fileName, fileExt) {
             handleTemplateModifyEventEvent(fileName);
         else if (fileExt == 'css' || fileExt == 'js')
             handleCssOrJsFileModifyEventEvent('/' + fileName);
-    } else if (type == fileWatcher.EVENT_REMOVE && fileExt == TEMPLATE_EXT) {
-        handleTemplateDeleteEventEvent(fileName);
+    } else if (type == fileWatcher.EVENT_REMOVE) {
+        if (fileExt == TEMPLATE_EXT)
+            handleTemplateDeleteEventEvent(fileName);
+        else if (fileExt == 'css' || fileExt == 'js')
+            handleCssOrJsFileDeleteEvent('/' + fileName);
     } else if (type == fileWatcher.EVENT_RENAME) {
-        if (fileExt == 'css' || fileExt == 'js') {
-            handleCssOrJsFileRename.apply(null, extractRenameFileNames(fileName));
-            lastRenameEventTime = fileWatcher.timer.now();
-        }
+        if (fileExt == TEMPLATE_EXT)
+            handleTemplateRenameEvent.apply(null, extractRenameFileNames(fileName));
+        else if (fileExt == 'css' || fileExt == 'js')
+            handleCssOrJsFileRenameEvent.apply(null, extractRenameFileNames(fileName));
+        else return;
+        lastRenameEventTime = fileWatcher.timer.now();
     }
 }
 
@@ -128,10 +133,59 @@ function handleTemplateDeleteEventEvent(fileName) {
 }
 
 /**
+ * @param {string} fileName eg. '/file.css'
+ */
+function handleCssOrJsFileDeleteEvent(fileName) {
+    var bindUrl = function(stmt) { stmt.bindString(0, fileName); };
+    if (commons.db.delete('delete from staticFileResources where `url` = ?',
+                          bindUrl) < 1) {
+        commons.log('[Debug]: An unknown file "' + fileName + '" was deleted, skipping.');
+        return;
+    }
+    // Wipe uploadStatus completely if the file isn't uploaded
+    if (commons.db.delete('delete from uploadStatuses where \
+                          `url` = ? and `uphash` is null', bindUrl) < 1) {
+        // Otherwise mark it as removed
+        commons.db.update('update uploadStatuses set `curhash` = null where \
+                           `url` = ?', bindUrl);
+    }
+    commons.log('[Info]: Removed "' + fileName + '"');
+}
+
+/**
+ * @param {string} from eg. 'layout.jsx.htm'
+ * @param {string} to eg. 'renamed.jsx.htm'
+ */
+function handleTemplateRenameEvent(from, to) {
+    var layout = siteGraph.getTemplate(from);
+    if (!layout) {
+        commons.log('[Debug]: An unknown template "' + from + '" was renamed, skipping.');
+        return;
+    }
+    // Update the site graph
+    delete siteGraph.templates[from];
+    siteGraph.templates[to] = layout;
+    if (layout.isInUse) {
+        var p = siteGraph.pages;
+        for (var url in p) {
+            if (p[url].layoutFileName == from) p[url].layoutFileName = to;
+        }
+    }
+    website.saveToDb(siteGraph);
+    // Relocate the cached template function
+    var fn = commons.templateCache.get(from);
+    if (fn) {
+        commons.templateCache.put(to, fn);
+        commons.templateCache.remove(from);
+    }
+    commons.log('[Info]: Renamed "' + from + '"');
+}
+
+/**
  * @param {string} from eg. 'file.js'
  * @param {string} to eg. 'renamed.js'
  */
-function handleCssOrJsFileRename(from, to) {
+function handleCssOrJsFileRenameEvent(from, to) {
     from = '/' + from;
     to = '/' + to;
     commons.db.insert('insert or replace into staticFileResources values\
@@ -149,6 +203,7 @@ function handleCssOrJsFileRename(from, to) {
             stmt.bindString(0, to);
             stmt.bindString(1, from);
         });
+    commons.log('[Info]: Renamed "' + from + '"');
 }
 
 /**

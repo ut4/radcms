@@ -179,6 +179,107 @@ testLib.module('file-watchers.js', function(hooks) {
             }), 'should store the updated site graph to the database');
         });
     });
+    testLib.test('EVENT_REMOVE handles <existingFile>.css|js', function(assert) {
+        assert.expect(2);
+        var okButNotUploaded = '/foo.css';
+        var okAndUploaded = '/bar.js';
+        if (commons.db.insert('insert into staticFileResources values (?,1),(?,1)',
+            function(stmt) {
+                stmt.bindString(0, okButNotUploaded);
+                stmt.bindString(1, okAndUploaded);
+            }) < 1 ||
+            commons.db.insert('insert into uploadStatuses values (?,\'hash\',\'hash\',1)',
+            function(stmt) {
+                stmt.bindString(0, okAndUploaded);
+            }) < 1
+        ) throw new Error('Failed to insert test data.');
+        var assertChecksumEquals = function(fileUrl, expected, message) {
+            var actual = [];
+            commons.db.select('select us.*,sfr.`url` from uploadStatuses us \
+                left join staticFileResources sfr on (sfr.`url` = us.`url`) \
+                where us.`url` = ?',
+                function(row) {
+                    actual.push({url: row.getString(0), curhash: row.getString(1),
+                        uphash: row.getString(2), isFile: row.getInt(3),
+                        staticFileTableUrl: row.getString(4)});
+                },
+                function(stmt) {
+                    stmt.bindString(0, fileUrl);
+                }
+            );
+            assert.deepEqual(actual, expected, message);
+        };
+        //
+        fileWatcher._watchFn(fileWatcher.EVENT_REMOVE,
+            okButNotUploaded.substr(1), 'css');
+        assertChecksumEquals(okButNotUploaded, [],
+            'Should wipe completely if the file isn\'t uploaded');
+        //
+        fileWatcher._watchFn(fileWatcher.EVENT_REMOVE,
+            okAndUploaded.substr(1), 'js');
+        assertChecksumEquals(okAndUploaded, [{url: okAndUploaded, curhash: null,
+            uphash: 'hash', isFile: 1, staticFileTableUrl: null}],
+            'Should mark as removed if the file is uploaded');
+        //
+        if (commons.db.delete('delete from uploadStatuses where `url` = ?',
+            function(stmt) {
+                stmt.bindString(0, okAndUploaded);
+            }) < 1) throw new Error('Failed to clean test data.');
+    });
+    testLib.test('EVENT_RENAME handles <layout>.jsx.htm', function(assert) {
+        assert.expect(12);
+        var noUsersFrom = 'foo.jsx.htm';
+        var noUsersTo = 'newfoo.jsx.htm';
+        var hasUsersFrom = 'bar.jsx.htm';
+        var hasUsersTo = 'newbar.jsx.htm';
+        var testUser = '/a-page';
+        var testUser2 = '/a-page2';
+        siteGraph.addTemplate(noUsersFrom, true, false);
+        siteGraph.addTemplate(hasUsersFrom, true, true);
+        siteGraph.addPage(testUser, '', hasUsersFrom, {}, 1);
+        siteGraph.addPage(testUser2, '', hasUsersFrom, {}, 1);
+        commons.templateCache.put(noUsersFrom, function() {});
+        commons.templateCache.put(hasUsersFrom, function() {});
+        fileWatcher.timer = {now: function() { return 1; }};
+        var assertSwappedTheTemplate = function (from, to) {
+            assert.ok(!siteGraph.getTemplate(from),
+                'Should remove the old layout');
+            assert.ok(siteGraph.getTemplate(to) !== undefined,
+                'Should replace the old layout');
+            assert.ok(!commons.templateCache.has(from),
+                'Should remove the old entry from the templateCache');
+            assert.ok(commons.templateCache.has(to),
+                'Should replace the cached template function');
+        };
+        //
+        fileWatcher._watchFn(fileWatcher.EVENT_RENAME,
+            noUsersFrom + '>' + insnEnv.sitePath + noUsersTo, 'htm');
+        assertSwappedTheTemplate(noUsersFrom, noUsersTo);
+        commons.db.select('select `graph` from websites', function(row) {
+            assert.equal(row.getString(0), JSON.stringify({
+                pages:[[testUser,NO_PARENT,hasUsersFrom,[]],
+                       [testUser2,NO_PARENT,hasUsersFrom,[]]],
+                templates:[[hasUsersFrom,1,1],[noUsersTo,1,0]]
+            }));
+        });
+        //
+        fileWatcher._watchFn(fileWatcher.EVENT_RENAME,
+            hasUsersFrom + '>' + insnEnv.sitePath + hasUsersTo, 'htm');
+        assertSwappedTheTemplate(hasUsersFrom, hasUsersTo);
+        assert.equal(siteGraph.getPage(testUser).layoutFileName, hasUsersTo,
+            'Should update the new name to siteGraph.pages');
+        assert.equal(siteGraph.getPage(testUser2).layoutFileName, hasUsersTo,
+            'Should update the new name to siteGraph.pages');
+        commons.db.select('select `graph` from websites', function(row) {
+            assert.equal(row.getString(0), JSON.stringify({
+                pages:[[testUser,NO_PARENT,hasUsersTo,[]],
+                       [testUser2,NO_PARENT,hasUsersTo,[]]],
+                templates:[[noUsersTo,1,0],[hasUsersTo,1,1]]
+            }));
+        });
+        //
+        fileWatcher.timer = performance;
+    });
     testLib.test('EVENT_RENAME handles <file>.css|js', function(assert) {
         var notOkFrom = '/foo.css';
         var notOkTo = '/renamed.css';

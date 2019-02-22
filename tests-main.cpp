@@ -1,6 +1,4 @@
 #include <iostream>
-#include <memory>
-#include <string>
 #include "include/js-environment.hpp"
 #include "tests/test-utils.hpp"
 
