@@ -2,7 +2,7 @@
  * == file-watchers.js ====
  *
  * This file implements and registers handlers for the file notifier / fswatch
- * -events.
+ * events.
  *
  */
 var commons = require('common-services.js');
@@ -10,6 +10,8 @@ var fileWatcher = commons.fileWatcher;
 var website = require('website.js');
 var siteGraph = website.siteGraph;
 var diff = require('website-diff.js');
+var TEMPLATE_EXT = 'htm';
+var lastRenameEventTime = 0;
 
 exports.init = function() {
     fileWatcher.setWatchFn(handleFWEvent);
@@ -25,22 +27,28 @@ exports.init = function() {
  */
 function handleFWEvent(type, fileName, fileExt) {
     if (type == fileWatcher.EVENT_CREATE) {
-        if (fileExt == 'htm')
+        if (fileExt == TEMPLATE_EXT)
             handleTemplateCreateEvent(fileName);
         else if (fileExt == 'css' || fileExt == 'js')
             handleCssOrJsFileCreateEvent('/' + fileName);
     } else if (type == fileWatcher.EVENT_WRITE) {
-        if (fileExt == 'htm')
+        if (fileWatcher.timer.now() - lastRenameEventTime < 100) return;
+        if (fileExt == TEMPLATE_EXT)
             handleTemplateModifyEventEvent(fileName);
         else if (fileExt == 'css' || fileExt == 'js')
             handleCssOrJsFileModifyEventEvent('/' + fileName);
-    } else if (type == fileWatcher.EVENT_REMOVE) {
+    } else if (type == fileWatcher.EVENT_REMOVE && fileExt == TEMPLATE_EXT) {
         handleTemplateDeleteEventEvent(fileName);
+    } else if (type == fileWatcher.EVENT_RENAME) {
+        if (fileExt == 'css' || fileExt == 'js') {
+            handleCssOrJsFileRename.apply(null, extractRenameFileNames(fileName));
+            lastRenameEventTime = fileWatcher.timer.now();
+        }
     }
 }
 
 /**
- * @param {string} fileName
+ * @param {string} fileName eg. 'layout.jsx.htm'
  */
 function handleTemplateCreateEvent(fileName) {
     if (!siteGraph.getTemplate(fileName)) {
@@ -53,7 +61,7 @@ function handleTemplateCreateEvent(fileName) {
 }
 
 /**
- * @param {string} fileName Always starts with '/'
+ * @param {string} fileName eg. '/file.css'
  */
 function handleCssOrJsFileCreateEvent(fileName) {
     // Register the file, and set its `isOk` to 0
@@ -65,7 +73,7 @@ function handleCssOrJsFileCreateEvent(fileName) {
 }
 
 /**
- * @param {string} fileName
+ * @param {string} fileName eg. 'layout.jsx.htm'
  */
 function handleTemplateModifyEventEvent(fileName) {
     var layout = siteGraph.getTemplate(fileName);
@@ -77,11 +85,13 @@ function handleTemplateModifyEventEvent(fileName) {
         commons.log('[Info]: Cached "' + fileName + '"');
         layout.isOk = true;
     }
-    diff.performRescan('usersOf:' + fileName);
+    if (layout.isInUse) {
+        diff.performRescan('usersOf:' + fileName);
+    }
 }
 
 /**
- * @param {string} fileName Always starts with '/'
+ * @param {string} fileName eg. '/file.css'
  */
 function handleCssOrJsFileModifyEventEvent(fileName) {
     // Check if this file is registered (and update it's isOk)
@@ -104,7 +114,7 @@ function handleCssOrJsFileModifyEventEvent(fileName) {
 }
 
 /**
- * @param {string} fileName
+ * @param {string} fileName eg. 'layout.jsx.htm'
  */
 function handleTemplateDeleteEventEvent(fileName) {
     var layout = siteGraph.getTemplate(fileName);
@@ -115,4 +125,38 @@ function handleTemplateDeleteEventEvent(fileName) {
     website.website.deleteAndUncacheTemplate(layout.fileName);
     website.saveToDb(siteGraph);
     commons.log('[Info]: Removed "' + fileName + '"');
+}
+
+/**
+ * @param {string} from eg. 'file.js'
+ * @param {string} to eg. 'renamed.js'
+ */
+function handleCssOrJsFileRename(from, to) {
+    from = '/' + from;
+    to = '/' + to;
+    commons.db.insert('insert or replace into staticFileResources values\
+        (?,coalesce((select `isOk` from staticFileResources where `url`=?),0))',
+        function(stmt) {
+            stmt.bindString(0, to);
+            stmt.bindString(1, from);
+        });
+    commons.db.delete('delete from staticFileResources where `url` = ?',
+        function(stmt) {
+            stmt.bindString(0, from);
+        });
+    commons.db.update('update uploadStatuses set `url` = ? where `url` = ?',
+        function(stmt) {
+            stmt.bindString(0, to);
+            stmt.bindString(1, from);
+        });
+}
+
+/**
+ * @param {string} joined EVENT_RENAME's half-ass value eg. file.js>/path/to/site/renamed.js
+ * @returns {[string, string]} eg. ['file.ext', 'renamed.ext']
+ */
+function extractRenameFileNames(joined) {
+    var pcs = joined.split('>');
+    pcs[1] = pcs[1].substr(insnEnv.sitePath.length);
+    return pcs;
 }

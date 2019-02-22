@@ -22,13 +22,15 @@ const EVENT_OUT_ERROR: u32 = 8;
 #[no_mangle]
 pub extern "C" fn fileWatcherWatch(path_in: *const c_char,
                                    on_event: fn(uint32_t, *const c_char, *mut c_void),
+                                   debounce_time_millis: uint32_t,
                                    my_ptr: *mut c_void) {
     // Create a channel to receive the events.
     let (tx, rx) = channel();
 
     // Create a watcher object, delivering debounced events.
     // The notification back-end is selected based on the platform.
-    let mut watcher = watcher(tx, Duration::from_millis(120)).unwrap();
+    let mut watcher = watcher(tx,
+        Duration::from_millis(debounce_time_millis as u64)).unwrap();
 
     // Add a path to be watched. All files and directories at that path and
     // below will be monitored for changes.

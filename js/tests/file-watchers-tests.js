@@ -179,4 +179,60 @@ testLib.module('file-watchers.js', function(hooks) {
             }), 'should store the updated site graph to the database');
         });
     });
+    testLib.test('EVENT_RENAME handles <file>.css|js', function(assert) {
+        var notOkFrom = '/foo.css';
+        var notOkTo = '/renamed.css';
+        var okAndUploadedFrom = '/foo2.css';
+        var okAndUploadedTo = '/renamed2.css';
+        if (commons.db.insert('insert into staticFileResources values (?,0),(?,1)',
+            function(stmt) {
+                stmt.bindString(0, notOkFrom);
+                stmt.bindString(1, okAndUploadedFrom);
+            }) < 1 ||
+            commons.db.insert('insert into uploadStatuses values (?,\'hash\',\'hash\',1)',
+            function(stmt) {
+                stmt.bindString(0, okAndUploadedFrom);
+            }) < 1
+        ) throw new Error('Failed to insert test data.');
+        var assertStoredNewName = function(from, expected) {
+            var actual = [];
+            commons.db.select('select sfr.*,us.`url` from staticFileResources sfr \
+                              left join uploadStatuses us on (us.`url`=sfr.`url`) \
+                              where sfr.`url` in (?,?)',
+                function(row) {
+                    actual.push({url: row.getString(0), isOk: row.getInt(1),
+                        uploadStatusesUrl: row.getString(2)});
+                },
+                function(stmt) {
+                    stmt.bindString(0, from);
+                    stmt.bindString(1, expected.url);
+                }
+            );
+            assert.equal(actual.length, 1);
+            assert.deepEqual(actual[0], expected);
+        };
+        fileWatcher.timer = {now: function() { return 1; }};
+        //
+        fileWatcher._watchFn(fileWatcher.EVENT_RENAME,
+            notOkFrom.substr(1) + '>' + insnEnv.sitePath + notOkTo.substr(1), 'css');
+        assertStoredNewName(notOkFrom, {url: notOkTo, isOk: 0, uploadStatusesUrl: null});
+        //
+        fileWatcher._watchFn(fileWatcher.EVENT_RENAME, okAndUploadedFrom.substr(1) +
+            '>' + insnEnv.sitePath + okAndUploadedTo.substr(1), 'css');
+        assertStoredNewName(okAndUploadedFrom, {url: okAndUploadedTo, isOk: 1,
+            uploadStatusesUrl: okAndUploadedTo});
+        //
+        if (commons.db.delete('delete from uploadStatuses where `url` in(?,?)',
+                function(stmt) {
+                    stmt.bindString(0, okAndUploadedFrom);
+                    stmt.bindString(1, okAndUploadedTo);
+                }) < 1 ||
+            commons.db.delete('delete from staticFileResources where `url` in(?,?)',
+                function(stmt) {
+                    stmt.bindString(0, notOkFrom);
+                    stmt.bindString(1, notOkTo);
+                }) < 1
+        ) throw new Error('Failed to clean test data.');
+        fileWatcher.timer = performance;
+    });
 });

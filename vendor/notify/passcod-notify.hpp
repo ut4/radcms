@@ -17,5 +17,5 @@ enum FWEventType {
 
 extern void
 fileWatcherWatch(const char *path, void (*)(enum FWEventType, const char*, void*),
-                 void* myPtr);
+                 unsigned debounceTimeMillis, void* myPtr);
 }

@@ -145,7 +145,7 @@ startFileWatcher(void *myPtr) {
                     &ext[1],
                     myPtr);
             }
-        }, myPtr);
+        }, 120, myPtr);
     return NULL;
 }
 

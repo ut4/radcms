@@ -77,6 +77,32 @@ exports.fs = {
 };
 
 
+// == fileWatcher-singleton ====
+// =============================================================================
+exports.fileWatcher = {
+    timer: performance,
+    EVENT_NOTICE_WRITE: 0,
+    EVENT_NOTICE_REMOVE: 1,
+    EVENT_CREATE: 2,
+    EVENT_WRITE: 3,
+    EVENT_CHMOD: 4,
+    EVENT_REMOVE: 5,
+    EVENT_RENAME: 6,
+    EVENT_RESCAN: 7,
+    EVENT_ERROR: 8,
+    _watchFn: null,
+    /**
+     * @param {(eventType: number, fileName: string): void} fn
+     */
+    setWatchFn: function(fn) {
+        if (typeof fn != 'function') {
+            throw new TypeError('watchFn must be a function.');
+        }
+        this._watchFn = fn;
+    }
+};
+
+
 // == signals-singleton ====
 // =============================================================================
 exports.signals = {
@@ -114,31 +140,6 @@ exports.transpiler = {
      * @throws {Error}
      */
     transpileToFn: function(/*code, fileName*/) {}
-};
-
-
-// == fileWatcher-singleton ====
-// =============================================================================
-exports.fileWatcher = {
-    EVENT_NOTICE_WRITE: 0,
-    EVENT_NOTICE_REMOVE: 1,
-    EVENT_CREATE: 2,
-    EVENT_WRITE: 3,
-    EVENT_CHMOD: 4,
-    EVENT_REMOVE: 5,
-    EVENT_RENAME: 6,
-    EVENT_RESCAN: 7,
-    EVENT_ERROR: 8,
-    _watchFn: null,
-    /**
-     * @param {(eventType: number, fileName: string): void} fn
-     */
-    setWatchFn: function(fn) {
-        if (typeof fn != 'function') {
-            throw new TypeError('watchFn must be a function.');
-        }
-        this._watchFn = fn;
-    }
 };
 
 
