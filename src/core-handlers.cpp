@@ -15,6 +15,7 @@ static void finalizeChunkedReq(void*);
 static void initJsFormData(IncomingDataContentType ctype, void **myPtr);
 static bool putJsFormDataVal(const char *key, const char *value, void *myPtr);
 static void cleanJsFormData(void *myPtr);
+static const char* getMime(const char *ext);
 
 unsigned
 coreHandlersHandleStaticFileRequest(void *myPtr, void *myDataPtr, const char *method,
@@ -26,13 +27,6 @@ coreHandlersHandleStaticFileRequest(void *myPtr, void *myDataPtr, const char *me
     if (!ext) return MHD_NO;
     // Mustn't contain ".."
     if (strstr(url, "..")) return MHD_HTTP_NOT_FOUND;
-    // Must end with .(js|html|css|svg)
-    bool isJs = strcmp(ext, ".js") == 0;
-    bool isHtml = !isJs ? strcmp(ext, ".html") == 0 : false;
-    bool isCss = !isHtml ? strcmp(ext, ".css") == 0 : false;
-    if (!isJs && !isHtml && !isCss && strcmp(ext, ".svg") != 0) {
-        return MHD_HTTP_NOT_FOUND;
-    }
     // Must exist
     int fd;
     struct stat sbuf;
@@ -46,10 +40,8 @@ coreHandlersHandleStaticFileRequest(void *myPtr, void *myDataPtr, const char *me
         return MHD_HTTP_INTERNAL_SERVER_ERROR;
     }
     *response = MHD_create_response_from_fd_at_offset64(sbuf.st_size, fd, 0);
-    if (isJs) MHD_add_response_header(*response, "Content-Type", "application/javascript");
-    else if (isHtml) MHD_add_response_header(*response, "Content-Type", "text/html");
-    else if (isCss) MHD_add_response_header(*response, "Content-Type", "text/css");
-    else MHD_add_response_header(*response, "Content-Type", "image/svg+xml");
+    const char *mime = getMime(ext);
+    if (mime) MHD_add_response_header(*response, "Content-Type", mime);
     MHD_add_response_header(*response, "Cache-Control", "public,max-age=86400");//24h
     return MHD_HTTP_OK;
 }
@@ -301,4 +293,25 @@ finalizeChunkedReq(void *myPtr) {
     duk_push_null(ctx);
     duk_put_prop_string(ctx, -2, KEY_CUR_CHUNK_RESP_OBJ);
     duk_pop(ctx);
+}
+
+static const char*
+getMime(const char *ext) {
+    if (strcmp(ext, ".js") == 0) return "application/javascript";
+    if (strlen(ext) <= 5 && memcmp(ext, ".htm", 4) == 0) return "text/html";
+    if (strcmp(ext, ".css") == 0) return "text/css";
+    //
+    if (strcmp(ext, ".png") == 0) return "image/png";
+    if (strcmp(ext, ".jpg") == 0 || strcmp(ext, ".jpeg") == 0) return "image/jpeg";
+    if (strcmp(ext, ".svg") == 0) return "image/svg+xml";
+    if (strcmp(ext, ".gif") == 0) return "image/gif";
+    if (strlen(ext) <= 5 && memcmp(ext, ".tif", 4) == 0) return "image/tiff";
+    if (strcmp(ext, ".bmp") == 0) return "image/bmp";
+    //
+    if (strcmp(ext, ".woff2") == 0) return "font/woff2";
+    if (strcmp(ext, ".woff") == 0) return "font/woff";
+    if (strcmp(ext, ".ttf") == 0) return "font/truetype";
+    if (strcmp(ext, ".otf") == 0) return "font/opentype";
+    //
+    return nullptr;
 }

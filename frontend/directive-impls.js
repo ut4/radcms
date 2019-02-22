@@ -11,6 +11,9 @@ class ArticleListDirectiveWebUIImpl extends preact.Component {
     static getTitle() {
         return 'Article list';
     }
+    static getIcon() {
+        return 'layers';
+    }
     /**
      * @param {{type: string; contentNodes: Object[]; origin: string;}} directive
      * @param {Object} ctx
@@ -49,6 +52,9 @@ class StaticMenuDirectiveWebUIImpl extends preact.Component {
     }
     static getTitle() {
         return 'Static menu';
+    }
+    static getIcon() {
+        return 'list';
     }
     /**
      * @param {{type: string; contentNodes: Object[];}} directive

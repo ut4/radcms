@@ -88,7 +88,7 @@ class InsaneControlPanel extends preact.Component {
                     $el('button', {
                         className: this.state.tabA ? 'current' : '',
                         onClick: () => this.setState({tabA: !this.state.tabA})
-                    }, 'Content'),
+                    }, 'On this page'),
                     $el('button', {
                         className: !this.state.tabA ? 'current' : '',
                         onClick: () => this.setState({tabA: !this.state.tabA})
@@ -135,12 +135,12 @@ class InsaneControlPanel extends preact.Component {
                 }, 'Generate')
             ]),
             $el('div', null, [
-                $el('h3', null, 'On this page:'),
                 $el('div', {className: 'current-page-directive-list'},
                     this.currentPageDirectiveImpls.map((impl, i) => {
                         const directive = this.props.currentPageData.directiveInstances[i];
                         return $el(ControlPanelSection, {
                             title: impl.getTitle(),
+                            icon: typeof impl.getIcon == 'function' ? impl.getIcon() : null,
                             className: 'directive directive-' + directive.type
                         }, impl.getMenuItems(directive, this.props));
                     }).concat($el(ControlPanelSection, {
@@ -166,7 +166,9 @@ class InsaneControlPanel extends preact.Component {
                     }, this.state.templates.map((t, i) =>
                         $el('option', {value: i}, t.fileName)
                     )),
-                    myLink('/edit-site-graph', 'Edit site graph')
+                    $el('div', null,
+                        myLink('/edit-site-graph', 'Edit site graph')
+                    )
                 ])
             ])
         ];
@@ -200,7 +202,11 @@ class ControlPanelSection extends preact.Component {
     render() {
         return $el('div', {className: this.props.className}, [
             $el('h4', null, [
-                $el('span', null, this.props.title),
+                $el('span', null,
+                    $el('img', {src: '/frontend/assets/icon-sprite.svg#' +
+                        (this.props.icon || 'feather')}, null),
+                    this.props.title
+                ),
                 $el('button', {onClick: () => this.setState({collapsed: !this.state.collapsed})},
                     '[' + (!this.state.collapsed ? '-' : '+') + ']'
                 )

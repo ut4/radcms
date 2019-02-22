@@ -426,7 +426,7 @@ function handleUpdateSiteGraphRequest(req) {
 function injectControlPanelIFrame(html, dataToFrontend) {
     var bodyEnd = html.indexOf('</body>');
     if (bodyEnd > -1) {
-        return html.substr(0, bodyEnd) + '<iframe src="/frontend/cpanel.html" id="insn-cpanel-iframe" style="position:fixed;border:none;height:100%;width:240px;right:4px;top:4px;"></iframe><script>function setIframeVisible(setVisible) { document.getElementById(\'insn-cpanel-iframe\').style.width = setVisible ? \'100%\' : \'240px\'; } function getCurrentPageData() { return ' + JSON.stringify(dataToFrontend) + '; }</script>' + html.substr(bodyEnd);
+        return html.substr(0, bodyEnd) + '<iframe src="/frontend/cpanel.html" id="insn-cpanel-iframe" style="position:fixed;border:none;height:100%;width:275px;right:0;top:0"></iframe><script>function setIframeVisible(setVisible){document.getElementById(\'insn-cpanel-iframe\').style.width=setVisible?\'100%\':\'275px\';}function getCurrentPageData(){return' + JSON.stringify(dataToFrontend) + ';}</script>' + html.substr(bodyEnd);
     }
     return html;
 }

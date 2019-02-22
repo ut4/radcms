@@ -1,5 +1,18 @@
+@font-face {
+    font-family: "Fira sans light";
+    src: url("assets/fira-sans-light.woff2") format("woff2");
+    font-weight: normal;
+    font-style: normal;
+}
+@font-face {
+    font-family: "Fira sans heavy";
+    src: url("assets/fira-sans-heavy.woff2") format("woff2");
+    font-weight: normal;
+    font-style: normal;
+}
 body {
-    margin: 0 6px 6px;
+    margin: 0;
+    font: 14px/14px "Fira sans light";
 }
 .hidden {
     display: none;
@@ -10,6 +23,7 @@ body {
 
 /* == Buttons =============================================================== */
 button {
+    font-family: "Fira sans light";
     border: medium none;
     background-color: transparent;
     cursor: pointer;
@@ -19,7 +33,7 @@ button {
     border: 1px solid rgba(0,0,0,0.1);
     border-radius: 2px;
     color: #222222;
-    font: 11px/11px "Sans";
+    font: 11px/11px "Fira sans light";
     padding: 8px 12px;
     text-shadow: 0 1px rgba(0,0,0,0.1);
     text-decoration: none;
@@ -58,7 +72,7 @@ button {
     border-color: #379ded;
 }
 .text-button {
-    font: 0.8em "Sans";
+    font: 0.8em "Fira sans light";
     color: #676269;
     padding: 5px 20px;
     text-decoration: none;
@@ -82,7 +96,7 @@ input, textarea, select:not(.no-style) {
     border-style: solid;
     border-width: 1px;
     color: #444;
-    font: 14px "Sans";
+    font: 14px "Fira sans light";
     margin-bottom: 5px;
     padding: 5px 0;
     text-indent: 8px;
@@ -214,19 +228,21 @@ table .input-set input {
 }
 
 /* == App =================================================================== */
-.view { float: right; padding: 42px 1px 1px; margin: 10px 200px 0 0;
-    border-radius: 1px; box-shadow: 3px 2px 1px rgba(0,0,0,0.04); }
+.open { overflow: hidden; }
+.view { float: left; padding: 42px 1px 1px; border-radius: 2px;
+    width: calc(100% - 270px); margin: 8px 0 0 8px;
+    box-shadow: 3px 2px 1px rgba(0,0,0,0.04); }
 .view > div:nth-of-type(1), .view > form:first-of-type { padding: 15px;
     border-radius: 1px; }
-.view h2 { margin: -48px 0 24px -13px; font-size: 21px; }
+.view h2 { font: normal 24px/24px "Fira sans heavy"; margin: -50px 0 24px -2px; }
 
-#control-panel { position: absolute; min-width: 190px; max-width: 200px;
-    padding: 40px 1px 1px; margin-top: 10px; right: 5px; border-radius: 1px;
+#control-panel { position: absolute; width: 240px; padding: 40px 1px 1px;
+    margin-top: 8px; right: 9px; border-radius: 1px;
     box-shadow: 3px 2px 1px rgba(0,0,0,0.04); }
 #control-panel > h1 { float: right; margin: -37px 3px 0 0; letter-spacing: -1px;
-    font-size: 14px; }
+    font-size: 13px; font-weight: normal }
 #control-panel ul { margin: 5px 0; padding: 0; list-style: none; }
-#control-panel li { padding: 1px 5px 5px; background-color: rgba(0,0,0,0.05);}
+#control-panel li { padding: 6px 7px 8px; background-color: rgba(0,0,0,0.05);}
 #control-panel li:nth-of-type(2n) { background-color: transparent; }
 .tab-links { position: relative; top: 0px; margin-top: -18px; }
 .tab-links button { padding: 2px 8px; border-bottom: none; }
@@ -237,7 +253,10 @@ table .input-set input {
 #control-panel h3 { margin-top: 0; font-size: 18px; }
 #control-panel h3 > span { font-size: 11px; font-weight: normal; display: block;
     line-height: 11px; }
-#control-panel h4 { margin: 0; font-size: 16px; }
+#control-panel h4 { margin: 0 0 8px 0; font-size: 13px; font-weight: normal;
+    border-radius: 2px; padding: 10px 15px 10px; text-transform: uppercase;
+    letter-spacing: 2px; }
+#control-panel h4 img { float: left; margin: -2px 10px 0 -3px; width: 24px; }
 #control-panel .nice-button[data-num-waiting-uploads]::after {
     position: absolute; width: 16px; height: 16px;
     content: attr(data-num-waiting-uploads); margin: -15px 0 0 2px;
@@ -247,12 +266,14 @@ table .input-set input {
 
 /**/
 .light { color: rgb(62,62,62); }
-.light .view { background: linear-gradient(#bababae6,#c6c6c6); }
+.light .open { background-color: rgba(255,255,255,0.6); }
+.light .view { background: linear-gradient(#44e4b7,#13b385); }
 .light .view > div:first-of-type, .light .view > form:first-of-type {
     background-color: #fff; }
-.light #control-panel { background: linear-gradient(#bababae6,#c6c6c6); }
+.light #control-panel { background: linear-gradient(#44e4b7,#13b385); }
 .light #control-panel > div:not(.tab-links) { background-color: #fff; }
-.light #control-panel > h1 { color: #555; }
+.light #control-panel > h1 { color: rgba(0,0,0,0.6) }
 .light #control-panel h3 > span { color: #888; }
+.light #control-panel h4 { background: linear-gradient(to left, #40e3cb, #2eefb8); }
 .light .tab-links button { background-color: rgba(255,255,255,0.6); }
 .light .tab-links button.current { background-color: #fff; }
