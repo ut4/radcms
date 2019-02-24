@@ -18,4 +18,7 @@ transpilerGetLastError();
 void
 transpilerSetPrintErrors(bool logErrors);
 
+bool
+transpilerIsVoidElement(const char *tagName, unsigned tagNameLen);
+
 #endif

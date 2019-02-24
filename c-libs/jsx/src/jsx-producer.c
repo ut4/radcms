@@ -132,29 +132,12 @@ producerProduceCode(struct Token *token) {
 }
 
 bool
-producerProduceObjStringVal(struct Token *keyToken, struct Token *valueToken) {
-    unsigned finalLen = valueToken->lexemeLen + getNumEscapableSeqs(valueToken);
+producerProduceObjKey(struct Token *keyToken) {
     char *tail = myStrMakeSpace(&result, result.length + keyToken->lexemeLen +
-                                         finalLen +
-                                         6); // ': ' + quote*4
+                                         4); // ': ' + quote*2
     appendChar('\'');
     appendStr(keyToken->lexemeFrom, keyToken->lexemeLen);
     appendStr("': ", 3);
-    appendEscapedString(tail, valueToken->lexemeFrom, valueToken->lexemeLen,
-                        finalLen);
-    (void)producerAddComma();
-    return true;
-}
-
-bool
-producerProduceObjCodeVal(struct Token *keyToken, const char *code, unsigned codeLen) {
-    char *tail = myStrMakeSpace(&result, result.length + keyToken->lexemeLen +
-                                         codeLen + 4); // ': ' + quote*2
-    appendChar('\'');
-    appendStr(keyToken->lexemeFrom, keyToken->lexemeLen);
-    appendStr("': ", 3);
-    appendStr(code, codeLen);
-    (void)producerAddComma();
     return true;
 }
 
@@ -222,6 +205,26 @@ producerAddComma() {
 void
 producerReplaceChar(unsigned pos, char with) {
     result.chars[pos] = with;
+}
+
+void
+producerPatchTagName(unsigned pos, struct Token *nameToken) {
+    unsigned nameLen = nameToken->lexemeLen;
+    const unsigned aLen = strlen("directives['");
+    const unsigned bLen = strlen("']");
+    const unsigned newNameEnd = pos + aLen + nameLen + bLen;
+    const unsigned attrsStart = pos + nameLen + 2; // 2 = quote * 2
+    const unsigned attrsLen = result.length - attrsStart;
+    (void)myStrMakeSpace(&result, newNameEnd + attrsLen);
+    result.length = newNameEnd + attrsLen;
+    // '... createElement('foo', {prop: bar}, null' ->
+    // '... createElement(*****************, {prop: bar}, null'
+    memmove(&result.chars[newNameEnd], &result.chars[attrsStart], attrsLen);
+    // '... createElement(*****************, {prop: bar}, null' ->
+    // '... createElement(directives['foo'], {prop: bar}, null'
+    memcpy(&result.chars[pos], "directives['", aLen);
+    memcpy(&result.chars[pos+aLen], nameToken->lexemeFrom, nameLen);
+    memcpy(&result.chars[pos+aLen+nameLen], "'], ", bLen);
 }
 
 unsigned

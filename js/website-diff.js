@@ -247,7 +247,7 @@ LocalDiff.prototype.scanChanges = function(pages, usersOfLayout) {
         var l = fnCmps.length;
         for (var i = 0; i < l; ++i) {
             var props = fnCmps[i].props;
-            if (fnCmps[i].fn !== directives.Link) continue;
+            if (fnCmps[i].fn !== directives.RadLink) continue;
             var href = props.to;
             newLinksTo[href] = 1;
             // Page already in the site graph

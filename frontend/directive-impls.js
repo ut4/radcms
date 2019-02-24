@@ -2,7 +2,7 @@ import {myLink, contentNodeList} from './common-components.js';
 
 /*
  * Implements end-user management views (editing articles, creating new articles
- * etc.) for <ArticleList/> directives.
+ * etc.) for <RadArticleList/> directives.
  */
 class ArticleListDirectiveWebUIImpl extends preact.Component {
     static getRoutes() {
@@ -42,7 +42,7 @@ class StaticMenuAddPageView {
 
 /*
  * Implements end-user management views (adding links, reordering links etc.)
- * for <StaticMenu/> directives.
+ * for <RadStaticMenu/> directives.
  */
 class StaticMenuDirectiveWebUIImpl extends preact.Component {
     static getRoutes() {

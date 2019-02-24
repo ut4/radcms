@@ -9,7 +9,7 @@ var NO_PARENT = '';
 
 var makeLinks = function() {
     return '[' + [].slice.call(arguments).map(function(url) {
-        return '<directives.Link to="' + url + '"/>';
+        return '<RadLink to="' + url + '"/>';
     }) + ']';
 };
 
@@ -58,8 +58,8 @@ testLib.module('link-diff', function(hooks) {
         var existingLayout = siteGraph.addTemplate(mockTemplate.fname, true, true);
         var newLinkUrl = '/bar';
         mockTemplate.contents = '<html><body>'+
-            '<directives.Link to="' + newLinkUrl + '"/>' +
-            '<directives.Link to="' + newLinkUrl + '"/>'+ // dupes shouldn't matter
+            '<RadLink to="' + newLinkUrl + '"/>' +
+            '<RadLink to="' + newLinkUrl + '"/>'+ // dupes shouldn't matter
         '</body></html>';
         // Trigger handleFWEvent()
         fileWatcher._watchFn(fileWatcher.EVENT_WRITE, mockTemplate.fname, 'htm');
@@ -177,8 +177,8 @@ testLib.module('link-diff', function(hooks) {
         // Existing /foo contains a link to a new page /bar
         // New page /bar contains a link to another new page /nar
         mockTemplate.contents = '<html><body>{ url[0] == "foo" ? '+
-            '<directives.Link to="' + linkAHref + commonAttrs + '/> : '+
-            '<directives.Link to="' + linkBHref + commonAttrs + '/> }'+
+            '<RadLink to="' + linkAHref + commonAttrs + '/> : '+
+            '<RadLink to="' + linkBHref + commonAttrs + '/> }'+
         '</body></html>';
         var existingPage = siteGraph.addPage('/foo', NO_PARENT, mockTemplate.fname,
             {}, // Doesn't initially link anywhere
@@ -210,7 +210,7 @@ testLib.module('link-diff', function(hooks) {
     testLib.test('doesn\'t add aliases (<Link to="/"/>)', function(assert) {
         assert.expect(2);
         mockTemplate.contents = '<html><body>'+
-            '<directives.Link to="/"/>'+
+            '<RadLink to="/"/>'+
         '</body></html>';
         var existingPage = siteGraph.addPage('/home', NO_PARENT, mockTemplate.fname);
         var refCountBefore = existingPage.refCount;

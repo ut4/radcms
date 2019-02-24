@@ -4,17 +4,19 @@ var website = require('website.js');
  * Usage:
  * <html>
  *     ...
- *     <directives.Link to="/page" text="Read more" domAttr1="foo" another="bar"/>
+ *     <RadLink to="/page" text="Read more" domAttr1="foo" another="bar"/>
  *     ...
  * </html>
  */
-exports.Link = function(domTree, props) {
-    if (!props.to) throw new TypeError('<Link to=""/> can\'t be empty');
+exports.RadLink = function(domTree, props) {
+    if (!props.to) throw new TypeError('<RadLink to=""/> can\'t be empty');
     else if (props.to == '/') props.to = website.siteConfig.homeUrl;
     else if (props.to.charAt(0) != '/') props.to = '/' + props.to;
     //
     var p = {href: props.to};
-    for (var key in props) if (key != 'to' && key != 'text') p[key] = props[key];
+    for (var key in props) {
+        if (key != 'to' && key != 'text' && key != 'layoutOverride') p[key] = props[key];
+    }
     return domTree.createElement('a', p, props.text || '');
 };
 
@@ -23,31 +25,27 @@ exports.Link = function(domTree, props) {
  * @arts = fetchAll("Article")
  * <html>
  *     ...
- *     <directives.ArticleList name="WhatsNew" articles={ arts }/>
+ *     <RadArticleList articles={arts}/>
  *     ...
  * </html>
  *
  * With pagination:
- * var paginationOpts = {nthPage: url[1] || 1, limit: 10}
- * @arts = fetchAll("Article").paginate(paginationOpts)
+ * var opts = {nthPage: url[1] || 1, limit: 10}
+ * @arts = fetchAll("Article").paginate(opts)
  * <html>
  *     ...
- *     <directives.ArticleList
- *         name="PostsListing"
- *         articles={ arts }
- *         paginationOptions={ paginationOpts }
- *         url={ url }/>
+ *     <RadArticleList articles={arts} paginationOptions={opts} url={url}/>
  *     ...
  * </html>
  */
-exports.ArticleList = function(domTree, props) {
+exports.RadArticleList = function(domTree, props) {
     if (props.articles.length) {
         return domTree.createElement('div', null, props.articles.map(function(art) {
             return domTree.createElement('article', null, [
                 domTree.createElement('h2', null, art.title),
                 domTree.createElement('div', null, [
                     domTree.createElement('p', null, art.body.substr(0, 6) + '... '),
-                    domTree.createElement(exports.Link, {
+                    domTree.createElement(exports.RadLink, {
                         to: art.defaults.name.charAt(0) !== '/'
                             ? '/' + art.defaults.name
                             : art.defaults.name,
@@ -69,14 +67,14 @@ function buildPaginationLinks(domTree, props, isLast) {
     var out = [];
     var currentPage = domTree.getContext();
     if (opts.nthPage > 1) {
-        out.push(domTree.createElement(exports.Link, {
+        out.push(domTree.createElement(exports.RadLink, {
             to: '/' + props.url[0] + (opts.nthPage > 2 ? ('/' + (opts.nthPage - 1)) : ''),
             layoutOverride: currentPage.layoutFileName,
             text: 'Prev'
         }, null));
     }
     if (!isLast) {
-        out.push(domTree.createElement(exports.Link, {
+        out.push(domTree.createElement(exports.RadLink, {
             to: '/' + props.url[0] + '/' + (opts.nthPage + 1),
             layoutOverride: currentPage.layoutFileName,
             text: 'Next'

@@ -100,7 +100,7 @@ static std::vector<SampleData> sampleData = {
                                "        <title>Hello</title>\n"
                                "    </head>\n"
                                "    <body>\n"
-                               "        <directives.ArticleList name=\"arts\" articles={arts}/>\n"
+                               "        <RadArticleList name=\"arts\" articles={arts}/>\n"
                                "        <footer>{ footer.content }</footer>\n"
                                "    </body>\n"
                                "</html>"},

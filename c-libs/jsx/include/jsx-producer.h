@@ -32,13 +32,8 @@ producerProduceString(struct Token *token);
 bool
 producerProduceCode(struct Token *token);
 
-/** Appends '$keyToken->lexeme': '$valueToken->lexeme'. */
 bool
-producerProduceObjStringVal(struct Token *keyToken, struct Token *valueToken);
-
-/** Appends '$keyToken->lexeme': $valueToken->lexeme, */
-bool
-producerProduceObjCodeVal(struct Token *keyToken, const char *code, unsigned codeLen);
+producerProduceObjKey(struct Token *keyToken);
 
 bool
 producerProduceCommentOrDoctype(struct Token *contentsToken,
@@ -67,6 +62,13 @@ producerAddComma();
 
 void
 producerReplaceChar(unsigned pos, char with);
+
+/**
+ * Replaces 'createElement('foo', {'attr': 'val'}...' with
+ *          'createElement(directives['foo'], {'attr': 'val'}...'
+ */
+void
+producerPatchTagName(unsigned pos, struct Token *nameToken);
 
 unsigned
 producerGetLength();

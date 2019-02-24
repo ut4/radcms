@@ -445,8 +445,10 @@ collectElemChildren(duk_context *ctx, int valueIsAt,
             children.push_back(domTree.createTextNode(""));
         }
     } else {
-        std::cerr << "[Warn]: vElem content wasn't \"str\", <nodeRef> nor "
-                      "[<nodeRef>...]: attempting toString().\n";
+        if (!duk_is_null_or_undefined(ctx, valueIsAt)) {
+            std::cerr << "[Debug]: vElem content wasn't \"str\", <nodeRef> nor "
+                         "[<nodeRef>...]: attempting toString().\n";
+        }
         children.push_back(domTree.createTextNode(duk_to_string(ctx, valueIsAt)));
     }
 }
