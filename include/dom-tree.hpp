@@ -4,6 +4,7 @@
 #include <cstring>
 #include <vector>
 #include <string>
+#include "../c-libs/jsx/include/jsx-transpiler.hpp"
 
 typedef std::pair<std::string, std::string> ElemProp;
 

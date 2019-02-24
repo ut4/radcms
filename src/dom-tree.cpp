@@ -146,24 +146,26 @@ DomTree::doRender(const ElemNode *node, std::string &err) {
         r += "\"";
     }
     r += ">";
-    for (unsigned ref: node->children) {
-        const unsigned type = GET_NODETYPE(ref);
-        if (type == NODE_TYPE_ELEM) {
-            ElemNode *n = this->getElemNode(ref);
-            assert(n != nullptr && "getElemNode() == nullptr");
-            if (!this->doRender(n, err)) return false;
-        } else if (type == NODE_TYPE_TEXT) {
-            TextNode *n = this->getTextNode(ref);
-            assert(n != nullptr && "getTextNode() == nullptr");
-            r += n->chars;
-        } else {
-            ElemNode *rootElem = this->lazilyExecFnCmpFn(ref, err);
-            if ((rootElem && !this->doRender(rootElem, err)) || !rootElem) return false;
+    if (!transpilerIsVoidElement(node->tagName.c_str(), node->tagName.size())) {
+        for (unsigned ref: node->children) {
+            const unsigned type = GET_NODETYPE(ref);
+            if (type == NODE_TYPE_ELEM) {
+                ElemNode *n = this->getElemNode(ref);
+                assert(n != nullptr && "getElemNode() == nullptr");
+                if (!this->doRender(n, err)) return false;
+            } else if (type == NODE_TYPE_TEXT) {
+                TextNode *n = this->getTextNode(ref);
+                assert(n != nullptr && "getTextNode() == nullptr");
+                r += n->chars;
+            } else {
+                ElemNode *rootElem = this->lazilyExecFnCmpFn(ref, err);
+                if ((rootElem && !this->doRender(rootElem, err)) || !rootElem) return false;
+            }
         }
+        r += "</";
+        r += this->elemNodes[nidx].tagName;
+        r += ">";
     }
-    r += "</";
-    r += this->elemNodes[nidx].tagName;
-    r += ">";
     return true;
 }
 

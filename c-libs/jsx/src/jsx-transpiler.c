@@ -9,14 +9,15 @@
 
 #define ERR_MAX_LEN 128
 #define MAX_DATA_CONF_VARS 64
-#define MAX_VAR_NAME_LEN 128
-#define ISX_OUTER_START "function(fetchAll, fetchOne, url) { "
-//                           var batch = fetchAll().where() calls here...
-#define ISX_INNER_START     "return function(domTree, getDataFor, directives) { "
-//                               batch = getDataFor(batch) calls here...
-#define ISX_INNER_END          " return"
-//                               domTree.createElement(...,batch.foo)... calls here
-#define ISX_OUTER_END       "}; }"
+#define WRAP_JS_START "function(domTree, props) {" \
+                          "var directives = domTree.directives;" \
+                          "if (props.ddc) {var url = props.url;" \
+                                          "var fetchAll=props.ddc.fetchAll.bind(props.ddc);" \
+                                          "var fetchOne=props.ddc.fetchOne.bind(props.ddc);}"
+//                         js code here ...
+#define WRAP_JS_END      " return"
+//                         domTree.createElement(...,batch.foo)... calls here
+#define WRAP_END       "}"
 
 struct Transpiler {
     struct Token previous;
@@ -59,13 +60,13 @@ codeBlock -> "{" ( jsString | jsComment | element | ANY )+ "}"
 comment   -> "<" "!" "-" "-" ANY? "-" "-" ">"
 */
 static bool html(enum TagType alreadyConsumedStartEl);
-static void jsCode();
+static void jsCode(bool isDuk);
 static bool jsComment();
 static bool jsString(enum TokenType t);
 static bool element(bool startAlreadyConsumed);
 static bool doctypeOrComment(bool startAlreadyConsumed);
 static bool scriptOrStyleElement(const char *elName);
-static bool codeBlock(struct Token *previous);
+static bool codeBlock(bool isAttr);
 static unsigned startTag(bool startAlreadyConsumed, enum TagType *outType);
 static bool attrs();
 static bool tryStartTag(bool autoProduce);
@@ -73,20 +74,13 @@ static bool closingTag();
 static bool comment(bool startAlreadyConsumed);
 static enum TagType tryCommentOrDoctype();
 //
-static const char* appendVar(DataConfVar *vars, unsigned varsCount,
-                             const char *curCodeStart, const char *fileStart);
-static bool endVars(DataConfVar *vars, unsigned varsCount, const char *fileStart);
+static const char* isxVarDecl(const char *curCodeStart);
 static struct Token* advance(bool consumeWhiteSpace, enum ScanMode scanMode);
 static bool advanceIf(enum TokenType type, bool consumeWhiteSpace,
                       enum ScanMode scanMode);
 static bool consumeOr(enum TokenType type, const char *err,
                       bool consumeWhiteSpace, enum ScanMode scanMode);
 static void logError(const char *err);
-
-#define makeLexeme(toVarName, token) \
-    char toVarName[token.lexemeLen + 1]; \
-    memcpy(toVarName, token.lexemeFrom, token.lexemeLen); \
-    toVarName[token.lexemeLen] = '\0'
 
 #define makeError(fmt, ...) \
     (snprintf(sharedErr, ERR_MAX_LEN, fmt, ##__VA_ARGS__), sharedErr)
@@ -106,26 +100,40 @@ transpilerFreeProps() {
     producerFreeProps();
 }
 
+#define transpileInit() \
+    transpiler.hadError = false; \
+    transpiler.lastErr[0] = '\0'; \
+    sharedErr[0] = '\0'; \
+    scannerInit(src); \
+    producerClear(); \
+    (void)advance(true, SCAN_NAME)
+
+char*
+transpilerTranspileDuk(const char *src) {
+    transpileInit();
+    if (transpiler.current.type != TOKEN_EOF) {
+        producerAddChars(WRAP_JS_START);
+        if (transpiler.current.type == TOKEN_LT) {
+            producerAddChars(WRAP_JS_END);
+            html(TAG_TYPE_NONE);
+        } else {
+            jsCode(true);
+        }
+    }
+    producerAddChars(WRAP_END);
+    return !transpiler.hadError ? producerGetResult() : NULL;
+}
 
 char*
 transpilerTranspile(const char *src) {
-    transpiler.hadError = false;
-    transpiler.lastErr[0] = '\0';
-    sharedErr[0] = '\0';
-    scannerInit(src);
-    producerClear();
-    (void)advance(true, SCAN_NAME);
+    transpileInit();
     if (transpiler.current.type != TOKEN_EOF) {
-        producerAddChars(ISX_OUTER_START);
         if (transpiler.current.type == TOKEN_LT) {
-            producerAddChars(ISX_INNER_START);
-            producerAddChars(ISX_INNER_END);
             html(TAG_TYPE_NONE);
         } else {
-            jsCode();
+            jsCode(false);
         }
     }
-    producerAddChars(ISX_OUTER_END);
     return !transpiler.hadError ? producerGetResult() : NULL;
 }
 
@@ -137,6 +145,48 @@ transpilerGetLastError() {
 void
 transpilerSetPrintErrors(bool printErrors) {
     transpiler.printErrors = printErrors;
+}
+
+bool
+transpilerIsVoidElement(const char *tagName, unsigned tagNameLen) {
+    #define MATCH(tag, expectedLen) \
+        tagNameLen == expectedLen && \
+        strncasecmp(tagName, tag, expectedLen) == 0
+    char b;
+    switch (tolower(tagName[0])) {
+        case 'a':
+            return MATCH("area", 4);
+        case 'b':
+            if (tagNameLen == 1) return false;
+            b = tagName[1];
+            return ((b == 'r' || b == 'R') && MATCH("br", 2)) ||
+                   ((b == 'a' || b == 'A') && MATCH("base", 4));
+        case 'c':
+            return MATCH("col", 3);
+        case 'e':
+            return MATCH("embed", 5);
+        case 'h':
+            return MATCH("hr", 2);
+        case 'i':
+            if (tagNameLen == 1) return false;
+            b = tagName[1];
+            return ((b == 'm' || b == 'M') && MATCH("img", 3)) ||
+                   ((b == 'n' || b == 'N') && MATCH("input", 5));
+        case 'l':
+            return MATCH("link", 4);
+        case 'm':
+            return MATCH("meta", 4);
+        case 'p':
+            return MATCH("param", 5);
+        case 's':
+            return MATCH("source", 6);
+        case 't':
+            return MATCH("track", 5);
+        case 'w':
+            return MATCH("wbr", 3);
+    }
+    return false;
+    #undef MATCH
 }
 
 static bool
@@ -173,54 +223,20 @@ html(enum TagType alreadyConsumedStartEl) {
 }
 
 static const char*
-appendVar(DataConfVar *vars, unsigned varsCount, const char *curCodeStart,
-          const char *fileStart) {
-    if (varsCount >= MAX_DATA_CONF_VARS) {
-        logError("TOO_MANY_VARS"); return NULL;
-    }
+isxVarDecl(const char *curCodeStart) {
     producerAddNChars(curCodeStart, transpiler.current.lexemeFrom - curCodeStart);
-    producerAddChars("var ");
     curCodeStart = transpiler.current.lexemeFrom + 1;
     advance(true, SCAN_NAME); // @
+    producerAddChars("var ");
     if (transpiler.current.type != TOKEN_NAME) {
         logError("Expected variable name after '@'"); return NULL;
-    }
-    if (transpiler.current.lexemeLen <= MAX_VAR_NAME_LEN) {
-        vars[varsCount] = (DataConfVar){
-            .posFromFileStart = transpiler.current.lexemeFrom - fileStart,
-            .varNameLen = transpiler.current.lexemeLen
-        };
-    } else {
-        logError("VAR_NAME_TOO_LONG"); return NULL;
     }
     return curCodeStart;
 }
 
-static bool
-endVars(DataConfVar *vars, unsigned varsCount, const char *fileStart) {
-    if (!producerAddChars(ISX_INNER_START)) return false;
-    for (unsigned i = 0; i < varsCount; ++i) {
-        const unsigned vNameLen = vars[i].varNameLen;
-        char vName[vNameLen];
-        memcpy(vName, &fileStart[vars[i].posFromFileStart], vNameLen);
-        vName[vNameLen] = '\0';
-        //
-        const char *fmt = "%s=getDataFor(%s);";
-        const unsigned l = vNameLen * 2 + strlen(fmt) - 4 + 1; // 4 == %s%s, 1 == \0
-        char toDataCall[l]; // <varname>=getDataFor(<varname>);
-        snprintf(toDataCall, l, fmt, vName, vName);
-        producerAddNChars(toDataCall, l - 1);
-    }
-    return producerAddChars(ISX_INNER_END);
-}
-
 static void
-jsCode() {
-    const char *fileStart = transpiler.current.lexemeFrom;
+jsCode(bool isDuk) {
     const char *curCodeStart = transpiler.current.lexemeFrom;
-    DataConfVar vars[MAX_DATA_CONF_VARS];
-    unsigned varsCount = 0;
-    bool varsEnded = false;
     while (transpiler.current.type != TOKEN_EOF) {
         enum TokenType t = transpiler.current.type;
         if ((t == TOKEN_DQUOT || t == TOKEN_SQUOT) && !jsString(t)) continue;
@@ -235,16 +251,14 @@ jsCode() {
             }
             if (t != TAG_TYPE_NONE) {
                 producerAddNChars(curCodeStart, ltStart - curCodeStart);
-                if (!varsEnded && !(varsEnded = endVars(vars, varsCount, fileStart))) return;
+                if (isDuk) producerAddChars(WRAP_JS_END);
                 if (html(t)) { curCodeStart = transpiler.current.lexemeFrom; continue; }
                 else return;
             }
-        } else if (!varsEnded &&
+        } else if (
             transpiler.current.type == TOKEN_UNKNOWN &&
             *transpiler.current.lexemeFrom == '@') {
-            curCodeStart = appendVar(vars, varsCount, curCodeStart, fileStart);
-            if (curCodeStart) varsCount += 1;
-            else return;
+            if (!(curCodeStart = isxVarDecl(curCodeStart))) return;
             continue;
         }
         advance(false, SCAN_NAME);
@@ -308,7 +322,7 @@ element(bool startAlreadyConsumed) {
             if (!element(false)) return false;
         } else if (transpiler.current.type == TOKEN_LBRACE) {
             childCount += 1;
-            if (!codeBlock(NULL)) return false;
+            if (!codeBlock(false)) return false;
         } else {
             break;
         }
@@ -365,47 +379,8 @@ scriptOrStyleElement(const char *elName) {
     return true;
 }
 
-static bool
-isVoidElement(struct Token *token) {
-    #define MATCH(token, tag, expectedLen) \
-        token->lexemeLen == expectedLen && \
-        strncasecmp(token->lexemeFrom, tag, expectedLen) == 0
-    char b;
-    switch (tolower(token->lexemeFrom[0])) {
-        case 'a':
-            return MATCH(token, "area", 4);
-        case 'b':
-            if (token->lexemeLen == 1) return false;
-            b = token->lexemeFrom[1];
-            return ((b == 'r' || b == 'R') && MATCH(token, "br", 2)) ||
-                   ((b == 'a' || b == 'A') && MATCH(token, "base", 4));
-        case 'c':
-            return MATCH(token, "col", 3);
-        case 'e':
-            return MATCH(token, "embed", 5);
-        case 'h':
-            return MATCH(token, "hr", 2);
-        case 'i':
-            if (token->lexemeLen == 1) return false;
-            b = token->lexemeFrom[1];
-            return ((b == 'm' || b == 'M') && MATCH(token, "img", 3)) ||
-                   ((b == 'n' || b == 'N') && MATCH(token, "input", 5));
-        case 'l':
-            return MATCH(token, "link", 4);
-        case 'm':
-            return MATCH(token, "meta", 4);
-        case 'p':
-            return MATCH(token, "param", 5);
-        case 's':
-            return MATCH(token, "source", 6);
-        case 't':
-            return MATCH(token, "track", 5);
-        case 'w':
-            return MATCH(token, "wbr", 3);
-    }
-    return false;
-    #undef MATCH
-}
+#define isVoidElement(token) \
+    transpilerIsVoidElement(token.lexemeFrom, token.lexemeLen)
 
 static unsigned
 startTag(bool startAlreadyConsumed, enum TagType *outType) {
@@ -425,9 +400,10 @@ startTag(bool startAlreadyConsumed, enum TagType *outType) {
     if (transpiler.current.type == TOKEN_SLASH) { // <startTag.../>
         *outType = TAG_TYPE_SELF_CLOSING;
         advance(true, SCAN_NAME); // '/'
-        if (!isVoidElement(&tagNameToken)) { // assume a function or variable
-            producerReplaceChar(createElemTagNameStrEnd - tagNameToken.lexemeLen - 1, ' ');
-            producerReplaceChar(createElemTagNameStrEnd, ' ');
+        if (!isVoidElement(tagNameToken)) { // assume a function or variable
+            // createElement('Foo'... -> createElement(directives['Foo']...
+            producerPatchTagName(createElemTagNameStrEnd - tagNameToken.lexemeLen - 1,
+                                 &tagNameToken);
         }
         producerCloseSelfClosingTag();
     } else if (strncasecmp(tagNameToken.lexemeFrom, "script", 6) == 0) {
@@ -435,7 +411,7 @@ startTag(bool startAlreadyConsumed, enum TagType *outType) {
     } else if (strncasecmp(tagNameToken.lexemeFrom, "style", 5) == 0) {
         *outType = TAG_TYPE_STYLE;
     } else { // <startTag...>
-        if (isVoidElement(&tagNameToken)) {
+        if (isVoidElement(tagNameToken)) {
             *outType = TAG_TYPE_SELF_CLOSING;
             producerCloseSelfClosingTag();
         }
@@ -453,14 +429,13 @@ attrs() {
     }
     if (!producerAddChar('{')) return false;
     while (advanceIf(TOKEN_NAME, true, SCAN_NAME) ) {
-        struct Token keyToken = transpiler.previous;
+        if (!producerProduceObjKey(&transpiler.previous)) return false;
         if (!advanceIf(TOKEN_EQUAL, true, SCAN_NAME)) { // attr with no value
             if (transpiler.current.type == TOKEN_GT ||
                 transpiler.current.type == TOKEN_NAME ||
                 transpiler.current.type == TOKEN_SLASH ||
                 transpiler.current.type == TOKEN_SPACE) {
-                if (!producerProduceObjStringVal(&keyToken, &emptyToken))
-                    return false;
+                if (!producerAddChars("'',")) return false;
                 continue;
             } else {
                 logError(makeError("Unexpected '%c' after empty attribute",
@@ -479,12 +454,12 @@ attrs() {
             }
             if (!consumeOr(TOKEN_TEXT, "Expected attr value", false,
                            SCAN_NAME)) return false;
-            if (!producerProduceObjStringVal(&keyToken, &transpiler.previous))
+            if (!producerProduceString(&transpiler.previous) || !producerAddComma())
                 return false;
             advance(true, SCAN_NAME); // closing
         // "{"
         } else if (transpiler.current.type == TOKEN_LBRACE) {
-            if (!codeBlock(&keyToken)) return false;
+            if (!codeBlock(true) || !producerAddComma()) return false;
         } else {
             logError(makeError("Unexpected '%c' after '='",
                                *transpiler.current.lexemeFrom));
@@ -538,11 +513,10 @@ closingTag() {
 }
 
 static bool
-codeBlock(struct Token *previous) {
+codeBlock(bool isAttr) {
     unsigned startingLine = scannerGetCurrentLine();
     const char *start = transpiler.current.lexemeFrom+1;
     advance(true, SCAN_NAME); // "{"
-    bool isAttr = previous != NULL;
     if (transpiler.current.type == TOKEN_RBRACE) {
         if (!isAttr) logError("Expected stuff inside { }");
         else logError("Expected stuff inside attr { }");
@@ -557,7 +531,7 @@ codeBlock(struct Token *previous) {
         if ((t == TOKEN_DQUOT || t == TOKEN_SQUOT) && (hadUntermString = !jsString(t))) continue;
         if ((hadComment = t == TOKEN_SLASH) && !jsComment()) continue;
         else if (t == TOKEN_LBRACE) braceLevel += 1;
-        else if (!isAttr && t == TOKEN_LT) {
+        else if (t == TOKEN_LT) {
             const char *ltStart = transpiler.current.lexemeFrom;
             if (tryStartTag(false)) { // was tag
                 producerAddNChars(start, ltStart - start);
@@ -574,12 +548,7 @@ codeBlock(struct Token *previous) {
         advance(false, SCAN_NAME);
     }
     if (transpiler.current.lexemeFrom != start) {
-        if (!isAttr) {
-            producerAddNChars(start, transpiler.current.lexemeFrom - start);
-        } else {
-            producerProduceObjCodeVal(previous, start,
-                                      transpiler.current.lexemeFrom - start);
-        }
+        producerAddNChars(start, transpiler.current.lexemeFrom - start);
         if (!hadContent) {
             producerProduceString(&emptyToken);
         }

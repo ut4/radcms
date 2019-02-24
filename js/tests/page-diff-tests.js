@@ -38,7 +38,7 @@ testLib.module('page-diff', function(hooks) {
         var homePageChkSum = website.website.crypto.sha1(
             '<html><body><a href="' + newPage.url + '"></a></body></html>');
         mockTemplate.contents = '<html><body>{'+
-            'url[0] == "home" ? <directives.Link to="' + newPage.url + '"/> : "Hello"' +
+            'url[0] == "home" ? <RadLink to="' + newPage.url + '"/> : "Hello"' +
         '}</body></html>';
         if (commons.db.insert('insert into uploadStatuses values (?,?,null,0)', function(stmt) {
             stmt.bindString(0, homePage.url);

@@ -34,27 +34,28 @@ Page.prototype.render = function(dataToFrontend, issues) {
         if (issues) issues.push(this.url + '>' + message);
         return '<html><body>' + message + '</body></html>';
     }
-    // function cachedTemplate(fetchAll, fetchOne, url) {           <-- outer
-    //     var data1 = ddc.fetchAll()...
-    //     return function(domTree, getDataFor, directives) {...};  <-- inner
+    // function cachedTemplate(ddc, url) {             <-- outer
+    //     var data1 = fetchAll()...
+    //     return function(domTree, directives) {...}; <-- inner
     // }
     var outerFn = commons.templateCache.get(this.layoutFileName);
     var ddc = new documentData.DDC();
-    var innerFn = outerFn(ddc.fetchAll.bind(ddc), ddc.fetchOne.bind(ddc), this.urlPcs);
+    var innerFn = outerFn(ddc, this.urlPcs);
     //
     fetchData(ddc);
     //
     var domTree = new commons.DomTree();
     domTree.setContext(this);
+    domTree.directives = directives;
     if (!dataToFrontend) {
-        return domTree.render(innerFn(domTree, ddc.getDataFor.bind(ddc), directives));
+        return domTree.render(innerFn(domTree));
     }
-    var html = domTree.render(innerFn(domTree, ddc.getDataFor.bind(ddc), directives));
+    var html = domTree.render(innerFn(domTree));
     dataToFrontend.allContentNodes = ddc.data;
-    domTree.getRenderedFnComponents().forEach(function(fnData) {
-        if (fnData.fn == directives.ArticleList) {
+    domTree.getRenderedFnComponents().forEach(function(fnCmp) {
+        if (fnCmp.fn == directives.RadArticleList) {
             dataToFrontend.directiveInstances.push(
-                {type: 'ArticleList', contentNodes: fnData.props.articles}
+                {type: 'ArticleList', contentNodes: fnCmp.props.articles}
             );
         }
     });
@@ -66,13 +67,14 @@ Page.prototype.render = function(dataToFrontend, issues) {
 Page.prototype.dryRun = function() {
     var outerFn = commons.templateCache.get(this.layoutFileName);
     var ddc = new documentData.DDC();
-    var innerFn = outerFn(ddc.fetchAll.bind(ddc), ddc.fetchOne.bind(ddc), this.urlPcs);
+    var innerFn = outerFn(ddc, this.urlPcs);
     //
     fetchData(ddc);
     //
     var domTree = new commons.DomTree();
+    domTree.directives = directives;
     domTree.setContext(this);
-    innerFn(domTree, ddc.getDataFor.bind(ddc), directives);
+    innerFn(domTree);
     return domTree;
 };
 
@@ -309,7 +311,8 @@ exports.website = {
     compileAndCacheTemplate: function(fileName) {
         commons.templateCache.put(fileName, commons.transpiler.transpileToFn(
             this.fs.read(insnEnv.sitePath + fileName),
-            fileName
+            fileName,
+            true // Transpile ddc variables
         ));
         return true;
     },

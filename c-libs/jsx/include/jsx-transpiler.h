@@ -10,6 +10,9 @@ void
 transpilerFreeProps();
 
 char*
+transpilerTranspileDuk(const char *src);
+
+char*
 transpilerTranspile(const char *src);
 
 char*
@@ -17,5 +20,8 @@ transpilerGetLastError();
 
 void
 transpilerSetPrintErrors(bool logErrors);
+
+bool
+transpilerIsVoidElement(const char *tagName, unsigned tagNameLen);
 
 #endif

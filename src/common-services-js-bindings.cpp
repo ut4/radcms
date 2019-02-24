@@ -64,7 +64,7 @@ commonServicesJsModuleInit(duk_context *ctx, const int exportsIsAt) {
     duk_pop(ctx);                                       // [?]
     // module.transpiler
     duk_get_prop_string(ctx, exportsIsAt, "transpiler");// [? transpiler]
-    duk_push_c_lightfunc(ctx, transpilerTranspileToFn, 2, 0, 0); // [? transpiler lightfn]
+    duk_push_c_lightfunc(ctx, transpilerTranspileToFn, DUK_VARARGS, 0, 0); // [? transpiler lightfn]
     duk_put_prop_string(ctx, -2, "transpileToFn");      // [? transpiler]
     duk_pop(ctx);                                       // [?]
     // dukStash._StmtJsPrototype
@@ -329,7 +329,9 @@ fsMakeDirs(duk_context *ctx) {
 // =============================================================================
 static duk_ret_t
 transpilerTranspileToFn(duk_context *ctx) {
-    char *js = transpilerTranspile(duk_require_string(ctx, 0));
+    char *js = duk_get_top(ctx) < 3 || duk_get_boolean_default(ctx, 2, true)
+        ? transpilerTranspileDuk(duk_require_string(ctx, 0))
+        : transpilerTranspile(duk_require_string(ctx, 0));
     const char *fileName = duk_require_string(ctx, 1);
     std::string err;
     if (js) {
@@ -445,8 +447,10 @@ collectElemChildren(duk_context *ctx, int valueIsAt,
             children.push_back(domTree.createTextNode(""));
         }
     } else {
-        std::cerr << "[Warn]: vElem content wasn't \"str\", <nodeRef> nor "
-                      "[<nodeRef>...]: attempting toString().\n";
+        if (!duk_is_null_or_undefined(ctx, valueIsAt)) {
+            std::cerr << "[Debug]: vElem content wasn't \"str\", <nodeRef> nor "
+                         "[<nodeRef>...]: attempting toString().\n";
+        }
         children.push_back(domTree.createTextNode(duk_to_string(ctx, valueIsAt)));
     }
 }
@@ -628,6 +632,10 @@ domTreeCallCmpFn(FuncNode *me, std::string &err) {
     duk_get_prop_string(ctx, -1, "fn");          // [? this fnMap _ funcData fn]
     duk_dup(ctx, -5);                            // [? this fnMap _ funcData fn this]
     duk_get_prop_string(ctx, -3, "props");       // [? this fnMap _ funcData fn this props]
+    if (duk_is_null_or_undefined(ctx, -1)) {
+        duk_pop(ctx);
+        duk_push_bare_object(ctx);
+    }
     if (duk_pcall(ctx, 2) == DUK_EXEC_SUCCESS) { // [? this fnMap _ funcData elemRef]
         if (duk_is_number(ctx, -1)) {
             unsigned out = duk_get_number(ctx, -1);
