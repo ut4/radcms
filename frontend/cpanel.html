@@ -6,34 +6,20 @@
         <base href="">
     </head>
     <body class="light">
-        <div id="app"></div>
+        <div id="cpanel-app"></div>
         <script src="/frontend/vendor/vendor.bundle.min.js"></script>
         <script type="module">
             /*
-             * Store globals
-             */
-            window.$el = preact.createElement;
-            window.myRedirect = (to, full) => {
-                if (!full) {
-                    window.parent.location.hash = '#' + to;
-                } else {
-                    window.parent.location.href = window.parent.location.origin + to;
-                }
-            };
-            window.toast = (message, level) => {
-                if (level === 'error') console.error(message);
-                else console.info(message);
-            };
-            /*
              * Require all components
              */
-            import {InsaneControlPanel} from './app.js';
+            import './globals.js';
+            import {ControlPanel} from './cpanel.js';
             /*
              * main()
              */
-            preact.render($el(InsaneControlPanel, {
+            preact.render($el(ControlPanel, {
                 currentPageData: window.parent.getCurrentPageData()
-            }, null), document.getElementById("app"));
+            }, null), document.getElementById('cpanel-app'));
             //
             var parentUrlPcs = window.parent.location.href.split('#');
             var tmp = parentUrlPcs[0].split('?rescan=');

@@ -10,7 +10,7 @@
 #include <sys/select.h>
 #endif
 #include <microhttpd.h>
-#include "app-context.hpp"
+#include "app-env.hpp"
 #include "my-fs.hpp"
 
 enum IncomingDataContentType {
@@ -41,7 +41,7 @@ struct RequestHandler {
 
 class WebApp {
 public:
-    AppContext *ctx = nullptr;
+    AppEnv *env = nullptr;
     struct MHD_Daemon *daemon = nullptr;
     std::array<RequestHandler, 2> handlers;
     /**

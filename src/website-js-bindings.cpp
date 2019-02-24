@@ -19,7 +19,7 @@ websiteJsModuleInit(duk_context *ctx, const int exportsIsAt) {
 static duk_ret_t
 siteConfigLoadFromDisk(duk_context *ctx) {
     duk_push_global_stash(ctx);             // [stash]
-    std::string filePath = jsEnvironmentPullAppContext(ctx, -1)->sitePath + "site.ini";
+    std::string filePath = jsEnvironmentPullAppEnv(ctx, -1)->dataPath + "site.ini";
     duk_push_this(ctx);                     // [stash siteCfg]
     // -1 == file open error, -2 == mem error
     if (ini_parse(filePath.c_str(), receiveIniVal, ctx) < 0) {

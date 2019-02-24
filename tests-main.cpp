@@ -1,6 +1,5 @@
 #include <iostream>
 #include "include/js-environment.hpp"
-#include "tests/test-utils.hpp"
 
 static void
 myAtExit() {
@@ -13,11 +12,9 @@ int main(int argc, const char* argv[]) {
         return EXIT_FAILURE;
     }
     atexit(myAtExit);
-    AppContext testJsEnv;
-    testJsEnv.init("");
-    testJsEnv.sitePath = testJsEnv.appPath + "js/tests/testsite/";
+    AppEnv testJsEnv;
+    testJsEnv.init(INSN_PATH);
     int out = EXIT_FAILURE;
-    if (!testUtilsSetupTestDb(&testJsEnv.db, testJsEnv.errBuf)) goto done;
     jsEnvironmentConfigure(testJsEnv.dukCtx, &testJsEnv);
     //
     {

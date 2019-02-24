@@ -32,8 +32,8 @@ coreHandlersHandleStaticFileRequest(void *myPtr, void *myDataPtr, const char *me
     struct stat sbuf;
     bool isUserFile = strstr(url, "/frontend/") != url;
     std::string &rootPath = isUserFile
-        ? static_cast<AppContext*>(myPtr)->sitePath
-        : static_cast<AppContext*>(myPtr)->appPath;
+        ? static_cast<AppEnv*>(myPtr)->dataPath
+        : static_cast<AppEnv*>(myPtr)->appPath;
     std::string path = rootPath + std::string(&url[1]);
     if ((fd = open(path.c_str(), O_RDONLY)) == -1 || fstat(fd, &sbuf) != 0) {
         if (fd != -1) (void)close(fd);
@@ -274,7 +274,7 @@ pullAndSendChunkFromJs(void *myPtr, uint64_t pos, char *responseBuf, size_t max)
         }
     } else {
         // getNextChunk() threw an error -> return it to the browser and set the stop flag
-        auto &buf = jsEnvironmentPullAppContext(ctx, -3)->errBuf;
+        auto &buf = jsEnvironmentPullAppEnv(ctx, -3)->errBuf;
         dukUtilsPutDetailedError(ctx, -1, "ChunkedResponse", buf); // [stash req]
         unsigned totalChunkLen = writeToChunkBuf(buf.c_str(), buf.length(), max,
                                                  responseBuf, false);

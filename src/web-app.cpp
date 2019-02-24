@@ -73,10 +73,11 @@ WebApp::run() {
         signal(SIGINT, onCtrlC);
         struct timespec t = {0, 80000000L}; // 0 secs, 80 ms
         std::cout << "[Info]: Started server at localhost:3000. Hit Ctrl+C to stop it...\n";
+        this->env->openMainViewInBrowser();
         while (!isCtrlCTyped) nanosleep(&t, nullptr);
         return true;
     }
-    this->ctx->errBuf = "Failed to start the server.";
+    this->env->errBuf = "Failed to start the server.";
     return false;
 }
 
@@ -103,7 +104,7 @@ handleRequest(void *myPtr, struct MHD_Connection *conn, const char *url,
         unsigned statusCode = MHD_HTTP_NOT_FOUND;
         for (RequestHandler &h: app->handlers) {
             unsigned ret = h.handlerFn(h.myPtr, nullptr, method, url, conn,
-                                       &response, app->ctx->errBuf);
+                                       &response, app->env->errBuf);
             // Wasn't the right handler
             if (ret == MHD_NO) continue;
             // Was MHD_YES, setup *perConnPtr
@@ -115,7 +116,7 @@ handleRequest(void *myPtr, struct MHD_Connection *conn, const char *url,
             statusCode = ret;
             break;
         }
-        return respond(statusCode, conn, response, app->ctx->errBuf);
+        return respond(statusCode, conn, response, app->env->errBuf);
     }
     auto *connInfo = static_cast<PerConnInfo*>(*perConnPtr);
     /*
@@ -129,13 +130,13 @@ handleRequest(void *myPtr, struct MHD_Connection *conn, const char *url,
      * Last iteration of POST|PUT -> respond
      */
     if (connInfo->statusCode > 1) { // had errors
-        return respond(connInfo->statusCode, conn, nullptr, app->ctx->errBuf);
+        return respond(connInfo->statusCode, conn, nullptr, app->env->errBuf);
     }
     RequestHandler *h = connInfo->reqHandler;
     connInfo->statusCode = h->handlerFn(h->myPtr, h->formDataHandlers->myPtr,
                                         method, url, conn, &response,
-                                        app->ctx->errBuf);
-    return respond(connInfo->statusCode, conn, response, app->ctx->errBuf);
+                                        app->env->errBuf);
+    return respond(connInfo->statusCode, conn, response, app->env->errBuf);
 }
 
 void

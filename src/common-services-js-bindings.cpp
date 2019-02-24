@@ -133,22 +133,23 @@ callJsStmtBindFn(sqlite3_stmt *stmt, void *myPtr) {
 
 static duk_ret_t
 dbInsertOrUpdate(duk_context *ctx, bool isInsert) {
-    const char *sql = duk_require_string(ctx, 0);
-    duk_require_function(ctx, 1);
-    duk_push_global_stash(ctx);                  // [sql fn stash]
-    AppContext* app = jsEnvironmentPullAppContext(ctx, -1);
-    duk_swap_top(ctx, -2);                       // [sql stash fn]
-    std::string err;
-    int res = isInsert
-        ? app->db.insert(sql, callJsStmtBindFn, ctx, err)
-        : app->db.update(sql, callJsStmtBindFn, ctx, err);
-    if (res > -1) {                              // [sql stash]
-        duk_push_int(ctx, res);                  // [sql stash insertId]
-        return 1;
-    }                                            // [sql stash err]
-    return duk_error(ctx, DUK_ERR_ERROR, "%s", !err.empty()
-        ? err.c_str()
-        : duk_safe_to_string(ctx, -1));
+    return duk_error(ctx, DUK_ERR_ERROR, "Not implemented\n");
+    //const char *sql = duk_require_string(ctx, 0);
+    //duk_require_function(ctx, 1);
+    //duk_push_global_stash(ctx);                  // [sql fn stash]
+    //AppEnv* env = jsEnvironmentPullAppEnv(ctx, -1);
+    //duk_swap_top(ctx, -2);                       // [sql stash fn]
+    //std::string err;
+    //int res = isInsert
+    //    ? env->db.insert(sql, callJsStmtBindFn, ctx, err)
+    //    : env->db.update(sql, callJsStmtBindFn, ctx, err);
+    //if (res > -1) {                              // [sql stash]
+    //    duk_push_int(ctx, res);                  // [sql stash insertId]
+    //    return 1;
+    //}                                            // [sql stash err]
+    //return duk_error(ctx, DUK_ERR_ERROR, "%s", !err.empty()
+    //    ? err.c_str()
+    //    : duk_safe_to_string(ctx, -1));
 }
 
 static duk_ret_t
@@ -178,25 +179,26 @@ callJsResultRowMapFn(sqlite3_stmt *stmt, void *myPtr, unsigned rowIdx) {
 
 static duk_ret_t
 dbSelect(duk_context *ctx) {
-    const char *sql = duk_require_string(ctx, 0);
-    duk_require_function(ctx, 1);
-    bool hasWhereBinder = duk_get_top(ctx) > 2 && duk_is_function(ctx, 2);
-    duk_push_global_stash(ctx);                 // [sql rowFn bindFn? stash]
-    AppContext *app = jsEnvironmentPullAppContext(ctx, -1);
-    duk_swap_top(ctx, 1);                       // [sql stash bindFn? rowFn]
-    duk_put_prop_string(ctx, 1, KEY_CUR_ROW_MAP_FN); // [sql stash bindFn?]
-    std::string err;
-    bool res = app->db.select(sql, callJsResultRowMapFn,
-                              hasWhereBinder ? callJsStmtBindFn : nullptr, ctx, err);
-    duk_push_null(ctx);
-    duk_put_prop_string(ctx, 1, KEY_CUR_ROW_MAP_FN);
-    if (res) {                                  // [sql stash]
-        duk_push_boolean(ctx, true);            // [sql stash bool]
-        return 1;
-    }
-    return duk_error(ctx, DUK_ERR_ERROR, "%s", !err.empty()
-        ? err.c_str()
-        : duk_safe_to_string(ctx, -1));
+    return duk_error(ctx, DUK_ERR_ERROR, "Not implemented\n");
+    //const char *sql = duk_require_string(ctx, 0);
+    //duk_require_function(ctx, 1);
+    //bool hasWhereBinder = duk_get_top(ctx) > 2 && duk_is_function(ctx, 2);
+    //duk_push_global_stash(ctx);                 // [sql rowFn bindFn? stash]
+    //AppEnv *env = jsEnvironmentPullAppEnv(ctx, -1);
+    //duk_swap_top(ctx, 1);                       // [sql stash bindFn? rowFn]
+    //duk_put_prop_string(ctx, 1, KEY_CUR_ROW_MAP_FN); // [sql stash bindFn?]
+    //std::string err;
+    //bool res = env->db.select(sql, callJsResultRowMapFn,
+    //                          hasWhereBinder ? callJsStmtBindFn : nullptr, ctx, err);
+    //duk_push_null(ctx);
+    //duk_put_prop_string(ctx, 1, KEY_CUR_ROW_MAP_FN);
+    //if (res) {                                  // [sql stash]
+    //    duk_push_boolean(ctx, true);            // [sql stash bool]
+    //    return 1;
+    //}
+    //return duk_error(ctx, DUK_ERR_ERROR, "%s", !err.empty()
+    //    ? err.c_str()
+    //    : duk_safe_to_string(ctx, -1));
 }
 
 static duk_ret_t
@@ -650,7 +652,7 @@ domTreeCallCmpFn(FuncNode *me, std::string &err) {
 void
 commonServicesCallJsFWFn(FWEventType type, const char *fileName,
                          const char *ext, void *myPtr) {
-    auto *appCtx = static_cast<AppContext*>(myPtr);
+    auto *appCtx = static_cast<AppEnv*>(myPtr);
     duk_context *ctx = appCtx->dukCtx;
     jsEnvironmentPushCommonService(ctx, "fileWatcher"); // [fw]
     if (duk_get_prop_string(ctx, -1, "_watchFn")) {  // [fw fn]

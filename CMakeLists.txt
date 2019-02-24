@@ -2,12 +2,13 @@ cmake_minimum_required(VERSION 3.9.4)
 project(insanecms VERSION 0.0.0 LANGUAGES C CXX)
 
 set(INSN_COMPILE_FEATURES cxx_std_17)
+set(INSN_COMPILE_OPTIONS -Wall -pedantic -DINSN_PATH="/full/path/to/dev/dir/")
 
 if (WIN32)
-    set(INSN_COMPILE_OPTIONS -Wall -pedantic -DINSN_IS_WIN -D__USE_MINGW_ANSI_STDIO)
+    list(APPEND INSN_COMPILE_OPTIONS -DINSN_IS_WIN -D__USE_MINGW_ANSI_STDIO)
     set(INSN_IS_WIN "yesItIs")
 elseif(UNIX)
-    set(INSN_COMPILE_OPTIONS -Wall -pedantic -DINSN_IS_LINUX)
+    list(APPEND INSN_COMPILE_OPTIONS -DINSN_IS_LINUX)
     set(INSN_IS_LINUX "yesItIs")
 endif()
 
@@ -23,7 +24,7 @@ set(C_FILES
     c-libs/jsx/include/memory.h c-libs/jsx/src/memory.c
 )
 set(SOURCE_FILES
-    include/app-context.hpp src/app-context.cpp
+    include/app-env.hpp src/app-env.cpp
     include/common-services.hpp src/common-services.cpp
     include/common-services-js-bindings.hpp src/common-services-js-bindings.cpp
     include/core-handlers.hpp src/core-handlers.cpp

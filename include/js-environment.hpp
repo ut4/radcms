@@ -3,7 +3,7 @@
 #include <cassert>
 #include <string>
 #include "http-js-bindings.hpp"
-#include "app-context.hpp"
+#include "app-env.hpp"
 #include "common-services-js-bindings.hpp"
 #include "crypto-js-bindings.hpp"
 #include "duk.hpp"
@@ -16,4 +16,4 @@
  * Configures global.require() (Duktape.modSearch()).
  */
 void
-jsEnvironmentConfigure(duk_context *ctx, AppContext *appContext);
+jsEnvironmentConfigure(duk_context *ctx, AppEnv *appEnv);

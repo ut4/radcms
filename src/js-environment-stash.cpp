@@ -22,15 +22,15 @@ jsEnvironmentPushCommonService(duk_context *ctx, const char *serviceName) {
 }
 
 void
-jsEnvironmentPutAppContext(duk_context *ctx, AppContext* app, const int stashIsAt) {
-    duk_push_pointer(ctx, app);
+jsEnvironmentPutAppEnv(duk_context *ctx, AppEnv* env, const int stashIsAt) {
+    duk_push_pointer(ctx, env);
     duk_put_prop_string(ctx, stashIsAt - (stashIsAt < 0 ? 1 : 0), KEY_APP_PTR);
 }
 
-AppContext*
-jsEnvironmentPullAppContext(duk_context *ctx, const int stashIsAt) {
+AppEnv*
+jsEnvironmentPullAppEnv(duk_context *ctx, const int stashIsAt) {
     duk_get_prop_string(ctx, stashIsAt, KEY_APP_PTR);
-    auto *out = static_cast<AppContext*>(duk_get_pointer(ctx, -1));
+    auto *out = static_cast<AppEnv*>(duk_get_pointer(ctx, -1));
     duk_pop(ctx);
     return out;
 }

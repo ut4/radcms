@@ -8,22 +8,22 @@ static duk_ret_t
 myModSearchFn(duk_context *ctx);
 
 void
-jsEnvironmentConfigure(duk_context *ctx, AppContext *appContext) {
+jsEnvironmentConfigure(duk_context *ctx, AppEnv *appEnv) {
     // global.Duktape.modSearch
     duk_get_global_string(ctx, "Duktape");             // [duk]
     duk_push_c_function(ctx, myModSearchFn, 4);        // [duk fn]
     duk_put_prop_string(ctx, -2, "modSearch");         // [duk]
     duk_pop(ctx);                                      // []
-    // dukStash._appCtxPtr = appContext
+    // dukStash._appEnvPtr = appContext
     duk_push_global_stash(ctx);                        // [stash]
-    jsEnvironmentPutAppContext(ctx, appContext, -1);
+    jsEnvironmentPutAppEnv(ctx, appEnv, -1);
     duk_pop(ctx);                                      // []
     // global.insnEnv
     duk_push_bare_object(ctx);                         // [insnEnv]
-    duk_push_string(ctx, appContext->sitePath.c_str());// [insnEnv string]
-    duk_put_prop_string(ctx, -2, "sitePath");          // [insnEnv]
-    duk_push_string(ctx, appContext->appPath.c_str()); // [insnEnv string]
+    duk_push_string(ctx, appEnv->appPath.c_str());     // [insnEnv string]
     duk_put_prop_string(ctx, -2, "appPath");           // [insnEnv]
+    duk_push_string(ctx, appEnv->dataPath.c_str());    // [insnEnv string]
+    duk_put_prop_string(ctx, -2, "dataPath");          // [insnEnv]
     duk_put_global_string(ctx, "insnEnv");             // []
 }
 
@@ -33,7 +33,7 @@ myModSearchFn(duk_context *ctx) {
     const auto id = std::string(duk_get_string(ctx, 0));
     std::string code;
     duk_push_global_stash(ctx);                     // [id req exp mod stash]
-    auto *app = jsEnvironmentPullAppContext(ctx, -1);
+    auto *app = jsEnvironmentPullAppEnv(ctx, -1);
     std::string filePath = app->appPath + "js/" + id;
     bool isCrypto = false;
     bool isXmlReader = false;

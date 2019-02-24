@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cassert>
-#include "app-context.hpp"
+#include "app-env.hpp"
 #include "duk.hpp"
 
 /**
@@ -18,13 +18,13 @@ void
 jsEnvironmentPushCommonService(duk_context *ctx, const char *serviceName);
 
 /**
- * Puts AppContext to a duktape stash.
+ * Puts AppEnv to a duktape stash.
  */
 void
-jsEnvironmentPutAppContext(duk_context *ctx, AppContext* app, const int stashIsAt);
+jsEnvironmentPutAppEnv(duk_context *ctx, AppEnv* env, const int stashIsAt);
 
 /**
- * Retrieves AppContext from a duktape stash.
+ * Retrieves AppEnv from a duktape stash.
  */
-AppContext*
-jsEnvironmentPullAppContext(duk_context *ctx, const int stashIsAt);
+AppEnv*
+jsEnvironmentPullAppEnv(duk_context *ctx, const int stashIsAt);
