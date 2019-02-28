@@ -50,12 +50,12 @@ testLib.module('link-diff', function(hooks) {
     });
     hooks.afterEach(function() {
         siteGraph.clear();
-        commons.templateCache._fns = {};
+        commons.templateCache.clear();
     });
     testLib.test('spots a new link from a modified template', function(assert) {
         assert.expect(2);
         var existingPage = siteGraph.addPage('/foo', NO_PARENT, mockTemplate.fname, {}, 1);
-        var existingLayout = siteGraph.addTemplate(mockTemplate.fname, true, true);
+        commons.templateCache.put(mockTemplate.fname, function() {});
         var newLinkUrl = '/bar';
         mockTemplate.contents = '<html><body>'+
             '<RadLink to="' + newLinkUrl + '"/>' +
@@ -71,10 +71,9 @@ testLib.module('link-diff', function(hooks) {
             function(row) {
             assert.equal(row.getString(0), JSON.stringify({
                 pages:[
-                    [existingPage.url,NO_PARENT,existingLayout.fileName,[newLinkUrl]],
-                    [newLinkUrl,NO_PARENT,existingLayout.fileName,[newLinkUrl]]
-                ],
-                templates:[[existingLayout.fileName,1,1]]
+                    [existingPage.url,NO_PARENT,mockTemplate.fname,[newLinkUrl]],
+                    [newLinkUrl,NO_PARENT,mockTemplate.fname,[newLinkUrl]]
+                ]
             }), 'should store the updated site graph to the database');
         });
     });
@@ -83,7 +82,7 @@ testLib.module('link-diff', function(hooks) {
         var refCount = 1;
         var existingPage1 = siteGraph.addPage('/foo', NO_PARENT, mockTemplate.fname, {'/bar': 1}, 1);
         var existingPage2 = siteGraph.addPage('/bar', NO_PARENT, mockTemplate.fname, {}, refCount);
-        var existingLayout = siteGraph.addTemplate(mockTemplate.fname, true, true);
+        commons.templateCache.put(mockTemplate.fname, function() {});
         mockTemplate.contents = '<html><body>' +
             // a link has disappeared
         '</body></html>';
@@ -96,9 +95,8 @@ testLib.module('link-diff', function(hooks) {
             function(row) {
             assert.equal(row.getString(0), JSON.stringify({
                 pages:[
-                    [existingPage1.url,NO_PARENT,existingLayout.fileName,[]]
-                ],
-                templates:[[existingLayout.fileName,1,1]]
+                    [existingPage1.url,NO_PARENT,mockTemplate.fname,[]]
+                ]
             }), 'should store the updated site graph to the database');
         });
     });
@@ -107,7 +105,7 @@ testLib.module('link-diff', function(hooks) {
         var refCount = 2;
         var existingPage1 = siteGraph.addPage('/foo', NO_PARENT, mockTemplate.fname, {'/bar': 1}, 1);
         var existingPage2 = siteGraph.addPage('/bar', NO_PARENT, mockTemplate.fname, {}, refCount);
-        var existingLayout = siteGraph.addTemplate(mockTemplate.fname, true, true);
+        commons.templateCache.put(mockTemplate.fname, function() {});
         mockTemplate.contents = '<html><body></body></html>';
         // Trigger handleFWEvent()
         fileWatcher._watchFn(fileWatcher.EVENT_WRITE, mockTemplate.fname, 'htm');
@@ -119,10 +117,9 @@ testLib.module('link-diff', function(hooks) {
             function(row) {
             assert.equal(row.getString(0), JSON.stringify({
                 pages:[
-                    [existingPage1.url,NO_PARENT,existingLayout.fileName,[]],
-                    [existingPage2.url,NO_PARENT,existingLayout.fileName,[]]
-                ],
-                templates:[[existingLayout.fileName,1,1]]
+                    [existingPage1.url,NO_PARENT,mockTemplate.fname,[]],
+                    [existingPage2.url,NO_PARENT,mockTemplate.fname,[]]
+                ]
             }), 'should store the updated site graph to the database');
         });
     });
@@ -135,8 +132,7 @@ testLib.module('link-diff', function(hooks) {
                 ['/starters/dish1','/starters',mockTemplate.fname,['/starters']],
                 ['/desserts','',mockTemplate.fname,['/desserts/dish2']],
                 ['/desserts/dish2','/desserts',mockTemplate.fname,['/desserts']],
-            ],
-            templates: [[mockTemplate.fname,1,1]]
+            ]
         }));
         mockTemplate.contents = '<html><body>{'+
             '({'+
@@ -164,8 +160,7 @@ testLib.module('link-diff', function(hooks) {
                        ['/starters','',mockTemplate.fname,[]],
                        ['/desserts','',mockTemplate.fname,['/desserts/dish2','/desserts/dish1']],
                        ['/desserts/dish2','/desserts',mockTemplate.fname,['/desserts']],
-                       ['/desserts/dish1','/desserts',mockTemplate.fname,['/desserts']]],
-                templates:[[mockTemplate.fname,1,1]]
+                       ['/desserts/dish1','/desserts',mockTemplate.fname,['/desserts']]]
             }), 'should store the updated site graph to the database');
         });
     });
@@ -183,8 +178,7 @@ testLib.module('link-diff', function(hooks) {
         var existingPage = siteGraph.addPage('/foo', NO_PARENT, mockTemplate.fname,
             {}, // Doesn't initially link anywhere
             1);
-        var t1 = siteGraph.addTemplate(mockTemplate.fname, true, true);
-        website.website.compileAndCacheTemplate(t1.fileName);
+        website.website.compileAndCacheTemplate(mockTemplate.fname);
         // Trigger handleFWEvent()
         fileWatcher._watchFn(fileWatcher.EVENT_WRITE, mockTemplate.fname, 'htm');
         // Assert that added two new pages to website.siteGraph
@@ -202,8 +196,7 @@ testLib.module('link-diff', function(hooks) {
                     [existingPage.url,NO_PARENT,mockTemplate.fname,[linkAHref]],
                     [linkAHref,NO_PARENT,mockTemplate.fname,[linkBHref]],
                     [linkBHref,NO_PARENT,mockTemplate.fname,[linkBHref]]
-                ],
-                templates:[[mockTemplate.fname,1,1]]
+                ]
             }), 'should store the updated site graph to the database');
         });
     });
@@ -215,7 +208,6 @@ testLib.module('link-diff', function(hooks) {
         var existingPage = siteGraph.addPage('/home', NO_PARENT, mockTemplate.fname);
         var refCountBefore = existingPage.refCount;
         website.siteConfig.homeUrl = '/home';
-        siteGraph.addTemplate(mockTemplate.fname, true);
         // Trigger handleFWEvent()
         fileWatcher._watchFn(fileWatcher.EVENT_WRITE, mockTemplate.fname, 'htm');
         // Assert that didn't add '/'

@@ -1,3 +1,4 @@
+require('directives.js').init();
 var commons = require('common-services.js');
 var website = require('website.js');
 var fileWatchers = require('file-watchers.js');
@@ -13,11 +14,15 @@ commons.app.getHandler = function(url, method) {
     throw new Error('Didn\'t find handler for ' + method + ' ' + url);
 };
 
+commons.templateCache.clear = function() {
+    for (var key in commons.templateCache._fns) {
+        if (key.indexOf('Rad') != 0) commons.templateCache.remove(key);
+    }
+};
+
 website.siteGraph.clear = function() {
     this.pages = {};
     this.pageCount = 0;
-    this.templates = {};
-    this.templateCount = 0;
 };
 
 fileWatchers.clear = function() {

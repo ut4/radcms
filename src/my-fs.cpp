@@ -113,11 +113,12 @@ myFsReadDir(const char *path, bool (*onEach)(const char *fileName, void *myPtr),
         return false;
     }
     struct dirent *ent = nullptr;
+    bool out = true;
     while ((ent = readdir(dir))) {
-        if (!onEach(ent->d_name, myPtr)) break;
+        if (!(out = onEach(ent->d_name, myPtr))) break;
     }
     closedir(dir);
-    return true;
+    return out;
 }
 
 void

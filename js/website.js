@@ -1,6 +1,5 @@
 var commons = require('common-services.js');
 var documentData = require('document-data.js');
-var directives = require('directives.js');
 var crypto = require('crypto.js');
 
 // == Page ====
@@ -27,33 +26,23 @@ function Page(url, parentUrl, layoutFileName, linksTo, refCount) {
  * @returns {string}
  */
 Page.prototype.render = function(dataToFrontend, issues) {
-    var layout = exports.siteGraph.getTemplate(this.layoutFileName);
-    if (!layout || !layout.isOk) {
-        var message = 'The layout file \'' + this.layoutFileName + '\' doesn\'t exist' +
-                      (layout ? ' yet, or is empty.' : '.');
+    if (!commons.templateCache.has(this.layoutFileName)) {
+        var message = 'The layout file \'' + this.layoutFileName +
+            '\' doesn\'t exist yet, or is empty.';
         if (issues) issues.push(this.url + '>' + message);
         return '<html><body>' + message + '</body></html>';
     }
-    // function cachedTemplate(ddc, url) {             <-- outer
-    //     var data1 = fetchAll()...
-    //     return function(domTree, directives) {...}; <-- inner
-    // }
-    var outerFn = commons.templateCache.get(this.layoutFileName);
-    var ddc = new documentData.DDC();
-    var innerFn = outerFn(ddc, this.urlPcs);
-    //
-    fetchData(ddc);
-    //
     var domTree = new commons.DomTree();
-    domTree.setContext(this);
-    domTree.directives = directives;
+    domTree.directives = commons.templateCache._fns;
+    domTree.setContext({currentPage: this});
+    var props = {ddc: new documentData.DDC(commons.db), url: this.urlPcs};
     if (!dataToFrontend) {
-        return domTree.render(innerFn(domTree));
+        return domTree.render(commons.templateCache.get(this.layoutFileName)(domTree, props));
     }
-    var html = domTree.render(innerFn(domTree));
-    dataToFrontend.allContentNodes = ddc.data;
+    var html = domTree.render(commons.templateCache.get(this.layoutFileName)(domTree, props));
+    dataToFrontend.allContentNodes = props.ddc.data;
     domTree.getRenderedFnComponents().forEach(function(fnCmp) {
-        if (fnCmp.fn == directives.RadArticleList) {
+        if (fnCmp.fn == commons.templateCache.get('RadArticleList')) {
             dataToFrontend.directiveInstances.push(
                 {type: 'ArticleList', contentNodes: fnCmp.props.articles}
             );
@@ -65,51 +54,13 @@ Page.prototype.render = function(dataToFrontend, issues) {
  * @returns {DomTree}
  */
 Page.prototype.dryRun = function() {
-    var outerFn = commons.templateCache.get(this.layoutFileName);
-    var ddc = new documentData.DDC();
-    var innerFn = outerFn(ddc, this.urlPcs);
-    //
-    fetchData(ddc);
-    //
-    var domTree = new commons.DomTree();
-    domTree.directives = directives;
-    domTree.setContext(this);
-    innerFn(domTree);
-    return domTree;
+    var out = {domTree: new commons.DomTree(), rootElemRef: 0};
+    out.domTree.directives = commons.templateCache._fns;
+    out.domTree.setContext({currentPage: this});
+    out.rootElemRef = commons.templateCache.get(this.layoutFileName)(out.domTree,
+        {ddc: new documentData.DDC(commons.db), url: this.urlPcs});
+    return out;
 };
-
-/**
- * @param {DDC} ddc
- */
-function fetchData(ddc) {
-    if (ddc.batchCount) {
-        var cnodes = [];
-        commons.db.select(ddc.toSql(), function(row) {
-            var data = JSON.parse(row.getString(2));
-            data.defaults = {
-                id: row.getInt(0),
-                name: row.getString(1),
-                dataBatchConfigId: row.getInt(3)
-            };
-            cnodes.push(data);
-        });
-        ddc.setData(cnodes);
-    }
-}
-
-
-// == Template ====
-// =============================================================================
-/**
- * @param {string} fileName
- * @param {bool?} isOk = false
- * @param {bool?} isInUse = false
- */
-function Template(fileName, isOk, isInUse) {
-    this.fileName = fileName;
-    this.isOk = isOk === true;
-    this.isInUse = isInUse === true;
-}
 
 
 // == siteGraph-singleton ====
@@ -117,22 +68,17 @@ function Template(fileName, isOk, isInUse) {
 exports.siteGraph = {
     pages: {},
     pageCount: 0,
-    templates: {},
-    templateCount: 0,
-    hasUnsavedChanges: false,
     /**
      * @param {string} serialized '{'
      *     '"pages": [' // [[<url>,<parentUrl>,<templateName>,[<url>,...]],...]
-     *         '["/home",0,"1.html",["/foo"]],'
-     *         '["/foo",0,"2.html",[]]'
-     *     '],'
-     *     '"templates":[["1.htm",1],["2.htm",0]]' // [[<filename>,<isOk>],...]
+     *         '["/home","","1.html",["/foo"]],'
+     *         '["/foo","","2.html",[]]'
+     *     ']'
      * '}'
      */
     parseAndLoadFrom: function(serialized) {
         var json = JSON.parse(serialized);
         this.pageCount = json.pages.length;
-        this.templateCount = json.templates.length;
         for (var i = 0; i < this.pageCount; ++i) {
             var data = json.pages[i];
             this.addPage(data[0], data[1], data[2], data[3].reduce(function(o, url) {
@@ -145,29 +91,17 @@ exports.siteGraph = {
                 this.pages[outUrl].refCount += outUrl != url; // Self-refs don't count
             }
         }
-        for (i = 0; i < this.templateCount; ++i) {
-            data = json.templates[i];
-            var t = new Template(data[0], data[1] === 1, data[2] === 1);
-            this.templates[t.fileName] = t;
-        }
     },
     /**
      * @returns {string}
      */
     serialize: function() {
-        var ir = {
-            pages: [],
-            templates: []
-        };
+        var ir = {pages: []};
         for (var url in this.pages) {
             var page = this.pages[url];
             var linksToAsArr = [];
             for (var outUrl in page.linksTo) linksToAsArr.push(outUrl);
             ir.pages.push([url, page.parentUrl, page.layoutFileName, linksToAsArr]);
-        }
-        for (var fileName in this.templates) {
-            var t = this.templates[fileName];
-            ir.templates.push([fileName, t.isOk ? 1 : 0, t.isInUse ? 1 : 0]);
         }
         return JSON.stringify(ir);
     },
@@ -179,13 +113,6 @@ exports.siteGraph = {
         return this.pages[url];
     },
     /**
-     * @param {string} fileName
-     * @returns {Template|undefined}
-     */
-    getTemplate: function(fileName) {
-        return this.templates[fileName];
-    },
-    /**
      * @see Page
      * @returns {Page}
      */
@@ -193,14 +120,6 @@ exports.siteGraph = {
         if (url.charAt(0) != '/') url = '/' + url;
         this.pages[url] = new Page(url, parentUrl, layoutFileName, outboundUrls, refCount);
         return this.pages[url];
-    },
-    /**
-     * @see Template
-     * @returns {Template}
-     */
-    addTemplate: function(fileName, isOk, isInUse) {
-        this.templates[fileName] = new Template(fileName, isOk, isInUse);
-        return this.templates[fileName];
     },
     /**
      * @param {string} layoutFileName
@@ -243,51 +162,20 @@ exports.website = {
     config: exports.siteConfig,
     /** */
     init: function() {
-        // Populate exports.siteConfig
+        // Populate exports.siteConfig (from site.ini)
         this.config.loadFromDisk();
         // Populate exports.siteGraph
-        var siteGraph = this.siteGraph;
+        var self = this;
         commons.db.select('select `graph` from websites limit 1', function(row) {
-            siteGraph.parseAndLoadFrom(row.getString(0));
+            self.siteGraph.parseAndLoadFrom(row.getString(0));
         });
-        // Sync siteGraph.templates and populate commons.templateCache
-        var filesOnDisk = {};
-        var tmplDiff = {added: 0, removed: 0, validityChanged: 0};
+        // Read and compile each template from disk to commons.templateCache
         this.fs.readDir(insnEnv.sitePath, function(fname) {
             var lastDotPos = fname.lastIndexOf('.');
-            if (lastDotPos > -1 && fname.substr(lastDotPos) == '.htm') {
-                filesOnDisk[fname] = 1;
-                if (!siteGraph.templates[fname]) {
-                    siteGraph.addTemplate(fname, false, siteGraph.layoutHasUsers(fname));
-                    tmplDiff.added += 1;
-                }
-            }
+            if (lastDotPos == -1 || fname.substr(lastDotPos) != '.htm') return;
+            try { self.compileAndCacheTemplate(fname); }
+            catch(e) { /**/ }
         });
-        for (var fname in siteGraph.templates) {
-            var t = siteGraph.templates[fname];
-            var stillExists = filesOnDisk.hasOwnProperty(fname);
-            if (stillExists && t.isInUse) {
-                try {
-                    this.compileAndCacheTemplate(fname);
-                    if (!t.isOk) tmplDiff.validityChanged += 1; // from invalid to ok
-                    t.isOk = true;
-                } catch (e) {
-                    if (t.isOk) tmplDiff.validityChanged += 1; // from ok to invalid
-                    t.isOk = false;
-                }
-            } else if (!stillExists) {
-                delete siteGraph.templates[fname];
-                tmplDiff.removed += 1;
-            }
-        }
-        var message = [];
-        if (tmplDiff.added) message.push('discovered ' + tmplDiff.added + ' new templates');
-        if (tmplDiff.removed) message.push('unregistered ' + tmplDiff.removed + ' templates');
-        if (message.length || tmplDiff.validityChanged) {
-            if (message.length) commons.log('[Info]: ' + message.join(', '));
-        }
-        // Rescan for new/deleted links and save the siteGraph to the database
-        exports.siteGraph.hasUnsavedChanges = message.length || tmplDiff.validityChanged;
         commons.signals.emit('siteGraphRescanRequested', 'full');
     },
     /**
@@ -311,17 +199,9 @@ exports.website = {
     compileAndCacheTemplate: function(fileName) {
         commons.templateCache.put(fileName, commons.transpiler.transpileToFn(
             this.fs.read(insnEnv.sitePath + fileName),
-            fileName,
-            true // Transpile ddc variables
+            fileName
         ));
         return true;
-    },
-    /**
-     * @param {string} fileName
-     */
-    deleteAndUncacheTemplate: function(fileName) {
-        commons.templateCache.remove(fileName);
-        delete this.siteGraph.templates[fileName];
     },
     /**
      * @param {string} fileUrl

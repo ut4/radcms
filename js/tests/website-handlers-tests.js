@@ -21,8 +21,8 @@ testLib.module('website-handlers.js', function(hooks) {
     var makeDirsLog = [];
     hooks.before(function() {
         website.siteConfig.homeUrl = pages[0].url;
-        layout1 = siteGraph.addTemplate('home-layout.jsx.htm', true, true);
-        layout2 = siteGraph.addTemplate('page-layout.jsx.htm', true, true);
+        layout1 = {fileName: 'home-layout.jsx.htm'};
+        layout2 = {fileName: 'page-layout.jsx.htm'};
         page1 = siteGraph.addPage(pages[0].url, '', layout1.fileName, {}, 1);
         page2 = siteGraph.addPage(pages[1].url, '', layout2.fileName, {}, 1);
         page3 = siteGraph.addPage(pages[2].url, '', layout2.fileName, {}, 1);
@@ -112,7 +112,7 @@ testLib.module('website-handlers.js', function(hooks) {
         var handlePageRequestFn = commons.app.getHandler(req.url, req.method);
         //
         var response = handlePageRequestFn(req);
-        var pcs = response.body.split('function getCurrentPageData() { return ');
+        var pcs = response.body.split('function getCurrentPageData(){return ');
         assert.ok(pcs.length == 2, 'Should contain getCurrentPageData() declaration');
         var expectedPageData = JSON.stringify({
             directiveInstances:[],
@@ -123,7 +123,7 @@ testLib.module('website-handlers.js', function(hooks) {
         assert.equal(actualPageData, expectedPageData);
         //
         var response2 = handlePageRequestFn(new http.Request('/404', 'GET'));
-        var pcs2 = response2.body.split('function getCurrentPageData() { return ');
+        var pcs2 = response2.body.split('function getCurrentPageData(){return ');
         assert.ok(pcs2.length == 2, 'Should contain getCurrentPageData() declaration');
         var expectedPageData2 = JSON.stringify({directiveInstances:[],allContentNodes:[],page:{}});
         var actualPageData2 = pcs2[1] ? pcs2[1].substr(0, expectedPageData2.length) : '';

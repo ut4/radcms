@@ -30,12 +30,12 @@ testLib.module('resource-diff', function(hooks) {
     });
     hooks.afterEach(function() {
         siteGraph.clear();
-        commons.templateCache._fns = {};
+        commons.templateCache.clear();
     });
     testLib.test('spots new css/js from a modified template', function(assert) {
         assert.expect(13);
         siteGraph.addPage('/foo', NO_PARENT, mockTemplate.fname, {}, 1);
-        siteGraph.addTemplate(mockTemplate.fname, true, true);
+        commons.templateCache.put(mockTemplate.fname, function() {});
         mockTemplate.contents = '<html><body>'+
             '<link href="/non-existing.css" rel="stylesheet">' +
             '<link href="' + mockCssFile.url + '" rel="stylesheet">' +

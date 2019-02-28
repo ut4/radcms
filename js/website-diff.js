@@ -7,24 +7,22 @@
 var commons = require('common-services.js');
 var website = require('website.js');
 var siteGraph = website.siteGraph;
-var directives = require('directives.js');
 
 /**
  * @param {string} type 'full' or 'usersOf:some-template.jsx.htm'
  */
 exports.performRescan = function(type) {
-    var usersOf = '', t;
+    var usersOf = '';
     if (type != 'full') {
         usersOf = type.split(':')[1];
-        if (!(t = siteGraph.getTemplate(usersOf)) || !t.isOk) return;
+        if (!commons.templateCache.has(usersOf)) return;
     }
     var diff = new LocalDiff();
     diff.scanChanges(siteGraph.pages, usersOf);
     diff.deleteUnreachablePages();
     diff.remoteDiff.saveStatusesToDb();
-    if (siteGraph.hasUnsavedChanges || diff.nLinksAdded || diff.nLinksRemoved) {
+    if (diff.nLinksAdded || diff.nLinksRemoved) {
         website.saveToDb(siteGraph);
-        siteGraph.hasUnsavedChanges = false;
     }
     var m = [];
     if (diff.nPagesAdded) m.push('added ' + diff.nPagesAdded + ' page(s)');
@@ -237,6 +235,7 @@ function LocalDiff() {
  */
 LocalDiff.prototype.scanChanges = function(pages, usersOfLayout) {
     var completelyNewPages = {};
+    var RadLink = commons.templateCache.get('RadLink');
     for (var url in pages) {
         var page = pages[url];
         if (page.refCount < 1 || (usersOfLayout && page.layoutFileName != usersOfLayout)) continue;
@@ -247,7 +246,7 @@ LocalDiff.prototype.scanChanges = function(pages, usersOfLayout) {
         var l = fnCmps.length;
         for (var i = 0; i < l; ++i) {
             var props = fnCmps[i].props;
-            if (fnCmps[i].fn !== directives.RadLink) continue;
+            if (fnCmps[i].fn !== RadLink) continue;
             var href = props.to;
             newLinksTo[href] = 1;
             // Page already in the site graph
@@ -259,12 +258,6 @@ LocalDiff.prototype.scanChanges = function(pages, usersOfLayout) {
                     href.indexOf(url) === 0 ? url : '',
                     props.layoutOverride || website.siteConfig.defaultLayout);
                 this.addLink(href, page, true);
-            }
-            if (props.layoutOverride) {
-                var layout = siteGraph.getTemplate(props.layoutOverride);
-                if (!layout) {
-                    layout = siteGraph.addTemplate(props.layoutOverride, false, true);
-                }
             }
         }
         //

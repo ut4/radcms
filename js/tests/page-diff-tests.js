@@ -10,7 +10,7 @@ testLib.module('page-diff', function(hooks) {
     var homePage;
     hooks.before(function() {
         homePage = siteGraph.addPage('/home', '', mockTemplate.fname, {}, 1);
-        siteGraph.addTemplate(mockTemplate.fname, true, true);
+        commons.templateCache.put(mockTemplate.fname, function() {});
         website.siteConfig.defaultLayout = mockTemplate.fname;
         website.website.fs = {
             write: function() {},
@@ -28,7 +28,7 @@ testLib.module('page-diff', function(hooks) {
         fileWatchers.clear();
     });
     hooks.afterEach(function() {
-        commons.templateCache._fns = {};
+        commons.templateCache.clear();
     });
     testLib.test('saves the checksums of new pages', function(assert) {
         assert.expect(3);

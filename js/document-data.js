@@ -1,6 +1,7 @@
 // == DocumentDataConfig ====
 // =============================================================================
-exports.DDC = function() {
+exports.DDC = function(db) {
+    this.db = db;
     this.batches = [];
     this.batchCount = 0;
     this.data = [];
@@ -10,9 +11,8 @@ exports.DDC = function() {
  * @returns {DBC}
  */
 exports.DDC.prototype.fetchAll = function(contentTypeName) {
-    if (this.data.length) throw new TypeError('.fetchAll() must be called outside the html.');
     var len = this.batches.push(new exports.DBC(contentTypeName, true,
-                                                ++this.batchCount));
+                                                ++this.batchCount, this));
     return this.batches[len - 1];
 };
 /**
@@ -20,11 +20,34 @@ exports.DDC.prototype.fetchAll = function(contentTypeName) {
  * @returns {DBC}
  */
 exports.DDC.prototype.fetchOne = function(contentTypeName) {
-    if (this.data.length) throw new TypeError('.fetchOne() must be called outside the html.');
     var len = this.batches.push(new exports.DBC(contentTypeName, false,
-                                                ++this.batchCount));
+                                                ++this.batchCount, this));
     return this.batches[len - 1];
 };
+/**
+ * @param {Object[]} allContentNodes
+ */
+exports.DDC.prototype.setData = function(allContentNodes) {
+    this.data = allContentNodes;
+};
+/**
+* Runs $ddc.toSql() and stores the result to $ddc.data.
+*/
+function fetchData(ddc) {
+    if (ddc.batchCount) {
+        var cnodes = [];
+        ddc.db.select(ddc.toSql(), function(row) {
+            var data = JSON.parse(row.getString(2));
+            data.defaults = {
+                id: row.getInt(0),
+                name: row.getString(1),
+                dataBatchConfigId: row.getInt(3)
+            };
+            cnodes.push(data);
+        });
+        ddc.setData(cnodes);
+    }
+}
 /**
  * @param {DBC} dbc
  * @returns {Object[]|Object} The content nodes belonging to $dbc.
@@ -38,12 +61,6 @@ exports.DDC.prototype.getDataFor = function(dbc) {
         if (this.data[i].defaults.dataBatchConfigId == dbc.id) return this.data[i];
     }
     return {};
-};
-/**
- * @param {Object[]} allContentNodes
- */
-exports.DDC.prototype.setData = function(allContentNodes) {
-    this.data = allContentNodes;
 };
 /**
  * @returns {string}
@@ -67,11 +84,13 @@ exports.DDC.prototype.toSql = function() {
  * @param {string} contentTypeName
  * @param {bool} isFetchAll
  * @param {number} id
+ * @param {DDC} ddc
  */
-exports.DBC = function(contentTypeName, isFetchAll, id) {
+exports.DBC = function(contentTypeName, isFetchAll, id, ddc) {
     this.contentTypeName = contentTypeName;
     this.isFetchAll = isFetchAll;
     this.id = id;
+    this.ddc = ddc;
     this.whereExpr = null;
     this.orderByExpr = null;
     this.limitExpr = null;
@@ -134,6 +153,14 @@ exports.DBC.prototype.toSql = function() {
     }
     return '`contentTypeName` = \'' + this.contentTypeName + '\'' +
             (!this.whereExpr ? '' : ' and ' + this.whereExpr) + tail;
+};
+/**
+ * @returns {Object|Object[]}
+ */
+exports.DBC.prototype.exec = function() {
+    fetchData(this.ddc);
+    var out = this.ddc.getDataFor(this);
+    return out;
 };
 /**
  * @returns {string|null}
