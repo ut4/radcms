@@ -3,19 +3,22 @@ import services from './../common-services.js';
 import utils from './my-test-utils.js';
 const itu = Inferno.TestUtils;
 
-const testDirectiveImpl = {
-    getTitle: () => 'Test',
-    getMenuItems: _self => '...',
-    getRoutes: () => []
-};
+class TestUiPanelImpl {
+    getTitle() { return 'Test'; }
+    getRoutes() { return []; }
+    getIcon() { return 'feather'; }
+    getMenuItems(ctx) { return [
+        $el('div', {id: 'test-menu-item'}, ctx.currentPageData.page.url)
+    ]; }
+}
 
 QUnit.module('ControlPanelComponent', hooks => {
     let httpStub;
     hooks.before(() => {
-        app._directiveImpls['TestDirective'] = testDirectiveImpl;
+        app._uiPanelImpls['Test'] = TestUiPanelImpl;
     });
     hooks.after(() => {
-        delete app._directiveImpls['TestDirective'];
+        delete app._uiPanelImpls['Test'];
     });
     hooks.beforeEach(() => {
         httpStub = sinon.stub(services, 'myFetch');
@@ -23,31 +26,26 @@ QUnit.module('ControlPanelComponent', hooks => {
     hooks.afterEach(() => {
         httpStub.restore();
     });
-    QUnit.test('lists current page directives', assert => {
+    QUnit.test('renders ui panels for directive elements/tags', assert => {
         const currentPageData = {
             page: {url: '/home'},
-            directiveInstances: [
-                {type: 'TestDirective', contentNodes: [{title:'t',body:'b',defaults:{id:1}}]}
+            directiveElems: [
+                {uiPanelType: 'Test', contentNodes: [{title:'t',body:'b',defaults:{id:1}}]}
             ],
             allContentNodes: []
         };
         httpStub.onCall(0).returns(Promise.resolve('0'));
-        const getMenuItemsSpy = sinon.spy(app._directiveImpls['TestDirective'], 'getMenuItems');
         const cpanel = $el(InsaneControlPanel, {currentPageData}, null);
         //
         const rendered = itu.renderIntoContainer(cpanel);
-        const directiveList = itu.scryRenderedDOMElementsWithClass(rendered,
-            'directive');
-        assert.strictEqual(directiveList.length, 1, 'Should list directives');
+        const uiPanelList = itu.scryRenderedDOMElementsWithClass(rendered,
+            'ui-panel');
+        assert.strictEqual(uiPanelList.length, 1, 'Should list ui panels');
         const renderedTestDir = itu.findRenderedDOMElementWithClass(rendered,
-            'directive-TestDirective');
-        assert.ok(renderedTestDir !== undefined, 'Should render TestDirective');
+            'ui-panel-Test');
+        assert.ok(renderedTestDir !== undefined, 'Should render TestUiPanel for directiveElems[0]');
         assert.equal(renderedTestDir.querySelector('h4').textContent.substr(0,4), 'Test');
-        assert.ok(getMenuItemsSpy.calledOnce, 'Sanity check getMenuItemsSpy.calledOnce');
-        assert.deepEqual(getMenuItemsSpy.getCall(0).args[0],
-            currentPageData.directiveInstances[0],
-            'Should pass "self" to testDirective.getMenuItems()');
-        getMenuItemsSpy.restore();
+        assert.equal(renderedTestDir.querySelector('#test-menu-item').textContent, '/home');
     });
     QUnit.test('sets data-num-waiting-uploads attribute', assert => {
         const mockNum = '3';
@@ -58,7 +56,7 @@ QUnit.module('ControlPanelComponent', hooks => {
         //
         const rendered = itu.renderIntoContainer($el(InsaneControlPanel, {currentPageData: {
             page: {url: '/home'},
-            directiveInstances:[],
+            directiveElems:[],
             allContentNodes:[]
         }}, null));
         const uploadButton = itu.scryRenderedDOMElementsWithTag(rendered,
@@ -93,7 +91,7 @@ QUnit.module('ControlPanelComponent', hooks => {
         const done = assert.async();
         const rendered = itu.renderIntoContainer($el(InsaneControlPanel, {currentPageData: {
             page: currentPage,
-            directiveInstances:[],
+            directiveElems:[],
             allContentNodes:[],
         }}, null));
         // Wait until the constructor has loaded all data

@@ -1,5 +1,9 @@
 // == DocumentDataConfig ====
 // =============================================================================
+/**
+ * @param {Db} db
+ * @constructor
+ */
 exports.DDC = function(db) {
     this.db = db;
     this.batches = [];
@@ -33,7 +37,7 @@ exports.DDC.prototype.setData = function(allContentNodes) {
 /**
 * Runs $ddc.toSql() and stores the result to $ddc.data.
 */
-function fetchData(ddc) {
+function doFetchData(ddc) {
     if (ddc.batchCount) {
         var cnodes = [];
         ddc.db.select(ddc.toSql(), function(row) {
@@ -85,6 +89,7 @@ exports.DDC.prototype.toSql = function() {
  * @param {bool} isFetchAll
  * @param {number} id
  * @param {DDC} ddc
+ * @constructor
  */
 exports.DBC = function(contentTypeName, isFetchAll, id, ddc) {
     this.contentTypeName = contentTypeName;
@@ -158,7 +163,7 @@ exports.DBC.prototype.toSql = function() {
  * @returns {Object|Object[]}
  */
 exports.DBC.prototype.exec = function() {
-    fetchData(this.ddc);
+    doFetchData(this.ddc);
     var out = this.ddc.getDataFor(this);
     return out;
 };

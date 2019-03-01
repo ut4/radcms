@@ -44,7 +44,7 @@ commons.app.addRoute(function(url, method) {
  */
 function handlePageRequest(req) {
     var page = website.siteGraph.getPage(req.url != '/' ? req.url : website.siteConfig.homeUrl);
-    var dataToFrontend = {directiveInstances: [], allContentNodes: [], page: {}};
+    var dataToFrontend = {directiveElems: [], allContentNodes: [], page: {}};
     if (page) {
         var rescanType = req.getUrlParam('rescan');
         if (rescanType) {
@@ -404,7 +404,7 @@ function handleUpdateSiteGraphRequest(req) {
  * @param {string} html <html>...<p>foo</p></body>...
  * @param {Object} dataToFrontend {
  *     page: {url: <str>, layoutFileName: <str>},
- *     directiveInstances: [{type: <str>, contentNodes: [<cnode>...]...}...],
+ *     directiveElems: [{uiPanelType: <str>, contentType: <str>, contentNodes: [<cnode>...]...}...],
  *     allContentNodes: [{..., defaults: {id: <id>, name: <name>...}}],
  * }
  * @returns {string} <html>...<p>foo</p><iframe...</body>...

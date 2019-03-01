@@ -43,8 +43,14 @@ Page.prototype.render = function(dataToFrontend, issues) {
     dataToFrontend.allContentNodes = props.ddc.data;
     domTree.getRenderedFnComponents().forEach(function(fnCmp) {
         if (fnCmp.fn == commons.templateCache.get('RadArticleList')) {
-            dataToFrontend.directiveInstances.push(
-                {type: 'ArticleList', contentNodes: fnCmp.props.articles}
+            dataToFrontend.directiveElems.push(
+                {uiPanelType: 'EditableList', contentType: 'Article',
+                    contentNodes: fnCmp.props.articles}
+            );
+        } else if (fnCmp.fn == commons.templateCache.get('RadList')) {
+            dataToFrontend.directiveElems.push(
+                {uiPanelType: 'EditableList', contentType: fnCmp.props.contentType,
+                    contentNodes: fnCmp.props.items}
             );
         }
     });

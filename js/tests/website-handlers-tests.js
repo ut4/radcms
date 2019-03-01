@@ -115,7 +115,7 @@ testLib.module('website-handlers.js', function(hooks) {
         var pcs = response.body.split('function getCurrentPageData(){return ');
         assert.ok(pcs.length == 2, 'Should contain getCurrentPageData() declaration');
         var expectedPageData = JSON.stringify({
-            directiveInstances:[],
+            directiveElems:[],
             allContentNodes:[{content:'Hello',defaults:{id:1,name:'home',dataBatchConfigId:1}}],
             page:{url:req.url,layoutFileName:layout1.fileName}
         });
@@ -125,7 +125,7 @@ testLib.module('website-handlers.js', function(hooks) {
         var response2 = handlePageRequestFn(new http.Request('/404', 'GET'));
         var pcs2 = response2.body.split('function getCurrentPageData(){return ');
         assert.ok(pcs2.length == 2, 'Should contain getCurrentPageData() declaration');
-        var expectedPageData2 = JSON.stringify({directiveInstances:[],allContentNodes:[],page:{}});
+        var expectedPageData2 = JSON.stringify({directiveElems:[],allContentNodes:[],page:{}});
         var actualPageData2 = pcs2[1] ? pcs2[1].substr(0, expectedPageData2.length) : '';
         assert.equal(actualPageData2, expectedPageData2);
     });

@@ -1,3 +1,10 @@
+/**
+ * == directives.js ====
+ *
+ * This file contains all standard template directives (<RadLink/>,
+ * <RadList/> etc.). init() adds them to $commons.templateCache.
+ *
+ */
 var website = require('website.js');
 var templates = require('common-services.js').templateCache;
 
@@ -8,16 +15,22 @@ exports.init = function() {
     exports.init = function() {};
 };
 
-/*
+/**
  * Usage:
  * <html>
  *     ...
  *     <RadLink to="/page" text="Read more" domAttr1="foo" another="bar"/>
  *     ...
  * </html>
+ *
+ * @param {DomTree} domTree
+ * @param {{
+ *     to: string;
+ *     text: string;
+ * }} props
  */
 function Link(domTree, props) {
-    if (!props.to) throw new TypeError('<RadLink to=""/> can\'t be empty');
+    if (!props.to) throw new TypeError('<RadLink to=""/> is required');
     else if (props.to == '/') props.to = website.siteConfig.homeUrl;
     else if (props.to.charAt(0) != '/') props.to = '/' + props.to;
     //
@@ -28,24 +41,41 @@ function Link(domTree, props) {
     return domTree.createElement('a', p, props.text || '');
 }
 
-/*
+/**
  * Usage:
  * @books = fetchAll("Book").exec()
  * <html>
  *     ...
- *     <RadList items={ books } listFn={function(book) {
- *         return <div>{ book.title }...</div>
+ *     <RadList items={ books } contentType="Book" listFn={function(books) {
+ *         return <div>{books.map(function(book) {
+ *             return <div>{ book.title }...</div>
+ *         })}</div>
  *     }} noItemsFn={function() {
  *         return <div>No books found.</div>
  *     }}/>
  *     ...
  * </html>
+ *
+ * @param {DomTree} domTree
+ * @param {{
+ *     items: Object[];
+ *     contentType: string;
+ *     listFn: (items: Object[]): JsxElem;
+ *     noItemsFn?: (void): JsxElem;
+ *     contentTypeLabel?: string?; eg. 'Book'
+ *     icon?: string; eg. 'activity' (see: feathericons.com)
+ * }} props
  */
 function List(domTree, props) {
+    if (!props.listFn) throw new TypeError('<RadList listFn={}/> is required');
+    if (!props.contentType) throw new TypeError('<RadList contentType=""/> is required');
+    if (!props.noItemsFn) props.noItemsFn = function() {
+        return domTree.createElement('div', null, 'No items found.');
+    };
     return props.items.length ? props.listFn(props.items) : props.noItemsFn();
 }
 
-/*
+/**
  * Usage:
  * @arts = fetchAll("Article").exec()
  * <html>
@@ -62,6 +92,13 @@ function List(domTree, props) {
  *     <RadArticleList articles={arts} paginationOptions={opts} url={url}/>
  *     ...
  * </html>
+ *
+ * @param {DomTree} domTree
+ * @param {{
+ *     articles: Object[];
+ *     url: string;
+ *     paginationOptions?: {nthPage: number; limit: number;};
+ * }} props
  */
 function ArticleList(domTree, props) {
     if (props.articles.length) {
