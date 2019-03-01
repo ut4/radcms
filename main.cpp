@@ -131,7 +131,7 @@ startFileWatcher(void *myPtr) {
                 std::cerr << "[Error]: Got an error from fileWatcher\n";
                 return;
             }
-            char *ext = strrchr(filePath, '.');
+            const char *ext = strrchr(filePath, '.');
             if (ext && (
                 strcmp(ext, ".htm") == 0 ||
                 strcmp(ext, ".js") == 0 ||

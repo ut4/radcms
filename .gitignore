@@ -1,5 +1,7 @@
 out/
 internal/
+target/
+Cargo.lock
 duktape.c
 duk_source_meta.json
 todo.txt

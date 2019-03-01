@@ -81,7 +81,10 @@ elseif(INSN_IS_LINUX)
     # -- curl provided by libcurl4-openssl-dev ----
 
     # -- notify ----
-    # todo
+    add_library(notify SHARED IMPORTED)
+    set_target_properties(notify PROPERTIES
+        IMPORTED_LOCATION ${CMAKE_BINARY_DIR}/libnotify.so
+    )
 
     set(INSN_DEP_INCLUDES
         ${VENDOR_ROOT}/duktape
@@ -101,6 +104,7 @@ elseif(INSN_IS_LINUX)
         ssl
         curl
         cjson
+        notify
     )
 else()
     message(FATAL_ERROR "INSN_IS_WIN or INSN_IS_LINUX must be SET() before including deps.cmake.")

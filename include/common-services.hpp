@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstring> // strlen(), memcpy()
 #include <iostream> // std::cerr
 #include <curl/curl.h>
 
