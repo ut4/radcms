@@ -179,7 +179,7 @@ class WebsiteUploadView extends preact.Component {
                     const idx = list.findIndex(pageOrFile => pageOrFile.url === url);
                     if (uploadResult === '0') {
                         list[idx].uploadStatus = UStatus.UPLOADED;
-                        services.signals.emit('itemUploaded');
+                        services.signals.emit('numWaitingUploadsChanged', old => old - 1);
                     } else {
                         list[idx].uploadStatus = UStatus.ERROR;
                     }

@@ -90,7 +90,7 @@ function buildPaginationLinks(domTree, props, isLast) {
     var opts = props.paginationOptions;
     if (!opts) return [''];
     var out = [];
-    var currentPage = domTree.getContext().currentPage;
+    var currentPage = domTree.currentPage;
     if (opts.nthPage > 1) {
         out.push(domTree.createElement(templates.get('RadLink'), {
             to: '/' + props.url[0] + (opts.nthPage > 2 ? ('/' + (opts.nthPage - 1)) : ''),

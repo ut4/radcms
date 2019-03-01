@@ -24,8 +24,6 @@ static duk_ret_t domTreeCreateElement(duk_context *ctx);
 static duk_ret_t domTreeRender(duk_context *ctx);
 static duk_ret_t domTreeGetRenderedElems(duk_context *ctx);
 static duk_ret_t domTreeGetRenderedFnComponents(duk_context *ctx);
-static duk_ret_t domTreeSetContext(duk_context *ctx);
-static duk_ret_t domTreeGetContext(duk_context *ctx);
 static unsigned domTreeCallCmpFn(FuncNode *me, std::string &err);
 
 constexpr const char* KEY_STMT_JS_PROTO = "_StmtProto";
@@ -105,10 +103,6 @@ commonServicesJsModuleInit(duk_context *ctx, const int exportsIsAt) {
     duk_put_prop_string(ctx, -2, "getRenderedElements");// [? DomTree proto]
     duk_push_c_lightfunc(ctx, domTreeGetRenderedFnComponents, 0, 0, 0); // [? DomTree proto lightfn]
     duk_put_prop_string(ctx, -2, "getRenderedFnComponents"); // [? DomTree proto]
-    duk_push_c_lightfunc(ctx, domTreeSetContext, 1, 0, 0); // [? DomTree proto lightfn]
-    duk_put_prop_string(ctx, -2, "setContext");         // [? DomTree proto]
-    duk_push_c_lightfunc(ctx, domTreeGetContext, 0, 0, 0); // [? DomTree proto lightfn]
-    duk_put_prop_string(ctx, -2, "getContext");         // [? DomTree proto]
     duk_put_prop_string(ctx, -2, "prototype");          // [? DomTree]
     duk_put_prop_string(ctx, exportsIsAt, "DomTree");   // [?]
 }
@@ -605,21 +599,6 @@ domTreeGetRenderedFnComponents(duk_context *ctx) {
         return 1;
     }
     return duk_error(ctx, DUK_ERR_ERROR, "%s", err.c_str());
-}
-
-static duk_ret_t
-domTreeSetContext(duk_context *ctx) {
-    duk_push_this(ctx);                          // [val this]
-    duk_swap_top(ctx, -2);                       // [this val]
-    duk_put_prop_string(ctx, -2, "context");     // [this]
-    return 0;
-}
-
-static duk_ret_t
-domTreeGetContext(duk_context *ctx) {
-    duk_push_this(ctx);                          // [this]
-    duk_get_prop_string(ctx, -1, "context");     // [this ctx]
-    return 1;
 }
 
 static unsigned

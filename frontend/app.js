@@ -61,8 +61,8 @@ class InsaneControlPanel extends preact.Component {
         );
         this.state = {className: '', templates: [], selectedTemplateIdx: null,
                       tabA: true, numWaitingUploads: 0};
-        services.signals.listen('itemUploaded', () => {
-            this.setState({numWaitingUploads: this.state.numWaitingUploads - 1});
+        services.signals.listen('numWaitingUploadsChanged', newValProvideFn => {
+            this.setState({numWaitingUploads: newValProvideFn(this.state.numWaitingUploads)});
         });
         services.myFetch('/api/website/num-waiting-uploads')
             .then(res => {

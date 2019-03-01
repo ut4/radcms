@@ -34,7 +34,7 @@ Page.prototype.render = function(dataToFrontend, issues) {
     }
     var domTree = new commons.DomTree();
     domTree.directives = commons.templateCache._fns;
-    domTree.setContext({currentPage: this});
+    domTree.currentPage = this;
     var props = {ddc: new documentData.DDC(commons.db), url: this.urlPcs};
     if (!dataToFrontend) {
         return domTree.render(commons.templateCache.get(this.layoutFileName)(domTree, props));
@@ -51,15 +51,14 @@ Page.prototype.render = function(dataToFrontend, issues) {
     return html;
 };
 /**
- * @returns {DomTree}
+ * @param {DomTree} domTree (out)
+ * @returns string
  */
-Page.prototype.dryRun = function() {
-    var out = {domTree: new commons.DomTree(), rootElemRef: 0};
-    out.domTree.directives = commons.templateCache._fns;
-    out.domTree.setContext({currentPage: this});
-    out.rootElemRef = commons.templateCache.get(this.layoutFileName)(out.domTree,
-        {ddc: new documentData.DDC(commons.db), url: this.urlPcs});
-    return out;
+Page.prototype.render2 = function(domTree) {
+    domTree.directives = commons.templateCache._fns;
+    domTree.currentPage = this;
+    return domTree.render(commons.templateCache.get(this.layoutFileName)(
+        domTree, {ddc: new documentData.DDC(commons.db), url: this.urlPcs}));
 };
 
 

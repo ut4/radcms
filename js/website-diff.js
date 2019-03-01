@@ -46,12 +46,13 @@ function RemoteDiff() {
 }
 
 /**
- * @param {Page} page
+ * @param {string} url
+ * @param {string} html
  */
-RemoteDiff.prototype.addPageToCheck = function(page) {
-    if (!this.checkables.hasOwnProperty(page.url)) {
-        this.checkables[page.url] = {url: page.url, hash: website.website.crypto.
-            sha1(page.render()), uphash: null, isFile: 0};
+RemoteDiff.prototype.addPageToCheck = function(url, html) {
+    if (!this.checkables.hasOwnProperty(url)) {
+        this.checkables[url] = {url: url, hash: website.website.crypto.
+            sha1(html), uphash: null, isFile: 0};
     }
 };
 
@@ -219,8 +220,8 @@ RemoteDiff.prototype._getCurrentStatuses = function(curStatuses) {
 function LocalDiff() {
     this.nPagesAdded = 0;   // The number of completely new pages
     this.nPagesRemoved = 0; // The number of completely removed pages (refCount==0)
-    this.nLinksAdded = 0;   // The number of new links added to the root page
-    this.nLinksRemoved = 0; // The number of links removed from the root page
+    this.nLinksAdded = 0;   // The number of new links added
+    this.nLinksRemoved = 0; // The number of links removed
     this.removedLinkUrls = {};
     this.staticFiles = {};  // A list of script/css urls
     this.remoteDiff = new exports.RemoteDiff(); // use exports so it can be mocked
@@ -240,8 +241,8 @@ LocalDiff.prototype.scanChanges = function(pages, usersOfLayout) {
         var page = pages[url];
         if (page.refCount < 1 || (usersOfLayout && page.layoutFileName != usersOfLayout)) continue;
         var newLinksTo = {};
-        var domTree = page.dryRun();
-        this.remoteDiff.addPageToCheck(page);
+        var domTree = new commons.DomTree();
+        this.remoteDiff.addPageToCheck(page.url, page.render2(domTree));
         var fnCmps = domTree.getRenderedFnComponents();
         var l = fnCmps.length;
         for (var i = 0; i < l; ++i) {
