@@ -58,8 +58,12 @@ class SiteGraphEditView extends preact.Component {
             })
         }).then(() => {
             toast('Updated the site graph.', 'success');
+            return services.myFetch('/api/website/num-waiting-uploads');
         }, () => {
             toast('Failed the update the site graph.', 'error');
+        }).then(res => {
+            services.signals.emit('numWaitingUploadsChanged',
+                () => parseInt(res.responseText));
         });
     }
 }

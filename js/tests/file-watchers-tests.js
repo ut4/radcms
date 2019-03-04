@@ -1,5 +1,6 @@
 var fileWatchers = require('file-watchers.js');
 var commons = require('common-services.js');
+var templateCache = commons.templateCache;
 var website = require('website.js');
 var siteGraph = website.siteGraph;
 var fileWatcher = commons.fileWatcher;
@@ -35,23 +36,7 @@ testLib.module('file-watchers.js', function(hooks) {
     });
     hooks.afterEach(function() {
         siteGraph.clear();
-        commons.templateCache._fns = {};
-    });
-    testLib.test('EVENT_CREATE <newLayout>.jsx.htm updates siteGraph.templates', function(assert) {
-        assert.expect(2);
-        // Trigger handleFWEvent()
-        var templateBefore = siteGraph.getTemplate(mockTemplate.fname); // undefined
-        fileWatcher._watchFn(fileWatcher.EVENT_CREATE, mockTemplate.fname, 'htm');
-        // Assert that added the template to website.siteGraph
-        var templateAfter = siteGraph.getTemplate(mockTemplate.fname);
-        assert.ok(templateAfter !== templateBefore, 'should add a template to siteGraph');
-        // Assert that saved the updated site graph to the database
-        commons.db.select('select `graph` from websites where id = ' + websiteData.id,
-            function(row) {
-            assert.equal(row.getString(0), JSON.stringify({pages:[],
-                templates:[[mockTemplate.fname,0,0]]}),
-                'should store the updated site graph to the database');
-        });
+        commons.templateCache.clear();
     });
     testLib.test('EVENT_CREATE <newFile>.css|js inserts the file to the db', function(assert) {
         assert.expect(6);
@@ -85,16 +70,14 @@ testLib.module('file-watchers.js', function(hooks) {
                 stmt.bindString(1, newJsFileName);
             }) < 2) throw new Error('Failed to clean test data.');
     });
-    testLib.test('EVENT_WRITE <existingLayout>.jsx.htm updates siteGraph.templates', function(assert) {
+    testLib.test('EVENT_WRITE <template>.jsx.htm caches the file', function(assert) {
         assert.expect(1);
-        siteGraph.addPage('/foo', NO_PARENT, mockTemplate.fname);
         mockTemplate.contents = '<html><body>Hello</body></html>';
-        var t = siteGraph.addTemplate(mockTemplate.fname, true);
-        var cachedTemplateFnBefore = commons.templateCache.get(t.fileName); // undefined
+        var cachedTemplateFnBefore = commons.templateCache.get(mockTemplate.fname); // undefined
         // Trigger handleFWEvent()
         fileWatcher._watchFn(fileWatcher.EVENT_WRITE, mockTemplate.fname, 'htm');
         // Assert that called templateCache.put(transpileToFn(newContents))
-        assert.ok(commons.templateCache.get(t.fileName) !== cachedTemplateFnBefore,
+        assert.ok(commons.templateCache.get(mockTemplate.fname) !== cachedTemplateFnBefore,
             'Should cache the modified template');
     });
     testLib.test('EVENT_WRITE <existingFile>.css|js updates the files\' checksum', function(assert) {
@@ -162,22 +145,15 @@ testLib.module('file-watchers.js', function(hooks) {
                 stmt.bindString(2, okAndUploaded);
             }) < 3) throw new Error('Failed to clean test data.');
     });
-    testLib.test('EVENT_REMOVE <existingLayout>.jsx.htm updates siteGraph.templates', function(assert) {
+    testLib.test('EVENT_REMOVE <existingTemplate>.jsx.htm uncaches the file', function(assert) {
         assert.expect(2);
-        siteGraph.addTemplate(mockTemplate.fname, true);
-        var siteGraphBefore = siteGraph.serialize();
+        templateCache.put(mockTemplate.fname, function() {});
+        assert.ok(templateCache.get(mockTemplate.fname) !== undefined);
         //
         fileWatcher._watchFn(fileWatcher.EVENT_REMOVE, mockTemplate.fname, 'htm');
         //
-        assert.ok(siteGraph.serialize().length < siteGraphBefore.length,
-            'Should remove the template from website.siteGraph');
-        commons.db.select('select `graph` from websites where id = ' + websiteData.id,
-            function(row) {
-            assert.equal(row.getString(0), JSON.stringify({
-                pages: [],
-                templates:[]
-            }), 'should store the updated site graph to the database');
-        });
+        assert.ok(templateCache.get(mockTemplate.fname) === undefined,
+            'Should uncache the file');
     });
     testLib.test('EVENT_REMOVE handles <existingFile>.css|js', function(assert) {
         assert.expect(2);
@@ -226,7 +202,7 @@ testLib.module('file-watchers.js', function(hooks) {
                 stmt.bindString(0, okAndUploaded);
             }) < 1) throw new Error('Failed to clean test data.');
     });
-    testLib.test('EVENT_RENAME handles <layout>.jsx.htm', function(assert) {
+    testLib.test('EVENT_RENAME handles <existingTemplate>.jsx.htm', function(assert) {
         assert.expect(12);
         var noUsersFrom = 'foo.jsx.htm';
         var noUsersTo = 'newfoo.jsx.htm';
@@ -234,17 +210,15 @@ testLib.module('file-watchers.js', function(hooks) {
         var hasUsersTo = 'newbar.jsx.htm';
         var testUser = '/a-page';
         var testUser2 = '/a-page2';
-        siteGraph.addTemplate(noUsersFrom, true, false);
-        siteGraph.addTemplate(hasUsersFrom, true, true);
         siteGraph.addPage(testUser, '', hasUsersFrom, {}, 1);
         siteGraph.addPage(testUser2, '', hasUsersFrom, {}, 1);
-        commons.templateCache.put(noUsersFrom, function() {});
-        commons.templateCache.put(hasUsersFrom, function() {});
+        templateCache.put(noUsersFrom, function() {});
+        templateCache.put(hasUsersFrom, function() {});
         fileWatcher.timer = {now: function() { return 1; }};
         var assertSwappedTheTemplate = function (from, to) {
-            assert.ok(!siteGraph.getTemplate(from),
+            assert.ok(!templateCache.get(from),
                 'Should remove the old layout');
-            assert.ok(siteGraph.getTemplate(to) !== undefined,
+            assert.ok(templateCache.get(to) !== undefined,
                 'Should replace the old layout');
             assert.ok(!commons.templateCache.has(from),
                 'Should remove the old entry from the templateCache');
@@ -256,11 +230,7 @@ testLib.module('file-watchers.js', function(hooks) {
             noUsersFrom + '>' + insnEnv.sitePath + noUsersTo, 'htm');
         assertSwappedTheTemplate(noUsersFrom, noUsersTo);
         commons.db.select('select `graph` from websites', function(row) {
-            assert.equal(row.getString(0), JSON.stringify({
-                pages:[[testUser,NO_PARENT,hasUsersFrom,[]],
-                       [testUser2,NO_PARENT,hasUsersFrom,[]]],
-                templates:[[hasUsersFrom,1,1],[noUsersTo,1,0]]
-            }));
+            assert.equal(row.getString(0), '');
         });
         //
         fileWatcher._watchFn(fileWatcher.EVENT_RENAME,
@@ -273,8 +243,7 @@ testLib.module('file-watchers.js', function(hooks) {
         commons.db.select('select `graph` from websites', function(row) {
             assert.equal(row.getString(0), JSON.stringify({
                 pages:[[testUser,NO_PARENT,hasUsersTo,[]],
-                       [testUser2,NO_PARENT,hasUsersTo,[]]],
-                templates:[[noUsersTo,1,0],[hasUsersTo,1,1]]
+                       [testUser2,NO_PARENT,hasUsersTo,[]]]
             }));
         });
         //

@@ -136,10 +136,11 @@ exports.transpiler = {
      * @native
      * @param {string} code
      * @param {string} fileName For debugging
+     * @param {bool?} doDukWrap = true
      * @returns {Function}
      * @throws {Error}
      */
-    transpileToFn: function(/*code, fileName*/) {}
+    transpileToFn: function(/*code, fileName, doDukWrap*/) {}
 };
 
 
@@ -220,18 +221,24 @@ exports.DomTree.prototype.getRenderedFnComponents = function() {};
 // =============================================================================
 exports.templateCache = {
     _fns: {},
-    put: function(key, fn) {
-        this._fns[key] = fn;
+    put: function(fname, fn, whine) {
+        if (whine && this._fns.hasOwnProperty(fname)) {
+            throw new TypeError('Duplicate template ' + fname);
+        }
+        this._fns[fname] = fn;
+        this._fns[fname.split('.')[0]] = this._fns[fname];
     },
-    get: function(key) {
-        return this._fns[key];
+    remove: function(fname) {
+        delete this._fns[fname];
+        delete this._fns[fname.split('.')[0]];
     },
-    has: function(key) {
-        return this._fns.hasOwnProperty(key);
+    get: function(name) {
+        return this._fns[name];
     },
-    remove: function(key) {
-        delete this._fns[key];
+    has: function(name) {
+        return this._fns.hasOwnProperty(name);
     }
 };
+
 
 exports.log = print;

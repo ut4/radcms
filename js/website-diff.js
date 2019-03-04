@@ -7,24 +7,22 @@
 var commons = require('common-services.js');
 var website = require('website.js');
 var siteGraph = website.siteGraph;
-var directives = require('directives.js');
 
 /**
  * @param {string} type 'full' or 'usersOf:some-template.jsx.htm'
  */
 exports.performRescan = function(type) {
-    var usersOf = '', t;
+    var usersOf = '';
     if (type != 'full') {
         usersOf = type.split(':')[1];
-        if (!(t = siteGraph.getTemplate(usersOf)) || !t.isOk) return;
+        if (!commons.templateCache.has(usersOf)) return;
     }
     var diff = new LocalDiff();
     diff.scanChanges(siteGraph.pages, usersOf);
     diff.deleteUnreachablePages();
     diff.remoteDiff.saveStatusesToDb();
-    if (siteGraph.hasUnsavedChanges || diff.nLinksAdded || diff.nLinksRemoved) {
+    if (diff.nLinksAdded || diff.nLinksRemoved) {
         website.saveToDb(siteGraph);
-        siteGraph.hasUnsavedChanges = false;
     }
     var m = [];
     if (diff.nPagesAdded) m.push('added ' + diff.nPagesAdded + ' page(s)');
@@ -48,12 +46,13 @@ function RemoteDiff() {
 }
 
 /**
- * @param {Page} page
+ * @param {string} url
+ * @param {string} html
  */
-RemoteDiff.prototype.addPageToCheck = function(page) {
-    if (!this.checkables.hasOwnProperty(page.url)) {
-        this.checkables[page.url] = {url: page.url, hash: website.website.crypto.
-            sha1(page.render()), uphash: null, isFile: 0};
+RemoteDiff.prototype.addPageToCheck = function(url, html) {
+    if (!this.checkables.hasOwnProperty(url)) {
+        this.checkables[url] = {url: url, hash: website.website.crypto.
+            sha1(html), uphash: null, isFile: 0};
     }
 };
 
@@ -221,8 +220,8 @@ RemoteDiff.prototype._getCurrentStatuses = function(curStatuses) {
 function LocalDiff() {
     this.nPagesAdded = 0;   // The number of completely new pages
     this.nPagesRemoved = 0; // The number of completely removed pages (refCount==0)
-    this.nLinksAdded = 0;   // The number of new links added to the root page
-    this.nLinksRemoved = 0; // The number of links removed from the root page
+    this.nLinksAdded = 0;   // The number of new links added
+    this.nLinksRemoved = 0; // The number of links removed
     this.removedLinkUrls = {};
     this.staticFiles = {};  // A list of script/css urls
     this.remoteDiff = new exports.RemoteDiff(); // use exports so it can be mocked
@@ -237,17 +236,18 @@ function LocalDiff() {
  */
 LocalDiff.prototype.scanChanges = function(pages, usersOfLayout) {
     var completelyNewPages = {};
+    var RadLink = commons.templateCache.get('RadLink');
     for (var url in pages) {
         var page = pages[url];
         if (page.refCount < 1 || (usersOfLayout && page.layoutFileName != usersOfLayout)) continue;
         var newLinksTo = {};
-        var domTree = page.dryRun();
-        this.remoteDiff.addPageToCheck(page);
+        var domTree = new commons.DomTree();
+        this.remoteDiff.addPageToCheck(page.url, page.render2(domTree));
         var fnCmps = domTree.getRenderedFnComponents();
         var l = fnCmps.length;
         for (var i = 0; i < l; ++i) {
             var props = fnCmps[i].props;
-            if (fnCmps[i].fn !== directives.RadLink) continue;
+            if (fnCmps[i].fn !== RadLink) continue;
             var href = props.to;
             newLinksTo[href] = 1;
             // Page already in the site graph
@@ -259,12 +259,6 @@ LocalDiff.prototype.scanChanges = function(pages, usersOfLayout) {
                     href.indexOf(url) === 0 ? url : '',
                     props.layoutOverride || website.siteConfig.defaultLayout);
                 this.addLink(href, page, true);
-            }
-            if (props.layoutOverride) {
-                var layout = siteGraph.getTemplate(props.layoutOverride);
-                if (!layout) {
-                    layout = siteGraph.addTemplate(props.layoutOverride, false, true);
-                }
             }
         }
         //

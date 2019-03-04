@@ -9,17 +9,15 @@
 
 #define ERR_MAX_LEN 128
 #define MAX_DATA_CONF_VARS 64
-#define MAX_VAR_NAME_LEN 128
-#define ISX_OUTER_START "function(ddc, url) {" \
-                            "var fetchAll = ddc.fetchAll.bind(ddc);" \
-                            "var fetchOne = ddc.fetchOne.bind(ddc);"
-//                           var batch = fetchAll().where() calls here...
-#define ISX_INNER_START     "return function(domTree, directives) {" \
-                                "var getDataFor = ddc.getDataFor.bind(ddc);"
-//                               batch = getDataFor(batch) calls here...
-#define ISX_INNER_END          " return"
-//                               domTree.createElement(...,batch.foo)... calls here
-#define ISX_OUTER_END       "}; }"
+#define WRAP_JS_START "function(domTree, props) {" \
+                          "var directives = domTree.directives;" \
+                          "if (props.ddc) {var url = props.url;" \
+                                          "var fetchAll=props.ddc.fetchAll.bind(props.ddc);" \
+                                          "var fetchOne=props.ddc.fetchOne.bind(props.ddc);}"
+//                         js code here ...
+#define WRAP_JS_END      " return"
+//                         domTree.createElement(...,batch.foo)... calls here
+#define WRAP_END       "}"
 
 struct Transpiler {
     struct Token previous;
@@ -62,7 +60,7 @@ codeBlock -> "{" ( jsString | jsComment | element | ANY )+ "}"
 comment   -> "<" "!" "-" "-" ANY? "-" "-" ">"
 */
 static bool html(enum TagType alreadyConsumedStartEl);
-static void jsCode();
+static void jsCode(bool isDuk);
 static bool jsComment();
 static bool jsString(enum TokenType t);
 static bool element(bool startAlreadyConsumed);
@@ -76,9 +74,7 @@ static bool closingTag();
 static bool comment(bool startAlreadyConsumed);
 static enum TagType tryCommentOrDoctype();
 //
-static const char* appendVar(DataConfVar *vars, unsigned varsCount,
-                             const char *curCodeStart, const char *fileStart);
-static bool endVars(DataConfVar *vars, unsigned varsCount, const char *fileStart);
+static const char* isxVarDecl(const char *curCodeStart);
 static struct Token* advance(bool consumeWhiteSpace, enum ScanMode scanMode);
 static bool advanceIf(enum TokenType type, bool consumeWhiteSpace,
                       enum ScanMode scanMode);
@@ -104,26 +100,40 @@ transpilerFreeProps() {
     producerFreeProps();
 }
 
+#define transpileInit() \
+    transpiler.hadError = false; \
+    transpiler.lastErr[0] = '\0'; \
+    sharedErr[0] = '\0'; \
+    scannerInit(src); \
+    producerClear(); \
+    (void)advance(true, SCAN_NAME)
+
+char*
+transpilerTranspileDuk(const char *src) {
+    transpileInit();
+    if (transpiler.current.type != TOKEN_EOF) {
+        producerAddChars(WRAP_JS_START);
+        if (transpiler.current.type == TOKEN_LT) {
+            producerAddChars(WRAP_JS_END);
+            html(TAG_TYPE_NONE);
+        } else {
+            jsCode(true);
+        }
+    }
+    producerAddChars(WRAP_END);
+    return !transpiler.hadError ? producerGetResult() : NULL;
+}
 
 char*
 transpilerTranspile(const char *src) {
-    transpiler.hadError = false;
-    transpiler.lastErr[0] = '\0';
-    sharedErr[0] = '\0';
-    scannerInit(src);
-    producerClear();
-    (void)advance(true, SCAN_NAME);
+    transpileInit();
     if (transpiler.current.type != TOKEN_EOF) {
-        producerAddChars(ISX_OUTER_START);
         if (transpiler.current.type == TOKEN_LT) {
-            producerAddChars(ISX_INNER_START);
-            producerAddChars(ISX_INNER_END);
             html(TAG_TYPE_NONE);
         } else {
-            jsCode();
+            jsCode(false);
         }
     }
-    producerAddChars(ISX_OUTER_END);
     return !transpiler.hadError ? producerGetResult() : NULL;
 }
 
@@ -213,54 +223,20 @@ html(enum TagType alreadyConsumedStartEl) {
 }
 
 static const char*
-appendVar(DataConfVar *vars, unsigned varsCount, const char *curCodeStart,
-          const char *fileStart) {
-    if (varsCount >= MAX_DATA_CONF_VARS) {
-        logError("TOO_MANY_VARS"); return NULL;
-    }
+isxVarDecl(const char *curCodeStart) {
     producerAddNChars(curCodeStart, transpiler.current.lexemeFrom - curCodeStart);
-    producerAddChars("var ");
     curCodeStart = transpiler.current.lexemeFrom + 1;
     advance(true, SCAN_NAME); // @
+    producerAddChars("var ");
     if (transpiler.current.type != TOKEN_NAME) {
         logError("Expected variable name after '@'"); return NULL;
-    }
-    if (transpiler.current.lexemeLen <= MAX_VAR_NAME_LEN) {
-        vars[varsCount] = (DataConfVar){
-            .posFromFileStart = transpiler.current.lexemeFrom - fileStart,
-            .varNameLen = transpiler.current.lexemeLen
-        };
-    } else {
-        logError("VAR_NAME_TOO_LONG"); return NULL;
     }
     return curCodeStart;
 }
 
-static bool
-endVars(DataConfVar *vars, unsigned varsCount, const char *fileStart) {
-    if (!producerAddChars(ISX_INNER_START)) return false;
-    for (unsigned i = 0; i < varsCount; ++i) {
-        const unsigned vNameLen = vars[i].varNameLen;
-        char vName[vNameLen];
-        memcpy(vName, &fileStart[vars[i].posFromFileStart], vNameLen);
-        vName[vNameLen] = '\0';
-        //
-        const char *fmt = "%s=getDataFor(%s);";
-        const unsigned l = vNameLen * 2 + strlen(fmt) - 4 + 1; // 4 == %s%s, 1 == \0
-        char toDataCall[l]; // <varname>=getDataFor(<varname>);
-        snprintf(toDataCall, l, fmt, vName, vName);
-        producerAddNChars(toDataCall, l - 1);
-    }
-    return producerAddChars(ISX_INNER_END);
-}
-
 static void
-jsCode() {
-    const char *fileStart = transpiler.current.lexemeFrom;
+jsCode(bool isDuk) {
     const char *curCodeStart = transpiler.current.lexemeFrom;
-    DataConfVar vars[MAX_DATA_CONF_VARS];
-    unsigned varsCount = 0;
-    bool varsEnded = false;
     while (transpiler.current.type != TOKEN_EOF) {
         enum TokenType t = transpiler.current.type;
         if ((t == TOKEN_DQUOT || t == TOKEN_SQUOT) && !jsString(t)) continue;
@@ -275,16 +251,14 @@ jsCode() {
             }
             if (t != TAG_TYPE_NONE) {
                 producerAddNChars(curCodeStart, ltStart - curCodeStart);
-                if (!varsEnded && !(varsEnded = endVars(vars, varsCount, fileStart))) return;
+                if (isDuk) producerAddChars(WRAP_JS_END);
                 if (html(t)) { curCodeStart = transpiler.current.lexemeFrom; continue; }
                 else return;
             }
-        } else if (!varsEnded &&
+        } else if (
             transpiler.current.type == TOKEN_UNKNOWN &&
             *transpiler.current.lexemeFrom == '@') {
-            curCodeStart = appendVar(vars, varsCount, curCodeStart, fileStart);
-            if (curCodeStart) varsCount += 1;
-            else return;
+            if (!(curCodeStart = isxVarDecl(curCodeStart))) return;
             continue;
         }
         advance(false, SCAN_NAME);

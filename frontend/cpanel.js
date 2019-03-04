@@ -1,32 +1,31 @@
 import services from './common-services.js';
 import {myLink, contentNodeList} from './common-components.js';
-import {ArticleListDirectiveWebUIImpl,
-        StaticMenuDirectiveWebUIImpl} from './directive-impls.js';
+import {GenericListUIPanelImpl, StaticMenuUIPanelImpl} from './directive-impls.js';
 import {AddContentView, EditContentView} from './content-views.js';
 import {WebsiteGenerateView, WebsiteUploadView} from './website-views.js';
 import {SiteGraphEditView} from './site-graph-views.js';
 
 const cpanelApp = {
-    _directiveImpls: {
-        'StaticMenu': StaticMenuDirectiveWebUIImpl,
-        'ArticleList': ArticleListDirectiveWebUIImpl
+    _uiPanelImpls: {
+        'EditableList': GenericListUIPanelImpl,
+        'StaticMenu': StaticMenuUIPanelImpl
     },
     /**
      * @param {string} name
      * @param {Object} impl
      * @throws {TypeError}
      */
-    registerDirectiveImpl: function(name, impl) {
-        if (this._directiveImpls.hasOwnProperty(name))
-            throw new TypeError('Directive \''+name+'\' already exists.');
-        this._directiveImpls[name] = impl;
+    registerUiPanelImpl: function(name, impl) {
+        if (this._uiPanelImpls.hasOwnProperty(name))
+            throw new TypeError('Impl \''+name+'\' already exists.');
+        this._uiPanelImpls[name] = impl;
     },
     /**
      * @param {string} name
      * @returns {Object|undefined}
      */
-    getDirectiveImpl: function(name) {
-        return this._directiveImpls[name];
+    getUiPanelImpl: function(name) {
+        return this._uiPanelImpls[name];
     }
 };
 
@@ -38,28 +37,28 @@ class ControlPanel extends preact.Component {
      * @param {Object} props {
      *     currentPageData: {
      *         page: {url: <str>, layoutFileName: <str>},
-     *         directiveInstances: [{type: <str>, contentNodes: [<cnode>...]...}...],
+     *         directiveElems: [{uiPanelType: <str>, contentNodes: [<cnode>...]...}...],
      *         allContentNodes: [{..., defaults: {id: <id>, name: <name>...}}],
      *     };
      * }
      */
     constructor(props) {
         super(props);
-        this.currentPageDirectiveImpls = [];
-        props.currentPageData.directiveInstances.forEach(instance => {
-            const impl = cpanelApp.getDirectiveImpl(instance.type);
-            if (!impl) return;
-            this.currentPageDirectiveImpls.push(impl);
+        this.currentPageUiPanels = [];
+        props.currentPageData.directiveElems.forEach(obj => {
+            const Cls = cpanelApp.getUiPanelImpl(obj.uiPanelType);
+            if (!Cls) return;
+            this.currentPageUiPanels.push(new Cls(obj));
         });
         this.looseContentNodes = props.currentPageData.allContentNodes.filter(n =>
-            !props.currentPageData.directiveInstances.some(ins =>
-                ins.contentNodes.some(n2 => n.defaults.name == n2.defaults.name)
+            !props.currentPageData.directiveElems.some(elem =>
+                elem.contentNodes.some(n2 => n.defaults.name == n2.defaults.name)
             )
         );
         this.state = {className: '', templates: [], selectedTemplateIdx: null,
                       tabA: true, numWaitingUploads: 0};
-        services.signals.listen('itemUploaded', () => {
-            this.setState({numWaitingUploads: this.state.numWaitingUploads - 1});
+        services.signals.listen('numWaitingUploadsChanged', newValProvideFn => {
+            this.setState({numWaitingUploads: newValProvideFn(this.state.numWaitingUploads)});
         });
         services.myFetch('/api/website/num-waiting-uploads')
             .then(res => {
@@ -109,7 +108,7 @@ class ControlPanel extends preact.Component {
                     $el(WebsiteGenerateView, {path: '/generate-website'}, null),
                     $el(WebsiteUploadView, {path: '/upload-website'}, null),
                     $el(SiteGraphEditView, {path: '/edit-site-graph'}, null)
-                ].concat(...this.currentPageDirectiveImpls.map(dir=>dir.getRoutes()))
+                ].concat(...this.currentPageUiPanels.map(panel=>panel.getRoutes()))
             )
         ]);
     }
@@ -132,14 +131,14 @@ class ControlPanel extends preact.Component {
                 }, 'Generate')
             ]),
             $el('div', null, [
-                $el('div', {className: 'current-page-directive-list'},
-                    this.currentPageDirectiveImpls.map((impl, i) => {
-                        const directive = this.props.currentPageData.directiveInstances[i];
+                $el('div', {className: 'current-page-ui-panels'},
+                    this.currentPageUiPanels.map((panel, i) => {
                         return $el(ControlPanelSection, {
-                            title: impl.getTitle(),
-                            icon: typeof impl.getIcon == 'function' ? impl.getIcon() : null,
-                            className: 'directive directive-' + directive.type
-                        }, impl.getMenuItems(directive, this.props));
+                            title: panel.getTitle(),
+                            icon: typeof panel.getIcon == 'function' ? panel.getIcon() : null,
+                            className: 'ui-panel ui-panel-' +
+                                this.props.currentPageData.directiveElems[i].uiPanelType
+                        }, panel.getMenuItems(this.props));
                     }).concat($el(ControlPanelSection, {
                         title: 'Other',
                         className: ''

@@ -24,8 +24,6 @@ static duk_ret_t domTreeCreateElement(duk_context *ctx);
 static duk_ret_t domTreeRender(duk_context *ctx);
 static duk_ret_t domTreeGetRenderedElems(duk_context *ctx);
 static duk_ret_t domTreeGetRenderedFnComponents(duk_context *ctx);
-static duk_ret_t domTreeSetContext(duk_context *ctx);
-static duk_ret_t domTreeGetContext(duk_context *ctx);
 static unsigned domTreeCallCmpFn(FuncNode *me, std::string &err);
 
 constexpr const char* KEY_STMT_JS_PROTO = "_StmtProto";
@@ -64,7 +62,7 @@ commonServicesJsModuleInit(duk_context *ctx, const int exportsIsAt) {
     duk_pop(ctx);                                       // [?]
     // module.transpiler
     duk_get_prop_string(ctx, exportsIsAt, "transpiler");// [? transpiler]
-    duk_push_c_lightfunc(ctx, transpilerTranspileToFn, 2, 0, 0); // [? transpiler lightfn]
+    duk_push_c_lightfunc(ctx, transpilerTranspileToFn, DUK_VARARGS, 0, 0); // [? transpiler lightfn]
     duk_put_prop_string(ctx, -2, "transpileToFn");      // [? transpiler]
     duk_pop(ctx);                                       // [?]
     // dukStash._StmtJsPrototype
@@ -105,10 +103,6 @@ commonServicesJsModuleInit(duk_context *ctx, const int exportsIsAt) {
     duk_put_prop_string(ctx, -2, "getRenderedElements");// [? DomTree proto]
     duk_push_c_lightfunc(ctx, domTreeGetRenderedFnComponents, 0, 0, 0); // [? DomTree proto lightfn]
     duk_put_prop_string(ctx, -2, "getRenderedFnComponents"); // [? DomTree proto]
-    duk_push_c_lightfunc(ctx, domTreeSetContext, 1, 0, 0); // [? DomTree proto lightfn]
-    duk_put_prop_string(ctx, -2, "setContext");         // [? DomTree proto]
-    duk_push_c_lightfunc(ctx, domTreeGetContext, 0, 0, 0); // [? DomTree proto lightfn]
-    duk_put_prop_string(ctx, -2, "getContext");         // [? DomTree proto]
     duk_put_prop_string(ctx, -2, "prototype");          // [? DomTree]
     duk_put_prop_string(ctx, exportsIsAt, "DomTree");   // [?]
 }
@@ -331,7 +325,9 @@ fsMakeDirs(duk_context *ctx) {
 // =============================================================================
 static duk_ret_t
 transpilerTranspileToFn(duk_context *ctx) {
-    char *js = transpilerTranspile(duk_require_string(ctx, 0));
+    char *js = duk_get_top(ctx) < 3 || duk_get_boolean_default(ctx, 2, true)
+        ? transpilerTranspileDuk(duk_require_string(ctx, 0))
+        : transpilerTranspile(duk_require_string(ctx, 0));
     const char *fileName = duk_require_string(ctx, 1);
     std::string err;
     if (js) {
@@ -607,21 +603,6 @@ domTreeGetRenderedFnComponents(duk_context *ctx) {
     return duk_error(ctx, DUK_ERR_ERROR, "%s", err.c_str());
 }
 
-static duk_ret_t
-domTreeSetContext(duk_context *ctx) {
-    duk_push_this(ctx);                          // [val this]
-    duk_swap_top(ctx, -2);                       // [this val]
-    duk_put_prop_string(ctx, -2, "context");     // [this]
-    return 0;
-}
-
-static duk_ret_t
-domTreeGetContext(duk_context *ctx) {
-    duk_push_this(ctx);                          // [this]
-    duk_get_prop_string(ctx, -1, "context");     // [this ctx]
-    return 1;
-}
-
 static unsigned
 domTreeCallCmpFn(FuncNode *me, std::string &err) {
     // If we're coming from render() ->          // [? this fnMap null]
@@ -632,6 +613,10 @@ domTreeCallCmpFn(FuncNode *me, std::string &err) {
     duk_get_prop_string(ctx, -1, "fn");          // [? this fnMap _ funcData fn]
     duk_dup(ctx, -5);                            // [? this fnMap _ funcData fn this]
     duk_get_prop_string(ctx, -3, "props");       // [? this fnMap _ funcData fn this props]
+    if (duk_is_null_or_undefined(ctx, -1)) {
+        duk_pop(ctx);
+        duk_push_bare_object(ctx);
+    }
     if (duk_pcall(ctx, 2) == DUK_EXEC_SUCCESS) { // [? this fnMap _ funcData elemRef]
         if (duk_is_number(ctx, -1)) {
             unsigned out = duk_get_number(ctx, -1);

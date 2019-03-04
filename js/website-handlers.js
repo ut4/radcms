@@ -44,7 +44,7 @@ commons.app.addRoute(function(url, method) {
  */
 function handlePageRequest(req) {
     var page = website.siteGraph.getPage(req.url != '/' ? req.url : website.siteConfig.homeUrl);
-    var dataToFrontend = {directiveInstances: [], allContentNodes: [], page: {}};
+    var dataToFrontend = {directiveElems: [], allContentNodes: [], page: {}};
     if (page) {
         var rescanType = req.getUrlParam('rescan');
         if (rescanType) {
@@ -80,16 +80,16 @@ function handleGetNumWaitingUploads() {
  *
  * Example response:
  * [
- *     {"fileName":"foo.jsx.htm", "isOk": true, "isInUse": true},
- *     {"fileName":"bar.jsx.htm", "isOk": false, "isInUse": true}
+ *     {"fileName":"foo.jsx.htm"},
+ *     {"fileName":"bar.jsx.htm"}
  * ]
  */
 function handleGetAllTemplatesRequest() {
     var templates = [];
-    var all = website.siteGraph.templates;
-    for (var fileName in all)
-        templates.push({fileName: fileName, isOk: all[fileName].isOk,
-                        isInUse: all[fileName].isInUse});
+    var all = commons.templateCache._fns;
+    for (var name in all) {
+        if (name.indexOf('.htm') > -1) templates.push({fileName: name});
+    }
     return new http.Response(200, JSON.stringify(templates),
         {'Content-Type': 'application/json'}
     );
@@ -130,17 +130,13 @@ function handleGetWaitingUploadsRequest() {
  *
  * Example response:
  * {
- *     "pages":[{"url":"/home""layoutFileName":"main-layout.jsx.htm"}],
- *     "templates":[{"fileName":"main-layout.jsx.htm"}]
+ *     "pages":[{"url":"/home","layoutFileName":"main-layout.jsx.htm"}]
  * }
  */
 function handleGetSiteGraphRequest() {
-    var out = {pages: [], templates: []};
+    var out = {pages: []};
     for (var url in website.siteGraph.pages) {
         out.pages.push({url: url});
-    }
-    for (var fileName in website.siteGraph.templates) {
-        out.templates.push({fileName: fileName});
     }
     return new http.Response(200, JSON.stringify(out),
         {'Content-Type': 'application/json'}
@@ -366,21 +362,11 @@ function handleUpdatePageRequest(req) {
     if (errs.length) return new http.Response(400, errs.join('\n'));
     //
     page.layoutFileName = req.data.layoutFileName;
-    setLayoutAsUsed(page.layoutFileName);
     var ok = commons.db.update('update websites set `graph` = ?', function(stmt) {
         stmt.bindString(0, website.siteGraph.serialize());
     });
     return new http.Response(200, JSON.stringify({numAffectedRows: ok}),
         {'Content-Type': 'application/json'});
-}
-
-function setLayoutAsUsed(fileName) {
-    var t = website.siteGraph.getTemplate(fileName);
-    t.isInUse = true;
-    if (!t.isOk) {
-        try { t.isOk = website.website.compileAndCacheTemplate(t.fileName); }
-        catch(e) { t.isOk = false; }
-    }
 }
 
 /**
@@ -418,7 +404,7 @@ function handleUpdateSiteGraphRequest(req) {
  * @param {string} html <html>...<p>foo</p></body>...
  * @param {Object} dataToFrontend {
  *     page: {url: <str>, layoutFileName: <str>},
- *     directiveInstances: [{type: <str>, contentNodes: [<cnode>...]...}...],
+ *     directiveElems: [{uiPanelType: <str>, contentType: <str>, contentNodes: [<cnode>...]...}...],
  *     allContentNodes: [{..., defaults: {id: <id>, name: <name>...}}],
  * }
  * @returns {string} <html>...<p>foo</p><iframe...</body>...
@@ -426,7 +412,7 @@ function handleUpdateSiteGraphRequest(req) {
 function injectControlPanelIFrame(html, dataToFrontend) {
     var bodyEnd = html.indexOf('</body>');
     if (bodyEnd > -1) {
-        return html.substr(0, bodyEnd) + '<iframe src="/frontend/cpanel.html" id="insn-cpanel-iframe" style="position:fixed;border:none;height:100%;width:275px;right:0;top:0"></iframe><script>function setIframeVisible(setVisible){document.getElementById(\'insn-cpanel-iframe\').style.width=setVisible?\'100%\':\'275px\';}function getCurrentPageData(){return' + JSON.stringify(dataToFrontend) + ';}</script>' + html.substr(bodyEnd);
+        return html.substr(0, bodyEnd) + '<iframe src="/frontend/cpanel.html" id="insn-cpanel-iframe" style="position:fixed;border:none;height:100%;width:275px;right:0;top:0"></iframe><script>function setIframeVisible(setVisible){document.getElementById(\'insn-cpanel-iframe\').style.width=setVisible?\'100%\':\'275px\';}function getCurrentPageData(){return ' + JSON.stringify(dataToFrontend) + ';}</script>' + html.substr(bodyEnd);
     }
     return html;
 }

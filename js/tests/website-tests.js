@@ -2,14 +2,10 @@ var commons = require('common-services.js');
 var fileWatchers = require('file-watchers.js');
 var website = require('website.js');
 var testLib = require('tests/testlib.js').testLib;
-var IS_OK = 1;
-var IS_NOT_OK = 0;
-var IS_IN_USE = 1;
-var IS_NOT_IN_USE = 0;
 
 testLib.module('[\'website.js\'].website', function(hooks) {
-    var newTmplName = 'new.jsx.htm';
-    var oldTmplName = 'existing.jsx.htm';
+    var tmplName1 = 'foo.jsx.htm';
+    var tmplName2 = 'bar.jsx.htm';
     var mockFilesOnDisk = [];
     hooks.before(function() {
         website.siteConfig.homeUrl = '/home';
@@ -18,66 +14,25 @@ testLib.module('[\'website.js\'].website', function(hooks) {
             readDir: function(path, onEach) { mockFilesOnDisk.forEach(onEach); },
             read: function() { return '<p>hello</p>'; }
         };
-        if (commons.db.insert('insert into websites values (?,?)', function(stmt) {
-            stmt.bindInt(0, 3);
-            stmt.bindString(1, '...');
-        }) < 1) throw new Error('Failed to insert test data.');
         fileWatchers.init();
     });
     hooks.after(function() {
         website.website.config = website.siteConfig;
         website.website.fs = website.fs;
-        if (commons.db.delete('delete from websites where id = ?', function(stmt) {
-            stmt.bindInt(0, 3);
-        }) < 1) throw new Error('Failed to clean test data.');
         fileWatchers.clear();
     });
     hooks.afterEach(function() {
         website.siteGraph.clear();
     });
-    testLib.test('init() spots new templates from disk', function(assert) {
+    testLib.test('init() reads&caches templates from disk', function(assert) {
         assert.expect(2);
-        if (commons.db.update('update websites set `graph` = ? where id = ?', function(stmt) {
-            stmt.bindString(0, JSON.stringify({
-                pages: [['/home','',oldTmplName,[]]],
-                templates: [[oldTmplName,IS_OK,IS_IN_USE]]
-            }));
-            stmt.bindInt(1, 3);
-        }) < 1) throw new Error('Failed to insert test data.');
         //
-        mockFilesOnDisk = [oldTmplName,newTmplName];
+        mockFilesOnDisk = [tmplName2,tmplName1];
         website.website.init();
-        assert.ok(website.siteGraph.getTemplate(newTmplName) !== undefined,
-            'Should add the new template to website.siteGraph');
-        commons.db.select('select `graph` from websites where id = 3',
-            function(row) {
-            assert.equal(row.getString(0), JSON.stringify({
-                pages: [['/home','',oldTmplName,[]]],
-                templates:[[oldTmplName,IS_OK,IS_IN_USE],[newTmplName,IS_NOT_OK,IS_NOT_IN_USE]]
-            }), 'should save changes to the database');
-        });
-    });
-    testLib.test('init() spots deleted templates from disk', function(assert) {
-        assert.expect(2);
-        if (commons.db.update('update websites set `graph` = ? where id = ?', function(stmt) {
-            stmt.bindString(0, JSON.stringify({
-                pages: [['/home','',oldTmplName,[]]],
-                templates: [[oldTmplName,IS_OK,IS_IN_USE]]
-            }));
-            stmt.bindInt(1, 3);
-        }) < 1) throw new Error('Failed to insert test data.');
-        //
-        mockFilesOnDisk = []; // oldTmplName has disappeared
-        website.website.init();
-        assert.ok(!website.siteGraph.getTemplate(newTmplName),
-            'Should remove the deleted template from website.siteGraph');
-        commons.db.select('select `graph` from websites where id = 3',
-            function(row) {
-            assert.equal(row.getString(0), JSON.stringify({
-                pages: [['/home','',oldTmplName,[]]],
-                templates:[]
-            }), 'should save changes to the database');
-        });
+        assert.ok(commons.templateCache.has(tmplName1),
+            'Should add tmplsFromDisk[0] to templateCache');
+        assert.ok(commons.templateCache.has(tmplName2),
+            'Should add tmplsFromDisk[1] to templateCache');
     });
 });
 

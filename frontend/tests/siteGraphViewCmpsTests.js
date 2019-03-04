@@ -11,14 +11,16 @@ QUnit.module('SiteGraphEditComponent', hooks => {
         httpStub.restore();
     });
     QUnit.test('ticks/unticks deletable pages, sends data to backend', assert => {
-        assert.expect(12);
+        assert.expect(14);
         const testSiteGraph = JSON.stringify({pages:[
             {url:'/home'}, {url:'/news'}, {url:'/contact'}
         ]});
         httpStub
             .onCall(0).returns(Promise.resolve({responseText: testSiteGraph}))
-            .onCall(1).returns(Promise.resolve({responseText: ''}));
+            .onCall(1).returns(Promise.resolve({responseText: ''}))
+            .onCall(2).returns(Promise.resolve({responseText: '3'}));
         const toastSpy = sinon.spy(window, 'toast');
+        const signalEmitSpy = sinon.spy(services.signals, 'emit');
         //
         const tree = itu.renderIntoDocument($el(SiteGraphEditView, null, null));
         const done = assert.async();
@@ -48,8 +50,13 @@ QUnit.module('SiteGraphEditComponent', hooks => {
             assert.equal(putCall.args[1].headers['Content-Type'], 'application/json');
             assert.equal(putCall.args[1].data, '{"deleted":["/contact"]}');
             putCall.returnValue.then(() => {
-                assert.ok(toastSpy.calledAfter(httpStub), 'Should show success message');
+                assert.ok(toastSpy.called, 'Should show success message');
                 assert.equal(toastSpy.getCall(0).args[0], 'Updated the site graph.');
+                return httpStub.getCall(2).returnValue; // GET '/website/num-waiting-uploads'
+            }).then(() => {
+                assert.ok(signalEmitSpy.calledAfter(toastSpy), 'Should show success message');
+                assert.equal(signalEmitSpy.getCall(0).args[0], 'numWaitingUploadsChanged');
+                signalEmitSpy.restore();
                 toastSpy.restore();
                 done();
             });

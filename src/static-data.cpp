@@ -40,8 +40,7 @@ static std::vector<SampleData> sampleData = {
         // name
         "minimal",
         // installSql
-        "insert into websites values (1, '{\"pages\":[[\"/home\",\"\",\"main-layout.jsx.htm\",[]]],"
-                                          "\"templates\":[[\"main-layout.jsx.htm\",1,1]]}');"
+        "insert into websites values (1, '{\"pages\":[[\"/home\",\"\",\"main-layout.jsx.htm\",[]]]}');"
         "insert into contentNodes values (1, 'footer', '{\"content\":\"(c) 2034 MySite\"}', 'Generic');"
         "insert into uploadStatuses values ('/home','4e86b8c03bedc235b9ec52f04d55c11f18574b1c',null,0);",
         // files
@@ -51,7 +50,7 @@ static std::vector<SampleData> sampleData = {
                          "defaultLayout=main-layout.jsx.htm\n\n"
                          "[ContentType:Generic]\n"
                          "content=richtext"},
-            {"main-layout.jsx.htm", "@footer = fetchOne(\"Generic\").where(\"name='footer'\")\n"
+            {"main-layout.jsx.htm", "@footer = fetchOne(\"Generic\").where(\"name='footer'\").exec()\n"
                                     "<html>\n"
                                     "    <head>\n"
                                     "        <title>Hello</title>\n"
@@ -71,8 +70,7 @@ static std::vector<SampleData> sampleData = {
         "  (1, '{\"pages\":[[\"/home\",\"\",\"main-layout.jsx.htm\",[\"/art1\",\"/art2\",\"/art3\"]],"
                            "[\"/art1\",\"\",\"article-layout.jsx.htm\",[]],"
                            "[\"/art2\",\"\",\"article-layout.jsx.htm\",[]],"
-                           "[\"/art3\",\"\",\"article-layout.jsx.htm\",[]]],"
-                "\"templates\":[[\"main-layout.jsx.htm\",1,1],[\"article-layout.jsx.htm\",1,1]]}');"
+                           "[\"/art3\",\"\",\"article-layout.jsx.htm\",[]]]}');"
         "insert into contentNodes values"
         " (1,'footer','{\"content\":\"(c) 2034 MySite\"}','Generic'),"
         " (2,'art1', '{\"title\":\"Article 1\",\"body\":\"Hello from article 1\"}','Article'),"
@@ -93,19 +91,19 @@ static std::vector<SampleData> sampleData = {
                          "[ContentType:Article]\n"
                          "title=text\n"
                          "body=richtext"},
-            {"main-layout.jsx.htm", "@arts = fetchAll(\"Article\")\n"
-                               "@footer = fetchOne(\"Generic\").where(\"name='footer'\")\n"
+            {"main-layout.jsx.htm", "@arts = fetchAll(\"Article\").exec()\n"
+                               "@footer = fetchOne(\"Generic\").where(\"name='footer'\").exec()\n"
                                "<html>\n"
                                "    <head>\n"
                                "        <title>Hello</title>\n"
                                "    </head>\n"
                                "    <body>\n"
-                               "        <RadArticleList name=\"arts\" articles={arts}/>\n"
+                               "        <RadArticleList articles={arts}/>\n"
                                "        <footer>{ footer.content }</footer>\n"
                                "    </body>\n"
                                "</html>"},
-            {"article-layout.jsx.htm", "@art = fetchOne(\"Article\").where(\"name='\" + url[0] + \"'\")\n"
-                                  "@footer = fetchOne(\"Generic\").where(\"name='footer'\")\n"
+            {"article-layout.jsx.htm", "@art = fetchOne(\"Article\").where(\"name='\" + url[0] + \"'\").exec()\n"
+                                  "@footer = fetchOne(\"Generic\").where(\"name='footer'\").exec()\n"
                                   "<html>\n"
                                   "    <head>\n"
                                   "        <title>{ art.title }</title>\n"

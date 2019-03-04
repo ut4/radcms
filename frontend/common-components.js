@@ -83,7 +83,6 @@ function myLink(to, text) {
  *     createLinkText: string;
  *     currentPageUrl: string;
  *     contentType?: string;
- *     urlToRescanAfterSubmit?: string;
  * }
  */
 function contentNodeList(props) {
@@ -97,10 +96,7 @@ function contentNodeList(props) {
         )),
         $el('div', null, myLink(
             '/add-content' + (!props.contentType ? '' : '/' + props.contentType) +
-            '?returnTo=' + encodeURIComponent(props.currentPageUrl) +
-            (props.urlToRescanAfterSubmit
-                ? '&urlToRescanAfterSubmit=' + encodeURIComponent(props.urlToRescanAfterSubmit)
-                : ''),
+                '?returnTo=' + encodeURIComponent(props.currentPageUrl),
             props.createLinkText || 'Create content'
         ))
     ];

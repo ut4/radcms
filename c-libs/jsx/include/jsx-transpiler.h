@@ -10,6 +10,9 @@ void
 transpilerFreeProps();
 
 char*
+transpilerTranspileDuk(const char *src);
+
+char*
 transpilerTranspile(const char *src);
 
 char*

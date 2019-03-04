@@ -56,13 +56,7 @@ function handleFWEvent(type, fileName, fileExt) {
  * @param {string} fileName eg. 'layout.jsx.htm'
  */
 function handleTemplateCreateEvent(fileName) {
-    if (!siteGraph.getTemplate(fileName)) {
-        // Add the layout, and leave its .isOk to false
-        siteGraph.addTemplate(fileName);
-        website.saveToDb(siteGraph);
-        commons.log('[Info]: ' + 'Added "' + fileName + '"');
-    }
-    // Skip compileAndCache()
+    commons.log('[Info]: ' + 'Noted "' + fileName + '"');
 }
 
 /**
@@ -81,18 +75,10 @@ function handleCssOrJsFileCreateEvent(fileName) {
  * @param {string} fileName eg. 'layout.jsx.htm'
  */
 function handleTemplateModifyEventEvent(fileName) {
-    var layout = siteGraph.getTemplate(fileName);
-    if (!layout) {
-        commons.log('[Debug]: An unknown template "' + fileName + '" was modified, skipping.');
-        return;
-    }
     if (website.website.compileAndCacheTemplate(fileName)) {
         commons.log('[Info]: Cached "' + fileName + '"');
-        layout.isOk = true;
     }
-    if (layout.isInUse) {
-        diff.performRescan('usersOf:' + fileName);
-    }
+    diff.performRescan('full');
 }
 
 /**
@@ -122,14 +108,12 @@ function handleCssOrJsFileModifyEventEvent(fileName) {
  * @param {string} fileName eg. 'layout.jsx.htm'
  */
 function handleTemplateDeleteEventEvent(fileName) {
-    var layout = siteGraph.getTemplate(fileName);
-    if (!layout) {
+    if (!commons.templateCache.has(fileName)) {
         commons.log('[Debug]: An unknown template "' + fileName + '" was deleted, skipping.');
         return;
     }
-    website.website.deleteAndUncacheTemplate(layout.fileName);
-    website.saveToDb(siteGraph);
-    commons.log('[Info]: Removed "' + fileName + '"');
+    commons.templateCache.remove(fileName);
+    commons.log('[Info]: Uncached "' + fileName + '"');
 }
 
 /**
@@ -157,27 +141,26 @@ function handleCssOrJsFileDeleteEvent(fileName) {
  * @param {string} to eg. 'renamed.jsx.htm'
  */
 function handleTemplateRenameEvent(from, to) {
-    var layout = siteGraph.getTemplate(from);
-    if (!layout) {
-        commons.log('[Debug]: An unknown template "' + from + '" was renamed, skipping.');
+    var fn = commons.templateCache.get(from);
+    if (!fn) {
+        commons.log('[Debug]: Unattached template "' + from + '" was renamed, skipping.');
         return;
     }
     // Update the site graph
-    delete siteGraph.templates[from];
-    siteGraph.templates[to] = layout;
-    if (layout.isInUse) {
-        var p = siteGraph.pages;
-        for (var url in p) {
-            if (p[url].layoutFileName == from) p[url].layoutFileName = to;
+    var p = siteGraph.pages;
+    var numUserPages = 0;
+    for (var url in p) {
+        if (p[url].layoutFileName == from) {
+            p[url].layoutFileName = to;
+            numUserPages += 1;
         }
     }
-    website.saveToDb(siteGraph);
-    // Relocate the cached template function
-    var fn = commons.templateCache.get(from);
-    if (fn) {
-        commons.templateCache.put(to, fn);
-        commons.templateCache.remove(from);
+    if (numUserPages > 0) {
+        website.saveToDb(siteGraph);
     }
+    // Relocate the template function
+    commons.templateCache.put(to, fn);
+    commons.templateCache.remove(from);
     commons.log('[Info]: Renamed "' + from + '"');
 }
 

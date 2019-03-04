@@ -2,11 +2,12 @@
 
 #include <fstream>
 #include <cstring>
-#include <dirent.h> // opendir
-#include <sys/stat.h> // mkdir, S_IRWXU etc.
+#include <dirent.h> // opendir()
+#include <sys/stat.h> // mkdir(), S_IRWXU etc.
 #if defined(INSN_IS_WIN)
 #include <limits.h> // PATH_MAX
 #elif defined(INSN_IS_LINUX)
+#include <unistd.h> // access()
 #include <linux/limits.h> // PATH_MAX
 #endif
 
