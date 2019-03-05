@@ -1,3 +1,14 @@
+/**
+ * == website.js ====
+ *
+ * In this file:
+ *
+ * - Page (class)
+ * - siteGraph (singleton)
+ * - siteConfig (singleton)
+ * - Website (class)
+ *
+ */
 var commons = require('common-services.js');
 var documentData = require('document-data.js');
 var crypto = require('crypto.js');
@@ -157,73 +168,85 @@ exports.siteConfig = {
 };
 
 
-// == website-singleton ====
-// =============================================================================
-exports.website = {
-    fs: commons.fs,
-    crypto: crypto,
-    Uploader: commons.Uploader,
-    siteGraph: exports.siteGraph,
-    config: exports.siteConfig,
-    /** */
-    init: function() {
-        // Populate exports.siteConfig (from site.ini)
-        this.config.loadFromDisk();
-        // Populate exports.siteGraph
-        var self = this;
-        commons.db.select('select `graph` from websites limit 1', function(row) {
-            self.siteGraph.parseAndLoadFrom(row.getString(0));
-        });
-        // Read and compile each template from disk to commons.templateCache
-        this.fs.readDir(insnEnv.sitePath, function(fname) {
-            var lastDotPos = fname.lastIndexOf('.');
-            if (lastDotPos == -1 || fname.substr(lastDotPos) != '.htm') return;
-            try { self.compileAndCacheTemplate(fname); }
-            catch(e) { /**/ }
-        });
-        commons.signals.emit('siteGraphRescanRequested', 'full');
-    },
-    /**
-     * @param {(renderedHtml: string, page: Page): any|bool} onEach
-     * @param {Array?} issues
-     * @param {{[string]: any;}?} pages
-     * @returns {bool} false if there was issues, true otherwise
-     */
-    generate: function(onEach, issues, pages) {
-        if (!pages) pages = this.siteGraph.pages;
-        for (var url in pages) {
-            var page = this.siteGraph.getPage(url);
-            if (onEach(page.render(null, issues), page) === false) break;
-        }
-        return !issues || issues.length == 0;
-    },
-    /**
-     * @param {string} fileName
-     * @throws {Error}
-     */
-    compileAndCacheTemplate: function(fileName) {
-        commons.templateCache.put(fileName, commons.transpiler.transpileToFn(
-            this.fs.read(insnEnv.sitePath + fileName),
-            fileName
-        ));
-        return true;
-    },
-    /**
-     * @param {string} fileUrl
-     * @returns {string} sha1 eg. da39a3ee5e6b4b0d3255bfef95601890afd80709
-     * @throws {Error}
-     */
-    readFileAndCalcChecksum: function(fileUrl) {
-        return this.crypto.sha1(this.fs.read(insnEnv.sitePath + fileUrl.substr(1)));
-    }
+/**
+ * @param {string} dirPath eg. '/full/path/to/my/site/'
+ * @param {string?} dbUrl
+ * @constructor
+ */
+exports.Website = function(dirPath, dbUrl) {
+    this.dirPath = dirPath;
+    this.db = new commons.Db(dbUrl || dirPath + 'data.db');
+    this.fs = commons.fs;
+    this.crypto = crypto;
+    this.Uploader = commons.Uploader;
+    this.siteGraph = exports.siteGraph;
+    this.config = exports.siteConfig;
 };
-
+/**
+ * Creates and populates $this.dirPath/data.db.
+ *
+ * @native
+ * @param {string} sampleDataName 'minimal' or 'blog' etc.
+ */
+exports.Website.prototype.install = function(/*sampleDataName*/) {};
+/**
+ */
+exports.Website.prototype.init = function() {
+    // Populate exports.siteConfig (from site.ini)
+    this.config.loadFromDisk();
+    // Populate exports.siteGraph
+    var self = this;
+    this.db.select('select `graph` from websites limit 1', function(row) {
+        self.siteGraph.parseAndLoadFrom(row.getString(0));
+    });
+    // Read and compile each template from disk to commons.templateCache
+    this.fs.readDir(insnEnv.sitePath, function(fname) {
+        var lastDotPos = fname.lastIndexOf('.');
+        if (lastDotPos == -1 || fname.substr(lastDotPos) != '.htm') return;
+        try { self.compileAndCacheTemplate(fname); }
+        catch(e) { /**/ }
+    });
+    commons.signals.emit('siteGraphRescanRequested', 'full');
+};
+/**
+ * @param {(renderedHtml: string, page: Page): any|bool} onEach
+ * @param {Array?} issues
+ * @param {{[string]: any;}?} pages
+ * @returns {bool} false if there was issues, true otherwise
+ */
+exports.Website.prototype.generate = function(onEach, issues, pages) {
+    if (!pages) pages = this.siteGraph.pages;
+    for (var url in pages) {
+        var page = this.siteGraph.getPage(url);
+        if (onEach(page.render(null, issues), page) === false) break;
+    }
+    return !issues || issues.length == 0;
+};
+/**
+ * @param {string} fileName
+ * @throws {Error}
+ */
+exports.Website.prototype.compileAndCacheTemplate = function(fileName) {
+    commons.templateCache.put(fileName, commons.transpiler.transpileToFn(
+        this.fs.read(insnEnv.sitePath + fileName),
+        fileName
+    ));
+    return true;
+};
+/**
+ * @param {string} fileUrl
+ * @returns {string} sha1 eg. da39a3ee5e6b4b0d3255bfef95601890afd80709
+ * @throws {Error}
+ */
+exports.Website.prototype.readFileAndCalcChecksum = function(fileUrl) {
+    return this.crypto.sha1(this.fs.read(insnEnv.sitePath + fileUrl.substr(1)));
+};
 /**
  * @returns {number} numAffectedRows
  * @throws {Error}
  */
-exports.saveToDb = function(siteGraph) {
-    return commons.db.update('update websites set `graph` = ?', function(stmt) {
+exports.Website.prototype.saveToDb = function(siteGraph) {
+    return this.db.update('update websites set `graph` = ?', function(stmt) {
         stmt.bindString(0, siteGraph.serialize());
     });
 };

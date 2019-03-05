@@ -10,7 +10,7 @@ struct SampleData {
 };
 
 const char*
-getDbSchemaSql();
+getDbSchemaSql(bool websiteSchema);
 
 SampleData*
 getSampleData(const std::string &name);

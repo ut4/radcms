@@ -16,32 +16,36 @@ exports.app = {
 
 // == db-singleton ====
 // =============================================================================
-exports.db = {
-    /**
-     * @native
-     * @param {string} sql
-     * @param {(stmt: Stmt): void} bindFn
-     * @returns int lastInsertId
-     */
-    insert: function(/*sql, bindFn*/) {},
-    /**
-     * @native
-     * @param {string} sql
-     * @param {(row: ResultRow, rowIdx: number): void} mapFn
-     */
-    select: function(/*sql, mapFn[, whereBindFn]*/) {},
-    /**
-     * @native
-     * @param {string} sql
-     * @param {(stmt: Stmt): void} bindFn
-     * @returns int numAffectedRows
-     */
-    update: function(/*sql, bindFn*/) {},
-    /**
-     * @see update
-     */
-    delete: function(/*sql, bindFn*/) {},
-};
+/**
+ * @native
+ * @param {string} path
+ * @constructor
+ */
+exports.db = function(/*path*/) {};
+/**
+ * @native
+ * @param {string} sql
+ * @param {(stmt: Stmt): void} bindFn
+ * @returns int lastInsertId
+ */
+exports.db.prototype.insert = function(/*sql, bindFn*/) {};
+/**
+ * @native
+ * @param {string} sql
+ * @param {(row: ResultRow, rowIdx: number): void} mapFn
+ */
+exports.db.prototype.select = function(/*sql, mapFn[, whereBindFn]*/) {};
+/**
+ * @native
+ * @param {string} sql
+ * @param {(stmt: Stmt): void} bindFn
+ * @returns int numAffectedRows
+ */
+exports.db.prototype.update = function(/*sql, bindFn*/) {};
+/**
+ * @see update
+ */
+exports.db.prototype.delete = function(/*sql, bindFn*/) {};
 
 
 // == fs-singleton ====

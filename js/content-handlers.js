@@ -5,6 +5,7 @@
  * /api/content/* and /api/content-type/* http-routes.
  *
  */
+var app = require('app.js').app;
 var commons = require('common-services.js');
 var http = require('http.js');
 var website = require('website.js');
@@ -38,7 +39,7 @@ commons.app.addRoute(function(url, method) {
 function handleGetContentNodeRequest(req) {
     var sql = 'select id,`name`,`json`,`contentTypeName` from contentNodes where id = ?';
     var out = null;
-    commons.db.select(sql, function(row) {
+    app.currentWebsite.db.select(sql, function(row) {
         out = {
             id: row.getInt(0),
             name: row.getString(1),
@@ -71,7 +72,7 @@ function handleCreateContentRequest(req) {
     var errs = [];
     if (!validateReqData(req.data, errs)) return new http.Response(400, errs.join('\n'));
     //
-    var insertId = commons.db.insert(
+    var insertId = app.currentWebsite.db.insert(
         'insert into contentNodes (`name`, `json`, `contentTypeName`) values (?, ?, ?)',
         function(stmt) {
         stmt.bindString(0, req.data.name);
@@ -97,7 +98,7 @@ function handleUpdateContentRequest(req) {
     var errs = [];
     if (!validateReqData(req.data, errs)) return new http.Response(400, errs.join('\n'));
     //
-    var ok = commons.db.insert(
+    var ok = app.currentWebsite.db.insert(
         'update contentNodes set `json`=?, `contentTypeName`=? where `name`=?',
         function(stmt) {
         stmt.bindString(0, req.data.json);

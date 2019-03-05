@@ -1,4 +1,7 @@
+var app = require('app.js').app;
 require('directives.js').init();
+app.setCurrentWebsite(insnEnv.appPath + 'js/tests/testsite/', ':memory:');
+app.currentWebsite.install();
 var commons = require('common-services.js');
 var website = require('website.js');
 var fileWatchers = require('file-watchers.js');
@@ -35,7 +38,7 @@ exports.main = function(suite, logAssertions) {
     var isAll = suite == 'all';
     if (isAll || suite == 'common-services') {
         require('tests/common-services-tests.js');
-        modules.push('[\'common-services.js\'].db');
+        modules.push('[\'common-services.js\'].Db');
         modules.push('[\'common-services.js\'].DomTree');
     }
     if (isAll || suite == 'content-handlers') {

@@ -1,5 +1,7 @@
 #include "../../include/website-js-bindings.hpp"
 
+static duk_ret_t websiteInstall(duk_context *ctx);
+
 static duk_ret_t siteConfigLoadFromDisk(duk_context *ctx);
 
 static int receiveIniVal(void *myPtr, const char *section, const char *key,
@@ -10,10 +12,30 @@ static bool validateSiteConfig(duk_context *ctx);
 
 void
 websiteJsModuleInit(duk_context *ctx, const int exportsIsAt) {
+    // module.Website
+    duk_get_prop_string(ctx, exportsIsAt, "Website"); // [? Website]
+    duk_get_prop_string(ctx, -1, "prototype");        // [? Website proto]
+    duk_push_c_lightfunc(ctx, websiteInstall, 0, 0, 0); // [? Website proto lightfn]
+    duk_put_prop_string(ctx, -2, "install");          // [? Website proto]
+    duk_put_prop_string(ctx, -2, "prototype");        // [? Website]
+    duk_pop(ctx);
+    // module.siteConfig
     duk_get_prop_string(ctx, exportsIsAt, "siteConfig"); // [? siteCfg]
     duk_push_c_lightfunc(ctx, siteConfigLoadFromDisk, 0, 0, 0); // [? siteCfg lightfn]
     duk_put_prop_string(ctx, -2, "loadFromDisk");        // [? siteCfg]
     duk_pop(ctx);                                        // [?]
+}
+
+static duk_ret_t
+websiteInstall(duk_context *ctx) {
+    duk_push_this(ctx);                 // [this]
+    duk_get_prop_string(ctx, -1, "db"); // [this db]
+    Db *db = commonServicesGetDbSelfPtr(ctx, -1);
+    std::string err;
+    if (!db->runInTransaction(getDbSchemaSql(true), err))
+        return duk_error(ctx, DUK_ERR_ERROR, "%s", err.c_str());
+    duk_push_boolean(ctx, true);        // [this db out]
+    return 1;
 }
 
 static duk_ret_t

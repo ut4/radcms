@@ -1,3 +1,4 @@
+var app = require('app.js').app;
 var fileWatchers = require('file-watchers.js');
 var commons = require('common-services.js');
 var website = require('website.js');
@@ -18,7 +19,9 @@ testLib.module('link-diff', function(hooks) {
     var mockTemplate2 = {fname:'template-b.jsx.htm', contents:null};
     var websiteData = {id: 3, graph: ''};
     var originalRemoteDiff = diff.RemoteDiff;
+    var db;
     hooks.before(function() {
+        db = app.currentWebsite.db;
         diff.RemoteDiff = function(){};
         diff.RemoteDiff.prototype.addPageToCheck = function(){};
         diff.RemoteDiff.prototype.addFileToCheck = function(){};
@@ -26,14 +29,14 @@ testLib.module('link-diff', function(hooks) {
         diff.RemoteDiff.prototype.saveStatusesToDb = function(){};
         website.siteConfig.homeUrl = '/home';
         website.siteConfig.defaultLayout = mockTemplate.fname;
-        website.website.fs = {
+        app.currentWebsite.fs = {
             write:function() {},
             read: function(a) {
                 if(a==insnEnv.sitePath + mockTemplate.fname) return mockTemplate.contents;
                 if(a==insnEnv.sitePath + mockTemplate2.fname) return mockTemplate2.contents;
             }
         };
-        if (commons.db.insert('insert into websites values (?,?)', function(stmt) {
+        if (db.insert('insert into websites values (?,?)', function(stmt) {
                 stmt.bindInt(0, websiteData.id);
                 stmt.bindString(1, websiteData.graph);
             }) < 1
@@ -42,8 +45,8 @@ testLib.module('link-diff', function(hooks) {
     });
     hooks.after(function() {
         diff.RemoteDiff = originalRemoteDiff;
-        website.website.fs = commons.fs;
-        if (commons.db.delete('delete from websites where id = ?',
+        app.currentWebsite.fs = commons.fs;
+        if (db.delete('delete from websites where id = ?',
             function(stmt) { stmt.bindInt(0, websiteData.id); }) < 1
         ) throw new Error('Failed to clean test data.');
         fileWatchers.clear();
@@ -67,7 +70,7 @@ testLib.module('link-diff', function(hooks) {
         var addedPage = siteGraph.getPage(newLinkUrl);
         assert.ok(addedPage !== undefined, 'should add a page to website.siteGraph');
         // Assert that saved the updated site graph to the database
-        commons.db.select('select `graph` from websites where id = ' + websiteData.id,
+        db.select('select `graph` from websites where id = ' + websiteData.id,
             function(row) {
             assert.equal(row.getString(0), JSON.stringify({
                 pages:[
@@ -91,7 +94,7 @@ testLib.module('link-diff', function(hooks) {
         // Assert that removed the page to website.siteGraph
         assert.ok(!siteGraph.getPage(existingPage2), 'Should remove a page from website.siteGraph');
         // Assert that saved the updated site graph to the database
-        commons.db.select('select `graph` from websites where id = ' + websiteData.id,
+        db.select('select `graph` from websites where id = ' + websiteData.id,
             function(row) {
             assert.equal(row.getString(0), JSON.stringify({
                 pages:[
@@ -113,7 +116,7 @@ testLib.module('link-diff', function(hooks) {
         assert.equal(siteGraph.getPage(existingPage2.url), existingPage2,
             'Should not remove the page');
         // Assert that saved the updated site graph to the database
-        commons.db.select('select `graph` from websites where id = ' + websiteData.id,
+        db.select('select `graph` from websites where id = ' + websiteData.id,
             function(row) {
             assert.equal(row.getString(0), JSON.stringify({
                 pages:[
@@ -144,7 +147,7 @@ testLib.module('link-diff', function(hooks) {
                 ',"desserts/dish1":' + makeLinks('/desserts') +
             '})[url.join("/")]'+
         '}</body></html>';
-        website.website.compileAndCacheTemplate(mockTemplate.fname);
+        app.currentWebsite.compileAndCacheTemplate(mockTemplate.fname);
         // Trigger handleFWEvent()
         fileWatcher._watchFn(fileWatcher.EVENT_WRITE, mockTemplate.fname, 'htm');
         // Assert that removed /starters/dish1 and added /desserts/dish1
@@ -153,7 +156,7 @@ testLib.module('link-diff', function(hooks) {
         assert.ok(newDish1 !== undefined, 'Should add /desserts/dish1');
         assert.equal(newDish1.parentUrl, '/desserts', 'Should update .parentUrl /starters -> /desserts');
         //
-        commons.db.select('select `graph` from websites where id = ' + websiteData.id,
+        db.select('select `graph` from websites where id = ' + websiteData.id,
             function(row) {
             assert.equal(row.getString(0), JSON.stringify({
                 pages:[['/home','',mockTemplate.fname,['/starters','/desserts']],
@@ -178,7 +181,7 @@ testLib.module('link-diff', function(hooks) {
         var existingPage = siteGraph.addPage('/foo', NO_PARENT, mockTemplate.fname,
             {}, // Doesn't initially link anywhere
             1);
-        website.website.compileAndCacheTemplate(mockTemplate.fname);
+        app.currentWebsite.compileAndCacheTemplate(mockTemplate.fname);
         // Trigger handleFWEvent()
         fileWatcher._watchFn(fileWatcher.EVENT_WRITE, mockTemplate.fname, 'htm');
         // Assert that added two new pages to website.siteGraph
@@ -189,7 +192,7 @@ testLib.module('link-diff', function(hooks) {
         assert.ok(added2 !== undefined, 'should add page #2 to website.siteGraph');
         assert.equal(added2.url, '/nar');
         // Assert that saved the updated site graph to the database
-        commons.db.select('select `graph` from websites where id = ' + websiteData.id,
+        db.select('select `graph` from websites where id = ' + websiteData.id,
             function(row) {
             assert.equal(row.getString(0), JSON.stringify({
                 pages: [

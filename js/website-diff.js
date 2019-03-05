@@ -4,6 +4,7 @@
  * This file contains logic for the automatic page scanning, and the tracking of
  * remote <-> local content.
  */
+var app = require('app.js').app;
 var commons = require('common-services.js');
 var website = require('website.js');
 var siteGraph = website.siteGraph;
@@ -22,7 +23,7 @@ exports.performRescan = function(type) {
     diff.deleteUnreachablePages();
     diff.remoteDiff.saveStatusesToDb();
     if (diff.nLinksAdded || diff.nLinksRemoved) {
-        website.saveToDb(siteGraph);
+        app.currentWebsite.saveToDb(siteGraph);
     }
     var m = [];
     if (diff.nPagesAdded) m.push('added ' + diff.nPagesAdded + ' page(s)');
@@ -51,7 +52,7 @@ function RemoteDiff() {
  */
 RemoteDiff.prototype.addPageToCheck = function(url, html) {
     if (!this.checkables.hasOwnProperty(url)) {
-        this.checkables[url] = {url: url, hash: website.website.crypto.
+        this.checkables[url] = {url: url, hash: app.currentWebsite.crypto.
             sha1(html), uphash: null, isFile: 0};
     }
 };
@@ -122,7 +123,7 @@ RemoteDiff.prototype.saveStatusesToDb = function() {
             removedStatuses.holders.push('?');
         }
     }
-    if (newStatuses.data.length) commons.db.insert(
+    if (newStatuses.data.length) app.currentWebsite.db.insert(
         'insert or replace into uploadStatuses values ' + newStatuses.holders.join(','),
         function(stmt) {
             newStatuses.data.forEach(function(item, i) {
@@ -134,7 +135,7 @@ RemoteDiff.prototype.saveStatusesToDb = function() {
             });
         }
     );
-    if (removedStatuses.urls.length) commons.db.delete(
+    if (removedStatuses.urls.length) app.currentWebsite.db.delete(
         'delete from uploadStatuses where url in (' + removedStatuses.holders.join(',') + ')',
         function(stmt) {
             removedStatuses.urls.forEach(function(url, i) {
@@ -159,7 +160,7 @@ RemoteDiff.prototype._syncStaticFileUrlsToDb = function(currentUrls) {
     }
     if (!select.urls.length) return;
     //
-    commons.db.select('select `url`,`isOk` from staticFileResources where `url` in (' +
+    app.currentWebsite.db.select('select `url`,`isOk` from staticFileResources where `url` in (' +
                       select.holders.join(',') + ')', function(row) {
         currentUrls[row.getString(0)] = {isOk: row.getInt(1), newHash: null};
     }, function(stmt) {
@@ -174,7 +175,7 @@ RemoteDiff.prototype._syncStaticFileUrlsToDb = function(currentUrls) {
         if (!currentUrls.hasOwnProperty(url)) { // Completely new url
             try {
                 currentUrls[url] = {isOk: 1, newHash:
-                    website.website.readFileAndCalcChecksum(url)};
+                    app.currentWebsite.readFileAndCalcChecksum(url)};
                 insert.data.push({url: url, isOk: 1});
             } catch (e) {
                 currentUrls[url] = {isOk: 0, newHash: null};
@@ -185,7 +186,7 @@ RemoteDiff.prototype._syncStaticFileUrlsToDb = function(currentUrls) {
         }
     }
     // Save the new urls if any
-    if (insert.data.length) commons.db.insert(
+    if (insert.data.length) app.currentWebsite.db.insert(
         'insert into staticFileResources values' + insert.holders.join(','),
         function(stmt) {
             insert.data.forEach(function(item, i) {
@@ -203,7 +204,7 @@ RemoteDiff.prototype._getCurrentStatuses = function(curStatuses) {
     for (hadItems in deletables) selectHolders.push('?');
     if (!hadItems) return false;
     //
-    commons.db.select('select * from uploadStatuses where `url` in (' +
+    app.currentWebsite.db.select('select * from uploadStatuses where `url` in (' +
         selectHolders.join(',') + ')', function(row) {
             curStatuses[row.getString(0)] = {curhash: row.getString(1),
                 uphash: row.getString(2), isFile: row.getInt(3)};

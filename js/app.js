@@ -1,10 +1,21 @@
+var commons = require('common-services.js');
+var Website = require('website.js').Website;
+
 exports.app = {
     db: null,
     currentWebsite: null,
-    init: function() {
-        //
+    initAndInstall: function() {
+        this.db = new commons.Db(insnEnv.dataPath + 'data.db');
+        this.populateDatabaseIfEmpty();
     },
-    setCurrentWebsite: function(/*website*/) {
-        //
+    /**
+     * Populates $insnEnv.appPath/data.db, or does nothing if the file was
+     * already populated.
+     *
+     * @native
+     */
+    populateDatabaseIfEmpty: function() {},
+    setCurrentWebsite: function(dirPath, dbUrl) {
+        this.currentWebsite = new Website(dirPath, dbUrl);
     }
 };

@@ -1,6 +1,12 @@
 #include "../include/static-data.hpp"
 
-const char *schemaSql =
+const char *mainDbSchemaSql =
+"drop table if exists websites;"
+"create table websites ("
+    "`dirPath` varchar(512) primary key"
+");";
+
+const char *websiteDbSchemaSql =
 "drop trigger if exists onUploadStatusesDeleteFileTrigger;"
 "drop table if exists uploadStatuses;"
 "drop table if exists staticFileResources;"
@@ -121,8 +127,8 @@ static std::vector<SampleData> sampleData = {
 };
 
 const char*
-getDbSchemaSql() { 
-    return schemaSql;
+getDbSchemaSql(bool websiteSchema) {
+    return websiteSchema ? websiteDbSchemaSql : mainDbSchemaSql;
 }
 
 SampleData*

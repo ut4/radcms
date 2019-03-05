@@ -4,6 +4,7 @@
 #include <string>
 #include "http-js-bindings.hpp"
 #include "app-env.hpp"
+#include "app-js-bindings.hpp"
 #include "common-services-js-bindings.hpp"
 #include "crypto-js-bindings.hpp"
 #include "duk.hpp"

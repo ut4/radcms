@@ -1,16 +1,21 @@
+var app = require('app.js').app;
 var commons = require('common-services.js');
 var testLib = require('tests/testlib.js').testLib;
 
-testLib.module('[\'common-services.js\'].db', function(hooks) {
+testLib.module('[\'common-services.js\'].Db', function(hooks) {
+    var db;
+    hooks.before(function() {
+        db = app.currentWebsite.db;
+    });
     hooks.afterEach(function() {
-        if (commons.db.delete('delete from websites where id >= ?',
+        if (db.delete('delete from websites where id >= ?',
             function(stmt) { stmt.bindInt(0, 1); }) < 0
         ) throw new Error('Failed to clean test data.');
     });
     testLib.test('insert() inserts data', function(assert) {
         assert.expect(4);
         var sql = 'insert into websites values (?,?),(?,?)';
-        var insertId = commons.db.insert(sql, function(stmt) {
+        var insertId = db.insert(sql, function(stmt) {
             stmt.bindInt(0, 1);
             stmt.bindString(1, 'foo');
             stmt.bindInt(2, 2);
@@ -19,7 +24,7 @@ testLib.module('[\'common-services.js\'].db', function(hooks) {
         //
         assert.equal(insertId, 2, 'should return insertId');
         var actuallyInserted = [];
-        commons.db.select('select id, `graph` from websites', function map(row) {
+        db.select('select id, `graph` from websites', function map(row) {
             actuallyInserted.push({id: row.getInt(0), graph: row.getString(1)});
         });
         assert.equal(actuallyInserted.length, 2, 'should insert 2 rows');
@@ -30,7 +35,7 @@ testLib.module('[\'common-services.js\'].db', function(hooks) {
         assert.expect(3);
         var runInvalid = function(bindFn) {
             try {
-                commons.db.insert('insert into contentNodes(`name`) values (?)',
+                db.insert('insert into contentNodes(`name`) values (?)',
                                   bindFn);
             } catch (e) {
                 return e.message;
@@ -54,7 +59,7 @@ testLib.module('[\'common-services.js\'].db', function(hooks) {
             {id: 23, graph: 'graph2'},
             {id: 76, graph: 'graph3'}
         ];
-        if (commons.db.insert(sql, function(stmt) {
+        if (db.insert(sql, function(stmt) {
             stmt.bindInt(0, testData[0].id);
             stmt.bindString(1, testData[0].graph);
             stmt.bindInt(2, testData[1].id);
@@ -65,7 +70,7 @@ testLib.module('[\'common-services.js\'].db', function(hooks) {
         //
         var selected = [];
         var sql2 = 'select id, `graph` from websites order by id';
-        commons.db.select(sql2, function map(row, rowIdx) {
+        db.select(sql2, function map(row, rowIdx) {
             selected.push({
                 id: row.getInt(0),
                 graph: row.getString(1),
@@ -85,7 +90,7 @@ testLib.module('[\'common-services.js\'].db', function(hooks) {
         //
         var runInvalid = function(sql, mapFn) {
             try {
-                commons.db.select(sql, mapFn);
+                db.select(sql, mapFn);
             } catch (e) {
                 return e.message;
             }
@@ -99,33 +104,33 @@ testLib.module('[\'common-services.js\'].db', function(hooks) {
     });
     testLib.test('update() updates data', function(assert) {
         assert.expect(2);
-        if (commons.db.insert('insert into websites values (?,?)', function(stmt) {
+        if (db.insert('insert into websites values (?,?)', function(stmt) {
             stmt.bindInt(0, 1);
             stmt.bindString(1, 'foo');
         }) < 1) throw new Error('Failed to insert test data');
         //
         var sql = 'update websites set `graph` = ? where id = ?';
-        var numAffected = commons.db.update(sql, function(stmt) {
+        var numAffected = db.update(sql, function(stmt) {
             stmt.bindString(0, 'bar');
             stmt.bindInt(1, 1);
         });
         //
         assert.equal(numAffected, 1, 'should return numAffectedRows');
         var actuallyUpdated = '';
-        commons.db.select('select `graph` from websites', function map(row) {
+        db.select('select `graph` from websites', function map(row) {
             actuallyUpdated = row.getString(0);
         });
         assert.equal(actuallyUpdated, 'bar', 'should update data');
     });
     testLib.test('update() validates stuff', function(assert) {
         assert.expect(4);
-        if (commons.db.insert('insert into websites(`graph`) values (?)',
+        if (db.insert('insert into websites(`graph`) values (?)',
             function(stmt) { stmt.bindString(0, 'foo'); }
         ) < 1) throw new Error('Failed to insert test data.');
         //
         var runInvalid = function(sql, bindFn) {
             try {
-                commons.db.update(sql, bindFn);
+                db.update(sql, bindFn);
             } catch (e) {
                 return e.message;
             }

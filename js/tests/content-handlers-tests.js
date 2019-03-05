@@ -1,15 +1,20 @@
 require('content-handlers.js');
+var app = require('app.js').app;
 var commons = require('common-services.js');
 var testLib = require('tests/testlib.js').testLib;
 var http = require('http.js');
 var website = require('website.js');
 
-testLib.module('content-handlers.js', function() {
+testLib.module('content-handlers.js', function(hooks) {
     var testCntType = {name:'name', props:''};
     var testCnode = {id:1,name:'foo',json:'',contentTypeName:testCntType.name};
+    var db;
+    hooks.before(function() {
+        db = app.currentWebsite.db;
+    });
     testLib.test('GET \'/api/content/<id>\' returns a content node', function(assert) {
         assert.expect(3);
-        commons.db.insert('insert into contentNodes values (?,?,?,?)', function(stmt) {
+        db.insert('insert into contentNodes values (?,?,?,?)', function(stmt) {
             stmt.bindInt(0, testCnode.id);
             stmt.bindString(1, testCnode.name);
             stmt.bindString(2, testCnode.json);
@@ -22,7 +27,7 @@ testLib.module('content-handlers.js', function() {
         assert.equal(response.body, JSON.stringify(testCnode));
         assert.equal(response.headers['Content-Type'], 'application/json');
         //
-        if (commons.db.delete('delete from contentNodes where id = ?', function(stmt) {
+        if (db.delete('delete from contentNodes where id = ?', function(stmt) {
             stmt.bindInt(0, testCnode.id);
         }) < 1) throw new Error('Failed to clean test data.');
     });
@@ -35,7 +40,7 @@ testLib.module('content-handlers.js', function() {
         //
         var actuallyInserted = {};
         var sql = 'select * from contentNodes order by id desc limit 1';
-        commons.db.select(sql, function(row) {
+        db.select(sql, function(row) {
             actuallyInserted = {id: row.getInt(0), name: row.getString(1),
                 json: row.getString(2), contentTypeName: row.getString(3)};
         });
@@ -45,14 +50,14 @@ testLib.module('content-handlers.js', function() {
         assert.equal(actuallyInserted.json, req.data.json);
         assert.equal(actuallyInserted.contentTypeName, req.data.contentTypeName);
         //
-        if (commons.db.delete('delete from contentNodes where id = ?', function(stmt) {
+        if (db.delete('delete from contentNodes where id = ?', function(stmt) {
             stmt.bindInt(0, actuallyInserted.id);
         }) < 1) throw new Error('Failed to clean test data.');
     });
     testLib.test('PUT \'/api/content\' saves data to db', function(assert) {
         assert.expect(5);
         //
-        commons.db.insert('insert into contentNodes values (?,?,?,?)', function(stmt) {
+        db.insert('insert into contentNodes values (?,?,?,?)', function(stmt) {
             stmt.bindInt(0, testCnode.id);
             stmt.bindString(1, testCnode.name);
             stmt.bindString(2, testCnode.json);
@@ -66,7 +71,7 @@ testLib.module('content-handlers.js', function() {
         //
         var newCnode = {};
         var sql = 'select * from contentNodes where id = ' + testCnode.id;
-        commons.db.select(sql, function(row) {
+        db.select(sql, function(row) {
             newCnode = {id: row.getInt(0), name: row.getString(1),
                 json: row.getString(2), contentTypeName: row.getString(3)};
         });
@@ -76,7 +81,7 @@ testLib.module('content-handlers.js', function() {
         assert.equal(newCnode.json, req.data.json);
         assert.equal(newCnode.contentTypeName, req.data.contentTypeName);
         //
-        if (commons.db.delete('delete from contentNodes where id = ?', function(stmt) {
+        if (db.delete('delete from contentNodes where id = ?', function(stmt) {
             stmt.bindInt(0, testCnode.id);
         }) < 1) throw new Error('Failed to clean test data.');
     });

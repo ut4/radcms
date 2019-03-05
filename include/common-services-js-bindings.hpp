@@ -8,13 +8,15 @@
 #include "duk.hpp"
 #include "my-fs.hpp"
 #include "js-environment-stash.hpp"
+#include "static-data.hpp"
 
 /**
  * Implements @native methods of common-services.js (
- *    - db.insert()
- *    - db.select()
- *    - db.update()
- *    - db.delete()
+ *    - Db()
+ *    - Db.prototype.insert()
+ *    - Db.prototype.select()
+ *    - Db.prototype.update()
+ *    - Db.prototype.delete()
  *    - fs.write()
  *    - fs.read()
  *    - fs.readDir()
@@ -39,3 +41,9 @@ commonServicesJsModuleInit(duk_context *ctx, const int exportsIsAt);
 void
 commonServicesCallJsFWFn(FWEventType type, const char *fileName,
                          const char *ext, void *myPtr);
+
+/**
+ * Returns the c pointer that's stored to $dukApiStack[$thisIsAt].
+ */
+Db*
+commonServicesGetDbSelfPtr(duk_context *ctx, int thisIsAt);

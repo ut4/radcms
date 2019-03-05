@@ -2,7 +2,7 @@
 
 #include <ini.h> // ini_parse
 #include "duk.hpp"
-#include "js-environment-stash.hpp"
+#include "common-services-js-bindings.hpp"
 
 /**
  * Implements @native methods of website.js (

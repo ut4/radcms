@@ -5,6 +5,7 @@
  * GET /<page>, and * /api/website/* http-routes.
  *
  */
+var app = require('app.js').app;
 var commons = require('common-services.js');
 var website = require('website.js');
 var http = require('http.js');
@@ -12,6 +13,8 @@ var diff = require('website-diff.js');
 var uploadHandlerIsBusy = false;
 
 commons.app.addRoute(function(url, method) {
+    if (!app.currentWebsite)
+        return;
     if (method == 'GET') {
         if (url == '/api/website/num-waiting-uploads')
             return handleGetNumWaitingUploads;
@@ -43,7 +46,8 @@ commons.app.addRoute(function(url, method) {
  * GET <any> eg. "/" or "/foo/bar/baz": renders a page.
  */
 function handlePageRequest(req) {
-    var page = website.siteGraph.getPage(req.url != '/' ? req.url : website.siteConfig.homeUrl);
+    var w = app.currentWebsite;
+    var page = w.siteGraph.getPage(req.url != '/' ? req.url : w.siteConfig.homeUrl);
     var dataToFrontend = {directiveElems: [], allContentNodes: [], page: {}};
     if (page) {
         var rescanType = req.getUrlParam('rescan');
@@ -65,9 +69,9 @@ function handlePageRequest(req) {
  */
 function handleGetNumWaitingUploads() {
     var count = 0;
-    commons.db.select('select count(`url`) from uploadStatuses where \
-                       `uphash` is null or `curhash` != `uphash` or\
-                       `curhash` is null and `uphash` is not null',
+    app.currentWebsite.db.select('select count(`url`) from uploadStatuses where \
+                                 `uphash` is null or `curhash` != `uphash` or\
+                                 `curhash` is null and `uphash` is not null',
         function(row) {
             count = row.getInt(0).toString();
         });
@@ -111,7 +115,7 @@ function handleGetAllTemplatesRequest() {
  */
 function handleGetWaitingUploadsRequest() {
     var out = {pages: [], files: []};
-    commons.db.select('select `url`, `curhash`, `uphash`, `isFile` from uploadStatuses\
+    app.currentWebsite.db.select('select `url`, `curhash`, `uphash`, `isFile` from uploadStatuses\
                       where `uphash` is null or `curhash` != `uphash` or\
                       (`curhash` is null and `uphash` is not null)', function(row) {
         (row.getInt(3) == 0 ? out.pages : out.files).push({
@@ -135,7 +139,7 @@ function handleGetWaitingUploadsRequest() {
  */
 function handleGetSiteGraphRequest() {
     var out = {pages: []};
-    for (var url in website.siteGraph.pages) {
+    for (var url in app.currentWebsite.siteGraph.pages) {
         out.pages.push({url: url});
     }
     return new http.Response(200, JSON.stringify(out),
@@ -156,18 +160,19 @@ function handleGetSiteGraphRequest() {
  * }
  */
 function handleGenerateRequest() {
+    var w = app.currentWebsite;
     var out = {
         wrotePagesNum: 0,
         tookSecs: performance.now(),
-        totalPages: website.siteGraph.pageCount,
+        totalPages: w.siteGraph.pageCount,
         outPath: insnEnv.sitePath + 'out',
         issues: []
     };
-    website.website.generate(function(renderedOutput, page) {
+    w.generate(function(renderedOutput, page) {
         // 'path/out' + '/foo'
         var dirPath = out.outPath + page.url;
-        if (website.website.fs.makeDirs(dirPath) &&
-            website.website.fs.write(
+        if (w.fs.makeDirs(dirPath) &&
+            w.fs.write(
                 // 'path/out/foo' + '/index.html'
                 dirPath + '/index.html',
                 renderedOutput
@@ -225,7 +230,7 @@ function handleUploadRequest(req) {
     var issues = [];
     // Render all pages in one go so we can return immediately if there was any issues
     if (uploadState.uploadPagesLeft) {
-        if (!website.website.generate(function(renderedOutput, page) {
+        if (!app.currentWebsite.generate(function(renderedOutput, page) {
             uploadState.generatedPages.push({url: page.url, html: renderedOutput});
         }, issues, pageUrls)) {
             uploadHandlerIsBusy = false;
@@ -257,7 +262,7 @@ function handleUploadRequest(req) {
         } else if (state.uploadFilesLeft > 0) {
             resourceTypePrefix = 'file|';
             url = state.uploadFileNames[idx];
-            contents = website.website.fs.read(insnEnv.sitePath + url);
+            contents = app.currentWebsite.fs.read(insnEnv.sitePath + url);
             uploadRes = state.uploader.uploadString(state.remoteUrl + url,
                 contents);
             if (--state.uploadFilesLeft == 0) state.nthItem = 0;
@@ -284,15 +289,15 @@ function handleUploadRequest(req) {
 function saveOrDeleteUploadStatus(url, contents) {
     if (contents) {
         var sql = 'update uploadStatuses set `uphash` = ? where `url` = ?';
-        if (commons.db.update(sql, function(stmt) {
-            stmt.bindString(0, website.website.crypto.sha1(contents));
+        if (app.currentWebsite.db.update(sql, function(stmt) {
+            stmt.bindString(0, app.currentWebsite.crypto.sha1(contents));
             stmt.bindString(1, url);
         }) < 0) {
             commons.log('[Error]: Failed to save uploadStatus of \'' + url + '\'.');
         }
     } else {
         sql = 'delete from uploadStatuses where `url` = ?';
-        if (commons.db.delete(sql, function(stmt) { stmt.bindString(0, url); }) < 0) {
+        if (app.currentWebsite.db.delete(sql, function(stmt) { stmt.bindString(0, url); }) < 0) {
             commons.log('[Error]: Failed to delete \'' + url + '\' from uploadStatuses.');
         }
     }
@@ -312,7 +317,7 @@ function makeUploadState(reqData, pageUrls) {
         uploadFileNames: [], uploadFilesLeft: 0,
         remoteUrl: reqData.remoteUrl.charAt(l) != '/'
             ? reqData.remoteUrl : reqData.remoteUrl.substr(0, l),
-        uploader: new website.website.Uploader(reqData.username, reqData.password),
+        uploader: new app.currentWebsite.Uploader(reqData.username, reqData.password),
         hadStopError: false
     };
     for (var i = 0; i < reqData.fileNames.length; ++i) {
@@ -353,7 +358,7 @@ function makeUploadState(reqData, pageUrls) {
 function handleUpdatePageRequest(req) {
     var errs = [];
     if (req.data.url) {
-        var page = website.siteGraph.getPage(req.data.url);
+        var page = app.currentWebsite.siteGraph.getPage(req.data.url);
         if (!page) errs.push('Page' + req.data.url + ' not found.');
     } else {
         errs.push('url is required.');
@@ -362,9 +367,7 @@ function handleUpdatePageRequest(req) {
     if (errs.length) return new http.Response(400, errs.join('\n'));
     //
     page.layoutFileName = req.data.layoutFileName;
-    var ok = commons.db.update('update websites set `graph` = ?', function(stmt) {
-        stmt.bindString(0, website.siteGraph.serialize());
-    });
+    var ok = app.currentWebsite.saveToDb(app.currentWebsite.siteGraph);
     return new http.Response(200, JSON.stringify({numAffectedRows: ok}),
         {'Content-Type': 'application/json'});
 }
@@ -383,17 +386,18 @@ function handleUpdatePageRequest(req) {
  */
 function handleUpdateSiteGraphRequest(req) {
     var remoteDiff = new diff.RemoteDiff();
+    var w = app.currentWebsite;
     for (var i = 0; i < req.data.deleted.length; ++i) {
         var url = req.data.deleted[i];
-        if (!website.siteGraph.getPage(url)) {
+        if (!w.siteGraph.getPage(url)) {
             return new http.Response(400, 'Page \'' + url + '\' not found.');
         }
         remoteDiff.addPageToDelete(url);
-        delete website.siteGraph.pages[url];
+        delete w.siteGraph.pages[url];
     }
     if (i == 0) return new http.Response(400, 'Nothing to update.');
     //
-    website.saveToDb(website.siteGraph); // update websites set `graph` = ...
+    w.saveToDb(w.siteGraph); // update websites set `graph` = ...
     remoteDiff.saveStatusesToDb(); // update|delete from uploadStatuses ...
     return new http.Response(200, '{"status":"ok"}',
         {'Content-Type': 'application/json'}

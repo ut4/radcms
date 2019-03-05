@@ -50,11 +50,13 @@ myModSearchFn(duk_context *ctx) {
     /*
      * Fill in the @native methods ...
      */
+    bool isApp = false;
     bool isCommonServices = false;
     bool isHttp = false;
     bool isWebsite = false;
     if (isCrypto ||
         isXmlReader ||
+        (isApp = id == "app.js") ||
         (isCommonServices = id == "common-services.js") ||
         (isHttp = id == "http.js") ||
         (isWebsite = id == "website.js")) {
@@ -69,7 +71,8 @@ myModSearchFn(duk_context *ctx) {
             dukUtilsPutDetailedError(ctx, -1, filePath.c_str(), app->errBuf);
             return duk_error(ctx, DUK_ERR_TYPE_ERROR, app->errBuf.c_str());
         }
-        if (isCommonServices) commonServicesJsModuleInit(ctx, EXPORTS_IS_AT);
+        if (isApp) appJsModuleInit(ctx, EXPORTS_IS_AT);
+        else if (isCommonServices) commonServicesJsModuleInit(ctx, EXPORTS_IS_AT);
         else if (isHttp) httpJsModuleInit(ctx, EXPORTS_IS_AT);
         else if (isWebsite) websiteJsModuleInit(ctx, EXPORTS_IS_AT);
         else if (isCrypto) cryptoJsModuleInit(ctx, EXPORTS_IS_AT);

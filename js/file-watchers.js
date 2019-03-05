@@ -5,6 +5,7 @@
  * events.
  *
  */
+var app = require('app.js').app;
 var commons = require('common-services.js');
 var fileWatcher = commons.fileWatcher;
 var website = require('website.js');
@@ -64,7 +65,7 @@ function handleTemplateCreateEvent(fileName) {
  */
 function handleCssOrJsFileCreateEvent(fileName) {
     // Register the file, and set its `isOk` to 0
-    commons.db.insert('insert or replace into staticFileResources values (?,0)',
+    app.currentWebsite.db.insert('insert or replace into staticFileResources values (?,0)',
         function(stmt) {
             stmt.bindString(0, fileName);
         });
@@ -75,7 +76,7 @@ function handleCssOrJsFileCreateEvent(fileName) {
  * @param {string} fileName eg. 'layout.jsx.htm'
  */
 function handleTemplateModifyEventEvent(fileName) {
-    if (website.website.compileAndCacheTemplate(fileName)) {
+    if (app.currentWebsite.compileAndCacheTemplate(fileName)) {
         commons.log('[Info]: Cached "' + fileName + '"');
     }
     diff.performRescan('full');
@@ -86,16 +87,16 @@ function handleTemplateModifyEventEvent(fileName) {
  */
 function handleCssOrJsFileModifyEventEvent(fileName) {
     // Check if this file is registered (and update it's isOk)
-    var numAffected = commons.db.update('update staticFileResources set \
+    var numAffected = app.currentWebsite.db.update('update staticFileResources set \
         `isOk` = 1 where `url` = ?',
         function(stmt) { stmt.bindString(0, fileName); }
     );
     // It is -> insert or update the new checksum
     if (numAffected > 0) {
-        commons.db.insert('insert or replace into uploadStatuses values \
+        app.currentWebsite.db.insert('insert or replace into uploadStatuses values \
             (?,?,(select `uphash` from uploadStatuses where `url`=?),1)', function(stmt) {
                 stmt.bindString(0, fileName);
-                stmt.bindString(1, website.website.readFileAndCalcChecksum(fileName));
+                stmt.bindString(1, app.currentWebsite.readFileAndCalcChecksum(fileName));
                 stmt.bindString(2, fileName);
             });
         commons.log('[Info]: Updated "' + fileName + '"');
@@ -121,16 +122,16 @@ function handleTemplateDeleteEventEvent(fileName) {
  */
 function handleCssOrJsFileDeleteEvent(fileName) {
     var bindUrl = function(stmt) { stmt.bindString(0, fileName); };
-    if (commons.db.delete('delete from staticFileResources where `url` = ?',
+    if (app.currentWebsite.db.delete('delete from staticFileResources where `url` = ?',
                           bindUrl) < 1) {
         commons.log('[Debug]: An unknown file "' + fileName + '" was deleted, skipping.');
         return;
     }
     // Wipe uploadStatus completely if the file isn't uploaded
-    if (commons.db.delete('delete from uploadStatuses where \
+    if (app.currentWebsite.db.delete('delete from uploadStatuses where \
                           `url` = ? and `uphash` is null', bindUrl) < 1) {
         // Otherwise mark it as removed
-        commons.db.update('update uploadStatuses set `curhash` = null where \
+        app.currentWebsite.db.update('update uploadStatuses set `curhash` = null where \
                            `url` = ?', bindUrl);
     }
     commons.log('[Info]: Removed "' + fileName + '"');
@@ -156,7 +157,7 @@ function handleTemplateRenameEvent(from, to) {
         }
     }
     if (numUserPages > 0) {
-        website.saveToDb(siteGraph);
+        app.currentWebsite.saveToDb(siteGraph);
     }
     // Relocate the template function
     commons.templateCache.put(to, fn);
@@ -171,17 +172,17 @@ function handleTemplateRenameEvent(from, to) {
 function handleCssOrJsFileRenameEvent(from, to) {
     from = '/' + from;
     to = '/' + to;
-    commons.db.insert('insert or replace into staticFileResources values\
+    app.currentWebsite.db.insert('insert or replace into staticFileResources values\
         (?,coalesce((select `isOk` from staticFileResources where `url`=?),0))',
         function(stmt) {
             stmt.bindString(0, to);
             stmt.bindString(1, from);
         });
-    commons.db.delete('delete from staticFileResources where `url` = ?',
+    app.currentWebsite.db.delete('delete from staticFileResources where `url` = ?',
         function(stmt) {
             stmt.bindString(0, from);
         });
-    commons.db.update('update uploadStatuses set `url` = ? where `url` = ?',
+    app.currentWebsite.db.update('update uploadStatuses set `url` = ? where `url` = ?',
         function(stmt) {
             stmt.bindString(0, to);
             stmt.bindString(1, from);
