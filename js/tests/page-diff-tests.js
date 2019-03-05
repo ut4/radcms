@@ -1,24 +1,26 @@
 var app = require('app.js').app;
 var fileWatchers = require('file-watchers.js');
 var commons = require('common-services.js');
-var website = require('website.js');
-var siteGraph = website.siteGraph;
 var fileWatcher = commons.fileWatcher;
 var testLib = require('tests/testlib.js').testLib;
 
 testLib.module('page-diff', function(hooks) {
     var mockTemplate = {fname:'test.jsx.htm', contents: '<html><body></body></html>'};
     var homePage;
+    var website;
+    var siteGraph;
     var db;
     hooks.before(function() {
-        db = app.currentWebsite.db;
+        website = app.currentWebsite;
+        siteGraph = website.graph;
+        db = website.db;
         homePage = siteGraph.addPage('/home', '', mockTemplate.fname, {}, 1);
         commons.templateCache.put(mockTemplate.fname, function() {});
-        website.siteConfig.defaultLayout = mockTemplate.fname;
+        website.config.defaultLayout = mockTemplate.fname;
         app.currentWebsite.fs = {
             write: function() {},
             read: function(a) {
-                if(a==insnEnv.sitePath + mockTemplate.fname) return mockTemplate.contents;
+                if(a==website.dirPath + mockTemplate.fname) return mockTemplate.contents;
             }
         };
         app.currentWebsite.crypto = {sha1: function(str) { return str; }};

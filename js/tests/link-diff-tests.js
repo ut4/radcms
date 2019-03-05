@@ -1,8 +1,6 @@
 var app = require('app.js').app;
 var fileWatchers = require('file-watchers.js');
 var commons = require('common-services.js');
-var website = require('website.js');
-var siteGraph = website.siteGraph;
 var fileWatcher = commons.fileWatcher;
 var testLib = require('tests/testlib.js').testLib;
 var diff = require('website-diff.js');
@@ -19,21 +17,25 @@ testLib.module('link-diff', function(hooks) {
     var mockTemplate2 = {fname:'template-b.jsx.htm', contents:null};
     var websiteData = {id: 3, graph: ''};
     var originalRemoteDiff = diff.RemoteDiff;
+    var website;
+    var siteGraph;
     var db;
     hooks.before(function() {
-        db = app.currentWebsite.db;
+        website = app.currentWebsite;
+        siteGraph = website.graph;
+        db = website.db;
         diff.RemoteDiff = function(){};
         diff.RemoteDiff.prototype.addPageToCheck = function(){};
         diff.RemoteDiff.prototype.addFileToCheck = function(){};
         diff.RemoteDiff.prototype.addPageToDelete = function(){};
         diff.RemoteDiff.prototype.saveStatusesToDb = function(){};
-        website.siteConfig.homeUrl = '/home';
-        website.siteConfig.defaultLayout = mockTemplate.fname;
+        website.config.homeUrl = '/home';
+        website.config.defaultLayout = mockTemplate.fname;
         app.currentWebsite.fs = {
             write:function() {},
             read: function(a) {
-                if(a==insnEnv.sitePath + mockTemplate.fname) return mockTemplate.contents;
-                if(a==insnEnv.sitePath + mockTemplate2.fname) return mockTemplate2.contents;
+                if(a==website.dirPath + mockTemplate.fname) return mockTemplate.contents;
+                if(a==website.dirPath + mockTemplate2.fname) return mockTemplate2.contents;
             }
         };
         if (db.insert('insert into websites values (?,?)', function(stmt) {
@@ -66,9 +68,9 @@ testLib.module('link-diff', function(hooks) {
         '</body></html>';
         // Trigger handleFWEvent()
         fileWatcher._watchFn(fileWatcher.EVENT_WRITE, mockTemplate.fname, 'htm');
-        // Assert that added the page to website.siteGraph
+        // Assert that added the page to website.graph
         var addedPage = siteGraph.getPage(newLinkUrl);
-        assert.ok(addedPage !== undefined, 'should add a page to website.siteGraph');
+        assert.ok(addedPage !== undefined, 'should add a page to website.graph');
         // Assert that saved the updated site graph to the database
         db.select('select `graph` from websites where id = ' + websiteData.id,
             function(row) {
@@ -91,8 +93,8 @@ testLib.module('link-diff', function(hooks) {
         '</body></html>';
         // Trigger handleFWEvent()
         fileWatcher._watchFn(fileWatcher.EVENT_WRITE, mockTemplate.fname, 'htm');
-        // Assert that removed the page to website.siteGraph
-        assert.ok(!siteGraph.getPage(existingPage2), 'Should remove a page from website.siteGraph');
+        // Assert that removed the page to website.graph
+        assert.ok(!siteGraph.getPage(existingPage2), 'Should remove a page from website.graph');
         // Assert that saved the updated site graph to the database
         db.select('select `graph` from websites where id = ' + websiteData.id,
             function(row) {
@@ -136,7 +138,7 @@ testLib.module('link-diff', function(hooks) {
                 ['/desserts','',mockTemplate.fname,['/desserts/dish2']],
                 ['/desserts/dish2','/desserts',mockTemplate.fname,['/desserts']],
             ]
-        }));
+        }), '/home');
         mockTemplate.contents = '<html><body>{'+
             '({'+
                 '"home":' + makeLinks('/starters','/desserts') +
@@ -184,12 +186,12 @@ testLib.module('link-diff', function(hooks) {
         app.currentWebsite.compileAndCacheTemplate(mockTemplate.fname);
         // Trigger handleFWEvent()
         fileWatcher._watchFn(fileWatcher.EVENT_WRITE, mockTemplate.fname, 'htm');
-        // Assert that added two new pages to website.siteGraph
+        // Assert that added two new pages to website.graph
         var added1 = siteGraph.getPage(linkAHref);
-        assert.ok(added1 !== undefined, 'should add page #1 to website.siteGraph');
+        assert.ok(added1 !== undefined, 'should add page #1 to website.graph');
         assert.equal(added1.url, '/bar');
         var added2 = siteGraph.getPage(linkBHref);
-        assert.ok(added2 !== undefined, 'should add page #2 to website.siteGraph');
+        assert.ok(added2 !== undefined, 'should add page #2 to website.graph');
         assert.equal(added2.url, '/nar');
         // Assert that saved the updated site graph to the database
         db.select('select `graph` from websites where id = ' + websiteData.id,
@@ -210,7 +212,7 @@ testLib.module('link-diff', function(hooks) {
         '</body></html>';
         var existingPage = siteGraph.addPage('/home', NO_PARENT, mockTemplate.fname);
         var refCountBefore = existingPage.refCount;
-        website.siteConfig.homeUrl = '/home';
+        website.config.homeUrl = '/home';
         // Trigger handleFWEvent()
         fileWatcher._watchFn(fileWatcher.EVENT_WRITE, mockTemplate.fname, 'htm');
         // Assert that didn't add '/'

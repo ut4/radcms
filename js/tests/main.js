@@ -8,7 +8,7 @@ var fileWatchers = require('file-watchers.js');
 
 commons.log = function() {};
 
-commons.app.getHandler = function(url, method) {
+app.getHandler = function(url, method) {
     var fn;
     var l = this._routeMatchers.length;
     for (var i = 0; i < l; ++i) {
@@ -23,7 +23,7 @@ commons.templateCache.clear = function() {
     }
 };
 
-website.siteGraph.clear = function() {
+website.SiteGraph.prototype.clear = function() {
     this.pages = {};
     this.pageCount = 0;
 };
@@ -71,8 +71,8 @@ exports.main = function(suite, logAssertions) {
     }
     if (isAll || suite == 'website') {
         require('tests/website-tests.js');
-        modules.push('[\'website.js\'].website');
-        modules.push('[\'website.js\'].siteConfig');
+        modules.push('[\'website.js\'].Website');
+        modules.push('[\'website.js\'].SiteConfig');
     }
     require('tests/testlib.js').testLib.start(!isAll ? modules : null, logAssertions);
 };

@@ -1,9 +1,9 @@
-require('website-handlers.js');
+require('website-handlers.js').init();
+var app = require('app.js').app;
 var commons = require('common-services.js');
 var testLib = require('tests/testlib.js').testLib;
-var website = require('website.js');
-var siteGraph = website.siteGraph;
 var http = require('http.js');
+var websiteModule = require('website.js');
 var UPLOAD_OK = commons.UploaderStatus.UPLOAD_OK;
 var q = '(?,?,?,?)';
 
@@ -19,23 +19,27 @@ testLib.module('website-handlers.js', function(hooks) {
     var layout1, layout2, page1, page2, page3;
     var writeLog = [];
     var makeDirsLog = [];
+    var website;
+    var siteGraph;
     hooks.before(function() {
-        website.siteConfig.homeUrl = pages[0].url;
+        website = app.currentWebsite;
+        siteGraph = website.graph;
+        website.config.homeUrl = pages[0].url;
         layout1 = {fileName: 'home-layout.jsx.htm'};
         layout2 = {fileName: 'page-layout.jsx.htm'};
         page1 = siteGraph.addPage(pages[0].url, '', layout1.fileName, {}, 1);
         page2 = siteGraph.addPage(pages[1].url, '', layout2.fileName, {}, 1);
         page3 = siteGraph.addPage(pages[2].url, '', layout2.fileName, {}, 1);
-        website.website.compileAndCacheTemplate(layout1.fileName);
-        website.website.compileAndCacheTemplate(layout2.fileName);
+        app.currentWebsite.compileAndCacheTemplate(layout1.fileName);
+        app.currentWebsite.compileAndCacheTemplate(layout2.fileName);
         var sql2 = 'insert into contentNodes values '+q+','+q+','+q;
         var sql3 = 'insert into uploadStatuses values '+q+','+q+','+q+','+q+','+q;
         var sql4 = 'insert into staticFileResources values (?,1),(?,1)';
-        if (commons.db.insert('insert into websites values (?,?)', function(stmt) {
+        if (website.db.insert('insert into websites values (?,?)', function(stmt) {
                 stmt.bindInt(0, testWebsite.id);
                 stmt.bindString(1, siteGraph.serialize());
             }) < 1 ||
-            commons.db.insert(sql2, function(stmt) {
+            website.db.insert(sql2, function(stmt) {
                 [homeContentCnt,page2ContentCnt,page3ContentCnt].forEach(function(c, i) {
                     stmt.bindInt(i*4, i+1);
                     stmt.bindString(i*4+1, c.name);
@@ -43,7 +47,7 @@ testLib.module('website-handlers.js', function(hooks) {
                     stmt.bindString(i*4+3, c.contentTypeName);
                 });
             }) < 1 ||
-            commons.db.insert(sql3, function(stmt) {
+            website.db.insert(sql3, function(stmt) {
                 Object.keys(mockFiles).concat(page1, page2, page3).forEach(function(item, i) {
                     stmt.bindString(i*4, i < 2 ? item : item.url);
                     stmt.bindString(i*4+1, '');         // curhash
@@ -51,29 +55,29 @@ testLib.module('website-handlers.js', function(hooks) {
                     stmt.bindInt(i*4+3, i < 2 ? 1 : 0); // isFile
                 });
             }) < 1 ||
-            commons.db.insert(sql4, function(stmt) {
+            website.db.insert(sql4, function(stmt) {
                 Object.keys(mockFiles).forEach(function(url, i) {
                     stmt.bindString(i, url);
                 });
             }) < 1
         ) throw new Error('Failed to insert test data.');
         //
-        website.website.fs = {
+        app.currentWebsite.fs = {
             write: function(a,b) { writeLog.push({path:a,contents:b}); return true; },
-            read: function(fpath) { return mockFiles[fpath.replace(insnEnv.sitePath,'')]; },
+            read: function(fpath) { return mockFiles[fpath.replace(website.dirPath,'')]; },
             makeDirs: function(a) { makeDirsLog.push({path:a}); return true; }
         };
-        website.website.crypto = {sha1: function(str) { return str; }};
+        app.currentWebsite.crypto = {sha1: function(str) { return str; }};
     });
     hooks.after(function() {
-        website.website.fs = commons.fs;
-        website.website.crypto = require('crypto.js');
-        website.siteGraph.clear();
-        if (commons.db.delete('delete from contentNodes where contentTypeName = ?',
+        app.currentWebsite.fs = commons.fs;
+        app.currentWebsite.crypto = require('crypto.js');
+        website.graph.clear();
+        if (website.db.delete('delete from contentNodes where contentTypeName = ?',
                 function(stmt) { stmt.bindString(0, genericCntType.name); }) < 1 ||
-            commons.db.delete('delete from websites where id = ?',
+            website.db.delete('delete from websites where id = ?',
                 function(stmt) { stmt.bindInt(0, testWebsite.id); }) < 1 ||
-            commons.db.delete('delete from uploadStatuses', function() { }) < 5
+            website.db.delete('delete from uploadStatuses', function() { }) < 5
         ) throw new Error('Failed to clean test data.');
     });
     hooks.afterEach(function() {
@@ -83,7 +87,7 @@ testLib.module('website-handlers.js', function(hooks) {
     testLib.test('GET \'/<url>\' serves a page', function(assert) {
         assert.expect(11);
         var req = new http.Request('/', 'GET');
-        var handlePageRequestFn = commons.app.getHandler(req.url, req.method);
+        var handlePageRequestFn = app.getHandler(req.url, req.method);
         //
         var response = handlePageRequestFn(req);
         assert.equal(response.statusCode, 200);
@@ -109,7 +113,7 @@ testLib.module('website-handlers.js', function(hooks) {
     testLib.test('GET \'/<url>\' embeds info about the page in <script>', function(assert) {
         assert.expect(4);
         var req = new http.Request('/home', 'GET');
-        var handlePageRequestFn = commons.app.getHandler(req.url, req.method);
+        var handlePageRequestFn = app.getHandler(req.url, req.method);
         //
         var response = handlePageRequestFn(req);
         var pcs = response.body.split('function getCurrentPageData(){return ');
@@ -134,17 +138,17 @@ testLib.module('website-handlers.js', function(hooks) {
         //
         var sql = 'update uploadStatuses set `curhash`= ?, `uphash` = ? where `url`= ?';
         if (
-            commons.db.update(sql, function(stmt) {
+            website.db.update(sql, function(stmt) {
                 stmt.bindString(0, 'different-hash');
                 stmt.bindString(1, 'same-hash');
                 stmt.bindString(2, pages[1].url);
             }) < 1 ||
-            commons.db.update(sql, function(stmt) {
+            website.db.update(sql, function(stmt) {
                 stmt.bindString(0, 'same-hash');
                 stmt.bindString(1, 'same-hash');
                 stmt.bindString(2, pages[2].url);
             }) < 1 ||
-            commons.db.update(sql, function(stmt) {
+            website.db.update(sql, function(stmt) {
                 stmt.bindString(0, 'same-hash');
                 stmt.bindString(1, 'same-hash');
                 stmt.bindString(2, fileNames[0]);
@@ -152,20 +156,20 @@ testLib.module('website-handlers.js', function(hooks) {
         ) throw new Error('Failed to setup test data.');
         //
         var req = new http.Request('/api/website/waiting-uploads', 'GET');
-        var response = commons.app.getHandler(req.url, req.method)(req);
+        var response = app.getHandler(req.url, req.method)(req);
         assert.equal(response.statusCode, 200);
         var resp = JSON.parse(response.body);
         assert.equal(response.headers['Content-Type'], 'application/json');
         assert.equal(resp.pages[0].url, pages[0].url);
         assert.equal(resp.pages[1].url, pages[1].url);
         assert.ok(resp.pages[2] === undefined, 'shouldn\'t return uploaded pages');
-        assert.equal(resp.pages[0].uploadStatus, website.NOT_UPLOADED);
-        assert.equal(resp.pages[1].uploadStatus, website.OUTDATED);
+        assert.equal(resp.pages[0].uploadStatus, websiteModule.NOT_UPLOADED);
+        assert.equal(resp.pages[1].uploadStatus, websiteModule.OUTDATED);
         assert.equal(resp.files[0].url, fileNames[1]);
         assert.ok(resp.files[1] === undefined, 'Shouldn\'t return uploaded files');
-        assert.equal(resp.files[0].uploadStatus, website.NOT_UPLOADED);
+        assert.equal(resp.files[0].uploadStatus, websiteModule.NOT_UPLOADED);
         //
-        if (commons.db.update('update uploadStatuses set `uphash` = null',
+        if (website.db.update('update uploadStatuses set `uphash` = null',
             function() {}) < 5) throw new Error('Failed to reset test data.');
     });
     testLib.test('POST \'/api/website/generate\' generates the site', function(assert) {
@@ -173,21 +177,21 @@ testLib.module('website-handlers.js', function(hooks) {
         //
         var req = new http.Request('/api/website/generate', 'POST');
         //
-        var response = commons.app.getHandler(req.url, req.method)(req);
+        var response = app.getHandler(req.url, req.method)(req);
         assert.equal(response.statusCode, 200);
         var body = JSON.parse(response.body);
         assert.equal(body.wrotePagesNum, 3);
-        assert.equal(body.totalPages, website.siteGraph.pageCount);
-        assert.equal(body.outPath, insnEnv.sitePath + 'out');
+        assert.equal(body.totalPages, website.graph.pageCount);
+        assert.equal(body.outPath, website.dirPath + 'out');
         assert.equal(body.issues.length, 0);
         assert.equal(makeDirsLog.length, 3, 'should make dirs for all pages');
-        assert.equal(makeDirsLog[0].path, insnEnv.sitePath+'out/home');
-        assert.equal(makeDirsLog[1].path, insnEnv.sitePath+'out/page2');
-        assert.equal(makeDirsLog[2].path, insnEnv.sitePath+'out/page3');
+        assert.equal(makeDirsLog[0].path, website.dirPath+'out/home');
+        assert.equal(makeDirsLog[1].path, website.dirPath+'out/page2');
+        assert.equal(makeDirsLog[2].path, website.dirPath+'out/page3');
         assert.equal(writeLog.length, 3, 'should write all pages to /out');
-        assert.equal(writeLog[0].path, insnEnv.sitePath+'out/home/index.html');
-        assert.equal(writeLog[1].path, insnEnv.sitePath+'out/page2/index.html');
-        assert.equal(writeLog[2].path, insnEnv.sitePath+'out/page3/index.html');
+        assert.equal(writeLog[0].path, website.dirPath+'out/home/index.html');
+        assert.equal(writeLog[1].path, website.dirPath+'out/page2/index.html');
+        assert.equal(writeLog[2].path, website.dirPath+'out/page3/index.html');
         assert.ok(writeLog[0].contents.indexOf('<p>'+homeContentCnt.json.content) > -1,
             'should write the contents of \'/home\'');
         assert.ok(writeLog[1].contents.indexOf('<p>'+page2ContentCnt.json.content) > -1,
@@ -199,7 +203,7 @@ testLib.module('website-handlers.js', function(hooks) {
         assert.expect(20);
         var uploaderCredentials = {};
         var uploadLog = [];
-        website.website.Uploader = function(a,b) {
+        app.currentWebsite.Uploader = function(a,b) {
             uploaderCredentials = {username: a, password: b};
             this.uploadString = function(a,b) { uploadLog.push({url:a,contents:b});return UPLOAD_OK; };
         };
@@ -215,7 +219,7 @@ testLib.module('website-handlers.js', function(hooks) {
                         {fileName: fileNames[1], isDeleted: 0}
                     ]};
         //
-        var response = commons.app.getHandler(req.url, req.method)(req);
+        var response = app.getHandler(req.url, req.method)(req);
         assert.deepEqual(uploaderCredentials, {username: req.data.username,
             password: req.data.password},
             'should pass req.data.username&pass to new Uploader()');
@@ -264,14 +268,14 @@ testLib.module('website-handlers.js', function(hooks) {
         var chunk6 = response.getNextChunk(response.chunkFnState);
         assert.equal(chunk6, '');
         //
-        website.website.Uploader = commons.Uploader;
-        if (commons.db.update('update uploadStatuses set `uphash` = null',
+        app.currentWebsite.Uploader = commons.Uploader;
+        if (website.db.update('update uploadStatuses set `uphash` = null',
             function() {}) < 5) throw new Error('Failed to reset test data.');
     });
     testLib.test('POST \'/api/website/upload\' updates uploadStatuses', function(assert) {
         assert.expect(3);
-        website.website.Uploader = function() {};
-        website.website.Uploader.prototype.uploadString = function() {};
+        app.currentWebsite.Uploader = function() {};
+        app.currentWebsite.Uploader.prototype.uploadString = function() {};
         //
         var req = new http.Request('/api/website/upload', 'POST');
         req.data = {remoteUrl: 'ftp://ftp.site.net', username: 'ftp@mysite.net',
@@ -279,9 +283,9 @@ testLib.module('website-handlers.js', function(hooks) {
                     pageUrls: [{url: pages[0].url, isDeleted: 0}],
                     fileNames: [{fileName: fileNames[0], isDeleted: 0}]};
         //
-        var response = commons.app.getHandler(req.url, req.method)(req);
+        var response = app.getHandler(req.url, req.method)(req);
         var assertSetStatusToUploaded = function(expected, id) {
-            commons.db.select('select `uphash` from uploadStatuses where `url` = ?',
+            website.db.select('select `uphash` from uploadStatuses where `url` = ?',
                 function(row) {
                     assert.ok(row.getString(0) != null,
                         'should update uphash of ' + id);
@@ -297,8 +301,8 @@ testLib.module('website-handlers.js', function(hooks) {
         var lastChunk = response.getNextChunk(response.chunkFnState);
         assert.equal(lastChunk, '');
         //
-        website.website.Uploader = commons.Uploader;
-        if (commons.db.update('update uploadStatuses set `uphash` = null',
+        app.currentWebsite.Uploader = commons.Uploader;
+        if (website.db.update('update uploadStatuses set `uphash` = null',
             function() {}) < 2) throw new Error('Failed to reset test data.');
     });
     testLib.test('POST \'/api/website/upload\' deletes pages and files', function(assert) {
@@ -306,13 +310,13 @@ testLib.module('website-handlers.js', function(hooks) {
         var uploaderDeleteLog = [];
         var inputPageUrls = [pages[2].url];
         var inputFileNames = [fileNames[1]];
-        website.website.Uploader = function() {};
-        website.website.Uploader.prototype.uploadString = function() {};
-        website.website.Uploader.prototype.delete = function(a, b, c) {
+        app.currentWebsite.Uploader = function() {};
+        app.currentWebsite.Uploader.prototype.uploadString = function() {};
+        app.currentWebsite.Uploader.prototype.delete = function(a, b, c) {
             uploaderDeleteLog.push({serverUrl: a, itemPath: b, asDir: c});
             return UPLOAD_OK;
         };
-        if (commons.db.update('update uploadStatuses set `curhash` = null,\
+        if (website.db.update('update uploadStatuses set `curhash` = null,\
                             `uphash` = \'up\' where `url` in (?,?)', function(stmt) {
                 stmt.bindString(0, inputPageUrls[0]);
                 stmt.bindString(1, inputFileNames[0]);
@@ -325,9 +329,9 @@ testLib.module('website-handlers.js', function(hooks) {
                     pageUrls: [{url: inputPageUrls[0], isDeleted: 1}],
                     fileNames: [{fileName: inputFileNames[0], isDeleted: 1}]};
         //
-        var response = commons.app.getHandler(req.url, req.method)(req);
+        var response = app.getHandler(req.url, req.method)(req);
         var assertWipedStatus = function(expected, id) {
-            commons.db.select('select count(`url`) from uploadStatuses where `url` = ?',
+            website.db.select('select count(`url`) from uploadStatuses where `url` = ?',
                 function(row) {
                     assert.equal(row.getInt(0), 0, 'should delete ' + id +
                         ' from uploadStatuses');
@@ -349,8 +353,8 @@ testLib.module('website-handlers.js', function(hooks) {
         var lastChunk = response.getNextChunk(response.chunkFnState);
         assert.equal(lastChunk, '');
         //
-        website.website.Uploader = commons.Uploader;
-        if (commons.db.insert('insert into uploadStatuses values '+q+','+q, function(stmt) {
+        app.currentWebsite.Uploader = commons.Uploader;
+        if (website.db.insert('insert into uploadStatuses values '+q+','+q, function(stmt) {
                 stmt.bindString(0, inputPageUrls[0]);
                 stmt.bindString(1, '');
                 stmt.bindInt(3, 0);
@@ -365,11 +369,11 @@ testLib.module('website-handlers.js', function(hooks) {
         var req = new http.Request('/api/website/page', 'PUT');
         // Emulate the request
         req.data = {url: '/page2', layoutFileName: layout1.fileName};
-        var response = commons.app.getHandler(req.url, req.method)(req);
+        var response = app.getHandler(req.url, req.method)(req);
         assert.equal(response.statusCode, 200);
         assert.equal(response.body, '{"numAffectedRows":1}');
         // Assert that changed layoutFileName and saved the changes to the database
-        commons.db.select('select `graph` from websites limit 1', function(row) {
+        website.db.select('select `graph` from websites limit 1', function(row) {
             var updatedPData = JSON.parse(row.getString(0)).pages; // [[<url>,<parent>,<layoutFilename>...]]
             var entry = findPage(updatedPData, req.data.url);
             assert.equal(entry ? entry[2] : 'nil', layout1.fileName);
@@ -382,7 +386,7 @@ testLib.module('website-handlers.js', function(hooks) {
         var url2 = '/contact';
         siteGraph.addPage(url1, '', layout1.fileName, {}, 1);
         siteGraph.addPage(url2, '', layout1.fileName, {}, 1);
-        if (commons.db.insert('insert into uploadStatuses values '+q+','+q, function(stmt) {
+        if (website.db.insert('insert into uploadStatuses values '+q+','+q, function(stmt) {
             stmt.bindString(0, url1);
             stmt.bindString(1, 'hash');
             stmt.bindString(2, 'hash'); // /services2 is uploaded
@@ -391,13 +395,13 @@ testLib.module('website-handlers.js', function(hooks) {
             stmt.bindString(5, 'hash');
             stmt.bindString(6, null); // /contact2 is not
             stmt.bindInt(7, 1);
-        }) < 1 || website.saveToDb(siteGraph) < 1) {
+        }) < 1 || app.currentWebsite.saveToDb(siteGraph) < 1) {
             throw new Error('Failed to setup test data.');
         }
         var req = new http.Request('/api/website/site-graph', 'PUT');
         // Emulate the request
         req.data = {deleted: [url1, url2]};
-        var response = commons.app.getHandler(req.url, req.method)(req);
+        var response = app.getHandler(req.url, req.method)(req);
         assert.equal(response.statusCode, 200);
         assert.equal(response.body, '{"status":"ok"}');
         //
@@ -406,7 +410,7 @@ testLib.module('website-handlers.js', function(hooks) {
         assert.ok(siteGraph.getPage(url2) === undefined,
             'Should remove /contact2 from the site graph');
         // Assert that updated websites
-        commons.db.select('select `graph` from websites limit 1', function(row) {
+        website.db.select('select `graph` from websites limit 1', function(row) {
             var updatedPData = JSON.parse(row.getString(0)).pages;
             assert.ok(findPage(updatedPData, url1) == null,
                 'Should remove /services2 from the stored site graph');
@@ -415,7 +419,7 @@ testLib.module('website-handlers.js', function(hooks) {
         });
         // Assert that updated uploadStatuses
         var statuses = [];
-        commons.db.select('select `url`,`curhash`,`uphash` from uploadStatuses \
+        website.db.select('select `url`,`curhash`,`uphash` from uploadStatuses \
                           where `url` in (?,?)', function(row) {
             statuses.push({url: row.getString(0), curhash: row.getString(1),
                 uphash: row.getString(2)});

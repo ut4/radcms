@@ -1,8 +1,7 @@
+var app = require('app.js').app;
 var fileWatchers = require('file-watchers.js');
 var commons = require('common-services.js');
 var templateCache = commons.templateCache;
-var website = require('website.js');
-var siteGraph = website.siteGraph;
 var fileWatcher = commons.fileWatcher;
 var testLib = require('tests/testlib.js').testLib;
 var NO_PARENT = '';
@@ -11,15 +10,19 @@ testLib.module('file-watchers.js', function(hooks) {
     var mockTemplate = {fname:'template-a.jsx.htm', contents:null};
     var mockFiles = {};
     var websiteData = {id: 2, graph: ''};
+    var website;
+    var db;
     hooks.before(function() {
-        website.website.fs = {
+        website = app.currentWebsite;
+        db = website.db;
+        website.fs = {
             read: function(a) {
-                if(a==insnEnv.sitePath + mockTemplate.fname) return mockTemplate.contents;
-                return mockFiles[a.replace(insnEnv.sitePath,'/')];
+                if(a==website.dirPath + mockTemplate.fname) return mockTemplate.contents;
+                return mockFiles[a.replace(website.dirPath,'/')];
             }
         };
-        website.website.crypto = {sha1: function(str) { return str; }};
-        if (commons.db.insert('insert into websites values (?,?)', function(stmt) {
+        website.crypto = {sha1: function(str) { return str; }};
+        if (db.insert('insert into websites values (?,?)', function(stmt) {
                 stmt.bindInt(0, websiteData.id);
                 stmt.bindString(1, websiteData.graph);
             }) < 1
@@ -27,15 +30,15 @@ testLib.module('file-watchers.js', function(hooks) {
         fileWatchers.init();
     });
     hooks.after(function() {
-        website.website.fs = commons.fs;
-        website.website.crypto = require('crypto.js');
-        if (commons.db.delete('delete from websites where id = ?',
+        website.fs = commons.fs;
+        website.crypto = require('crypto.js');
+        if (db.delete('delete from websites where id = ?',
             function(stmt) { stmt.bindInt(0, websiteData.id); }) < 1
         ) throw new Error('Failed to clean test data.');
         fileWatchers.clear();
     });
     hooks.afterEach(function() {
-        siteGraph.clear();
+        website.graph.clear();
         commons.templateCache.clear();
     });
     testLib.test('EVENT_CREATE <newFile>.css|js inserts the file to the db', function(assert) {
@@ -44,7 +47,7 @@ testLib.module('file-watchers.js', function(hooks) {
         var newJsFileName = '/bar.js';
         var assertExistsInDb = function(expectCssFileExists, expectJsFile) {
             var cssFileInfo, jsFileInfo;
-            commons.db.select('select `url`,`isOk` from staticFileResources\
+            db.select('select `url`,`isOk` from staticFileResources\
                               where `url` in (?,?)',
                 function(row) {
                     if (row.getString(0) == newCssFileName) cssFileInfo = row.getInt(1);
@@ -64,7 +67,7 @@ testLib.module('file-watchers.js', function(hooks) {
         fileWatcher._watchFn(fileWatcher.EVENT_CREATE, newJsFileName.substr(1), 'js');
         assertExistsInDb(true, true);
         //
-        if (commons.db.delete('delete from staticFileResources where url in(?,?)',
+        if (db.delete('delete from staticFileResources where url in(?,?)',
             function(stmt) {
                 stmt.bindString(0, newCssFileName);
                 stmt.bindString(1, newJsFileName);
@@ -88,13 +91,13 @@ testLib.module('file-watchers.js', function(hooks) {
         mockFiles[notOkNotUploaded] = 'foo';
         mockFiles[okButNotUploaded] = 'bar';
         mockFiles[okAndUploaded] = 'baz';
-        if (commons.db.insert('insert into staticFileResources values (?,0),(?,1),(?,1)',
+        if (db.insert('insert into staticFileResources values (?,0),(?,1),(?,1)',
             function(stmt) {
                 stmt.bindString(0, notOkNotUploaded);
                 stmt.bindString(1, okButNotUploaded);
                 stmt.bindString(2, okAndUploaded);
             }) < 1 ||
-            commons.db.insert('insert into uploadStatuses values (?,?,?,?)',
+            db.insert('insert into uploadStatuses values (?,?,?,?)',
             function(stmt) {
                 stmt.bindString(0, okAndUploaded);
                 stmt.bindString(1, mockFiles[okAndUploaded]);
@@ -104,7 +107,7 @@ testLib.module('file-watchers.js', function(hooks) {
         ) throw new Error('Failed to insert test data.');
         var assertChecksumEquals = function(expected) {
             var actual = [];
-            commons.db.select('select us.*, sfr.`isOk` from uploadStatuses us \
+            db.select('select us.*, sfr.`isOk` from uploadStatuses us \
                 left join staticFileResources sfr on (sfr.`url` = us.`url`) \
                 where us.`url` in (?,?,?)',
                 function(row) {
@@ -138,7 +141,7 @@ testLib.module('file-watchers.js', function(hooks) {
         expectedC.curhash = 'updated';
         assertChecksumEquals([expectedB,expectedC,expectedA]);
         //
-        if (commons.db.delete('delete from uploadStatuses where `url` in(?,?,?)',
+        if (db.delete('delete from uploadStatuses where `url` in(?,?,?)',
             function(stmt) {
                 stmt.bindString(0, notOkNotUploaded);
                 stmt.bindString(1, okButNotUploaded);
@@ -159,19 +162,19 @@ testLib.module('file-watchers.js', function(hooks) {
         assert.expect(2);
         var okButNotUploaded = '/foo.css';
         var okAndUploaded = '/bar.js';
-        if (commons.db.insert('insert into staticFileResources values (?,1),(?,1)',
+        if (db.insert('insert into staticFileResources values (?,1),(?,1)',
             function(stmt) {
                 stmt.bindString(0, okButNotUploaded);
                 stmt.bindString(1, okAndUploaded);
             }) < 1 ||
-            commons.db.insert('insert into uploadStatuses values (?,\'hash\',\'hash\',1)',
+            db.insert('insert into uploadStatuses values (?,\'hash\',\'hash\',1)',
             function(stmt) {
                 stmt.bindString(0, okAndUploaded);
             }) < 1
         ) throw new Error('Failed to insert test data.');
         var assertChecksumEquals = function(fileUrl, expected, message) {
             var actual = [];
-            commons.db.select('select us.*,sfr.`url` from uploadStatuses us \
+            db.select('select us.*,sfr.`url` from uploadStatuses us \
                 left join staticFileResources sfr on (sfr.`url` = us.`url`) \
                 where us.`url` = ?',
                 function(row) {
@@ -197,7 +200,7 @@ testLib.module('file-watchers.js', function(hooks) {
             uphash: 'hash', isFile: 1, staticFileTableUrl: null}],
             'Should mark as removed if the file is uploaded');
         //
-        if (commons.db.delete('delete from uploadStatuses where `url` = ?',
+        if (db.delete('delete from uploadStatuses where `url` = ?',
             function(stmt) {
                 stmt.bindString(0, okAndUploaded);
             }) < 1) throw new Error('Failed to clean test data.');
@@ -210,8 +213,8 @@ testLib.module('file-watchers.js', function(hooks) {
         var hasUsersTo = 'newbar.jsx.htm';
         var testUser = '/a-page';
         var testUser2 = '/a-page2';
-        siteGraph.addPage(testUser, '', hasUsersFrom, {}, 1);
-        siteGraph.addPage(testUser2, '', hasUsersFrom, {}, 1);
+        website.graph.addPage(testUser, '', hasUsersFrom, {}, 1);
+        website.graph.addPage(testUser2, '', hasUsersFrom, {}, 1);
         templateCache.put(noUsersFrom, function() {});
         templateCache.put(hasUsersFrom, function() {});
         fileWatcher.timer = {now: function() { return 1; }};
@@ -227,20 +230,20 @@ testLib.module('file-watchers.js', function(hooks) {
         };
         //
         fileWatcher._watchFn(fileWatcher.EVENT_RENAME,
-            noUsersFrom + '>' + insnEnv.sitePath + noUsersTo, 'htm');
+            noUsersFrom + '>' + website.dirPath + noUsersTo, 'htm');
         assertSwappedTheTemplate(noUsersFrom, noUsersTo);
-        commons.db.select('select `graph` from websites', function(row) {
+        db.select('select `graph` from websites', function(row) {
             assert.equal(row.getString(0), '');
         });
         //
         fileWatcher._watchFn(fileWatcher.EVENT_RENAME,
-            hasUsersFrom + '>' + insnEnv.sitePath + hasUsersTo, 'htm');
+            hasUsersFrom + '>' + website.dirPath + hasUsersTo, 'htm');
         assertSwappedTheTemplate(hasUsersFrom, hasUsersTo);
-        assert.equal(siteGraph.getPage(testUser).layoutFileName, hasUsersTo,
+        assert.equal(website.graph.getPage(testUser).layoutFileName, hasUsersTo,
             'Should update the new name to siteGraph.pages');
-        assert.equal(siteGraph.getPage(testUser2).layoutFileName, hasUsersTo,
+        assert.equal(website.graph.getPage(testUser2).layoutFileName, hasUsersTo,
             'Should update the new name to siteGraph.pages');
-        commons.db.select('select `graph` from websites', function(row) {
+        db.select('select `graph` from websites', function(row) {
             assert.equal(row.getString(0), JSON.stringify({
                 pages:[[testUser,NO_PARENT,hasUsersTo,[]],
                        [testUser2,NO_PARENT,hasUsersTo,[]]]
@@ -254,19 +257,19 @@ testLib.module('file-watchers.js', function(hooks) {
         var notOkTo = '/renamed.css';
         var okAndUploadedFrom = '/foo2.css';
         var okAndUploadedTo = '/renamed2.css';
-        if (commons.db.insert('insert into staticFileResources values (?,0),(?,1)',
+        if (db.insert('insert into staticFileResources values (?,0),(?,1)',
             function(stmt) {
                 stmt.bindString(0, notOkFrom);
                 stmt.bindString(1, okAndUploadedFrom);
             }) < 1 ||
-            commons.db.insert('insert into uploadStatuses values (?,\'hash\',\'hash\',1)',
+            db.insert('insert into uploadStatuses values (?,\'hash\',\'hash\',1)',
             function(stmt) {
                 stmt.bindString(0, okAndUploadedFrom);
             }) < 1
         ) throw new Error('Failed to insert test data.');
         var assertStoredNewName = function(from, expected) {
             var actual = [];
-            commons.db.select('select sfr.*,us.`url` from staticFileResources sfr \
+            db.select('select sfr.*,us.`url` from staticFileResources sfr \
                               left join uploadStatuses us on (us.`url`=sfr.`url`) \
                               where sfr.`url` in (?,?)',
                 function(row) {
@@ -284,20 +287,20 @@ testLib.module('file-watchers.js', function(hooks) {
         fileWatcher.timer = {now: function() { return 1; }};
         //
         fileWatcher._watchFn(fileWatcher.EVENT_RENAME,
-            notOkFrom.substr(1) + '>' + insnEnv.sitePath + notOkTo.substr(1), 'css');
+            notOkFrom.substr(1) + '>' + website.dirPath + notOkTo.substr(1), 'css');
         assertStoredNewName(notOkFrom, {url: notOkTo, isOk: 0, uploadStatusesUrl: null});
         //
         fileWatcher._watchFn(fileWatcher.EVENT_RENAME, okAndUploadedFrom.substr(1) +
-            '>' + insnEnv.sitePath + okAndUploadedTo.substr(1), 'css');
+            '>' + website.dirPath + okAndUploadedTo.substr(1), 'css');
         assertStoredNewName(okAndUploadedFrom, {url: okAndUploadedTo, isOk: 1,
             uploadStatusesUrl: okAndUploadedTo});
         //
-        if (commons.db.delete('delete from uploadStatuses where `url` in(?,?)',
+        if (db.delete('delete from uploadStatuses where `url` in(?,?)',
                 function(stmt) {
                     stmt.bindString(0, okAndUploadedFrom);
                     stmt.bindString(1, okAndUploadedTo);
                 }) < 1 ||
-            commons.db.delete('delete from staticFileResources where `url` in(?,?)',
+            db.delete('delete from staticFileResources where `url` in(?,?)',
                 function(stmt) {
                     stmt.bindString(0, notOkFrom);
                     stmt.bindString(1, notOkTo);

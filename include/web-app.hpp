@@ -3,7 +3,6 @@
 #include <array>
 #include <cstring>
 #include <iostream>
-#include <unistd.h> // getcwd
 #if defined(INSN_IS_WIN)
 #include <winsock2.h>
 #elif defined(INSN_IS_LINUX)

@@ -8,8 +8,6 @@
 var app = require('app.js').app;
 var commons = require('common-services.js');
 var fileWatcher = commons.fileWatcher;
-var website = require('website.js');
-var siteGraph = website.siteGraph;
 var diff = require('website-diff.js');
 var TEMPLATE_EXT = 'htm';
 var lastRenameEventTime = 0;
@@ -148,6 +146,7 @@ function handleTemplateRenameEvent(from, to) {
         return;
     }
     // Update the site graph
+    var siteGraph = app.currentWebsite.graph;
     var p = siteGraph.pages;
     var numUserPages = 0;
     for (var url in p) {
@@ -196,6 +195,6 @@ function handleCssOrJsFileRenameEvent(from, to) {
  */
 function extractRenameFileNames(joined) {
     var pcs = joined.split('>');
-    pcs[1] = pcs[1].substr(insnEnv.sitePath.length);
+    pcs[1] = pcs[1].substr(app.currentWebsite.dirPath.length);
     return pcs;
 }

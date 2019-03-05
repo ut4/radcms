@@ -13,16 +13,18 @@ static bool validateSiteConfig(duk_context *ctx);
 void
 websiteJsModuleInit(duk_context *ctx, const int exportsIsAt) {
     // module.Website
-    duk_get_prop_string(ctx, exportsIsAt, "Website"); // [? Website]
-    duk_get_prop_string(ctx, -1, "prototype");        // [? Website proto]
-    duk_push_c_lightfunc(ctx, websiteInstall, 0, 0, 0); // [? Website proto lightfn]
-    duk_put_prop_string(ctx, -2, "install");          // [? Website proto]
-    duk_put_prop_string(ctx, -2, "prototype");        // [? Website]
+    duk_get_prop_string(ctx, exportsIsAt, "Website");    // [? Website]
+    duk_get_prop_string(ctx, -1, "prototype");           // [? Website proto]
+    duk_push_c_lightfunc(ctx, websiteInstall, 0, 0, 0);  // [? Website proto lightfn]
+    duk_put_prop_string(ctx, -2, "install");             // [? Website proto]
+    duk_put_prop_string(ctx, -2, "prototype");           // [? Website]
     duk_pop(ctx);
-    // module.siteConfig
-    duk_get_prop_string(ctx, exportsIsAt, "siteConfig"); // [? siteCfg]
-    duk_push_c_lightfunc(ctx, siteConfigLoadFromDisk, 0, 0, 0); // [? siteCfg lightfn]
-    duk_put_prop_string(ctx, -2, "loadFromDisk");        // [? siteCfg]
+    // module.SiteConfig
+    duk_get_prop_string(ctx, exportsIsAt, "SiteConfig"); // [? SiteCfg]
+    duk_get_prop_string(ctx, -1, "prototype");           // [? SiteCfg proto]
+    duk_push_c_lightfunc(ctx, siteConfigLoadFromDisk, 1, 0, 0); // [? SiteCfg proto lightfn]
+    duk_put_prop_string(ctx, -2, "loadFromDisk");        // [? SiteCfg proto]
+    duk_put_prop_string(ctx, -2, "prototype");           // [? SiteCfg]
     duk_pop(ctx);                                        // [?]
 }
 
@@ -40,9 +42,9 @@ websiteInstall(duk_context *ctx) {
 
 static duk_ret_t
 siteConfigLoadFromDisk(duk_context *ctx) {
-    duk_push_global_stash(ctx);             // [stash]
-    std::string filePath = jsEnvironmentPullAppEnv(ctx, -1)->dataPath + "site.ini";
-    duk_push_this(ctx);                     // [stash siteCfg]
+    std::string filePath = duk_require_string(ctx, 0);
+    filePath += "site.ini";
+    duk_push_this(ctx); // [str siteCfg]
     // -1 == file open error, -2 == mem error
     if (ini_parse(filePath.c_str(), receiveIniVal, ctx) < 0) {
         return duk_error(ctx, DUK_ERR_TYPE_ERROR, 

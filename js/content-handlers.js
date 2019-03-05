@@ -1,29 +1,32 @@
 /**
  * == content-handlers.js ====
  *
- * This file implements and registers handlers (or controllers) for
- * /api/content/* and /api/content-type/* http-routes.
+ * This file implements handlers (or controllers) for /api/content/* and
+ * /api/content-type/* http-routes.
  *
  */
 var app = require('app.js').app;
-var commons = require('common-services.js');
 var http = require('http.js');
-var website = require('website.js');
+var rejectRequest = require('website-handlers.js');
 
-commons.app.addRoute(function(url, method) {
-    if (method == 'GET') {
-        if (url == '/api/content-type')
-            return handleGetAllContentTypesRequest;
-        if (url.indexOf('/api/content-type/') > -1)
-            return handleGetContentTypeRequest;
-        if (url.indexOf('/api/content/') > -1)
-            return handleGetContentNodeRequest;
-    }
-    if (method == 'POST' && url == '/api/content')
-        return handleCreateContentRequest;
-    if (method == 'PUT' && url == '/api/content')
-        return handleUpdateContentRequest;
-});
+exports.init = function() {
+    app.addRoute(function(url, method) {
+        if (!app.currentWebsite)
+            return rejectRequest;
+        if (method == 'GET') {
+            if (url == '/api/content-type')
+                return handleGetAllContentTypesRequest;
+            if (url.indexOf('/api/content-type/') > -1)
+                return handleGetContentTypeRequest;
+            if (url.indexOf('/api/content/') > -1)
+                return handleGetContentNodeRequest;
+        }
+        if (method == 'POST' && url == '/api/content')
+            return handleCreateContentRequest;
+        if (method == 'PUT' && url == '/api/content')
+            return handleUpdateContentRequest;
+    });
+};
 
 /**
  * GET /api/content/<id>: returns a content node.
@@ -121,9 +124,10 @@ function handleUpdateContentRequest(req) {
  * ]
  */
 function handleGetAllContentTypesRequest() {
-    return new http.Response(200, JSON.stringify(website.siteConfig.contentTypes), {
-        'Content-Type': 'application/json'
-    });
+    return new http.Response(200,
+        JSON.stringify(app.currentWebsite.config.contentTypes),
+        {'Content-Type': 'application/json'}
+    );
 }
 
 /**
@@ -135,7 +139,7 @@ function handleGetAllContentTypesRequest() {
 function handleGetContentTypeRequest(req) {
     var contentType = null;
     var lookFor = req.url.split('/').pop();
-    var all = website.siteConfig.contentTypes;
+    var all = app.currentWebsite.config.contentTypes;
     for (var i = 0; i < all.length; ++i) {
         if (all[i].name == lookFor) { contentType = all[i]; break; }
     }

@@ -2,7 +2,6 @@
 
 #include <string>
 #include <stdlib.h> // system()
-#include <unistd.h> // getcwd()
 #if defined(INSN_IS_WIN)
 #include <shlobj.h> // SHGetFolderPathA()
 #endif

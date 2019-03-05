@@ -56,6 +56,23 @@ myFsRead(const std::string &path, std::string &to, std::string &err) {
 }
 
 bool
+myFsReadDir(const char *path, bool (*onEach)(const char *fileName, void *myPtr),
+            void *myPtr, std::string &err) {
+    DIR *dir = opendir(path);
+    if (!dir) {
+        err.assign("Failed to open dir '" + std::string(path) + "'");
+        return false;
+    }
+    struct dirent *ent = nullptr;
+    bool out = true;
+    while ((ent = readdir(dir))) {
+        if (!(out = onEach(ent->d_name, myPtr))) break;
+    }
+    closedir(dir);
+    return out;
+}
+
+bool
 myFsMakeDirs(const char *path, std::string &err) {
     const unsigned plen = strlen(path);
     if (plen > PATH_MAX) {
@@ -104,21 +121,15 @@ myFsMakeDirs(const char *path, std::string &err) {
     return true;
 }
 
-bool
-myFsReadDir(const char *path, bool (*onEach)(const char *fileName, void *myPtr),
-            void *myPtr, std::string &err) {
-    DIR *dir = opendir(path);
-    if (!dir) {
-        err.assign("Failed to open dir '" + std::string(path) + "'");
-        return false;
+int
+myFsGetFileInfo(const char *path, struct stat *out) {
+    int fd = open(path, O_RDONLY);
+    if (fd == -1) return -1;
+    if (fstat(fd, out) != 0) {
+        (void)close(fd);
+        return -2;
     }
-    struct dirent *ent = nullptr;
-    bool out = true;
-    while ((ent = readdir(dir))) {
-        if (!(out = onEach(ent->d_name, myPtr))) break;
-    }
-    closedir(dir);
-    return out;
+    return fd;
 }
 
 void

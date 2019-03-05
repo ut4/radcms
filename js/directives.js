@@ -5,7 +5,7 @@
  * <RadList/> etc.). init() adds them to $commons.templateCache.
  *
  */
-var website = require('website.js');
+var app = require('app.js').app;
 var templates = require('common-services.js').templateCache;
 
 exports.init = function() {
@@ -31,7 +31,7 @@ exports.init = function() {
  */
 function Link(domTree, props) {
     if (!props.to) throw new TypeError('<RadLink to=""/> is required');
-    else if (props.to == '/') props.to = website.siteConfig.homeUrl;
+    else if (props.to == '/') props.to = app.currentWebsite.config.homeUrl;
     else if (props.to.charAt(0) != '/') props.to = '/' + props.to;
     //
     var p = {href: props.to};

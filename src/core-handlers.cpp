@@ -28,17 +28,13 @@ coreHandlersHandleStaticFileRequest(void *myPtr, void *myDataPtr, const char *me
     // Mustn't contain ".."
     if (strstr(url, "..")) return MHD_HTTP_NOT_FOUND;
     // Must exist
-    int fd;
-    struct stat sbuf;
-    bool isUserFile = strstr(url, "/frontend/") != url;
-    std::string &rootPath = isUserFile
+    std::string &rootPath = strstr(url, "/frontend/") != url
         ? static_cast<AppEnv*>(myPtr)->dataPath
         : static_cast<AppEnv*>(myPtr)->appPath;
-    std::string path = rootPath + std::string(&url[1]);
-    if ((fd = open(path.c_str(), O_RDONLY)) == -1 || fstat(fd, &sbuf) != 0) {
-        if (fd != -1) (void)close(fd);
-        return MHD_HTTP_INTERNAL_SERVER_ERROR;
-    }
+    struct stat sbuf;
+    int fd = myFsGetFileInfo((rootPath + std::string(&url[1])).c_str(), &sbuf);
+    if (fd < 0) return MHD_HTTP_NOT_FOUND;
+    //
     *response = MHD_create_response_from_fd_at_offset64(sbuf.st_size, fd, 0);
     const char *mime = getMime(ext);
     if (mime) MHD_add_response_header(*response, "Content-Type", mime);
@@ -56,7 +52,7 @@ coreHandlersHandleScriptRouteRequest(void *myPtr, void *myDataPtr, const char *m
     duk_push_global_stash(ctx);                         // [stash]
     // First iteration
     if (!myDataPtr) {
-        jsEnvironmentPushCommonService(ctx, "app");     // [stash app]
+        jsEnvironmentPushModuleProp(ctx, "app.js", "app"); // [stash app]
         duk_get_prop_string(ctx, -1, "_routeMatchers"); // [stash app routes]
         duk_size_t l = duk_get_length(ctx, -1);
         for (duk_size_t i = 0; i < l; ++i) {

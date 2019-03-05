@@ -2,11 +2,10 @@
 
 #include <cassert>
 #include <cstring>
-#include <fcntl.h> // O_RDONLY
-#include <sys/stat.h> // fstat
 #include "duk.hpp"
 #include "web-app.hpp" // microhttpd
 #include "js-environment.hpp"
+#include "my-fs.hpp"
 
 /**
  * Responds to GET /<any>.html|js|css|svg eg. "/frontend/cpanel.html"

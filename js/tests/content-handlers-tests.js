@@ -1,16 +1,16 @@
-require('content-handlers.js');
+require('content-handlers.js').init();
 var app = require('app.js').app;
-var commons = require('common-services.js');
 var testLib = require('tests/testlib.js').testLib;
 var http = require('http.js');
-var website = require('website.js');
 
 testLib.module('content-handlers.js', function(hooks) {
     var testCntType = {name:'name', props:''};
     var testCnode = {id:1,name:'foo',json:'',contentTypeName:testCntType.name};
+    var website;
     var db;
     hooks.before(function() {
-        db = app.currentWebsite.db;
+        website = app.currentWebsite;
+        db = website.db;
     });
     testLib.test('GET \'/api/content/<id>\' returns a content node', function(assert) {
         assert.expect(3);
@@ -22,7 +22,7 @@ testLib.module('content-handlers.js', function(hooks) {
         });
         var req = new http.Request('/api/content/' + testCnode.id, 'GET');
         //
-        var response = commons.app.getHandler(req.url, req.method)(req);
+        var response = app.getHandler(req.url, req.method)(req);
         assert.equal(response.statusCode, 200);
         assert.equal(response.body, JSON.stringify(testCnode));
         assert.equal(response.headers['Content-Type'], 'application/json');
@@ -36,7 +36,7 @@ testLib.module('content-handlers.js', function(hooks) {
         var req = new http.Request('/api/content', 'POST');
         req.data = {name: 'foo', json: JSON.stringify({key: 'val'}),
             contentTypeName: testCntType.name};
-        var response = commons.app.getHandler(req.url, req.method)(req);
+        var response = app.getHandler(req.url, req.method)(req);
         //
         var actuallyInserted = {};
         var sql = 'select * from contentNodes order by id desc limit 1';
@@ -67,7 +67,7 @@ testLib.module('content-handlers.js', function(hooks) {
         var req = new http.Request('/api/content', 'PUT');
         req.data = {name: 'foo', json: JSON.stringify({key: 'val'}),
             contentTypeName: testCntType.name};
-        var response = commons.app.getHandler(req.url, req.method)(req);
+        var response = app.getHandler(req.url, req.method)(req);
         //
         var newCnode = {};
         var sql = 'select * from contentNodes where id = ' + testCnode.id;
@@ -87,22 +87,22 @@ testLib.module('content-handlers.js', function(hooks) {
     });
     testLib.test('GET \'/api/content-type\' lists content types', function(assert) {
         assert.expect(3);
-        website.siteConfig.contentTypes = [{foo: 'bar'}];
+        website.config.contentTypes = [{foo: 'bar'}];
         var req = new http.Request('/api/content-type', 'GET');
         //
-        var response = commons.app.getHandler(req.url, req.method)(req);
+        var response = app.getHandler(req.url, req.method)(req);
         assert.equal(response.statusCode, 200);
-        assert.equal(response.body, JSON.stringify(website.siteConfig.contentTypes));
+        assert.equal(response.body, JSON.stringify(website.config.contentTypes));
         assert.equal(response.headers['Content-Type'], 'application/json');
     });
     testLib.test('GET \'/api/content-type/<name>\' returns a content type', function(assert) {
         assert.expect(3);
-        website.siteConfig.contentTypes = [{name: 'foo'}, {name: 'bar'}];
+        website.config.contentTypes = [{name: 'foo'}, {name: 'bar'}];
         var req = new http.Request('/api/content-type/bar', 'GET');
         //
-        var response = commons.app.getHandler(req.url, req.method)(req);
+        var response = app.getHandler(req.url, req.method)(req);
         assert.equal(response.statusCode, 200);
-        assert.equal(response.body, JSON.stringify(website.siteConfig.contentTypes[1]));
+        assert.equal(response.body, JSON.stringify(website.config.contentTypes[1]));
         assert.equal(response.headers['Content-Type'], 'application/json');
     });
 });

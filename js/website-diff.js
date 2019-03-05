@@ -6,8 +6,6 @@
  */
 var app = require('app.js').app;
 var commons = require('common-services.js');
-var website = require('website.js');
-var siteGraph = website.siteGraph;
 
 /**
  * @param {string} type 'full' or 'usersOf:some-template.jsx.htm'
@@ -19,6 +17,7 @@ exports.performRescan = function(type) {
         if (!commons.templateCache.has(usersOf)) return;
     }
     var diff = new LocalDiff();
+    var siteGraph = app.currentWebsite.graph;
     diff.scanChanges(siteGraph.pages, usersOf);
     diff.deleteUnreachablePages();
     diff.remoteDiff.saveStatusesToDb();
@@ -229,7 +228,7 @@ function LocalDiff() {
 }
 
 /**
- * Scans $pages for new/removed links+static urls updating website.siteGraph
+ * Scans $pages for new/removed links+static urls updating website.graph
  * along the way.
  *
  * @param {Page[]} pages
@@ -238,12 +237,13 @@ function LocalDiff() {
 LocalDiff.prototype.scanChanges = function(pages, usersOfLayout) {
     var completelyNewPages = {};
     var RadLink = commons.templateCache.get('RadLink');
+    var website = app.currentWebsite;
     for (var url in pages) {
         var page = pages[url];
         if (page.refCount < 1 || (usersOfLayout && page.layoutFileName != usersOfLayout)) continue;
         var newLinksTo = {};
         var domTree = new commons.DomTree();
-        this.remoteDiff.addPageToCheck(page.url, page.render2(domTree));
+        this.remoteDiff.addPageToCheck(page.url, website.renderPage2(page, domTree));
         var fnCmps = domTree.getRenderedFnComponents();
         var l = fnCmps.length;
         for (var i = 0; i < l; ++i) {
@@ -252,13 +252,13 @@ LocalDiff.prototype.scanChanges = function(pages, usersOfLayout) {
             var href = props.to;
             newLinksTo[href] = 1;
             // Page already in the site graph
-            if (siteGraph.getPage(href)) {
+            if (website.graph.getPage(href)) {
                 if (!page.linksTo[href]) this.addLink(href, page);
             // Totally new page -> add it
             } else {
-                completelyNewPages[href] = siteGraph.addPage(href,
+                completelyNewPages[href] = website.graph.addPage(href,
                     href.indexOf(url) === 0 ? url : '',
-                    props.layoutOverride || website.siteConfig.defaultLayout);
+                    props.layoutOverride || website.config.defaultLayout);
                 this.addLink(href, page, true);
             }
         }
@@ -313,7 +313,7 @@ LocalDiff.prototype.addLink = function(url, toPage, isNewPage) {
     }
     toPage.linksTo[url] = 1;
     if (toPage.url != url) {
-        siteGraph.pages[url].refCount += 1;
+        app.currentWebsite.graph.pages[url].refCount += 1;
     }
 };
 
@@ -327,7 +327,7 @@ LocalDiff.prototype.removeLink = function(url, fromPage) {
     if (url != fromPage.url) {
         fromPage.linksTo[url] = 0;
         this.removedLinkUrls[url] = 1;
-        var p = siteGraph.pages[url];
+        var p = app.currentWebsite.graph.pages[url];
         // Doesn't link to anywhere anymore -> recurse
         if (--p.refCount == 0) {
             for (var url2 in p.linksTo) {
@@ -340,7 +340,8 @@ LocalDiff.prototype.removeLink = function(url, fromPage) {
 };
 
 LocalDiff.prototype.deleteUnreachablePages = function() {
-    var homeUrl = website.siteConfig.homeUrl;
+    var homeUrl = app.currentWebsite.config.homeUrl;
+    var siteGraph = app.currentWebsite.graph;
     for (var url in this.removedLinkUrls) {
         var r = siteGraph.pages[url].refCount;
         if (r < 1 && url != homeUrl) {

@@ -1,51 +1,49 @@
-// == app-singleton ====
-// =============================================================================
-exports.app = {
-    _routeMatchers: [],
-    /**
-     * @param {(url: string, method: string): Function|null} fn
-     */
-    addRoute: function(fn) {
-        if (typeof fn != 'function') {
-            throw new TypeError('A handler must be a function.');
-        }
-        this._routeMatchers.push(fn);
-    }
-};
+/**
+ * == common-services.js ====
+ *
+ * In this file:
+ *
+ * - Db (class)
+ * - fs (singleton)
+ * - fileWatcher (singleton)
+ * - signals (singleton)
+ * - transpiler (singleton)
+ * - Uploader (class)
+ * - DomTree (class)
+ * - templateCache (singleton)
+ *
+ */
 
-
-// == db-singleton ====
-// =============================================================================
 /**
  * @native
  * @param {string} path
  * @constructor
  */
-exports.db = function(/*path*/) {};
+exports.Db = function(/*path*/) {};
 /**
  * @native
  * @param {string} sql
  * @param {(stmt: Stmt): void} bindFn
  * @returns int lastInsertId
  */
-exports.db.prototype.insert = function(/*sql, bindFn*/) {};
+exports.Db.prototype.insert = function(/*sql, bindFn*/) {};
 /**
  * @native
  * @param {string} sql
  * @param {(row: ResultRow, rowIdx: number): void} mapFn
  */
-exports.db.prototype.select = function(/*sql, mapFn[, whereBindFn]*/) {};
+exports.Db.prototype.select = function(/*sql, mapFn[, whereBindFn]*/) {};
 /**
  * @native
  * @param {string} sql
  * @param {(stmt: Stmt): void} bindFn
  * @returns int numAffectedRows
  */
-exports.db.prototype.update = function(/*sql, bindFn*/) {};
+exports.Db.prototype.update = function(/*sql, bindFn*/) {};
 /**
  * @see update
  */
-exports.db.prototype.delete = function(/*sql, bindFn*/) {};
+exports.Db.prototype.delete = function(/*sql, bindFn*/) {};
 
 
 // == fs-singleton ====
@@ -185,6 +183,7 @@ exports.Uploader.prototype.uploadFile = function(/*url, filePath*/) {};
  * @returns {number}
  */
 exports.Uploader.prototype.delete = function(/*serverUrl, itemPath, asDir*/) {};
+
 
 // == DomTree ====
 // =============================================================================

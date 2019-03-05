@@ -1,7 +1,7 @@
 #include <iostream>
 #include "include/core-handlers.hpp"
-#include "include/js-environment.hpp"
 #include "include/web-app.hpp"
+#include "include/js-environment.hpp"
 
 static void
 myAtExit() {

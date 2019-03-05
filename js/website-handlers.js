@@ -1,8 +1,8 @@
 /**
  * == website-handlers.js ====
  *
- * This file implements and registers handlers (or controllers) for
- * GET /<page>, and * /api/website/* http-routes.
+ * This file implements handlers (or controllers) for GET /<page>,
+ * and * /api/website/* http-routes.
  *
  */
 var app = require('app.js').app;
@@ -12,49 +12,55 @@ var http = require('http.js');
 var diff = require('website-diff.js');
 var uploadHandlerIsBusy = false;
 
-commons.app.addRoute(function(url, method) {
-    if (!app.currentWebsite)
-        return;
-    if (method == 'GET') {
-        if (url == '/api/website/num-waiting-uploads')
-            return handleGetNumWaitingUploads;
-        if (url == '/api/website/templates')
-            return handleGetAllTemplatesRequest;
-        if (url == '/api/website/waiting-uploads')
-            return handleGetWaitingUploadsRequest;
-        if (url == '/api/website/site-graph')
-            return handleGetSiteGraphRequest;
-        return handlePageRequest;
-    }
-    if (method == 'POST') {
-        if (url == '/api/website/generate')
-            return handleGenerateRequest;
-        if (url == '/api/website/upload') {
-            if (!uploadHandlerIsBusy) return handleUploadRequest;
-            else return rejectUploadRequest;
+exports.init = function() {
+    app.addRoute(function(url, method) {
+        if (!app.currentWebsite)
+            return rejectRequest;
+        if (method == 'GET') {
+            if (url == '/api/website/num-waiting-uploads')
+                return handleGetNumWaitingUploads;
+            if (url == '/api/website/templates')
+                return handleGetAllTemplatesRequest;
+            if (url == '/api/website/waiting-uploads')
+                return handleGetWaitingUploadsRequest;
+            if (url == '/api/website/site-graph')
+                return handleGetSiteGraphRequest;
+            return handlePageRequest;
         }
-    }
-    if (method == 'PUT') {
-        if (url == '/api/website/page')
-            return handleUpdatePageRequest;
-        if (url == '/api/website/site-graph')
-            return handleUpdateSiteGraphRequest;
-    }
-});
+        if (method == 'POST') {
+            if (url == '/api/website/generate')
+                return handleGenerateRequest;
+            if (url == '/api/website/upload') {
+                if (!uploadHandlerIsBusy) return handleUploadRequest;
+                else return rejectUploadRequest;
+            }
+        }
+        if (method == 'PUT') {
+            if (url == '/api/website/page')
+                return handleUpdatePageRequest;
+            if (url == '/api/website/site-graph')
+                return handleUpdateSiteGraphRequest;
+        }
+    });
+};
+
+function rejectRequest() {
+    return new http.Response(428, 'app.currentWebsite == null'); // Precondition Required
+}
 
 /**
  * GET <any> eg. "/" or "/foo/bar/baz": renders a page.
  */
 function handlePageRequest(req) {
     var w = app.currentWebsite;
-    var page = w.siteGraph.getPage(req.url != '/' ? req.url : w.siteConfig.homeUrl);
+    var page = w.graph.getPage(req.url != '/' ? req.url : w.config.homeUrl);
     var dataToFrontend = {directiveElems: [], allContentNodes: [], page: {}};
     if (page) {
         var rescanType = req.getUrlParam('rescan');
         if (rescanType) {
             commons.signals.emit('siteGraphRescanRequested', rescanType);
         }
-        var html = page.render(dataToFrontend);
+        var html = w.renderPage(page, dataToFrontend);
         dataToFrontend.page = {url: page.url, layoutFileName: page.layoutFileName};
         return new http.Response(200, injectControlPanelIFrame(html, dataToFrontend));
     } else {
@@ -115,9 +121,9 @@ function handleGetAllTemplatesRequest() {
  */
 function handleGetWaitingUploadsRequest() {
     var out = {pages: [], files: []};
-    app.currentWebsite.db.select('select `url`, `curhash`, `uphash`, `isFile` from uploadStatuses\
-                      where `uphash` is null or `curhash` != `uphash` or\
-                      (`curhash` is null and `uphash` is not null)', function(row) {
+    app.currentWebsite.db.select('select `url`, `curhash`, `uphash`, `isFile` \
+        from uploadStatuses where `uphash` is null or `curhash` != `uphash` or\
+        (`curhash` is null and `uphash` is not null)', function(row) {
         (row.getInt(3) == 0 ? out.pages : out.files).push({
             url: row.getString(0),
             uploadStatus: !row.getString(2) ? website.NOT_UPLOADED :
@@ -139,7 +145,7 @@ function handleGetWaitingUploadsRequest() {
  */
 function handleGetSiteGraphRequest() {
     var out = {pages: []};
-    for (var url in app.currentWebsite.siteGraph.pages) {
+    for (var url in app.currentWebsite.graph.pages) {
         out.pages.push({url: url});
     }
     return new http.Response(200, JSON.stringify(out),
@@ -164,8 +170,8 @@ function handleGenerateRequest() {
     var out = {
         wrotePagesNum: 0,
         tookSecs: performance.now(),
-        totalPages: w.siteGraph.pageCount,
-        outPath: insnEnv.sitePath + 'out',
+        totalPages: w.graph.pageCount,
+        outPath: w.dirPath + 'out',
         issues: []
     };
     w.generate(function(renderedOutput, page) {
@@ -262,7 +268,7 @@ function handleUploadRequest(req) {
         } else if (state.uploadFilesLeft > 0) {
             resourceTypePrefix = 'file|';
             url = state.uploadFileNames[idx];
-            contents = app.currentWebsite.fs.read(insnEnv.sitePath + url);
+            contents = app.currentWebsite.fs.read(app.currentWebsite.dirPath + url);
             uploadRes = state.uploader.uploadString(state.remoteUrl + url,
                 contents);
             if (--state.uploadFilesLeft == 0) state.nthItem = 0;
@@ -344,7 +350,7 @@ function makeUploadState(reqData, pageUrls) {
 }
 
 /**
- * PUT /api/website/page: updates siteGraph.pages[$req.data.url].
+ * PUT /api/website/page: updates app.currentWebsite.graph.pages[$req.data.url].
  *
  * Payload:
  * {
@@ -358,7 +364,7 @@ function makeUploadState(reqData, pageUrls) {
 function handleUpdatePageRequest(req) {
     var errs = [];
     if (req.data.url) {
-        var page = app.currentWebsite.siteGraph.getPage(req.data.url);
+        var page = app.currentWebsite.graph.getPage(req.data.url);
         if (!page) errs.push('Page' + req.data.url + ' not found.');
     } else {
         errs.push('url is required.');
@@ -367,7 +373,7 @@ function handleUpdatePageRequest(req) {
     if (errs.length) return new http.Response(400, errs.join('\n'));
     //
     page.layoutFileName = req.data.layoutFileName;
-    var ok = app.currentWebsite.saveToDb(app.currentWebsite.siteGraph);
+    var ok = app.currentWebsite.saveToDb(app.currentWebsite.graph);
     return new http.Response(200, JSON.stringify({numAffectedRows: ok}),
         {'Content-Type': 'application/json'});
 }
@@ -389,15 +395,15 @@ function handleUpdateSiteGraphRequest(req) {
     var w = app.currentWebsite;
     for (var i = 0; i < req.data.deleted.length; ++i) {
         var url = req.data.deleted[i];
-        if (!w.siteGraph.getPage(url)) {
+        if (!w.graph.getPage(url)) {
             return new http.Response(400, 'Page \'' + url + '\' not found.');
         }
         remoteDiff.addPageToDelete(url);
-        delete w.siteGraph.pages[url];
+        delete w.graph.pages[url];
     }
     if (i == 0) return new http.Response(400, 'Nothing to update.');
     //
-    w.saveToDb(w.siteGraph); // update websites set `graph` = ...
+    w.saveToDb(w.graph); // update websites set `graph` = ...
     remoteDiff.saveStatusesToDb(); // update|delete from uploadStatuses ...
     return new http.Response(200, '{"status":"ok"}',
         {'Content-Type': 'application/json'}
@@ -420,3 +426,5 @@ function injectControlPanelIFrame(html, dataToFrontend) {
     }
     return html;
 }
+
+exports.rejectRequest = rejectRequest;

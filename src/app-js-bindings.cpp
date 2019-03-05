@@ -15,7 +15,7 @@ appFillDbIfEmpty(duk_context *ctx) {
     duk_push_this(ctx);
     duk_get_prop_string(ctx, -1, "db");
     Db* self = commonServicesGetDbSelfPtr(ctx, -1);
-    // Check if $appPath/data.db is already populated
+    // Check if $appPath+'data.db' is already populated
     bool wasAlreadyPopulated = false;
     std::string err;
     self->select("select count(`type`) from sqlite_master",

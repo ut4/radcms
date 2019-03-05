@@ -6,7 +6,8 @@
 
 /**
  * Implements @native methods of website.js (
- *    - siteConfig.loadFromDisk()
+ *    - Website.prototype.install()
+ *    - SiteConfig.prototype.loadFromDisk()
  * ) */
 void
 websiteJsModuleInit(duk_context *ctx, const int exportsIsAt);

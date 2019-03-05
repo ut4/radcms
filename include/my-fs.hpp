@@ -3,7 +3,8 @@
 #include <fstream>
 #include <cstring>
 #include <dirent.h> // opendir()
-#include <sys/stat.h> // mkdir(), S_IRWXU etc.
+#include <sys/stat.h> // mkdir(), S_IRWXU etc., fstat()
+#include <fcntl.h> // O_RDONLY
 #if defined(INSN_IS_WIN)
 #include <limits.h> // PATH_MAX
 #elif defined(INSN_IS_LINUX)
@@ -28,8 +29,11 @@ myFsReadDir(const char *path, bool (*onEach)(const char *fileName, void *myPtr),
 bool
 myFsMakeDirs(const char *path, std::string &err);
 
+int
+myFsGetFileInfo(const char *path, struct stat *out);
+
 #define myFsIsReadable(path) \
-    access(path, R_OK) == 0
+    (access(path, R_OK) == 0)
 
 /**
  * "c:\foo\bar" -> "c:/foo/bar/".
