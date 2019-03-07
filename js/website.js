@@ -28,10 +28,12 @@ exports.Website = function(dirPath, dbUrl) {
     this.Uploader = commons.Uploader;
 };
 /**
- * Creates and populates $this.dirPath+'data.db'.
+ * Populates $this.dirPath+'data.db'.
  *
  * @native
  * @param {string} sampleDataName 'minimal', 'blog' etc.
+ * @throws {TypeError} if $sampleDataName wasn't valid
+ * @throws {Error} if there was a database or fs error
  */
 exports.Website.prototype.install = function(/*sampleDataName*/) {};
 /**
@@ -41,7 +43,7 @@ exports.Website.prototype.init = function() {
     this.config.loadFromDisk(this.dirPath);
     // Populate this.graph
     var self = this;
-    this.db.select('select `graph` from websites limit 1', function(row) {
+    this.db.select('select `graph` from self limit 1', function(row) {
         self.graph.parseAndLoadFrom(row.getString(0), self.config.homeUrl);
     });
     // Read and compile each template from disk to commons.templateCache
@@ -52,6 +54,12 @@ exports.Website.prototype.init = function() {
         catch(e) { /**/ }
     });
     commons.signals.emit('siteGraphRescanRequested', 'full');
+};
+/**
+ * @returns {bool}
+ */
+exports.Website.prototype.isInitialized = function() {
+    return this.config.name.length > 0;
 };
 /**
  * @param {(renderedHtml: string, page: Page): any|bool} onEach
@@ -113,7 +121,7 @@ exports.Website.prototype.renderPage2 = function(page, domTree) {
    domTree.directives = commons.templateCache._fns;
    domTree.currentPage = page;
    return domTree.render(commons.templateCache.get(page.layoutFileName)(
-       domTree, {ddc: new documentData.DDC(commons.db), url: page.urlPcs}));
+       domTree, {ddc: new documentData.DDC(this.db), url: page.urlPcs}));
 };
 /**
  * @param {string} fileName
@@ -139,7 +147,7 @@ exports.Website.prototype.readFileAndCalcChecksum = function(fileUrl) {
  * @throws {Error}
  */
 exports.Website.prototype.saveToDb = function(siteGraph) {
-    return this.db.update('update websites set `graph` = ?', function(stmt) {
+    return this.db.update('update self set `graph` = ?', function(stmt) {
         stmt.bindString(0, siteGraph.serialize());
     });
 };

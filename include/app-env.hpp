@@ -12,6 +12,8 @@
 struct AppEnv {
     std::string appPath; // An absolute path to the source/binary dir, always ends with "/"
     std::string dataPath; // An absolute path to a platform-specific data dir, always ends with "/"
+    std::string currentWebsiteDirPath; // Empty, or an absolute path to the directory of the website
+                                       // currently being edited (and ends with "/")
     std::string errBuf; // A shared error buffer
     duk_context *dukCtx = nullptr;
     ~AppEnv();

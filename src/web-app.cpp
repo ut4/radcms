@@ -245,6 +245,11 @@ processPostData(const char *uploadData, size_t *uploadDataSize,
     handlers->init(connInfo->formDataContentType, &handlers->myPtr);
     //
     if (connInfo->formDataContentType == CONTENT_TYPE_JSON) {
+        if (uploadData[l] != '\0') {
+            char terminator[2] = {uploadData[l - 1], '\0'};
+            // abcjunk -> abc\0unk
+            memcpy((void*)&uploadData[l - 1], terminator, 2);
+        }
         handlers->receiveVal("<json>", uploadData, handlers->myPtr);
     } else {
         (void)MHD_post_process(connInfo->postProcessor, uploadData, l);

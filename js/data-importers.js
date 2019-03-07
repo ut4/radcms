@@ -6,6 +6,7 @@ var commons = require('common-services.js');
  * @param {any} arg
  */
 exports.import = function(type, arg) {
+    throw new TypeError('Not implemented');
     var data = null;
     var errors = null;
     if (type == 'wp') data = wpXmlFileToInsaneData(arg);

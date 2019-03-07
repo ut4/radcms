@@ -22,7 +22,7 @@ testLib.module('file-watchers.js', function(hooks) {
             }
         };
         website.crypto = {sha1: function(str) { return str; }};
-        if (db.insert('insert into websites values (?,?)', function(stmt) {
+        if (db.insert('insert into self values (?,?)', function(stmt) {
                 stmt.bindInt(0, websiteData.id);
                 stmt.bindString(1, websiteData.graph);
             }) < 1
@@ -32,7 +32,7 @@ testLib.module('file-watchers.js', function(hooks) {
     hooks.after(function() {
         website.fs = commons.fs;
         website.crypto = require('crypto.js');
-        if (db.delete('delete from websites where id = ?',
+        if (db.delete('delete from self where id = ?',
             function(stmt) { stmt.bindInt(0, websiteData.id); }) < 1
         ) throw new Error('Failed to clean test data.');
         fileWatchers.clear();
@@ -232,7 +232,7 @@ testLib.module('file-watchers.js', function(hooks) {
         fileWatcher._watchFn(fileWatcher.EVENT_RENAME,
             noUsersFrom + '>' + website.dirPath + noUsersTo, 'htm');
         assertSwappedTheTemplate(noUsersFrom, noUsersTo);
-        db.select('select `graph` from websites', function(row) {
+        db.select('select `graph` from self', function(row) {
             assert.equal(row.getString(0), '');
         });
         //
@@ -243,7 +243,7 @@ testLib.module('file-watchers.js', function(hooks) {
             'Should update the new name to siteGraph.pages');
         assert.equal(website.graph.getPage(testUser2).layoutFileName, hasUsersTo,
             'Should update the new name to siteGraph.pages');
-        db.select('select `graph` from websites', function(row) {
+        db.select('select `graph` from self', function(row) {
             assert.equal(row.getString(0), JSON.stringify({
                 pages:[[testUser,NO_PARENT,hasUsersTo,[]],
                        [testUser2,NO_PARENT,hasUsersTo,[]]]

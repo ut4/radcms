@@ -38,7 +38,7 @@ testLib.module('link-diff', function(hooks) {
                 if(a==website.dirPath + mockTemplate2.fname) return mockTemplate2.contents;
             }
         };
-        if (db.insert('insert into websites values (?,?)', function(stmt) {
+        if (db.insert('insert into self values (?,?)', function(stmt) {
                 stmt.bindInt(0, websiteData.id);
                 stmt.bindString(1, websiteData.graph);
             }) < 1
@@ -48,7 +48,7 @@ testLib.module('link-diff', function(hooks) {
     hooks.after(function() {
         diff.RemoteDiff = originalRemoteDiff;
         app.currentWebsite.fs = commons.fs;
-        if (db.delete('delete from websites where id = ?',
+        if (db.delete('delete from self where id = ?',
             function(stmt) { stmt.bindInt(0, websiteData.id); }) < 1
         ) throw new Error('Failed to clean test data.');
         fileWatchers.clear();
@@ -72,7 +72,7 @@ testLib.module('link-diff', function(hooks) {
         var addedPage = siteGraph.getPage(newLinkUrl);
         assert.ok(addedPage !== undefined, 'should add a page to website.graph');
         // Assert that saved the updated site graph to the database
-        db.select('select `graph` from websites where id = ' + websiteData.id,
+        db.select('select `graph` from self where id = ' + websiteData.id,
             function(row) {
             assert.equal(row.getString(0), JSON.stringify({
                 pages:[
@@ -96,7 +96,7 @@ testLib.module('link-diff', function(hooks) {
         // Assert that removed the page to website.graph
         assert.ok(!siteGraph.getPage(existingPage2), 'Should remove a page from website.graph');
         // Assert that saved the updated site graph to the database
-        db.select('select `graph` from websites where id = ' + websiteData.id,
+        db.select('select `graph` from self where id = ' + websiteData.id,
             function(row) {
             assert.equal(row.getString(0), JSON.stringify({
                 pages:[
@@ -118,7 +118,7 @@ testLib.module('link-diff', function(hooks) {
         assert.equal(siteGraph.getPage(existingPage2.url), existingPage2,
             'Should not remove the page');
         // Assert that saved the updated site graph to the database
-        db.select('select `graph` from websites where id = ' + websiteData.id,
+        db.select('select `graph` from self where id = ' + websiteData.id,
             function(row) {
             assert.equal(row.getString(0), JSON.stringify({
                 pages:[
@@ -158,7 +158,7 @@ testLib.module('link-diff', function(hooks) {
         assert.ok(newDish1 !== undefined, 'Should add /desserts/dish1');
         assert.equal(newDish1.parentUrl, '/desserts', 'Should update .parentUrl /starters -> /desserts');
         //
-        db.select('select `graph` from websites where id = ' + websiteData.id,
+        db.select('select `graph` from self where id = ' + websiteData.id,
             function(row) {
             assert.equal(row.getString(0), JSON.stringify({
                 pages:[['/home','',mockTemplate.fname,['/starters','/desserts']],
@@ -194,7 +194,7 @@ testLib.module('link-diff', function(hooks) {
         assert.ok(added2 !== undefined, 'should add page #2 to website.graph');
         assert.equal(added2.url, '/nar');
         // Assert that saved the updated site graph to the database
-        db.select('select `graph` from websites where id = ' + websiteData.id,
+        db.select('select `graph` from self where id = ' + websiteData.id,
             function(row) {
             assert.equal(row.getString(0), JSON.stringify({
                 pages: [

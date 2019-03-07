@@ -64,3 +64,9 @@ exports.ChunkedResponse = function(statusCode, chunkFn, chunkFnState, chunkSizeM
         throw new TypeError('Invalid chunkSizeMax ' + this.chunkSizeMax);
     }
 };
+
+exports.makeJsonResponse = function(statusCode, body) {
+    return new exports.Response(statusCode, JSON.stringify(body), {
+        'Content-Type': 'application/json'
+    });
+};

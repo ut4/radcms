@@ -52,9 +52,7 @@ function handleGetContentNodeRequest(req) {
     }, function(stmt) {
         stmt.bindInt(0, parseInt(req.url.split('/').pop()));
     });
-    if (out) return new http.Response(200, JSON.stringify(out), {
-        'Content-Type': 'application/json'
-    });
+    if (out) return http.makeJsonResponse(200, out);
     return new http.Response(400, 'Content node not found');
 }
 
@@ -83,9 +81,7 @@ function handleCreateContentRequest(req) {
         stmt.bindString(2, req.data.contentTypeName);
     });
     //
-    return new http.Response(200, JSON.stringify({insertId: insertId}), {
-        'Content-Type': 'application/json'
-    });
+    return http.makeJsonResponse(200, {insertId: insertId});
 }
 
 /**
@@ -109,9 +105,7 @@ function handleUpdateContentRequest(req) {
         stmt.bindString(2, req.data.name);
     });
     //
-    return new http.Response(200, JSON.stringify({numAffectedRows: ok}), {
-        'Content-Type': 'application/json'
-    });
+    return http.makeJsonResponse(200, {numAffectedRows: ok});
 }
 
 /**
@@ -124,10 +118,7 @@ function handleUpdateContentRequest(req) {
  * ]
  */
 function handleGetAllContentTypesRequest() {
-    return new http.Response(200,
-        JSON.stringify(app.currentWebsite.config.contentTypes),
-        {'Content-Type': 'application/json'}
-    );
+    return http.makeJsonResponse(200, app.currentWebsite.config.contentTypes);
 }
 
 /**
@@ -143,9 +134,7 @@ function handleGetContentTypeRequest(req) {
     for (var i = 0; i < all.length; ++i) {
         if (all[i].name == lookFor) { contentType = all[i]; break; }
     }
-    if (contentType) return new http.Response(200, JSON.stringify(contentType), {
-        'Content-Type': 'application/json'
-    });
+    if (contentType) return http.makeJsonResponse(200, contentType);
     return new http.Response(400, 'Content type not found');
 }
 

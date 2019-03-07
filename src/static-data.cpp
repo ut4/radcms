@@ -3,7 +3,10 @@
 const char *mainDbSchemaSql =
 "drop table if exists websites;"
 "create table websites ("
-    "`dirPath` varchar(512) primary key"
+    "`id` integer primary key autoincrement,"
+    "`dirPath` varchar(512),"
+    "`name` varchar(128) default null,"
+    "`createdAt` datetime default (strftime('%s', \'now\'))"
 ");";
 
 const char *websiteDbSchemaSql =
@@ -13,8 +16,8 @@ const char *websiteDbSchemaSql =
 "drop index if exists contentNodesContentTypeNameIdx;"
 "drop index if exists contentNodesNameIdx;"
 "drop table if exists contentNodes;"
-"drop table if exists websites;"
-"create table websites ("
+"drop table if exists self;"
+"create table self ("
     "`id` integer primary key autoincrement,"
     "`graph` json"
 ");"
@@ -46,7 +49,7 @@ static std::vector<SampleData> sampleData = {
         // name
         "minimal",
         // installSql
-        "insert into websites values (1, '{\"pages\":[[\"/home\",\"\",\"main-layout.jsx.htm\",[]]]}');"
+        "insert into self values (1, '{\"pages\":[[\"/home\",\"\",\"main-layout.jsx.htm\",[]]]}');"
         "insert into contentNodes values (1, 'footer', '{\"content\":\"(c) 2034 MySite\"}', 'Generic');"
         "insert into uploadStatuses values ('/home','4e86b8c03bedc235b9ec52f04d55c11f18574b1c',null,0);",
         // files
@@ -72,7 +75,7 @@ static std::vector<SampleData> sampleData = {
         // name
         "blog",
         // installSql
-        "insert into websites values"
+        "insert into self values"
         "  (1, '{\"pages\":[[\"/home\",\"\",\"main-layout.jsx.htm\",[\"/art1\",\"/art2\",\"/art3\"]],"
                            "[\"/art1\",\"\",\"article-layout.jsx.htm\",[]],"
                            "[\"/art2\",\"\",\"article-layout.jsx.htm\",[]],"

@@ -14,6 +14,12 @@ var uploadHandlerIsBusy = false;
 
 exports.init = function() {
     app.addRoute(function(url, method) {
+        if (method == 'POST' &&url == '/api/website')
+            return handleCreateWebsiteRequest;
+        if (method == 'PUT' &&url == '/api/set-current-website')
+            return handleSetCurrentWebsiteRequest;
+    });
+    app.addRoute(function(url, method) {
         if (!app.currentWebsite)
             return rejectRequest;
         if (method == 'GET') {
@@ -79,10 +85,10 @@ function handleGetNumWaitingUploads() {
                                  `uphash` is null or `curhash` != `uphash` or\
                                  `curhash` is null and `uphash` is not null',
         function(row) {
-            count = row.getInt(0).toString();
+            count = row.getInt(0);
         });
     //
-    return new http.Response(200, count, {'Content-Type': 'application/json'});
+    return http.makeJsonResponse(200, count);
 }
 
 /**
@@ -100,9 +106,7 @@ function handleGetAllTemplatesRequest() {
     for (var name in all) {
         if (name.indexOf('.htm') > -1) templates.push({fileName: name});
     }
-    return new http.Response(200, JSON.stringify(templates),
-        {'Content-Type': 'application/json'}
-    );
+    return http.makeJsonResponse(200, templates);
 }
 
 /**
@@ -130,9 +134,7 @@ function handleGetWaitingUploadsRequest() {
                             row.getString(1) ? website.OUTDATED : website.DELETED
         });
     });
-    return new http.Response(200, JSON.stringify(out),
-        {'Content-Type': 'application/json'}
-    );
+    return http.makeJsonResponse(200, out);
 }
 
 /**
@@ -148,9 +150,77 @@ function handleGetSiteGraphRequest() {
     for (var url in app.currentWebsite.graph.pages) {
         out.pages.push({url: url});
     }
-    return new http.Response(200, JSON.stringify(out),
-        {'Content-Type': 'application/json'}
-    );
+    return http.makeJsonResponse(200, out);
+}
+
+/**
+ * POST /api/website: Creates a new website to $req.dirPath, and populates it
+ * with $sampleDataName data. Assumes that $req.dirPath already exists.
+ * Overwrites existing files (site.ini, data.db).
+ *
+ * Payload:
+ * {
+ *     dirPath:        string; // required, example: "c:/foo/bar/"
+ *     sampleDataName: string; // required, example: "minimal" or "blog"
+ *     name?: string;          // maxLen 128, example "mysite.com"
+ * }
+ *
+ * Example response:
+ * {"status":"ok"}
+ */
+function handleCreateWebsiteRequest(req) {
+    //
+    var errs = [];
+    if (!req.data.dirPath) errs.push('dirPath is required.');
+    else { if (req.data.dirPath.charAt(req.data.dirPath.length - 1) != '/') req.data.dirPath += '/'; }
+    if (!req.data.sampleDataName) errs.push('sampleDataName is required.');
+    if (req.data.name && req.data.name.length > 128) errs.push('name.length must be <= 128');
+    if (errs.length) return new http.Response(400, errs.join('\n'));
+    //
+    try {
+        app.setCurrentWebsite(req.data.dirPath);
+        app.currentWebsite.install(req.data.sampleDataName);
+        app.db.insert('insert or replace into websites (`dirPath`,`name`) \
+                       values (?, ?)', function (stmt) {
+            stmt.bindString(0, req.data.dirPath);
+            stmt.bindString(1, req.data.name || null);
+        });
+        return http.makeJsonResponse(200, {status: 'ok'});
+    } catch(e) {
+        return http.makeJsonResponse(500, {status: 'err', details: e.message || '-'});
+    }
+}
+
+/**
+ * PUT /api/set-current-website: Sets the website located at $req.dirPath as the
+ * active website ($app.currentWebsite), and initializes it. If the requested
+ * site was already the active one, does nothing.
+ *
+ * Payload:
+ * {
+ *     dirPath: string; // required, example: "c:/foo/bar/"
+ * }
+ *
+ * Example response:
+ * {"status":"ok"}
+ */
+function handleSetCurrentWebsiteRequest(req) {
+    //
+    var errs = [];
+    if (!req.data.dirPath) errs.push('dirPath is required.');
+    else { if (req.data.dirPath.charAt(req.data.dirPath.length - 1) != '/') req.data.dirPath += '/'; }
+    if (errs.length) return new http.Response(400, errs.join('\n'));
+    //
+    if (app.currentWebsite.dirPath != req.data.dirPath ||
+        !app.currentWebsite.isInitialized()) {
+        try {
+            app.setCurrentWebsite(req.data.dirPath);
+            app.currentWebsite.init();
+        } catch(e) {
+            return http.makeJsonResponse(500, {status: 'err', details: e.message || '-'});
+        }
+    }
+    return http.makeJsonResponse(200, {status: 'ok'});
 }
 
 /**
@@ -189,9 +259,7 @@ function handleGenerateRequest() {
         return false;
     }, out.issues);
     out.tookSecs = (performance.now() - out.tookSecs) / 1000;
-    return new http.Response(200, JSON.stringify(out),
-        {'Content-Type': 'application/json'}
-    );
+    return http.makeJsonResponse(200, out);
 }
 
 /**
@@ -374,8 +442,7 @@ function handleUpdatePageRequest(req) {
     //
     page.layoutFileName = req.data.layoutFileName;
     var ok = app.currentWebsite.saveToDb(app.currentWebsite.graph);
-    return new http.Response(200, JSON.stringify({numAffectedRows: ok}),
-        {'Content-Type': 'application/json'});
+    return http.makeJsonResponse(200, {numAffectedRows: ok});
 }
 
 /**
@@ -388,7 +455,7 @@ function handleUpdatePageRequest(req) {
  * }
  *
  * Example response:
- * '{"status":"ok"}'
+ * {"status":"ok"}
  */
 function handleUpdateSiteGraphRequest(req) {
     var remoteDiff = new diff.RemoteDiff();
@@ -405,9 +472,7 @@ function handleUpdateSiteGraphRequest(req) {
     //
     w.saveToDb(w.graph); // update websites set `graph` = ...
     remoteDiff.saveStatusesToDb(); // update|delete from uploadStatuses ...
-    return new http.Response(200, '{"status":"ok"}',
-        {'Content-Type': 'application/json'}
-    );
+    return http.makeJsonResponse(200, {status: 'ok'});
 }
 
 /**

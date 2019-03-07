@@ -35,7 +35,7 @@ testLib.module('website-handlers.js', function(hooks) {
         var sql2 = 'insert into contentNodes values '+q+','+q+','+q;
         var sql3 = 'insert into uploadStatuses values '+q+','+q+','+q+','+q+','+q;
         var sql4 = 'insert into staticFileResources values (?,1),(?,1)';
-        if (website.db.insert('insert into websites values (?,?)', function(stmt) {
+        if (website.db.insert('insert into self values (?,?)', function(stmt) {
                 stmt.bindInt(0, testWebsite.id);
                 stmt.bindString(1, siteGraph.serialize());
             }) < 1 ||
@@ -75,7 +75,7 @@ testLib.module('website-handlers.js', function(hooks) {
         website.graph.clear();
         if (website.db.delete('delete from contentNodes where contentTypeName = ?',
                 function(stmt) { stmt.bindString(0, genericCntType.name); }) < 1 ||
-            website.db.delete('delete from websites where id = ?',
+            website.db.delete('delete from self where id = ?',
                 function(stmt) { stmt.bindInt(0, testWebsite.id); }) < 1 ||
             website.db.delete('delete from uploadStatuses', function() { }) < 5
         ) throw new Error('Failed to clean test data.');
@@ -373,7 +373,7 @@ testLib.module('website-handlers.js', function(hooks) {
         assert.equal(response.statusCode, 200);
         assert.equal(response.body, '{"numAffectedRows":1}');
         // Assert that changed layoutFileName and saved the changes to the database
-        website.db.select('select `graph` from websites limit 1', function(row) {
+        website.db.select('select `graph` from self limit 1', function(row) {
             var updatedPData = JSON.parse(row.getString(0)).pages; // [[<url>,<parent>,<layoutFilename>...]]
             var entry = findPage(updatedPData, req.data.url);
             assert.equal(entry ? entry[2] : 'nil', layout1.fileName);
@@ -409,8 +409,8 @@ testLib.module('website-handlers.js', function(hooks) {
             'Should remove /services2 from the site graph');
         assert.ok(siteGraph.getPage(url2) === undefined,
             'Should remove /contact2 from the site graph');
-        // Assert that updated websites
-        website.db.select('select `graph` from websites limit 1', function(row) {
+        // Assert that updated self
+        website.db.select('select `graph` from self limit 1', function(row) {
             var updatedPData = JSON.parse(row.getString(0)).pages;
             assert.ok(findPage(updatedPData, url1) == null,
                 'Should remove /services2 from the stored site graph');

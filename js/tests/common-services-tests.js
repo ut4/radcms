@@ -8,13 +8,13 @@ testLib.module('[\'common-services.js\'].Db', function(hooks) {
         db = app.currentWebsite.db;
     });
     hooks.afterEach(function() {
-        if (db.delete('delete from websites where id >= ?',
+        if (db.delete('delete from self where id >= ?',
             function(stmt) { stmt.bindInt(0, 1); }) < 0
         ) throw new Error('Failed to clean test data.');
     });
     testLib.test('insert() inserts data', function(assert) {
         assert.expect(4);
-        var sql = 'insert into websites values (?,?),(?,?)';
+        var sql = 'insert into self values (?,?),(?,?)';
         var insertId = db.insert(sql, function(stmt) {
             stmt.bindInt(0, 1);
             stmt.bindString(1, 'foo');
@@ -24,7 +24,7 @@ testLib.module('[\'common-services.js\'].Db', function(hooks) {
         //
         assert.equal(insertId, 2, 'should return insertId');
         var actuallyInserted = [];
-        db.select('select id, `graph` from websites', function map(row) {
+        db.select('select id, `graph` from self', function map(row) {
             actuallyInserted.push({id: row.getInt(0), graph: row.getString(1)});
         });
         assert.equal(actuallyInserted.length, 2, 'should insert 2 rows');
@@ -36,7 +36,7 @@ testLib.module('[\'common-services.js\'].Db', function(hooks) {
         var runInvalid = function(bindFn) {
             try {
                 db.insert('insert into contentNodes(`name`) values (?)',
-                                  bindFn);
+                          bindFn);
             } catch (e) {
                 return e.message;
             }
@@ -53,7 +53,7 @@ testLib.module('[\'common-services.js\'].Db', function(hooks) {
     });
     testLib.test('select() fetches data', function(assert) {
         assert.expect(4);
-        var sql = 'insert into websites values (?,?),(?,?),(?,?)';
+        var sql = 'insert into self values (?,?),(?,?),(?,?)';
         var testData = [
             {id: 45, graph: 'graph1'},
             {id: 23, graph: 'graph2'},
@@ -69,7 +69,7 @@ testLib.module('[\'common-services.js\'].Db', function(hooks) {
         }) < 1) throw new Error('Failed to insert test data');
         //
         var selected = [];
-        var sql2 = 'select id, `graph` from websites order by id';
+        var sql2 = 'select id, `graph` from self order by id';
         db.select(sql2, function map(row, rowIdx) {
             selected.push({
                 id: row.getInt(0),
@@ -104,12 +104,12 @@ testLib.module('[\'common-services.js\'].Db', function(hooks) {
     });
     testLib.test('update() updates data', function(assert) {
         assert.expect(2);
-        if (db.insert('insert into websites values (?,?)', function(stmt) {
+        if (db.insert('insert into self values (?,?)', function(stmt) {
             stmt.bindInt(0, 1);
             stmt.bindString(1, 'foo');
         }) < 1) throw new Error('Failed to insert test data');
         //
-        var sql = 'update websites set `graph` = ? where id = ?';
+        var sql = 'update self set `graph` = ? where id = ?';
         var numAffected = db.update(sql, function(stmt) {
             stmt.bindString(0, 'bar');
             stmt.bindInt(1, 1);
@@ -117,14 +117,14 @@ testLib.module('[\'common-services.js\'].Db', function(hooks) {
         //
         assert.equal(numAffected, 1, 'should return numAffectedRows');
         var actuallyUpdated = '';
-        db.select('select `graph` from websites', function map(row) {
+        db.select('select `graph` from self', function map(row) {
             actuallyUpdated = row.getString(0);
         });
         assert.equal(actuallyUpdated, 'bar', 'should update data');
     });
     testLib.test('update() validates stuff', function(assert) {
         assert.expect(4);
-        if (db.insert('insert into websites(`graph`) values (?)',
+        if (db.insert('insert into self(`graph`) values (?)',
             function(stmt) { stmt.bindString(0, 'foo'); }
         ) < 1) throw new Error('Failed to insert test data.');
         //
@@ -135,7 +135,7 @@ testLib.module('[\'common-services.js\'].Db', function(hooks) {
                 return e.message;
             }
         };
-        var sql = 'update websites set graph = ? where id = ?';
+        var sql = 'update self set graph = ? where id = ?';
         assert.equal(runInvalid(sql, function(stmt) {
             stmt.bindInt(2,1);
         }), 'RangeError: Bind index 2 too large (max 1)');
@@ -145,7 +145,7 @@ testLib.module('[\'common-services.js\'].Db', function(hooks) {
         assert.equal(runInvalid(sql, function(stmt) {
             stmt.bindString(0, {});
         }), 'TypeError: string required, found [object Object] (stack index 1)');
-        assert.equal(runInvalid('update from websites', function() {
+        assert.equal(runInvalid('update from self', function() {
             //
         }), 'Failed to create stmt: near "from": syntax error');
     });

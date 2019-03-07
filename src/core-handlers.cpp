@@ -29,8 +29,9 @@ coreHandlersHandleStaticFileRequest(void *myPtr, void *myDataPtr, const char *me
     if (strstr(url, "..")) return MHD_HTTP_NOT_FOUND;
     // Must exist
     std::string &rootPath = strstr(url, "/frontend/") != url
-        ? static_cast<AppEnv*>(myPtr)->dataPath
+        ? static_cast<AppEnv*>(myPtr)->currentWebsiteDirPath
         : static_cast<AppEnv*>(myPtr)->appPath;
+    if (rootPath.empty()) return MHD_HTTP_NOT_FOUND;
     struct stat sbuf;
     int fd = myFsGetFileInfo((rootPath + std::string(&url[1])).c_str(), &sbuf);
     if (fd < 0) return MHD_HTTP_NOT_FOUND;
