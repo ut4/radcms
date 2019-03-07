@@ -14,9 +14,11 @@ var uploadHandlerIsBusy = false;
 
 exports.init = function() {
     app.addRoute(function(url, method) {
-        if (method == 'POST' &&url == '/api/website')
+        if (method == 'GET' && url == '/api/website')
+            return handleGetAllWebsites;
+        if (method == 'POST' && url == '/api/website')
             return handleCreateWebsiteRequest;
-        if (method == 'PUT' &&url == '/api/set-current-website')
+        if (method == 'PUT' && url == '/api/set-current-website')
             return handleSetCurrentWebsiteRequest;
     });
     app.addRoute(function(url, method) {
@@ -154,6 +156,24 @@ function handleGetSiteGraphRequest() {
 }
 
 /**
+ * GET /api/website: lists all websites installed on this machine.
+ *
+ * Example response:
+ * [
+ *     {"id":2,"dirPath":"d:/data/my-site/","name":"mysite.com","createdAt":1551939199},
+ *     {"id":3,"dirPath":"c:/another/","name":null,"createdAt":1555438184}
+ * ]
+ */
+function handleGetAllWebsites() {
+    var out = [];
+    app.db.select('select * from websites', function(row) {
+        out.push({id: row.getInt(0), dirPath: row.getString(1),
+            name: row.getString(2), createdAt: row.getInt(3)});
+    });
+    return http.makeJsonResponse(200, out);
+}
+
+/**
  * POST /api/website: Creates a new website to $req.dirPath, and populates it
  * with $sampleDataName data. Assumes that $req.dirPath already exists.
  * Overwrites existing files (site.ini, data.db).
@@ -178,15 +198,15 @@ function handleCreateWebsiteRequest(req) {
     if (errs.length) return new http.Response(400, errs.join('\n'));
     //
     try {
-        app.setCurrentWebsite(req.data.dirPath);
-        app.currentWebsite.install(req.data.sampleDataName);
+        app.setWaitingWebsite(req.data.dirPath);
+        app.waitingWebsite.install(req.data.sampleDataName);
         app.db.insert('insert or replace into websites (`dirPath`,`name`) \
                        values (?, ?)', function (stmt) {
             stmt.bindString(0, req.data.dirPath);
             stmt.bindString(1, req.data.name || null);
         });
         return http.makeJsonResponse(200, {status: 'ok'});
-    } catch(e) {
+    } catch (e) {
         return http.makeJsonResponse(500, {status: 'err', details: e.message || '-'});
     }
 }
@@ -211,12 +231,11 @@ function handleSetCurrentWebsiteRequest(req) {
     else { if (req.data.dirPath.charAt(req.data.dirPath.length - 1) != '/') req.data.dirPath += '/'; }
     if (errs.length) return new http.Response(400, errs.join('\n'));
     //
-    if (app.currentWebsite.dirPath != req.data.dirPath ||
-        !app.currentWebsite.isInitialized()) {
+    if (!app.currentWebsite ||
+        app.currentWebsite.dirPath != req.data.dirPath) {
         try {
             app.setCurrentWebsite(req.data.dirPath);
-            app.currentWebsite.init();
-        } catch(e) {
+        } catch (e) {
             return http.makeJsonResponse(500, {status: 'err', details: e.message || '-'});
         }
     }

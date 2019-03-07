@@ -1,6 +1,6 @@
 import services from './common-services.js';
 import {myLink, contentNodeList} from './common-components.js';
-import {GenericListUIPanelImpl, StaticMenuUIPanelImpl} from './directive-impls.js';
+import {GenericListUIPanelImpl, StaticMenuUIPanelImpl} from './ui-panel-impls.js';
 import {AddContentView, EditContentView} from './content-views.js';
 import {WebsiteGenerateView, WebsiteUploadView} from './website-views.js';
 import {SiteGraphEditView} from './site-graph-views.js';
@@ -79,7 +79,7 @@ class ControlPanel extends preact.Component {
     render() {
         return $el('div', {className: this.state.className}, [
             $el('div', {id: 'control-panel'}, [
-                $el('h1', null, 'InsaneCMS'),
+                myLink('/frontend/app.html', 'Back to dashboard', true),
                 $el('div', {className: 'tab-links'}, [
                     $el('button', {
                         className: this.state.tabA ? 'current' : '',
@@ -92,6 +92,7 @@ class ControlPanel extends preact.Component {
                 ]),
                 $el('div', {className: !this.state.tabA ? 'hidden' : ''}, this.makeMainTabItems()),
                 $el('div', {className: this.state.tabA ? 'hidden' : ''}, this.makeDevTabItems()),
+                $el('h1', null, 'InsaneCMS')
             ]),
             $el(preactRouter,
                 {
@@ -214,4 +215,4 @@ class ControlPanelSection extends preact.Component {
     }
 }
 
-export {ControlPanel};
+export {cpanelApp, ControlPanel};

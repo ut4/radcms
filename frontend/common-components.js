@@ -62,17 +62,19 @@ class Form extends preact.Component {
 }
 
 /**
- * Sets parent.window.hash = '#' + $to.
+ * Sets window.parent.location.hash = '#' + $to (or window.parent.location.href = $to
+ * if $full = true).
  *
  * @param {string} to eg. '/edit-content/1'
  * @param {text} to eg. 'Edit content'
+ * @param {bool?} full = false
  */
-function myLink(to, text) {
+function myLink(to, text, full) {
     return $el('a', {
-        href: '#' + to.split('?')[0],
+        href: (!full ? '#' : '') + to.split('?')[0],
         onclick: e => {
             e.preventDefault();
-            myRedirect(to);
+            myRedirect(to, full);
         },
     }, text);
 }

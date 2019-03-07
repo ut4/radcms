@@ -1,4 +1,4 @@
-import {app, InsaneControlPanel} from './../app.js';
+import {cpanelApp, ControlPanel} from './../cpanel.js';
 import services from './../common-services.js';
 import utils from './my-test-utils.js';
 const itu = Inferno.TestUtils;
@@ -15,10 +15,10 @@ class TestUiPanelImpl {
 QUnit.module('ControlPanelComponent', hooks => {
     let httpStub;
     hooks.before(() => {
-        app._uiPanelImpls['Test'] = TestUiPanelImpl;
+        cpanelApp._uiPanelImpls['Test'] = TestUiPanelImpl;
     });
     hooks.after(() => {
-        delete app._uiPanelImpls['Test'];
+        delete cpanelApp._uiPanelImpls['Test'];
     });
     hooks.beforeEach(() => {
         httpStub = sinon.stub(services, 'myFetch');
@@ -35,7 +35,7 @@ QUnit.module('ControlPanelComponent', hooks => {
             allContentNodes: []
         };
         httpStub.onCall(0).returns(Promise.resolve('0'));
-        const cpanel = $el(InsaneControlPanel, {currentPageData}, null);
+        const cpanel = $el(ControlPanel, {currentPageData}, null);
         //
         const rendered = itu.renderIntoContainer(cpanel);
         const uiPanelList = itu.scryRenderedDOMElementsWithClass(rendered,
@@ -54,7 +54,7 @@ QUnit.module('ControlPanelComponent', hooks => {
             .onCall(1).returns(Promise.resolve({responseText:'[]'}));
         const done = assert.async();
         //
-        const rendered = itu.renderIntoContainer($el(InsaneControlPanel, {currentPageData: {
+        const rendered = itu.renderIntoContainer($el(ControlPanel, {currentPageData: {
             page: {url: '/home'},
             directiveElems:[],
             allContentNodes:[]
@@ -89,7 +89,7 @@ QUnit.module('ControlPanelComponent', hooks => {
         const currentPage = {url: '/foo', layoutFileName: originalLayout};
         const newLayout = 'a.jsx.htm';
         const done = assert.async();
-        const rendered = itu.renderIntoContainer($el(InsaneControlPanel, {currentPageData: {
+        const rendered = itu.renderIntoContainer($el(ControlPanel, {currentPageData: {
             page: currentPage,
             directiveElems:[],
             allContentNodes:[],

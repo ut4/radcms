@@ -12,14 +12,11 @@
              * Require all components
              */
             import './globals.js';
-            import {MainView} from './app.js';
+            import {App} from './app.js';
             /*
              * main()
              */
-            preact.render($el(preactRouter,
-                {history: History.createHashHistory()},
-                $el(MainView, {path: '/'}, null)
-            ), document.getElementById('app'));
+            preact.render($el(App, null, null), document.getElementById('app'));
         </script>
     </body>
 </html>

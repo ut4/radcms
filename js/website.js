@@ -56,12 +56,6 @@ exports.Website.prototype.init = function() {
     commons.signals.emit('siteGraphRescanRequested', 'full');
 };
 /**
- * @returns {bool}
- */
-exports.Website.prototype.isInitialized = function() {
-    return this.config.name.length > 0;
-};
-/**
  * @param {(renderedHtml: string, page: Page): any|bool} onEach
  * @param {Array?} issues
  * @param {{[string]: any;}?} pages

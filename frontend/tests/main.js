@@ -1,7 +1,7 @@
-import './AddContentViewCmpTests.js';
-import './ControlPanelCmpTests.js';
-import './siteGraphViewCmpsTests.js';
-import './websiteViewCmpsTests.js';
+import './content-view-cmps-tests.js';
+import './control-panel-cmp-tests.js';
+import './site-graph-view-cmps-tests.js';
+import './website-view-cmps-tests.js';
 
 QUnit.config.autostart = false;
 QUnit.dump.maxDepth = 8; // default 5

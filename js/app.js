@@ -9,6 +9,7 @@ var Website = require('website.js').Website;
 
 exports.app = {
     db: null,
+    waitingWebsite: null, // A kind of back buffer, used in setCurrentWebsite()
     currentWebsite: null,
     _routeMatchers: [],
     /**
@@ -16,8 +17,8 @@ exports.app = {
      * $insnEnv.dataPath is 'c:/Users/<user>/AppData/Roaming/insane/' (win),
      * 'todo' (linux), or 'todo' (macOs).
      */
-    initAndInstall: function() {
-        this.db = new Db(insnEnv.dataPath + 'data.db');
+    initAndInstall: function(dbPath) {
+        this.db = new Db(dbPath || insnEnv.dataPath + 'data.db');
         this.populateDatabaseIfEmpty();
     },
     /**
@@ -28,11 +29,25 @@ exports.app = {
      */
     populateDatabaseIfEmpty: function() {},
     /**
-     * Sets $this.currentWebsite = new Website($dirPath, $dbUrl).
+     * Sets $this.currentWebsite.
+     */
+    setCurrentWebsite: function(dirPath, skipInit) {
+        if (!this.waitingWebsite || this.waitingWebsite.dirPath != dirPath) {
+            this.currentWebsite = new Website(dirPath);
+            this.waitingWebsite = null;
+        } else {
+            this.currentWebsite = this.waitingWebsite;
+            this.waitingWebsite = null;
+        }
+        if (!skipInit) this.currentWebsite.init();
+        insnEnv.setProp('currentWebsiteDirPath', dirPath);
+    },
+    /**
+     * Sets $this.waitingWebsite = new Website($dirPath, $dbUrl).
      * @see Website @website.js
      */
-    setCurrentWebsite: function(dirPath, dbUrl) {
-        this.currentWebsite = new Website(dirPath, dbUrl);
+    setWaitingWebsite: function(dirPath, dbUrl) {
+        this.waitingWebsite = new Website(dirPath, dbUrl);
     },
     /**
      * @param {(url: string, method: string): Function|null} fn

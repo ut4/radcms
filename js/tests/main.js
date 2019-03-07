@@ -1,7 +1,9 @@
 var app = require('app.js').app;
+app.initAndInstall(':memory:');
 require('directives.js').init();
-app.setCurrentWebsite(insnEnv.appPath + 'js/tests/testsite/', ':memory:');
-app.currentWebsite.install();
+app.setWaitingWebsite(insnEnv.appPath + 'js/tests/testsite/', ':memory:');
+app.waitingWebsite.install();
+app.setCurrentWebsite(app.waitingWebsite.dirPath, true);
 var commons = require('common-services.js');
 var website = require('website.js');
 var fileWatchers = require('file-watchers.js');
@@ -67,7 +69,8 @@ exports.main = function(suite, logAssertions) {
     }
     if (isAll || suite == 'website-handlers') {
         require('tests/website-handlers-tests.js');
-        modules.push('website-handlers.js');
+        modules.push('website-handlers.js (1)');
+        modules.push('website-handlers.js (2)');
     }
     if (isAll || suite == 'website') {
         require('tests/website-tests.js');

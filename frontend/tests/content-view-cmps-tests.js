@@ -1,4 +1,4 @@
-import {AddContentView} from './../app.js';
+import {AddContentView} from './../content-views.js';
 import services from './../common-services.js';
 import utils from './my-test-utils.js';
 const itu = Inferno.TestUtils;

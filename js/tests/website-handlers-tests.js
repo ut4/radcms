@@ -7,7 +7,93 @@ var websiteModule = require('website.js');
 var UPLOAD_OK = commons.UploaderStatus.UPLOAD_OK;
 var q = '(?,?,?,?)';
 
-testLib.module('website-handlers.js', function(hooks) {
+testLib.module('website-handlers.js (1)', function() {
+    var resetDb = function() {
+        if (app.db.delete('delete from websites', function() {
+            //
+        }) < 1) throw new Error('Failed to clean test data.');
+    };
+    testLib.test('GET \'/api/website\' lists all websites', function(assert) {
+        assert.expect(5);
+        //
+        var ancientUnixTime = 2;
+        var testSites = [
+            {id: 23, dirPath: 'a/a/', name: 'a.com'},
+            {id: 64, dirPath: 'b/b/', name: null}
+        ];
+        if (app.db.insert('insert into websites (`id`,`dirPath`,`name`) values \
+                          (?,?,?),(?,?,?)', function(stmt) {
+                testSites.forEach(function(testSite, i) {
+                    stmt.bindInt(i*3, testSite.id);
+                    stmt.bindString(i*3+1, testSite.dirPath);
+                    stmt.bindString(i*3+2, testSite.name);
+                });
+            }) < 1) throw new Error('Failed to insert test data');
+        //
+        var req = new http.Request('/api/website', 'GET');
+        var response = app.getHandler(req.url, req.method)(req);
+        //
+        assert.equal(response.statusCode, 200);
+        assert.equal(response.headers['Content-Type'], 'application/json');
+        var actual = JSON.parse(response.body);
+        assert.ok(actual[0].createdAt > ancientUnixTime, 'Should set default createdAt #1');
+        assert.ok(actual[1].createdAt > ancientUnixTime, 'Should set default createdAt #2');
+        delete actual[0].createdAt;
+        delete actual[1].createdAt;
+        assert.deepEqual(actual, testSites);
+        //
+        resetDb();
+    });
+    testLib.test('POST \'/api/website\' creates a new website', function(assert) {
+        assert.expect(7);
+        var stub1 = new Stub(app, 'setWaitingWebsite', function(dirPath) {
+            app.waitingWebsite = new websiteModule.Website(dirPath, ':memory:');
+        });
+        var stub2 = new Stub(websiteModule.Website.prototype, 'install', function() {});
+        //
+        var inputDirPath = '/test/path';
+        var inputWebsiteName = 'mysite.com';
+        var req = new http.Request('/api/website', 'POST');
+        req.data = {dirPath: inputDirPath, sampleDataName: 'minimal',
+                    name: inputWebsiteName};
+        //
+        var response = app.getHandler(req.url, req.method)(req);
+        assert.equal(response.statusCode, 200);
+        assert.equal(response.body, '{"status":"ok"}');
+        assert.equal(response.headers['Content-Type'], 'application/json');
+        assert.equal(stub1.callInfo[0][0], inputDirPath + '/',
+            'Should call setWaitingWebsite($req.data.dirPath)');
+        assert.equal(stub2.callInfo[0][0], req.data.sampleDataName,
+            'Should call app.currentWebsite.install($req.data.sampleDataName)');
+        app.db.select('select `dirPath`,`name` from websites', function(row) {
+            assert.equal(row.getString(0), inputDirPath + '/');
+            assert.equal(row.getString(1), inputWebsiteName);
+        });
+        //
+        stub1.restore();
+        stub2.restore();
+        resetDb();
+    });
+    testLib.test('PUT \'/api/set-current-website\'', function(assert) {
+        assert.expect(4);
+        var stub1 = new Stub(app, 'setCurrentWebsite', function() {});
+        //
+        var inputDirPath = '/test/path/to/my/site';
+        var req = new http.Request('/api/set-current-website', 'PUT');
+        req.data = {dirPath: inputDirPath};
+        //
+        var response = app.getHandler(req.url, req.method)(req);
+        assert.equal(response.statusCode, 200);
+        assert.equal(response.body, '{"status":"ok"}');
+        assert.equal(response.headers['Content-Type'], 'application/json');
+        assert.equal(stub1.callInfo[0][0], inputDirPath + '/',
+            'Should call setCurrentWebsite($req.data.dirPath)');
+        //
+        stub1.restore();
+    });
+});
+
+testLib.module('website-handlers.js (2)', function(hooks) {
     var genericCntType = {id:1,name:'Generic',fields:'{"content":"richtext"}'};
     var homeContentCnt = {name:'home',json:{content:'Hello'},contentTypeName:'Generic'};
     var page2ContentCnt = {name:'/page2',json:{content:'Page2'},contentTypeName:'Generic'};
@@ -439,3 +525,16 @@ testLib.module('website-handlers.js', function(hooks) {
         return null;
     }
 });
+
+function Stub(obj, method, withFn) {
+    this.callInfo = [];
+    var orig = obj[method];
+    var self = this;
+    obj[method] = function() {
+        self.callInfo.push(arguments);
+        withFn.apply(null, arguments);
+    };
+    this.restore = function() {
+        obj[method] = orig;
+    };
+}

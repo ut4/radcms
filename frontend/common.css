@@ -1,0 +1,22 @@
+@font-face {
+    font-family: "Fira sans light";
+    src: url("assets/fira-sans-light.woff2") format("woff2");
+    font-weight: normal;
+    font-style: normal;
+}
+@font-face {
+    font-family: "Fira sans heavy";
+    src: url("assets/fira-sans-heavy.woff2") format("woff2");
+    font-weight: normal;
+    font-style: normal;
+}
+body {
+    margin: 0;
+    font: normal 14px/14px "Fira sans light";
+}
+.hidden {
+    display: none;
+}
+.line-through {
+    text-decoration: line-through;
+}

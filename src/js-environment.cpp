@@ -4,8 +4,8 @@ static constexpr int EXPORTS_IS_AT = 2;
 static constexpr int MODULE_IS_AT = 3;
 
 /** Implements <global>.require() */
-static duk_ret_t
-myModSearchFn(duk_context *ctx);
+static duk_ret_t myModSearchFn(duk_context *ctx);
+static duk_ret_t envSetProp(duk_context *ctx);
 
 void
 jsEnvironmentConfigure(duk_context *ctx, AppEnv *appEnv) {
@@ -24,6 +24,8 @@ jsEnvironmentConfigure(duk_context *ctx, AppEnv *appEnv) {
     duk_put_prop_string(ctx, -2, "appPath");           // [insnEnv]
     duk_push_string(ctx, appEnv->dataPath.c_str());    // [insnEnv string]
     duk_put_prop_string(ctx, -2, "dataPath");          // [insnEnv]
+    duk_push_c_lightfunc(ctx, envSetProp, 2, 0, 0);    // [insnEnv lightfn]
+    duk_put_prop_string(ctx, -2, "setProp");           // [insnEnv]
     duk_put_global_string(ctx, "insnEnv");             // []
 }
 
@@ -85,4 +87,18 @@ myModSearchFn(duk_context *ctx) {
         duk_push_string(ctx, code.c_str());
     }
     return 1;
+}
+
+static duk_ret_t
+envSetProp(duk_context *ctx) {
+    const char *key = duk_require_string(ctx, 0);
+    if (strcmp(key, "currentWebsiteDirPath") == 0) {
+        duk_push_global_stash(ctx);
+        jsEnvironmentPullAppEnv(ctx, -1)->currentWebsiteDirPath =
+            duk_require_string(ctx, 1);
+    } else {
+        return duk_error(ctx, DUK_ERR_ERROR, "%s is not valid property name",
+                         key);
+    }
+    return 0;
 }
