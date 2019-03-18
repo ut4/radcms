@@ -2,7 +2,7 @@
 
 #define MAIN_VIEW_URL "http://localhost:3000/frontend/app.html"
 
-static bool setDataPath(AppEnv *self);
+static bool setPlatformSpecificPaths(AppEnv *self);
 
 AppEnv::~AppEnv() {
     if (this->dukCtx) duk_destroy_heap(this->dukCtx);
@@ -13,9 +13,10 @@ bool
 AppEnv::init(const char *appPath) {
     this->appPath = appPath;
     myFsNormalizePath(this->appPath);
-    if (!setDataPath(this)) return false;
+    if (!setPlatformSpecificPaths(this)) return false;
     myFsNormalizePath(this->dataPath);
     this->dataPath += "insane/";
+    myFsNormalizePath(this->homePath);
     if (!myFsMakeDirs(this->dataPath.c_str(), this->errBuf)) return false;
     if (!(this->dukCtx = myDukCreate(this->errBuf))) return false;
     transpilerInit();
@@ -34,13 +35,14 @@ int AppEnv::openMainViewInBrowser() {
 }
 
 static bool
-setDataPath(AppEnv *self) {
+setPlatformSpecificPaths(AppEnv *self) {
 #if defined(INSN_IS_WIN)
     char path[MAX_PATH];
     // C:\Users\username\AppData\Roaming
-    if (SHGetFolderPathA(NULL, CSIDL_APPDATA | CSIDL_FLAG_CREATE, NULL, 0,
-                         path) != S_OK) return false;
+    if (SHGetFolderPathA(NULL, CSIDL_APPDATA, NULL, 0, path) != S_OK) return false;
     self->dataPath = path;
+    if (SHGetFolderPathA(NULL, CSIDL_PROFILE, NULL, 0, path) != S_OK) return false;
+    self->homePath = path;
     return true;
 #elif defined(INSN_IS_LINUX)
     return false;

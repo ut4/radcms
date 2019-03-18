@@ -24,6 +24,8 @@ jsEnvironmentConfigure(duk_context *ctx, AppEnv *appEnv) {
     duk_put_prop_string(ctx, -2, "appPath");           // [insnEnv]
     duk_push_string(ctx, appEnv->dataPath.c_str());    // [insnEnv string]
     duk_put_prop_string(ctx, -2, "dataPath");          // [insnEnv]
+    duk_push_string(ctx, appEnv->homePath.c_str());    // [insnEnv string]
+    duk_put_prop_string(ctx, -2, "homePath");          // [insnEnv]
     duk_push_c_lightfunc(ctx, envSetProp, 2, 0, 0);    // [insnEnv lightfn]
     duk_put_prop_string(ctx, -2, "setProp");           // [insnEnv]
     duk_put_global_string(ctx, "insnEnv");             // []

@@ -15,7 +15,7 @@ testLib.module('[\'website.js\'].Website', function(hooks) {
         origWebsiteConfig = website.config;
         app.currentWebsite.config = {loadFromDisk: function() {}};
         app.currentWebsite.fs = {
-            readDir: function(path, onEach) { mockFilesOnDisk.forEach(onEach); },
+            readDir: function(entry, onEach) { mockFilesOnDisk.forEach(onEach); },
             read: function() { return '<p>hello</p>'; }
         };
         fileWatchers.init();
@@ -31,7 +31,7 @@ testLib.module('[\'website.js\'].Website', function(hooks) {
     testLib.test('init() reads&caches templates from disk', function(assert) {
         assert.expect(2);
         //
-        mockFilesOnDisk = [tmplName2,tmplName1];
+        mockFilesOnDisk = [{name:tmplName2,isDir:false},{name:tmplName1,isDir:false}];
         app.currentWebsite.init();
         assert.ok(commons.templateCache.has(tmplName1),
             'Should add tmplsFromDisk[0] to templateCache');

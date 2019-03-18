@@ -23,7 +23,8 @@ bool
 myFsRead(const std::string &path, std::string &to, std::string &err);
 
 bool
-myFsReadDir(const char *path, bool (*onEach)(const char *fileName, void *myPtr),
+myFsReadDir(const char *path,
+            bool (*onEach)(const char *entryName, bool isDir, void *myPtr),
             void *myPtr, std::string &err);
 
 bool
@@ -34,6 +35,9 @@ myFsGetFileInfo(const char *path, struct stat *out);
 
 #define myFsIsReadable(path) \
     (access(path, R_OK) == 0)
+
+bool
+myFsIsDir(const char *path);
 
 /**
  * "c:\foo\bar" -> "c:/foo/bar/".

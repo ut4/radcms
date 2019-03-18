@@ -47,10 +47,10 @@ exports.Website.prototype.init = function() {
         self.graph.parseAndLoadFrom(row.getString(0), self.config.homeUrl);
     });
     // Read and compile each template from disk to commons.templateCache
-    this.fs.readDir(this.dirPath, function(fname) {
-        var lastDotPos = fname.lastIndexOf('.');
-        if (lastDotPos == -1 || fname.substr(lastDotPos) != '.htm') return;
-        try { self.compileAndCacheTemplate(fname); }
+    this.fs.readDir(this.dirPath, function(entry) {
+        var lastDotPos = !entry.isDir ? entry.name.lastIndexOf('.') : -1;
+        if (lastDotPos == -1 || entry.name.substr(lastDotPos) != '.htm') return;
+        try { self.compileAndCacheTemplate(entry.name); }
         catch(e) { /**/ }
     });
     commons.signals.emit('siteGraphRescanRequested', 'full');

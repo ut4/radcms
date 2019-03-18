@@ -1,8 +1,7 @@
 /**
  * == website-handlers.js ====
  *
- * This file implements handlers (or controllers) for GET /<page>,
- * and * /api/website/* http-routes.
+ * This file implements handlers for GET /<page>, and * /api/website/* http-routes.
  *
  */
 var app = require('app.js').app;
@@ -112,7 +111,7 @@ function handleGetAllTemplatesRequest() {
 }
 
 /**
- * GET /api/website/upload-statuses: Returns pages and files waiting for upload.
+ * GET /api/website/waiting-uploads: Returns pages and files waiting for upload.
  *
  * Example response:
  * {
@@ -144,7 +143,7 @@ function handleGetWaitingUploadsRequest() {
  *
  * Example response:
  * {
- *     "pages":[{"url":"/home","layoutFileName":"main-layout.jsx.htm"}]
+ *     "pages":[{"url":"/home"}]
  * }
  */
 function handleGetSiteGraphRequest() {
@@ -174,9 +173,10 @@ function handleGetAllWebsites() {
 }
 
 /**
- * POST /api/website: Creates a new website to $req.dirPath, and populates it
- * with $sampleDataName data. Assumes that $req.dirPath already exists.
- * Overwrites existing files (site.ini, data.db).
+ * POST /api/website: Creates a new website to $req.dirPath, populates it
+ * with $req.sampleDataName data, and finally registers it to the global database.
+ * Assumes that $req.dirPath already exists. Overwrites existing files (site.ini,
+ * data.db).
  *
  * Payload:
  * {
@@ -243,7 +243,7 @@ function handleSetCurrentWebsiteRequest(req) {
 }
 
 /**
- * GET /api/website/generate: writes all pages to disk.
+ * GET /api/website/generate: writes all pages to a local disk.
  *
  * Example response:
  * {
@@ -283,7 +283,7 @@ function handleGenerateRequest() {
 
 /**
  * POST /api/website/upload: uploads or deletes the requested pages and files
- * to / from a server using FTP.
+ * to/from a remote server using FTP.
  *
  * Payload:
  * {

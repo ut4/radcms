@@ -83,11 +83,11 @@ class ControlPanel extends preact.Component {
                 $el('div', {className: 'tab-links'}, [
                     $el('button', {
                         className: this.state.tabA ? 'current' : '',
-                        onClick: () => this.setState({tabA: !this.state.tabA})
+                        onClick: () => { if (!this.state.tabA) this.setState({tabA: true}); }
                     }, 'On this page'),
                     $el('button', {
                         className: !this.state.tabA ? 'current' : '',
-                        onClick: () => this.setState({tabA: !this.state.tabA})
+                        onClick: () => { if (this.state.tabA) this.setState({tabA: false}); }
                     }, 'For devs'),
                 ]),
                 $el('div', {className: !this.state.tabA ? 'hidden' : ''}, this.makeMainTabItems()),

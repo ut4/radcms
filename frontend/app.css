@@ -7,6 +7,11 @@ h2 {
     font: normal 26px/26px "Fira sans heavy";
     margin-top: 15px;
 }
+.view-content {
+    padding: 20px;
+    margin: 0 25px 20px 0;
+    border-radius: 2px;
+}
 #main-menu {
     position: absolute;
     height: 100%;
@@ -53,9 +58,49 @@ h2 {
     list-style: none;
 }
 
+
+
+/* -- File dialog ----------------------------------------------------------- */
+.file-dialog-outer {
+    position: absolute;
+    left: 0;
+    width: 100%;
+    top: 0;
+    height: 100%;
+    background-color: rgba(0,0,0,0.3);
+}
+.file-dialog {
+    position: absolute;
+    top: 20px;
+    width: 540px;
+    left: 50%;
+    margin-left: -260px;
+    border-radius: 2px;
+}
+.top, .bottom {
+    background-color: #eee;
+}
+.main {
+    height: 300px;
+    overflow-y: auto;
+    margin-bottom: 32px;
+}
+.bottom {
+    position: absolute;
+    bottom: 0;
+    height: 32px;
+    width: 100%;
+}
+
+
+
+/* -- Theme (app) ----------------------------------------------------------- */
 .light { background-color: #f5f5f5; color: #4d4d4d; }
-.light #main-menu,
-.light #website-list > div > div { background-color: #fff;
-    box-shadow: 1px 1px 2px rgba(0,0,0,0.1); }
+.light .box { background-color: #fff; box-shadow: 1px 1px 2px rgba(0,0,0,0.1); }
+.light .box:not(.no-highlight-stripe) { border-top: 3px solid #40e3cb; }
 .light #main-menu h1 { color: rgba(0,0,0,0.6); }
-.light #website-list > div > div { border-top: 3px solid #40e3cb; }
+
+
+
+/* -- Theme (file dialog) --------------------------------------------------- */
+.light .file-dialog { box-shadow: 2px 2px 3px rgba(0,0,0,0.2); }

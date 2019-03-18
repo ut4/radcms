@@ -43,6 +43,9 @@ class Form extends preact.Component {
             this.close();
         }
     }
+    static receiveInputValue(e, dhis, name) {
+        dhis.setState({[name || e.target.name]: e.target.value});
+    }
     cancel(e) {
         if (this.props.onCancel) this.props.onCancel(e);
         this.close();

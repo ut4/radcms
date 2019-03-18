@@ -6,7 +6,7 @@ import {WebsiteListView, WebsiteCreateView, WebsiteImportView} from './app-websi
 class App extends preact.Component {
     render() {
         return $el('div', null,
-            $el('nav', {id: 'main-menu'},
+            $el('nav', {id: 'main-menu', className: 'box no-highlight-stripe'},
                 $el('h1', null, 'InsaneCMS'),
                 $el('a', {href: '#/import-website'}, 'Import website'),
                 $el('span', null, 'Advanced'),

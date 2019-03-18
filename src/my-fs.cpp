@@ -1,5 +1,4 @@
 #include "../include/my-fs.hpp"
-#include <iostream>
 
 #if defined(INSN_IS_WIN)
 static constexpr int DEFAULT_DIR_PERMS = 0;
@@ -56,7 +55,7 @@ myFsRead(const std::string &path, std::string &to, std::string &err) {
 }
 
 bool
-myFsReadDir(const char *path, bool (*onEach)(const char *fileName, void *myPtr),
+myFsReadDir(const char *path, bool (*onEach)(const char *entryName, bool isDir, void *myPtr),
             void *myPtr, std::string &err) {
     DIR *dir = opendir(path);
     if (!dir) {
@@ -65,8 +64,11 @@ myFsReadDir(const char *path, bool (*onEach)(const char *fileName, void *myPtr),
     }
     struct dirent *ent = nullptr;
     bool out = true;
+    std::string fullPath = path;
     while ((ent = readdir(dir))) {
-        if (!(out = onEach(ent->d_name, myPtr))) break;
+        if (!(out = onEach(ent->d_name,
+                           myFsIsDir((fullPath + '/' + ent->d_name).c_str()),
+                           myPtr))) break;
     }
     closedir(dir);
     return out;
@@ -130,6 +132,13 @@ myFsGetFileInfo(const char *path, struct stat *out) {
         return -2;
     }
     return fd;
+}
+
+bool
+myFsIsDir(const char *path) {
+    struct stat s;
+    if (stat(path, &s) != 0) return false;
+    return S_ISDIR(s.st_mode);
 }
 
 void

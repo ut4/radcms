@@ -112,7 +112,7 @@ class WebsiteUploadView extends preact.Component {
                         $el('input', {
                             name: 'ftpRemoteUrl',
                             value: this.state.remoteUrl,
-                            onChange: e => this.receiveInputValue('remoteUrl', e)
+                            onChange: e => Form.receiveInputValue(e, this, 'remoteUrl')
                         }, null)
                     ]),
                     $el('label', null, [
@@ -120,7 +120,7 @@ class WebsiteUploadView extends preact.Component {
                         $el('input', {
                             name: 'ftpUsername',
                             value: this.state.username,
-                            onChange: e => this.receiveInputValue('username', e)
+                            onChange: e => Form.receiveInputValue(e, this, 'username')
                         }, null)
                     ]),
                     $el('label', null, [
@@ -129,7 +129,7 @@ class WebsiteUploadView extends preact.Component {
                             name: 'ftpPassword',
                             type: 'password',
                             value: this.state.password,
-                            onChange: e => this.receiveInputValue('password', e)
+                            onChange: e => Form.receiveInputValue(e, this, 'password')
                         }, null)
                     ])
                 ]),
@@ -139,9 +139,6 @@ class WebsiteUploadView extends preact.Component {
                 'Nothing to upload.'
             ])
         ));
-    }
-    receiveInputValue(name, e) {
-        this.setState({[name]: e.target.value});
     }
     confirm() {
         const pendingPages = [];

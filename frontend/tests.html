@@ -18,17 +18,23 @@
             //
             window.preact = Inferno;
             window.History = {createHashHistory: () => {}};
-            window.preactRouter = () => {};
+            window.preactRouter = function() {};
+            window.preactRouter.route = function(){};
         </script>
         <!-- QUnit, Inferno.TestUtils, sinon -->
         <script src="./vendor/test-vendor.bundle.js"></script>
-        <script>
+        <script>(function() {
             Inferno.TestUtils.renderIntoDocument = el => {
                 const tree = Inferno.TestUtils.renderIntoContainer(el);
-                document.body.appendChild(tree.$LI.dom);
+                document.body.appendChild(findFirstDomEl(tree));
                 return tree;
             };
-        </script>
+            function findFirstDomEl(tree) {
+                let li = tree.$LI;
+                while (li && !li.dom) li = li.children.$LI;
+                return li ? li.dom : undefined;
+            }
+        }());</script>
         <script src="tests/main.js" type="module"></script>
     </body>
 </html>

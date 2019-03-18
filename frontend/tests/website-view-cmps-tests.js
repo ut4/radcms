@@ -1,4 +1,4 @@
-import {WebsiteListView} from './../app-website-views.js';
+import {WebsiteListView, WebsiteCreateView} from './../app-website-views.js';
 import {WebsiteGenerateView, WebsiteUploadView, UploadStatus} from './../website-views.js';
 import services from './../common-services.js';
 import utils from './my-test-utils.js';
@@ -43,6 +43,50 @@ QUnit.module('WebsiteListViewComponent', hooks => {
             assert.equal(dirPath2, 'Location' + testSites[1].dirPath);
             assert.equal(createdAt2, 'Created at' +
                 new Date(testSites[1].createdAt * 1000).toLocaleString());
+            done();
+        });
+    });
+});
+
+QUnit.module('WebsiteCreateViewComponent', hooks => {
+    let httpStub;
+    hooks.beforeEach(() => {
+        httpStub = sinon.stub(services, 'myFetch');
+    });
+    hooks.afterEach(() => {
+        httpStub.restore();
+    });
+    QUnit.test('sends data to backend', assert => {
+        httpStub.onCall(0).returns(Promise.resolve('{"status":"ok"}'));
+        const redirectStub = sinon.stub(preactRouter, 'route');
+        //
+        const tree = itu.renderIntoDocument($el(WebsiteCreateView, null, null));
+        const done = assert.async();
+        const form = itu.findRenderedDOMElementWithTag(tree, 'form');
+        const dirPathInput = form.querySelector('input[name="dirPath"]');
+        const sampleDataDropdown = form.querySelector('select[name="sampleDataName"]');
+        const nameInput = form.querySelector('input[name="name"]');
+        const formButtons = itu.findRenderedDOMElementWithClass(tree, 'form-buttons');
+        const submitButton = formButtons.querySelector('input[type="submit"]');
+        // Fill out the form
+        utils.setInputValue('c:/path/to/dir', dirPathInput);
+        utils.setDropdownIndex(1, sampleDataDropdown);
+        utils.setInputValue('berties-backside.biz', nameInput);
+        // Submit it
+        submitButton.click();
+        const postCall = httpStub.getCall(0);
+        assert.ok(!!postCall, 'Should send data to backend');
+        assert.equal(postCall.args[0], '/api/website');
+        assert.equal(postCall.args[1].method, 'POST');
+        assert.equal(postCall.args[1].headers['Content-Type'], 'application/json');
+        assert.equal(postCall.args[1].data, JSON.stringify({
+            name: nameInput.value,
+            dirPath: dirPathInput.value,
+            sampleDataName: 'blog'
+        }));
+        postCall.returnValue.then(() => {
+            assert.ok(redirectStub.calledAfter(httpStub), 'Should redirect to "/"');
+            redirectStub.restore();
             done();
         });
     });

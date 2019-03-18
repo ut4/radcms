@@ -332,11 +332,15 @@ fsReadDir(duk_context *ctx) {
     const char* dirPath = duk_require_string(ctx, 0);
     duk_require_function(ctx, 1);
     std::string err;
-    if (myFsReadDir(dirPath, [](const char *fileName, void *myPtr) -> bool {
-        if (strcmp(fileName, ".") == 0 || strcmp(fileName, "..") == 0) return true;
+    if (myFsReadDir(dirPath, [](const char *entryName, bool isDir, void *myPtr) -> bool {
+        if (strcmp(entryName, ".") == 0 || strcmp(entryName, "..") == 0) return true;
         auto ctx = static_cast<duk_context*>(myPtr);
         duk_dup(ctx, -1);                             // [dirPath fn fn]
-        duk_push_string(ctx, fileName);               // [dirPath fn fn fname]
+        duk_push_object(ctx);                         // [dirPath fn fn obj]
+        duk_push_string(ctx, entryName);              // [dirPath fn fn obj fname]
+        duk_put_prop_string(ctx, -2, "name");         // [dirPath fn fn obj]
+        duk_push_boolean(ctx, isDir);                 // [dirPath fn fn obj bool]
+        duk_put_prop_string(ctx, -2, "isDir");        // [dirPath fn fn obj]
         if (duk_pcall(ctx, 1) == DUK_EXEC_SUCCESS) {  // [dirPath fn bool|none]
             bool doContinue = duk_get_boolean_default(ctx, -1, true);
             duk_pop(ctx);                             // [dirPath fn]

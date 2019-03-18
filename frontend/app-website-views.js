@@ -1,4 +1,5 @@
 import {Form} from './common-components.js';
+import {FileDialog} from './file-dialog.js';
 import services from './common-services.js';
 
 /**
@@ -17,7 +18,7 @@ class WebsiteListView extends preact.Component {
         let content = [];
         if (this.state.websites !== null && this.state.websites.length > 0) {
             content.push(...this.state.websites.map(site =>
-                $el('div', null, $el('div', null,
+                $el('div', null, $el('div', {className: 'box'},
                     $el('h3', null, site.name || 'untitled'),
                     $el('ul', null,
                         $el('li', null,
@@ -29,12 +30,13 @@ class WebsiteListView extends preact.Component {
                             new Date(site.createdAt * 1000).toLocaleString()
                         )
                     ),
-                    $el('button', {onClick: () => this.openWebsite(site.dirPath)},
+                    $el('button', {onClick: () => this.openWebsite(site.dirPath),
+                        className: 'nice-button nice-button-primary'},
                         'Start editing')
                 ))
             ));
         }
-        content.push($el('div', null, $el('div', null,
+        content.push($el('div', null, $el('div', {className: 'box'},
             $el('a', {href: '#/import-website'}, 'Import website')
         )));
         return $el('div', null,
@@ -63,14 +65,71 @@ class WebsiteListView extends preact.Component {
  * #/create-website.
  */
 class WebsiteCreateView extends preact.Component {
+    constructor(props) {
+        super(props);
+        this.fileDialog = null;
+        this.sampleDataOptions = [
+            {name: 'minimal', friendlyName: 'Tyhjä'},
+            {name: 'blog', friendlyName: 'Blogi'},
+        ];
+        this.state = {
+            dirPath: 'C:/Users/Me/Desktop/my-site-project',
+            name: 'mysite.com',
+            sampleDataName: 'minimal'
+        };
+    }
     render() {
-        return $el(Form, {onConfirm: e => this.confirm(e)},
+        return $el(Form, {onConfirm: e => this.confirm(e), confirmButtonText: 'Create'},
             $el('h2', null, 'Create website'),
-            $el('button', null, 'Create')
+            $el('div', {className: 'view-content box'},
+                $el('label', null,
+                    $el('span', {'data-help-text': 'Sivuston nimi, ei pakollinen.'}, 'Nimi'),
+                    $el('input', {name: 'name', onChange: e => Form.receiveInputValue(e, this),
+                                value: this.state.name}, null)
+                ),
+                $el('label', null,
+                    $el('span', {'data-help-text': 'Lokaali kansio, joka sisältää sivuston templaatit sekä konfiguraatio-, ja datatiedostot.'}, 'Kansio'),
+                    $el('input', {name: 'dirPath', onChange: e => Form.receiveInputValue(e, this),
+                                  value: this.state.dirPath, onClick: () => this.fileDialog.open()}, null)
+                ),
+                $el('label', null,
+                    $el('span', {'data-help-text': 'Sisällön nimi, jolla luotava sivusto alustetaan.'}, 'Alustava sisältö'),
+                    $el('select', {
+                        value: this.state.sampleDataName,
+                        name: 'sampleDataName',
+                        onChange: e => Form.receiveInputValue(e, this)
+                    }, this.sampleDataOptions.map(option =>
+                        $el('option', {value: option.name}, option.friendlyName)
+                    ))
+                )
+            ),
+            $el(FileDialog, {
+                provideDirListFn: path => services.myFetch('/api/file/list-dir', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    data: JSON.stringify({path})
+                }).then(res => JSON.parse(res.responseText)),
+                onConfirm: dirPath => {
+                    this.setState({dirPath});
+                },
+                ref: cmp => { this.fileDialog = cmp; }
+            }, null)
         );
     }
     confirm() {
-        throw new Error('Not implemented yet');
+        services.myFetch('/api/website', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            data: JSON.stringify({
+                name: this.state.name,
+                dirPath: this.state.dirPath,
+                sampleDataName: this.state.sampleDataName
+            })
+        }).then(() => {
+            preactRouter.route('/');
+        }, () => {
+            toast('Failed to create the website.', 'error');
+        });
     }
 }
 
