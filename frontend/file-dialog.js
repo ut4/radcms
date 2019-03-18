@@ -43,6 +43,7 @@ class FileDialog extends preact.Component {
                 ),
                 $el('div', {className: 'main'}, this.makeMainPanel()),
                 $el('div', {className: 'bottom'},
+                    $el('span', null, this.state.selectedPath),
                     $el('button', {onClick: () => this.confirmSelection(),
                                    type: 'button',
                                    className: 'nice-button nice-button-primary',
@@ -64,7 +65,7 @@ class FileDialog extends preact.Component {
         if ((performance.now() - this.lastClick) < DOUBLE_CLICK_TIME_WINDOW) { // double-click
             this.loadToMainPanel(this.state.mainPanelTree.root + entry.name);
         } else { // single
-            this.setState({selectedPath: entry.name});
+            this.setState({selectedPath: this.state.mainPanelTree.root + entry.name});
         }
         this.lastClick = performance.now();
     }
@@ -83,7 +84,7 @@ class FileDialog extends preact.Component {
         });
     }
     confirmSelection() {
-        this.props.onConfirm(this.state.mainPanelTree.root + this.state.selectedPath);
+        this.props.onConfirm(this.state.selectedPath);
         this.closeDialog();
     }
     closeDialog() {

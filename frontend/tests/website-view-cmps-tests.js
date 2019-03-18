@@ -57,37 +57,42 @@ QUnit.module('WebsiteCreateViewComponent', hooks => {
         httpStub.restore();
     });
     QUnit.test('sends data to backend', assert => {
-        httpStub.onCall(0).returns(Promise.resolve('{"status":"ok"}'));
+        const testSampleDataOptions = [{name:'blog'},{name:'portfolio'}];
+        httpStub
+            .onCall(0).returns(Promise.resolve({responseText:JSON.stringify(testSampleDataOptions)}))
+            .onCall(1).returns(Promise.resolve({responseText:'{"status":"ok"}'}));
         const redirectStub = sinon.stub(preactRouter, 'route');
         //
         const tree = itu.renderIntoDocument($el(WebsiteCreateView, null, null));
         const done = assert.async();
-        const form = itu.findRenderedDOMElementWithTag(tree, 'form');
-        const dirPathInput = form.querySelector('input[name="dirPath"]');
-        const sampleDataDropdown = form.querySelector('select[name="sampleDataName"]');
-        const nameInput = form.querySelector('input[name="name"]');
-        const formButtons = itu.findRenderedDOMElementWithClass(tree, 'form-buttons');
-        const submitButton = formButtons.querySelector('input[type="submit"]');
-        // Fill out the form
-        utils.setInputValue('c:/path/to/dir', dirPathInput);
-        utils.setDropdownIndex(1, sampleDataDropdown);
-        utils.setInputValue('berties-backside.biz', nameInput);
-        // Submit it
-        submitButton.click();
-        const postCall = httpStub.getCall(0);
-        assert.ok(!!postCall, 'Should send data to backend');
-        assert.equal(postCall.args[0], '/api/website');
-        assert.equal(postCall.args[1].method, 'POST');
-        assert.equal(postCall.args[1].headers['Content-Type'], 'application/json');
-        assert.equal(postCall.args[1].data, JSON.stringify({
-            name: nameInput.value,
-            dirPath: dirPathInput.value,
-            sampleDataName: 'blog'
-        }));
-        postCall.returnValue.then(() => {
-            assert.ok(redirectStub.calledAfter(httpStub), 'Should redirect to "/"');
-            redirectStub.restore();
-            done();
+        httpStub.firstCall.returnValue.then(() => {
+            const form = itu.findRenderedDOMElementWithTag(tree, 'form');
+            const dirPathInput = form.querySelector('input[name="dirPath"]');
+            const sampleDataDropdown = form.querySelector('select[name="sampleDataName"]');
+            const nameInput = form.querySelector('input[name="name"]');
+            const formButtons = itu.findRenderedDOMElementWithClass(tree, 'form-buttons');
+            const submitButton = formButtons.querySelector('input[type="submit"]');
+            // Fill out the form
+            utils.setInputValue('c:/path/to/dir', dirPathInput);
+            utils.setDropdownIndex(1, sampleDataDropdown);
+            utils.setInputValue('berties-backside.biz', nameInput);
+            // Submit it
+            submitButton.click();
+            const postCall = httpStub.getCall(1);
+            assert.ok(!!postCall, 'Should send data to backend');
+            assert.equal(postCall.args[0], '/api/websites');
+            assert.equal(postCall.args[1].method, 'POST');
+            assert.equal(postCall.args[1].headers['Content-Type'], 'application/json');
+            assert.equal(postCall.args[1].data, JSON.stringify({
+                name: nameInput.value,
+                dirPath: dirPathInput.value,
+                sampleDataName: testSampleDataOptions[1].name
+            }));
+            postCall.returnValue.then(() => {
+                assert.ok(redirectStub.calledAfter(httpStub), 'Should redirect to "/"');
+                redirectStub.restore();
+                done();
+            });
         });
     });
 });
@@ -118,7 +123,7 @@ QUnit.module('WebsiteGenerateViewComponent', hooks => {
         //
         const postCall = httpStub.getCall(0);
         assert.ok(postCall !== null, 'Should send request to backend');
-        assert.equal(postCall.args[0], '/api/website/generate');
+        assert.equal(postCall.args[0], '/api/websites/current/generate');
         assert.equal(postCall.args[1].method, 'POST');
         const done = assert.async();
         postCall.returnValue.then(() => {
@@ -150,7 +155,7 @@ QUnit.module('WebsiteGenerateViewComponent', hooks => {
         //
         const postCall = httpStub.getCall(0);
         assert.ok(postCall !== null, 'Should send request to backend');
-        assert.equal(postCall.args[0], '/api/website/generate');
+        assert.equal(postCall.args[0], '/api/websites/current/generate');
         assert.equal(postCall.args[1].method, 'POST');
         const done = assert.async();
         postCall.returnValue.then(() => {
@@ -197,7 +202,7 @@ QUnit.module('WebsiteUploadViewComponent', hooks => {
         const tree = itu.renderIntoDocument($el(WebsiteUploadView, null, null));
         //
         const done = assert.async();
-        // Wait for GET /api/website/upload-statuses
+        // Wait for GET /api/websites/current/upload-statuses
         httpStub.getCall(0).returnValue.then(() => {
             const form = itu.findRenderedDOMElementWithTag(tree, 'form');
             const remoteUrlInput = form.querySelector('input[name="ftpRemoteUrl"]');
@@ -230,7 +235,7 @@ QUnit.module('WebsiteUploadViewComponent', hooks => {
             assert.equal(fileTableRows[1].textContent, testFiles[1].url + 'Pending...');
             const postCall = httpStub.getCall(1);
             assert.ok(postCall !== null, 'Should send request to backend');
-            assert.equal(postCall.args[0], '/api/website/upload');
+            assert.equal(postCall.args[0], '/api/websites/current/upload');
             assert.equal(postCall.args[1].method, 'POST');
             assert.equal(postCall.args[1].headers['Content-Type'], 'application/json');
             assert.equal(postCall.args[1].data, JSON.stringify({
@@ -317,7 +322,7 @@ QUnit.module('WebsiteUploadViewComponent', hooks => {
         const tree = itu.renderIntoDocument($el(WebsiteUploadView, null, null));
         //
         const done = assert.async();
-        // Wait for GET /api/website/upload-statuses
+        // Wait for GET /api/websites/current/upload-statuses
         httpStub.getCall(0).returnValue.then(() => {
             const form = itu.findRenderedDOMElementWithTag(tree, 'form');
             const pageTableRows = form.querySelectorAll('tbody tr');

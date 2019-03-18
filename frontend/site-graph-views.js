@@ -8,7 +8,7 @@ class SiteGraphEditView extends preact.Component {
     constructor(props) {
         super(props);
         this.state = {pages: null, numDeletables: 0};
-        services.myFetch('/api/website/site-graph').then(
+        services.myFetch('/api/websites/current/site-graph').then(
             res => {
                 this.setState({pages: JSON.parse(res.responseText).pages.map(
                     p => { p.doDelete = false; return p; }
@@ -50,7 +50,7 @@ class SiteGraphEditView extends preact.Component {
         });
     }
     confirm() {
-        services.myFetch('/api/website/site-graph', {
+        services.myFetch('/api/websites/current/site-graph', {
             method: 'PUT',
             headers: {'Content-Type': 'application/json'},
             data: JSON.stringify({
@@ -58,7 +58,7 @@ class SiteGraphEditView extends preact.Component {
             })
         }).then(() => {
             toast('Updated the site graph.', 'success');
-            return services.myFetch('/api/website/num-waiting-uploads');
+            return services.myFetch('/api/websites/current/num-waiting-uploads');
         }, () => {
             toast('Failed the update the site graph.', 'error');
         }).then(res => {

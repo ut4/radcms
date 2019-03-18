@@ -109,7 +109,7 @@ QUnit.module('ControlPanelComponent', hooks => {
             //
             assert.ok(httpStub.calledThrice);
             const args = httpStub.getCall(2).args;
-            assert.equal(args[0], '/api/website/page');
+            assert.equal(args[0], '/api/websites/current/page');
             assert.equal(args[1].method, 'PUT');
             assert.equal(args[1].headers['Content-Type'], 'application/json');
             assert.equal(args[1].data, JSON.stringify({

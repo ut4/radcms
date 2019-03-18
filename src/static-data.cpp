@@ -52,6 +52,8 @@ static std::vector<SampleData> sampleData = {
         "insert into self values (1, '{\"pages\":[[\"/home\",\"\",\"main-layout.jsx.htm\",[]]]}');"
         "insert into contentNodes values (1, 'footer', '{\"content\":\"(c) 2034 MySite\"}', 'Generic');"
         "insert into uploadStatuses values ('/home','4e86b8c03bedc235b9ec52f04d55c11f18574b1c',null,0);",
+        // contentTypes
+        "[{\"name\":\"Generic\",\"fields\":[{\"name\":\"content\",\"dataType\":\"richtext\"}]}]",
         // files
         {
             {"site.ini", "[Site]\n"
@@ -90,6 +92,10 @@ static std::vector<SampleData> sampleData = {
         " ('/art1','b1a32abb186dec98beee7ac8046ba3707f1d4837',null,0),"
         " ('/art2','d07c501d4d239ad675d34a9ec7bacc00d323b474',null,0),"
         " ('/art3','248f99ff331240f99f0a4688bde33b6b6413d2a6',null,0);",
+        // contentTypes
+        "[{\"name\":\"Generic\",\"fields\":[{\"name\":\"content\",\"dataType\":\"richtext\"}]},"
+         "{\"name\":\"Article\",\"fields\":[{\"name\":\"title\",\"dataType\":\"text\"},"
+                                           "{\"name\":\"body\",\"dataType\":\"richtext\"}]}]",
         // files
         {
             {"site.ini", "[Site]\n"
@@ -140,4 +146,9 @@ getSampleData(const std::string &name) {
         if (d.name == name) return &d;
     }
     return nullptr;
+}
+
+std::vector<SampleData>&
+getSampleData() {
+    return sampleData;
 }

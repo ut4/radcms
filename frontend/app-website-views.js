@@ -3,13 +3,13 @@ import {FileDialog} from './file-dialog.js';
 import services from './common-services.js';
 
 /**
- * #/: Lists websites returned by GET /api/website.
+ * #/: Lists websites returned by GET /api/websites.
  */
 class WebsiteListView extends preact.Component {
     constructor(props) {
         super(props);
         this.state = {websites: null};
-        services.myFetch('/api/website').then(
+        services.myFetch('/api/websites').then(
             res => { this.setState({websites: JSON.parse(res.responseText)}); },
             () => { toast('Failed to fetch the website list', 'error'); }
         );
@@ -49,7 +49,7 @@ class WebsiteListView extends preact.Component {
      * redirects to its home page.
      */
     openWebsite(dirPath) {
-        services.myFetch('/api/set-current-website', {
+        services.myFetch('/api/websites/set-current', {
             method: 'PUT',
             headers: {'Content-Type': 'application/json'},
             data: JSON.stringify({dirPath})
@@ -68,39 +68,43 @@ class WebsiteCreateView extends preact.Component {
     constructor(props) {
         super(props);
         this.fileDialog = null;
-        this.sampleDataOptions = [
-            {name: 'minimal', friendlyName: 'Tyhjä'},
-            {name: 'blog', friendlyName: 'Blogi'},
-        ];
         this.state = {
-            dirPath: 'C:/Users/Me/Desktop/my-site-project',
+            sampleDataOptions: [],
+            dirPath: '/path/to/local/dir/',
             name: 'mysite.com',
             sampleDataName: 'minimal'
         };
+        services.myFetch('/api/websites/sample-content-types').then(
+            res => {
+                this.setState({sampleDataOptions: JSON.parse(res.responseText)});
+            },
+            () => {
+                toast('Failed to fetch the sample data list', 'error');
+            }
+        );
     }
     render() {
         return $el(Form, {onConfirm: e => this.confirm(e), confirmButtonText: 'Create'},
             $el('h2', null, 'Create website'),
             $el('div', {className: 'view-content box'},
                 $el('label', null,
-                    $el('span', {'data-help-text': 'Sivuston nimi, ei pakollinen.'}, 'Nimi'),
+                    $el('span', {'data-help-text': 'Sivustoprojektin nimi, ei pakollinen.'}, 'Nimi'),
                     $el('input', {name: 'name', onChange: e => Form.receiveInputValue(e, this),
-                                value: this.state.name}, null)
+                                  value: this.state.name}, null)
                 ),
                 $el('label', null,
-                    $el('span', {'data-help-text': 'Lokaali kansio, joka sisältää sivuston templaatit sekä konfiguraatio-, ja datatiedostot.'}, 'Kansio'),
+                    $el('span', {'data-help-text': 'Lokaali kansio, joka sisältää tämän sivustoprojektin templaatit sekä konfiguraatio-, ja datatiedostot.'}, 'Kansio'),
                     $el('input', {name: 'dirPath', onChange: e => Form.receiveInputValue(e, this),
                                   value: this.state.dirPath, onClick: () => this.fileDialog.open()}, null)
                 ),
                 $el('label', null,
-                    $el('span', {'data-help-text': 'Sisällön nimi, jolla luotava sivusto alustetaan.'}, 'Alustava sisältö'),
-                    $el('select', {
-                        value: this.state.sampleDataName,
-                        name: 'sampleDataName',
-                        onChange: e => Form.receiveInputValue(e, this)
-                    }, this.sampleDataOptions.map(option =>
-                        $el('option', {value: option.name}, option.friendlyName)
-                    ))
+                    $el('span', {'data-help-text': 'Sisällön nimi, jolla tämä sivustoprojekti alustetaan.'}, 'Alustava sisältö'),
+                    $el('select', {value: this.state.sampleDataName,
+                                   name: 'sampleDataName',
+                                   onChange: e => Form.receiveInputValue(e, this)},
+                        this.state.sampleDataOptions.map(option =>
+                            $el('option', {value: option.name}, option.name)
+                        ))
                 )
             ),
             $el(FileDialog, {
@@ -109,15 +113,13 @@ class WebsiteCreateView extends preact.Component {
                     headers: {'Content-Type': 'application/json'},
                     data: JSON.stringify({path})
                 }).then(res => JSON.parse(res.responseText)),
-                onConfirm: dirPath => {
-                    this.setState({dirPath});
-                },
+                onConfirm: dirPath => { this.setState({dirPath}); },
                 ref: cmp => { this.fileDialog = cmp; }
             }, null)
         );
     }
     confirm() {
-        services.myFetch('/api/website', {
+        services.myFetch('/api/websites', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             data: JSON.stringify({

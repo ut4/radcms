@@ -1,7 +1,7 @@
 /**
  * == website-handlers.js ====
  *
- * This file implements handlers for GET /<page>, and * /api/website/* http-routes.
+ * This file implements handlers for GET /<page>, and * /api/websites/* http-routes.
  *
  */
 var app = require('app.js').app;
@@ -13,39 +13,41 @@ var uploadHandlerIsBusy = false;
 
 exports.init = function() {
     app.addRoute(function(url, method) {
-        if (method == 'GET' && url == '/api/website')
+        if (method == 'GET' && url == '/api/websites')
             return handleGetAllWebsites;
-        if (method == 'POST' && url == '/api/website')
+        if (method == 'POST' && url == '/api/websites')
             return handleCreateWebsiteRequest;
-        if (method == 'PUT' && url == '/api/set-current-website')
+        if (method == 'PUT' && url == '/api/websites/set-current')
             return handleSetCurrentWebsiteRequest;
+        if (method == 'GET' && url == '/api/websites/sample-content-types')
+            return handleGetAllSampleContentTypesRequest;
     });
     app.addRoute(function(url, method) {
         if (!app.currentWebsite)
             return rejectRequest;
         if (method == 'GET') {
-            if (url == '/api/website/num-waiting-uploads')
+            if (url == '/api/websites/current/num-waiting-uploads')
                 return handleGetNumWaitingUploads;
-            if (url == '/api/website/templates')
+            if (url == '/api/websites/current/templates')
                 return handleGetAllTemplatesRequest;
-            if (url == '/api/website/waiting-uploads')
+            if (url == '/api/websites/current/waiting-uploads')
                 return handleGetWaitingUploadsRequest;
-            if (url == '/api/website/site-graph')
+            if (url == '/api/websites/current/site-graph')
                 return handleGetSiteGraphRequest;
             return handlePageRequest;
         }
         if (method == 'POST') {
-            if (url == '/api/website/generate')
+            if (url == '/api/websites/current/generate')
                 return handleGenerateRequest;
-            if (url == '/api/website/upload') {
+            if (url == '/api/websites/current/upload') {
                 if (!uploadHandlerIsBusy) return handleUploadRequest;
                 else return rejectUploadRequest;
             }
         }
         if (method == 'PUT') {
-            if (url == '/api/website/page')
+            if (url == '/api/websites/current/page')
                 return handleUpdatePageRequest;
-            if (url == '/api/website/site-graph')
+            if (url == '/api/websites/current/site-graph')
                 return handleUpdateSiteGraphRequest;
         }
     });
@@ -78,7 +80,7 @@ function handlePageRequest(req) {
 }
 
 /**
- * GET /api/website/num-waiting-uploads.
+ * GET /api/websites/current/num-waiting-uploads.
  */
 function handleGetNumWaitingUploads() {
     var count = 0;
@@ -93,7 +95,7 @@ function handleGetNumWaitingUploads() {
 }
 
 /**
- * GET /api/website/template: lists all templates.
+ * GET /api/websites/current/template: lists all templates.
  *
  * Example response:
  * [
@@ -111,7 +113,8 @@ function handleGetAllTemplatesRequest() {
 }
 
 /**
- * GET /api/website/waiting-uploads: Returns pages and files waiting for upload.
+ * GET /api/websites/current/waiting-uploads: Returns pages and files waiting
+ * for an upload.
  *
  * Example response:
  * {
@@ -139,7 +142,7 @@ function handleGetWaitingUploadsRequest() {
 }
 
 /**
- * GET /api/website/site-graph: Returns the contents of the site graph.
+ * GET /api/websites/current/site-graph: Returns the contents of the site graph.
  *
  * Example response:
  * {
@@ -155,7 +158,7 @@ function handleGetSiteGraphRequest() {
 }
 
 /**
- * GET /api/website: lists all websites installed on this machine.
+ * GET /api/websites: lists all websites installed on this machine.
  *
  * Example response:
  * [
@@ -173,7 +176,7 @@ function handleGetAllWebsites() {
 }
 
 /**
- * POST /api/website: Creates a new website to $req.dirPath, populates it
+ * POST /api/websites: Creates a new website to $req.dirPath, populates it
  * with $req.sampleDataName data, and finally registers it to the global database.
  * Assumes that $req.dirPath already exists. Overwrites existing files (site.ini,
  * data.db).
@@ -212,8 +215,8 @@ function handleCreateWebsiteRequest(req) {
 }
 
 /**
- * PUT /api/set-current-website: Sets the website located at $req.dirPath as the
- * active website ($app.currentWebsite), and initializes it. If the requested
+ * PUT /api/websites/set-current: Sets the website located at $req.dirPath as
+ * the active website ($app.currentWebsite), and initializes it. If the requested
  * site was already the active one, does nothing.
  *
  * Payload:
@@ -243,7 +246,25 @@ function handleSetCurrentWebsiteRequest(req) {
 }
 
 /**
- * GET /api/website/generate: writes all pages to a local disk.
+ * GET /api/websites/sample-content-types: lists the default sample content types.
+ *
+ * Example response:
+ * [
+ *     {"name":"minimal","contentTypes":[
+ *         {"name":"Generic","fields":[{"name":"content","dataType":"richtext"}]}
+ *     ]},
+ *     {"name":"blog","contentTypes":[
+ *         {"name":"Generic","fields":[{"name":"content","dataType":"richtext"}]},
+ *         {"name":"Article","fields":[{"name":"title","dataType":"text"},{"name":"body","dataType":"richtext"}]}
+ *     ]}
+ * ]
+ */
+function handleGetAllSampleContentTypesRequest() {
+    return http.makeJsonResponse(200, app.getSampleContentTypes());
+}
+
+/**
+ * GET /api/websites/current/generate: writes all pages to a local disk.
  *
  * Example response:
  * {
@@ -282,8 +303,8 @@ function handleGenerateRequest() {
 }
 
 /**
- * POST /api/website/upload: uploads or deletes the requested pages and files
- * to/from a remote server using FTP.
+ * POST /api/websites/current/upload: uploads or deletes the requested pages and
+ * files to/from a remote server using FTP.
  *
  * Payload:
  * {
@@ -437,7 +458,7 @@ function makeUploadState(reqData, pageUrls) {
 }
 
 /**
- * PUT /api/website/page: updates app.currentWebsite.graph.pages[$req.data.url].
+ * PUT /api/websites/current/page: updates app.currentWebsite.graph.pages[$req.data.url].
  *
  * Payload:
  * {
@@ -465,8 +486,8 @@ function handleUpdatePageRequest(req) {
 }
 
 /**
- * PUT /api/website/site-graph: deletes the requested pages from the site graph,
- * and syncs the changes to the database.
+ * PUT /api/websites/current/site-graph: deletes the requested pages from the
+ * site graph, and syncs the changes to the database.
  *
  * Payload:
  * {

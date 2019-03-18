@@ -24,7 +24,7 @@ QUnit.module('SiteGraphEditComponent', hooks => {
         //
         const tree = itu.renderIntoDocument($el(SiteGraphEditView, null, null));
         const done = assert.async();
-        // Wait for constructor's GET /api/website/site-graph
+        // Wait for constructor's GET /api/websites/current/site-graph
         httpStub.getCall(0).returnValue.then(() => {
             const form = itu.findRenderedDOMElementWithTag(tree, 'form');
             const submitButton = form.querySelector('input[type="submit"]');
@@ -45,7 +45,7 @@ QUnit.module('SiteGraphEditComponent', hooks => {
             // Send the form
             submitButton.click();
             const putCall = httpStub.getCall(1);
-            assert.equal(putCall.args[0], '/api/website/site-graph');
+            assert.equal(putCall.args[0], '/api/websites/current/site-graph');
             assert.equal(putCall.args[1].method, 'PUT');
             assert.equal(putCall.args[1].headers['Content-Type'], 'application/json');
             assert.equal(putCall.args[1].data, '{"deleted":["/contact"]}');

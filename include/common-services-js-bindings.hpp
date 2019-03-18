@@ -8,7 +8,6 @@
 #include "duk.hpp"
 #include "my-fs.hpp"
 #include "js-environment-stash.hpp"
-#include "static-data.hpp"
 
 /**
  * Implements @native methods of common-services.js (

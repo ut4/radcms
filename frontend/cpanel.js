@@ -60,10 +60,10 @@ class ControlPanel extends preact.Component {
         services.signals.listen('numWaitingUploadsChanged', newValProvideFn => {
             this.setState({numWaitingUploads: newValProvideFn(this.state.numWaitingUploads)});
         });
-        services.myFetch('/api/website/num-waiting-uploads')
+        services.myFetch('/api/websites/current/num-waiting-uploads')
             .then(res => {
                 this.state.numWaitingUploads = parseInt(res.responseText);
-                return services.myFetch('/api/website/templates');
+                return services.myFetch('/api/websites/current/templates');
             }, () => {
                 toast('Failed to fetch waiting items.', 'error');
             }).then(res => {
@@ -174,7 +174,7 @@ class ControlPanel extends preact.Component {
         this.setState({selectedTemplateIdx: parseInt(e.target.value)});
         const u = this.props.currentPageData.page.url;
         const f = this.state.templates[this.state.selectedTemplateIdx].fileName;
-        services.myFetch('/api/website/page', {
+        services.myFetch('/api/websites/current/page', {
             method: 'PUT',
             headers: {'Content-Type': 'application/json'},
             data: JSON.stringify({url: u, layoutFileName: f})

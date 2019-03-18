@@ -3,6 +3,7 @@
 #include <ini.h> // ini_parse
 #include "duk.hpp"
 #include "common-services-js-bindings.hpp"
+#include "static-data.hpp"
 
 /**
  * Implements @native methods of website.js (

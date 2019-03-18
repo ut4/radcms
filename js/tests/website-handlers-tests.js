@@ -13,7 +13,7 @@ testLib.module('website-handlers.js (1)', function() {
             //
         }) < 1) throw new Error('Failed to clean test data.');
     };
-    testLib.test('GET \'/api/website\' lists all websites', function(assert) {
+    testLib.test('GET \'/api/websites\' lists all websites', function(assert) {
         assert.expect(5);
         //
         var ancientUnixTime = 2;
@@ -30,7 +30,7 @@ testLib.module('website-handlers.js (1)', function() {
                 });
             }) < 1) throw new Error('Failed to insert test data');
         //
-        var req = new http.Request('/api/website', 'GET');
+        var req = new http.Request('/api/websites', 'GET');
         var response = app.getHandler(req.url, req.method)(req);
         //
         assert.equal(response.statusCode, 200);
@@ -44,7 +44,7 @@ testLib.module('website-handlers.js (1)', function() {
         //
         resetDb();
     });
-    testLib.test('POST \'/api/website\' creates a new website', function(assert) {
+    testLib.test('POST \'/api/websites\' creates a new website', function(assert) {
         assert.expect(7);
         var stub1 = new Stub(app, 'setWaitingWebsite', function(dirPath) {
             app.waitingWebsite = new websiteModule.Website(dirPath, ':memory:');
@@ -53,7 +53,7 @@ testLib.module('website-handlers.js (1)', function() {
         //
         var inputDirPath = '/test/path';
         var inputWebsiteName = 'mysite.com';
-        var req = new http.Request('/api/website', 'POST');
+        var req = new http.Request('/api/websites', 'POST');
         req.data = {dirPath: inputDirPath, sampleDataName: 'minimal',
                     name: inputWebsiteName};
         //
@@ -74,12 +74,12 @@ testLib.module('website-handlers.js (1)', function() {
         stub2.restore();
         resetDb();
     });
-    testLib.test('PUT \'/api/set-current-website\'', function(assert) {
+    testLib.test('PUT \'/api/websites/set-current\'', function(assert) {
         assert.expect(4);
         var stub1 = new Stub(app, 'setCurrentWebsite', function() {});
         //
         var inputDirPath = '/test/path/to/my/site';
-        var req = new http.Request('/api/set-current-website', 'PUT');
+        var req = new http.Request('/api/websites/set-current', 'PUT');
         req.data = {dirPath: inputDirPath};
         //
         var response = app.getHandler(req.url, req.method)(req);
@@ -219,7 +219,7 @@ testLib.module('website-handlers.js (2)', function(hooks) {
         var actualPageData2 = pcs2[1] ? pcs2[1].substr(0, expectedPageData2.length) : '';
         assert.equal(actualPageData2, expectedPageData2);
     });
-    testLib.test('GET \'/api/website/waiting-uploads\'', function(assert) {
+    testLib.test('GET \'/api/websites/current/waiting-uploads\'', function(assert) {
         assert.expect(10);
         //
         var sql = 'update uploadStatuses set `curhash`= ?, `uphash` = ? where `url`= ?';
@@ -241,7 +241,7 @@ testLib.module('website-handlers.js (2)', function(hooks) {
             }) < 1
         ) throw new Error('Failed to setup test data.');
         //
-        var req = new http.Request('/api/website/waiting-uploads', 'GET');
+        var req = new http.Request('/api/websites/current/waiting-uploads', 'GET');
         var response = app.getHandler(req.url, req.method)(req);
         assert.equal(response.statusCode, 200);
         var resp = JSON.parse(response.body);
@@ -258,10 +258,10 @@ testLib.module('website-handlers.js (2)', function(hooks) {
         if (website.db.update('update uploadStatuses set `uphash` = null',
             function() {}) < 5) throw new Error('Failed to reset test data.');
     });
-    testLib.test('POST \'/api/website/generate\' generates the site', function(assert) {
+    testLib.test('POST \'/api/websites/current/generate\' generates the site', function(assert) {
         assert.expect(16);
         //
-        var req = new http.Request('/api/website/generate', 'POST');
+        var req = new http.Request('/api/websites/current/generate', 'POST');
         //
         var response = app.getHandler(req.url, req.method)(req);
         assert.equal(response.statusCode, 200);
@@ -285,7 +285,7 @@ testLib.module('website-handlers.js (2)', function(hooks) {
         assert.ok(writeLog[2].contents.indexOf('<p>'+page3ContentCnt.json.content) > -1,
             'should write the contents of \'/page3\'');
     });
-    testLib.test('POST \'/api/website/upload\' uploads pages and files', function(assert) {
+    testLib.test('POST \'/api/websites/current/upload\' uploads pages and files', function(assert) {
         assert.expect(20);
         var uploaderCredentials = {};
         var uploadLog = [];
@@ -294,7 +294,7 @@ testLib.module('website-handlers.js (2)', function(hooks) {
             this.uploadString = function(a,b) { uploadLog.push({url:a,contents:b});return UPLOAD_OK; };
         };
         //
-        var req = new http.Request('/api/website/upload', 'POST');
+        var req = new http.Request('/api/websites/current/upload', 'POST');
         req.data = {remoteUrl: 'ftp://ftp.site.net/', username: 'ftp@mysite.net',
                     password: 'bar', pageUrls: [
                         {url: pages[0].url, isDeleted: 0},
@@ -358,12 +358,12 @@ testLib.module('website-handlers.js (2)', function(hooks) {
         if (website.db.update('update uploadStatuses set `uphash` = null',
             function() {}) < 5) throw new Error('Failed to reset test data.');
     });
-    testLib.test('POST \'/api/website/upload\' updates uploadStatuses', function(assert) {
+    testLib.test('POST \'/api/websites/current/upload\' updates uploadStatuses', function(assert) {
         assert.expect(3);
         app.currentWebsite.Uploader = function() {};
         app.currentWebsite.Uploader.prototype.uploadString = function() {};
         //
-        var req = new http.Request('/api/website/upload', 'POST');
+        var req = new http.Request('/api/websites/current/upload', 'POST');
         req.data = {remoteUrl: 'ftp://ftp.site.net', username: 'ftp@mysite.net',
                     password: 'bar',
                     pageUrls: [{url: pages[0].url, isDeleted: 0}],
@@ -391,7 +391,7 @@ testLib.module('website-handlers.js (2)', function(hooks) {
         if (website.db.update('update uploadStatuses set `uphash` = null',
             function() {}) < 2) throw new Error('Failed to reset test data.');
     });
-    testLib.test('POST \'/api/website/upload\' deletes pages and files', function(assert) {
+    testLib.test('POST \'/api/websites/current/upload\' deletes pages and files', function(assert) {
         assert.expect(5);
         var uploaderDeleteLog = [];
         var inputPageUrls = [pages[2].url];
@@ -408,7 +408,7 @@ testLib.module('website-handlers.js (2)', function(hooks) {
                 stmt.bindString(1, inputFileNames[0]);
             }) < 2) throw new Error('Failed to setup test data.');
         //
-        var req = new http.Request('/api/website/upload', 'POST');
+        var req = new http.Request('/api/websites/current/upload', 'POST');
         req.data = {remoteUrl: 'ftp://ftp.site.net/dir',
                     username: 'ftp@mysite.net',
                     password: 'bar',
@@ -449,10 +449,10 @@ testLib.module('website-handlers.js (2)', function(hooks) {
                 stmt.bindInt(7, 1);
             }) < 1) throw new Error('Failed to reset test data.');
     });
-    testLib.test('PUT \'/api/website/page\' updates a page', function(assert) {
+    testLib.test('PUT \'/api/websites/current/page\' updates a page', function(assert) {
         assert.expect(3);
         //
-        var req = new http.Request('/api/website/page', 'PUT');
+        var req = new http.Request('/api/websites/current/page', 'PUT');
         // Emulate the request
         req.data = {url: '/page2', layoutFileName: layout1.fileName};
         var response = app.getHandler(req.url, req.method)(req);
@@ -465,7 +465,7 @@ testLib.module('website-handlers.js (2)', function(hooks) {
             assert.equal(entry ? entry[2] : 'nil', layout1.fileName);
         });
     });
-    testLib.test('PUT \'/api/website/site-graph\' deletes pages', function(assert) {
+    testLib.test('PUT \'/api/websites/current/site-graph\' deletes pages', function(assert) {
         assert.expect(8);
         //
         var url1 = '/services';
@@ -484,7 +484,7 @@ testLib.module('website-handlers.js (2)', function(hooks) {
         }) < 1 || app.currentWebsite.saveToDb(siteGraph) < 1) {
             throw new Error('Failed to setup test data.');
         }
-        var req = new http.Request('/api/website/site-graph', 'PUT');
+        var req = new http.Request('/api/websites/current/site-graph', 'PUT');
         // Emulate the request
         req.data = {deleted: [url1, url2]};
         var response = app.getHandler(req.url, req.method)(req);

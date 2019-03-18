@@ -35,7 +35,7 @@ class WebsiteGenerateView extends preact.Component {
         ));
     }
     confirm() {
-        services.myFetch('/api/website/generate', {
+        services.myFetch('/api/websites/current/generate', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'}
         }).then(req => {
@@ -87,7 +87,7 @@ class WebsiteUploadView extends preact.Component {
             files: [],
             noData: false
         };
-        services.myFetch('/api/website/waiting-uploads').then(
+        services.myFetch('/api/websites/current/waiting-uploads').then(
             res => {
                 var data = JSON.parse(res.responseText);
                 this.setState({pages: data.pages, files: data.files,
@@ -154,7 +154,7 @@ class WebsiteUploadView extends preact.Component {
         this.state.files.forEach(file => makeUploadable(file, pendingFiles));
         this.setState({uploading: true, pages: this.state.pages, files: this.state.files});
         let lenAlreadyProcessed = 0;
-        services.myFetch('/api/website/upload', {
+        services.myFetch('/api/websites/current/upload', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             data: JSON.stringify({
