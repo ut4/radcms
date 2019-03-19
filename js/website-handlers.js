@@ -260,7 +260,7 @@ function handleSetCurrentWebsiteRequest(req) {
  * ]
  */
 function handleGetAllSampleContentTypesRequest() {
-    return http.makeJsonResponse(200, app.getSampleContentTypes());
+    return http.makeJsonResponse(200, app.getSampleData());
 }
 
 /**

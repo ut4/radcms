@@ -26,16 +26,44 @@ exports.Website = function(dirPath, dbUrl) {
     this.fs = commons.fs;
     this.crypto = crypto;
     this.Uploader = commons.Uploader;
+    this.app = null;
 };
 /**
- * Populates $this.dirPath+'data.db'.
+ * Writes and populates data files (data.db, site.ini, some-template.jsx.htm
+ * etc.) to $this.dirPath.
  *
- * @native
  * @param {string} sampleDataName 'minimal', 'blog' etc.
  * @throws {TypeError} if $sampleDataName wasn't valid
  * @throws {Error} if there was a database or fs error
  */
-exports.Website.prototype.install = function(/*sampleDataName*/) {};
+exports.Website.prototype.install = function(sampleDataName) {
+    /**
+     * 1. Create the schema (create table foo ...)
+     */
+    this.db.execNamedSql(':websiteSchema:');
+    /**
+     * 2. Insert the sample data (insert into foo ...)
+     */
+    if (sampleDataName) {
+        var sampleDataOpts = this.app.getSampleData(true); // true == include files
+        var sampleData = null;
+        for (var i = 0; i < sampleDataOpts.length; ++i) {
+            if (sampleDataOpts[i].name == sampleDataName) {
+                sampleData = sampleDataOpts[i]; break;
+            }
+        }
+        if (!sampleData) throw new TypeError('"' + sampleDataName +
+                                             '" is not valid sample data name');
+        this.db.execNamedSql(':' + sampleDataName + 'SampleData:');
+        /**
+         * 3. Write the files.
+         */
+        var self = this;
+        sampleData.files.forEach(function(file) {
+            self.fs.write(self.dirPath + file.name, file.contents);
+        });
+    }
+};
 /**
  */
 exports.Website.prototype.init = function() {
@@ -144,6 +172,12 @@ exports.Website.prototype.saveToDb = function(siteGraph) {
     return this.db.update('update self set `graph` = ?', function(stmt) {
         stmt.bindString(0, siteGraph.serialize());
     });
+};
+/**
+ * @param {Object} app
+ */
+exports.Website.prototype.setApp = function(app) {
+    this.app = app;
 };
 
 

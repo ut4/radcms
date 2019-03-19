@@ -7,7 +7,6 @@
 
 /**
  * Implements @native methods of website.js (
- *    - Website.prototype.install()
  *    - SiteConfig.prototype.loadFromDisk()
  * ) */
 void

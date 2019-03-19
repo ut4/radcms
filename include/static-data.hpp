@@ -11,7 +11,7 @@ struct SampleData {
 };
 
 const char*
-getDbSchemaSql(bool websiteSchema);
+getNamedSql(const std::string &name);
 
 SampleData*
 getSampleData(const std::string &name);

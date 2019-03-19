@@ -45,11 +45,13 @@ testLib.module('website-handlers.js (1)', function() {
         resetDb();
     });
     testLib.test('POST \'/api/websites\' creates a new website', function(assert) {
-        assert.expect(7);
-        var stub1 = new Stub(app, 'setWaitingWebsite', function(dirPath) {
+        assert.expect(10);
+        var fsWriteStub;
+        var swwStub = new Stub(app, 'setWaitingWebsite', function(dirPath) {
             app.waitingWebsite = new websiteModule.Website(dirPath, ':memory:');
+            fsWriteStub = new Stub(app.waitingWebsite.fs, 'write');
+            app.waitingWebsite.setApp(app);
         });
-        var stub2 = new Stub(websiteModule.Website.prototype, 'install', function() {});
         //
         var inputDirPath = '/test/path';
         var inputWebsiteName = 'mysite.com';
@@ -61,35 +63,65 @@ testLib.module('website-handlers.js (1)', function() {
         assert.equal(response.statusCode, 200);
         assert.equal(response.body, '{"status":"ok"}');
         assert.equal(response.headers['Content-Type'], 'application/json');
-        assert.equal(stub1.callInfo[0][0], inputDirPath + '/',
-            'Should call setWaitingWebsite($req.data.dirPath)');
-        assert.equal(stub2.callInfo[0][0], req.data.sampleDataName,
-            'Should call app.currentWebsite.install($req.data.sampleDataName)');
+        var minimalSampleData = app.getSampleData(true)[0];
+        // Assert that inserted sample data to the website db ($website.db)
+        app.waitingWebsite.db.select(
+            'select c.`name`, count(s.`graph`) from contentNodes c\
+             left join self s on (1 = 1)', function(row) {
+                 assert.equal(row.getString(0), 'footer');
+                 assert.equal(row.getInt(1), 1);
+            });
+        // Assert that wrote sample data files
+        var file1Call = fsWriteStub.callInfo[0];
+        var file2Call = fsWriteStub.callInfo[1];
+        assert.equal(fsWriteStub.callInfo.length, 2,
+            'Should write all sample data files');
+        assert.deepEqual(
+            {name: file1Call[0].replace(inputDirPath+'/',''), contents: file1Call[1]},
+            minimalSampleData.files[0],
+            'Should write sample data file #1'
+        );
+        assert.deepEqual(
+            {name: file2Call[0].replace(inputDirPath+'/',''), contents: file2Call[1]},
+            minimalSampleData.files[1],
+            'Should write sample data file #2'
+        );
+        // Assert that registered the new website to the main db ($app.db)
         app.db.select('select `dirPath`,`name` from websites', function(row) {
             assert.equal(row.getString(0), inputDirPath + '/');
             assert.equal(row.getString(1), inputWebsiteName);
         });
         //
-        stub1.restore();
-        stub2.restore();
+        swwStub.restore();
+        fsWriteStub.restore();
         resetDb();
+        app.waitingWebsite = null;
     });
     testLib.test('PUT \'/api/websites/set-current\'', function(assert) {
-        assert.expect(4);
-        var stub1 = new Stub(app, 'setCurrentWebsite', function() {});
+        assert.expect(6);
         //
+        var origCurrentWebsite = app.currentWebsite;
         var inputDirPath = '/test/path/to/my/site';
         var req = new http.Request('/api/websites/set-current', 'PUT');
         req.data = {dirPath: inputDirPath};
+        app.setWaitingWebsite(inputDirPath + '/', ':memory:');
+        var initStub = new Stub(app.waitingWebsite, 'init', function() {});
+        var setEnvPropStub = new Stub(insnEnv, 'setProp', function() {});
         //
         var response = app.getHandler(req.url, req.method)(req);
         assert.equal(response.statusCode, 200);
         assert.equal(response.body, '{"status":"ok"}');
         assert.equal(response.headers['Content-Type'], 'application/json');
-        assert.equal(stub1.callInfo[0][0], inputDirPath + '/',
-            'Should call setCurrentWebsite($req.data.dirPath)');
+        assert.equal(app.currentWebsite.dirPath, inputDirPath + '/',
+            'Should set $app.currentWebsite = $app.waitingWebsite');
+        assert.deepEqual(Array.prototype.slice.call(setEnvPropStub.callInfo[0]),
+            ['currentWebsiteDirPath', inputDirPath + '/'],
+            'Should update currentWebsiteDirPath envProp');
+        assert.equal(initStub.callInfo.length, 1, 'Should initialize the new website');
         //
-        stub1.restore();
+        initStub.restore();
+        setEnvPropStub.restore();
+        app.currentWebsite = origCurrentWebsite;
     });
 });
 
@@ -532,7 +564,7 @@ function Stub(obj, method, withFn) {
     var self = this;
     obj[method] = function() {
         self.callInfo.push(arguments);
-        withFn.apply(null, arguments);
+        if (withFn) return withFn.apply(obj, arguments);
     };
     this.restore = function() {
         obj[method] = orig;

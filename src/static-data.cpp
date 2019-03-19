@@ -136,8 +136,18 @@ static std::vector<SampleData> sampleData = {
 };
 
 const char*
-getDbSchemaSql(bool websiteSchema) {
-    return websiteSchema ? websiteDbSchemaSql : mainDbSchemaSql;
+getNamedSql(const std::string &name) {
+    if (name == ":mainSchema:") {
+        return mainDbSchemaSql;
+    } else if (name == ":websiteSchema:") {
+        return websiteDbSchemaSql;
+    }
+    // ":blogSampleData:", ":minimalSampleData:" etc.
+    for (const auto &d: sampleData) {
+        if (name.find(d.name.c_str(), 0, d.name.length()) == 1)
+            return d.installSql.c_str();
+    }
+    return nullptr;
 }
 
 SampleData*

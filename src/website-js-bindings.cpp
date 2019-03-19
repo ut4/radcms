@@ -1,7 +1,5 @@
 #include "../../include/website-js-bindings.hpp"
 
-static duk_ret_t websiteInstall(duk_context *ctx);
-
 static duk_ret_t siteConfigLoadFromDisk(duk_context *ctx);
 
 static int receiveIniVal(void *myPtr, const char *section, const char *key,
@@ -12,13 +10,6 @@ static bool validateSiteConfig(duk_context *ctx);
 
 void
 websiteJsModuleInit(duk_context *ctx, const int exportsIsAt) {
-    // module.Website
-    duk_get_prop_string(ctx, exportsIsAt, "Website");    // [? Website]
-    duk_get_prop_string(ctx, -1, "prototype");           // [? Website proto]
-    duk_push_c_lightfunc(ctx, websiteInstall, DUK_VARARGS, 0, 0); // [? Website proto lightfn]
-    duk_put_prop_string(ctx, -2, "install");             // [? Website proto]
-    duk_put_prop_string(ctx, -2, "prototype");           // [? Website]
-    duk_pop(ctx);
     // module.SiteConfig
     duk_get_prop_string(ctx, exportsIsAt, "SiteConfig"); // [? SiteCfg]
     duk_get_prop_string(ctx, -1, "prototype");           // [? SiteCfg proto]
@@ -26,47 +17,6 @@ websiteJsModuleInit(duk_context *ctx, const int exportsIsAt) {
     duk_put_prop_string(ctx, -2, "loadFromDisk");        // [? SiteCfg proto]
     duk_put_prop_string(ctx, -2, "prototype");           // [? SiteCfg]
     duk_pop(ctx);                                        // [?]
-}
-
-static duk_ret_t
-websiteInstall(duk_context *ctx) {
-    const char *sampleDataName = duk_get_top(ctx) > 0
-                                    ? duk_require_string(ctx, 0)
-                                    : nullptr;
-    duk_push_this(ctx);                      // [arg this]
-    duk_get_prop_string(ctx, -1, "db");      // [arg this db]
-    Db *db = commonServicesGetDbSelfPtr(ctx, -1);
-    /**
-     * 1. Create the db schema
-     */
-    std::string err;
-    if (!db->runInTransaction(getDbSchemaSql(true), err))
-        return duk_error(ctx, DUK_ERR_ERROR, "%s", err.c_str());
-    /**
-     * 2. Insert sample data
-     */
-    duk_get_prop_string(ctx, -2, "dirPath"); // [arg this db str]
-    const char* sitePath = duk_get_string(ctx, -1);
-    if (sampleDataName) {
-        SampleData *sd = getSampleData(sampleDataName);
-        if (!sd) {
-            return duk_error(ctx, DUK_ERR_TYPE_ERROR,
-                             "%s is not valid sample data name", sampleDataName);
-        }
-        if (!db->runInTransaction(sd->installSql, err))
-            return duk_error(ctx, DUK_ERR_ERROR, "%s", err.c_str());
-        /**
-         * 3. Write the layout-files & template-files.
-         */
-        for (const auto &file: sd->files) {
-            if (!myFsWrite(sitePath + file.first, file.second, err))
-                return duk_error(ctx, DUK_ERR_ERROR, "%s", err.c_str());
-        }
-    }
-    duk_push_global_stash(ctx);              // [arg this db str stash]
-    jsEnvironmentPullAppEnv(ctx, -1)->currentWebsiteDirPath = sitePath;
-    duk_push_boolean(ctx, true);             // [arg this db str stash out]
-    return 1;
 }
 
 static duk_ret_t

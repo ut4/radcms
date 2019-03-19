@@ -10,6 +10,7 @@ static duk_ret_t dbStmtBindInt(duk_context *ctx);
 static duk_ret_t dbStmtBindString(duk_context *ctx);
 static duk_ret_t dbResRowGetInt(duk_context *ctx);
 static duk_ret_t dbResRowGetString(duk_context *ctx);
+static duk_ret_t dbExecNamedSql(duk_context *ctx);
 static duk_ret_t fsWrite(duk_context *ctx);
 static duk_ret_t fsRead(duk_context *ctx);
 static duk_ret_t fsReadDir(duk_context *ctx);
@@ -52,6 +53,8 @@ commonServicesJsModuleInit(duk_context *ctx, const int exportsIsAt) {
     duk_put_prop_string(ctx, -2, "update");             // [? Db proto]
     duk_get_prop_string(ctx, -1, "update");             // [? Db proto lightfn]
     duk_put_prop_string(ctx, -2, "delete");             // [? Db proto]
+    duk_push_c_lightfunc(ctx, dbExecNamedSql, 1, 0, 0); // [? Db proto lightfn]
+    duk_put_prop_string(ctx, -2, "execNamedSql");       // [? Db proto]
     duk_put_prop_string(ctx, -2, "prototype");          // [? Db]
     duk_put_prop_string(ctx, exportsIsAt, "Db");        // [?]
     // module.fs
@@ -240,6 +243,19 @@ dbSelect(duk_context *ctx) {
 static duk_ret_t
 dbUpdate(duk_context *ctx) {
     return dbInsertOrUpdate(ctx, false);
+}
+
+static duk_ret_t
+dbExecNamedSql(duk_context *ctx) {
+    const char *sql = getNamedSql(duk_require_string(ctx, 0));
+    if (!sql) return duk_error(ctx, DUK_ERR_ERROR, "Unknown stored sql \"%s\"", sql);
+    //
+    duk_push_this(ctx);
+    Db *self = commonServicesGetDbSelfPtr(ctx, 1);
+    std::string err;
+    if (!self->runInTransaction(sql, err))
+        return duk_error(ctx, DUK_ERR_ERROR, "%s", err.c_str());
+    return 0;
 }
 
 #define pullInsertStmt(stmt, placeholderIdx) \

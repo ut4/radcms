@@ -48,6 +48,7 @@ exports.app = {
      */
     setWaitingWebsite: function(dirPath, dbUrl) {
         this.waitingWebsite = new Website(dirPath, dbUrl);
+        this.waitingWebsite.setApp(this);
     },
     /**
      * @param {(url: string, method: string): Function|null} fn

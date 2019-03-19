@@ -44,6 +44,14 @@ exports.Db.prototype.update = function(/*sql, bindFn*/) {};
  * @see update
  */
 exports.Db.prototype.delete = function(/*sql, bindFn*/) {};
+/**
+ * Runs a stored piece of sql.
+ *
+ * @native
+ * @param {string} name eg. ':mainSchema:', ':websiteSchema:', ':minimalSampleData:'
+ * @throws {Error} if $name wasn't a known piece of sql, or database failed
+ */
+exports.Db.prototype.execNamedSql = function(/*name*/) {};
 
 
 // == fs-singleton ====
