@@ -71,15 +71,20 @@ class Form extends preact.Component {
  * @param {string} to eg. '/edit-content/1'
  * @param {text} to eg. 'Edit content'
  * @param {bool?} full = false
+ * @param {Object?} attrs = null
  */
-function myLink(to, text, full) {
-    return $el('a', {
+function myLink(to, text, full, attrs) {
+    let props = {
         href: (!full ? '#' : '') + to.split('?')[0],
         onclick: e => {
             e.preventDefault();
             myRedirect(to, full);
         },
-    }, text);
+    };
+    if (attrs) for (const key in attrs) {
+        props[key] = attrs[key];
+    }
+    return $el('a', props, text);
 }
 
 /**

@@ -1,5 +1,16 @@
-// == DocumentDataConfig ====
-// =============================================================================
+/**
+ * == document-data.js ====
+ *
+ * In this file:
+ *
+ * - DDC / DocumentDataConfig (class)
+ * - DBC / DataBatchConfig (class)
+ *
+ */
+
+// {'ownfield': value, 'extrafield__separator__datatype': value}
+var EXTRA_FIELD_SEPARATOR = '__separator__';
+
 /**
  * @param {Db} db
  * @constructor
@@ -42,6 +53,12 @@ function doFetchData(ddc) {
         var cnodes = [];
         ddc.db.select(ddc.toSql(), function(row) {
             var data = JSON.parse(row.getString(2));
+            // {'fieldname__separator__datatype': 'foo'} -> {..., 'fieldname': 'foo'}
+            for (var key in data) {
+                if (key.indexOf(EXTRA_FIELD_SEPARATOR) > 0) {
+                    data[key.split(EXTRA_FIELD_SEPARATOR)[0]] = data[key];
+                }
+            }
             data.defaults = {
                 id: row.getInt(0),
                 name: row.getString(1),
@@ -82,8 +99,8 @@ exports.DDC.prototype.toSql = function() {
     }).join(' union all ');
 };
 
-// == DataBatchConfig ====
 // =============================================================================
+
 /**
  * @param {string} contentTypeName
  * @param {bool} isFetchAll

@@ -11,10 +11,11 @@ const utils = {
     /**
      * @param {any} value
      * @param {Element} el
+     * @param {string?} eventType = 'change'
      */
-    setInputValue(value, el) {
+    setInputValue(value, el, eventType = 'change') {
         el.value = value;
-        utils.triggerEvent('change', el);
+        utils.triggerEvent(eventType, el);
     },
     /**
      * @param {boolean} checked

@@ -11,16 +11,15 @@ QUnit.module('AddContentViewComponent', hooks => {
     let httpStub;
     hooks.beforeEach(() => {
         httpStub = sinon.stub(services, 'myFetch');
+        httpStub.onCall(0).returns(
+            Promise.resolve({responseText: JSON.stringify(testContentTypes)})
+        );
     });
     hooks.afterEach(() => {
         httpStub.restore();
     });
     QUnit.test('submits data to backend', assert => {
-        httpStub
-            .onCall(0)
-                .returns(Promise.resolve({responseText: JSON.stringify(testContentTypes)}))
-            .onCall(1)
-                .returns(Promise.resolve({insertId: 1}));
+        httpStub.onCall(1).returns(Promise.resolve({insertId: 1}));
         const redirectSpy = sinon.spy(window, 'myRedirect');
         const tree = itu.renderIntoDocument($el(AddContentView, {
             initialContentTypeName: 'Article'
@@ -31,7 +30,7 @@ QUnit.module('AddContentViewComponent', hooks => {
             const form = itu.findRenderedDOMElementWithTag(tree, 'form');
             const formButtons = itu.findRenderedDOMElementWithClass(tree, 'form-buttons');
             const submitButton = formButtons.querySelector('input[type="submit"]');
-            const cnodeNameInput = form.querySelector('input[name="defs.name"]');
+            const cnodeNameInput = form.querySelector('input[name="cnodeName"]');
             const titleInput = form.querySelector('input[name="title"]');
             const bodyInput = form.querySelector('textarea[name="body"]');
             // Fill out the form
@@ -58,12 +57,53 @@ QUnit.module('AddContentViewComponent', hooks => {
             });
         });
     });
+    QUnit.test('submits extra fields', assert => {
+        httpStub.onCall(1).returns(Promise.resolve(null));
+        const tree = itu.renderIntoDocument($el(AddContentView, {
+            initialContentTypeName: 'Generic'
+        }, null));
+        //
+        const done = assert.async();
+        httpStub.getCall(0).returnValue.then(() => {
+            const form = itu.findRenderedDOMElementWithTag(tree, 'form');
+            const formButtons = itu.findRenderedDOMElementWithClass(tree, 'form-buttons');
+            const submitButton = formButtons.querySelector('input[type="submit"]');
+            const cnodeNameInput = form.querySelector('input[name="cnodeName"]');
+            const contentInput = form.querySelector('textarea[name="content"]');
+            const extraFieldForm = form.querySelector('.extra-field-form');
+            const addExtraFieldBtn = extraFieldForm.children[0];
+            // Add an extra field
+            addExtraFieldBtn.click();
+            const extraFieldNameInput = extraFieldForm.querySelector('input[name="openFieldName"]');
+            const extraFieldDataTypeInput = extraFieldForm.querySelector('select[name="openFieldDataType"]');
+            utils.setInputValue('newField', extraFieldNameInput, 'input');
+            utils.setDropdownIndex(1, extraFieldDataTypeInput);
+            extraFieldForm.querySelector('button:first-of-type').click();
+            const extraFieldValueInput = form.querySelector('textarea[name="newField"]');
+            // Fill out the fields (own and the extra)
+            utils.setInputValue('/new-article', cnodeNameInput);
+            utils.setInputValue('foo', contentInput);
+            utils.setInputValue('bar', extraFieldValueInput);
+            //
+            submitButton.click();
+            //
+            const postCall = httpStub.getCall(1);
+            assert.equal(postCall.args[1].data, JSON.stringify({
+                name: cnodeNameInput.value,
+                json: JSON.stringify({
+                    content: contentInput.value,
+                    'newField__separator__richtext': extraFieldValueInput.value
+                }),
+                contentTypeName: 'Generic'
+            }));
+            postCall.returnValue.then(() => {
+                done();
+            });
+        }).catch(e=>{console.log(e);
+        });
+    });
     QUnit.test('shows message if backend fails', assert => {
-        httpStub
-            .onCall(0)
-                .returns(Promise.resolve({responseText: JSON.stringify(testContentTypes)}))
-            .onCall(1)
-                .returns(Promise.reject());
+        httpStub.onCall(1).returns(Promise.reject());
         const toastSpy = sinon.spy(window, 'toast');
         const tree = itu.renderIntoDocument($el(AddContentView, null, null));
         //
@@ -72,7 +112,7 @@ QUnit.module('AddContentViewComponent', hooks => {
             const form = itu.findRenderedDOMElementWithTag(tree, 'form');
             const formButtons = itu.findRenderedDOMElementWithClass(tree, 'form-buttons');
             const submitButton = formButtons.querySelector('input[type="submit"]');
-            const cnodeNameInput = form.querySelector('input[name="defs.name"]');
+            const cnodeNameInput = form.querySelector('input[name="cnodeName"]');
             const contentInput = form.querySelector('textarea[name="content"]');
             // Fill out the form
             utils.setInputValue('/new-article', cnodeNameInput);
