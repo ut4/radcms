@@ -31,16 +31,11 @@
  *    - DomTree.prototype.render()
  *    - DomTree.prototype.getRenderedElements()
  *    - DomTree.prototype.getRenderedFnComponents()
+ *    - fileWatcher.watch()
+ *    - fileWatcher.stop()
  * ) */
 void
 commonServicesJsModuleInit(duk_context *ctx, const int exportsIsAt);
-
-/**
- * Forwards events to (common-services.js)fileWatcher._watchFn().
- */
-void
-commonServicesCallJsFWFn(FWEventType type, const char *fileName,
-                         const char *ext, void *myPtr);
 
 /**
  * Returns the c pointer that's stored to $dukApiStack[$thisIsAt].

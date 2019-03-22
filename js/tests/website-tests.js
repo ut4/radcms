@@ -13,8 +13,9 @@ testLib.module('[\'website.js\'].Website', function(hooks) {
         website = app.currentWebsite;
         website.config.homeUrl = '/home';
         origWebsiteConfig = website.config;
-        app.currentWebsite.config = {loadFromDisk: function() {}};
-        app.currentWebsite.fs = {
+        website.config = {loadFromDisk: function() {}};
+        website.fileWatcher = {stop: function() {}, watch: function() {}};
+        website.fs = {
             readDir: function(entry, onEach) { mockFilesOnDisk.forEach(onEach); },
             read: function() { return '<p>hello</p>'; }
         };
@@ -22,17 +23,18 @@ testLib.module('[\'website.js\'].Website', function(hooks) {
     });
     hooks.after(function() {
         app.currentWebsite.config = origWebsiteConfig;
-        app.currentWebsite.fs = website.fs;
+        app.currentWebsite.fs = commons.fs;
+        app.currentWebsite.fileWatcher = commons.fileWatcher;
         fileWatchers.clear();
     });
     hooks.afterEach(function() {
         app.currentWebsite.graph.clear();
     });
-    testLib.test('init() reads&caches templates from disk', function(assert) {
+    testLib.test('activate() reads&caches templates from disk', function(assert) {
         assert.expect(2);
         //
         mockFilesOnDisk = [{name:tmplName2,isDir:false},{name:tmplName1,isDir:false}];
-        app.currentWebsite.init();
+        app.currentWebsite.activate();
         assert.ok(commons.templateCache.has(tmplName1),
             'Should add tmplsFromDisk[0] to templateCache');
         assert.ok(commons.templateCache.has(tmplName2),

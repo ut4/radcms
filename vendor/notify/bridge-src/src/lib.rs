@@ -5,9 +5,9 @@ use std::ffi::{CStr,    // From C to Rust
                c_void}; // void*
 use std::time::Duration;
 use libc::{c_char, uint32_t};
-use notify::{Watcher, RecursiveMode, watcher};
-use notify::DebouncedEvent::*;
-use std::sync::mpsc::channel;
+use notify::{Watcher, RecommendedWatcher, RecursiveMode, DebouncedEvent, watcher};
+use notify::DebouncedEvent::*; // Write, Remove, Rename etc.
+use std::sync::mpsc::{channel, Receiver};
 
 const EVENT_OUT_NOTICE_WRITE: u32 = 0;
 const EVENT_OUT_NOTICE_REMOVE: u32 = 1;
@@ -19,23 +19,53 @@ const EVENT_OUT_RENAME: u32 = 6;
 const EVENT_OUT_RESCAN: u32 = 7;
 const EVENT_OUT_ERROR: u32 = 8;
 
+pub struct WatcherInfo {
+    rx: Receiver<DebouncedEvent>,
+    watcher: RecommendedWatcher,
+}
+
+impl WatcherInfo {
+    fn new(debounce_time_millis: uint32_t) -> WatcherInfo {
+        // Create a channel to receive the events.
+        let (tx, rx) = channel();
+        // Create a watcher object, delivering debounced events.
+        // The notification back-end is selected based on the platform.
+        let watcher = watcher(tx, Duration::from_millis(debounce_time_millis as u64));
+        WatcherInfo {
+            rx: rx,
+            watcher: watcher.unwrap(),
+        }
+    }
+}
+
 #[no_mangle]
-pub extern "C" fn fileWatcherWatch(path_in: *const c_char,
-                                   on_event: fn(uint32_t, *const c_char, *mut c_void),
-                                   debounce_time_millis: uint32_t,
-                                   my_ptr: *mut c_void) {
-    // Create a channel to receive the events.
-    let (tx, rx) = channel();
+pub extern "C" fn fileWatcherNew(debounce_time_millis: uint32_t) -> *mut WatcherInfo {
+    Box::into_raw(Box::new(WatcherInfo::new(debounce_time_millis)))
+}
 
-    // Create a watcher object, delivering debounced events.
-    // The notification back-end is selected based on the platform.
-    let mut watcher = watcher(tx,
-        Duration::from_millis(debounce_time_millis as u64)).unwrap();
-
-    // Add a path to be watched. All files and directories at that path and
-    // below will be monitored for changes.
+#[no_mangle]
+pub extern "C" fn fileWatcherStop(ptr: *mut WatcherInfo, path_in: *const c_char) {
     let file_path = unsafe { CStr::from_ptr(path_in) };
-    watcher.watch(file_path.to_str().unwrap(), RecursiveMode::NonRecursive).unwrap();
+    let fwi = unsafe {
+        assert!(!ptr.is_null());
+        &mut *ptr
+    };
+    fwi.watcher.unwatch(file_path.to_str().unwrap()).unwrap();
+}
+
+#[no_mangle]
+pub extern "C" fn fileWatcherWatch(ptr: *mut WatcherInfo,
+                                   path_in: *const c_char,
+                                   on_event: fn(uint32_t, *const c_char, *mut c_void),
+                                   my_ptr: *mut c_void) {
+    // Add a path to be watched. All files and directories at that path
+    // will be monitored for changes.
+    let file_path = unsafe { CStr::from_ptr(path_in) };
+    let fwi = unsafe {
+        assert!(!ptr.is_null());
+        &mut *ptr
+    };
+    fwi.watcher.watch(file_path.to_str().unwrap(), RecursiveMode::NonRecursive).unwrap();
 
     #[macro_export]
     macro_rules! to_cstr {
@@ -45,7 +75,7 @@ pub extern "C" fn fileWatcherWatch(path_in: *const c_char,
     }
 
     loop {
-        match rx.recv() {
+        match fwi.rx.recv() {
             Ok(event) => match event {
                 NoticeWrite(buf) => on_event(EVENT_OUT_NOTICE_WRITE,
                     to_cstr!(buf.to_str().unwrap()), my_ptr),

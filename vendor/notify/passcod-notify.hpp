@@ -15,7 +15,16 @@ enum FWEventType {
     FW_EVENT_ERROR,
 };
 
+typedef struct FileWatcherS FileWatcher;
+
+extern FileWatcher*
+fileWatcherNew(unsigned debounceTimeMillis);
+
 extern void
-fileWatcherWatch(const char *path, void (*)(enum FWEventType, const char*, void*),
-                 unsigned debounceTimeMillis, void* myPtr);
+fileWatcherWatch(FileWatcher* self, const char *path,
+                 void (*)(enum FWEventType, const char*, void*),
+                 void* myPtr);
+
+extern void
+fileWatcherStop(FileWatcher* self, const char *path);
 }

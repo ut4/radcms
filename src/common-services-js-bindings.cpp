@@ -28,6 +28,8 @@ static duk_ret_t domTreeRender(duk_context *ctx);
 static duk_ret_t domTreeGetRenderedElems(duk_context *ctx);
 static duk_ret_t domTreeGetRenderedFnComponents(duk_context *ctx);
 static unsigned domTreeCallCmpFn(FuncNode *me, std::string &err);
+static duk_ret_t jsFileWatcherWatch(duk_context *ctx);
+static duk_ret_t jsFileWatcherStop(duk_context *ctx);
 
 constexpr const char* KEY_DB_PTR = DUK_HIDDEN_SYMBOL("_dbInstancePtr");
 constexpr const char* KEY_STMT_JS_PROTO = "_StmtProto";
@@ -39,6 +41,8 @@ constexpr const char* KEY_STMT_MAX_BIND_IDX = DUK_HIDDEN_SYMBOL("_maxPlaceholder
 constexpr const char* KEY_UPLOADER_PTR = DUK_HIDDEN_SYMBOL("_uploaderInstancePtr");
 constexpr const char* KEY_DOM_TREE_PTR = DUK_HIDDEN_SYMBOL("_domTreeInstancePtr");
 constexpr const char* KEY_CMP_FUNCS = DUK_HIDDEN_SYMBOL("_domTreeCmpFuncs");
+constexpr const char* KEY_FW_SELF_PTR = DUK_HIDDEN_SYMBOL("_fileWatcherSelfPtr");
+constexpr const char* KEY_FW_THREAD = DUK_HIDDEN_SYMBOL("_fileWatcherThread");
 
 void
 commonServicesJsModuleInit(duk_context *ctx, const int exportsIsAt) {
@@ -113,6 +117,13 @@ commonServicesJsModuleInit(duk_context *ctx, const int exportsIsAt) {
     duk_put_prop_string(ctx, -2, "getRenderedFnComponents"); // [? DomTree proto]
     duk_put_prop_string(ctx, -2, "prototype");          // [? DomTree]
     duk_put_prop_string(ctx, exportsIsAt, "DomTree");   // [?]
+    // module.fileWatcher
+    duk_get_prop_string(ctx, exportsIsAt, "fileWatcher"); // [? fileWatcher]
+    duk_push_c_lightfunc(ctx, jsFileWatcherWatch, 1, 0, 0); // [? fileWatcher lightfn]
+    duk_put_prop_string(ctx, -2, "watch");              // [? fileWatcher]
+    duk_push_c_lightfunc(ctx, jsFileWatcherStop, 0, 0, 0);// [? fileWatcher lightfn]
+    duk_put_prop_string(ctx, -2, "stop");               // [? fileWatcher]
+    duk_pop(ctx);                                       // [?]
 }
 
 Db*
@@ -696,22 +707,99 @@ domTreeCallCmpFn(FuncNode *me, std::string &err) {
 
 // == fwatcher ====
 // =============================================================================
-void
-commonServicesCallJsFWFn(FWEventType type, const char *fileName,
-                         const char *ext, void *myPtr) {
-    auto *appCtx = static_cast<AppEnv*>(myPtr);
-    duk_context *ctx = appCtx->dukCtx;
-    jsEnvironmentPushCommonService(ctx, "fileWatcher"); // [fw]
-    if (duk_get_prop_string(ctx, -1, "_watchFn")) {  // [fw fn]
-        duk_push_uint(ctx, type);                    // [fw fn arg1(type)]
-        duk_push_string(ctx, fileName);              // [fw fn arg1(type) arg2(fileName)]
-        duk_push_string(ctx, ext);                   // [fw fn arg1(type) arg2(fileName) arg3(fileExt)]
-        if (duk_pcall(ctx, 3) != DUK_EXEC_SUCCESS) { // [fw err|undef]
-            dukUtilsPutDetailedError(ctx, -1, "fwFatchFn", appCtx->errBuf); // [fw]
-            duk_push_error_object(ctx, DUK_ERR_ERROR, "%s", appCtx->errBuf);
-            std::cerr << appCtx->errBuf << "\n";
-            appCtx->errBuf.clear();
+static void
+callFWWatchFn(FWEventType type, const char *filePath, const char *ext, void *myPtr) {
+    auto *ctx = static_cast<duk_context*>(myPtr);
+    jsEnvironmentPushCommonService(ctx, "fileWatcher");// [? fw]
+    duk_get_prop_string(ctx, -1, "dirPath");         // [? fw path]
+    if (duk_get_prop_string(ctx, -2, "_watchFn")) {  // [? fw path fn]
+        duk_push_uint(ctx, type);                    // [? fw path fn arg1(type)]
+        // /full/path/file.js -> file.js
+        duk_push_string(ctx, &filePath[duk_get_length(ctx, -3)]); // [? fw path fn arg1(type) arg2(fileName)]
+        duk_push_string(ctx, ext);                   // [? fw path fn arg1(type) arg2(fileName) arg3(fileExt)]
+        if (duk_pcall(ctx, 3) != DUK_EXEC_SUCCESS) { // [? fw path err|undef]
+            std::string err;
+            dukUtilsPutDetailedError(ctx, -1, "fwFatchFn", err); // [? fw path]
+            duk_push_error_object(ctx, DUK_ERR_ERROR, "%s", err.c_str());
+            std::cerr << err << "\n";
         }
-    }                                                // [fw undef]
-    duk_pop_2(ctx);                                  // []
+    }                                                // [? fw path err|undef]
+    duk_pop_3(ctx);                                  // [?]
+}
+
+static void*
+startFileWatcher(void *myPtr) {
+    //                                              [str this ptr]
+    auto *ctx = static_cast<duk_context*>(myPtr);
+    auto *self = static_cast<FileWatcher*>(duk_get_pointer(ctx, -1));
+    auto *dirPath = duk_get_string(ctx, -3);
+    fileWatcherWatch(self, dirPath,
+        [](FWEventType type, const char *filePath, void *myPtr) {
+            if (type == FW_EVENT_RESCAN) return;
+            if (type == FW_EVENT_ERROR) {
+                std::cerr << "[Error]: Got an error from fileWatcher\n";
+                return;
+            }
+            char *ext = strrchr(filePath, '.');
+            if (ext && (
+                strcmp(ext, ".htm") == 0 ||
+                strcmp(ext, ".js") == 0 ||
+                strcmp(ext, ".css") == 0 ||
+                strcmp(ext, ".ini") == 0 ||
+                strcmp(ext, ".jsx") == 0
+            )) {
+                callFWWatchFn(type, filePath, &ext[1], myPtr);
+            }
+        }, myPtr);
+    return nullptr;
+}
+
+static duk_ret_t
+jsFileWatcherWatch(duk_context *ctx) {
+    const char *dirPath = duk_require_string(ctx, 0);
+    duk_push_this(ctx);                                  // [str this]
+    if (duk_get_prop_string(ctx, -1, KEY_FW_SELF_PTR) && duk_is_pointer(ctx, -1)) {
+        return duk_error(ctx, DUK_ERR_ERROR, "The previous file watcher is still "
+                                             "running (use fileWatcher.stop().");
+    }
+    duk_pop(ctx);
+    static constexpr unsigned defaultDebounceMillis = 120;
+    FileWatcher* fw = fileWatcherNew(defaultDebounceMillis);
+    if (!fw) return duk_error(ctx, DUK_ERR_ERROR, "Failed to allocate the fileWatcher");
+    //
+    duk_push_pointer(ctx, fw);                           // [str this ptr]
+    duk_put_prop_string(ctx, -2, KEY_FW_SELF_PTR);       // [str this]
+    duk_dup(ctx, 0);                                     // [str this str]
+    duk_put_prop_string(ctx, -2, "dirPath");             // [str this]
+    duk_get_prop_string(ctx, -1, KEY_FW_SELF_PTR);       // [str this ptr]
+    //
+    pthread_t fileWatcherThread;
+    if (pthread_create(&fileWatcherThread, nullptr, startFileWatcher, ctx) == 0) {
+        std::cout << "[Info]: Started watching files at '" << dirPath << "'.\n";
+        duk_push_number(ctx, fileWatcherThread);         // [str this ptr thread]
+        duk_put_prop_string(ctx, -3, KEY_FW_THREAD);     // [str this ptr]
+        return 0;
+    }
+    return duk_error(ctx, DUK_ERR_ERROR, "Failed to create the fileWatcher thread");
+}
+
+
+static duk_ret_t
+jsFileWatcherStop(duk_context *ctx) {
+    duk_push_this(ctx);                                // [this]
+    if (duk_get_prop_string(ctx, -1, KEY_FW_THREAD) && // [this thread]
+        duk_is_number(ctx, -1)) {
+        duk_get_prop_string(ctx, -2, KEY_FW_SELF_PTR); // [this thread ptr]
+        duk_get_prop_string(ctx, -3, "dirPath");       // [this thread ptr str]
+        auto *self = static_cast<FileWatcher*>(duk_get_pointer(ctx, -2));
+        fileWatcherStop(self, duk_get_string(ctx, -1));
+        auto thread = static_cast<pthread_t>(duk_get_number(ctx, -3));
+        if (pthread_cancel(thread) != 0)
+            std::cerr << "[Error]: Failed to terminate the fileWatcher thread" << std::endl;
+        duk_push_null(ctx);                            // [this thread ptr str null]
+        duk_put_prop_string(ctx, -5, KEY_FW_THREAD);   // [this thread ptr str]
+        duk_push_null(ctx);                            // [this thread ptr str null]
+        duk_put_prop_string(ctx, -5, KEY_FW_SELF_PTR); // [this thread ptr str]
+    }
+    return 0;
 }

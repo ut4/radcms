@@ -24,6 +24,7 @@ exports.Website = function(dirPath, dbUrl) {
     this.graph = new exports.SiteGraph();
     this.config = new exports.SiteConfig();
     this.fs = commons.fs;
+    this.fileWatcher = commons.fileWatcher;
     this.crypto = crypto;
     this.Uploader = commons.Uploader;
     this.app = null;
@@ -66,7 +67,7 @@ exports.Website.prototype.install = function(sampleDataName) {
 };
 /**
  */
-exports.Website.prototype.init = function() {
+exports.Website.prototype.activate = function() {
     // Populate this.config (from $this.dirPath+'site.ini')
     this.config.loadFromDisk(this.dirPath);
     // Populate this.graph
@@ -81,6 +82,8 @@ exports.Website.prototype.init = function() {
         try { self.compileAndCacheTemplate(entry.name); }
         catch(e) { /**/ }
     });
+    this.fileWatcher.stop();
+    this.fileWatcher.watch(this.dirPath);
     commons.signals.emit('siteGraphRescanRequested', 'full');
 };
 /**

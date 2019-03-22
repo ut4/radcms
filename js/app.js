@@ -31,7 +31,7 @@ exports.app = {
     /**
      * Sets $this.currentWebsite.
      */
-    setCurrentWebsite: function(dirPath, skipInit) {
+    setCurrentWebsite: function(dirPath, skipActivate) {
         if (!this.waitingWebsite || this.waitingWebsite.dirPath != dirPath) {
             this.currentWebsite = new Website(dirPath);
             this.waitingWebsite = null;
@@ -39,7 +39,7 @@ exports.app = {
             this.currentWebsite = this.waitingWebsite;
             this.waitingWebsite = null;
         }
-        if (!skipInit) this.currentWebsite.init();
+        if (!skipActivate) this.currentWebsite.activate();
         insnEnv.setProp('currentWebsiteDirPath', dirPath);
     },
     /**

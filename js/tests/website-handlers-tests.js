@@ -105,7 +105,7 @@ testLib.module('website-handlers.js (1)', function() {
         var req = new http.Request('/api/websites/set-current', 'PUT');
         req.data = {dirPath: inputDirPath};
         app.setWaitingWebsite(inputDirPath + '/', ':memory:');
-        var initStub = new Stub(app.waitingWebsite, 'init', function() {});
+        var initStub = new Stub(app.waitingWebsite, 'activate', function() {});
         var setEnvPropStub = new Stub(insnEnv, 'setProp', function() {});
         //
         var response = app.getHandler(req.url, req.method)(req);
