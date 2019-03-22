@@ -20,31 +20,36 @@ body {
 .line-through {
     text-decoration: line-through;
 }
+h3 {
+    margin: 0 0 20px;
+    font: normal 18px/18px "Fira sans heavy";
+}
+.feather {
+    width: 26px;
+    height: 26px;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    fill: none;
+}
 
 /* == Buttons =============================================================== */
 button {
     font-family: "Fira sans light";
     border: medium none;
-    background-color: transparent;
     cursor: pointer;
+    background-color: #f0f0f0;
+}
+button:hover:enabled {
+    background-color: #ececec;
 }
 .nice-button {
-    background-color: #F5F5F5;
-    border: 1px solid rgba(0,0,0,0.1);
-    border-radius: 2px;
-    color: #222222;
-    font: 11px/11px "Fira sans light";
-    padding: 8px 12px;
-    text-shadow: 0 1px rgba(0,0,0,0.1);
-    text-decoration: none;
-}
-.nice-button.small {
-    font-size: 10px;
-    padding: 6px;
-}
-.nice-button.large {
-    font-size: 14px;
-    padding: 15px 35px;
+    padding: 6px 16px;
+    border-radius: 16px;
+    background-color: #40e3cb;
+    color: rgba(255,255,255,0.9);
+    text-shadow: 1px 1px 0 #15c2bb;
 }
 .nice-button:disabled {
     background-color: #E5E5E5;
@@ -52,40 +57,30 @@ button {
     cursor: not-allowed;
     text-shadow: none;
 }
-.nice-button:active:enabled {
-    box-shadow: 0 1px 2px rgba(0,0,0,0.08) inset;
+.nice-button:active:enabled,
+.text-button:active:enabled {
+    transform: scale(1.02, 1.02);
 }
 .nice-button:hover:enabled {
-    background-color: #F2F2F2;
-    border-color: rgba(0,0,0,0.15);
+    background-color: #3bddc5;
 }
-.nice-button.nice-button-primary:enabled {
-    background: linear-gradient(#50acfb, #358dd8);
-    border-color: #2b94e6;
-    color: #FFFFFF;
-}
-.nice-button.nice-button-primary:active:enabled {
-    box-shadow: 0 1px 2px rgba(0,0,0,0.2) inset;
-}
-.nice-button.nice-button-primary:hover:enabled {
-    background: linear-gradient(#5cb4ff, #4299e4);
-    border-color: #379ded;
+.icon-button .feather {
+    width: 18px;
+    height: 18px;
+    float: left;
+    margin-right: 8px;
 }
 .text-button {
-    font: 0.8em "Fira sans light";
-    color: #676269;
-    padding: 5px 20px;
-    text-decoration: none;
-}
-.text-button.current {
-    border-bottom: 1px solid;
+    padding: 5px 16px;
+    background-color: transparent;
 }
 .text-button:disabled {
     color: #AAAAAA;
     cursor: not-allowed;
 }
 .text-button:hover:enabled {
-    color: #2C8EB8;
+    color: #366361;
+    background-color: initial;
 }
 
 /* == Forms ================================================================= */
@@ -136,7 +131,6 @@ input[type="checkbox"] + label:after {
     border: 2px solid #899598;
 }
 input[type="checkbox"]:checked + label:after {
-    background-image: url(assets/icon-sprite.svg#checked);
     background-color: #449eec;
     border: none;
     padding: 3px;
@@ -226,3 +220,8 @@ table .input-set > span:first-of-type {
 table .input-set input {
     margin: 0;
 }
+
+/* == Theme =============================================================== */
+.light h3 { color: rgba(0,0,0,0.65); }
+.light a { color: #4d817f; }
+.light a:hover { color: #366361 }

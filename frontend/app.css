@@ -31,7 +31,6 @@ h2 {
     bottom: -1px;
     left: 11px;
 }
-
 #website-list {
     overflow: hidden;
 }
@@ -47,15 +46,29 @@ h2 {
     padding: 20px;
     border-radius: 2px;
 }
-#website-list h3 {
-    margin: 0;
-}
 #website-list ul {
-    margin: 0;
+    margin: 0 0 18px;
     padding: 0;
 }
 #website-list li {
     list-style: none;
+    margin-bottom: 26px;
+}
+#website-list h4 {
+    margin: 0 0 12px 0;
+    font-weight: normal;
+    font-size: 16px;
+    line-height: 15px;
+    text-indent: 10px;
+    text-shadow: 0 0 2px rgba(0,0,0,0.15);
+}
+#website-list h4 .feather {
+    float: left;
+    width: 16px;
+    height: 16px;
+}
+#website-list li span {
+    color: rgba(0,0,0,0.6);
 }
 
 

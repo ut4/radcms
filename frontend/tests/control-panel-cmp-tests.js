@@ -59,10 +59,10 @@ QUnit.module('ControlPanelComponent', hooks => {
             directiveElems:[],
             allContentNodes:[]
         }}, null));
-        const uploadButton = itu.scryRenderedDOMElementsWithTag(rendered,
-            'button').find(btn => btn.textContent == 'Upload');
-        assert.ok(uploadButton !== null, "Sanity check uploadButton != null");
-        assert.equal(uploadButton.getAttribute('data-num-waiting-uploads'), null,
+        const uploadLink = itu.scryRenderedDOMElementsWithTag(rendered,
+            'a').find(btn => btn.textContent == 'Upload');
+        assert.ok(uploadLink !== null, "Sanity check uploadLink != null");
+        assert.equal(uploadLink.getAttribute('data-num-waiting-uploads'), null,
                      "Sanity check data-num-waiting-uploads == ''");
         //
         const waitingUploadsGetCall = httpStub.getCall(0);
@@ -70,7 +70,7 @@ QUnit.module('ControlPanelComponent', hooks => {
         waitingUploadsGetCall.returnValue // GET website/num-waiting-uploads
         .then(() => httpStub.getCall(1).returnValue) // GET website/templates
         .then(() => {
-            assert.equal(uploadButton.getAttribute('data-num-waiting-uploads'),
+            assert.equal(uploadLink.getAttribute('data-num-waiting-uploads'),
                          mockNum);
             httpStub.restore();
             done();

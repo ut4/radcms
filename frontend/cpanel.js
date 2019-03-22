@@ -1,5 +1,5 @@
 import services from './common-services.js';
-import {myLink, contentNodeList} from './common-components.js';
+import {myLink, contentNodeList, featherSvg} from './common-components.js';
 import {GenericListUIPanelImpl, StaticMenuUIPanelImpl} from './ui-panel-impls.js';
 import {AddContentView, EditContentView} from './content-views.js';
 import {WebsiteGenerateView, WebsiteUploadView} from './website-views.js';
@@ -84,7 +84,7 @@ class ControlPanel extends preact.Component {
                     $el('button', {
                         className: this.state.tabA ? 'current' : '',
                         onClick: () => { if (!this.state.tabA) this.setState({tabA: true}); }
-                    }, 'On this page'),
+                    }, 'Content'),
                     $el('button', {
                         className: !this.state.tabA ? 'current' : '',
                         onClick: () => { if (this.state.tabA) this.setState({tabA: false}); }
@@ -114,43 +114,40 @@ class ControlPanel extends preact.Component {
         ]);
     }
     makeMainTabItems() {
-        const uploadBtnAttrs = {
-            onclick: () => myRedirect('/upload-website'),
-            className: 'nice-button nice-button-primary'
-        };
+        const uploadBtnAttrs = {};
         if (this.state.numWaitingUploads > 0) {
             const l = this.state.numWaitingUploads;
             uploadBtnAttrs['data-num-waiting-uploads'] = l;
             uploadBtnAttrs['title'] = 'Upload ' + l + ' waiting items.';
         }
-        return [
-            $el('div', null, [
-                $el('button', uploadBtnAttrs, 'Upload'),
-                $el('button', {
-                    onclick: () => myRedirect('/generate-website'),
-                    className: 'nice-button nice-button-primary'
-                }, 'Generate')
-            ]),
-            $el('div', null, [
-                $el('div', {className: 'current-page-ui-panels'},
-                    this.currentPageUiPanels.map((panel, i) => {
-                        return $el(ControlPanelSection, {
-                            title: panel.getTitle(),
-                            icon: typeof panel.getIcon == 'function' ? panel.getIcon() : null,
-                            className: 'ui-panel ui-panel-' +
-                                this.props.currentPageData.directiveElems[i].uiPanelType
-                        }, panel.getMenuItems(this.props));
-                    }).concat($el(ControlPanelSection, {
-                        title: 'Other',
-                        className: ''
-                    }, contentNodeList({
-                        cnodes: this.looseContentNodes,
-                        createLinkText: 'Create Content',
-                        currentPageUrl: this.props.currentPageData.page.url
-                    })))
+        return $el('div', null,
+            $el('section', {className: 'quick-links'},
+                $el('h3', null, 'Quick links:'),
+                $el('div', null,
+                    myLink('/upload-website', [featherSvg('upload-cloud'), 'Upload'],
+                           false, uploadBtnAttrs),
+                    myLink('/generate-website', [featherSvg('save'), 'Generate'])
                 )
-            ])
-        ];
+            ),
+            $el('section', null,
+                $el('h3', null, 'On this page:'),
+                ...this.currentPageUiPanels.map((panel, i) => {
+                    return $el(ControlPanelSection, {
+                        title: panel.getTitle(),
+                        icon: typeof panel.getIcon == 'function' ? panel.getIcon() : null,
+                        className: 'ui-panel ui-panel-' +
+                            this.props.currentPageData.directiveElems[i].uiPanelType
+                    }, panel.getMenuItems(this.props));
+                }).concat($el(ControlPanelSection, {
+                    title: 'Other',
+                    className: ''
+                }, contentNodeList({
+                    cnodes: this.looseContentNodes,
+                    createLinkText: 'Create Content',
+                    currentPageUrl: this.props.currentPageData.page.url
+                })))
+            )
+        );
     }
     makeDevTabItems() {
         return [
@@ -200,8 +197,7 @@ class ControlPanelSection extends preact.Component {
         return $el('div', {className: this.props.className}, [
             $el('h4', null, [
                 $el('span', null,
-                    $el('img', {src: '/frontend/assets/icon-sprite.svg#' +
-                        (this.props.icon || 'feather')}, null),
+                    featherSvg(this.props.icon || 'feather'),
                     this.props.title
                 ),
                 $el('button', {onClick: () => this.setState({collapsed: !this.state.collapsed})},

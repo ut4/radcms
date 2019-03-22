@@ -1,4 +1,4 @@
-import {Form} from './common-components.js';
+import {Form, featherSvg} from './common-components.js';
 import {FileDialog} from './file-dialog.js';
 import services from './common-services.js';
 
@@ -22,17 +22,17 @@ class WebsiteListView extends preact.Component {
                     $el('h3', null, site.name || 'untitled'),
                     $el('ul', null,
                         $el('li', null,
-                            $el('h4', null, $el('img', {src: '/frontend/assets/icon-sprite.svg#folder'}, null), 'Location'),
-                            site.dirPath
+                            $el('h4', null, featherSvg('hard-drive'), 'Location'),
+                            $el('span', null, site.dirPath)
                         ),
                         $el('li', null,
-                            $el('h4', null, $el('img', {src: '/frontend/assets/icon-sprite.svg#clock'}, null), 'Created at'),
-                            new Date(site.createdAt * 1000).toLocaleString()
+                            $el('h4', null, featherSvg('clock'), 'Created at'),
+                            $el('span', null, new Date(site.createdAt * 1000).toLocaleString())
                         )
                     ),
                     $el('button', {onClick: () => this.openWebsite(site.dirPath),
-                        className: 'nice-button nice-button-primary'},
-                        'Start editing')
+                        className: 'nice-button icon-button nice-button-primary'},
+                        featherSvg('edit'), 'Start editing')
                 ))
             ));
         }

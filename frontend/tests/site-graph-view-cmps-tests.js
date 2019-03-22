@@ -27,7 +27,7 @@ QUnit.module('SiteGraphEditComponent', hooks => {
         // Wait for constructor's GET /api/websites/current/site-graph
         httpStub.getCall(0).returnValue.then(() => {
             const form = itu.findRenderedDOMElementWithTag(tree, 'form');
-            const submitButton = form.querySelector('input[type="submit"]');
+            const submitButton = form.querySelector('button[type="submit"]');
             const pageTableRows = form.querySelectorAll('tbody tr');
             const newsPageDeleteButton = pageTableRows[1].querySelector('button');
             const contentPageDeleteButton = pageTableRows[2].querySelector('button');

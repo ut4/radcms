@@ -29,7 +29,7 @@ QUnit.module('AddContentViewComponent', hooks => {
         httpStub.getCall(0).returnValue.then(() => {
             const form = itu.findRenderedDOMElementWithTag(tree, 'form');
             const formButtons = itu.findRenderedDOMElementWithClass(tree, 'form-buttons');
-            const submitButton = formButtons.querySelector('input[type="submit"]');
+            const submitButton = formButtons.querySelector('button[type="submit"]');
             const cnodeNameInput = form.querySelector('input[name="cnodeName"]');
             const titleInput = form.querySelector('input[name="title"]');
             const bodyInput = form.querySelector('textarea[name="body"]');
@@ -67,7 +67,7 @@ QUnit.module('AddContentViewComponent', hooks => {
         httpStub.getCall(0).returnValue.then(() => {
             const form = itu.findRenderedDOMElementWithTag(tree, 'form');
             const formButtons = itu.findRenderedDOMElementWithClass(tree, 'form-buttons');
-            const submitButton = formButtons.querySelector('input[type="submit"]');
+            const submitButton = formButtons.querySelector('button[type="submit"]');
             const cnodeNameInput = form.querySelector('input[name="cnodeName"]');
             const contentInput = form.querySelector('textarea[name="content"]');
             const extraFieldForm = form.querySelector('.extra-field-form');
@@ -111,7 +111,7 @@ QUnit.module('AddContentViewComponent', hooks => {
         httpStub.getCall(0).returnValue.then(() => {
             const form = itu.findRenderedDOMElementWithTag(tree, 'form');
             const formButtons = itu.findRenderedDOMElementWithClass(tree, 'form-buttons');
-            const submitButton = formButtons.querySelector('input[type="submit"]');
+            const submitButton = formButtons.querySelector('button[type="submit"]');
             const cnodeNameInput = form.querySelector('input[name="cnodeName"]');
             const contentInput = form.querySelector('textarea[name="content"]');
             // Fill out the form

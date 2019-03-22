@@ -18,12 +18,11 @@ class Form extends preact.Component {
         return $el('form', {onSubmit: e => this.confirm(e)},
             this.props.children,
             $el('div', {className: 'form-buttons'},
-                $el('input', {
-                    value: this.props.confirmButtonText || 'Ok',
+                $el('button', {
                     className: 'nice-button nice-button-primary',
                     type: 'submit',
                     disabled: this.doDisableConfirmButton()
-                }, null),
+                }, this.props.confirmButtonText || 'Ok'),
                 $el('button', {
                     className: 'text-button',
                     type: 'button',
@@ -69,11 +68,11 @@ class Form extends preact.Component {
  * if $full = true).
  *
  * @param {string} to eg. '/edit-content/1'
- * @param {text} to eg. 'Edit content'
+ * @param {string|VDOMNode} children eg. 'Edit content' or $el('span', null, 'foo')
  * @param {bool?} full = false
  * @param {Object?} attrs = null
  */
-function myLink(to, text, full, attrs) {
+function myLink(to, children, full, attrs) {
     let props = {
         href: (!full ? '#' : '') + to.split('?')[0],
         onclick: e => {
@@ -84,7 +83,7 @@ function myLink(to, text, full, attrs) {
     if (attrs) for (const key in attrs) {
         props[key] = attrs[key];
     }
-    return $el('a', props, text);
+    return $el('a', props, children);
 }
 
 /**
@@ -112,4 +111,14 @@ function contentNodeList(props) {
     ];
 }
 
-export {Form, myLink, contentNodeList};
+/**
+ * @param {string} iconId eg. 'activity' (see: feathericons.com)
+ */
+function featherSvg(iconId) {
+    return $el('svg', {className: 'feather'},
+        $el('use', {'xlink:href': '/frontend/assets/feather-sprite.svg#' + iconId},
+            null)
+    );
+}
+
+export {Form, myLink, contentNodeList, featherSvg};

@@ -2,6 +2,6 @@ Asset: fira-sans-heavy.woff2, fira-sans-light.woff2
 License: SIL Open Font License v1.10
 Link: https://www.fontsquirrel.com/fonts/fira-sans
 
-Asset: icon-sprite.svg
+Asset: feather-sprite.svg
 License: The MIT License (MIT)
 Link: https://github.com/feathericons/feather

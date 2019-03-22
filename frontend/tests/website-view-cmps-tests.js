@@ -71,7 +71,7 @@ QUnit.module('WebsiteCreateViewComponent', hooks => {
             const sampleDataDropdown = form.querySelector('select[name="sampleDataName"]');
             const nameInput = form.querySelector('input[name="name"]');
             const formButtons = itu.findRenderedDOMElementWithClass(tree, 'form-buttons');
-            const submitButton = formButtons.querySelector('input[type="submit"]');
+            const submitButton = formButtons.querySelector('button[type="submit"]');
             // Fill out the form
             utils.setInputValue('c:/path/to/dir', dirPathInput);
             utils.setDropdownIndex(1, sampleDataDropdown);
@@ -119,7 +119,7 @@ QUnit.module('WebsiteGenerateViewComponent', hooks => {
         const tree = itu.renderIntoDocument($el(WebsiteGenerateView, null, null));
         //
         const formButtons = itu.findRenderedDOMElementWithClass(tree, 'form-buttons');
-        formButtons.querySelector('input[type="submit"]').click();
+        formButtons.querySelector('button[type="submit"]').click();
         //
         const postCall = httpStub.getCall(0);
         assert.ok(postCall !== null, 'Should send request to backend');
@@ -151,7 +151,7 @@ QUnit.module('WebsiteGenerateViewComponent', hooks => {
         const tree = itu.renderIntoDocument($el(WebsiteGenerateView, null, null));
         //
         const formButtons = itu.findRenderedDOMElementWithClass(tree, 'form-buttons');
-        formButtons.querySelector('input[type="submit"]').click();
+        formButtons.querySelector('button[type="submit"]').click();
         //
         const postCall = httpStub.getCall(0);
         assert.ok(postCall !== null, 'Should send request to backend');
@@ -211,7 +211,7 @@ QUnit.module('WebsiteUploadViewComponent', hooks => {
             const tables = form.querySelectorAll('table');
             const pageTableRows = tables[0].querySelectorAll('tbody tr');
             const fileTableRows = tables[1].querySelectorAll('tbody tr');
-            const submitButton = form.querySelector('input[type="submit"]');
+            const submitButton = form.querySelector('button[type="submit"]');
             //
             assert.equal(remoteUrlInput.value, 'ftp://ftp.mysite.net/public_html');
             assert.equal(usernameInput.value, 'ftp@mysite.net');
@@ -326,7 +326,7 @@ QUnit.module('WebsiteUploadViewComponent', hooks => {
         httpStub.getCall(0).returnValue.then(() => {
             const form = itu.findRenderedDOMElementWithTag(tree, 'form');
             const pageTableRows = form.querySelectorAll('tbody tr');
-            const submitButton = form.querySelector('input[type="submit"]');
+            const submitButton = form.querySelector('button[type="submit"]');
             //
             submitButton.click();
             //
