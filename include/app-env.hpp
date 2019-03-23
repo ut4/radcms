@@ -4,6 +4,8 @@
 #include <stdlib.h> // system()
 #if defined(INSN_IS_WIN)
 #include <shlobj.h> // SHGetFolderPathA()
+#elif defined(INSN_IS_LINUX)
+#include <pwd.h> // getpwuid()
 #endif
 #include "duk.hpp"
 #include "my-fs.hpp"
