@@ -82,7 +82,6 @@ exports.Website.prototype.activate = function() {
         try { self.compileAndCacheTemplate(entry.name); }
         catch(e) { /**/ }
     });
-    this.fileWatcher.stop();
     this.fileWatcher.watch(this.dirPath);
     commons.signals.emit('siteGraphRescanRequested', 'full');
 };

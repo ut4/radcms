@@ -2,7 +2,10 @@
 
 #include <cstring> // strlen(), memcpy()
 #include <iostream> // std::cerr
+#include <vector>
 #include <curl/curl.h>
+#undef UNICODE
+#include <FileWatcher/FileWatcher.h>
 
 enum UploadStatus {
     UPLOAD_OK = 0,
@@ -36,4 +39,53 @@ struct CurlUploader {
     initUploadOpts(const char *fullUrl, bool isDelete = false);
     int
     perform(struct curl_slist *headerlist = nullptr);
+};
+
+// =============================================================================
+
+enum FWEventType {
+    FW_EVENT_NOTICE_WRITE,
+    FW_EVENT_NOTICE_REMOVE,
+    FW_EVENT_CREATE,
+    FW_EVENT_WRITE,
+    FW_EVENT_CHMOD,
+    FW_EVENT_REMOVE,
+    FW_EVENT_RENAME,
+    FW_EVENT_RESCAN,
+    FW_EVENT_ERROR,
+    FW_EVENT_NONE,
+};
+
+struct QueuedFWEvent {
+    FW::String fileName;
+    FW::Action eventType;
+    bool isProcessed;
+};
+
+class NormalizingFWEventHandler: public FW::FileWatchListener {
+public:
+    static const int DEFAULT_FLUSH_INTERVAL_MILLIS = 120;
+    void (*onEvent)(FWEventType type, const char *filePath, void *myPtr);
+    void* myPtr;
+    /**
+     * Collects this event to the event queue ($this->queue);
+     */
+    void
+    handleFileAction(FW::WatchID watchid, const FW::String& dir,
+                     const FW::String& fileName, FW::Action action);
+    /**
+     * Processed all entries in the event queue ($this->queue) in a normalized
+     * fashion (removes doubles, converts add + mod into a rename etc.) and
+     * dispatches them to $this->onEvent().
+     */
+    void
+    processQueue();
+private:
+    std::vector<QueuedFWEvent> queue;
+    int
+    findRelatedMod(const FW::String &fileName, QueuedFWEvent* info[3]);
+    int
+    findRelatedAdd(const FW::String &fileName, QueuedFWEvent* info[3]);
+    int
+    findRelatedRem(const FW::String &fileName, QueuedFWEvent* info[3]);
 };

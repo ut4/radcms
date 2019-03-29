@@ -28,8 +28,8 @@ static duk_ret_t domTreeRender(duk_context *ctx);
 static duk_ret_t domTreeGetRenderedElems(duk_context *ctx);
 static duk_ret_t domTreeGetRenderedFnComponents(duk_context *ctx);
 static unsigned domTreeCallCmpFn(FuncNode *me, std::string &err);
-static duk_ret_t jsFileWatcherWatch(duk_context *ctx);
-static duk_ret_t jsFileWatcherStop(duk_context *ctx);
+static duk_ret_t fileWatcherWatch(duk_context *ctx);
+static duk_ret_t fileWatcherFinalize(duk_context *ctx);
 
 constexpr const char* KEY_DB_PTR = DUK_HIDDEN_SYMBOL("_dbInstancePtr");
 constexpr const char* KEY_STMT_JS_PROTO = "_StmtProto";
@@ -119,10 +119,10 @@ commonServicesJsModuleInit(duk_context *ctx, const int exportsIsAt) {
     duk_put_prop_string(ctx, exportsIsAt, "DomTree");   // [?]
     // module.fileWatcher
     duk_get_prop_string(ctx, exportsIsAt, "fileWatcher"); // [? fileWatcher]
-    duk_push_c_lightfunc(ctx, jsFileWatcherWatch, 1, 0, 0); // [? fileWatcher lightfn]
+    duk_push_c_lightfunc(ctx, fileWatcherWatch, 1, 0, 0); // [? fileWatcher lightfn]
     duk_put_prop_string(ctx, -2, "watch");              // [? fileWatcher]
-    duk_push_c_lightfunc(ctx, jsFileWatcherStop, 0, 0, 0);// [? fileWatcher lightfn]
-    duk_put_prop_string(ctx, -2, "stop");               // [? fileWatcher]
+    duk_push_c_function(ctx, fileWatcherFinalize, 1);   // [? fileWatcher fn]
+    duk_set_finalizer(ctx, -2);                         // [? fileWatcher]
     duk_pop(ctx);                                       // [?]
 }
 
@@ -707,99 +707,123 @@ domTreeCallCmpFn(FuncNode *me, std::string &err) {
 
 // == fwatcher ====
 // =============================================================================
+static constexpr FW::WatchID NOT_POSSIBLE_WATCH_ID = 65535;
+
 static void
-callFWWatchFn(FWEventType type, const char *filePath, const char *ext, void *myPtr) {
+onFWEvent(FWEventType type, const char *fileName, void *myPtr) {
+    const char *ext = strrchr(fileName, '.');
+    if (!ext || !(
+        strcmp(ext, ".htm") == 0 ||
+        strcmp(ext, ".js") == 0 ||
+        strcmp(ext, ".css") == 0 ||
+        strcmp(ext, ".ini") == 0 ||
+        strcmp(ext, ".jsx") == 0
+    )) return;
+    //
     auto *ctx = static_cast<duk_context*>(myPtr);
     jsEnvironmentPushCommonService(ctx, "fileWatcher");// [? fw]
-    duk_get_prop_string(ctx, -1, "dirPath");         // [? fw path]
-    if (duk_get_prop_string(ctx, -2, "_watchFn")) {  // [? fw path fn]
-        duk_push_uint(ctx, type);                    // [? fw path fn arg1(type)]
-        // /full/path/file.js -> file.js
-        duk_push_string(ctx, &filePath[duk_get_length(ctx, -3)]); // [? fw path fn arg1(type) arg2(fileName)]
-        duk_push_string(ctx, ext);                   // [? fw path fn arg1(type) arg2(fileName) arg3(fileExt)]
-        if (duk_pcall(ctx, 3) != DUK_EXEC_SUCCESS) { // [? fw path err|undef]
+    if (duk_get_prop_string(ctx, -1, "_watchFn")) {  // [? fw fn]
+        duk_push_uint(ctx, type);                    // [? fw fn arg1(type)]
+        duk_push_string(ctx, fileName);              // [? fw fn arg1(type) arg2(fileName)]
+        duk_push_string(ctx, &ext[1]);               // [? fw fn arg1(type) arg2(fileName) arg3(fileExt)]
+        if (duk_pcall(ctx, 3) != DUK_EXEC_SUCCESS) { // [? fw err|undef]
             std::string err;
-            dukUtilsPutDetailedError(ctx, -1, "fwFatchFn", err); // [? fw path]
+            dukUtilsPutDetailedError(ctx, -1, "fwFatchFn", err); // [? fw]
             duk_push_error_object(ctx, DUK_ERR_ERROR, "%s", err.c_str());
             std::cerr << err << "\n";
         }
-    }                                                // [? fw path err|undef]
-    duk_pop_3(ctx);                                  // [?]
+    }                                                // [? fw err|undef]
+    duk_pop_2(ctx);                                  // [?]
 }
 
+struct FWContext {
+    FW::FileWatcher fw;
+    NormalizingFWEventHandler* currentHandler;
+    FW::WatchID currentWatchId;
+};
+
 static void*
-startFileWatcher(void *myPtr) {
-    //                                              [str this ptr]
-    auto *ctx = static_cast<duk_context*>(myPtr);
-    auto *self = static_cast<FileWatcher*>(duk_get_pointer(ctx, -1));
-    auto *dirPath = duk_get_string(ctx, -3);
-    fileWatcherWatch(self, dirPath,
-        [](FWEventType type, const char *filePath, void *myPtr) {
-            if (type == FW_EVENT_RESCAN) return;
-            if (type == FW_EVENT_ERROR) {
-                std::cerr << "[Error]: Got an error from fileWatcher\n";
-                return;
-            }
-            const char *ext = strrchr(filePath, '.');
-            if (ext && (
-                strcmp(ext, ".htm") == 0 ||
-                strcmp(ext, ".js") == 0 ||
-                strcmp(ext, ".css") == 0 ||
-                strcmp(ext, ".ini") == 0 ||
-                strcmp(ext, ".jsx") == 0
-            )) {
-                callFWWatchFn(type, filePath, &ext[1], myPtr);
-            }
-        }, myPtr);
+startFileWatcherThread(void *myPtr) {
+    auto *self = static_cast<FWContext*>(myPtr);
+    struct timespec t = {0, static_cast<long>(// 0 secs, 120 ms
+        NormalizingFWEventHandler::DEFAULT_FLUSH_INTERVAL_MILLIS * 1e6)};
+    while (self) {
+        if (self->currentHandler) {
+            self->fw.update();
+            self->currentHandler->processQueue();
+        }
+        nanosleep(&t, nullptr);
+    }
     return nullptr;
 }
 
-static duk_ret_t
-jsFileWatcherWatch(duk_context *ctx) {
-    const char *dirPath = duk_require_string(ctx, 0);
-    duk_push_this(ctx);                                  // [str this]
-    if (duk_get_prop_string(ctx, -1, KEY_FW_SELF_PTR) && duk_is_pointer(ctx, -1)) {
-        return duk_error(ctx, DUK_ERR_ERROR, "The previous file watcher is still "
-                                             "running (use fileWatcher.stop().");
+static int
+stopAndDeleteCurrentWatcher(FWContext* self, pthread_t thread) {
+    void* cancelStatus;
+    bool cancelOk = false;
+    bool joinOk = false;
+    bool statusOk = false;
+    if (!(cancelOk = pthread_cancel(thread) == 0) ||
+        !(joinOk = pthread_join(thread, &cancelStatus) == 0) ||
+        !(statusOk = cancelStatus == PTHREAD_CANCELED)) {
+        std::cerr << "[Error]: Failed to cancel the fileWatcher thread #2 "
+                  << "(cancel = " << cancelOk << ", join = " << joinOk
+                  << ", status = " << statusOk << ") " << std::endl;
+        return false;
     }
-    duk_pop(ctx);
-    static constexpr unsigned defaultDebounceMillis = 120;
-    FileWatcher* fw = fileWatcherNew(defaultDebounceMillis);
-    if (!fw) return duk_error(ctx, DUK_ERR_ERROR, "Failed to allocate the fileWatcher");
-    //
-    duk_push_pointer(ctx, fw);                           // [str this ptr]
-    duk_put_prop_string(ctx, -2, KEY_FW_SELF_PTR);       // [str this]
-    duk_dup(ctx, 0);                                     // [str this str]
-    duk_put_prop_string(ctx, -2, "dirPath");             // [str this]
-    duk_get_prop_string(ctx, -1, KEY_FW_SELF_PTR);       // [str this ptr]
-    //
-    pthread_t fileWatcherThread;
-    if (pthread_create(&fileWatcherThread, nullptr, startFileWatcher, ctx) == 0) {
-        std::cout << "[Info]: Started watching files at '" << dirPath << "'.\n";
-        duk_push_number(ctx, fileWatcherThread);         // [str this ptr thread]
-        duk_put_prop_string(ctx, -3, KEY_FW_THREAD);     // [str this ptr]
-        return 0;
-    }
-    return duk_error(ctx, DUK_ERR_ERROR, "Failed to create the fileWatcher thread");
+    self->fw.removeWatch(self->currentWatchId);
+    self->currentWatchId = NOT_POSSIBLE_WATCH_ID;
+    delete self->currentHandler;
+    self->currentHandler = nullptr;
+    return true;
 }
 
+static duk_ret_t
+fileWatcherWatch(duk_context *ctx) {
+    const char *dirPath = duk_require_string(ctx, 0);
+    FWContext *self = nullptr;
+    // Create self if not yet created
+    duk_push_this(ctx);                              // [str this]
+    if (duk_get_prop_string(ctx, -1, KEY_FW_SELF_PTR) && duk_is_pointer(ctx, -1)) {
+        self = static_cast<FWContext*>(duk_get_pointer(ctx, -1));
+    } else {
+        self = new FWContext;
+        self->currentWatchId = NOT_POSSIBLE_WATCH_ID;
+        self->currentHandler = nullptr;
+        duk_push_pointer(ctx, self);                 // [str this undefined ptr]
+        duk_put_prop_string(ctx, -3, KEY_FW_SELF_PTR); // [str this undefined]
+    }
+    // Delete the previous handler                   // [str this ptr|undefined]
+    if (self->currentHandler) {
+        duk_get_prop_string(ctx, -2, KEY_FW_THREAD); // [str this ? thread]
+        if (!stopAndDeleteCurrentWatcher(self, duk_get_number(ctx, -1))) return 0;
+        duk_pop(ctx);                                // [str this ?]
+    }
+    // Create a new one
+    pthread_t thread;
+    if (pthread_create(&thread, nullptr, startFileWatcherThread, self) == 0) {
+        duk_push_number(ctx, thread);                // [str this ? thread]
+        duk_put_prop_string(ctx, -3, KEY_FW_THREAD); // [str this ?]
+        auto* newHandler = new NormalizingFWEventHandler();
+        newHandler->myPtr = ctx;
+        newHandler->onEvent = onFWEvent;
+        self->currentHandler = newHandler;
+        self->currentWatchId = self->fw.addWatch(dirPath, self->currentHandler);
+        std::cout << "[Info]: started watching files at \"" << dirPath << "\"" << std::endl;
+    }
+    return 0;
+}
 
 static duk_ret_t
-jsFileWatcherStop(duk_context *ctx) {
-    duk_push_this(ctx);                                // [this]
-    if (duk_get_prop_string(ctx, -1, KEY_FW_THREAD) && // [this thread]
-        duk_is_number(ctx, -1)) {
-        duk_get_prop_string(ctx, -2, KEY_FW_SELF_PTR); // [this thread ptr]
-        duk_get_prop_string(ctx, -3, "dirPath");       // [this thread ptr str]
-        auto *self = static_cast<FileWatcher*>(duk_get_pointer(ctx, -2));
-        fileWatcherStop(self, duk_get_string(ctx, -1));
-        auto thread = static_cast<pthread_t>(duk_get_number(ctx, -3));
-        if (pthread_cancel(thread) != 0)
-            std::cerr << "[Error]: Failed to terminate the fileWatcher thread" << std::endl;
-        duk_push_null(ctx);                            // [this thread ptr str null]
-        duk_put_prop_string(ctx, -5, KEY_FW_THREAD);   // [this thread ptr str]
-        duk_push_null(ctx);                            // [this thread ptr str null]
-        duk_put_prop_string(ctx, -5, KEY_FW_SELF_PTR); // [this thread ptr str]
+fileWatcherFinalize(duk_context *ctx) {
+    duk_get_prop_string(ctx, -1, KEY_FW_SELF_PTR);   // [this ptr]
+    if (!duk_is_pointer(ctx, -1)) return 0;
+    //
+    auto *self = static_cast<FWContext*>(duk_get_pointer(ctx, -1));
+    if (self->currentHandler) {
+        duk_get_prop_string(ctx, -2, KEY_FW_THREAD); // [this ptr thread]
+        if (!stopAndDeleteCurrentWatcher(self, duk_get_number(ctx, -1))) return 0;
     }
+    delete self;
     return 0;
 }

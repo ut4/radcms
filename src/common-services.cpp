@@ -134,3 +134,82 @@ getUrlInfo(const std::string &fullUrl, std::string &domain, std::string &path) {
         path = "";
     }
 }
+
+// =============================================================================
+
+void
+NormalizingFWEventHandler::handleFileAction(FW::WatchID watchid, const FW::String& dir,
+                                            const FW::String& fileName, FW::Action action) {
+    QueuedFWEvent &item = this->queue.emplace_back();
+    item.fileName = fileName;
+    item.eventType = action;
+    item.isProcessed = false;
+}
+
+void
+NormalizingFWEventHandler::processQueue() {
+    int itemsLeft = this->queue.size();
+    if (!itemsLeft) return;
+    for (const auto &item: this->queue) {
+        if (itemsLeft == 0) break;
+        QueuedFWEvent* info[3] = {nullptr, nullptr, nullptr};
+        int count;
+        // Possible combinations: [mod]
+        //                        [mod, mod]
+        //                        [mod, add, mod]
+        if (item.eventType == FW::Action::Modified) {
+            if (!(count = this->findRelatedMod(item.fileName, info))) continue;
+            this->onEvent(FW_EVENT_WRITE, info[0]->fileName.c_str(), this->myPtr);
+        // Possible combinations: [add]
+        //                        [add, mod]
+        //                        [add, mod, mod]
+        } else if (item.eventType == FW::Action::Add) {
+            if (!(count = this->findRelatedAdd(item.fileName, info))) continue;
+            this->onEvent(FW_EVENT_CREATE, info[0]->fileName.c_str(), this->myPtr);
+        // Possible combinations: [rem]
+        //                        [rem(pathA), add(pathB)]
+        //                        [rem(pathA), add(pathB), mod(pathB)]
+        } else {
+            if (!(count = this->findRelatedRem(item.fileName, info))) continue;
+            if (count == 1 || info[1]->eventType != FW::Action::Add)
+                this->onEvent(FW_EVENT_REMOVE, info[0]->fileName.c_str(), this->myPtr);
+            else
+                this->onEvent(FW_EVENT_REMOVE, (info[0]->fileName+">"+info[1]->fileName).c_str(), this->myPtr);
+        }
+        itemsLeft -= count;
+        info[0]->isProcessed = true;
+        if (count > 1) info[1]->isProcessed = true; // was add + mod (rename)
+        if (count > 2) info[2]->isProcessed = true; // was add + double mod (rename)
+    }
+    if (itemsLeft > 0)
+        std::cerr << "[Error]: Faild to process all events" << std::endl;
+    this->queue.clear();
+}
+
+#define findRelated(testExpr) \
+    int len = 0; \
+    for (auto &item: this->queue) { \
+        if (testExpr) { \
+            if (item.isProcessed) return 0; \
+            info[len++] = &item; \
+        } \
+    } \
+    return len
+
+int
+NormalizingFWEventHandler::findRelatedMod(const FW::String &fileName, QueuedFWEvent* info[3]) {
+    findRelated(item.eventType == FW::Action::Modified && item.fileName == fileName);
+}
+
+int
+NormalizingFWEventHandler::findRelatedAdd(const FW::String &fileName, QueuedFWEvent* info[3]) {
+    findRelated((item.eventType == FW::Action::Add ||
+                 item.eventType == FW::Action::Modified) && item.fileName == fileName);
+}
+
+int
+NormalizingFWEventHandler::findRelatedRem(const FW::String &fileName, QueuedFWEvent* info[3]) {
+    findRelated((!item.isProcessed && item.eventType == FW::Action::Delete && item.fileName == fileName) ||
+                (len > 0 && !item.isProcessed && item.eventType == FW::Action::Add) ||
+                (len > 1 && !item.isProcessed && item.eventType == FW::Action::Modified));
+}

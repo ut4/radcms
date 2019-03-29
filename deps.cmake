@@ -38,11 +38,12 @@ if (INSN_IS_WIN)
         IMPORTED_IMPLIB ${CMAKE_BINARY_DIR}/libcrypto-1_1-x64.dll
     )
 
-    # -- notify ----
-    add_library(notify SHARED IMPORTED)
-    set_target_properties(notify PROPERTIES
-        IMPORTED_IMPLIB ${CMAKE_BINARY_DIR}/notify.dll
+    # -- simplefilewatcher ----
+    add_library(simplefilewatcher SHARED
+        ${VENDOR_ROOT}/simplefilewatcher/source/FileWatcher.cpp
+        ${VENDOR_ROOT}/simplefilewatcher/source/FileWatcherWin32.cpp
     )
+    set_target_properties(simplefilewatcher PROPERTIES LINKER_LANGUAGE CXX)
 
     set(INSN_DEP_INCLUDES
         ${VENDOR_ROOT}/microhttpd/include
@@ -53,7 +54,7 @@ if (INSN_IS_WIN)
         ${VENDOR_ROOT}/curl
         ${VENDOR_ROOT}/cjson
         ${VENDOR_ROOT}/rapidxml
-        ${VENDOR_ROOT}/notify
+        ${VENDOR_ROOT}/simplefilewatcher/include
     )
     set(INSN_DEP_LIBS
         microhttpd
@@ -63,7 +64,7 @@ if (INSN_IS_WIN)
         curl
         crypto
         cjson
-        notify
+        simplefilewatcher
     )
 elseif(INSN_IS_LINUX)
     # -- microhttpd provided by libmicrohttpd-dev ----
@@ -80,18 +81,19 @@ elseif(INSN_IS_LINUX)
     # -- openssl & crypto provided by libssl-dev ----
     # -- curl provided by libcurl4-openssl-dev ----
 
-    # -- notify ----
-    add_library(notify SHARED IMPORTED)
-    set_target_properties(notify PROPERTIES
-        IMPORTED_LOCATION ${CMAKE_BINARY_DIR}/libnotify.so
+    # -- simplefilewatcher ----
+    add_library(simplefilewatcher SHARED
+        ${VENDOR_ROOT}/simplefilewatcher/source/FileWatcher.cpp
+        ${VENDOR_ROOT}/simplefilewatcher/source/FileWatcherLinux.cpp
     )
+    set_target_properties(simplefilewatcher PROPERTIES LINKER_LANGUAGE CXX)
 
     set(INSN_DEP_INCLUDES
         ${VENDOR_ROOT}/duktape
         ${VENDOR_ROOT}/inih
         ${VENDOR_ROOT}/cjson
         ${VENDOR_ROOT}/rapidxml
-        ${VENDOR_ROOT}/notify
+        ${VENDOR_ROOT}/simplefilewatcher/include
     )
     set(INSN_DEP_LIBS
         m
@@ -104,7 +106,7 @@ elseif(INSN_IS_LINUX)
         ssl
         curl
         cjson
-        notify
+        simplefilewatcher
     )
 else()
     message(FATAL_ERROR "INSN_IS_WIN or INSN_IS_LINUX must be SET() before including deps.cmake.")
