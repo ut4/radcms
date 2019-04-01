@@ -1,0 +1,37 @@
+{
+  "name": "radcms",
+  "version": "0.0.0",
+  "description": "Simply the most radical static site cms ever created.",
+  "main": "main.js",
+  "bin": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ut4/radcms.git"
+  },
+  "author": "ut4",
+  "license": "BSD-3-Clause",
+  "bugs": {
+    "url": "https://github.com/ut4/radcms/issues"
+  },
+  "homepage": "https://github.com/ut4/radcms#readme",
+  "dependencies": {
+    "basic-ftp": "^3.4.4",
+    "better-sqlite3": "^5.4.0",
+    "chokidar": "^2.1.5"
+  },
+  "pkg": {
+    "assets": [
+      "frontend/assets/feather-sprite.svg",
+      "frontend/assets/fira-sans-heavy.woff2",
+      "frontend/assets/fira-sans-light.woff2",
+      "frontend/vendor/vendor.bundle.min.js",
+      "frontend/app.bundle.css",
+      "frontend/app.bundle.js",
+      "frontend/app.html",
+      "frontend/cpanel.html"
+    ]
+  }
+}
