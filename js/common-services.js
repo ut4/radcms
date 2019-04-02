@@ -3,89 +3,12 @@
  *
  * In this file:
  *
- * - Db (class)
- * - fs (singleton)
  * - fileWatcher (singleton)
- * - signals (singleton)
  * - transpiler (singleton)
  * - Uploader (class)
  * - DomTree (class)
- * - templateCache (singleton)
  *
  */
-
-/**
- * @native
- * @param {string} path
- * @constructor
- */
-exports.Db = function(/*path*/) {};
-/**
- * @native
- * @param {string} sql
- * @param {(stmt: Stmt): void} bindFn
- * @returns int lastInsertId
- */
-exports.Db.prototype.insert = function(/*sql, bindFn*/) {};
-/**
- * @native
- * @param {string} sql
- * @param {(row: ResultRow, rowIdx: number): void} mapFn
- */
-exports.Db.prototype.select = function(/*sql, mapFn[, whereBindFn]*/) {};
-/**
- * @native
- * @param {string} sql
- * @param {(stmt: Stmt): void} bindFn
- * @returns int numAffectedRows
- */
-exports.Db.prototype.update = function(/*sql, bindFn*/) {};
-/**
- * @see update
- */
-exports.Db.prototype.delete = function(/*sql, bindFn*/) {};
-/**
- * Runs a stored piece of sql.
- *
- * @native
- * @param {string} name eg. ':mainSchema:', ':websiteSchema:', ':minimalSampleData:'
- * @throws {Error} if $name wasn't a known piece of sql, or database failed
- */
-exports.Db.prototype.execNamedSql = function(/*name*/) {};
-
-
-// == fs-singleton ====
-// =============================================================================
-exports.fs = {
-    /**
-     * @native
-     * @param {string} path
-     * @param {string} contents
-     * @returns {bool}
-     * @throws {Error}
-     */
-    write: function(/*path, contents*/) {},
-    /**
-     * @native
-     * @param {string} path
-     * @returns {string}
-     */
-    read: function(/*path*/) {},
-    /**
-     * @native
-     * @param {string} path
-     * @param {(item: {name: string; isDir: bool;}): void|bool} onEach return false == break, anything else == continue
-     * @returns {bool}
-     */
-    readDir: function(/*path, onEach*/) {},
-    /**
-     * @native
-     * @param {string} path
-     * @returns {bool}
-     */
-    makeDirs: function(/*path*/) {},
-};
-
 
 // == fileWatcher-singleton ====
 // =============================================================================
@@ -121,32 +44,6 @@ exports.fileWatcher = {
      * @native
      */
     stop: function() {}
-};
-
-
-// == signals-singleton ====
-// =============================================================================
-exports.signals = {
-    _listeners: [],
-    /**
-     * @param {string} whichSignal
-     * @param {function} fn
-     */
-    listen: function(whichSignal, fn) {
-        this._listeners.push({listeningTo: whichSignal, fn: fn});
-    },
-    /**
-     * @param {string} whichSignal
-     * @param {any?} arg
-     */
-    emit: function(whichSignal, arg) {
-        var l = this._listeners.length;
-        for (var i = 0; i < l; ++i) {
-            var listener = this._listeners[i];
-            if (listener.listeningTo == whichSignal &&
-                listener.fn(arg) === false) break;
-        }
-    }
 };
 
 
@@ -237,30 +134,6 @@ exports.DomTree.prototype.getRenderedElements = function() {};
  * @returns {{props: {Object}, fn: {Function}}[]} function components
  */
 exports.DomTree.prototype.getRenderedFnComponents = function() {};
-
-
-// == templateCache-singleton ====
-// =============================================================================
-exports.templateCache = {
-    _fns: {},
-    put: function(fname, fn, whine) {
-        if (whine && this._fns.hasOwnProperty(fname)) {
-            throw new TypeError('Duplicate template ' + fname);
-        }
-        this._fns[fname] = fn;
-        this._fns[fname.split('.')[0]] = this._fns[fname];
-    },
-    remove: function(fname) {
-        delete this._fns[fname];
-        delete this._fns[fname.split('.')[0]];
-    },
-    get: function(name) {
-        return this._fns[name];
-    },
-    has: function(name) {
-        return this._fns.hasOwnProperty(name);
-    }
-};
 
 
 exports.log = print;
