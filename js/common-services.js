@@ -4,9 +4,7 @@
  * In this file:
  *
  * - fileWatcher (singleton)
- * - transpiler (singleton)
  * - Uploader (class)
- * - DomTree (class)
  *
  */
 
@@ -47,21 +45,6 @@ exports.fileWatcher = {
 };
 
 
-// == transpiler-singleton ====
-// =============================================================================
-exports.transpiler = {
-    /**
-     * @native
-     * @param {string} code
-     * @param {string} fileName For debugging
-     * @param {bool?} doDukWrap = true
-     * @returns {Function}
-     * @throws {Error}
-     */
-    transpileToFn: function(/*code, fileName, doDukWrap*/) {}
-};
-
-
 // == Uploader ====
 // =============================================================================
 exports.UploaderStatus = Object.freeze({
@@ -99,41 +82,6 @@ exports.Uploader.prototype.uploadFile = function(/*url, filePath*/) {};
  * @returns {number}
  */
 exports.Uploader.prototype.delete = function(/*serverUrl, itemPath, asDir*/) {};
-
-
-// == DomTree ====
-// =============================================================================
-/**
- * @native
- * @constructor
- */
-exports.DomTree = function() {};
-/**
- * @native
- * @param {string} tagName
- * @param {Object?} props
- * @param {children?} children
- * @returns {number} A reference to the new element
- * @throws {TypeError}
- */
-exports.DomTree.prototype.createElement = function(/*tagName, props, children*/) {};
-/**
- * @native
- * @param {number} elemRef
- * @returns {string}
- * @throws {TypeError}
- */
-exports.DomTree.prototype.render = function(/*elemRef*/) {};
-/**
- * @native
- * @returns {{tagName: {string}, props: {Object}}[]} elements
- */
-exports.DomTree.prototype.getRenderedElements = function() {};
-/**
- * @native
- * @returns {{props: {Object}, fn: {Function}}[]} function components
- */
-exports.DomTree.prototype.getRenderedFnComponents = function() {};
 
 
 exports.log = print;

@@ -1,6 +1,6 @@
 const {Stub} = require('./main.js');
 const {app} = require('../src/app.js');
-const commons = require('../src/common-services.js');
+const templateCache = require('../src/templating.js');
 
 QUnit.module('[\'website.js\'].Website', hooks => {
     let tmplName1 = 'foo.jsx.htm';
@@ -46,13 +46,13 @@ QUnit.module('[\'website.js\'].Website', hooks => {
         );
         //
         app.currentWebsite.activate();
-        assert.ok(commons.templateCache.has(tmplName1),
+        assert.ok(templateCache.has(tmplName1),
             'Should add tmplsFromDisk[0] to templateCache');
-        assert.ok(commons.templateCache.has(tmplName2),
+        assert.ok(templateCache.has(tmplName2),
             'Should add tmplsFromDisk[1] to templateCache');
         //
-        commons.templateCache.remove(tmplName1);
-        commons.templateCache.remove(tmplName2);
+        templateCache.remove(tmplName1);
+        templateCache.remove(tmplName2);
         readDirStub.restore();
         readTemplateStub.restore();
     });
@@ -67,7 +67,7 @@ QUnit.module('[\'website.js\'].SiteConfig', hooks => {
         config.contentTypes = [];
     });
     QUnit.test('loadFromDisk() reads and normalizes values', assert => {
-        assert.expect(4);
+        assert.expect(5);
         let fsReadStub = new Stub(config.fs, 'readFileSync', () =>
             '[Site]\nname=foo\nhomeUrl=noSlash\ndefaultLayout=fos.htm\n[ContentType:Test]\nkey=text'
         );

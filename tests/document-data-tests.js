@@ -1,11 +1,10 @@
-var documentData = require('document-data.js');
-var testLib = require('tests/testlib.js').testLib;
+const {DDC} = require('../src/document-data.js');
 
-testLib.module('document-data.js', function() {
-    testLib.test('DDC.toSql() generates queries for fetchOne()s', function(assert) {
+QUnit.module('document-data.js', () => {
+    QUnit.test('DDC.toSql() generates queries for fetchOne()s', assert => {
         assert.expect(2);
         //
-        var ddc1 = new documentData.DDC();
+        let ddc1 = new DDC();
         ddc1.fetchOne('Generic').where('name=\'Foo\'');
         assert.equal(ddc1.toSql(),
             'select * from (select `id`,`name`,`json`, 1 as `dbcId` '+
@@ -13,7 +12,7 @@ testLib.module('document-data.js', function() {
             ')'
         );
         //
-        var ddc2 = new documentData.DDC();
+        let ddc2 = new DDC();
         ddc2.fetchOne('Generic').where('name=\'Foo\'');
         ddc2.fetchOne('Generic').where('name=\'Bar\'');
         ddc2.fetchOne('Artible').where('name=\'Naz\'');
@@ -29,10 +28,10 @@ testLib.module('document-data.js', function() {
             ')'
         );
     });
-    testLib.test('DDC.toSql() generates queries for fetchAll()s', function(assert) {
+    QUnit.test('DDC.toSql() generates queries for fetchAll()s', assert => {
         assert.expect(2);
         //
-        var ddc1 = new documentData.DDC();
+        let ddc1 = new DDC();
         ddc1.fetchAll('Article');
         assert.equal(ddc1.toSql(),
             'select * from ('+
@@ -41,7 +40,7 @@ testLib.module('document-data.js', function() {
             ')'
         );
         //
-        var ddc2 = new documentData.DDC();
+        let ddc2 = new DDC();
         ddc2.fetchAll('Article');
         ddc2.fetchAll('Other');
         assert.equal(ddc2.toSql(),
@@ -55,19 +54,19 @@ testLib.module('document-data.js', function() {
             ')'
         );
     });
-    testLib.test('<dataBathConfig>.toSql() validates itself', function(assert) {
+    QUnit.test('<dataBathConfig>.toSql() validates itself', assert => {
         assert.expect(4);
-        var runInvalid = function(dbc) {
+        let runInvalid = dbc => {
             try { dbc.toSql(); } catch (e) { return e.message; }
         };
-        var ddc = new documentData.DDC();
-        var dbc1 = ddc.fetchAll();
+        let ddc = new DDC();
+        let dbc1 = ddc.fetchAll();
         assert.equal(runInvalid(dbc1), 'contentTypeName is required');
-        var dbc2 = ddc.fetchOne();
+        let dbc2 = ddc.fetchOne();
         assert.equal(runInvalid(dbc2), 'contentTypeName is required');
-        var dbc3 = ddc.fetchOne('foo');
+        let dbc3 = ddc.fetchOne('foo');
         assert.equal(runInvalid(dbc3), 'fetchOne(...).where() is required.');
-        var dbc4 = ddc.fetchOne('-'.repeat(65)).where('1=1');
+        let dbc4 = ddc.fetchOne('-'.repeat(65)).where('1=1');
         assert.equal(runInvalid(dbc4), 'contentTypeName too long (max 64, was 65).');
     });
 });
