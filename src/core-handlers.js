@@ -16,21 +16,21 @@ exports.init = () => {
     });
 };
 
-function handleStaticFileRequest(req, then) {
+function handleStaticFileRequest(req) {
     let filePath = '';
     if (req.url.indexOf('/frontend/') === 0) {
         filePath = path.join(__dirname, '..' + req.url);
     } else if (app.currentWebsite) {
         filePath = app.currentWebsite.dirPath + req.url.substr(1);
     }
-    fs.readFile(filePath, 'binary', (err, file) => {
+    return new Promise(resolve => { fs.readFile(filePath, 'binary', (err, file) => {
         if (err) {
-            then(new BasicResponse(404, '404', {'Content-Type': 'text/plain'}));
+            resolve(new BasicResponse(404, '404', {'Content-Type': 'text/plain'}));
             return;
         }
         const mime = getMime(req.url.substr(req.url.lastIndexOf('.') + 1));
-        then(new BasicResponse(200, [file, 'binary'], mime ? {'Content-Type': mime} : null));
-    });
+        resolve(new BasicResponse(200, [file, 'binary'], mime ? {'Content-Type': mime} : null));
+    }); });
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -1,19 +1,12 @@
 /**
- * == directives.js ====
+ * # directives.js
  *
- * This file contains all standard template directives (<RadLink/>,
+ * This file contains the default template directives (<RadLink/>,
  * <RadList/> etc.). init() adds them to $commons.templateCache.
  *
  */
-var app = require('app.js').app;
-var templates = require('common-services.js').templateCache;
-
-exports.init = function() {
-    templates.put('RadLink', Link);
-    templates.put('RadList', List);
-    templates.put('RadArticleList', ArticleList);
-    exports.init = function() {};
-};
+const {app} = require('./app.js');
+const {templateCache} = require('./templating');
 
 /**
  * Usage:
@@ -23,20 +16,20 @@ exports.init = function() {
  *     ...
  * </html>
  *
- * @param {DomTree} domTree
  * @param {{
  *     to: string;
  *     text: string;
  * }} props
+ * @param {DomTree} domTree
  */
-function Link(domTree, props) {
+function Link(props, domTree) {
     if (!props.to) throw new TypeError('<RadLink to=""/> is required');
     else if (props.to == '/') props.to = app.currentWebsite.config.homeUrl;
     else if (props.to.charAt(0) != '/') props.to = '/' + props.to;
     //
-    var p = {href: props.to};
-    for (var key in props) {
-        if (key != 'to' && key != 'text' && key != 'layoutOverride') p[key] = props[key];
+    let p = {href: props.to};
+    for (let key in props) {
+        if (key !== 'to' && key !== 'text' && key !== 'layoutOverride') p[key] = props[key];
     }
     return domTree.createElement('a', p, props.text || '');
 }
@@ -56,7 +49,6 @@ function Link(domTree, props) {
  *     ...
  * </html>
  *
- * @param {DomTree} domTree
  * @param {{
  *     items: Object[];
  *     contentType: string;
@@ -65,13 +57,13 @@ function Link(domTree, props) {
  *     contentTypeLabel?: string?; eg. 'Book'
  *     icon?: string; eg. 'activity' (see: feathericons.com)
  * }} props
+ * @param {DomTree} domTree
  */
-function List(domTree, props) {
+function List(props, domTree) {
     if (!props.listFn) throw new TypeError('<RadList listFn={}/> is required');
     if (!props.contentType) throw new TypeError('<RadList contentType=""/> is required');
-    if (!props.noItemsFn) props.noItemsFn = function() {
-        return domTree.createElement('div', null, 'No items found.');
-    };
+    if (!props.noItemsFn) props.noItemsFn = () =>
+        domTree.createElement('div', null, 'No items found.');
     return props.items.length ? props.listFn(props.items) : props.noItemsFn();
 }
 
@@ -85,7 +77,7 @@ function List(domTree, props) {
  * </html>
  *
  * With pagination:
- * var opts = {nthPage: url[1] || 1, limit: 10}
+ * let opts = {nthPage: url[1] || 1, limit: 10}
  * @arts = fetchAll("Article").paginate(opts).exec()
  * <html>
  *     ...
@@ -93,21 +85,21 @@ function List(domTree, props) {
  *     ...
  * </html>
  *
- * @param {DomTree} domTree
  * @param {{
  *     articles: Object[];
  *     url: string;
  *     paginationOptions?: {nthPage: number; limit: number;};
  * }} props
+ * @param {DomTree} domTree
  */
-function ArticleList(domTree, props) {
+function ArticleList(props, domTree) {
     if (props.articles.length) {
-        return domTree.createElement('div', null, props.articles.map(function(art) {
+        return domTree.createElement('div', null, props.articles.map(art =>  {
             return domTree.createElement('article', null, [
                 domTree.createElement('h2', null, art.title),
                 domTree.createElement('div', null, [
                     domTree.createElement('p', null, art.body.substr(0, 6) + '... '),
-                    domTree.createElement(templates.get('RadLink'), {
+                    domTree.createElement(templateCache.get('RadLink'), {
                         to: art.defaults.name.charAt(0) !== '/'
                             ? '/' + art.defaults.name
                             : art.defaults.name,
@@ -116,27 +108,27 @@ function ArticleList(domTree, props) {
                     }, null)
                 ])
             ]);
-        }).concat(buildPaginationLinks(domTree, props, false)));
+        }).concat(buildPaginationLinks(props, domTree, false)));
     }
     return domTree.createElement('div', null, [
         domTree.createElement('div', null, 'No articles found.'),
-    ].concat(buildPaginationLinks(domTree, props, true)));
+    ].concat(buildPaginationLinks(props, domTree, true)));
 }
 
-function buildPaginationLinks(domTree, props, isLast) {
-    var opts = props.paginationOptions;
+function buildPaginationLinks(props, domTree, isLast) {
+    let opts = props.paginationOptions;
     if (!opts) return [''];
-    var out = [];
-    var currentPage = domTree.currentPage;
+    let out = [];
+    let currentPage = domTree.currentPage;
     if (opts.nthPage > 1) {
-        out.push(domTree.createElement(templates.get('RadLink'), {
+        out.push(domTree.createElement(templateCache.get('RadLink'), {
             to: '/' + props.url[0] + (opts.nthPage > 2 ? ('/' + (opts.nthPage - 1)) : ''),
             layoutOverride: currentPage.layoutFileName,
             text: 'Prev'
         }, null));
     }
     if (!isLast) {
-        out.push(domTree.createElement(templates.get('RadLink'), {
+        out.push(domTree.createElement(templateCache.get('RadLink'), {
             to: '/' + props.url[0] + '/' + (opts.nthPage + 1),
             layoutOverride: currentPage.layoutFileName,
             text: 'Next'
@@ -144,3 +136,10 @@ function buildPaginationLinks(domTree, props, isLast) {
     }
     return domTree.createElement('div', null, out);
 }
+
+exports.init = () => {
+    templateCache.put('RadLink', Link);
+    templateCache.put('RadList', List);
+    templateCache.put('RadArticleList', ArticleList);
+    exports.init = () => {};
+};

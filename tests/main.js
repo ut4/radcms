@@ -10,8 +10,8 @@ webApp.getHandler = function(url, method) {
     throw new Error('Didn\'t find handler for ' + method + ' ' + url);
 };
 
-webApp.makeRequest = function(url, method) {
-    return {url, method};
+webApp.makeRequest = function(url, method, data = {}) {
+    return {url, method, params: {}, data};
 };
 
 SiteGraph.prototype.clear = function() {

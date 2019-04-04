@@ -5,10 +5,10 @@
  * "routing framework".
  *
  * # Contents
- * ## NormalizedRequest()
- * ## BasicResponse()
- * ## ChunkedResponse()
- * ## webApp
+ * ## NormalizedRequest: class
+ * ## BasicResponse: class
+ * ## ChunkedResponse: class
+ * ## webApp: singleton
  * ### addRoute()
  *
  */
@@ -39,7 +39,18 @@ class BasicResponse {
     constructor(statusCode, body, headers) {
         this.statusCode = statusCode;
         this.body = body;
-        this.headers = headers || {};
+        if (headers) {
+            for (let key in headers) {
+                if (typeof headers[key] !== 'string')
+                    throw new TypeError('A header value must be a string.');
+            }
+            this.headers = headers;
+        } else {
+            this.headers = {};
+        }
+        if (!this.headers['Content-Type']) {
+            this.headers['Content-Type'] = 'text/html;charset=utf-8';
+        }
     }
     /**
      * @param {http.ServerResponse} res
@@ -88,6 +99,12 @@ class ChunkedResponse {
     }
 }
 
+function makeJsonResponse(statusCode, obj) {
+    return new BasicResponse(statusCode, JSON.stringify(obj),
+        {'Content-Type': 'application/json'}
+    );
+}
+
 const webApp = {
     /**
      * @property {(url: string, method: string): (myReq: NormalizedRequest, (myRes: BasicResponse|ChynkedResponse):|undefined): any}[]
@@ -112,10 +129,11 @@ const webApp = {
     _handleRequest(req, res) {
         if (req.method === 'POST') {
             if (req.headers['content-type'] !== 'application/json') {
-                throw new Error('todo return 400');
+                new BasicResponse(400, 'Expected "content-type": "application/json"',
+                                  {'Content-Type': 'text/plain'}).process(res);
+                return;
             }
         }
-
         const myReq = new NormalizedRequest(req);
         // GET or DELETE -> call the matchers right away
         if (req.method === 'GET' || req.method === 'DELETE') {
@@ -126,10 +144,12 @@ const webApp = {
             req.on('data', chunk => { requestBody += chunk; });
             req.on('end', () => {
                 try {
-                    myReq.data = JSON.parse(requestBody);
+                    myReq.data = requestBody.length ? JSON.parse(requestBody) : {};
                     this._matchAndDispatchRequest(myReq, res);
                 } catch (e) {
-                    throw e;
+                    app.log('[Error]: ' + e.message);
+                    new BasicResponse(400, 'Failed to parse json',
+                                      {'Content-Type': 'text/plain'}).process(res);
                 }
             });
         }
@@ -138,30 +158,30 @@ const webApp = {
      * @param {NormalizedRequest} myReq
      * @param {http.ServerResponse} res
      */
-    _matchAndDispatchRequest(myReq, res) {
+    async _matchAndDispatchRequest(myReq, res) {
+        let handler = null;
+        // Call the matchers until a handler is returned.
         const l = this.routeMatchers.length;
         for (let i = 0; i < l; ++i) {
-            // Call the matcher function.
-            const handler = this.routeMatchers[i](myReq.url, myReq.method);
-            // Wasn't interested.
-            if (!handler) continue;
-            // Got a handler -> call it
-            handler(myReq, myRes => {
-                // Got a response
-                if (myRes instanceof BasicResponse ||
-                    myRes instanceof ChunkedResponse) {
-                    myRes.process(res);
-                } else {
-                    app.log('[Error]: Handler must return a BasicResponse or ChunkedResponse');
-                }
-            });
-            break;
+            if ((handler = this.routeMatchers[i](myReq.url, myReq.method))) break;
         }
-        // none of the matchers returned a function -> 404
-        return new BasicResponse(200, 'Not found', {'Content-Type': 'text/plain'});
+        // Got one -> call it.
+        if (handler) {
+            const myRes = await handler(myReq);
+            if (myRes instanceof BasicResponse ||
+                myRes instanceof ChunkedResponse) {
+                myRes.process(res);
+            } else {
+                app.log('[Error]: Handler must return a BasicResponse or ChunkedResponse');
+            }
+            return;
+        }
+        // None of the matchers matched -> 404
+        new BasicResponse(404, 'Not found', {'Content-Type': 'text/plain'}).process(res);
     }
 };
 
 exports.webApp = webApp;
 exports.BasicResponse = BasicResponse;
+exports.makeJsonResponse = makeJsonResponse;
 exports.ChunkedResponse = ChunkedResponse;

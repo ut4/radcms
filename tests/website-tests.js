@@ -1,6 +1,6 @@
 const {Stub} = require('./main.js');
 const {app} = require('../src/app.js');
-const templateCache = require('../src/templating.js');
+const {templateCache} = require('../src/templating.js');
 
 QUnit.module('[\'website.js\'].Website', hooks => {
     let tmplName1 = 'foo.jsx.htm';
@@ -26,7 +26,7 @@ QUnit.module('[\'website.js\'].Website', hooks => {
     });
     QUnit.test('activate() reads&parses the site graph', assert => {
         //
-        let readDirStub = new Stub(website.fs, 'readdirSync');
+        let readDirStub = new Stub(website.fs, 'readdirSync', () => []);
         //
         website.activate();
         assert.ok(!!website.graph.getPage('/home'), '/home',
@@ -36,11 +36,9 @@ QUnit.module('[\'website.js\'].Website', hooks => {
     });
     QUnit.test('activate() reads&caches templates from disk', assert => {
         assert.expect(2);
-        let mockFilesOnDisk = [{name:tmplName2,isDirectory:()=>false},
-                               {name:tmplName1,isDirectory:()=>false}];
-        let readDirStub = new Stub(website.fs, 'readdirSync', (_dir, _opts, onEach) => {
-            mockFilesOnDisk.forEach(onEach);
-        });
+        let readDirStub = new Stub(website.fs, 'readdirSync', () =>
+            [{name: tmplName2, isDirectory: () => false},
+             {name: tmplName1, isDirectory: () => false}]);
         let readTemplateStub = new Stub(website.fs, 'readFileSync', () =>
             '<p>hello</p>'
         );

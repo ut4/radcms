@@ -81,7 +81,7 @@ class DDC {
 function ddcFetchData(ddc) {
     if (ddc.batchCount) {
         let cnodes = [];
-        ddc.db.prepare(ddc.toSql()).raw().all().map(row => {
+        ddc.db.prepare(ddc.toSql()).raw().all().forEach(row => {
             let data = JSON.parse(row[2]);
             // {'fieldname__separator__datatype': 'foo'} -> {..., 'fieldname': 'foo'}
             for (let key in data) {

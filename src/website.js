@@ -7,9 +7,11 @@
  * ## Page: class
  * ## SiteGraph: class
  * ## SiteConfig: class
+ * ## UploadStatus: object|enum
  *
  */
 const fs = require('fs');
+const {performance} = require('perf_hooks');
 const Sqlite = require('better-sqlite3');
 const ini = require('ini');
 const data = require('./static-data.js');
@@ -29,6 +31,7 @@ class Website {
         this.graph = new SiteGraph();
         this.config = new SiteConfig();
         this.fileWatcher = fileWatcher;
+        this.performance = performance;
         this.fs = fs;
     }
     /**
@@ -69,7 +72,7 @@ class Website {
         this.graph.parseAndLoadFrom(this.db.prepare('select `graph` from self limit 1').get().graph,
                                     this.config.homeUrl);
         // Read and compile each template from disk to templateCache
-        this.fs.readdirSync(this.dirPath, {withFileTypes: true}).map(entry => {
+        this.fs.readdirSync(this.dirPath, {withFileTypes: true}).forEach(entry => {
             let lastDotPos = !entry.isDirectory() ? entry.name.lastIndexOf('.') : -1;
             if (lastDotPos === -1 || entry.name.substr(lastDotPos) !== '.htm') return;
             try { this.compileAndCacheTemplate(entry.name); }
@@ -84,7 +87,7 @@ class Website {
      * @param {Array?} issues
      * @returns {string}
      */
-    renderPage(page, dataToFrontend, issues) { 
+    renderPage(page, dataToFrontend, issues) {
         if (!templateCache.has(page.layoutFileName)) {
             let message = 'The layout file \'' + page.layoutFileName +
                           '\' doesn\'t exist yet, or is empty.';
@@ -117,6 +120,45 @@ class Website {
         return html;
     }
     /**
+     * @param {Page} page
+     * @param {DomTree} domTree (out)
+     * @returns string
+     */
+    renderPage2(page, domTree) {
+        domTree.directives = templateCache._fns;
+        domTree.currentPage = page;
+        return domTree.render(templateCache.get(page.layoutFileName)(
+            {ddc: new DDC(this.db), url: page.urlPcs}, domTree));
+    }
+    /**
+     * @param {(renderedHtml: string, page: Page): any|bool} onEach
+     * @param {Array?} issues
+     * @param {{[string]: any;}?} pages
+     * @returns {bool} false if there was issues, true otherwise
+     */
+    generate(onEach, issues, pages) {
+        if (!pages) pages = this.graph.pages;
+        for (const url in pages) {
+            const page = this.graph.getPage(url);
+            onEach(this.renderPage(page, null, issues), page);
+        }
+        return !issues || issues.length == 0;
+    }
+    /**
+     * @returns {number} numAffectedRows
+     * @throws {Error}
+     */
+    saveToDb(siteGraph) {
+        return this.db.prepare('update self set `graph` = ?')
+                      .run(siteGraph.serialize()).changes;
+    }
+    /**
+     * @param {Object} app
+     */
+    setApp(app) {
+        this.app = app;
+    }
+    /**
      * @param {string} fileName
      * @throws {Error}
      */
@@ -127,10 +169,11 @@ class Website {
         return true;
     }
     /**
-     * @param {Object} app
+     * @param {string} fileName
+     * @throws {Error}
      */
-    setApp(app) {
-        this.app = app;
+    readTemplate(fileName) {
+        return this.fs.readFileSync(this.dirPath + fileName, 'utf-8');
     }
 }
 
@@ -302,5 +345,13 @@ class SiteConfig {
     }
 }
 
+const UploadStatus = {
+    NOT_UPLOADED: 0,
+    OUTDATED: 1,
+    UPLOADED: 2,
+    DELETED: 3,
+};
+
 exports.Website = Website;
 exports.SiteGraph = SiteGraph;
+exports.UploadStatus = UploadStatus;
