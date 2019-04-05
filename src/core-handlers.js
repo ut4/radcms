@@ -6,7 +6,7 @@
  */
 const fs = require('fs');
 const path = require('path');
-const {webApp, BasicResponse} = require('./web.js');
+const {webApp} = require('./web.js');
 const {app} = require('./app.js');
 
 exports.init = () => {
@@ -16,21 +16,21 @@ exports.init = () => {
     });
 };
 
-function handleStaticFileRequest(req) {
+function handleStaticFileRequest(req, res) {
     let filePath = '';
     if (req.url.indexOf('/frontend/') === 0) {
         filePath = path.join(__dirname, '..' + req.url);
     } else if (app.currentWebsite) {
         filePath = app.currentWebsite.dirPath + req.url.substr(1);
     }
-    return new Promise(resolve => { fs.readFile(filePath, 'binary', (err, file) => {
+    fs.readFile(filePath, 'binary', (err, file) => {
         if (err) {
-            resolve(new BasicResponse(404, '404', {'Content-Type': 'text/plain'}));
+            res.plain(404, '404');
             return;
         }
         const mime = getMime(req.url.substr(req.url.lastIndexOf('.') + 1));
-        resolve(new BasicResponse(200, [file, 'binary'], mime ? {'Content-Type': mime} : null));
-    }); });
+        res.send(200, [file, 'binary'], mime ? {'Content-Type': mime} : null);
+    });
 }
 
 ////////////////////////////////////////////////////////////////////////////////

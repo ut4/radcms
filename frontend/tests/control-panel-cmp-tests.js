@@ -34,7 +34,9 @@ QUnit.module('ControlPanelComponent', hooks => {
             ],
             allContentNodes: []
         };
-        httpStub.onCall(0).returns(Promise.resolve('0'));
+        httpStub
+            .onCall(0).returns(Promise.resolve('0'))
+            .onCall(1).returns(Promise.resolve({responseText:'[]'}));
         const cpanel = $el(ControlPanel, {currentPageData}, null);
         //
         const rendered = itu.renderIntoContainer(cpanel);

@@ -4,7 +4,6 @@
  * In this file:
  *
  * - fileWatcher (singleton)
- * - Uploader (class)
  *
  */
 
@@ -43,45 +42,3 @@ exports.fileWatcher = {
      */
     stop: function() {}
 };
-
-
-// == Uploader ====
-// =============================================================================
-exports.UploaderStatus = Object.freeze({
-    UPLOAD_OK: 0,
-    UPLOAD_COULDNT_READ_FILE: 37, // these values are same as CURLE_*
-    UPLOAD_LOGIN_DENIED: 67
-});
-/**
- * @native
- * @param {string} username
- * @param {string} password
- * @constructor
- */
-exports.Uploader = function(/*username, password*/) {};
-/**
- * @native
- * @param {string} url eg. 'ftp://ftp.mysite.net/public_html/file.html'
- * @param {string} string
- * @returns {number} eg. Uploader.UPLOAD_*
- */
-exports.Uploader.prototype.uploadString = function(/*url, string*/) {};
-/**
- * @native
- * @param {string} url
- * @param {string} filePath eg. 'c:/foo/file.txt'
- * @returns {number}
- */
-exports.Uploader.prototype.uploadFile = function(/*url, filePath*/) {};
-/**
- * @native
- * @param {string} serverUrl eg. 'ftp://ftp.mysite.net/public_html'
- * @param {string} itemPath eg. '/file.html'
- * @param {bool?} asDir = false false = delete only '/foo/file.txt',
- *                              true = delete also dir '/foo' after deleting '/foo/file.txt'
- * @returns {number}
- */
-exports.Uploader.prototype.delete = function(/*serverUrl, itemPath, asDir*/) {};
-
-
-exports.log = print;

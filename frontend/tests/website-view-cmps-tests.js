@@ -253,11 +253,9 @@ QUnit.module('WebsiteUploadViewComponent', hooks => {
             }));
             // Simulate xhr.onprogress calls
             const progressClb = postCall.args[1].progress;
-            const successCode = '0';
-            const makeChunkResp = function(isPage, resourceUrl) {
-                const str = `${isPage?'page':'file'}|${resourceUrl}|${successCode}`;
-                return `${parseFloat(str.length).toString(16)}\r\n${str}\r\n`;
-            };
+            const makeChunkResp = (isPage, resourceUrl) =>
+                `${isPage?'page':'file'}|${resourceUrl}|ok|`
+            ;
             const fakeResponse1 = {responseText: makeChunkResp(false, testFiles[0].url)};
             const fakeResponse2 = {responseText: fakeResponse1.responseText +
                                                  makeChunkResp(false, testFiles[1].url)};
@@ -335,12 +333,9 @@ QUnit.module('WebsiteUploadViewComponent', hooks => {
             const postCall = httpStub.getCall(1);
             // Simulate xhr.onprogress calls
             const progressClb = postCall.args[1].progress;
-            const successCode = '0';
-            const someErrorCode = '1998';
-            const chunkify = str => `${parseFloat(str.length).toString(16)}\r\n${str}\r\n`;
-            const fakeResponse1 = {responseText: chunkify('page|' + testPages[0].url + '|' + successCode)};
+            const fakeResponse1 = {responseText: 'page|' + testPages[0].url + '|ok|'};
             const fakeResponse2 = {responseText: fakeResponse1.responseText +
-                                                 chunkify('page|' + testPages[1].url + '|' + someErrorCode)};
+                                                 'page|' + testPages[1].url + '|error message|'};
             progressClb(fakeResponse1, 1 / 2);
             assert.equal(pageTableRows[0].textContent, testPages[0].url + 'Ok');
             assert.equal(pageTableRows[1].textContent, testPages[1].url + 'Pending...');

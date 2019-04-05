@@ -5,9 +5,8 @@
  * "routing framework".
  *
  * # Contents
- * ## NormalizedRequest: class
- * ## BasicResponse: class
- * ## ChunkedResponse: class
+ * ## MyRequest: class
+ * ## MyResponse: class
  * ## webApp: singleton
  * ### addRoute()
  *
@@ -17,7 +16,7 @@ const parseQ = require('querystring').parse;
 const http = require('http');
 const {app} = require('./app.js');
 
-class NormalizedRequest {
+class MyRequest {
     /**
      * @param {http.IncomingMessage} req
      */
@@ -30,13 +29,41 @@ class NormalizedRequest {
     }
 }
 
-class BasicResponse {
+class MyResponse {
     /**
+     * @param {http.ServerResponse} res
+     */
+    constructor(res) {
+        this.res = res;
+    }
+    /**
+     * Sends a json response to the browser.
+     *
+     * @param {number} statusCode
+     * @param {Onject} obj
+     */
+    json(statusCode, obj) {
+        this.send(statusCode, JSON.stringify(obj),
+            {'Content-Type': 'application/json'});
+    }
+    /**
+     * Sends a text/plain response to the browser.
+     *
      * @param {number} statusCode
      * @param {string|any[]} body eg. 'body' or [file, 'binary']
-     * @param {Object?} headers = null
      */
-    constructor(statusCode, body, headers) {
+    plain(statusCode, body) {
+        this.send(statusCode, body,
+            {'Content-Type': 'text/plain'});
+    }
+    /**
+     * Sends a response to the browser.
+     *
+     * @param {number} statusCode
+     * @param {string|any[]} body eg. 'body' or [file, 'binary']
+     * @param {string|Object?} headers = null
+     */
+    send(statusCode, body, headers) {
         this.statusCode = statusCode;
         this.body = body;
         if (headers) {
@@ -51,11 +78,8 @@ class BasicResponse {
         if (!this.headers['Content-Type']) {
             this.headers['Content-Type'] = 'text/html;charset=utf-8';
         }
-    }
-    /**
-     * @param {http.ServerResponse} res
-     */
-    process(res) {
+        //
+        const res = this.res;
         for (const key in this.headers) {
             res.setHeader(key, this.headers[key]);
         }
@@ -66,48 +90,27 @@ class BasicResponse {
             res.write(...this.body);
         res.end();
     }
-}
-
-class ChunkedResponse {
     /**
-     * @param {number} statusCode
-     * @param {(state: any, (chunk: string): any): any} chunkProviderFn
-     * @param {any} state
+     * @param {number?} statusCode = 200
      */
-    constructor(statusCode, chunkProviderFn, state) {
-        this.statusCode = statusCode;
-        this.chunkProviderFn = chunkProviderFn;
-        this.state = state;
+    beginChunked(statusCode = 200) {
+        this.res.setHeader('Content-Type', 'text/plain; charset=UTF-8');
+        this.res.writeHead(statusCode);
     }
     /**
-     * @param {http.ServerResponse} res
+     * @param {any} chunk
      */
-    process(res) {
-        res.setHeader('Content-Type', 'text/plain; charset=UTF-8');
-        res.writeHead(200);
-        this._callNextChunk(res);
+    writeChunk(chunk) {
+        this.res.write(chunk);
     }
-    _callNextChunk(res) {
-        this.chunkProviderFn(this.state, chunk => {
-            if (chunk) {
-                res.write(chunk);
-                this._callNextChunk(res);
-            } else {
-                res.end();
-            }
-        });
+    endChunked() {
+        this.res.end();
     }
-}
-
-function makeJsonResponse(statusCode, obj) {
-    return new BasicResponse(statusCode, JSON.stringify(obj),
-        {'Content-Type': 'application/json'}
-    );
 }
 
 const webApp = {
     /**
-     * @property {(url: string, method: string): (myReq: NormalizedRequest, (myRes: BasicResponse|ChynkedResponse):|undefined): any}[]
+     * @property {(url: string, method: string): (myReq: MyRequest, (myRes: BasicResponse|ChynkedResponse):|undefined): any}[]
      */
     routeMatchers: [],
     /**
@@ -117,7 +120,7 @@ const webApp = {
         http.createServer(this._handleRequest.bind(this)).listen(3000);
     },
     /**
-     * @param {(url: string, method: string): (myReq: NormalizedRequest, (myRes: BasicResponse|ChynkedResponse):|undefined): any} fn
+     * @param {(url: string, method: string): (myReq: MyRequest, (myRes: BasicResponse|ChynkedResponse):|undefined): any} fn
      */
     addRoute(fn) {
         this.routeMatchers.push(fn);
@@ -127,17 +130,17 @@ const webApp = {
      * @param {http.ServerResponse} res
      */
     _handleRequest(req, res) {
+        const myRes = new MyResponse(res);
         if (req.method === 'POST') {
             if (req.headers['content-type'] !== 'application/json') {
-                new BasicResponse(400, 'Expected "content-type": "application/json"',
-                                  {'Content-Type': 'text/plain'}).process(res);
+                myRes.plain(400, 'Expected "content-type": "application/json"');
                 return;
             }
         }
-        const myReq = new NormalizedRequest(req);
+        const myReq = new MyRequest(req);
         // GET or DELETE -> call the matchers right away
         if (req.method === 'GET' || req.method === 'DELETE') {
-            this._matchAndDispatchRequest(myReq, res);
+            this._matchAndDispatchRequest(myReq, myRes);
         // POST or PUT -> collect the json data first before calling the matchers
         } else if (req.method === 'POST' || req.method === 'PUT') {
             let requestBody = '';
@@ -145,43 +148,33 @@ const webApp = {
             req.on('end', () => {
                 try {
                     myReq.data = requestBody.length ? JSON.parse(requestBody) : {};
-                    this._matchAndDispatchRequest(myReq, res);
+                    this._matchAndDispatchRequest(myReq, myRes);
                 } catch (e) {
                     app.log('[Error]: ' + e.message);
-                    new BasicResponse(400, 'Failed to parse json',
-                                      {'Content-Type': 'text/plain'}).process(res);
+                    myRes.plain(400, 'Failed to parse json');
                 }
             });
         }
     },
     /**
-     * @param {NormalizedRequest} myReq
-     * @param {http.ServerResponse} res
+     * @param {MyRequest} myReq
+     * @param {MyResponse} myRes
      */
-    async _matchAndDispatchRequest(myReq, res) {
+    _matchAndDispatchRequest(myReq, myRes) {
         let handler = null;
         // Call the matchers until a handler is returned.
         const l = this.routeMatchers.length;
         for (let i = 0; i < l; ++i) {
             if ((handler = this.routeMatchers[i](myReq.url, myReq.method))) break;
         }
-        // Got one -> call it.
+        // Got one -> call it and move on.
         if (handler) {
-            const myRes = await handler(myReq);
-            if (myRes instanceof BasicResponse ||
-                myRes instanceof ChunkedResponse) {
-                myRes.process(res);
-            } else {
-                app.log('[Error]: Handler must return a BasicResponse or ChunkedResponse');
-            }
+            handler(myReq, myRes);
             return;
         }
         // None of the matchers matched -> 404
-        new BasicResponse(404, 'Not found', {'Content-Type': 'text/plain'}).process(res);
+        myRes.send(404, 'Not found', myRes.PLAIN);
     }
 };
 
 exports.webApp = webApp;
-exports.BasicResponse = BasicResponse;
-exports.makeJsonResponse = makeJsonResponse;
-exports.ChunkedResponse = ChunkedResponse;

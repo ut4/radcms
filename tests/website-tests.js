@@ -1,4 +1,4 @@
-const {Stub} = require('./main.js');
+const {Stub, testEnv} = require('./env.js');
 const {app} = require('../src/app.js');
 const {templateCache} = require('../src/templating.js');
 
@@ -9,6 +9,7 @@ QUnit.module('[\'website.js\'].Website', hooks => {
     let configLoadStub;
     let testSiteId = 2;
     hooks.before(() => {
+        testEnv.setupTestWebsite();
         website = app.currentWebsite;
         website.config.homeUrl = '/home';
         configLoadStub = new Stub(website.config, 'loadFromDisk');

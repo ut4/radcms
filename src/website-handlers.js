@@ -5,12 +5,12 @@
  *
  */
 const {app} = require('./app.js');
-const {webApp, BasicResponse, makeJsonResponse} = require('./web.js');
+const {webApp} = require('./web.js');
 const commons = require('./common-services.js');
 const data = require('./static-data.js');
 const {UploadStatus} = require('./website.js');
 const {templateCache} = require('./templating.js');
-const {RemoteDiff} = require('./website-diff.js');
+const {RemoteDiff, sha1} = require('./website-diff.js');
 
 exports.init = () => {
     webApp.addRoute((url, method) => {
@@ -40,6 +40,8 @@ exports.init = () => {
         if (method == 'POST') {
             if (url === '/api/websites/current/generate')
                 return handleGenerateRequest;
+            if (url === '/api/websites/current/upload')
+                return handleUploadRequest;
         }
         if (method == 'PUT') {
             if (url === '/api/websites/current/page')
@@ -53,7 +55,7 @@ exports.init = () => {
 /**
  * GET <any> eg. "/" or "/foo/bar/baz": renders a page.
  */
-function handlePageRequest(req) {
+function handlePageRequest(req, res) {
     let w = app.currentWebsite;
     let page = w.graph.getPage(req.url !== '/' ? req.url : w.config.homeUrl);
     let dataToFrontend = {directiveElems: [], allContentNodes: [], page: {}};
@@ -64,9 +66,10 @@ function handlePageRequest(req) {
         }
         let html = w.renderPage(page, dataToFrontend);
         dataToFrontend.page = {url: page.url, layoutFileName: page.layoutFileName};
-        return new BasicResponse(200, injectControlPanelIFrame(html, dataToFrontend));
+        res.send(200, injectControlPanelIFrame(html, dataToFrontend));
+        return;
     }
-    return new BasicResponse(404, injectControlPanelIFrame(
+    res.send(404, injectControlPanelIFrame(
         '<!DOCTYPE html><html><title>Not found</title><body>Not found</body></htm>',
         dataToFrontend));
 }
@@ -80,8 +83,8 @@ function handlePageRequest(req) {
  *     {"id":3,"dirPath":"c:/another/","name":null,"createdAt":1555438184}
  * ]
  */
-function handleGetAllWebsites() {
-    return makeJsonResponse(200, app.db.prepare('select * from websites').all());
+function handleGetAllWebsites(_, res) {
+    res.json(200, app.db.prepare('select * from websites').all());
 }
 
 /**
@@ -100,23 +103,23 @@ function handleGetAllWebsites() {
  * Example response:
  * {"status":"ok"}
  */
-function handleCreateWebsiteRequest(req) {
+function handleCreateWebsiteRequest(req, res) {
     //
     let errs = [];
     if (!req.data.dirPath) errs.push('dirPath is required.');
     else { if (req.data.dirPath.charAt(req.data.dirPath.length - 1) != '/') req.data.dirPath += '/'; }
     if (!req.data.sampleDataName) errs.push('sampleDataName is required.');
     if (req.data.name && req.data.name.length > 128) errs.push('name.length must be <= 128');
-    if (errs.length) return new BasicResponse(400, errs.join('\n'));
+    if (errs.length) { res.plain(400, errs.join('\n')); return; }
     //
     try {
         app.setWaitingWebsite(req.data.dirPath);
         app.waitingWebsite.install(req.data.sampleDataName);
         app.db.prepare('insert or replace into websites (`dirPath`,`name`) \
                        values (?, ?)').run(req.data.dirPath, req.data.name);
-        return makeJsonResponse(200, {status: 'ok'});
+        res.json(200, {status: 'ok'});
     } catch (e) {
-        return makeJsonResponse(500, {status: 'err', details: e.message || '-'});
+        res.json(500, {status: 'err', details: e.message || '-'});
     }
 }
 
@@ -133,21 +136,21 @@ function handleCreateWebsiteRequest(req) {
  * Example response:
  * {"status":"ok"}
  */
-function handleSetCurrentWebsiteRequest(req) {
+function handleSetCurrentWebsiteRequest(req, res) {
     //
     let errs = [];
     if (!req.data.dirPath) errs.push('dirPath is required.');
     else { if (req.data.dirPath.charAt(req.data.dirPath.length - 1) != '/') req.data.dirPath += '/'; }
-    if (errs.length) return new BasicResponse(400, errs.join('\n'));
+    if (errs.length) { res.plain(400, errs.join('\n')); return; }
     //
     if (!app.currentWebsite || app.currentWebsite.dirPath != req.data.dirPath) {
         try {
             app.setCurrentWebsite(req.data.dirPath);
         } catch (e) {
-            return makeJsonResponse(500, {status: 'err', details: e.message || '-'});
+            res.json(500, {status: 'err', details: e.message || '-'});
         }
     }
-    return makeJsonResponse(200, {status: 'ok'});
+    res.json(200, {status: 'ok'});
 }
 
 /**
@@ -164,8 +167,8 @@ function handleSetCurrentWebsiteRequest(req) {
  *     ]}
  * ]
  */
-function handleGetAllSampleContentTypesRequest() {
-    return makeJsonResponse(200, data.getSampleData().map(d =>
+function handleGetAllSampleContentTypesRequest(_, res) {
+    res.json(200, data.getSampleData().map(d =>
         ({name: d.name, contentTypes: JSON.parse(d.contentTypes)})
     ));
 }
@@ -173,11 +176,11 @@ function handleGetAllSampleContentTypesRequest() {
 /**
  * GET /api/websites/current/num-waiting-uploads.
  */
-function handleGetNumWaitingUploads() {
-    return makeJsonResponse(200, app.currentWebsite.db.prepare(
-         'select count(`url`) as url from uploadStatuses where \
-         `uphash` is null or `curhash` != `uphash` or\
-         `curhash` is null and `uphash` is not null').get().url);
+function handleGetNumWaitingUploads(_, res) {
+    res.json(200, app.currentWebsite.db.prepare(
+        'select count(`url`) as num from uploadStatuses where \
+        `uphash` is null or `curhash` != `uphash` or\
+        `curhash` is null and `uphash` is not null').get().num);
 }
 
 /**
@@ -195,7 +198,7 @@ function handleGetNumWaitingUploads() {
  *     ]
  * }
  */
-function handleGetWaitingUploadsRequest() {
+function handleGetWaitingUploadsRequest(_, res) {
     let out = {pages: [], files: []};
     app.currentWebsite.db.prepare('select `url`, `curhash`, `uphash`, `isFile` \
         from uploadStatuses where `uphash` is null or `curhash` != `uphash` or\
@@ -203,10 +206,10 @@ function handleGetWaitingUploadsRequest() {
             (row[3] == 0 ? out.pages : out.files).push({
                 url: row[0],
                 uploadStatus: !row[2] ? UploadStatus.NOT_UPLOADED :
-                            row[1] ? UploadStatus.OUTDATED : UploadStatus.DELETED
+                               row[1] ? UploadStatus.OUTDATED : UploadStatus.DELETED
             });
         });
-    return makeJsonResponse(200, out);
+    res.json(200, out);
 }
 
 /**
@@ -218,13 +221,13 @@ function handleGetWaitingUploadsRequest() {
  *     {"fileName":"bar.jsx.htm"}
  * ]
  */
-function handleGetAllTemplatesRequest() {
+function handleGetAllTemplatesRequest(_, res) {
     const templates = [];
     const all = templateCache._fns;
     for (const name in all) {
         if (name.indexOf('.htm') > -1) templates.push({fileName: name});
     }
-    return makeJsonResponse(200, templates);
+    res.json(200, templates);
 }
 
 /**
@@ -235,12 +238,12 @@ function handleGetAllTemplatesRequest() {
  *     "pages":[{"url":"/home"}]
  * }
  */
-function handleGetSiteGraphRequest() {
+function handleGetSiteGraphRequest(_, res) {
     const out = {pages: []};
     for (const url in app.currentWebsite.graph.pages) {
         out.pages.push({url: url});
     }
-    return makeJsonResponse(200, out);
+    res.json(200, out);
 }
 
 /**
@@ -255,7 +258,7 @@ function handleGetSiteGraphRequest() {
  *     "issues": ["/some-url>Some error."]
  * }
  */
-function handleGenerateRequest() {
+function handleGenerateRequest(_, res) {
     const w = app.currentWebsite;
     const out = {
         wrotePagesNum: 0,
@@ -276,13 +279,147 @@ function handleGenerateRequest() {
             out.wrotePagesNum += 1;
             return true;
         }, out.issues);
-    } catch(e) {
+    } catch (e) {
         app.log('[Error]: ' + e.message);
-        return new BasicResponse(500, 'Failed to generate the site.',
-            {'Content-Type': 'text/plain'});
+        res.plain(500, 'Failed to generate the site.');
     }
     out.tookSecs = (w.performance.now() - out.tookSecs) / 1000;
-    return makeJsonResponse(200, out);
+    res.json(200, out);
+}
+
+/**
+ * POST /api/websites/current/upload: uploads or deletes the requested pages and
+ * files to/from a remote server using FTP.
+ *
+ * Payload:
+ * {
+ *     remoteUrl: string; // required
+ *     username: string;  // required
+ *     password: string;  // required
+ *     pageUrls: {        // required if fileNames.length == 0
+ *         url: string;
+ *         isDeleted: number;
+ *     }[];
+ *     fileNames: {       // required if pageUrls.length == 0
+ *         fileName: string;
+ *         isDeleted: number;
+ *     }[];
+ * }
+ *
+ * Example response chunk:
+ * file|/some-file.css|0|
+ * - or -
+ * page|/some/url|0|
+ */
+function handleUploadRequest(req, res) {
+    //
+    let errs = [];
+    if (!req.data.remoteUrl) errs.push('remoteUrl is required.');
+    if (!req.data.username) errs.push('username is required.');
+    if (!req.data.password) errs.push('password is required.');
+    if ((!req.data.pageUrls || !req.data.pageUrls.length) &&
+        (!req.data.fileNames || !req.data.fileNames.length)) {
+        errs.push('pageUrls or fileNames is required.');
+    }
+    if (errs.length) { res.plain(400, errs.join('\n')); return; }
+    //
+    let pageUrls = {};
+    let issues = [];
+    let data = normalizeUploadItems(req.data, pageUrls);
+    // Render all pages in one go so we can return immediately if there was any issues
+    if (data.numUploadablePages) {
+        if (!app.currentWebsite.generate((renderedOutput, page) => {
+            data.generatedPages.push({url: page.url, html: renderedOutput});
+        }, issues, pageUrls)) {
+            res.plain(400, issues.join('\n'));
+            return;
+        }
+    }
+    const afterEachFtpTask = (ftpResponse, url, contents, resourceType) => {
+        const hadStopError = commons.Uploader.isLoginError(ftpResponse.code);
+        if (!hadStopError) saveOrDeleteUploadStatus(url, contents);
+        const status = !hadStopError ? 'ok' : ftpResponse.message;
+        res.writeChunk(resourceType + '|' +  url + '|' + status + '|');
+        if (hadStopError) throw new Error('Unrecoverable FTP error');
+    };
+    // Start the sync process
+    res.beginChunked();
+    return data.uploader.open(req.data.remoteUrl, req.data.username, req.data.password)
+        // Delete removed pages first ...
+        .then(() => waterfall(data.deletablePageUrls.map(url => () =>
+            data.uploader.delete(url + '/index.html', true)
+                .then(res => afterEachFtpTask(res, url, null, 'page'))
+        )))
+        // then delete removed files ...
+        .then(() => waterfall(data.deletableFileNames.map(fname => () =>
+            data.uploader.delete(fname, false)
+                .then(res => afterEachFtpTask(res, fname, null, 'file'))
+        )))
+        // then upload new files ...
+        .then(() => waterfall(data.uploadFileNames.map(fname => () => {
+            const contents = app.currentWebsite.readTemplate(fname);
+            return data.uploader.upload(fname, contents)
+                .then(res => afterEachFtpTask(res, fname, contents, 'file'));
+        })))
+        // and lastly upload new or modified pages
+        .then(() =>
+            waterfall(data.generatedPages.map(page => () =>
+                data.uploader.upload(page.url + '/index.html', page.html)
+                    .then(res => afterEachFtpTask(res, page.url, page.html, 'page'))
+            ))
+        )
+        .then(() => {
+            res.endChunked();
+        })
+        .catch(e => {
+            app.log('[Error]: there was an issue during the upload: ' + e.message);
+            res.endChunked();
+        });
+}
+
+function saveOrDeleteUploadStatus(url, contents) {
+    if (contents) {
+        if (app.currentWebsite.db
+                .prepare('update uploadStatuses set `uphash` = ? where `url` = ?')
+                .run(sha1(contents), url).changes < 0) {//??
+            commons.log('[Error]: Failed to save uploadStatus of \'' + url + '\'.');
+        }
+    } else {
+        if (app.currentWebsite.db
+                .prepare('delete from uploadStatuses where `url` = ?')
+                .run(url).changes < 0) {
+            commons.log('[Error]: Failed to delete \'' + url + '\' from uploadStatuses.');
+        }
+    }
+}
+
+function normalizeUploadItems(reqData, pageUrls) {
+    let data = {
+        deletablePageUrls: [],
+        deletableFileNames: [],
+        generatedPages: [],
+        numUploadablePages: 0,
+        uploadFileNames: [],
+        uploader: app.currentWebsite.uploader,
+    };
+    for (let i = 0; i < reqData.fileNames.length; ++i) {
+        let file = reqData.fileNames[i];
+        if (file.isDeleted == 0) {
+            data.uploadFileNames.push(file.fileName);
+        } else {
+            data.deletableFileNames.push(file.fileName);
+        }
+    }
+    for (let i = 0; i < reqData.pageUrls.length; ++i) {
+        let page = reqData.pageUrls[i];
+        if (page.isDeleted == 0) {
+            pageUrls[page.url] = 1;
+            data.numUploadablePages += 1;
+        } else {
+            data.deletablePageUrls.push(page.url);
+        }
+    }
+    return data;
 }
 
 /**
@@ -297,7 +434,7 @@ function handleGenerateRequest() {
  * Example response:
  * {"numAffectedRows": 1}
  */
-function handleUpdatePageRequest(req) {
+function handleUpdatePageRequest(req, res) {
     const errs = [];
     const w = app.currentWebsite;
     let page = null;
@@ -308,10 +445,10 @@ function handleUpdatePageRequest(req) {
         errs.push('url is required.');
     }
     if (!req.data.layoutFileName) errs.push('layoutFileName is required.');
-    if (errs.length) return new BasicResponse(400, errs.join('\n'));
+    if (errs.length) { res.plain(400, errs.join('\n')); return; }
     //
     page.layoutFileName = req.data.layoutFileName;
-    return makeJsonResponse(200, {numAffectedRows: w.saveToDb(w.graph)});
+    res.json(200, {numAffectedRows: w.saveToDb(w.graph)});
 }
 
 /**
@@ -326,31 +463,31 @@ function handleUpdatePageRequest(req) {
  * Example response:
  * {"status":"ok"}
  */
-function handleUpdateSiteGraphRequest(req) {
+function handleUpdateSiteGraphRequest(req, res) {
     const w = app.currentWebsite;
     const remoteDiff = new RemoteDiff(w);
     let i = 0;
     for (; i < req.data.deleted.length; ++i) {
         const url = req.data.deleted[i];
         if (!w.graph.getPage(url)) {
-            return new BasicResponse(400, 'Page \'' + url + '\' not found.');
+            res.send(400, 'Page \'' + url + '\' not found.');
+            return;
         }
         remoteDiff.addPageToDelete(url);
         delete w.graph.pages[url];
     }
-    if (i === 0) return new BasicResponse(400, 'Nothing to update.');
+    if (i === 0) { res.send(400, 'Nothing to update.'); return; }
     //
     w.saveToDb(w.graph); // update websites set `graph` = ...
     remoteDiff.saveStatusesToDb(); // update|delete from uploadStatuses ...
-    return makeJsonResponse(200, {status: 'ok'});
+    res.json(200, {status: 'ok'});
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-function rejectRequest() {
+function rejectRequest(_, res) {
     // Precondition Required
-    return new BasicResponse(428, 'The current website is not set ' +
-                                  '(app.currentWebsite == null)');
+    res.send(428, 'The current website is not set (app.currentWebsite == null)');
 }
 
 /**
@@ -368,4 +505,12 @@ function injectControlPanelIFrame(html, dataToFrontend) {
         return html.substr(0, bodyEnd) + '<iframe src="/frontend/cpanel.html" id="insn-cpanel-iframe" style="position:fixed;border:none;height:100%;width:275px;right:0;top:0"></iframe><script>function setIframeVisible(setVisible){document.getElementById(\'insn-cpanel-iframe\').style.width=setVisible?\'100%\':\'275px\';}function getCurrentPageData(){return ' + JSON.stringify(dataToFrontend) + ';}</script>' + html.substr(bodyEnd);
     }
     return html;
+}
+
+function waterfall(getterFns, i = 0) {
+    if (!getterFns.length) return;
+    return getterFns[i]().then(() => {
+        if (++i < getterFns.length) return waterfall(getterFns, i);
+        // else we're done
+    });
 }

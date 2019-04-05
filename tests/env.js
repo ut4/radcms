@@ -1,5 +1,19 @@
+const {app} = require('../src/app.js');
 const {webApp} = require('../src/web.js');
 const {SiteGraph} = require('../src/website.js');
+
+const testEnv = {
+    setupAppDb() {
+        app.initAndInstall({memory: true});
+        this.setupAppDb = () => {};
+    },
+    setupTestWebsite() {
+        app.setWaitingWebsite('dummy/', {memory: true});
+        app.waitingWebsite.install(null);
+        app.setCurrentWebsite(app.waitingWebsite.dirPath, true);
+        this.setupTestWebsite = () => {};
+    }
+};
 
 webApp.getHandler = function(url, method) {
     let fn;
@@ -12,6 +26,11 @@ webApp.getHandler = function(url, method) {
 
 webApp.makeRequest = function(url, method, data = {}) {
     return {url, method, params: {}, data};
+};
+
+webApp.makeResponse = function() {
+    return {json: () => {}, plain: () => {}, send: () => {},
+            beginChunked: () => {}, writeChunk: () => {}, endChunked: () => {}};
 };
 
 SiteGraph.prototype.clear = function() {
@@ -33,3 +52,4 @@ function Stub(obj, method, withFn) {
 }
 
 exports.Stub = Stub;
+exports.testEnv = testEnv;

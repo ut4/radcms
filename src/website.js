@@ -17,7 +17,7 @@ const ini = require('ini');
 const data = require('./static-data.js');
 const {DomTree, templateCache, transpiler} = require('./templating.js');
 const {DDC} = require('./document-data.js');
-const {signals, fileWatcher} = require('./common-services.js');
+const {signals, fileWatcher, Uploader} = require('./common-services.js');
 
 class Website {
     /**
@@ -32,6 +32,7 @@ class Website {
         this.config = new SiteConfig();
         this.fileWatcher = fileWatcher;
         this.performance = performance;
+        this.uploader = new Uploader();
         this.fs = fs;
     }
     /**

@@ -1,23 +1,23 @@
-const {Stub} = require('./main.js');
+const {Stub, testEnv} = require('./env.js');
 require('../src/website-handlers.js').init();
 const {app} = require('../src/app.js');
 const {webApp} = require('../src/web.js');
 const {Website, UploadStatus} = require('../src/website.js');
 const {templateCache, transpiler} = require('../src/templating.js');
 const {getSampleData} = require('../src/static-data.js');
+const {FTPResponseCode} = require('../src/common-services.js');
 
-app.initAndInstall({memory: true});
-app.setWaitingWebsite('dummy/', {memory: true});
-app.waitingWebsite.install(null);
-app.setCurrentWebsite(app.waitingWebsite.dirPath, true);
-
-QUnit.module('website-handlers.js (1)', () => {
+QUnit.module('website-handlers.js (1)', hooks => {
     const resetDb = () => {
         if (app.db.prepare('delete from websites').run().changes < 1)
             throw new Error('Failed to clean test data.');
     };
+    hooks.before(() => {
+        testEnv.setupAppDb();
+        testEnv.setupTestWebsite();
+    });
     QUnit.test('GET \'/api/websites\' lists all websites', assert => {
-        assert.expect(5);
+        assert.expect(4);
         //
         const ancientUnixTime = 2;
         const testSites = [
@@ -30,11 +30,12 @@ QUnit.module('website-handlers.js (1)', () => {
             )) < 1) throw new Error('Failed to insert test data');
         //
         const req = webApp.makeRequest('/api/websites', 'GET');
-        const response = webApp.getHandler(req.url, req.method)(req, ()=>{});
+        const res = webApp.makeResponse();
+        const sendRespSpy = new Stub(res, 'json');
         //
-        assert.equal(response.statusCode, 200);
-        assert.equal(response.headers['Content-Type'], 'application/json');
-        const actual = JSON.parse(response.body);
+        webApp.getHandler(req.url, req.method)(req, res);
+        const [statusCode, actual] = [...sendRespSpy.callInfo[0]];
+        assert.equal(statusCode, 200);
         assert.ok(actual[0].createdAt > ancientUnixTime, 'Should set default createdAt #1');
         assert.ok(actual[1].createdAt > ancientUnixTime, 'Should set default createdAt #2');
         delete actual[0].createdAt;
@@ -44,7 +45,7 @@ QUnit.module('website-handlers.js (1)', () => {
         resetDb();
     });
     QUnit.test('POST \'/api/websites\' creates a new website', assert => {
-        assert.expect(10);
+        assert.expect(9);
         let fsWriteStub;
         const swwStub = new Stub(app, 'setWaitingWebsite', dirPath => {
             app.waitingWebsite = new Website(dirPath, {memory: true});
@@ -54,14 +55,16 @@ QUnit.module('website-handlers.js (1)', () => {
         //
         const inputDirPath = '/test/path';
         const inputWebsiteName = 'mysite.com';
-        const req = webApp.makeRequest('/api/websites', 'POST');
-        req.data = {dirPath: inputDirPath, sampleDataName: 'minimal',
-                    name: inputWebsiteName};
+        const req = webApp.makeRequest('/api/websites', 'POST',
+            {dirPath: inputDirPath, sampleDataName: 'minimal',
+             name: inputWebsiteName});
+        const res = webApp.makeResponse();
+        const sendRespSpy = new Stub(res, 'json');
         //
-        const response = webApp.getHandler(req.url, req.method)(req);
-        assert.equal(response.statusCode, 200);
-        assert.equal(response.body, '{"status":"ok"}');
-        assert.equal(response.headers['Content-Type'], 'application/json');
+        webApp.getHandler(req.url, req.method)(req, res);
+        const [statusCode, body] = [...sendRespSpy.callInfo[0]];
+        assert.equal(statusCode, 200);
+        assert.equal(JSON.stringify(body), '{"status":"ok"}');
         const minimalSampleData = getSampleData('minimal');
         // Assert that inserted sample data to the website db ($website.db)
         const row = app.waitingWebsite.db.prepare(
@@ -96,19 +99,21 @@ QUnit.module('website-handlers.js (1)', () => {
         app.waitingWebsite = null;
     });
     QUnit.test('PUT \'/api/websites/set-current\'', assert => {
-        assert.expect(5);
+        assert.expect(4);
         //
         const origCurrentWebsite = app.currentWebsite;
         const inputDirPath = '/test/path/to/my/site';
-        const req = webApp.makeRequest('/api/websites/set-current', 'PUT');
-        req.data = {dirPath: inputDirPath};
+        const req = webApp.makeRequest('/api/websites/set-current', 'PUT',
+                                       {dirPath: inputDirPath});
         app.setWaitingWebsite(inputDirPath + '/', {memory: true});
-        const initStub = new Stub(app.waitingWebsite, 'activate', function() {});
+        const initStub = new Stub(app.waitingWebsite, 'activate', () => {});
+        const res = webApp.makeResponse();
+        const sendRespSpy = new Stub(res, 'json');
         //
-        const response = webApp.getHandler(req.url, req.method)(req);
-        assert.equal(response.statusCode, 200);
-        assert.equal(response.body, '{"status":"ok"}');
-        assert.equal(response.headers['Content-Type'], 'application/json');
+        webApp.getHandler(req.url, req.method)(req, res);
+        const [statusCode, body] = [...sendRespSpy.callInfo[0]];
+        assert.equal(statusCode, 200);
+        assert.equal(JSON.stringify(body), '{"status":"ok"}');
         assert.equal(app.currentWebsite.dirPath, inputDirPath + '/',
             'Should set $app.currentWebsite = $app.waitingWebsite');
         assert.equal(initStub.callInfo.length, 1, 'Should initialize the new website');
@@ -118,7 +123,7 @@ QUnit.module('website-handlers.js (1)', () => {
     });
 });
 
-QUnit.module('website-handlers.js (2)', function(hooks) {
+QUnit.module('website-handlers.js (2)', hooks => {
     const genericCntType = {id:1,name:'Generic',fields:'{"content":"richtext"}'};
     const homeContentCnt = {name:'home',json:{content:'Hello'},contentTypeName:'Generic'};
     const page2ContentCnt = {name:'/page2',json:{content:'Page2'},contentTypeName:'Generic'};
@@ -155,6 +160,7 @@ QUnit.module('website-handlers.js (2)', function(hooks) {
     let siteGraph;
     const q = '(?,?,?,?)';
     hooks.before(() => {
+        testEnv.setupTestWebsite();
         website = app.currentWebsite;
         siteGraph = website.graph;
         website.config.homeUrl = pages[0].url;
@@ -184,22 +190,12 @@ QUnit.module('website-handlers.js (2)', function(hooks) {
                 .run(layout1.fileName, layout2.fileName).changes < 1
         ) throw new Error('Failed to insert test data.');
         //
-        fsReadStub = new Stub(website.fs, 'readFileSync', fpath => {
-            console.log('trying o read', fpath);
-            
-return            mockFiles[fpath.replace(website.dirPath,'')]
-        });
-        //app.currentWebsite.fs = {
-        //    write: function(a,b) { writeLog.push({path:a,contents:b}); return true; },
-        //    makeDirs: function(a) { makeRequest.push({path:a}); return true; }
-        //};
-        //app.currentWebsite.crypto = {sha1: function(str) { return str; }};
-
+        fsReadStub = new Stub(website.fs, 'readFileSync', fpath =>
+            mockFiles[fpath.replace(website.dirPath,'')]
+        );
     });
     hooks.after(() => {
         fsReadStub.restore();
-        //app.currentWebsite.fs = commons.fs;
-        //app.currentWebsite.crypto = require('crypto.js');
         website.graph.clear();
         if (website.db.prepare('delete from contentNodes where contentTypeName = ?')
                       .run(genericCntType.name).changes < 1 ||
@@ -208,43 +204,47 @@ return            mockFiles[fpath.replace(website.dirPath,'')]
             website.db.prepare('delete from uploadStatuses').run().changes < 5
         ) throw new Error('Failed to clean test data.');
     });
-    //hooks.afterEach(() => {
-    //    writeLog = [];
-    //    makeRequest = [];
-    //});
     QUnit.test('GET \'/<url>\' serves a page', assert => {
         assert.expect(11);
         const req = webApp.makeRequest('/', 'GET');
         const handlePageRequestFn = webApp.getHandler(req.url, req.method);
+        const res = webApp.makeResponse();
+        const sendRespSpy = new Stub(res, 'send');
         //
-        const response = handlePageRequestFn(req);
-        assert.equal(response.statusCode, 200);
-        assert.ok(response.body.indexOf('<title>Hello home') > -1,
-            'should serve js/tests/testsite/home-layout.jsx.htm');
-        assert.ok(response.body.indexOf('<p>'+homeContentCnt.json.content) > -1,
+        handlePageRequestFn(req, res);
+        const [statusCode, body] = [...sendRespSpy.callInfo[0]];
+        assert.equal(statusCode, 200);
+        assert.ok(body.indexOf('<title>Hello home') > -1,
+            'should serve "/home" using home-layout.jsx.htm');
+        assert.ok(body.indexOf('<p>'+homeContentCnt.json.content) > -1,
             'should render { mainContent.content }');
-        assert.ok(response.body.indexOf('<iframe') > -1, 'should contain "<iframe"');
+        assert.ok(body.indexOf('<iframe') > -1, 'should contain "<iframe"');
         //
-        const response2 = handlePageRequestFn(webApp.makeRequest('/page2', 'GET'));
-        assert.equal(response2.statusCode, 200);
-        assert.ok(response2.body.indexOf('<title>Hello page') > -1,
-            'should serve js/tests/testsite/page-layout.jsx.htm');
-        assert.ok(response2.body.indexOf('<p>'+page2ContentCnt.json.content) > -1,
+        handlePageRequestFn(webApp.makeRequest('/page2', 'GET'), res);
+        assert.equal(sendRespSpy.callInfo[1][0], 200);
+        const body2 = sendRespSpy.callInfo[1][1];
+        assert.ok(body2.indexOf('<title>Hello page') > -1,
+            'should serve "/page2" using page-layout.jsx.htm');
+        assert.ok(body2.indexOf('<p>'+page2ContentCnt.json.content) > -1,
             'should render { mainContent.content }');
-        assert.ok(response2.body.indexOf('<iframe') > -1, 'should contain "<iframe"');
+        assert.ok(body2.indexOf('<iframe') > -1, 'should contain "<iframe"');
         //
-        const response3 = handlePageRequestFn(webApp.makeRequest('/404', 'GET'));
-        assert.equal(response3.statusCode, 404);
-        assert.ok(response3.body.indexOf('Not found') > -1, 'should contain "Not found"');
-        assert.ok(response3.body.indexOf('<iframe') > -1, 'should contain "<iframe"');
+        handlePageRequestFn(webApp.makeRequest('/404', 'GET'), res);
+        assert.equal(sendRespSpy.callInfo[2][0], 404);
+        const body3 = sendRespSpy.callInfo[2][1];
+        assert.ok(body3.indexOf('Not found') > -1, 'should contain "Not found"');
+        assert.ok(body3.indexOf('<iframe') > -1, 'should contain "<iframe"');
     });
     QUnit.test('GET \'/<url>\' embeds info about the page in <script>', assert => {
         assert.expect(4);
         const req = webApp.makeRequest('/home', 'GET');
+        const res = webApp.makeResponse();
         const handlePageRequestFn = webApp.getHandler(req.url, req.method);
+        const sendRespSpy = new Stub(res, 'send');
         //
-        const response = handlePageRequestFn(req);
-        const pcs = response.body.split('function getCurrentPageData(){return ');
+        handlePageRequestFn(req, res);
+        const body = sendRespSpy.callInfo[0][1];
+        const pcs = body.split('function getCurrentPageData(){return ');
         assert.ok(pcs.length == 2, 'Should contain getCurrentPageData() declaration');
         const expectedPageData = JSON.stringify({
             directiveElems:[],
@@ -254,15 +254,16 @@ return            mockFiles[fpath.replace(website.dirPath,'')]
         const actualPageData = pcs[1] ? pcs[1].substr(0, expectedPageData.length) : '';
         assert.equal(actualPageData, expectedPageData);
         //
-        const response2 = handlePageRequestFn(webApp.makeRequest('/404', 'GET'));
-        const pcs2 = response2.body.split('function getCurrentPageData(){return ');
+        handlePageRequestFn(webApp.makeRequest('/404', 'GET'), res);
+        const body2 = sendRespSpy.callInfo[1][1];
+        const pcs2 = body2.split('function getCurrentPageData(){return ');
         assert.ok(pcs2.length == 2, 'Should contain getCurrentPageData() declaration');
         const expectedPageData2 = JSON.stringify({directiveElems:[],allContentNodes:[],page:{}});
         const actualPageData2 = pcs2[1] ? pcs2[1].substr(0, expectedPageData2.length) : '';
         assert.equal(actualPageData2, expectedPageData2);
     });
     QUnit.test('GET \'/api/websites/current/waiting-uploads\'', assert => {
-        assert.expect(10);
+        assert.expect(9);
         //
         const sql = 'update uploadStatuses set `curhash`= ?, `uphash` = ? where `url`= ?';
         if (
@@ -272,10 +273,11 @@ return            mockFiles[fpath.replace(website.dirPath,'')]
         ) throw new Error('Failed to setup test data.');
         //
         const req = webApp.makeRequest('/api/websites/current/waiting-uploads', 'GET');
-        const response = webApp.getHandler(req.url, req.method)(req);
-        assert.equal(response.statusCode, 200);
-        const resp = JSON.parse(response.body);
-        assert.equal(response.headers['Content-Type'], 'application/json');
+        const res = webApp.makeResponse();
+        const sendRespSpy = new Stub(res, 'json');
+        webApp.getHandler(req.url, req.method)(req, res);
+        const [statusCode, resp] = [...sendRespSpy.callInfo[0]];
+        assert.equal(statusCode, 200);
         assert.equal(resp.pages[0].url, pages[0].url);
         assert.equal(resp.pages[1].url, pages[1].url);
         assert.ok(resp.pages[2] === undefined, 'shouldn\'t return uploaded pages');
@@ -290,15 +292,16 @@ return            mockFiles[fpath.replace(website.dirPath,'')]
     });
     QUnit.test('POST \'/api/websites/current/generate\' generates the site', assert => {
         assert.expect(16);
-        const existsStub = new Stub(app.currentWebsite.fs, 'existsSync');
-        const makeDirStub = new Stub(app.currentWebsite.fs, 'mkdirSync');
-        const writeFileStub = new Stub(app.currentWebsite.fs, 'writeFileSync');
-        //
+        const existsStub = new Stub(website.fs, 'existsSync');
+        const makeDirStub = new Stub(website.fs, 'mkdirSync');
+        const writeFileStub = new Stub(website.fs, 'writeFileSync');
         const req = webApp.makeRequest('/api/websites/current/generate', 'POST');
+        const res = webApp.makeResponse();
+        const sendRespSpy = new Stub(res, 'json');
         //
-        const response = webApp.getHandler(req.url, req.method)(req);
-        assert.equal(response.statusCode, 200);
-        const body = JSON.parse(response.body);
+        webApp.getHandler(req.url, req.method)(req, res);
+        const [statusCode, body] = [...sendRespSpy.callInfo[0]];
+        assert.equal(statusCode, 200);
         assert.equal(body.wrotePagesNum, 3);
         assert.equal(body.totalPages, website.graph.pageCount);
         assert.equal(body.outPath, website.dirPath + 'out');
@@ -322,179 +325,170 @@ return            mockFiles[fpath.replace(website.dirPath,'')]
         makeDirStub.restore();
         writeFileStub.restore();
     });
-    /*QUnit.test('POST \'/api/websites/current/upload\' uploads pages and files', assert => {
-        assert.expect(20);
-        const uploaderCredentials = {};
-        const uploadLog = [];
-        app.currentWebsite.Uploader = function(a,b) {
-            uploaderCredentials = {username: a, password: b};
-            this.uploadString = function(a,b) { uploadLog.push({url:a,contents:b});return UPLOAD_OK; };
-        };
+    QUnit.test('POST \'/api/websites/current/upload\' uploads pages and files', assert => {
+        assert.expect(11);
+        const res = webApp.makeResponse();
+        const ftpConnectStub = new Stub(website.uploader, 'open',
+            () => Promise.resolve(null));
+        const ftpUploadStub = new Stub(website.uploader, 'upload',
+            () => Promise.resolve({code: FTPResponseCode.TRANSFER_COMPLETE}));
+        const chunkWriteSpy = new Stub(res, 'writeChunk');
         //
-        const req = webApp.makeRequest('/api/websites/current/upload', 'POST');
-        req.data = {remoteUrl: 'ftp://ftp.site.net/', username: 'ftp@mysite.net',
-                    password: 'bar', pageUrls: [
-                        {url: pages[0].url, isDeleted: 0},
-                        {url: pages[1].url, isDeleted: 0},
-                        {url: pages[2].url, isDeleted: 0},
-                    ], fileNames: [
-                        {fileName: fileNames[0], isDeleted: 0},
-                        {fileName: fileNames[1], isDeleted: 0}
-                    ]};
+        const req = webApp.makeRequest('/api/websites/current/upload', 'POST',
+            {remoteUrl: 'ftp://ftp.site.net/',
+             username: 'ftp@mysite.net',
+             password: 'bar', pageUrls: [
+                 {url: pages[0].url, isDeleted: 0},
+                 {url: pages[1].url, isDeleted: 0},
+                 {url: pages[2].url, isDeleted: 0},
+             ], fileNames: [
+                 {fileName: mockFileNames[0], isDeleted: 0},
+                 {fileName: mockFileNames[1], isDeleted: 0}
+             ]});
         //
-        const response = webApp.getHandler(req.url, req.method)(req);
-        assert.deepEqual(uploaderCredentials, {username: req.data.username,
-            password: req.data.password},
-            'should pass req.data.username&pass to new Uploader()');
-        assert.ok(response instanceof http.ChunkedResponse,
-            'should return new ChunkedResponse()');
-        assert.equal(response.statusCode, 200);
-        const generatedPages = response.chunkFnState.generatedPages;
-        assert.equal(generatedPages.length, 3, 'should generate the pages beforehand');
-        // Simulate MHD's MHD_ContentReaderCallback calls
-        const chunk1 = response.getNextChunk(response.chunkFnState);
-        const remUrl = req.data.remoteUrl.substr(0, req.data.remoteUrl.length -1);
-        assert.equal(chunk1, 'file|' + req.data.fileNames[0].fileName + '|' + UPLOAD_OK);
-        assert.equal(uploadLog.length, 1, 'should upload file #1');
-        assert.deepEqual(uploadLog[0], {
-            url: remUrl+req.data.fileNames[0].fileName,
-            contents: mockFiles[req.data.fileNames[0].fileName]
+        const done = assert.async();
+        webApp.getHandler(req.url, req.method)(req, res).then(() => {
+            assert.deepEqual(ftpConnectStub.callInfo[0],
+                {'0': req.data.remoteUrl, '1': req.data.username,
+                 '2': req.data.password},
+                'should pass req.data.username&pass to currentWebsite.uploader.open()');
+            //
+            const chunk1 = chunkWriteSpy.callInfo[0][0];
+            assert.equal(chunk1, 'file|' + req.data.fileNames[0].fileName + '|ok|');
+            assert.deepEqual(ftpUploadStub.callInfo[0], {
+                '0': req.data.fileNames[0].fileName,
+                '1': mockFiles[req.data.fileNames[0].fileName]
+            });
+            const chunk2 = chunkWriteSpy.callInfo[1][0];
+            assert.equal(chunk2, 'file|' + req.data.fileNames[1].fileName + '|ok|');
+            assert.deepEqual(ftpUploadStub.callInfo[1], {
+                '0': req.data.fileNames[1].fileName,
+                '1': mockFiles[req.data.fileNames[1].fileName]
+            });
+            //
+            const generatedHtmls = [];
+            website.generate((renderedOutput) => {
+                generatedHtmls.push(renderedOutput);
+            }, null, {
+                [req.data.pageUrls[0].url]: 1,
+                [req.data.pageUrls[1].url]: 1,
+                [req.data.pageUrls[2].url]: 1
+            });
+            const chunk3 = chunkWriteSpy.callInfo[2][0];
+            assert.equal(chunk3, 'page|' + req.data.pageUrls[0].url + '|ok|');
+            assert.deepEqual(ftpUploadStub.callInfo[2], {
+                '0': req.data.pageUrls[0].url+'/index.html',
+                '1': generatedHtmls[0],
+            });
+            const chunk4 = chunkWriteSpy.callInfo[3][0];
+            assert.equal(chunk4, 'page|' + req.data.pageUrls[1].url + '|ok|');
+            assert.deepEqual(ftpUploadStub.callInfo[3], {
+                '0': req.data.pageUrls[1].url+'/index.html',
+                '1': generatedHtmls[1],
+            });
+            const chunk5 = chunkWriteSpy.callInfo[4][0];
+            assert.equal(chunk5, 'page|' + req.data.pageUrls[2].url + '|ok|');
+            assert.deepEqual(ftpUploadStub.callInfo[4], {
+                '0': req.data.pageUrls[2].url+'/index.html',
+                '1': generatedHtmls[2],
+            });
+            //
+            ftpConnectStub.restore();
+            ftpUploadStub.restore();
+            if (website.db.prepare('update uploadStatuses set `uphash` = null')
+                          .run().changes < 5) throw new Error('Failed to reset test data.');
+            done();
         });
-        const chunk2 = response.getNextChunk(response.chunkFnState);
-        assert.equal(chunk2, 'file|' + req.data.fileNames[1].fileName + '|' + UPLOAD_OK);
-        assert.equal(uploadLog.length, 2, 'should upload file #2');
-        assert.deepEqual(uploadLog[1], {
-            url: remUrl+req.data.fileNames[1].fileName,
-            contents: mockFiles[req.data.fileNames[1].fileName]
-        });
-        const chunk3 = response.getNextChunk(response.chunkFnState);
-        assert.equal(chunk3, 'page|' + generatedPages[0].url + '|' + UPLOAD_OK);
-        assert.equal(uploadLog.length, 3, 'should upload page #1');
-        assert.deepEqual(uploadLog[2], {
-            url: remUrl+generatedPages[0].url+'/index.html',
-            contents: generatedPages[0].html,
-        });
-        const chunk4 = response.getNextChunk(response.chunkFnState);
-        assert.equal(chunk4, 'page|' + generatedPages[1].url + '|' + UPLOAD_OK);
-        assert.equal(uploadLog.length, 4, 'should upload page #2');
-        assert.deepEqual(uploadLog[3], {
-            url: remUrl+generatedPages[1].url+'/index.html',
-            contents: generatedPages[1].html,
-        });
-        const chunk5 = response.getNextChunk(response.chunkFnState);
-        assert.equal(chunk5, 'page|' + generatedPages[2].url + '|' + UPLOAD_OK);
-        assert.equal(uploadLog.length, 5, 'should upload page #3');
-        assert.deepEqual(uploadLog[4], {
-            url: remUrl+generatedPages[2].url+'/index.html',
-            contents: generatedPages[2].html,
-        });
-        const chunk6 = response.getNextChunk(response.chunkFnState);
-        assert.equal(chunk6, '');
-        //
-        app.currentWebsite.Uploader = commons.Uploader;
-        if (website.db.update('update uploadStatuses set `uphash` = null',
-            function() {}) < 5) throw new Error('Failed to reset test data.');
     });
     QUnit.test('POST \'/api/websites/current/upload\' updates uploadStatuses', assert => {
-        assert.expect(3);
-        app.currentWebsite.Uploader = function() {};
-        app.currentWebsite.Uploader.prototype.uploadString = function() {};
+        assert.expect(2);
+        const res = webApp.makeResponse();
+        const ftpConnectStub = new Stub(website.uploader, 'open',
+            () => Promise.resolve(null));
+        const ftpUploadStub = new Stub(website.uploader, 'upload',
+            () => Promise.resolve({code: FTPResponseCode.TRANSFER_COMPLETE}));
         //
-        const req = webApp.makeRequest('/api/websites/current/upload', 'POST');
-        req.data = {remoteUrl: 'ftp://ftp.site.net', username: 'ftp@mysite.net',
-                    password: 'bar',
-                    pageUrls: [{url: pages[0].url, isDeleted: 0}],
-                    fileNames: [{fileName: fileNames[0], isDeleted: 0}]};
+        const req = webApp.makeRequest('/api/websites/current/upload', 'POST',
+            {remoteUrl: 'ftp://ftp.site.net', username: 'ftp@mysite.net',
+             password: 'bar',
+             pageUrls: [{url: pages[0].url, isDeleted: 0}],
+             fileNames: [{fileName: mockFileNames[0], isDeleted: 0}]});
         //
-        const response = webApp.getHandler(req.url, req.method)(req);
-        const assertSetStatusToUploaded = function(expected, id) {
-            website.db.select('select `uphash` from uploadStatuses where `url` = ?',
-                function(row) {
-                    assert.ok(row.getString(0) != null,
-                        'should update uphash of ' + id);
-                }, function(stmt) {
-                    stmt.bindString(0, expected);
-                });
-        };
-        // Simulate MHD's MHD_ContentReaderCallback calls
-        response.getNextChunk(response.chunkFnState);
-        assertSetStatusToUploaded(fileNames[0], 'file #1');
-        response.getNextChunk(response.chunkFnState);
-        assertSetStatusToUploaded(page1.url, 'page #1');
-        const lastChunk = response.getNextChunk(response.chunkFnState);
-        assert.equal(lastChunk, '');
-        //
-        app.currentWebsite.Uploader = commons.Uploader;
-        if (website.db.update('update uploadStatuses set `uphash` = null',
-            function() {}) < 2) throw new Error('Failed to reset test data.');
+        const done = assert.async();
+        webApp.getHandler(req.url, req.method)(req, res).then(() => {
+            const assertSetStatusToUploaded = (url, id) => {
+                assert.ok(website.db
+                    .prepare('select `uphash` from uploadStatuses where `url` = ?')
+                    .get(url).uphash != null, 'should update uphash of ' + id);
+            };
+            assertSetStatusToUploaded(mockFileNames[0], 'file #1');
+            assertSetStatusToUploaded(page1.url, 'page #1');
+            //
+            ftpConnectStub.restore();
+            ftpUploadStub.restore();
+            if (website.db.prepare('update uploadStatuses set `uphash` = null')
+                            .run().changes < 2) throw new Error('Failed to reset test data.');
+            done();
+        });
     });
     QUnit.test('POST \'/api/websites/current/upload\' deletes pages and files', assert => {
-        assert.expect(5);
-        const uploaderDeleteLog = [];
+        assert.expect(4);
         const inputPageUrls = [pages[2].url];
-        const inputFileNames = [fileNames[1]];
-        app.currentWebsite.Uploader = function() {};
-        app.currentWebsite.Uploader.prototype.uploadString = function() {};
-        app.currentWebsite.Uploader.prototype.delete = function(a, b, c) {
-            uploaderDeleteLog.push({serverUrl: a, itemPath: b, asDir: c});
-            return UPLOAD_OK;
-        };
-        if (website.db.update('update uploadStatuses set `curhash` = null,\
-                            `uphash` = \'up\' where `url` in (?,?)', function(stmt) {
-                stmt.bindString(0, inputPageUrls[0]);
-                stmt.bindString(1, inputFileNames[0]);
-            }) < 2) throw new Error('Failed to setup test data.');
+        const inputFileNames = [mockFileNames[1]];
+        const res = webApp.makeResponse();
         //
-        const req = webApp.makeRequest('/api/websites/current/upload', 'POST');
-        req.data = {remoteUrl: 'ftp://ftp.site.net/dir',
-                    username: 'ftp@mysite.net',
-                    password: 'bar',
-                    pageUrls: [{url: inputPageUrls[0], isDeleted: 1}],
-                    fileNames: [{fileName: inputFileNames[0], isDeleted: 1}]};
+        const ftpConnectStub = new Stub(website.uploader, 'open',
+            () => Promise.resolve(null));
+        const ftpDeleteStub = new Stub(website.uploader, 'delete',
+            () => Promise.resolve({code: FTPResponseCode.TRANSFER_COMPLETE}));
+        if (website.db.prepare('update uploadStatuses set `curhash` = null,\
+                               `uphash` = \'up\' where `url` in (?,?)').run(
+                inputPageUrls[0], inputFileNames[0]
+            ).changes < 2) throw new Error('Failed to setup test data.');
         //
-        const response = webApp.getHandler(req.url, req.method)(req);
-        const assertWipedStatus = function(expected, id) {
-            website.db.select('select count(`url`) from uploadStatuses where `url` = ?',
-                function(row) {
-                    assert.equal(row.getInt(0), 0, 'should delete ' + id +
-                        ' from uploadStatuses');
-                }, function(stmt) {
-                    stmt.bindString(0, expected);
-                });
-        };
-        // Simulate MHD's MHD_ContentReaderCallback calls
-        response.getNextChunk(response.chunkFnState);
-        assert.deepEqual(uploaderDeleteLog[0], {serverUrl: req.data.remoteUrl,
-            itemPath: inputPageUrls[0]+'/index.html', asDir: true},
-            'Should delete the page first');
-        assertWipedStatus(inputPageUrls[0], 'page #1');
-        response.getNextChunk(response.chunkFnState);
-        assert.deepEqual(uploaderDeleteLog[1], {serverUrl: req.data.remoteUrl,
-            itemPath: inputFileNames[0], asDir: false},
-            'Should delete the file');
-        assertWipedStatus(inputFileNames[0], 'file #1');
-        const lastChunk = response.getNextChunk(response.chunkFnState);
-        assert.equal(lastChunk, '');
+        const req = webApp.makeRequest('/api/websites/current/upload', 'POST',
+            {remoteUrl: 'ftp://ftp.site.net/dir',
+             username: 'ftp@mysite.net',
+             password: 'bar',
+             pageUrls: [{url: inputPageUrls[0], isDeleted: 1}],
+             fileNames: [{fileName: inputFileNames[0], isDeleted: 1}]});
         //
-        app.currentWebsite.Uploader = commons.Uploader;
-        if (website.db.insert('insert into uploadStatuses values '+q+','+q, function(stmt) {
-                stmt.bindString(0, inputPageUrls[0]);
-                stmt.bindString(1, '');
-                stmt.bindInt(3, 0);
-                stmt.bindString(4, inputFileNames[0]);
-                stmt.bindString(5, '');
-                stmt.bindInt(7, 1);
-            }) < 1) throw new Error('Failed to reset test data.');
-    });*/
+        const done = assert.async();
+        webApp.getHandler(req.url, req.method)(req, res).then(() => {
+            const assertWipedStatus = (url, id) => {
+                const q = 'select count(`url`) as c from uploadStatuses where `url` = ?';
+                assert.equal(website.db.prepare(q).get(url).c, 0,
+                    'should delete ' + id + ' from uploadStatuses');
+            };
+            assert.deepEqual(ftpDeleteStub.callInfo[0],
+                {'0': inputPageUrls[0]+'/index.html', '1': true},
+                'Should delete the page first');
+            assertWipedStatus(inputPageUrls[0], 'page #1');
+            assert.deepEqual(ftpDeleteStub.callInfo[1],
+                {'0': inputFileNames[0], '1': false},
+                'Should delete the file');
+            assertWipedStatus(inputFileNames[0], 'file #1');
+            //
+            ftpConnectStub.restore();
+            ftpDeleteStub.restore();
+            if (website.db.prepare('insert into uploadStatuses values '+q+','+q).run(
+                    inputPageUrls[0], '', null, 0, inputFileNames[0], '', null, 1
+                ).changes < 1) throw new Error('Failed to reset test data.');
+            done();
+        });
+    });
     QUnit.test('PUT \'/api/websites/current/page\' updates a page', assert => {
         assert.expect(3);
         //
-        const req = webApp.makeRequest('/api/websites/current/page', 'PUT');
-        // Emulate the request
-        req.data = {url: '/page2', layoutFileName: layout1.fileName};
-        const response = webApp.getHandler(req.url, req.method)(req);
-        assert.equal(response.statusCode, 200);
-        assert.equal(response.body, '{"numAffectedRows":1}');
+        const req = webApp.makeRequest('/api/websites/current/page', 'PUT',
+            {url: '/page2', layoutFileName: layout1.fileName});
+        const res = webApp.makeResponse();
+        const sendRespSpy = new Stub(res, 'json');
+        //
+        webApp.getHandler(req.url, req.method)(req, res);
+        const [statusCode, body] = [...sendRespSpy.callInfo[0]];
+        assert.equal(statusCode, 200);
+        assert.equal(JSON.stringify(body), '{"numAffectedRows":1}');
         // Assert that changed layoutFileName and saved the changes to the database
         const row = website.db.prepare('select `graph` from self limit 1').get();
         const updatedPData = JSON.parse(row.graph).pages; // [[<url>,<parent>,<layoutFilename>...]]
@@ -513,15 +507,18 @@ return            mockFiles[fpath.replace(website.dirPath,'')]
             //               ^ /services2 is uploaded
             url2, 'hash', null, 1
             //              ^ /contact2 is not
-        ).changes < 1 || app.currentWebsite.saveToDb(siteGraph) < 1) {
+        ).changes < 1 || website.saveToDb(siteGraph) < 1) {
             throw new Error('Failed to setup test data.');
         }
-        const req = webApp.makeRequest('/api/websites/current/site-graph', 'PUT');
+        const res = webApp.makeResponse();
+        const sendRespSpy = new Stub(res, 'json');
+        const req = webApp.makeRequest('/api/websites/current/site-graph', 'PUT',
+            {deleted: [url1, url2]});
         // Emulate the request
-        req.data = {deleted: [url1, url2]};
-        const response = webApp.getHandler(req.url, req.method)(req);
-        assert.equal(response.statusCode, 200);
-        assert.equal(response.body, '{"status":"ok"}');
+        webApp.getHandler(req.url, req.method)(req, res);
+        const [statusCode, body] = [...sendRespSpy.callInfo[0]];
+        assert.equal(statusCode, 200);
+        assert.equal(JSON.stringify(body), '{"status":"ok"}');
         //
         assert.ok(siteGraph.getPage(url1) === undefined,
             'Should remove /services2 from the site graph');

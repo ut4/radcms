@@ -165,3 +165,4 @@ function sha1(str) {
 }
 
 exports.RemoteDiff = RemoteDiff;
+exports.sha1 = sha1;

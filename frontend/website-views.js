@@ -169,12 +169,12 @@ class WebsiteUploadView extends preact.Component {
                 // <fromPrevIteration>...<lastChunk> -> <lastChunk>
                 const lastChunks = res.responseText.substr(lenAlreadyProcessed);
                 lenAlreadyProcessed += lastChunks.length;
-                const pcs = lastChunks.split('\r\n');
-                for (let i = 0; i < pcs.length - 1; i += 2) {
-                    const [resourceType, url, uploadResult] = pcs[i + 1].split('|');
+                const pcs = lastChunks.split('|');
+                for (let i = 0; i < pcs.length; i += 3) {
+                    const [resourceType, url, uploadResult] = pcs.slice(i, i + 3);
                     const list = resourceType == 'page' ? this.state.pages : this.state.files;
                     const idx = list.findIndex(pageOrFile => pageOrFile.url === url);
-                    if (uploadResult === '0') {
+                    if (uploadResult === 'ok') {
                         list[idx].uploadStatus = UStatus.UPLOADED;
                         services.signals.emit('numWaitingUploadsChanged', old => old - 1);
                     } else {
