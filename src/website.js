@@ -122,14 +122,16 @@ class Website {
     }
     /**
      * @param {Page} page
-     * @param {DomTree} domTree (out)
-     * @returns string
+     * @returns [DomTree, ElNode, string]
      */
-    renderPage2(page, domTree) {
-        domTree.directives = templateCache._fns;
-        domTree.currentPage = page;
-        return domTree.render(templateCache.get(page.layoutFileName)(
-            {ddc: new DDC(this.db), url: page.urlPcs}, domTree));
+    renderPage2(page) {
+        const out = [new DomTree(), undefined, undefined];
+        out[0].directives = templateCache._fns;
+        out[0].currentPage = page;
+        out[1] = templateCache.get(page.layoutFileName)(
+            {ddc: new DDC(this.db), url: page.urlPcs}, out[0]);
+        out[2] = out[0].render(out[1]);
+        return out;
     }
     /**
      * @param {(renderedHtml: string, page: Page): any|bool} onEach
@@ -170,11 +172,11 @@ class Website {
         return true;
     }
     /**
-     * @param {string} fileName
+     * @param {string} fileName eg '/file.jsx.htm'
      * @throws {Error}
      */
-    readTemplate(fileName) {
-        return this.fs.readFileSync(this.dirPath + fileName, 'utf-8');
+    readOwnFile(fileName) {
+        return this.fs.readFileSync(this.dirPath + fileName.substr(1), 'utf-8');
     }
 }
 
@@ -355,4 +357,5 @@ const UploadStatus = {
 
 exports.Website = Website;
 exports.SiteGraph = SiteGraph;
+exports.SiteConfig = SiteConfig;
 exports.UploadStatus = UploadStatus;

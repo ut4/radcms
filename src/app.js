@@ -18,7 +18,7 @@ let app = {
     dataPath: '',
     db: null,
     currentWebsite: null,
-    waitingWebsite: null,
+    waitingWebsite: null,// A kind of back buffer, used in setCurrentWebsite()
     /**
      * Opens or creates the main database $this.dataPath+'data.db'.
      *

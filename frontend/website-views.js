@@ -170,7 +170,7 @@ class WebsiteUploadView extends preact.Component {
                 const lastChunks = res.responseText.substr(lenAlreadyProcessed);
                 lenAlreadyProcessed += lastChunks.length;
                 const pcs = lastChunks.split('|');
-                for (let i = 0; i < pcs.length; i += 3) {
+                for (let i = 0; i < pcs.length - 1; i += 3) {
                     const [resourceType, url, uploadResult] = pcs.slice(i, i + 3);
                     const list = resourceType == 'page' ? this.state.pages : this.state.files;
                     const idx = list.findIndex(pageOrFile => pageOrFile.url === url);

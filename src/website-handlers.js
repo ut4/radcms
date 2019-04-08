@@ -10,7 +10,7 @@ const commons = require('./common-services.js');
 const data = require('./static-data.js');
 const {UploadStatus} = require('./website.js');
 const {templateCache} = require('./templating.js');
-const {RemoteDiff, sha1} = require('./website-diff.js');
+const diff = require('./website-diff.js');
 
 exports.init = () => {
     webApp.addRoute((url, method) => {
@@ -148,6 +148,7 @@ function handleSetCurrentWebsiteRequest(req, res) {
             app.setCurrentWebsite(req.data.dirPath);
         } catch (e) {
             res.json(500, {status: 'err', details: e.message || '-'});
+            return;
         }
     }
     res.json(200, {status: 'ok'});
@@ -282,6 +283,7 @@ function handleGenerateRequest(_, res) {
     } catch (e) {
         app.log('[Error]: ' + e.message);
         res.plain(500, 'Failed to generate the site.');
+        return;
     }
     out.tookSecs = (w.performance.now() - out.tookSecs) / 1000;
     res.json(200, out);
@@ -357,7 +359,7 @@ function handleUploadRequest(req, res) {
         )))
         // then upload new files ...
         .then(() => waterfall(data.uploadFileNames.map(fname => () => {
-            const contents = app.currentWebsite.readTemplate(fname);
+            const contents = app.currentWebsite.readOwnFile(fname);
             return data.uploader.upload(fname, contents)
                 .then(res => afterEachFtpTask(res, fname, contents, 'file'));
         })))
@@ -379,11 +381,9 @@ function handleUploadRequest(req, res) {
 
 function saveOrDeleteUploadStatus(url, contents) {
     if (contents) {
-        if (app.currentWebsite.db
-                .prepare('update uploadStatuses set `uphash` = ? where `url` = ?')
-                .run(sha1(contents), url).changes < 0) {//??
-            commons.log('[Error]: Failed to save uploadStatus of \'' + url + '\'.');
-        }
+        app.currentWebsite.db
+            .prepare('update uploadStatuses set `uphash` = ? where `url` = ?')
+            .run(diff.sha1(contents), url);
     } else {
         if (app.currentWebsite.db
                 .prepare('delete from uploadStatuses where `url` = ?')
@@ -465,7 +465,7 @@ function handleUpdatePageRequest(req, res) {
  */
 function handleUpdateSiteGraphRequest(req, res) {
     const w = app.currentWebsite;
-    const remoteDiff = new RemoteDiff(w);
+    const remoteDiff = new diff.RemoteDiff(w);
     let i = 0;
     for (; i < req.data.deleted.length; ++i) {
         const url = req.data.deleted[i];

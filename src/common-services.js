@@ -1,6 +1,7 @@
 const ReadableStream = require('stream').Readable;
 const parseUrl = require('url').parse;
 const ftp = require('basic-ftp');
+const chokidar = require('chokidar');
 
 /**
  * # common-services.js
@@ -39,11 +40,65 @@ let signals = {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+let watcher = null;
+let lastAddEventFileName = '';
+let addEventDispatchTimeout = 0;
+
 let fileWatcher = {
-    watch() {
-        //
+    _watchFn: null,
+    EVENT_ADD: 'add',
+    EVENT_ADD_DIR: 'addDir',
+    EVENT_CHANGE: 'change',
+    EVENT_RENAME: 'rename',
+    EVENT_UNLINK: 'unlink',
+    EVENT_UNLINK_DIR: 'unlinkDir',
+    EVENT_READY: 'ready',
+    EVENT_RAW: 'raw',
+    EVENT_ERROR: 'error',
+    /**
+     * @param {(eventType: string; fileName: string): any} fn
+     */
+    setWatchFn(watchFn) {
+        this._watchFn = watchFn;
+    },
+    /**
+     * @param {string} path eg. '/full/path/to/my/site/'
+     */
+    watch(path) {
+        if (watcher) {
+            resetAddEventTimeout();
+            watcher.close();
+        }
+        watcher = chokidar.watch(path, {
+            cwd: path,
+            ignored: /^.*\.(?!(htm|ini|css|js|jsx))/,
+            disableGlobbing: true,
+            ignoreInitial: true,
+            depth: 1
+        }).on('all', (event, fileName) => {
+            if (event === this.EVENT_ADD) {
+                lastAddEventFileName = fileName;
+                addEventDispatchTimeout = setTimeout(() => {
+                    lastAddEventFileName = '';
+                    this._watchFn(event, fileName);
+                }, 120);
+                return;
+            } else if (event === this.EVENT_UNLINK) {
+                if (lastAddEventFileName) { // add hasn't fired yet -> must be a rename
+                    resetAddEventTimeout();
+                    event = this.EVENT_RENAME;
+                    fileName += '>' + lastAddEventFileName;
+                }
+            }
+            this._watchFn(event, fileName);
+        });
     }
 };
+
+function resetAddEventTimeout() {
+    lastAddEventFileName = '';
+    clearTimeout(addEventDispatchTimeout);
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 

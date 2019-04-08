@@ -3,6 +3,7 @@ require('../src/website-handlers.js').init();
 const {app} = require('../src/app.js');
 const {webApp} = require('../src/web.js');
 const {Website, UploadStatus} = require('../src/website.js');
+const diff = require('../src/website-diff.js');
 const {templateCache, transpiler} = require('../src/templating.js');
 const {getSampleData} = require('../src/static-data.js');
 const {FTPResponseCode} = require('../src/common-services.js');
@@ -177,7 +178,7 @@ QUnit.module('website-handlers.js (2)', hooks => {
             website.db.prepare(sql2)
                 .run([].concat(...[homeContentCnt,page2ContentCnt,page3ContentCnt].map((c, i) =>
                     [i + 1, c.name, JSON.stringify(c.json), c.contentTypeName]
-                ))).changes < 1 ||
+                ))).changes < 3 ||
             website.db.prepare(sql3)
                 .run(// url, curhash, uphash, isFile
                     mockFileNames[0], '', null, 1,
@@ -185,13 +186,13 @@ QUnit.module('website-handlers.js (2)', hooks => {
                     page1.url,        '', null, 0,
                     page2.url,        '', null, 0,
                     page3.url,        '', null, 0
-                ).changes < 1 ||
+                ).changes < 5 ||
             website.db.prepare(sql4)
-                .run(layout1.fileName, layout2.fileName).changes < 1
+                .run(layout1.fileName, layout2.fileName).changes < 2
         ) throw new Error('Failed to insert test data.');
         //
         fsReadStub = new Stub(website.fs, 'readFileSync', fpath =>
-            mockFiles[fpath.replace(website.dirPath,'')]
+            mockFiles[fpath.replace(website.dirPath,'/')]
         );
     });
     hooks.after(() => {
@@ -201,8 +202,9 @@ QUnit.module('website-handlers.js (2)', hooks => {
                       .run(genericCntType.name).changes < 1 ||
             website.db.prepare('delete from self where id = ?')
                       .run(testWebsite.id).changes < 1 ||
-            website.db.prepare('delete from uploadStatuses').run().changes < 5
-        ) throw new Error('Failed to clean test data.');
+            website.db.prepare('delete from uploadStatuses')
+                      .run().changes < 5)
+            throw new Error('Failed to clean test data.');
     });
     QUnit.test('GET \'/<url>\' serves a page', assert => {
         assert.expect(11);
@@ -333,6 +335,7 @@ QUnit.module('website-handlers.js (2)', hooks => {
         const ftpUploadStub = new Stub(website.uploader, 'upload',
             () => Promise.resolve({code: FTPResponseCode.TRANSFER_COMPLETE}));
         const chunkWriteSpy = new Stub(res, 'writeChunk');
+        const sha1Stub = new Stub(diff, 'sha1', str => str);
         //
         const req = webApp.makeRequest('/api/websites/current/upload', 'POST',
             {remoteUrl: 'ftp://ftp.site.net/',
@@ -395,6 +398,7 @@ QUnit.module('website-handlers.js (2)', hooks => {
             //
             ftpConnectStub.restore();
             ftpUploadStub.restore();
+            sha1Stub.restore();
             if (website.db.prepare('update uploadStatuses set `uphash` = null')
                           .run().changes < 5) throw new Error('Failed to reset test data.');
             done();
@@ -407,6 +411,7 @@ QUnit.module('website-handlers.js (2)', hooks => {
             () => Promise.resolve(null));
         const ftpUploadStub = new Stub(website.uploader, 'upload',
             () => Promise.resolve({code: FTPResponseCode.TRANSFER_COMPLETE}));
+        const sha1Stub = new Stub(diff, 'sha1', str => str);
         //
         const req = webApp.makeRequest('/api/websites/current/upload', 'POST',
             {remoteUrl: 'ftp://ftp.site.net', username: 'ftp@mysite.net',
@@ -416,18 +421,21 @@ QUnit.module('website-handlers.js (2)', hooks => {
         //
         const done = assert.async();
         webApp.getHandler(req.url, req.method)(req, res).then(() => {
-            const assertSetStatusToUploaded = (url, id) => {
-                assert.ok(website.db
+            const assertSetStatusToUploaded = (url, expectedUphash, id) => {
+                assert.equal(website.db
                     .prepare('select `uphash` from uploadStatuses where `url` = ?')
-                    .get(url).uphash != null, 'should update uphash of ' + id);
+                    .get(url).uphash, expectedUphash, 'should update uphash of ' + id);
             };
-            assertSetStatusToUploaded(mockFileNames[0], 'file #1');
-            assertSetStatusToUploaded(page1.url, 'page #1');
+            assertSetStatusToUploaded(mockFileNames[0],
+                diff.sha1(mockFiles[mockFileNames[0]]), 'file #1');
+            assertSetStatusToUploaded(page1.url,
+                diff.sha1(website.renderPage(page1, null, null)), 'page #1');
             //
             ftpConnectStub.restore();
             ftpUploadStub.restore();
+            sha1Stub.restore();
             if (website.db.prepare('update uploadStatuses set `uphash` = null')
-                            .run().changes < 2) throw new Error('Failed to reset test data.');
+                          .run().changes < 2) throw new Error('Failed to reset test data.');
             done();
         });
     });
@@ -442,9 +450,9 @@ QUnit.module('website-handlers.js (2)', hooks => {
         const ftpDeleteStub = new Stub(website.uploader, 'delete',
             () => Promise.resolve({code: FTPResponseCode.TRANSFER_COMPLETE}));
         if (website.db.prepare('update uploadStatuses set `curhash` = null,\
-                               `uphash` = \'up\' where `url` in (?,?)').run(
-                inputPageUrls[0], inputFileNames[0]
-            ).changes < 2) throw new Error('Failed to setup test data.');
+                               `uphash` = \'up\' where `url` in (?,?)')
+                      .run(inputPageUrls[0], inputFileNames[0]).changes < 2)
+            throw new Error('Failed to setup test data.');
         //
         const req = webApp.makeRequest('/api/websites/current/upload', 'POST',
             {remoteUrl: 'ftp://ftp.site.net/dir',
@@ -503,13 +511,12 @@ QUnit.module('website-handlers.js (2)', hooks => {
         siteGraph.addPage(url1, '', layout1.fileName, {}, 1);
         siteGraph.addPage(url2, '', layout1.fileName, {}, 1);
         if (website.db.prepare('insert into uploadStatuses values '+q+','+q).run(
-            url1, 'hash', 'hash', 1,
-            //               ^ /services2 is uploaded
-            url2, 'hash', null, 1
-            //              ^ /contact2 is not
-        ).changes < 1 || website.saveToDb(siteGraph) < 1) {
+                url1, 'hash', 'hash', 1,
+                //               ^ /services2 is uploaded
+                url2, 'hash', null, 1
+                //              ^ /contact2 is not
+            ).changes < 1 || website.saveToDb(siteGraph) < 1)
             throw new Error('Failed to setup test data.');
-        }
         const res = webApp.makeResponse();
         const sendRespSpy = new Stub(res, 'json');
         const req = webApp.makeRequest('/api/websites/current/site-graph', 'PUT',

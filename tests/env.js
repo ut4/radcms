@@ -1,6 +1,8 @@
 const {app} = require('../src/app.js');
 const {webApp} = require('../src/web.js');
 const {SiteGraph} = require('../src/website.js');
+const {templateCache} = require('../src/templating.js');
+const directives = require('../src/directives.js');
 
 const testEnv = {
     setupAppDb() {
@@ -12,8 +14,14 @@ const testEnv = {
         app.waitingWebsite.install(null);
         app.setCurrentWebsite(app.waitingWebsite.dirPath, true);
         this.setupTestWebsite = () => {};
+    },
+    setupDirectives() {
+        directives.init();
+        this.setupDirectives = () => {};
     }
 };
+
+app.log = () => {};
 
 webApp.getHandler = function(url, method) {
     let fn;
@@ -36,6 +44,12 @@ webApp.makeResponse = function() {
 SiteGraph.prototype.clear = function() {
     this.pages = {};
     this.pageCount = 0;
+};
+
+templateCache.clear = () => {
+    for (const key in templateCache._fns) {
+        if (key.indexOf('Rad') != 0) templateCache.remove(key);
+    }
 };
 
 function Stub(obj, method, withFn) {

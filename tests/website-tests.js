@@ -1,6 +1,7 @@
 const {Stub, testEnv} = require('./env.js');
 const {app} = require('../src/app.js');
 const {templateCache} = require('../src/templating.js');
+const {SiteConfig} = require('../src/website.js');
 
 QUnit.module('[\'website.js\'].Website', hooks => {
     let tmplName1 = 'foo.jsx.htm';
@@ -57,16 +58,10 @@ QUnit.module('[\'website.js\'].Website', hooks => {
     });
 });
 
-QUnit.module('[\'website.js\'].SiteConfig', hooks => {
-    let config;
-    hooks.before(() => {
-        config = app.currentWebsite.config;
-    });
-    hooks.beforeEach(() => {
-        config.contentTypes = [];
-    });
+QUnit.module('[\'website.js\'].SiteConfig', () => {
     QUnit.test('loadFromDisk() reads and normalizes values', assert => {
         assert.expect(5);
+        const config = new SiteConfig();
         let fsReadStub = new Stub(config.fs, 'readFileSync', () =>
             '[Site]\nname=foo\nhomeUrl=noSlash\ndefaultLayout=fos.htm\n[ContentType:Test]\nkey=text'
         );
@@ -80,7 +75,5 @@ QUnit.module('[\'website.js\'].SiteConfig', hooks => {
         assert.equal(config.defaultLayout, 'fos.htm');
         assert.deepEqual(config.contentTypes[0],
             {name:'Test', fields: {key: 'text'}});
-        //
-        fsReadStub.restore();
     });
 });
