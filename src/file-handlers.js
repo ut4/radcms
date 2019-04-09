@@ -29,12 +29,12 @@ exports.init = () => {
  */
 function handleListDirRequest(req, res) {
     //
-    let errs = [];
+    const errs = [];
     if (!req.data.path) errs.push('path is required.');
     else { if (req.data.path.charAt(req.data.path.length - 1) != '/') req.data.path += '/'; }
     if (errs.length) { res.plain(400, errs.join('\n')); return; }
     //
-    let out = {
+    const out = {
         root: req.data.path != '$HOME/' ? req.data.path : app.homePath,
         entries: []
     };

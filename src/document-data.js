@@ -26,8 +26,8 @@ class DDC {
      * @returns {DBC}
      */
     fetchAll(contentTypeName) {
-        let len = this.batches.push(new exports.DBC(contentTypeName, true,
-                                                    ++this.batchCount, this));
+        const len = this.batches.push(new exports.DBC(contentTypeName, true,
+                                                      ++this.batchCount, this));
         return this.batches[len - 1];
     }
     /**
@@ -35,8 +35,8 @@ class DDC {
      * @returns {DBC}
      */
     fetchOne(contentTypeName) {
-        let len = this.batches.push(new exports.DBC(contentTypeName, false,
-                                                    ++this.batchCount, this));
+        const len = this.batches.push(new exports.DBC(contentTypeName, false,
+                                                      ++this.batchCount, this));
         return this.batches[len - 1];
     }
     /**
@@ -53,7 +53,7 @@ class DDC {
         if (dbc.isFetchAll) return this.data.filter(c =>
             c.defaults.dataBatchConfigId === dbc.id
         );
-        let l = this.data.length;
+        const l = this.data.length;
         for (let i = 0; i < l; ++i) {
             if (this.data[i].defaults.dataBatchConfigId === dbc.id) return this.data[i];
         }
@@ -80,11 +80,11 @@ class DDC {
 */
 function ddcFetchData(ddc) {
     if (ddc.batchCount) {
-        let cnodes = [];
+        const cnodes = [];
         ddc.db.prepare(ddc.toSql()).raw().all().forEach(row => {
-            let data = JSON.parse(row[2]);
+            const data = JSON.parse(row[2]);
             // {'fieldname__separator__datatype': 'foo'} -> {..., 'fieldname': 'foo'}
-            for (let key in data) {
+            for (const key in data) {
                 if (key.indexOf(EXTRA_FIELD_SEPARATOR) > 0) {
                     data[key.split(EXTRA_FIELD_SEPARATOR)[0]] = data[key];
                 }
@@ -183,15 +183,14 @@ class DBC {
      */
     exec() {
         ddcFetchData(this.ddc);
-        let out = this.ddc.getDataFor(this);
-        return out;
+        return this.ddc.getDataFor(this);
     }
 }
 /**
  * @returns {string|null}
  */
 function dbcValidate(dbc) {
-    let errors = [];
+    const errors = [];
     const MAX_CNT_TYPE_NAME_LEN = 64;
     const MAX_WHERE_LEN = 2048;
     if (!dbc.contentTypeName) {

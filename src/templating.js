@@ -21,6 +21,7 @@ class TextNode { constructor(chars) {
 class FuncNode { constructor(fn, props) {
     this.fn = fn;
     this.props = props;
+    this._cachedFnResult = null;
 } }
 
 class DomTree {
@@ -62,7 +63,7 @@ class DomTree {
     _doRender(node, buf) {
         buf.push('<', node.tagName);
         if (node.props) {
-            for (let key in node.props) {
+            for (const key in node.props) {
                 buf.push(' ', key, '="', node.props[key], '"');
             }
         }
@@ -74,8 +75,12 @@ class DomTree {
             } else if (child instanceof TextNode) {
                 buf.push(child.chars);
             } else if (child instanceof FuncNode) {
-                const ret = child.fn(child.props, this);
-                buf.push(ret instanceof ElNode ? this._doRender(ret, buf) : ret.toString());
+                const fnTree = this._lazilyExecFnCmp(child);
+                if (fnTree instanceof ElNode) {
+                    this._doRender(fnTree, buf);
+                } else {
+                    buf.push(fnTree);
+                }
             }
         }
         buf.push('</', node.tagName, '>');
@@ -87,7 +92,7 @@ class DomTree {
      */
     getRenderedElements(tree) {
         throwIfNotElNode(tree);
-        let out = [];
+        const out = [];
         this._collectElNodes(tree, out);
         return out;
     }
@@ -98,7 +103,7 @@ class DomTree {
      */
     getRenderedFnComponents(tree) {
         throwIfNotElNode(tree);
-        let out = [];
+        const out = [];
         this._collectFuncNodes(tree, out);
         return out;
     }
@@ -111,6 +116,9 @@ class DomTree {
         for (const child of node.children) {
             if (child instanceof ElNode) {
                 this._collectElNodes(child, to);
+            } else if (child instanceof FuncNode) {
+                const fnTree = this._lazilyExecFnCmp(child);
+                if (fnTree instanceof ElNode) this._collectElNodes(fnTree, to);
             }
         }
     }
@@ -124,8 +132,22 @@ class DomTree {
                 this._collectFuncNodes(child, to);
             } else if (child instanceof FuncNode) {
                 to.push(child);
+                const fnTree = this._lazilyExecFnCmp(child);
+                if (fnTree instanceof ElNode) this._collectFuncNodes(fnTree, to);
             }
         }
+    }
+    /**
+     * @param {FuncNode} node
+     * @returns {any} The return value of node.fn()
+     */
+    _lazilyExecFnCmp(node) {
+        if (node._cachedFnResult === null) {
+            node._cachedFnResult = node.fn(node.props || {}, this);
+            if (!(node._cachedFnResult instanceof ElNode))
+                node._cachedFnResult = node._cachedFnResult.toString();
+        }
+        return node._cachedFnResult;
     }
 }
 
@@ -135,7 +157,7 @@ function throwIfNotElNode(tree) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-let templateCache = {
+const templateCache = {
     _fns: {},
     put(fname, fn, doWhine) {
         if (doWhine && this._fns.hasOwnProperty(fname)) {

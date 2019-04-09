@@ -11,7 +11,7 @@ const {Website} = require('./website.js');
 
 const DATA_DIR_NAME = 'radcms';
 
-let app = {
+const app = {
     /** @property {string} eg. 'c:/users/<user>/' */
     homePath: '',
     /** @property {string} eg. 'c:/users/<user>/AppData/Roaming/radcms/' */

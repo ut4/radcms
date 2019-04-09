@@ -352,8 +352,8 @@ QUnit.module('website-handlers.js (2)', hooks => {
         const done = assert.async();
         webApp.getHandler(req.url, req.method)(req, res).then(() => {
             assert.deepEqual(ftpConnectStub.callInfo[0],
-                {'0': req.data.remoteUrl, '1': req.data.username,
-                 '2': req.data.password},
+                {'0': req.data.remoteUrl.substr(0, req.data.remoteUrl.length - 1),
+                 '1': req.data.username, '2': req.data.password},
                 'should pass req.data.username&pass to currentWebsite.uploader.open()');
             //
             const chunk1 = chunkWriteSpy.callInfo[0][0];

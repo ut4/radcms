@@ -15,7 +15,7 @@ const chokidar = require('chokidar');
  *
  */
 
-let signals = {
+const signals = {
     _listeners: [],
     /**
      * @param {string} whichSignal
@@ -29,9 +29,9 @@ let signals = {
      * @param {any?} arg
      */
     emit(whichSignal, arg) {
-        let l = this._listeners.length;
+        const l = this._listeners.length;
         for (let i = 0; i < l; ++i) {
-            let listener = this._listeners[i];
+            const listener = this._listeners[i];
             if (listener.listeningTo == whichSignal &&
                 listener.fn(arg) === false) break;
         }
@@ -44,7 +44,7 @@ let watcher = null;
 let lastAddEventFileName = '';
 let addEventDispatchTimeout = 0;
 
-let fileWatcher = {
+const fileWatcher = {
     _watchFn: null,
     EVENT_ADD: 'add',
     EVENT_ADD_DIR: 'addDir',
@@ -108,7 +108,7 @@ class Uploader {
         this.remoteUrl = null;
     }
     /**
-     * @param {string} remoteUrl eg. 'ftp://ftp.mysite.net/public_html[/]'
+     * @param {string} remoteUrl eg. 'ftp://ftp.mysite.net/public_html'
      * @param {string} username
      * @param {string} password
      * @returns {Promise<{code: number; message: string;}>}
@@ -130,16 +130,27 @@ class Uploader {
         const stream = new ReadableStream();
         stream.push(contents);
         stream.push(null);
+        const pcs = remoteFileName.split('/');
+        pcs.shift(); // ['', 'file.txt' ...] -> ['file.txt' ...]
+        if (pcs.length > 1) {
+            const fileName = pcs.pop();
+            return this.client
+                .ensureDir(this.remoteUrl.pathname + '/' + pcs.join('/'))
+                .then(() => this.client.upload(stream, fileName));
+        }
         return this.client.upload(stream, this.remoteUrl.pathname + remoteFileName);
     }
     /**
-     * @param {string} itemPath eg. '/file.html'
+     * @param {string} remoteFileName eg. '/file.html'
      * @param {bool?} asDir = false false = delete only '/foo/file.txt',
      *                              true = delete also dir '/foo' after deleting '/foo/file.txt'
      * @returns {Promise<{code: number; message: string;}>}
      */
-    delete(itemPath, asDir) {
-        // TODO this.client.remove(filename, ignoreErrorCodes = false)
+    delete(remoteFileName, asDir) {
+        return !asDir
+            ? this.client.remove(this.remoteUrl.pathname + remoteFileName)
+            : this.client.removeDir(this.remoteUrl.pathname +
+                remoteFileName.substr(0, remoteFileName.lastIndexOf('/')));
     }
     /**
      * @param {number} ftpStatusCode

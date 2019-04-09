@@ -67,7 +67,7 @@ class MyResponse {
         this.statusCode = statusCode;
         this.body = body;
         if (headers) {
-            for (let key in headers) {
+            for (const key in headers) {
                 if (typeof headers[key] !== 'string')
                     throw new TypeError('A header value must be a string.');
             }
@@ -146,13 +146,8 @@ const webApp = {
             let requestBody = '';
             req.on('data', chunk => { requestBody += chunk; });
             req.on('end', () => {
-                try {
-                    myReq.data = requestBody.length ? JSON.parse(requestBody) : {};
-                    this._matchAndDispatchRequest(myReq, myRes);
-                } catch (e) {
-                    app.log('[Error]: ' + e.message);
-                    myRes.plain(400, 'Failed to parse json');
-                }
+                myReq.data = requestBody.length ? JSON.parse(requestBody) : {};
+                this._matchAndDispatchRequest(myReq, myRes);
             });
         }
     },

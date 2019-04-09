@@ -56,15 +56,15 @@ exports.init = () => {
  * GET <any> eg. "/" or "/foo/bar/baz": renders a page.
  */
 function handlePageRequest(req, res) {
-    let w = app.currentWebsite;
-    let page = w.graph.getPage(req.url !== '/' ? req.url : w.config.homeUrl);
-    let dataToFrontend = {directiveElems: [], allContentNodes: [], page: {}};
+    const w = app.currentWebsite;
+    const page = w.graph.getPage(req.url !== '/' ? req.url : w.config.homeUrl);
+    const dataToFrontend = {directiveElems: [], allContentNodes: [], page: {}};
     if (page) {
-        let rescanType = req.params.rescan;
+        const rescanType = req.params.rescan;
         if (rescanType) {
             commons.signals.emit('siteGraphRescanRequested', rescanType);
         }
-        let html = w.renderPage(page, dataToFrontend);
+        const html = w.renderPage(page, dataToFrontend);
         dataToFrontend.page = {url: page.url, layoutFileName: page.layoutFileName};
         res.send(200, injectControlPanelIFrame(html, dataToFrontend));
         return;
@@ -105,7 +105,7 @@ function handleGetAllWebsites(_, res) {
  */
 function handleCreateWebsiteRequest(req, res) {
     //
-    let errs = [];
+    const errs = [];
     if (!req.data.dirPath) errs.push('dirPath is required.');
     else { if (req.data.dirPath.charAt(req.data.dirPath.length - 1) != '/') req.data.dirPath += '/'; }
     if (!req.data.sampleDataName) errs.push('sampleDataName is required.');
@@ -138,7 +138,7 @@ function handleCreateWebsiteRequest(req, res) {
  */
 function handleSetCurrentWebsiteRequest(req, res) {
     //
-    let errs = [];
+    const errs = [];
     if (!req.data.dirPath) errs.push('dirPath is required.');
     else { if (req.data.dirPath.charAt(req.data.dirPath.length - 1) != '/') req.data.dirPath += '/'; }
     if (errs.length) { res.plain(400, errs.join('\n')); return; }
@@ -200,7 +200,7 @@ function handleGetNumWaitingUploads(_, res) {
  * }
  */
 function handleGetWaitingUploadsRequest(_, res) {
-    let out = {pages: [], files: []};
+    const out = {pages: [], files: []};
     app.currentWebsite.db.prepare('select `url`, `curhash`, `uphash`, `isFile` \
         from uploadStatuses where `uphash` is null or `curhash` != `uphash` or\
         (`curhash` is null and `uphash` is not null)').raw().all().forEach(row => {
@@ -315,7 +315,7 @@ function handleGenerateRequest(_, res) {
  */
 function handleUploadRequest(req, res) {
     //
-    let errs = [];
+    const errs = [];
     if (!req.data.remoteUrl) errs.push('remoteUrl is required.');
     if (!req.data.username) errs.push('username is required.');
     if (!req.data.password) errs.push('password is required.');
@@ -325,9 +325,9 @@ function handleUploadRequest(req, res) {
     }
     if (errs.length) { res.plain(400, errs.join('\n')); return; }
     //
-    let pageUrls = {};
-    let issues = [];
-    let data = normalizeUploadItems(req.data, pageUrls);
+    const pageUrls = {};
+    const issues = [];
+    const data = makeUploadReqData(req.data, pageUrls);
     // Render all pages in one go so we can return immediately if there was any issues
     if (data.numUploadablePages) {
         if (!app.currentWebsite.generate((renderedOutput, page) => {
@@ -337,37 +337,43 @@ function handleUploadRequest(req, res) {
             return;
         }
     }
-    const afterEachFtpTask = (ftpResponse, url, contents, resourceType) => {
-        const hadStopError = commons.Uploader.isLoginError(ftpResponse.code);
-        if (!hadStopError) saveOrDeleteUploadStatus(url, contents);
-        const status = !hadStopError ? 'ok' : ftpResponse.message;
+    const afterEachFtpTask = (ftpResponseOrError, url, contents, resourceType) => {
+        const hadStopError = commons.Uploader.isLoginError(ftpResponseOrError.code);
+        const status = !hadStopError && ftpResponseOrError.name != 'FTPError'
+            ? 'ok'
+            : ftpResponseOrError.message;
+        if (status === 'ok') saveOrDeleteUploadStatus(url, contents);
         res.writeChunk(resourceType + '|' +  url + '|' + status + '|');
         if (hadStopError) throw new Error('Unrecoverable FTP error');
     };
     // Start the sync process
     res.beginChunked();
-    return data.uploader.open(req.data.remoteUrl, req.data.username, req.data.password)
+    return data.uploader.open(data.remoteUrl, req.data.username, req.data.password)
         // Delete removed pages first ...
         .then(() => waterfall(data.deletablePageUrls.map(url => () =>
             data.uploader.delete(url + '/index.html', true)
                 .then(res => afterEachFtpTask(res, url, null, 'page'))
+                .catch(err => afterEachFtpTask(err, url, null, 'page'))
         )))
         // then delete removed files ...
         .then(() => waterfall(data.deletableFileNames.map(fname => () =>
             data.uploader.delete(fname, false)
                 .then(res => afterEachFtpTask(res, fname, null, 'file'))
+                .catch(err => afterEachFtpTask(err, fname, null, 'file'))
         )))
         // then upload new files ...
         .then(() => waterfall(data.uploadFileNames.map(fname => () => {
             const contents = app.currentWebsite.readOwnFile(fname);
             return data.uploader.upload(fname, contents)
-                .then(res => afterEachFtpTask(res, fname, contents, 'file'));
+                .then(res => afterEachFtpTask(res, fname, contents, 'file'))
+                .catch(err => afterEachFtpTask(err, fname, contents, 'file'));
         })))
         // and lastly upload new or modified pages
         .then(() =>
             waterfall(data.generatedPages.map(page => () =>
                 data.uploader.upload(page.url + '/index.html', page.html)
                     .then(res => afterEachFtpTask(res, page.url, page.html, 'page'))
+                    .catch(err => afterEachFtpTask(err, page.url, page.html, 'page'))
             ))
         )
         .then(() => {
@@ -393,17 +399,20 @@ function saveOrDeleteUploadStatus(url, contents) {
     }
 }
 
-function normalizeUploadItems(reqData, pageUrls) {
-    let data = {
+function makeUploadReqData(reqData, pageUrls) {
+    const data = {
         deletablePageUrls: [],
         deletableFileNames: [],
         generatedPages: [],
         numUploadablePages: 0,
         uploadFileNames: [],
         uploader: app.currentWebsite.uploader,
+        remoteUrl: !reqData.remoteUrl.endsWith('/')
+            ? reqData.remoteUrl
+            : reqData.remoteUrl.substr(0, reqData.remoteUrl.length - 1)
     };
     for (let i = 0; i < reqData.fileNames.length; ++i) {
-        let file = reqData.fileNames[i];
+        const file = reqData.fileNames[i];
         if (file.isDeleted == 0) {
             data.uploadFileNames.push(file.fileName);
         } else {
@@ -411,7 +420,7 @@ function normalizeUploadItems(reqData, pageUrls) {
         }
     }
     for (let i = 0; i < reqData.pageUrls.length; ++i) {
-        let page = reqData.pageUrls[i];
+        const page = reqData.pageUrls[i];
         if (page.isDeleted == 0) {
             pageUrls[page.url] = 1;
             data.numUploadablePages += 1;
@@ -466,8 +475,7 @@ function handleUpdatePageRequest(req, res) {
 function handleUpdateSiteGraphRequest(req, res) {
     const w = app.currentWebsite;
     const remoteDiff = new diff.RemoteDiff(w);
-    let i = 0;
-    for (; i < req.data.deleted.length; ++i) {
+    for (var i = 0; i < req.data.deleted.length; ++i) {
         const url = req.data.deleted[i];
         if (!w.graph.getPage(url)) {
             res.send(400, 'Page \'' + url + '\' not found.');

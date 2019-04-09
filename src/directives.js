@@ -27,8 +27,8 @@ function Link(props, domTree) {
     else if (props.to == '/') props.to = app.currentWebsite.config.homeUrl;
     else if (props.to.charAt(0) != '/') props.to = '/' + props.to;
     //
-    let p = {href: props.to};
-    for (let key in props) {
+    const p = {href: props.to};
+    for (const key in props) {
         if (key !== 'to' && key !== 'text' && key !== 'layoutOverride') p[key] = props[key];
     }
     return domTree.createElement('a', p, props.text || '');
@@ -77,7 +77,7 @@ function List(props, domTree) {
  * </html>
  *
  * With pagination:
- * let opts = {nthPage: url[1] || 1, limit: 10}
+ * const opts = {nthPage: url[1] || 1, limit: 10}
  * @arts = fetchAll("Article").paginate(opts).exec()
  * <html>
  *     ...
@@ -116,10 +116,10 @@ function ArticleList(props, domTree) {
 }
 
 function buildPaginationLinks(props, domTree, isLast) {
-    let opts = props.paginationOptions;
+    const opts = props.paginationOptions;
     if (!opts) return [''];
-    let out = [];
-    let currentPage = domTree.currentPage;
+    const out = [];
+    const currentPage = domTree.currentPage;
     if (opts.nthPage > 1) {
         out.push(domTree.createElement(templateCache.get('RadLink'), {
             to: '/' + props.url[0] + (opts.nthPage > 2 ? ('/' + (opts.nthPage - 1)) : ''),
