@@ -8,19 +8,21 @@ QUnit.module('[\'website.js\'].Website', hooks => {
     let tmplName2 = 'bar.jsx.htm';
     let website;
     let configLoadStub;
-    let testSiteId = 2;
+    let fileWatchStub;
     hooks.before(() => {
         testEnv.setupTestWebsite();
         website = app.currentWebsite;
         website.config.homeUrl = '/home';
         configLoadStub = new Stub(website.config, 'loadFromDisk');
-        if (website.db.prepare('insert into self values (?, ?)')
-            .run(testSiteId, '{\"pages\":[[\"/home\",\"\",\"main-layout.jsx.htm\",[]]]}').changes < 1)
+        fileWatchStub = new Stub(website.fileWatcher, 'watch');
+        if (website.db.prepare('insert into self values (1, ?)')
+            .run('{\"pages\":[[\"/home\",\"\",\"main-layout.jsx.htm\",[]]]}').changes < 1)
                 throw new Error('Failed to insert test data');
     });
     hooks.after(() => {
         configLoadStub.restore();
-        if (website.db.prepare('delete from self where `id` = ?').run(testSiteId).changes < 1)
+        fileWatchStub.restore();
+        if (website.db.prepare('delete from self').run().changes < 1)
             throw new Error('Failed to clean test data');
     });
     hooks.afterEach(() => {

@@ -70,8 +70,13 @@ function handleCssOrJsFileCreateEvent(fileName) {
  * @param {string} fileName eg. 'layout.jsx.htm'
  */
 function handleTemplateModifyEventEvent(fileName) {
-    if (app.currentWebsite.compileAndCacheTemplate(fileName)) {
-        app.log('[Info]: Cached "' + fileName + '"');
+    try {
+        if (app.currentWebsite.compileAndCacheTemplate(fileName)) {
+            app.log('[Info]: Cached "' + fileName + '"');
+        }
+    } catch (e) {
+        app.logException(e);
+        return;
     }
     diff.performRescan('full');
 }

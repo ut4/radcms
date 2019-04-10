@@ -19,9 +19,14 @@ const performRescan = type => {
         if (!templateCache.has(usersOf)) return;
     }
     const website = app.currentWebsite;
-    const diff = new LocalDiff(new RemoteDiff(website));
+    const diff = new LocalDiff(new exports.RemoteDiff(website));
     const siteGraph = website.graph;
-    diff.scanChanges(siteGraph.pages, usersOf);
+    try {
+        diff.scanChanges(siteGraph.pages, usersOf);
+    } catch (e) {
+        app.logException(e);
+        return;
+    }
     diff.deleteUnreachablePages();
     diff.remoteDiff.saveStatusesToDb();
     if (diff.nLinksAdded || diff.nLinksRemoved) {
@@ -113,7 +118,7 @@ class RemoteDiff {
         const removedStatuses = {urls: [], holders: []};
         for (const url in this.deletables) {
             const item = this.deletables[url];
-            item.uphash = curStatuses[url] ? curStatuses[url].uphash : null;
+            item.uphash = curStatuses[url].uphash;
             if (item.uphash) { // is uploaded -> mark as deletable
                 item.hash = null;
                 newStatuses.vals.push(item.url, item.hash, item.uphash, item.isFile);
@@ -196,7 +201,7 @@ class LocalDiff {
         this.nLinksRemoved = 0; // The number of links removed
         this.removedLinkUrls = {};
         this.staticFiles = {};  // A list of script/css urls
-        this.remoteDiff = remoteDiff; // use exports so it can be mocked
+        this.remoteDiff = remoteDiff;
     }
     /**
      * Scans $pages for new/removed links+static urls updating website.graph

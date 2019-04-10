@@ -1,5 +1,5 @@
-const {Stub, testEnv} = require('./env.js');
 require('../src/website-handlers.js').init();
+const {Stub, testEnv} = require('./env.js');
 const {app} = require('../src/app.js');
 const {webApp} = require('../src/web.js');
 const {Website, UploadStatus} = require('../src/website.js');
@@ -34,7 +34,7 @@ QUnit.module('website-handlers.js (1)', hooks => {
         const res = webApp.makeResponse();
         const sendRespSpy = new Stub(res, 'json');
         //
-        webApp.getHandler(req.url, req.method)(req, res);
+        webApp.getHandler(req.path, req.method)(req, res);
         const [statusCode, actual] = [...sendRespSpy.callInfo[0]];
         assert.equal(statusCode, 200);
         assert.ok(actual[0].createdAt > ancientUnixTime, 'Should set default createdAt #1');
@@ -62,7 +62,7 @@ QUnit.module('website-handlers.js (1)', hooks => {
         const res = webApp.makeResponse();
         const sendRespSpy = new Stub(res, 'json');
         //
-        webApp.getHandler(req.url, req.method)(req, res);
+        webApp.getHandler(req.path, req.method)(req, res);
         const [statusCode, body] = [...sendRespSpy.callInfo[0]];
         assert.equal(statusCode, 200);
         assert.equal(JSON.stringify(body), '{"status":"ok"}');
@@ -111,7 +111,7 @@ QUnit.module('website-handlers.js (1)', hooks => {
         const res = webApp.makeResponse();
         const sendRespSpy = new Stub(res, 'json');
         //
-        webApp.getHandler(req.url, req.method)(req, res);
+        webApp.getHandler(req.path, req.method)(req, res);
         const [statusCode, body] = [...sendRespSpy.callInfo[0]];
         assert.equal(statusCode, 200);
         assert.equal(JSON.stringify(body), '{"status":"ok"}');
@@ -154,7 +154,6 @@ QUnit.module('website-handlers.js (2)', hooks => {
                 '    </body>\n' +
                 '</html>'};
     const pages = [{url:'/home'}, {url:'/page2'}, {url:'/page3'}];
-    const testWebsite = {id: 1};
     let page1, page2, page3;
     let fsReadStub;
     let website;
@@ -173,8 +172,8 @@ QUnit.module('website-handlers.js (2)', hooks => {
         const sql2 = 'insert into contentNodes values '+q+','+q+','+q;
         const sql3 = 'insert into uploadStatuses values '+q+','+q+','+q+','+q+','+q;
         const sql4 = 'insert into staticFileResources values (?,1),(?,1)';
-        if (website.db.prepare('insert into self values (?,?)')
-                .run(testWebsite.id, siteGraph.serialize()).changes < 1 ||
+        if (website.db.prepare('insert into self values (1,?)')
+                .run(siteGraph.serialize()).changes < 1 ||
             website.db.prepare(sql2)
                 .run([].concat(...[homeContentCnt,page2ContentCnt,page3ContentCnt].map((c, i) =>
                     [i + 1, c.name, JSON.stringify(c.json), c.contentTypeName]
@@ -200,8 +199,8 @@ QUnit.module('website-handlers.js (2)', hooks => {
         website.graph.clear();
         if (website.db.prepare('delete from contentNodes where contentTypeName = ?')
                       .run(genericCntType.name).changes < 1 ||
-            website.db.prepare('delete from self where id = ?')
-                      .run(testWebsite.id).changes < 1 ||
+            website.db.prepare('delete from self')
+                      .run().changes < 1 ||
             website.db.prepare('delete from uploadStatuses')
                       .run().changes < 5)
             throw new Error('Failed to clean test data.');
@@ -209,7 +208,7 @@ QUnit.module('website-handlers.js (2)', hooks => {
     QUnit.test('GET \'/<url>\' serves a page', assert => {
         assert.expect(11);
         const req = webApp.makeRequest('/', 'GET');
-        const handlePageRequestFn = webApp.getHandler(req.url, req.method);
+        const handlePageRequestFn = webApp.getHandler(req.path, req.method);
         const res = webApp.makeResponse();
         const sendRespSpy = new Stub(res, 'send');
         //
@@ -241,7 +240,7 @@ QUnit.module('website-handlers.js (2)', hooks => {
         assert.expect(4);
         const req = webApp.makeRequest('/home', 'GET');
         const res = webApp.makeResponse();
-        const handlePageRequestFn = webApp.getHandler(req.url, req.method);
+        const handlePageRequestFn = webApp.getHandler(req.path, req.method);
         const sendRespSpy = new Stub(res, 'send');
         //
         handlePageRequestFn(req, res);
@@ -251,7 +250,7 @@ QUnit.module('website-handlers.js (2)', hooks => {
         const expectedPageData = JSON.stringify({
             directiveElems:[],
             allContentNodes:[{content:'Hello',defaults:{id:1,name:'home',dataBatchConfigId:1}}],
-            page:{url:req.url,layoutFileName:layout1.fileName}
+            page:{url:req.path,layoutFileName:layout1.fileName}
         });
         const actualPageData = pcs[1] ? pcs[1].substr(0, expectedPageData.length) : '';
         assert.equal(actualPageData, expectedPageData);
@@ -277,7 +276,7 @@ QUnit.module('website-handlers.js (2)', hooks => {
         const req = webApp.makeRequest('/api/websites/current/waiting-uploads', 'GET');
         const res = webApp.makeResponse();
         const sendRespSpy = new Stub(res, 'json');
-        webApp.getHandler(req.url, req.method)(req, res);
+        webApp.getHandler(req.path, req.method)(req, res);
         const [statusCode, resp] = [...sendRespSpy.callInfo[0]];
         assert.equal(statusCode, 200);
         assert.equal(resp.pages[0].url, pages[0].url);
@@ -301,7 +300,7 @@ QUnit.module('website-handlers.js (2)', hooks => {
         const res = webApp.makeResponse();
         const sendRespSpy = new Stub(res, 'json');
         //
-        webApp.getHandler(req.url, req.method)(req, res);
+        webApp.getHandler(req.path, req.method)(req, res);
         const [statusCode, body] = [...sendRespSpy.callInfo[0]];
         assert.equal(statusCode, 200);
         assert.equal(body.wrotePagesNum, 3);
@@ -350,7 +349,7 @@ QUnit.module('website-handlers.js (2)', hooks => {
              ]});
         //
         const done = assert.async();
-        webApp.getHandler(req.url, req.method)(req, res).then(() => {
+        webApp.getHandler(req.path, req.method)(req, res).then(() => {
             assert.deepEqual(ftpConnectStub.callInfo[0],
                 {'0': req.data.remoteUrl.substr(0, req.data.remoteUrl.length - 1),
                  '1': req.data.username, '2': req.data.password},
@@ -420,7 +419,7 @@ QUnit.module('website-handlers.js (2)', hooks => {
              fileNames: [{fileName: mockFileNames[0], isDeleted: 0}]});
         //
         const done = assert.async();
-        webApp.getHandler(req.url, req.method)(req, res).then(() => {
+        webApp.getHandler(req.path, req.method)(req, res).then(() => {
             const assertSetStatusToUploaded = (url, expectedUphash, id) => {
                 assert.equal(website.db
                     .prepare('select `uphash` from uploadStatuses where `url` = ?')
@@ -462,7 +461,7 @@ QUnit.module('website-handlers.js (2)', hooks => {
              fileNames: [{fileName: inputFileNames[0], isDeleted: 1}]});
         //
         const done = assert.async();
-        webApp.getHandler(req.url, req.method)(req, res).then(() => {
+        webApp.getHandler(req.path, req.method)(req, res).then(() => {
             const assertWipedStatus = (url, id) => {
                 const q = 'select count(`url`) as c from uploadStatuses where `url` = ?';
                 assert.equal(website.db.prepare(q).get(url).c, 0,
@@ -493,7 +492,7 @@ QUnit.module('website-handlers.js (2)', hooks => {
         const res = webApp.makeResponse();
         const sendRespSpy = new Stub(res, 'json');
         //
-        webApp.getHandler(req.url, req.method)(req, res);
+        webApp.getHandler(req.path, req.method)(req, res);
         const [statusCode, body] = [...sendRespSpy.callInfo[0]];
         assert.equal(statusCode, 200);
         assert.equal(JSON.stringify(body), '{"numAffectedRows":1}');
@@ -522,7 +521,7 @@ QUnit.module('website-handlers.js (2)', hooks => {
         const req = webApp.makeRequest('/api/websites/current/site-graph', 'PUT',
             {deleted: [url1, url2]});
         // Emulate the request
-        webApp.getHandler(req.url, req.method)(req, res);
+        webApp.getHandler(req.path, req.method)(req, res);
         const [statusCode, body] = [...sendRespSpy.callInfo[0]];
         assert.equal(statusCode, 200);
         assert.equal(JSON.stringify(body), '{"status":"ok"}');

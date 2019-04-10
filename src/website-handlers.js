@@ -1,7 +1,7 @@
 /**
  * # website-handlers.js
  *
- * This file contains handlers for GET|PUT|POST /api/websites/*.
+ * This file contains http-handlers for GET|PUT|POST /api/websites/*.
  *
  */
 const {app} = require('./app.js');
@@ -12,9 +12,13 @@ const {UploadStatus} = require('./website.js');
 const {templateCache} = require('./templating.js');
 const diff = require('./website-diff.js');
 
+const makeErrorHtml = (message, title = message) =>
+    `<!DOCTYPE html><html><title>${title}</title><body>${message}</body></htm>`;
+const notFoundHtml = makeErrorHtml('Not found');
+
 exports.init = () => {
     webApp.addRoute((url, method) => {
-        if (method == 'GET' && url == '/api/websites')
+        if (method === 'GET' && url == '/api/websites')
             return handleGetAllWebsites;
         if (method === 'POST' && url === '/api/websites')
             return handleCreateWebsiteRequest;
@@ -26,8 +30,8 @@ exports.init = () => {
     webApp.addRoute((url, method) => {
         if (!app.currentWebsite)
             return rejectRequest;
-        if (method == 'GET') {
-            if (url == '/api/websites/current/num-waiting-uploads')
+        if (method === 'GET') {
+            if (url === '/api/websites/current/num-waiting-uploads')
                 return handleGetNumWaitingUploads;
             if (url === '/api/websites/current/waiting-uploads')
                 return handleGetWaitingUploadsRequest;
@@ -37,13 +41,13 @@ exports.init = () => {
                 return handleGetSiteGraphRequest;
             return handlePageRequest;
         }
-        if (method == 'POST') {
+        if (method === 'POST') {
             if (url === '/api/websites/current/generate')
                 return handleGenerateRequest;
             if (url === '/api/websites/current/upload')
                 return handleUploadRequest;
         }
-        if (method == 'PUT') {
+        if (method === 'PUT') {
             if (url === '/api/websites/current/page')
                 return handleUpdatePageRequest;
             if (url === '/api/websites/current/site-graph')
@@ -57,21 +61,28 @@ exports.init = () => {
  */
 function handlePageRequest(req, res) {
     const w = app.currentWebsite;
-    const page = w.graph.getPage(req.url !== '/' ? req.url : w.config.homeUrl);
+    const page = w.graph.getPage(req.path !== '/' ? req.path : w.config.homeUrl);
     const dataToFrontend = {directiveElems: [], allContentNodes: [], page: {}};
+    let html;
+    let code = 200;
     if (page) {
-        const rescanType = req.params.rescan;
-        if (rescanType) {
-            commons.signals.emit('siteGraphRescanRequested', rescanType);
+        if (req.params.rescan) {
+            commons.signals.emit('siteGraphRescanRequested', req.params.rescan);
         }
-        const html = w.renderPage(page, dataToFrontend);
-        dataToFrontend.page = {url: page.url, layoutFileName: page.layoutFileName};
-        res.send(200, injectControlPanelIFrame(html, dataToFrontend));
-        return;
+        try {
+            html = w.renderPage(page, dataToFrontend);
+            dataToFrontend.page = {url: page.url, layoutFileName: page.layoutFileName};
+        } catch (e) {
+            code = 500;
+            html = makeErrorHtml('<pre>' + e.stack
+                                 .replace(/</g, '&lt;')
+                                 .replace(/>/g, '&gt;') + '</pre>', 'Fail');
+        }
+    } else {
+        code = 404;
+        html = notFoundHtml;
     }
-    res.send(404, injectControlPanelIFrame(
-        '<!DOCTYPE html><html><title>Not found</title><body>Not found</body></htm>',
-        dataToFrontend));
+    res.send(code, injectControlPanelIFrame(html, dataToFrontend));
 }
 
 /**
@@ -522,3 +533,5 @@ function waterfall(getterFns, i = 0) {
         // else we're done
     });
 }
+
+exports.rejectRequest = rejectRequest;

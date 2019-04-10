@@ -14,7 +14,6 @@
 const parseUrl = require('url').parse;
 const parseQ = require('querystring').parse;
 const http = require('http');
-const {app} = require('./app.js');
 
 class MyRequest {
     /**
@@ -22,9 +21,9 @@ class MyRequest {
      */
     constructor(req) {
         this.method = req.method;
-        this.url = req.url;
-        this.path = parseUrl(req.url);
-        this.params = this.path.query ? parseQ(this.path.query) : {};
+        this.url = parseUrl(req.url);
+        this.path = this.url.pathname;
+        this.params = this.url.query ? parseQ(this.url.query) : {};
         this.data = null;
     }
 }
@@ -110,7 +109,7 @@ class MyResponse {
 
 const webApp = {
     /**
-     * @property {(url: string, method: string): (myReq: MyRequest, (myRes: BasicResponse|ChynkedResponse):|undefined): any}[]
+     * @property {Array<(url: string, method: string): (myReq: MyRequest, myRes: MyResponse): any>}
      */
     routeMatchers: [],
     /**
@@ -120,7 +119,7 @@ const webApp = {
         http.createServer(this._handleRequest.bind(this)).listen(3000);
     },
     /**
-     * @param {(url: string, method: string): (myReq: MyRequest, (myRes: BasicResponse|ChynkedResponse):|undefined): any} fn
+     * @param {(url: string, method: string): (myReq: MyRequest, myRes: MyResponse): any} fn
      */
     addRoute(fn) {
         this.routeMatchers.push(fn);
@@ -157,10 +156,11 @@ const webApp = {
      */
     _matchAndDispatchRequest(myReq, myRes) {
         let handler = null;
-        // Call the matchers until a handler is returned.
+        // Call the matchers until a handler (function) is returned.
         const l = this.routeMatchers.length;
         for (let i = 0; i < l; ++i) {
-            if ((handler = this.routeMatchers[i](myReq.url, myReq.method))) break;
+            if ((handler = this.routeMatchers[i](myReq.path, myReq.method)))
+                break;
         }
         // Got one -> call it and move on.
         if (handler) {
@@ -168,7 +168,7 @@ const webApp = {
             return;
         }
         // None of the matchers matched -> 404
-        myRes.send(404, 'Not found', myRes.PLAIN);
+        myRes.plain(404, 'Not found');
     }
 };
 

@@ -19,7 +19,7 @@ QUnit.module('file-watchers.js', hooks => {
             return mockFiles[a.replace(website.dirPath,'/')];
         });
         sha1Stub = new Stub(diff, 'sha1', str => str);
-        if (website.db.prepare('insert into self values (2,\'\')').run().changes < 1)
+        if (website.db.prepare('insert into self values (1,\'\')').run().changes < 1)
             throw new Error('Failed to insert test data.');
     });
     hooks.after(() => {

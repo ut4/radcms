@@ -63,9 +63,12 @@ const app = {
         // self-destruct
         this._populateDatabaseIfEmpty = () => {};
     },
+    /* eslint-disable no-console */
     log(...args) {
-        /* eslint-disable no-console */
         console.log(...args);
+    },
+    logException(e) {
+        console.log(e.stack);
     }
 };
 

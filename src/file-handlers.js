@@ -1,7 +1,7 @@
 /**
  * # file-handlers.js
  *
- * This file contains handlers for * /api/file/*.
+ * This file contains http-handlers for * /api/file/*.
  *
  */
 const fs = require('fs');

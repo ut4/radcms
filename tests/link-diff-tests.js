@@ -5,7 +5,7 @@ const diff = require('../src/website-diff.js');
 const {fileWatcher} = require('../src/common-services.js');
 const {handleFWEvent} = require('../src/file-watchers.js');
 
-const getGraphSql = 'select `graph` from self where id = ?';
+const getGraphSql = 'select `graph` from self';
 const makeLinks = (...urls) =>
     '[' + urls.map(url =>
         '<RadLink to="' + url + '"/>'
@@ -14,7 +14,6 @@ const makeLinks = (...urls) =>
 QUnit.module('link-diff', hooks => {
     const mockTemplate = {fname:'template-a.jsx.htm', contents:null};
     const mockTemplate2 = {fname:'template-b.jsx.htm', contents:null};
-    const websiteData = {id: 3, graph: ''};
     const originalRemoteDiff = diff.RemoteDiff;
     let website;
     let siteGraph;
@@ -24,28 +23,27 @@ QUnit.module('link-diff', hooks => {
         testEnv.setupDirectives();
         website = app.currentWebsite;
         siteGraph = website.graph;
-        diff.RemoteDiff = function() {};
-        diff.RemoteDiff.prototype.addPageToCheck = () => {};
-        diff.RemoteDiff.prototype.addFileToCheck = () => {};
-        diff.RemoteDiff.prototype.addPageToDelete = () => {};
-        diff.RemoteDiff.prototype.saveStatusesToDb = () => {};
+        diff.RemoteDiff = class {
+            constructor(website){ this.website = website; }
+            addPageToCheck(){}
+            addFileToCheck(){}
+            addPageToDelete(){}
+            saveStatusesToDb(){}
+        };
         website.config.homeUrl = '/home';
         website.config.defaultLayout = mockTemplate.fname;
         readFileStub = new Stub(website.fs, 'readFileSync', a => {
             if(a==website.dirPath+mockTemplate.fname) return mockTemplate.contents;
             if(a==website.dirPath+mockTemplate2.fname) return mockTemplate2.contents;
         });
-        if (website.db.prepare('insert into self values (?,?)')
-                      .run(websiteData.id, websiteData.graph).changes < 1)
+        if (website.db.prepare('insert into self values (1,\'\')')
+                      .run().changes < 1)
             throw new Error('Failed to insert test data.');
     });
     hooks.after(() => {
         diff.RemoteDiff = originalRemoteDiff;
         readFileStub.restore();
-        if (website.db.prepare('delete from self where id = ?')
-                      .run(websiteData.id).changes < 1 ||
-            website.db.prepare('delete from uploadStatuses')
-                      .run().changes < 1)
+        if (website.db.prepare('delete from self').run().changes < 1)
             throw new Error('Failed to clean test data.');
     });
     hooks.afterEach(() => {
@@ -67,7 +65,7 @@ QUnit.module('link-diff', hooks => {
         const addedPage = siteGraph.getPage(newLinkUrl);
         assert.ok(addedPage !== undefined, 'should add a page to website.graph');
         // Assert that saved the updated site graph to the database
-        const row = website.db.prepare(getGraphSql).get(websiteData.id);
+        const row = website.db.prepare(getGraphSql).get();
         assert.equal(row.graph, JSON.stringify({
             pages:[
                 [existingPage.url,'',mockTemplate.fname,[newLinkUrl]],
@@ -89,7 +87,7 @@ QUnit.module('link-diff', hooks => {
         // Assert that removed the page to website.graph
         assert.ok(!siteGraph.getPage(existingPage2), 'Should remove a page from website.graph');
         // Assert that saved the updated site graph to the database
-        const row = website.db.prepare(getGraphSql).get(websiteData.id);
+        const row = website.db.prepare(getGraphSql).get();
         assert.equal(row.graph, JSON.stringify({
             pages:[
                 [existingPage1.url,'',mockTemplate.fname,[]]
@@ -109,7 +107,7 @@ QUnit.module('link-diff', hooks => {
         assert.equal(siteGraph.getPage(existingPage2.url), existingPage2,
             'Should not remove the page');
         // Assert that saved the updated site graph to the database
-        const row = website.db.prepare(getGraphSql).get(websiteData.id);
+        const row = website.db.prepare(getGraphSql).get();
         assert.equal(row.graph, JSON.stringify({
             pages:[
                 [existingPage1.url,'',mockTemplate.fname,[]],
@@ -147,7 +145,7 @@ QUnit.module('link-diff', hooks => {
         assert.ok(newDish1 !== undefined, 'Should add /desserts/dish1');
         assert.equal(newDish1.parentUrl, '/desserts', 'Should update .parentUrl /starters -> /desserts');
         //
-        const row = website.db.prepare(getGraphSql).get(websiteData.id);
+        const row = website.db.prepare(getGraphSql).get();
         assert.equal(row.graph, JSON.stringify({
             pages:[['/home','',mockTemplate.fname,['/starters','/desserts']],
                     ['/starters','',mockTemplate.fname,[]],
@@ -181,7 +179,7 @@ QUnit.module('link-diff', hooks => {
         assert.ok(added2 !== undefined, 'should add page #2 to website.graph');
         assert.equal(added2.url, '/nar');
         // Assert that saved the updated site graph to the database
-        const row = website.db.prepare(getGraphSql).get(websiteData.id);
+        const row = website.db.prepare(getGraphSql).get();
         assert.equal(row.graph, JSON.stringify({
             pages: [
                 [existingPage.url,'',mockTemplate.fname,[linkAHref]],

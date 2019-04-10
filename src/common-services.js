@@ -85,9 +85,9 @@ const fileWatcher = {
                 return;
             } else if (event === this.EVENT_UNLINK) {
                 if (lastAddEventFileName) { // add hasn't fired yet -> must be a rename
-                    resetAddEventTimeout();
-                    event = this.EVENT_RENAME;
                     fileName += '>' + lastAddEventFileName;
+                    event = this.EVENT_RENAME;
+                    resetAddEventTimeout();
                 }
             }
             this._watchFn(event, fileName);

@@ -32,8 +32,8 @@ webApp.getHandler = function(url, method) {
     throw new Error('Didn\'t find handler for ' + method + ' ' + url);
 };
 
-webApp.makeRequest = function(url, method, data = {}) {
-    return {url, method, params: {}, data};
+webApp.makeRequest = function(path, method, data = {}) {
+    return {path, method, params: {}, data};
 };
 
 webApp.makeResponse = function() {

@@ -1,7 +1,7 @@
 /**
  * # core-handlers.js
  *
- * This file contains a handler for static file requests (GET /<any>.<fileExt>).
+ * This file contains an http-handler for static file requests (GET /<any>.<fileExt>).
  *
  */
 const fs = require('fs');
@@ -18,17 +18,17 @@ exports.init = () => {
 
 function handleStaticFileRequest(req, res) {
     let filePath = '';
-    if (req.url.indexOf('/frontend/') === 0) {
-        filePath = path.join(__dirname, '..' + req.url);
+    if (req.path.indexOf('/frontend/') === 0) {
+        filePath = path.join(__dirname, '..' + req.path);
     } else if (app.currentWebsite) {
-        filePath = app.currentWebsite.dirPath + req.url.substr(1);
+        filePath = app.currentWebsite.dirPath + req.path.substr(1);
     }
     fs.readFile(filePath, 'binary', (err, file) => {
         if (err) {
             res.plain(404, '404');
             return;
         }
-        const mime = getMime(req.url.substr(req.url.lastIndexOf('.') + 1));
+        const mime = getMime(req.path.substr(req.path.lastIndexOf('.') + 1));
         res.send(200, [file, 'binary'], mime ? {'Content-Type': mime} : null);
     });
 }

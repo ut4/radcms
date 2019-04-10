@@ -182,7 +182,7 @@ class AddContentView extends preact.Component {
             selectedContentType: null,
             contentTypes: []
         };
-        services.myFetch('/api/content-type').then(
+        services.myFetch('/api/content-types').then(
             res => {
                 let newState = {
                     contentTypes: JSON.parse(res.responseText),
@@ -270,7 +270,7 @@ class EditContentView extends preact.Component {
                 this.state.cnodeName = contentNode.name;
                 this.state.cnodeContentTypeName = contentNode.contentTypeName;
                 this.state.fieldsData = JSON.parse(contentNode.json);
-                return services.myFetch('/api/content-type/' + contentNode.contentTypeName);
+                return services.myFetch('/api/content-types/' + contentNode.contentTypeName);
             },
             res => { toast(res.responseText, 'error'); }
         ).then(
