@@ -21,7 +21,8 @@
     "basic-ftp": "^3.4.4",
     "better-sqlite3": "^5.4.0",
     "chokidar": "^2.1.5",
-    "ini": "^1.3.5"
+    "ini": "^1.3.5",
+    "opener": "^1.5.1"
   },
   "devDependencies": {
     "qunit": "^2.9.2"
@@ -32,8 +33,10 @@
       "frontend/assets/fira-sans-heavy.woff2",
       "frontend/assets/fira-sans-light.woff2",
       "frontend/vendor/vendor.bundle.min.js",
-      "frontend/app.bundle.css",
-      "frontend/app.bundle.js",
+      "frontend/app.bundle.min.css",
+      "frontend/app.bundle.min.js",
+      "frontend/cpanel.bundle.min.css",
+      "frontend/cpanel.bundle.min.js",
       "frontend/app.html",
       "frontend/cpanel.html"
     ]

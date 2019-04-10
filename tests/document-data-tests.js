@@ -15,7 +15,7 @@ QUnit.module('document-data.js', () => {
         let ddc2 = new DDC();
         ddc2.fetchOne('Generic').where('name=\'Foo\'');
         ddc2.fetchOne('Generic').where('name=\'Bar\'');
-        ddc2.fetchOne('Artible').where('name=\'Naz\'');
+        ddc2.fetchOne('Article').where('name=\'Naz\'');
         assert.equal(ddc2.toSql(),
             'select * from (select `id`,`name`,`json`, 1 as `dbcId` '+
                 'from contentNodes where name=\'Foo\''+
@@ -25,6 +25,20 @@ QUnit.module('document-data.js', () => {
             ') union all '+
             'select * from (select `id`,`name`,`json`, 3 as `dbcId` '+
                 'from contentNodes where name=\'Naz\''+
+            ')'
+        );
+    });
+    QUnit.test('DDC.toSql() generates queries for chained fetchOne()s', assert => {
+        let ddc = new DDC();
+        ddc.fetchOne('Generic').where('name=\'Foo\'')
+           .fetchOne('Article').where('name=\'Bar\'');
+        //
+        assert.equal(ddc.toSql(),
+            'select * from (select `id`,`name`,`json`, 1 as `dbcId` '+
+                'from contentNodes where name=\'Foo\''+
+            ') union all '+
+            'select * from (select `id`,`name`,`json`, 2 as `dbcId` '+
+                'from contentNodes where name=\'Bar\''+
             ')'
         );
     });
@@ -51,6 +65,22 @@ QUnit.module('document-data.js', () => {
             'select * from ('+
                 'select `id`,`name`,`json`, 2 as `dbcId` from contentNodes where '+
                 '`contentTypeName` = \'Other\''+
+            ')'
+        );
+    });
+    QUnit.test('DDC.toSql() generates queries for chained fetchAll()s', assert => {
+        let ddc = new DDC();
+        ddc.fetchAll('Generic').where('name like \'foo%\'')
+           .fetchAll('Article').limit('2');
+        //
+        assert.equal(ddc.toSql(),
+            'select * from ('+
+                'select `id`,`name`,`json`, 1 as `dbcId` from contentNodes where '+
+                '`contentTypeName` = \'Generic\' and name like \'foo%\''+
+            ') union all '+
+            'select * from ('+
+                'select `id`,`name`,`json`, 2 as `dbcId` from contentNodes where '+
+                '`contentTypeName` = \'Article\' limit 2'+
             ')'
         );
     });

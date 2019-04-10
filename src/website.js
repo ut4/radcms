@@ -329,6 +329,7 @@ class SiteConfig {
         /*
          * [ContentType:Foo]\nfield=dataType\nanother=dataType
          */
+        this.contentTypes = [];
         for (const title in config) {
             if (title.indexOf('ContentType:') < 0) continue;
             for (const propName in config[title]) {

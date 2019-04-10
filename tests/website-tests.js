@@ -69,7 +69,7 @@ QUnit.module('[\'website.js\'].SiteConfig', () => {
         );
         //
         const testPath = '/some/path/';
-        config.loadFromDisk(testPath,true);
+        config.loadFromDisk(testPath);
         //
         assert.equal(fsReadStub.callInfo[0][0], testPath + 'site.ini');
         assert.equal(config.name, 'foo');

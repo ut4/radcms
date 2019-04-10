@@ -179,11 +179,25 @@ class DBC {
                 (!this.whereExpr ? '' : ' and ' + this.whereExpr) + tail;
     }
     /**
-     * @returns {Object|Object[]}
+     * @returns {Object|Object[]|Array<Object|Object[]>}
      */
     exec() {
         ddcFetchData(this.ddc);
-        return this.ddc.getDataFor(this);
+        return this.ddc.batchCount == 1
+            ? this.ddc.getDataFor(this)
+            : this.ddc.batches.map(dbc => this.ddc.getDataFor(dbc));
+    }
+    /**
+     * @see DDC.fetchOne
+     */
+    fetchOne(contentTypeName) {
+        return this.ddc.fetchOne(contentTypeName);
+    }
+    /**
+     * @see DDC.fetchAll
+     */
+    fetchAll(contentTypeName) {
+        return this.ddc.fetchAll(contentTypeName);
     }
 }
 /**

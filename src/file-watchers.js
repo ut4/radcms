@@ -10,6 +10,7 @@ const {templateCache} = require('./templating.js');
 const diff = require('./website-diff.js');
 
 const TEMPLATE_EXT = 'htm';
+const CONFIG_EXT = 'ini';
 
 exports.init = () => {
     fileWatcher.setWatchFn(handleFWEvent);
@@ -34,6 +35,8 @@ function handleFWEvent(type, fileName) {
             handleTemplateModifyEventEvent(fileName);
         else if (fileExt == 'css' || fileExt == 'js')
             handleCssOrJsFileModifyEventEvent('/' + fileName);
+        else if (fileExt == CONFIG_EXT)
+            handleConfigFileModifyEvent(fileName);
     } else if (type == fileWatcher.EVENT_UNLINK) {
         if (fileExt == TEMPLATE_EXT)
             handleTemplateDeleteEventEvent(fileName);
@@ -104,6 +107,19 @@ function handleCssOrJsFileModifyEventEvent(fileName) {
 }
 
 /**
+ * @param {string} fileName eg. 'site.ini'
+ */
+function handleConfigFileModifyEvent(fileName) {
+    if (fileName != 'site.ini') {
+        app.log('[Debug]: An unknown config file "' + fileName + '" was modified, skipping.');
+        return;
+    }
+    const w = app.currentWebsite;
+    w.config.loadFromDisk(w.dirPath);
+    app.log('[Info]: updated site.ini');
+}
+
+/**
  * @param {string} fileName eg. 'layout.jsx.htm'
  */
 function handleTemplateDeleteEventEvent(fileName) {
@@ -163,7 +179,7 @@ function handleTemplateRenameEvent(from, to) {
     // Relocate the template function
     templateCache.put(to, fn);
     templateCache.remove(from);
-    app.log('[Info]: Renamed "' + from + '"');
+    app.log('[Info]: Renamed "' + from + '" > "' + to + '"');
 }
 
 /**
@@ -183,7 +199,7 @@ function handleCssOrJsFileRenameEvent(from, to) {
     app.currentWebsite.db
         .prepare('update uploadStatuses set `url` = ? where `url` = ?')
         .run(to, from);
-    app.log('[Info]: Renamed "' + from + '"');
+    app.log('[Info]: Renamed "' + from + '" > "' + to + '"');
 }
 
 exports.handleFWEvent = handleFWEvent;
