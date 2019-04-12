@@ -41,8 +41,8 @@ QUnit.module('[\'website.js\'].Website', hooks => {
     QUnit.test('activate() reads&caches templates from disk', assert => {
         assert.expect(2);
         let readDirStub = new Stub(website.fs, 'readdirSync', () =>
-            [{name: tmplName2, isDirectory: () => false},
-             {name: tmplName1, isDirectory: () => false}]);
+            [tmplName2, tmplName1]
+        );
         let readTemplateStub = new Stub(website.fs, 'readFileSync', () =>
             '<p>hello</p>'
         );

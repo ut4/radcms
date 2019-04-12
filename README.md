@@ -1,3 +1,3 @@
-# RadCMS3
+# RadCMC
 
-RadCMS3 is the most sophisticated static site generator ever created.
+RadCMS is simply the most radical static site cms ever created.

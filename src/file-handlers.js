@@ -7,6 +7,7 @@
 const fs = require('fs');
 const {app} = require('./app.js');
 const {webApp} = require('./web.js');
+const {Dirent} = require('./pkg-monkeypatches.js');
 
 exports.init = () => {
     webApp.addRoute((url, method) => {
@@ -40,7 +41,8 @@ function handleListDirRequest(req, res) {
     };
     fs.readdir(out.root, {withFileTypes: true}, (err, files) => {
         files = !err ? files : [];
-        for (const entry of files) {
+        for (let entry of files) {
+            if (typeof entry === 'string') entry = new Dirent(entry.name, out.root);
             if (entry.isDirectory()) out.entries.push({name: entry.name, isDir: true});
         }
         res.json(200, out);

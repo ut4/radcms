@@ -1,3 +1,4 @@
+frontend/*.bundle.*
 out/
 internal/
 target/
