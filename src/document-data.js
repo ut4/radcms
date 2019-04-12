@@ -175,7 +175,8 @@ class DBC {
         if (!this.isFetchAll) {
             return this.whereExpr + tail;
         }
-        return '`contentTypeName` = \'' + this.contentTypeName + '\'' +
+        return '`contentTypeId` = (select `id` from contentTypes where `name` = \'' +
+                                   this.contentTypeName + '\')' +
                 (!this.whereExpr ? '' : ' and ' + this.whereExpr) + tail;
     }
     /**

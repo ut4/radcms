@@ -125,10 +125,10 @@ QUnit.module('website-handlers.js (1)', hooks => {
 });
 
 QUnit.module('website-handlers.js (2)', hooks => {
-    const genericCntType = {id:1,name:'Generic',fields:'{"content":"richtext"}'};
-    const homeContentCnt = {name:'home',json:{content:'Hello'},contentTypeName:'Generic'};
-    const page2ContentCnt = {name:'/page2',json:{content:'Page2'},contentTypeName:'Generic'};
-    const page3ContentCnt = {name:'/page3',json:{content:'Page3'},contentTypeName:'Generic'};
+    const genericCntType = {id: 1, name: 'Generic', fields: '{"content":"richtext"}'};
+    const homeContentCnt = {name: 'home', json: {content: 'Hello'}, contentTypeId: 1};
+    const page2ContentCnt = {name: '/page2', json: {content: 'Page2'}, contentTypeId: 1};
+    const page3ContentCnt = {name: '/page3', json: {content: 'Page3'}, contentTypeId: 1};
     const mockFiles = {'/foo.css': 'p {}', '/bar.js': 'const p;'};
     const mockFileNames = Object.keys(mockFiles);
     const layout1 = {fileName: 'home-layout.jsx.htm', contents:
@@ -169,24 +169,25 @@ QUnit.module('website-handlers.js (2)', hooks => {
         page3 = siteGraph.addPage(pages[2].url, '', layout2.fileName, {}, 1);
         templateCache.put(layout1.fileName, transpiler.transpileToFn(layout1.contents));
         templateCache.put(layout2.fileName, transpiler.transpileToFn(layout2.contents));
-        const sql2 = 'insert into contentNodes values '+q+','+q+','+q;
-        const sql3 = 'insert into uploadStatuses values '+q+','+q+','+q+','+q+','+q;
-        const sql4 = 'insert into staticFileResources values (?,1),(?,1)';
         if (website.db.prepare('insert into self values (1,?)')
-                .run(siteGraph.serialize()).changes < 1 ||
-            website.db.prepare(sql2)
+                .run(siteGraph.serialize())
+                .changes < 1 ||
+            website.db.prepare('insert into contentTypes values (?,?,?)')
+                .run(genericCntType.id,genericCntType.name,genericCntType.fields)
+                .changes < 1 ||
+            website.db.prepare('insert into contentNodes values '+q+','+q+','+q)
                 .run([].concat(...[homeContentCnt,page2ContentCnt,page3ContentCnt].map((c, i) =>
-                    [i + 1, c.name, JSON.stringify(c.json), c.contentTypeName]
+                    [i + 1, c.name, JSON.stringify(c.json), c.contentTypeId]
                 ))).changes < 3 ||
-            website.db.prepare(sql3)
-                .run(// url, curhash, uphash, isFile
-                    mockFileNames[0], '', null, 1,
+            website.db.prepare('insert into uploadStatuses values '+q+','+q+','+q+','+q+','+q)
+                .run(
+                    mockFileNames[0], '', null, 1, // url, curhash, uphash, isFile
                     mockFileNames[1], '', null, 1,
                     page1.url,        '', null, 0,
                     page2.url,        '', null, 0,
                     page3.url,        '', null, 0
                 ).changes < 5 ||
-            website.db.prepare(sql4)
+            website.db.prepare('insert into staticFileResources values (?,1),(?,1)')
                 .run(layout1.fileName, layout2.fileName).changes < 2
         ) throw new Error('Failed to insert test data.');
         //
@@ -197,8 +198,10 @@ QUnit.module('website-handlers.js (2)', hooks => {
     hooks.after(() => {
         fsReadStub.restore();
         website.graph.clear();
-        if (website.db.prepare('delete from contentNodes where contentTypeName = ?')
-                      .run(genericCntType.name).changes < 1 ||
+        if (website.db.prepare('delete from contentNodes where contentTypeId = ?')
+                      .run(genericCntType.id).changes < 1 ||
+            website.db.prepare('delete from contentTypes where id = ?')
+                      .run(genericCntType.id).changes < 1 ||
             website.db.prepare('delete from self')
                       .run().changes < 1 ||
             website.db.prepare('delete from uploadStatuses')

@@ -11,22 +11,27 @@ const websiteDbSchemaSql =
 "drop trigger if exists onUploadStatusesDeleteFileTrigger;" +
 "drop table if exists uploadStatuses;" +
 "drop table if exists staticFileResources;" +
-"drop index if exists contentNodesContentTypeNameIdx;" +
 "drop index if exists contentNodesNameIdx;" +
 "drop table if exists contentNodes;" +
+"drop table if exists contentTypes;" +
 "drop table if exists self;" +
 "create table self (" +
     "`id` integer primary key autoincrement," +
     "`graph` json" +
 ");" +
+"create table contentTypes (" +
+    "`id` integer primary key autoincrement," +
+    "`name` varchar(78) not null," +
+    "`fields` json" +
+");" +
 "create table contentNodes (" +
     "`id` integer primary key autoincrement," +
-    "`name` varchar(32) not null," +
+    "`name` varchar(78) not null," +
     "`json` json," +
-    "contentTypeName varchar(64) not null" +
+    "contentTypeId integer not null," +
+    "foreign key(contentTypeId) references contentTypes(`id`)" +
 ");" +
 "create unique index contentNodesNameIdx on contentNodes(`name`);" +
-"create index contentNodesContentTypeNameIdx on contentNodes(`contentTypeName`);" +
 "create table staticFileResources (" +
     "`url` varchar(512) primary key," +
     "`isOk` integer default 0" +
@@ -42,22 +47,24 @@ const websiteDbSchemaSql =
     "delete from staticFileResources where `url` = old.`url`;" +
 "end;";
 
+const genericContentType = {name: 'Generic blobs', fields: {content: 'richtext'}};
+const articleContentType = {name: 'Articles', fields: {title: 'text', body: 'richtext'}};
+
 const sampleData = [
     {
         name: "minimal",
         installSql:
         "insert into self values (1, '{\"pages\":[[\"/home\",\"\",\"main-layout.jsx.htm\",[]]]}');" +
-        "insert into contentNodes values (1, 'footer', '{\"content\":\"(c) 2034 MySite\"}', 'Generic');" +
+        "insert into contentTypes values " +
+            "(1, '"+genericContentType.name+"', '"+JSON.stringify(genericContentType.fields)+"');" +
+        "insert into contentNodes values (1, 'footer', '{\"content\":\"(c) 2034 MySite\"}', 1);" +
         "insert into uploadStatuses values ('/home','4e86b8c03bedc235b9ec52f04d55c11f18574b1c',null,0);",
-        contentTypes:
-        "[{\"name\":\"Generic\",\"fields\":[{\"name\":\"content\",\"dataType\":\"richtext\"}]}]",
+        contentTypes: [genericContentType],
         files: {
             "site.ini": "[Site]\n" +
                         "homeUrl=/home\n" +
-                        "defaultLayout=main-layout.jsx.htm\n\n" +
-                        "[ContentType:Generic]\n" +
-                        "content=richtext",
-            "main-layout.jsx.htm": "@footer = fetchOne(\"Generic\").where(\"name='footer'\").exec()\n" +
+                        "defaultLayout=main-layout.jsx.htm",
+            "main-layout.jsx.htm": "const footer = fetchOne(\"Generic blobs\").where(\"name='footer'\").exec()\n" +
                                    "<html>\n" +
                                    "    <head>\n" +
                                    "        <title>Hello</title>\n" +
@@ -77,31 +84,26 @@ const sampleData = [
                            "[\"/art1\",\"\",\"article-layout.jsx.htm\",[]]," +
                            "[\"/art2\",\"\",\"article-layout.jsx.htm\",[]]," +
                            "[\"/art3\",\"\",\"article-layout.jsx.htm\",[]]]}');" +
+        "insert into contentTypes values " +
+            "(1, '"+genericContentType.name+"', '"+JSON.stringify(genericContentType.fields)+"')," +
+            "(2, '"+articleContentType.name+"', '"+JSON.stringify(articleContentType.fields)+"');" +
         "insert into contentNodes values" +
-        " (1,'footer','{\"content\":\"(c) 2034 MySite\"}','Generic')," +
-        " (2,'art1', '{\"title\":\"Article 1\",\"body\":\"Hello from article 1\"}','Article')," +
-        " (3,'art2', '{\"title\":\"Article 2\",\"body\":\"Hello from article 2\"}','Article')," +
-        " (4,'art3', '{\"title\":\"Article 3\",\"body\":\"Hello from article 3\"}','Article');" +
+        " (1,'footer','{\"content\":\"(c) 2034 MySite\"}',1)," +
+        " (2,'art1', '{\"title\":\"Article 1\",\"body\":\"Hello from article 1\"}',2)," +
+        " (3,'art2', '{\"title\":\"Article 2\",\"body\":\"Hello from article 2\"}',2)," +
+        " (4,'art3', '{\"title\":\"Article 3\",\"body\":\"Hello from article 3\"}',2);" +
         "insert into uploadStatuses values" +
-        " ('/home','69140fce68ae230488b2dd8790052da239635f0f',null,0)," +
+        " ('/home','4ae24f946f140ea08f6c365eeb6d596f1c9764f5',null,0)," +
         " ('/art1','b1a32abb186dec98beee7ac8046ba3707f1d4837',null,0)," +
         " ('/art2','d07c501d4d239ad675d34a9ec7bacc00d323b474',null,0)," +
         " ('/art3','248f99ff331240f99f0a4688bde33b6b6413d2a6',null,0);",
-        contentTypes:
-        "[{\"name\":\"Generic\",\"fields\":[{\"name\":\"content\",\"dataType\":\"richtext\"}]}," +
-         "{\"name\":\"Article\",\"fields\":[{\"name\":\"title\",\"dataType\":\"text\"}," +
-                                           "{\"name\":\"body\",\"dataType\":\"richtext\"}]}]",
+        contentTypes: [genericContentType, articleContentType],
         files: {
             "site.ini": "[Site]\n" +
                         "homeUrl=/home\n" +
-                        "defaultLayout=main-layout.jsx.htm\n\n" +
-                        "[ContentType:Generic]\n" +
-                        "content=richtext\n\n" +
-                        "[ContentType:Article]\n" +
-                        "title=text\n" +
-                        "body=richtext",
-            "main-layout.jsx.htm": "@arts = fetchAll(\"Article\").exec()\n" +
-                                   "@footer = fetchOne(\"Generic\").where(\"name='footer'\").exec()\n" +
+                        "defaultLayout=main-layout.jsx.htm",
+            "main-layout.jsx.htm": "const [arts, footer] = fetchAll(\"Articles\")\n" +
+                                   "                       .fetchOne(\"Generic blobs\").where(\"name='footer'\").exec()\n" +
                                    "<html>\n" +
                                    "    <head>\n" +
                                    "        <title>Hello</title>\n" +
@@ -111,8 +113,8 @@ const sampleData = [
                                    "        <footer>{ footer.content }</footer>\n" +
                                    "    </body>\n" +
                                    "</html>",
-            "article-layout.jsx.htm": "@art = fetchOne(\"Article\").where(\"name='\" + url[0] + \"'\").exec()\n" +
-                                      "@footer = fetchOne(\"Generic\").where(\"name='footer'\").exec()\n" +
+            "article-layout.jsx.htm": "const [art, footer] = fetchOne(\"Articles\").where(\"name='\" + url[0] + \"'\")\n" +
+                                      "                      .fetchOne(\"Generic blobs\").where(\"name='footer'\").exec()\n" +
                                       "<html>\n" +
                                       "    <head>\n" +
                                       "        <title>{ art.title }</title>\n" +

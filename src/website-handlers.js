@@ -102,7 +102,7 @@ function handleGetAllWebsites(_, res) {
  * POST /api/websites: Creates a new website to $req.dirPath, populates it
  * with $req.sampleDataName data, and finally registers it to the global database.
  * Assumes that $req.dirPath already exists. Overwrites existing files (site.ini,
- * data.db).
+ * site.db).
  *
  * Payload:
  * {
@@ -171,18 +171,16 @@ function handleSetCurrentWebsiteRequest(req, res) {
  * Example response:
  * [
  *     {"name":"minimal","contentTypes":[
- *         {"name":"Generic","fields":[{"name":"content","dataType":"richtext"}]}
+ *         {"name":"Generic","fields":{"content":"richtext"}}
  *     ]},
  *     {"name":"blog","contentTypes":[
- *         {"name":"Generic","fields":[{"name":"content","dataType":"richtext"}]},
- *         {"name":"Article","fields":[{"name":"title","dataType":"text"},{"name":"body","dataType":"richtext"}]}
+ *         {"name":"Generic","fields":{"content":"richtext"}},
+ *         {"name":"Article","fields":{"title":"text","body":"richtext"}}
  *     ]}
  * ]
  */
 function handleGetAllSampleContentTypesRequest(_, res) {
-    res.json(200, data.getSampleData().map(d =>
-        ({name: d.name, contentTypes: JSON.parse(d.contentTypes)})
-    ));
+    res.json(200, data.getSampleData());
 }
 
 /**

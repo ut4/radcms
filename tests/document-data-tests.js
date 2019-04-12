@@ -5,7 +5,7 @@ QUnit.module('document-data.js', () => {
         assert.expect(2);
         //
         let ddc1 = new DDC();
-        ddc1.fetchOne('Generic').where('name=\'Foo\'');
+        ddc1.fetchOne('Generics').where('name=\'Foo\'');
         assert.equal(ddc1.toSql(),
             'select * from (select `id`,`name`,`json`, 1 as `dbcId` '+
                 'from contentNodes where name=\'Foo\''+
@@ -13,9 +13,9 @@ QUnit.module('document-data.js', () => {
         );
         //
         let ddc2 = new DDC();
-        ddc2.fetchOne('Generic').where('name=\'Foo\'');
-        ddc2.fetchOne('Generic').where('name=\'Bar\'');
-        ddc2.fetchOne('Article').where('name=\'Naz\'');
+        ddc2.fetchOne('Generics').where('name=\'Foo\'');
+        ddc2.fetchOne('Generics').where('name=\'Bar\'');
+        ddc2.fetchOne('Articles').where('name=\'Naz\'');
         assert.equal(ddc2.toSql(),
             'select * from (select `id`,`name`,`json`, 1 as `dbcId` '+
                 'from contentNodes where name=\'Foo\''+
@@ -30,8 +30,8 @@ QUnit.module('document-data.js', () => {
     });
     QUnit.test('DDC.toSql() generates queries for chained fetchOne()s', assert => {
         let ddc = new DDC();
-        ddc.fetchOne('Generic').where('name=\'Foo\'')
-           .fetchOne('Article').where('name=\'Bar\'');
+        ddc.fetchOne('Generics').where('name=\'Foo\'')
+           .fetchOne('Articles').where('name=\'Bar\'');
         //
         assert.equal(ddc.toSql(),
             'select * from (select `id`,`name`,`json`, 1 as `dbcId` '+
@@ -46,41 +46,43 @@ QUnit.module('document-data.js', () => {
         assert.expect(2);
         //
         let ddc1 = new DDC();
-        ddc1.fetchAll('Article');
+        ddc1.fetchAll('Articles');
         assert.equal(ddc1.toSql(),
             'select * from ('+
                 'select `id`,`name`,`json`, 1 as `dbcId` from contentNodes where '+
-                '`contentTypeName` = \'Article\''+
+                '`contentTypeId` = (select `id` from contentTypes where `name` = \'Articles\')'+
             ')'
         );
         //
         let ddc2 = new DDC();
-        ddc2.fetchAll('Article');
+        ddc2.fetchAll('Articles');
         ddc2.fetchAll('Other');
         assert.equal(ddc2.toSql(),
             'select * from ('+
                 'select `id`,`name`,`json`, 1 as `dbcId` from contentNodes where '+
-                '`contentTypeName` = \'Article\''+
+                '`contentTypeId` = (select `id` from contentTypes where `name` = \'Articles\')'+
             ') union all '+
             'select * from ('+
                 'select `id`,`name`,`json`, 2 as `dbcId` from contentNodes where '+
-                '`contentTypeName` = \'Other\''+
+                '`contentTypeId` = (select `id` from contentTypes where `name` = \'Other\')'+
             ')'
         );
     });
     QUnit.test('DDC.toSql() generates queries for chained fetchAll()s', assert => {
         let ddc = new DDC();
-        ddc.fetchAll('Generic').where('name like \'foo%\'')
-           .fetchAll('Article').limit('2');
+        ddc.fetchAll('Generics').where('name like \'foo%\'')
+           .fetchAll('Articles').limit('2');
         //
         assert.equal(ddc.toSql(),
             'select * from ('+
                 'select `id`,`name`,`json`, 1 as `dbcId` from contentNodes where '+
-                '`contentTypeName` = \'Generic\' and name like \'foo%\''+
+                '`contentTypeId` = (select `id` from contentTypes where `name` = \'Generics\')'+
+                ' and name like \'foo%\''+
             ') union all '+
             'select * from ('+
                 'select `id`,`name`,`json`, 2 as `dbcId` from contentNodes where '+
-                '`contentTypeName` = \'Article\' limit 2'+
+                '`contentTypeId` = (select `id` from contentTypes where `name` = \'Articles\')'+
+                ' limit 2'+
             ')'
         );
     });

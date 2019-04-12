@@ -177,7 +177,7 @@ class AddContentView extends preact.Component {
         this.fieldListCmp = null;
         this.state = {
             cnodeName: '',
-            cnodeContentTypeName: '',
+            cnodeContentTypeId: 0,
             fieldsData: null,
             selectedContentType: null,
             contentTypes: []
@@ -242,7 +242,7 @@ class AddContentView extends preact.Component {
         this.setState(newState);
     }
     confirm() {
-        this.state.cnodeContentTypeName = this.state.selectedContentType.name;
+        this.state.cnodeContentTypeId = this.state.selectedContentType.id;
         return sendCnodeToBackend('POST', this, this.props.returnTo);
     }
 }
@@ -260,7 +260,7 @@ class EditContentView extends preact.Component {
         super(props);
         this.state = {
             cnodeName: '',
-            cnodeContentTypeName: '',
+            cnodeContentTypeId: '',
             fieldsData: null, // {title: 'Article 1', body:'Lorem ipsum'...}
             fieldsInfo: null  // {title: 'text', body: 'richtext'...}
         };
@@ -268,9 +268,9 @@ class EditContentView extends preact.Component {
             res => {
                 const contentNode = JSON.parse(res.responseText);
                 this.state.cnodeName = contentNode.name;
-                this.state.cnodeContentTypeName = contentNode.contentTypeName;
+                this.state.cnodeContentTypeId = contentNode.contentTypeId;
                 this.state.fieldsData = JSON.parse(contentNode.json);
-                return services.myFetch('/api/content-types/' + contentNode.contentTypeName);
+                return services.myFetch('/api/content-types/' + contentNode.contentTypeId);
             },
             res => { toast(res.responseText, 'error'); }
         ).then(
@@ -304,7 +304,7 @@ function sendCnodeToBackend(method, self) {
         data: JSON.stringify({
             name: self.state.cnodeName,
             json: JSON.stringify(self.fieldListCmp.getFieldsData()),
-            contentTypeName: self.state.cnodeContentTypeName
+            contentTypeId: self.state.cnodeContentTypeId
         })
     }).then(() => {
         myRedirect((self.props.returnTo || '/') + '?rescan=full', true);

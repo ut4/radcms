@@ -3,8 +3,8 @@ import services from './../common-services.js';
 import utils from './my-test-utils.js';
 const itu = Inferno.TestUtils;
 const testContentTypes = [
-    {name: 'Generic', fields: {content: 'richtext'}},
-    {name: 'Article', fields: {title: 'text', body: 'richtext'}}
+    {id: 7, name: 'Generic', fields: {content: 'richtext'}},
+    {id: 4, name: 'Article', fields: {title: 'text', body: 'richtext'}}
 ];
 
 QUnit.module('AddContentViewComponent', hooks => {
@@ -48,7 +48,7 @@ QUnit.module('AddContentViewComponent', hooks => {
             assert.equal(postCall.args[1].data, JSON.stringify({
                 name: cnodeNameInput.value,
                 json: JSON.stringify({title: titleInput.value, body: bodyInput.value}),
-                contentTypeName: 'Article'
+                contentTypeId: testContentTypes[1].id
             }));
             postCall.returnValue.then(() => {
                 assert.ok(redirectSpy.calledAfter(httpStub), 'Should redirect');
@@ -94,7 +94,7 @@ QUnit.module('AddContentViewComponent', hooks => {
                     content: contentInput.value,
                     'newField__separator__richtext': extraFieldValueInput.value
                 }),
-                contentTypeName: 'Generic'
+                contentTypeId: testContentTypes[0].id
             }));
             postCall.returnValue.then(() => {
                 done();

@@ -62,10 +62,10 @@ QUnit.module('[\'website.js\'].Website', hooks => {
 
 QUnit.module('[\'website.js\'].SiteConfig', () => {
     QUnit.test('loadFromDisk() reads and normalizes values', assert => {
-        assert.expect(5);
+        assert.expect(4);
         const config = new SiteConfig();
         let fsReadStub = new Stub(config.fs, 'readFileSync', () =>
-            '[Site]\nname=foo\nhomeUrl=noSlash\ndefaultLayout=fos.htm\n[ContentType:Test]\nkey=text'
+            '[Site]\nname=foo\nhomeUrl=noSlash\ndefaultLayout=fos.htm'
         );
         //
         const testPath = '/some/path/';
@@ -75,7 +75,5 @@ QUnit.module('[\'website.js\'].SiteConfig', () => {
         assert.equal(config.name, 'foo');
         assert.equal(config.homeUrl, '/noSlash');
         assert.equal(config.defaultLayout, 'fos.htm');
-        assert.deepEqual(config.contentTypes[0],
-            {name:'Test', fields: {key: 'text'}});
     });
 });

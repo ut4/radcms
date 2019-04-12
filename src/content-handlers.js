@@ -40,19 +40,27 @@ exports.init = () => {
  * ]
  */
 function handleGetAllContentTypesRequest(_, res) {
-    return res.json(200, app.currentWebsite.config.contentTypes);
+    return res.json(200, app.currentWebsite.db
+        .prepare('select `id`,`name`,`fields` from contentTypes')
+        .all()
+        .map(row => {
+            row.fields = JSON.parse(row.fields);
+            return row;
+        }));
 }
 
 /**
- * GET /api/content-types/<name>: returns a content type.
+ * GET /api/content-types/<id>: returns a content type.
  *
  * Example response:
  * {"name":"Article","fields":{"title":"text","body":"richtext"}}
  */
 function handleGetContentTypeRequest(req, res) {
-    const lookFor = decodeURIComponent(req.path.split('/').pop());
-    const type = app.currentWebsite.config.contentTypes.find(t => t.name === lookFor);
-    if (type) res.json(200, type);
+    const id = parseInt(req.path.split('/').pop());
+    const type = app.currentWebsite.db
+        .prepare('select `id`,`name`,`fields` from contentTypes where `id` = ?')
+        .get(id);
+    if (type) { type.fields = JSON.parse(type.fields); res.json(200, type); }
     else res.plain(400, 'Content type not found');
 }
 
@@ -64,12 +72,12 @@ function handleGetContentTypeRequest(req, res) {
  *     "id": 25,
  *     "name": "foo",
  *     "json": "{"title":"Hello","body":"Foo bar.."}",
- *     "contentTypeName": "Article",
+ *     "contentTypeId": 1,
  * }
  */
 function handleGetContentNodeRequest(req, res) {
     const node = app.currentWebsite.db
-        .prepare('select id,`name`,`json`,`contentTypeName` from contentNodes where id = ?')
+        .prepare('select `id`,`name`,`json`,`contentTypeId` from contentNodes where `id` = ?')
         .get(parseInt(req.path.split('/').pop()));
     if (node) res.json(200, node);
     else res.plain(400, 'Content node not found');
@@ -80,9 +88,9 @@ function handleGetContentNodeRequest(req, res) {
  *
  * Payload:
  * {
- *     name: string;            // required
- *     json: string;            // required
- *     contentTypeName: string; // required
+ *     name: string;          // required
+ *     json: string;          // required
+ *     contentTypeId: number; // required
  * }
  *
  * Example response:
@@ -93,8 +101,8 @@ function handleCreateContentRequest(req, res) {
     if (!validateReqData(req.data, errs)) { res.plain(400, errs.join('\n')); return; }
     //
     const insertId = app.currentWebsite.db
-        .prepare('insert into contentNodes (`name`, `json`, `contentTypeName`) values (?, ?, ?)')
-        .run(req.data.name, req.data.json, req.data.contentTypeName)
+        .prepare('insert into contentNodes (`name`, `json`, `contentTypeId`) values (?, ?, ?)')
+        .run(req.data.name, req.data.json, req.data.contentTypeId)
         .lastInsertRowid;
     //
     return res.json(200, {insertId: insertId});
@@ -114,8 +122,8 @@ function handleUpdateContentRequest(req, res) {
     if (!validateReqData(req.data, errs)) { res.plain(400, errs.join('\n')); return; }
     //
     const numChanges = app.currentWebsite.db
-        .prepare('update contentNodes set `json`=?, `contentTypeName`=? where `name`=?')
-        .run(req.data.json, req.data.contentTypeName, req.data.name)
+        .prepare('update contentNodes set `json`=?, `contentTypeId`=? where `name`=?')
+        .run(req.data.json, req.data.contentTypeId, req.data.name)
         .changes;
     //
     res.json(200, {numAffectedRows: numChanges});
@@ -129,6 +137,8 @@ function handleUpdateContentRequest(req, res) {
 function validateReqData(data, errs) {
     if (!data.name) errs.push('name is required.');
     if (!data.json) errs.push('json is required.');
-    if (!data.contentTypeName) errs.push('contentTypeName is required.');
+    if (!data.contentTypeId) errs.push('contentTypeId is required.');
+    else if (parseInt(data.contentTypeId) != data.contentTypeId)
+        errs.push('contentTypeId must be an integer');
     return errs.length == 0;
 }

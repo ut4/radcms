@@ -27,7 +27,7 @@ class Website {
      */
     constructor(dirPath, dbSettings) {
         this.dirPath = dirPath;
-        this.db = new Sqlite(dirPath + 'data.db', dbSettings);
+        this.db = new Sqlite(dirPath + 'site.db', dbSettings);
         this.graph = new SiteGraph();
         this.config = new SiteConfig();
         this.fileWatcher = fileWatcher;
@@ -36,7 +36,7 @@ class Website {
         this.fs = fs;
     }
     /**
-     * Writes and populates data files (data.db, site.ini, some-template.jsx.htm
+     * Writes and populates data files (site.db, site.ini, some-template.jsx.htm
      * etc.) to $this.dirPath.
      *
      * @param {string} sampleDataName 'minimal', 'blog' etc.
@@ -289,7 +289,6 @@ class SiteConfig {
         this.name = '';
         this.homeUrl = '';
         this.defaultLayout = '';
-        this.contentTypes = [];
     }
     /**
      * Reads and parses $dirPath+'site.ini' and stores the values to $this.*.
@@ -305,7 +304,7 @@ class SiteConfig {
      * @throws Error
      */
     _populateFrom(config) {
-        let errors = [];
+        const errors = [];
         const DEFAULT_DEFAULT_LAYOUT = 'main-layout.jsx.htm';
         /*
          * [Site]\nname
@@ -326,24 +325,6 @@ class SiteConfig {
          * [Site]\ndefaultLayout
          */
         this.defaultLayout = config.Site.defaultLayout || DEFAULT_DEFAULT_LAYOUT;
-        /*
-         * [ContentType:Foo]\nfield=dataType\nanother=dataType
-         */
-        this.contentTypes = [];
-        for (const title in config) {
-            if (title.indexOf('ContentType:') < 0) continue;
-            for (const propName in config[title]) {
-                const dataType = config[title][propName];
-                if (dataType !== 'text' &&
-                    dataType !== 'richtext') {
-                    errors.push('"' + dataType + '" is not valid datatype.');
-                }
-            }
-            this.contentTypes.push({name: title.substr(12), // 12='ContentType:'.length
-                                    fields: config[title]});
-        }
-        if (!this.contentTypes.length)
-            errors.push('At least one [ContentType:name] is required.');
         //
         if (errors.length) throw new Error(errors.join('\n'));
     }

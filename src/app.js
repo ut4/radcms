@@ -20,7 +20,7 @@ const app = {
     currentWebsite: null,
     waitingWebsite: null,// A kind of back buffer, used in setCurrentWebsite()
     /**
-     * Opens or creates the main database $this.dataPath+'data.db'.
+     * Opens or creates the main database $this.dataPath+'app.db'.
      *
      * @param {Object?} dbSettings
      */
@@ -28,7 +28,7 @@ const app = {
         if (!dbSettings && !fs.existsSync(this.dataPath)) {
             fs.mkdirSync(this.dataPath, {recursive: true});
         }
-        this.db = new Sqlite(this.dataPath + 'data.db', dbSettings);
+        this.db = new Sqlite(this.dataPath + 'app.db', dbSettings);
         this._populateDatabaseIfEmpty();
     },
     /**
