@@ -73,10 +73,10 @@ class Website {
         this.graph.parseAndLoadFrom(this.db.prepare('select `graph` from self limit 1').get().graph,
                                     this.config.homeUrl);
         // Read and compile each template from disk to templateCache
-        this.fs.readdirSync(this.dirPath, {withFileTypes: true}).forEach(entry => {
-            let lastDotPos = !entry.isDirectory() ? entry.name.lastIndexOf('.') : -1;
-            if (lastDotPos === -1 || entry.name.substr(lastDotPos) !== '.htm') return;
-            try { this.compileAndCacheTemplate(entry.name); }
+        this.fs.readdirSync(this.dirPath).forEach(name => {
+            const lastDotPos = name.lastIndexOf('.');
+            if (lastDotPos < 1 || name.substr(lastDotPos) !== '.htm') return;
+            try { this.compileAndCacheTemplate(name); }
             catch(e) { /**/ }
         });
         this.fileWatcher.watch(this.dirPath);

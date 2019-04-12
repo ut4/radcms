@@ -33,6 +33,7 @@
       "frontend/assets/fira-sans-heavy.woff2",
       "frontend/assets/fira-sans-light.woff2",
       "frontend/vendor/vendor.bundle.min.js",
+      "frontend/common.bundle.min.css",
       "frontend/app.bundle.min.css",
       "frontend/app.bundle.min.js",
       "frontend/cpanel.bundle.min.css",
