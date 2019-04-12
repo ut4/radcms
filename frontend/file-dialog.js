@@ -1,3 +1,5 @@
+import {Form, featherSvg} from './common-components.js';
+
 const DOUBLE_CLICK_TIME_WINDOW = 250; // ms
 
 class FileDialog extends preact.Component {
@@ -33,24 +35,28 @@ class FileDialog extends preact.Component {
         if (!this.state.isOpen) return;
         return $el('div', {className: 'file-dialog-outer'},
             $el('div', {className: 'file-dialog box no-highlight-stripe'},
+                $el('h3', null, 'Select a directory'),
                 $el('div', {className: 'top'},
                     $el('button', {onClick: () => this.loadParentDir(),
                                    disabled: !this.currentRootHasParentDir(),
-                                   type: 'button'}, 'Up'),
-                    this.state.mainPanelTree && $el('div', null,
-                        this.state.mainPanelTree.root
-                    )
+                                   type: 'button'}, featherSvg('arrow-up')),
+                    this.makeClickablePath()
                 ),
                 $el('div', {className: 'main'}, this.makeMainPanel()),
                 $el('div', {className: 'bottom'},
-                    $el('span', null, this.state.selectedPath),
+                    $el('label', {className: 'inline'},
+                        $el('span', null, 'Selected:'),
+                        $el('input', {onInput: e => Form.receiveInputValue(e, this),
+                                      name: 'selectedPath',
+                                      value: this.state.selectedPath}, null)
+                    ),
                     $el('button', {onClick: () => this.confirmSelection(),
                                    type: 'button',
                                    className: 'nice-button nice-button-primary',
-                                   disabled: !this.state.selectedPath}, 'Select'),
+                                   disabled: !this.state.selectedPath}, 'Ok'),
                     $el('button', {onClick: () => this.closeDialog(),
                                    type: 'button',
-                                   className: 'nice-button'}, 'Cancel')
+                                   className: 'text-button'}, 'Cancel')
                 )
             )
         );
@@ -60,6 +66,16 @@ class FileDialog extends preact.Component {
         return $el('ul', null, this.state.mainPanelTree.entries.map(entry =>
             $el('li', {onClick: () => { this.handleEntryClick(entry); }}, entry.name)
         ));
+    }
+    makeClickablePath() {
+        if (!this.state.mainPanelTree) return;
+        const segments = this.state.mainPanelTree.root.split('/');
+        segments.pop(); // trailing slash
+        return $el('div', null, segments.map((seg, i) => {
+            const cur = segments.slice(0, i + 1).join('/');
+            return $el('button', {onClick: () => this.loadToMainPanel(cur),
+                                  type: 'button'}, seg);
+        }));
     }
     handleEntryClick(entry) {
         if ((performance.now() - this.lastClick) < DOUBLE_CLICK_TIME_WINDOW) { // double-click

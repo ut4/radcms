@@ -118,4 +118,32 @@ QUnit.module('content-handlers.js', function(hooks) {
         assert.equal(statusCode, 200);
         assert.deepEqual(body, testCntType2);
     });
+    QUnit.test('PUT \'/api/content-types\' saves data to db', assert => {
+        assert.expect(4);
+        //
+        const testType = {id: 45, name: 'atest', fields: '["dum"]'};
+        if (website.db.prepare('insert into contentTypes values (?,?,?)')
+                      .run(testType.id, testType.name, testType.fields)
+                      .changes < 1)
+            throw new Error('Failed to insert test data.');
+        //
+        const req = webApp.makeRequest('/api/content-types', 'PUT',
+            {id: testType.id, name: 'updated name', fields: '["updated dum"]'});
+        const res = webApp.makeResponse();
+        const sendRespSpy = new Stub(res, 'json');
+        //
+        webApp.getHandler(req.path, req.method)(req, res);
+        const [statusCode, body] = [...sendRespSpy.callInfo[0]];
+        const actuallyUpdated = website.db
+            .prepare('select * from contentTypes where id = ?')
+            .get(testType.id);
+        assert.equal(statusCode, 200);
+        assert.deepEqual(body, {"numAffectedRows":1});
+        assert.equal(actuallyUpdated.name, req.data.name);
+        assert.equal(actuallyUpdated.fields, req.data.fields);
+        //
+        if (website.db.prepare('delete from contentTypes where id = ?')
+                      .run(testType.id).changes < 1)
+            throw new Error('Failed to clean test data.');
+    });
 });

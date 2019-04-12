@@ -2,6 +2,10 @@ import {Form} from './common-components.js';
 import services from './common-services.js';
 
 const EXTRA_FIELD_SEPARATOR = '__separator__';
+const dataTypes = [
+    {name: 'text'},
+    {name: 'richtext'},
+];
 
 class ContentNodeFieldList extends preact.Component {
     /**
@@ -16,10 +20,6 @@ class ContentNodeFieldList extends preact.Component {
             throw new TypeError('props.fieldsInfo must be an object');
         if (typeof props.fieldsData != 'object')
             throw new TypeError('props.fieldsData must be an object');
-        this.dataTypes = [
-            {name: 'text'},
-            {name: 'richtext'},
-        ];
         this.state = {
             fields: this.makeFields(props),
             openFieldName: null,
@@ -104,12 +104,13 @@ class ContentNodeFieldList extends preact.Component {
                 $el('input', {name: 'openFieldName',
                               placeholder: 'fieldname',
                               onInput: e => Form.receiveInputValue(e, this),
-                              value: this.state.openFieldName}, null),
+                              value: this.state.openFieldName,
+                              className: 'inline'}, null),
                 $el('label', null,
                     $el('select', {name: 'openFieldDataType',
                                    onChange: e => Form.receiveInputValue(e, this),
                                    value: this.state.openFieldDataType},
-                        this.dataTypes.map(type =>
+                        dataTypes.map(type =>
                             $el('option', {value: type.name}, type.name)
                         ))
                 ),
@@ -126,11 +127,11 @@ class ContentNodeFieldList extends preact.Component {
                     'Add field (for devs)')
             ];
         }
-        return $el('div', {className: 'extra-field-form' + (!this.state.openFieldDataType ? '' : ' open')}, content);
+        return $el('div', {className: !this.state.openFieldDataType ? '' : ' in-edit'}, content);
     }
     setOpenField(field) {
         this.setState(!field
-            ? {openFieldName: '', openFieldDataType: this.dataTypes[0].name,
+            ? {openFieldName: '', openFieldDataType: dataTypes[0].name,
                openFieldIsNew: true}
             : {openFieldName: field.name, openFieldDataType: field.dataType,
                openFieldIsNew: false}
@@ -313,4 +314,4 @@ function sendCnodeToBackend(method, self) {
     });
 }
 
-export {AddContentView, EditContentView};
+export {AddContentView, EditContentView, dataTypes};

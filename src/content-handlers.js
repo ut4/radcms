@@ -22,9 +22,14 @@ exports.init = () => {
                 return;
         } else if (method === 'POST' && url === '/api/content')
             match = handleCreateContentRequest;
-        else if (method === 'PUT' && url === '/api/content')
-            match = handleUpdateContentRequest;
-        else
+        else if (method === 'PUT') {
+            if (url === '/api/content')
+                match = handleUpdateContentRequest;
+            else if (url === '/api/content-types')
+                match = handleUpdateContentTypeRequest;
+            else
+                return;
+        } else
             return;
         return app.currentWebsite ? match : rejectRequest;
     });
@@ -90,7 +95,7 @@ function handleGetContentNodeRequest(req, res) {
  * {
  *     name: string;          // required
  *     json: string;          // required
- *     contentTypeId: number; // required
+ *     contentTypeId: number; // int, required
  * }
  *
  * Example response:
@@ -109,7 +114,7 @@ function handleCreateContentRequest(req, res) {
 }
 
 /**
- * PUT /api/content: writes updated content node to the database.
+ * PUT /api/content: updates a content node (identified by $req.data.name).
  *
  * Payload:
  * @see handleCreateContentRequest
@@ -121,12 +126,41 @@ function handleUpdateContentRequest(req, res) {
     const errs = [];
     if (!validateReqData(req.data, errs)) { res.plain(400, errs.join('\n')); return; }
     //
-    const numChanges = app.currentWebsite.db
+    const numAffectedRows = app.currentWebsite.db
         .prepare('update contentNodes set `json`=?, `contentTypeId`=? where `name`=?')
         .run(req.data.json, req.data.contentTypeId, req.data.name)
         .changes;
     //
-    res.json(200, {numAffectedRows: numChanges});
+    res.json(200, {numAffectedRows});
+}
+
+/**
+ * PUT /api/content-types: updates a content type (identified by $req.data.id).
+ *
+ * Payload:
+ * {
+ *     id: number;     // int, required
+ *     name: string;   // required
+ *     fields: string; // required
+ * }
+ *
+ * Example response:
+ * {"numAffectedRows":1}
+ */
+function handleUpdateContentTypeRequest(req, res) {
+    const errs = [];
+    if (!req.data.id) errs.push('id is required.');
+    else if (parseInt(req.data.id) != req.data.id) errs.push('id must be an integer');
+    if (!req.data.name) errs.push('name is required.');
+    if (!req.data.fields) errs.push('fields is required.');
+    if (errs.length) { res.plain(400, errs.join('\n')); return; }
+    //
+    const numAffectedRows = app.currentWebsite.db
+        .prepare('update contentTypes set `name` = ?, `fields` = ? where `id` = ?')
+        .run(req.data.name, req.data.fields, req.data.id)
+        .changes;
+    //
+    res.json(200, {numAffectedRows});
 }
 
 /**

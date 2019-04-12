@@ -20,7 +20,7 @@ body {
 .line-through {
     text-decoration: line-through;
 }
-h3 {
+h3, .h3 {
     margin: 0 0 20px;
     font: normal 18px/18px "Fira sans heavy";
 }
@@ -34,12 +34,29 @@ h3 {
     fill: none;
 }
 
+/* == Lists ================================================================= */
+.list > * {
+    margin: 25px 0;
+}
+.list > :first-child {
+    margin-top: 0;
+}
+.list > :last-child {
+    margin-bottom: 0;
+}
+.list-small > * {
+    margin: 12px auto;
+}
+
 /* == Buttons =============================================================== */
 button {
     font-family: "Fira sans light";
     border: medium none;
     cursor: pointer;
     background-color: #f0f0f0;
+}
+button:disabled {
+    cursor: not-allowed;
 }
 button:hover:enabled {
     background-color: #ececec;
@@ -54,7 +71,6 @@ button:hover:enabled {
 .nice-button:disabled {
     background-color: #E5E5E5;
     color: #AAAAAA;
-    cursor: not-allowed;
     text-shadow: none;
 }
 .nice-button:active:enabled,
@@ -64,11 +80,19 @@ button:hover:enabled {
 .nice-button:hover:enabled {
     background-color: #3bddc5;
 }
+.nice-button.small {
+    padding: 3px 13px;
+}
 .icon-button .feather {
     width: 18px;
     height: 18px;
     float: left;
     margin-right: 8px;
+}
+.icon-button.small .feather {
+    width: 15px;
+    height: 15px;
+    margin-top: 1px;
 }
 .text-button {
     padding: 5px 16px;
@@ -98,6 +122,7 @@ input, textarea, select:not(.no-style) {
     -webkit-transition: border-color 0.1s ease-out 0s;
             transition: border-color 0.1s ease-out 0s;
 }
+input.inline { padding: 0; }
 input[type="submit"] {
     text-indent: 0;
 }
@@ -170,6 +195,10 @@ label .text-error,
 .form-buttons .nice-button {
     min-width: 85px;
 }
+table input, table select:not(.no-style) {
+    padding: 2px 0;
+    margin: 0 0 0 6px;
+}
 
 /* == Tables ================================================================ */
 table {
@@ -198,7 +227,7 @@ table.striped tr:nth-of-type(2n) td {
 table td {
     padding: 6px 10px 6px 0;
     text-align: left;
-    vertical-align: top;
+    vertical-align: middle;
 }
 table tbody td:first-child {
     padding-left: 4px;
@@ -225,3 +254,4 @@ table .input-set input {
 .light h3 { color: rgba(0,0,0,0.65); }
 .light a { color: #4d817f; }
 .light a:hover { color: #366361 }
+.light input, textarea, select:not(.no-style) { background-color: #fff }

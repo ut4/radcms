@@ -70,7 +70,7 @@ QUnit.module('AddContentViewComponent', hooks => {
             const submitButton = formButtons.querySelector('button[type="submit"]');
             const cnodeNameInput = form.querySelector('input[name="cnodeName"]');
             const contentInput = form.querySelector('textarea[name="content"]');
-            const extraFieldForm = form.querySelector('.extra-field-form');
+            const extraFieldForm = form.children[3].children[2];
             const addExtraFieldBtn = extraFieldForm.children[0];
             // Add an extra field
             addExtraFieldBtn.click();

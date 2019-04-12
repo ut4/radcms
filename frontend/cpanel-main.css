@@ -1,5 +1,3 @@
-@import url("common.css");
-
 .open { overflow: hidden; }
 .view { float: left; padding: 48px 1px 1px; border-radius: 2px;
     width: calc(100% - 270px); margin: 8px 0 1px 8px; }
@@ -7,8 +5,7 @@
     border-radius: 1px; border-top: 1px solid rgba(0,0,0,0.15); }
 .view h2 { font: normal 24px/24px "Fira sans heavy"; margin: -55px 0 27px -2px; }
 
-.extra-field-form.open { padding: 12px 10px 10px; margin: 8px 0; }
-.extra-field-form > input:first-of-type { padding: 0; }
+.in-edit { padding: 12px 10px 10px; margin: 8px 0; }
 
 #control-panel { position: absolute; width: 240px; padding: 40px 1px 1px;
     margin-top: 8px; right: 9px; border-radius: 1px; }
@@ -46,6 +43,10 @@
     background-color: #fff; margin: 0; text-align: right; padding: 0 15px 8px;
     color: rgba(0,0,0,0.6); }
 
+.content-types-list > div { transition: padding 0.15s linear; }
+.content-types-list > div > *:first-child button { margin-left: 6px; }
+.content-types-list > div > table { max-width: 390px; }
+
 /**/
 .light { color: #4d4d4d; }
 .light .open { background-color: rgba(255,255,255,0.6); }
@@ -68,4 +69,4 @@
 .light .tab-links button.current:last-of-type {
     border-left: 1px solid rgba(0,0,0,0.15); }
 .light #control-panel h1 { color: rgba(0,0,0,0.5); }
-.light .extra-field-form.open { border: 1px dashed rgba(0,0,0,0.2); }
+.light .in-edit { border: 1px dashed rgba(0,0,0,0.2); }

@@ -1,8 +1,9 @@
 import services from './common-services.js';
 import {myLink, contentNodeList, featherSvg} from './common-components.js';
 import {GenericListUIPanelImpl, StaticMenuUIPanelImpl} from './ui-panel-impls.js';
-import {AddContentView, EditContentView} from './content-views.js';
 import {WebsiteGenerateView, WebsiteUploadView} from './website-views.js';
+import {AddContentView, EditContentView} from './content-views.js';
+import {ManageContentTypesView, CreateContentTypeView} from './content-type-views.js';
 import {SiteGraphEditView} from './site-graph-views.js';
 
 const cpanelApp = {
@@ -104,11 +105,13 @@ class ControlPanel extends preact.Component {
                         this.setState({className: !isIndex ? 'open' : ''});
                     }
                 }, [
-                    $el(AddContentView, {path: '/add-content/:initialContentTypeName?'}, null),
-                    $el(EditContentView, {path: '/edit-content/:contentNodeId'}, null),
                     $el(WebsiteGenerateView, {path: '/generate-website'}, null),
                     $el(WebsiteUploadView, {path: '/upload-website'}, null),
-                    $el(SiteGraphEditView, {path: '/edit-site-graph'}, null)
+                    $el(SiteGraphEditView, {path: '/edit-site-graph'}, null),
+                    $el(AddContentView, {path: '/add-content/:initialContentTypeName?'}, null),
+                    $el(EditContentView, {path: '/edit-content/:contentNodeId'}, null),
+                    $el(ManageContentTypesView, {path: '/manage-content-types'}, null),
+                    $el(CreateContentTypeView, {path: '/create-content-type'}, null),
                 ].concat(...this.currentPageUiPanels.map(panel=>panel.getRoutes()))
             )
         ]);
@@ -150,22 +153,28 @@ class ControlPanel extends preact.Component {
         );
     }
     makeDevTabItems() {
-        return [
+        return $el('div', {className: 'list list-small'}, [
             $el('div', null, [
-                $el('div', null, [
-                    $el('h3', null, ['Layout', $el('span', null, 'Render this page using:')]),
-                    this.state.templates.length && $el('select', {
-                        value: this.state.selectedTemplateIdx,
-                        onChange: e => { this.handleCurrentPageTemplateChange(e); },
-                    }, this.state.templates.map((t, i) =>
-                        $el('option', {value: i}, t.fileName)
-                    )),
-                    $el('div', null,
-                        myLink('/edit-site-graph', 'Edit site graph')
-                    )
+                $el('h3', null, ['Layout', $el('span', null, 'Render this page using:')]),
+                this.state.templates.length && $el('select', {
+                    value: this.state.selectedTemplateIdx,
+                    onChange: e => { this.handleCurrentPageTemplateChange(e); },
+                }, this.state.templates.map((t, i) =>
+                    $el('option', {value: i}, t.fileName)
+                ))
+            ]),
+            $el('div', null, [
+                $el('h3', null, 'Content types'),
+                $el('div', {className: 'list list-small'}, [
+                    $el('div', null, myLink('/manage-content-types', 'Manage')),
+                    $el('div', null, myLink('/create-content-type', 'Add new'))
                 ])
+            ]),
+            $el('div', null, [
+                $el('h3', null, 'Site graph'),
+                myLink('/edit-site-graph', 'Delete entries')
             ])
-        ];
+        ]);
     }
     handleCurrentPageTemplateChange(e) {
         this.setState({selectedTemplateIdx: parseInt(e.target.value)});
