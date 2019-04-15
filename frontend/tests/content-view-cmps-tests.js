@@ -70,19 +70,19 @@ QUnit.module('AddContentViewComponent', hooks => {
             const submitButton = formButtons.querySelector('button[type="submit"]');
             const cnodeNameInput = form.querySelector('input[name="cnodeName"]');
             const contentInput = form.querySelector('textarea[name="content"]');
-            const extraFieldForm = form.children[3].children[2];
-            const addExtraFieldBtn = extraFieldForm.children[0];
+            const addExtraFieldBtn = form.children[3].children[2].children[0];
             // Add an extra field
             addExtraFieldBtn.click();
-            const extraFieldNameInput = extraFieldForm.querySelector('input[name="openFieldName"]');
-            const extraFieldDataTypeInput = extraFieldForm.querySelector('select[name="openFieldDataType"]');
-            utils.setInputValue('newField', extraFieldNameInput, 'input');
+            const fieldInputOuter = itu.findRenderedDOMElementWithClass(tree, 'in-edit');
+            const extraFieldNameInput = fieldInputOuter.querySelector('input[name="openFieldName"]');
+            const extraFieldDataTypeInput = fieldInputOuter.querySelector('select[name="openFieldDataType"]');
+            utils.setInputValue('myNewField', extraFieldNameInput, 'input');
             utils.setDropdownIndex(1, extraFieldDataTypeInput);
-            extraFieldForm.querySelector('button:first-of-type').click();
-            const extraFieldValueInput = form.querySelector('textarea[name="newField"]');
+            fieldInputOuter.querySelector('button:first-of-type').click();
             // Fill out the fields (own and the extra)
             utils.setInputValue('/new-article', cnodeNameInput);
             utils.setInputValue('foo', contentInput);
+            const extraFieldValueInput = form.querySelector('textarea[name="myNewField"]');
             utils.setInputValue('bar', extraFieldValueInput);
             //
             submitButton.click();
@@ -92,7 +92,7 @@ QUnit.module('AddContentViewComponent', hooks => {
                 name: cnodeNameInput.value,
                 json: JSON.stringify({
                     content: contentInput.value,
-                    'newField__separator__richtext': extraFieldValueInput.value
+                    'myNewField__separator__richtext': extraFieldValueInput.value
                 }),
                 contentTypeId: testContentTypes[0].id
             }));

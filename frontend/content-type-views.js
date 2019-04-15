@@ -147,6 +147,7 @@ class ManageContentTypesView extends preact.Component {
             oldRef.name = ctype.name;
             oldRef.fields = fields;
             this.setState({contentTypes: this.state.contentTypes, openItem: null});
+            toast('Changes saved', 'success');
         }, () => {
             this.cancel();
             toast('Failed to update content type.', 'error');

@@ -1,5 +1,5 @@
 import services from './common-services.js';
-import {myLink, contentNodeList, featherSvg} from './common-components.js';
+import {myLink, contentNodeList, featherSvg, Toaster} from './common-components.js';
 import {GenericListUIPanelImpl, StaticMenuUIPanelImpl} from './ui-panel-impls.js';
 import {WebsiteGenerateView, WebsiteUploadView} from './website-views.js';
 import {AddContentView, EditContentView} from './content-views.js';
@@ -79,6 +79,7 @@ class ControlPanel extends preact.Component {
     }
     render() {
         return $el('div', {className: this.state.className}, [
+            $el(Toaster, null, null),
             $el('div', {id: 'control-panel'}, [
                 myLink('/frontend/app.html', 'Back to dashboard', true),
                 $el('div', {className: 'tab-links'}, [

@@ -15,5 +15,8 @@ require('./src/file-handlers.js').init();
 require('./src/website-handlers.js').init();
 
 app.initAndInstall();
-webApp.start();
-opener('http://localhost:3000/frontend/app.html');
+webApp.start(() => {
+    opener('http://localhost:3000/frontend/app.html');
+}, err => {
+    throw new Error(err.message);
+});

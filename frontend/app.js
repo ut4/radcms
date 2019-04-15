@@ -1,4 +1,5 @@
 import {WebsiteListView, WebsiteCreateView, WebsiteImportView} from './app-website-views.js';
+import {Toaster} from './common-components.js';
 
 /**
  * The root component of app.html.
@@ -6,6 +7,7 @@ import {WebsiteListView, WebsiteCreateView, WebsiteImportView} from './app-websi
 class App extends preact.Component {
     render() {
         return $el('div', null,
+            $el(Toaster, null, null),
             $el('nav', {id: 'main-menu', className: 'box no-highlight-stripe'},
                 $el('h1', null, 'InsaneCMS'),
                 $el('a', {href: '#/import-website'}, 'Import website'),

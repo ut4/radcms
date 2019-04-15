@@ -121,4 +121,54 @@ function featherSvg(iconId) {
     );
 }
 
-export {Form, myLink, contentNodeList, featherSvg};
+class Toaster extends preact.Component {
+    /**
+     * @param {{autoCloseTimeoutMillis?: number; publishFactoryTo?: Object;}} props
+     */
+    constructor(props) {
+        super(props);
+        (props.publishFactoryTo || window).toast = this.addMessage.bind(this);
+        this.autoCloseTimeoutMillis = props.autoCloseTimeoutMillis || 8000;
+        this.state = {messages: []};
+    }
+    /**
+     * @param {string} message
+     * @param {string} level
+     */
+    addMessage(message, level) {
+        this.state.messages.unshift({message, level,
+            timeoutId: setTimeout(this.removeMessage.bind(this),
+                                  this.autoCloseTimeoutMillis)});
+        this.setState({messages: this.state.messages});
+    }
+    /**
+     * @param {{message: string; level: string; timeoutId: number;}?} message
+     */
+    removeMessage(message) {
+        const messages = this.state.messages;
+        if (!message) { // from timeout
+            messages.pop();
+        } else { // from onClick
+            clearTimeout(message.timeoutId);
+            messages.splice(messages.indexOf(message), 1);
+        }
+        this.setState({messages});
+    }
+    render() {
+        if (!this.state.messages.length) return;
+        return $el('div', {className: 'toaster'},
+            this.state.messages.map(message => {
+                let icon = 'check';
+                if (message.level == 'error') icon = 'alert-triangle';
+                if (message.level == 'info') icon = 'info';
+                return $el('div', {className: 'toaster-message ' + message.level,
+                                   onClick: () => this.removeMessage(message)},
+                    featherSvg(icon),
+                    $el('span', null, message.message)
+                );
+            })
+        );
+    }
+}
+
+export {Form, myLink, contentNodeList, featherSvg, Toaster};

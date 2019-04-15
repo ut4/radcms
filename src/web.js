@@ -115,8 +115,11 @@ const webApp = {
     /**
      *
      */
-    start() {
-        http.createServer(this._handleRequest.bind(this)).listen(3000);
+    start(onOk, onErr) {
+        const server = http.createServer(this._handleRequest.bind(this));
+        server.listen(3000);
+        server.on('listening',  onOk);
+        server.on('error', onErr);
     },
     /**
      * @param {(url: string, method: string): (myReq: MyRequest, myRes: MyResponse): any} fn

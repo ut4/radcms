@@ -6,7 +6,3 @@ window.myRedirect = (to, full) => {
         window.parent.location.href = window.parent.location.origin + to;
     }
 };
-window.toast = (message, level) => {
-    if (level === 'error') console.error(message);
-    else console.info(message);
-};

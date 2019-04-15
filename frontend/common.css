@@ -197,7 +197,7 @@ label .text-error,
 }
 table input, table select:not(.no-style) {
     padding: 2px 0;
-    margin: 0 0 0 6px;
+    margin: 0;
 }
 
 /* == Tables ================================================================ */
@@ -225,7 +225,7 @@ table.striped tr:nth-of-type(2n) td {
     background-color: transparent;
 }
 table td {
-    padding: 6px 10px 6px 0;
+    padding: 6px 10px 6px 6px;
     text-align: left;
     vertical-align: middle;
 }
@@ -248,6 +248,39 @@ table .input-set > span:first-of-type {
 }
 table .input-set input {
     margin: 0;
+}
+
+/* == Messages ============================================================== */
+.toaster {
+    color: #fff;
+    font-size: 13px;
+    line-height: 13px;
+}
+.toaster-message {
+    cursor: pointer;
+    padding: 12px 10px 12px 47px;
+    position: relative;
+    border-radius: 2px;
+}
+.toaster-message:not(:only-of-type):not(:last-of-type) {
+    margin-bottom: 6px;
+}
+.toaster-message.success {
+    background-color: rgba(12, 191, 120, 0.85);
+}
+.toaster-message.info {
+    background-color: rgba(48, 174, 253, 0.85);
+}
+.toaster-message.error {
+    background-color: rgba(255, 62, 97, 0.85);
+}
+.toaster-message .feather {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    width: 22px;
+    height: 22px;
+    margin-top: -11px;
 }
 
 /* == Theme =============================================================== */

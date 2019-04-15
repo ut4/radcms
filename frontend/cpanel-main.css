@@ -1,3 +1,5 @@
+.toaster { margin: 8px 9px 0; }
+
 .open { overflow: hidden; }
 .view { float: left; padding: 48px 1px 1px; border-radius: 2px;
     width: calc(100% - 270px); margin: 8px 0 1px 8px; }
