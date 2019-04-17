@@ -79,7 +79,7 @@ class Website {
             try { this.compileAndCacheTemplate(name); }
             catch(e) { /**/ }
         });
-        this.fileWatcher.watch(this.dirPath);
+        this.fileWatcher.watch(this.dirPath, this.config._assetFileExtsStr);
         signals.emit('siteGraphRescanRequested', 'full');
     }
     /**
@@ -167,16 +167,19 @@ class Website {
      */
     compileAndCacheTemplate(fileName) {
         templateCache.put(fileName, transpiler.transpileToFn(
-            this.fs.readFileSync(this.dirPath + fileName, 'utf-8')
+            this.fs.readFileSync(this.dirPath + fileName, 'utf8')
         ));
         return true;
     }
     /**
-     * @param {string} fileName eg '/file.jsx.htm'
+     * @param {string} fileName eg. '/file.jsx.htm'
+     * @returns {string|Buffer}
      * @throws {Error}
      */
     readOwnFile(fileName) {
-        return this.fs.readFileSync(this.dirPath + fileName.substr(1), 'utf-8');
+        const ext = fileName.substr(fileName.lastIndexOf('.') + 1);
+        return this.fs.readFileSync(this.dirPath + fileName.substr(1),
+                                    ext == 'js' || ext == 'css' ? 'utf8' : null);
     }
 }
 
@@ -289,6 +292,8 @@ class SiteConfig {
         this.name = '';
         this.homeUrl = '';
         this.defaultLayout = '';
+        this.assetFileExts = [];
+        this._assetFileExtsStr = '';
     }
     /**
      * Reads and parses $dirPath+'site.ini' and stores the values to $this.*.
@@ -297,7 +302,7 @@ class SiteConfig {
      * @throws Error
      */
     loadFromDisk(dirPath) {
-        this._populateFrom(this.ini.parse(this.fs.readFileSync(dirPath + 'site.ini', 'utf-8')));
+        this._populateFrom(this.ini.parse(this.fs.readFileSync(dirPath + 'site.ini', 'utf8')));
     }
     /**
      * @param {Object} config
@@ -305,28 +310,43 @@ class SiteConfig {
      */
     _populateFrom(config) {
         const errors = [];
+        const DEFAULT_HOME_URL = '/home';
         const DEFAULT_DEFAULT_LAYOUT = 'main-layout.jsx.htm';
+        const DEFAULT_ASSET_EXTS = 'js|css|png|apng|jpg|jpeg|svg|gif|bmp|ico';
         /*
-         * [Site]\nname
+         * [Site] name
          */
         if (config.Site.name)
             this.name = config.Site.name;
         /*
-         * [Site]\nhomeUrl
+         * [Site] homeUrl
          */
         if (config.Site.homeUrl) {
             this.homeUrl = config.Site.homeUrl.charAt(0) === '/'
                 ? config.Site.homeUrl
                 : '/' + config.Site.homeUrl;
         } else {
-            errors.push('[Site] homeUrl is required');
+            this.homeUrl = DEFAULT_HOME_URL;
         }
         /*
-         * [Site]\ndefaultLayout
+         * [Site] defaultLayout
          */
         this.defaultLayout = config.Site.defaultLayout || DEFAULT_DEFAULT_LAYOUT;
+        /*
+         * [Sync] assetFileExtensions
+         */
+        if (!config.Sync) config.Sync = {};
+        if (!config.Sync.assetFileExtensions) {
+            this._assetFileExtsStr = DEFAULT_ASSET_EXTS;
+            this.assetFileExts = DEFAULT_ASSET_EXTS.split('|');
+        } else {
+            this._assetFileExtsStr = config.Sync.assetFileExtensions;
+            this.assetFileExts = config.Sync.assetFileExtensions.split('|');
+            if (this.assetFileExts.indexOf('css') < 0) this.assetFileExts.push('css');
+            if (this.assetFileExts.indexOf('js') < 0) this.assetFileExts.push('js');
+        }
         //
-        if (errors.length) throw new Error(errors.join('\n'));
+        if (errors.length) throw new Error(errors.join(' '));
     }
 }
 

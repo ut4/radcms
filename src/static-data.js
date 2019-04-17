@@ -10,7 +10,8 @@ const mainDbSchemaSql =
 const websiteDbSchemaSql =
 "drop trigger if exists onUploadStatusesDeleteFileTrigger;" +
 "drop table if exists uploadStatuses;" +
-"drop table if exists staticFileResources;" +
+"drop table if exists assetFileRefs;" +
+"drop table if exists assetFiles;" +
 "drop index if exists contentNodesNameIdx;" +
 "drop table if exists contentNodes;" +
 "drop table if exists contentTypes;" +
@@ -32,9 +33,13 @@ const websiteDbSchemaSql =
     "foreign key(contentTypeId) references contentTypes(`id`)" +
 ");" +
 "create unique index contentNodesNameIdx on contentNodes(`name`);" +
-"create table staticFileResources (" +
-    "`url` varchar(512) primary key," +
-    "`isOk` integer default 0" +
+"create table assetFiles (" +
+    "`url` varchar(512) primary key" +
+");" +
+"create table assetFileRefs (" +
+    "`fileUrl` varchar(512) not null," + // url from css/js/img element
+    "`userUrl` varchar(512) not null," + // url of the page where the $fileUrl element was found
+    "primary key (`fileUrl`, `userUrl`)" +
 ");" +
 "create table uploadStatuses (" +
     "`url` varchar(512) primary key," +
@@ -43,8 +48,8 @@ const websiteDbSchemaSql =
     "`isFile` integer default 0" + // 0 == page, 1 = file
 ");" +
 "create trigger onUploadStatusesDeleteFileTrigger after delete on uploadStatuses " +
-"when old.isFile = 1 begin " +
-    "delete from staticFileResources where `url` = old.`url`;" +
+"when old.`isFile` = 1 begin " +
+    "delete from assetFiles where `url` = old.`url`;" +
 "end;";
 
 const genericContentType = {name: 'Generic blobs', fields: {content: 'richtext'}};

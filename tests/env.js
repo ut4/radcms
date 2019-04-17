@@ -12,6 +12,7 @@ const testEnv = {
     setupTestWebsite() {
         app.setWaitingWebsite('dummy/', {memory: true});
         app.waitingWebsite.install(null);
+        app.waitingWebsite.config._populateFrom({Site: {}});
         app.setCurrentWebsite(app.waitingWebsite.dirPath, true);
         this.setupTestWebsite = () => {};
     },

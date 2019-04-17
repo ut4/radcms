@@ -22,19 +22,22 @@ QUnit.module('resource-diff', hooks => {
             throw new Error('');
         });
         sha1Stub = new Stub(diff, 'sha1', str => str);
+        //
+        website.graph.addPage('/foo', '', mockTemplate.fname, {}, 1);
+        templateCache.put(mockTemplate.fname, () => {});
     });
     hooks.after(() => {
         readFileStub.restore();
         sha1Stub.restore();
-    });
-    hooks.afterEach(() => {
+        //
         website.graph.clear();
         templateCache.clear();
+        //
+        if (website.db.prepare('delete from uploadStatuses').run().changes < 1)
+            throw new Error('Failed to clean test data.');
     });
-    QUnit.test('spots new css/js from a modified template', assert => {
-        assert.expect(13);
-        website.graph.addPage('/foo', '', mockTemplate.fname, {}, 1);
-        templateCache.put(mockTemplate.fname, () => {});
+    QUnit.test('discovers css/js from a modified template', assert => {
+        assert.expect(4);
         mockTemplate.contents = '<html><body>'+
             '<link href="/non-existing.css" rel="stylesheet">' +
             '<link href="' + mockCssFile.url + '" rel="stylesheet">' +
@@ -43,29 +46,62 @@ QUnit.module('resource-diff', hooks => {
         //
         handleFWEvent(fileWatcher.EVENT_CHANGE, mockTemplate.fname);
         //
-        const actuallyInsertedStatuses = website.db
-            .prepare('select * from uploadStatuses where `isFile` = 1')
-            .all();
         const actuallyInsertedFiles = website.db
-            .prepare('select * from staticFileResources')
+            .prepare('select * from assetFileRefs')
             .all();
         assert.equal(actuallyInsertedFiles.length, 3);
-        assert.equal(actuallyInsertedFiles[0].url, '/non-existing.css');
-        assert.equal(actuallyInsertedFiles[1].url, mockCssFile.url);
-        assert.equal(actuallyInsertedFiles[2].url, mockJsFile.url);
-        assert.equal(actuallyInsertedStatuses.length, 2,
-            'should save the checksums of valid files to uploadStatuses');
-        assert.equal(actuallyInsertedStatuses[0].url, mockCssFile.url);
-        assert.equal(actuallyInsertedStatuses[0].curhash, mockCssFile.contents);
-        assert.equal(actuallyInsertedStatuses[0].uphash, null);
-        assert.equal(actuallyInsertedStatuses[0].isFile, 1);
-        assert.equal(actuallyInsertedStatuses[1].url, mockJsFile.url);
-        assert.equal(actuallyInsertedStatuses[1].curhash, mockJsFile.contents);
-        assert.equal(actuallyInsertedStatuses[1].uphash, null);
-        assert.equal(actuallyInsertedStatuses[1].isFile, 1);
+        assert.equal(actuallyInsertedFiles[0].fileUrl, '/non-existing.css');
+        assert.equal(actuallyInsertedFiles[1].fileUrl, mockCssFile.url);
+        assert.equal(actuallyInsertedFiles[2].fileUrl, mockJsFile.url);
         //
-        if (website.db.prepare('delete from uploadStatuses').run().changes <
-            actuallyInsertedStatuses.length
+        if (website.db.prepare('delete from assetFileRefs').run().changes <
+            actuallyInsertedFiles.length
         ) throw new Error('Failed to clean test data.');
+    });
+    QUnit.test('inserts missing checksums for existing css/js', assert => {
+        assert.expect(1);
+        const cssFileHash = diff.sha1(mockCssFile.contents);
+        if (// Both files exists on disk ...
+            website.db.prepare('insert into assetFiles values (?),(?)')
+                      .run(mockCssFile.url, mockJsFile.url).changes < 1 ||
+            // but only the first one has a uploadStatus
+            website.db.prepare('insert into uploadStatuses values (?,?,null,1)')
+                      .run(mockCssFile.url, cssFileHash) < 1)
+            throw new Error('Failed to setup test data.');
+        mockTemplate.contents = '<html><body>'+
+            '<link href="' + mockCssFile.url + '" rel="stylesheet">' +
+            '<script src="' + mockJsFile.url.substr(1) + '"></script>' +
+        '</body></html>';
+        //
+        handleFWEvent(fileWatcher.EVENT_CHANGE, mockTemplate.fname);
+        //
+        const actualStatus = website.db
+            .prepare('select `curhash`,`uphash` from uploadStatuses where `url` = ?')
+            .get(mockCssFile.url);
+        assert.deepEqual(actualStatus, {curhash: cssFileHash, uphash: null},
+            'Should insert a missing checksum');
+        //
+        if (website.db.prepare('delete from assetFileRefs').run().changes < 2)
+            throw new Error('Failed to clean test data.');
+    });
+    QUnit.test('discovers ico/img from a modified template', assert => {
+        assert.expect(3);
+        mockTemplate.contents = '<html><body>'+
+            '<link href="/icon.ico" rel="icon">' +
+            '<img src="/pic.png">' +
+        '</body></html>';
+        //
+        handleFWEvent(fileWatcher.EVENT_CHANGE, mockTemplate.fname);
+        //
+        const actuallyInsertedFiles = website.db
+            .prepare('select * from assetFileRefs')
+            .all();
+        assert.equal(actuallyInsertedFiles.length, 2);
+        assert.equal(actuallyInsertedFiles[0].fileUrl, '/icon.ico');
+        assert.equal(actuallyInsertedFiles[1].fileUrl, '/pic.png');
+        //
+        if (website.db.prepare('delete from assetFileRefs')
+                      .run().changes < actuallyInsertedFiles.length)
+            throw new Error('Failed to clean test data.');
     });
 });

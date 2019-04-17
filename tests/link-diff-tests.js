@@ -26,9 +26,9 @@ QUnit.module('link-diff', hooks => {
         diff.RemoteDiff = class {
             constructor(website){ this.website = website; }
             addPageToCheck(){}
-            addFileToCheck(){}
             addPageToDelete(){}
-            saveStatusesToDb(){}
+            addAssetToCheck(){}
+            syncToDb(){}
         };
         website.config.homeUrl = '/home';
         website.config.defaultLayout = mockTemplate.fname;

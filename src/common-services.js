@@ -63,19 +63,21 @@ const fileWatcher = {
     },
     /**
      * @param {string} path eg. '/full/path/to/my/site/'
+     * @param {string} exts eg. 'txt|png|jpg'
      */
-    watch(path) {
+    watch(path, exts) {
         if (watcher) {
             resetAddEventTimeout();
             watcher.close();
         }
         watcher = chokidar.watch(path, {
             cwd: path,
-            ignored: /^.*\.(?!(htm|ini|css|js|jsx))/,
+            ignored: new RegExp('^.*\\.(?!(' + (exts ? exts + '|' : '') + 'ini|jsx|htm))'),
             disableGlobbing: true,
             ignoreInitial: true,
             depth: 1
         }).on('all', (event, fileName) => {
+            fileName = fileName.replace(/\\/g, '/');
             if (event === this.EVENT_ADD) {
                 lastAddEventFileName = fileName;
                 addEventDispatchTimeout = setTimeout(() => {
@@ -123,7 +125,7 @@ class Uploader {
     }
     /**
      * @param {string} remoteFileName eg. '/file.txt'
-     * @param {string} contents
+     * @param {string|Buffer} contents
      * @returns {Promise<{code: number; message: string;}>}
      */
     upload(remoteFileName, contents) {

@@ -187,7 +187,7 @@ QUnit.module('website-handlers.js (2)', hooks => {
                     page2.url,        '', null, 0,
                     page3.url,        '', null, 0
                 ).changes < 5 ||
-            website.db.prepare('insert into staticFileResources values (?,1),(?,1)')
+            website.db.prepare('insert into assetFiles values (?),(?)')
                 .run(layout1.fileName, layout2.fileName).changes < 2
         ) throw new Error('Failed to insert test data.');
         //
@@ -513,9 +513,9 @@ QUnit.module('website-handlers.js (2)', hooks => {
         siteGraph.addPage(url1, '', layout1.fileName, {}, 1);
         siteGraph.addPage(url2, '', layout1.fileName, {}, 1);
         if (website.db.prepare('insert into uploadStatuses values '+q+','+q).run(
-                url1, 'hash', 'hash', 1,
+                url1, 'hash', 'hash', 0,
                 //               ^ /services2 is uploaded
-                url2, 'hash', null, 1
+                url2, 'hash', null, 0
                 //              ^ /contact2 is not
             ).changes < 1 || website.saveToDb(siteGraph) < 1)
             throw new Error('Failed to setup test data.');

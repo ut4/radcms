@@ -28,7 +28,7 @@ const performRescan = type => {
         return;
     }
     diff.deleteUnreachablePages();
-    diff.remoteDiff.saveStatusesToDb();
+    diff.remoteDiff.syncToDb();
     if (diff.nLinksAdded || diff.nLinksRemoved) {
         website.saveToDb(siteGraph);
     }
@@ -37,8 +37,7 @@ const performRescan = type => {
     if (diff.nPagesRemoved) m.push('removed ' + diff.nPagesRemoved + ' page(s)');
     if (diff.nLinksAdded) m.push('added ' + diff.nLinksAdded + ' link(s)');
     if (diff.nLinksRemoved) m.push('removed ' + diff.nLinksRemoved + ' link(s)');
-    if (diff.remoteDiff.nNewFiles) m.push('discovered ' + diff.remoteDiff.nNewFiles +
-        ' file resources');
+    if (diff.nAssets) m.push('discovered ' + diff.nAssetsFound + ' asset files');
     app.log('[Info]: Rescanned the site' + (m.length ? ': ' + m.join(', ') : ''));
 };
 
@@ -47,11 +46,11 @@ class RemoteDiff {
      * @param {Website} website
      */
     constructor(website) {
-        /** @prop {[string]: {url: string; hash: string; uphash: string; isFile: bool;}} */
-        this.checkables = {};
-        this.deletables = {};
-        this.nNewFiles = 0;
-        this.nNewFilesAdded = 0;
+        /** @prop {[string]: {url: string; hash: string; uphash?: string;}} */
+        this.discoveredPages = {};
+        this.removedPages = {};
+        /** @prop {[string]: {url: string; userPageUrl: string;}} */
+        this.discoveredAssets = {};
         this.website = website;
     }
     /**
@@ -59,133 +58,103 @@ class RemoteDiff {
      * @param {string} html
      */
     addPageToCheck(url, html) {
-        if (!this.checkables.hasOwnProperty(url)) {
-            this.checkables[url] = {url: url, hash: exports.sha1(html),
-                                    uphash: null, isFile: 0};
+        if (!this.discoveredPages.hasOwnProperty(url)) {
+            this.discoveredPages[url] = {url: url, hash: exports.sha1(html),
+                                         uphash: null};
         }
-    }
-    /**
-     * @param {string} url Always starts with '/' i.e. '/foo.css', '/bar.js'
-     */
-    addFileToCheck(url) {
-        this.checkables[url] = {url: url, hash: null, uphash: null, isFile: 1};
     }
     /**
      * @param {string} url
      */
     addPageToDelete(url) {
-        this.deletables[url] = {url: url, hash: null, uphash: null, isFile: 0};
+        this.removedPages[url] = {url: url, hash: null, uphash: null};
     }
     /**
-     * Traverses $this.checkables and $this.deletables, and saves their new
-     * checksums to the database.
+     * @param {string} url Always starts with '/' i.e. '/foo.css', '/bar.js'
+     * @param {string} userPageUrl Url of the page where $url's element was discovered
      */
-    saveStatusesToDb() {
-        // Select current static file urls (css/js) from the database
-        const statics = {};
-        this._syncStaticFileUrlsToDb(statics);
-        // Select current checksums from the database
-        const curStatuses = {};
-        if (!this._getCurrentStatuses(curStatuses)) return;
-        // Collect files that were new, and pages which contents were changed
-        const newStatuses = {vals: [], holders: []};
-        for (const url in this.checkables) {
-            const c = this.checkables[url];
-            const curStatus = curStatuses[c.url];
-            if (!c.isFile) { // Page
-                if (curStatus) {
-                    // Current content identical with the uploaded content -> skip
-                    if (curStatus.uphash && curStatus.uphash === c.hash &&
-                        curStatus.curhash === c.hash) continue;
-                    // else -> fall through & save new curhash
-                    c.uphash = curStatus.uphash;
-                }
-            } else if (!curStatus) { // File, not yet saved to the db
-                const statc = statics[url];
-                if (statc.isOk) { // Ok -> fall through & save new curhash
-                    c.hash = statc.newHash;
-                    this.nNewFilesAdded += 1;
-                } else { // Not ok (doesn't exists etc.) -> skip
-                    continue;
-                }
-            } else { // File, already saved -> skip
-                continue;
+    addAssetToCheck(url, pageUrl) {
+        this.discoveredAssets[url] = {url: url, userPageUrl: pageUrl};
+    }
+    /**
+     */
+    syncToDb() {
+        this._syncAssetFileUrls();
+        const pageStatuses = {};
+        if (!this._getCurrentPageStatuses(pageStatuses)) return;
+        const updatedStatuses = {vals: [], holders: []};
+        for (const url in this.discoveredPages) {
+            const c = this.discoveredPages[url];
+            const curStatus = pageStatuses[c.url];
+            if (curStatus) {
+                // Current content identical with the uploaded content -> skip
+                if (curStatus.uphash && curStatus.uphash === c.hash &&
+                    curStatus.curhash === c.hash) continue;
+                // else -> fall through & save new curhash
+                c.uphash = curStatus.uphash;
             }
-            newStatuses.vals.push(c.url, c.hash, c.uphash, c.isFile);
-            newStatuses.holders.push('(?,?,?,?)');
+            updatedStatuses.vals.push(c.url, c.hash, c.uphash, 0);
+            updatedStatuses.holders.push('(?,?,?,?)');
         }
-        // Collect pages that were removed
         const removedStatuses = {urls: [], holders: []};
-        for (const url in this.deletables) {
-            const item = this.deletables[url];
-            item.uphash = curStatuses[url].uphash;
+        for (const url in this.removedPages) {
+            const item = this.removedPages[url];
+            item.uphash = pageStatuses[url].uphash;
             if (item.uphash) { // is uploaded -> mark as deletable
                 item.hash = null;
-                newStatuses.vals.push(item.url, item.hash, item.uphash, item.isFile);
-                newStatuses.holders.push('(?,?,?,?)');
+                updatedStatuses.vals.push(item.url, item.hash, item.uphash);
+                updatedStatuses.holders.push('(?,?,?,0)');
             } else { // exists only locally -> remove the status completely
                 removedStatuses.urls.push(item.url);
                 removedStatuses.holders.push('?');
             }
         }
-        if (newStatuses.vals.length) this.website.db
-            .prepare('insert or replace into uploadStatuses values ' + newStatuses.holders.join(','))
-            .run(newStatuses.vals);
+        if (updatedStatuses.vals.length) this.website.db
+            .prepare('insert or replace into uploadStatuses values ' + updatedStatuses.holders.join())
+            .run(updatedStatuses.vals);
         if (removedStatuses.urls.length) this.website.db
-            .prepare('delete from uploadStatuses where url in (' + removedStatuses.holders.join(',') + ')')
+            .prepare('delete from uploadStatuses where url in (' + removedStatuses.holders.join() + ')')
             .run(removedStatuses.urls);
     }
-    /**
-    * Picks all static file urls from $this.checkables, and syncs them to the
-    * database.
-    */
-    _syncStaticFileUrlsToDb(currentUrls) {
-        const select = {urls: [], holders: []};
-        for (const url in this.checkables) {
-            if (!this.checkables[url].isFile) continue;
-            select.urls.push(url);
-            select.holders.push('?');
-        }
-        if (!select.urls.length) return;
-        //
-        this.website.db.prepare('select `url`,`isOk` from staticFileResources where `url` in (' +
-                        select.holders.join(',') + ')').raw().all(select.urls).forEach(row => {
-            currentUrls[row[0]] = {isOk: row[1], newHash: null};
-        });
-        // Collect urls that weren't registered yet
+    _syncAssetFileUrls() {
         const insert = {vals: [], holders: []};
-        for (let i = 0; i < select.urls.length; ++i) {
-            const url = select.urls[i];
-            if (!currentUrls.hasOwnProperty(url)) { // Completely new url
-                try {
-                    currentUrls[url] = {isOk: 1, newHash:
-                        exports.sha1(this.website.readOwnFile(url))};
-                    insert.vals.push(url, 1);
-                } catch (e) {
-                    currentUrls[url] = {isOk: 0, newHash: null};
-                    insert.vals.push(url,  0);
-                }
-                insert.holders.push('(?,?)');
-                this.nNewFiles += 1;
-            }
+        for (const url in this.discoveredAssets) {
+            insert.vals.push(url, this.discoveredAssets[url].userPageUrl);
+            insert.holders.push('(?,?)');
         }
-        // Save the new urls if any
-        if (insert.vals.length) this.website.db
-            .prepare('insert into staticFileResources values' + insert.holders.join(','))
-            .run(insert.vals);
+        if (!insert.vals.length) return;
+        // Insert references even for urls that don't exist on disk (assetFiles)
+        this.website.db.prepare('insert or replace into assetFileRefs values ' +
+                                insert.holders.join()).run(insert.vals);
+        // Insert checksums for urls that exist on disk, but don't have it yet
+        const statusesToInsert = {vals: [], holders: []};
+        const urls = Object.keys(this.discoveredAssets);
+        this.website.db
+            .prepare('select a.`url` from assetFiles a left join ' +
+                     'uploadStatuses u on (u.`url` = a.`url`) where ' +
+                     'u.`url` is null and a.`url` in (' +
+                      urls.map(()=>'?').join() + ')')
+            .raw().all(urls).forEach(row => {
+                statusesToInsert.vals.push(row[0],
+                    exports.sha1(this.website.readOwnFile(row[0])));
+                statusesToInsert.holders.push('(?,?,null,1)'); // url, curhash, uphash, isFile
+            });
+        if (statusesToInsert.vals.length) this.website.db
+            .prepare('insert into uploadStatuses values ' + statusesToInsert.holders.join())
+            .run(statusesToInsert.vals);
     }
-    _getCurrentStatuses(curStatuses) {
-        const checkables = this.checkables;
-        const deletables = this.deletables;
+    _getCurrentPageStatuses(out) {
+        const discoveredPages = this.discoveredPages;
+        const removedPages = this.removedPages;
         const selectHolders = [];
         const allUrls = [];
-        for (var url in checkables) { selectHolders.push('?'); allUrls.push(url); }
-        for (url in deletables) { selectHolders.push('?'); allUrls.push(url); }
+        for (var url in discoveredPages) { selectHolders.push('?'); allUrls.push(url); }
+        for (url in removedPages) { selectHolders.push('?'); allUrls.push(url); }
         if (!allUrls.length) return false;
         //
         this.website.db.prepare('select * from uploadStatuses where `url` in (' +
-            selectHolders.join(',') + ')').raw().all(allUrls).forEach(row => {
-                curStatuses[row[0]] = {curhash: row[1], uphash: row[2], isFile: row[3]};
+            selectHolders.join() + ') and `isFile` = 0').raw().all(allUrls).forEach(row => {
+                out[row[0]] = {curhash: row[1], uphash: row[2]};
             });
         return true;
     }
@@ -194,14 +163,17 @@ class RemoteDiff {
 ////////////////////////////////////////////////////////////////////////////////
 
 class LocalDiff {
+    /** @param {RemoteDiff} remoteDiff */
     constructor(remoteDiff) {
         this.nPagesAdded = 0;   // The number of completely new pages
         this.nPagesRemoved = 0; // The number of completely removed pages (refCount==0)
         this.nLinksAdded = 0;   // The number of new links added
         this.nLinksRemoved = 0; // The number of links removed
+        this.nAssetsFound = 0;  // The number of script/css/img urls discovered
         this.removedLinkUrls = {};
-        this.staticFiles = {};  // A list of script/css urls
+        this.assetFiles = {};   // A list of script/css/img urls
         this.remoteDiff = remoteDiff;
+        this.assetFileExts = remoteDiff.website.config.assetFileExts;
     }
     /**
      * Scans $pages for new/removed links+static urls updating website.graph
@@ -256,16 +228,22 @@ class LocalDiff {
                     ) || (
                         el.tagName === 'link' &&
                         (fileUrl = el.props.href) &&
-                        el.props.rel === 'stylesheet'
+                        (el.props.rel.indexOf('stylesheet') > -1 ||
+                         el.props.rel.indexOf('icon') > -1)
+                    ) || (
+                        el.tagName === 'img' &&
+                        (fileUrl = el.props.src)
                     )) &&
                     fileUrl.indexOf('//') === -1 // reject 'http(s)://foo.js' and '//foo.js'
                 ) {
                     if (fileUrl.charAt(0) !== '/' && !hasBase) {
+                        app.log('[Warn]: The urls of local files should start ' +
+                            'with "/" (was "' + fileUrl + '").');
                         fileUrl = '/' + fileUrl;
-                        app.log('[Warn]: The urls of local script/styles should start with \'/\'.');
                     }
-                    this.staticFiles[fileUrl] = 1;
-                    this.remoteDiff.addFileToCheck(fileUrl);
+                    this.assetFiles[fileUrl] = 1;
+                    this.nAssetsFound += 1;
+                    this.remoteDiff.addAssetToCheck(fileUrl, page.url);
                 } else if (!hasBase && el.tagName === 'base' && (fileUrl = el.href)) {
                     hasBase = fileUrl.charAt(fileUrl.length - 1) === '/';
                 }

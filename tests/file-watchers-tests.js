@@ -37,15 +37,17 @@ QUnit.module('file-watchers.js', hooks => {
         const newCssFileName = '/foo.css';
         const newJsFileName = '/bar.js';
         const assertExistsInDb = (expectCssFileExists, expectJsFile) => {
-            let cssFileInfo, jsFileInfo;
-            website.db.prepare('select `url`,`isOk` from staticFileResources\
-                              where `url` in (?,?)').all(newCssFileName,newJsFileName)
+            let cssFileExists = false;
+            let jsFileExists = false;
+            website.db
+                .prepare('select `url` from assetFiles where `url` in (?,?)')
+                .all(newCssFileName, newJsFileName)
                 .forEach(row => {
-                    if (row.url == newCssFileName) cssFileInfo = row.isOk;
-                    else jsFileInfo = row.isOk;
+                    if (row.url == newCssFileName) cssFileExists = true;
+                    else jsFileExists = true;
                 });
-            assert.equal(cssFileInfo, expectCssFileExists ? 0 : undefined);
-            assert.equal(jsFileInfo, expectJsFile ? 0 : undefined);
+            assert.equal(cssFileExists, expectCssFileExists);
+            assert.equal(jsFileExists, expectJsFile);
         };
         assertExistsInDb(false, false);
         // Trigger handleFWEvent() and assert that inserted newCssFileName
@@ -55,7 +57,7 @@ QUnit.module('file-watchers.js', hooks => {
         handleFWEvent(fileWatcher.EVENT_ADD, newJsFileName.substr(1), 'js');
         assertExistsInDb(true, true);
         //
-        if (website.db.prepare('delete from staticFileResources where url in(?,?)')
+        if (website.db.prepare('delete from assetFiles where url in(?,?)')
                 .run(newCssFileName, newJsFileName).changes < 2)
             throw new Error('Failed to clean test data.');
     });
@@ -69,59 +71,63 @@ QUnit.module('file-watchers.js', hooks => {
         assert.ok(templateCache.get(mockTemplate.fname) !== cachedTemplateFnBefore,
             'Should cache the modified template');
     });
-    QUnit.test('EVENT_CHANGE <existingFile>.css|js updates checksums', assert => {
+    QUnit.test('EVENT_CHANGE <file>.css|js updates checksums', assert => {
         assert.expect(3);
-        const notOkNotUploaded = '/foo.css';
-        const okButNotUploaded = '/bar.js';
-        const okAndUploaded = '/dir/baz.css';
-        mockFiles[notOkNotUploaded] = 'foo';
-        mockFiles[okButNotUploaded] = 'bar';
-        mockFiles[okAndUploaded] = 'baz';
-        if (website.db.prepare('insert into staticFileResources values (?,0),(?,1),(?,1)').run(
-                notOkNotUploaded,
-                okButNotUploaded,
-                okAndUploaded
-            ).changes < 1 ||
-            website.db.prepare('insert into uploadStatuses values (?,?,?,1)').run(
-                okAndUploaded,
-                mockFiles[okAndUploaded],
-                mockFiles[okAndUploaded]
-            ).changes < 1
+        const uploaded = '/aaa.css';
+        const notUploaded = '/bbb.css';
+        const newUrl = '/dir/ccc.js';
+        mockFiles[uploaded] = 'aaa...';
+        mockFiles[notUploaded] = 'bbb...';
+        mockFiles[newUrl] = 'ccc...';
+        const fileAHash = diff.sha1(mockFiles[uploaded]);
+        const fileBHash = diff.sha1(mockFiles[notUploaded]);
+        if (website.db
+                .prepare('insert into assetFiles values (?),(?),(?)')
+                .run(uploaded, notUploaded, newUrl)
+                .changes < 1 ||
+            website.db
+                .prepare('insert into assetFileRefs values (?, \'/some-page\'),\
+                         (?, \'/some-page\'),(?, \'/some-page\')')
+                .run(uploaded, notUploaded, newUrl)
+                .changes < 1 ||
+            website.db
+                .prepare('insert into uploadStatuses values (?,?,?,1),(?,?,?,1)')
+                .run(uploaded, fileAHash, fileAHash,
+                     notUploaded, fileBHash, null)
+                .changes < 1
         ) throw new Error('Failed to insert test data.');
+        //
         const assertChecksumEquals = expected => {
-            const actual = website.db.prepare('select us.*, sfr.`isOk` from uploadStatuses us \
-                left join staticFileResources sfr on (sfr.`url` = us.`url`) \
-                where us.`url` in (?,?,?)').raw()
-                .all(notOkNotUploaded, okButNotUploaded, okAndUploaded)
-                .map(row =>
-                    ({url: row[0], curhash: row[1], uphash: row[2],
-                      isFile: row[3], isOk: row[4]})
-                );
+            const actual = website.db
+                .prepare('select `curhash`,`uphash` from uploadStatuses where `url` in (?,?,?)')
+                .all(uploaded, notUploaded, newUrl);
             assert.deepEqual(actual, expected);
         };
-        const expectedA = {url: notOkNotUploaded, curhash: mockFiles[notOkNotUploaded],
-            uphash: null, isFile: 1, isOk: 1};
-        const expectedB = {url: okButNotUploaded, curhash: mockFiles[okButNotUploaded],
-            uphash: null, isFile: 1, isOk: 1};
-        const expectedC = {url: okAndUploaded, curhash: mockFiles[okAndUploaded],
-            uphash: mockFiles[okAndUploaded], isFile: 1, isOk: 1};
         //
-        handleFWEvent(fileWatcher.EVENT_CHANGE, notOkNotUploaded.substr(1));
-        assertChecksumEquals([expectedC,expectedA]);
+        mockFiles[uploaded] = 'updated aaa';
+        const newFileAHash = diff.sha1(mockFiles[uploaded]);
+        handleFWEvent(fileWatcher.EVENT_CHANGE, uploaded.substr(1));
+        assertChecksumEquals([{curhash: newFileAHash, uphash: fileAHash},{curhash: fileBHash, uphash: null}]);
         //
-        handleFWEvent(fileWatcher.EVENT_CHANGE, okButNotUploaded.substr(1));
-        assertChecksumEquals([expectedB,expectedC,expectedA]);
+        mockFiles[notUploaded] = 'updated bbb';
+        const newFileBHash = diff.sha1(mockFiles[notUploaded]);
+        handleFWEvent(fileWatcher.EVENT_CHANGE, notUploaded.substr(1));
+        assertChecksumEquals([
+                              {curhash: newFileAHash, uphash: fileAHash},{curhash: newFileBHash, uphash: null}]);
         //
-        mockFiles[okAndUploaded] = 'updated';
-        handleFWEvent(fileWatcher.EVENT_CHANGE, okAndUploaded.substr(1));
-        expectedC.curhash = 'updated';
-        assertChecksumEquals([expectedB,expectedC,expectedA]);
+        const fileCHash = diff.sha1(mockFiles[newUrl]);
+        handleFWEvent(fileWatcher.EVENT_CHANGE, newUrl.substr(1));
+        assertChecksumEquals([{curhash: newFileAHash, uphash: fileAHash},
+                              {curhash: newFileBHash, uphash: null},{curhash: fileCHash, uphash: null}]);
         //
-        if (website.db.prepare('delete from uploadStatuses where `url` in(?,?,?)').run(
-                notOkNotUploaded,
-                okButNotUploaded,
-                okAndUploaded
-            ).changes < 3) throw new Error('Failed to clean test data.');
+        if (website.db
+                .prepare('delete from uploadStatuses where `url` in(?,?,?)')
+                .run(uploaded, notUploaded, newUrl)
+                .changes < 3 ||
+            website.db
+                .prepare('delete from assetFileRefs where `fileUrl` in(?,?,?)')
+                .run(uploaded, notUploaded, newUrl)
+                .changes < 3) throw new Error('Failed to clean test data.');
     });
     QUnit.test('EVENT_UNLINK <existingTemplate>.jsx.htm uncaches the file', assert => {
         assert.expect(2);
@@ -135,34 +141,33 @@ QUnit.module('file-watchers.js', hooks => {
     });
     QUnit.test('EVENT_REMOVE handles <existingFile>.css|js', assert => {
         assert.expect(2);
-        const okButNotUploaded = '/foo.css';
-        const okAndUploaded = '/bar.js';
-        if (website.db.prepare('insert into staticFileResources values (?,1),(?,1)')
-                      .run(okButNotUploaded, okAndUploaded).changes < 1 ||
+        const notUploaded = '/foo.css';
+        const uploaded = '/bar.js';
+        if (website.db.prepare('insert into assetFiles values (?),(?)')
+                      .run(notUploaded, uploaded).changes < 1 ||
             website.db.prepare('insert into uploadStatuses values (?,\'hash\',\'hash\',1)')
-                      .run(okAndUploaded).changes < 1)
+                      .run(uploaded).changes < 1)
             throw new Error('Failed to insert test data.');
         const assertChecksumEquals = (fileUrl, expected, message) => {
-            const actual = website.db.prepare('select us.*,sfr.`url` from uploadStatuses us \
-                left join staticFileResources sfr on (sfr.`url` = us.`url`) \
-                where us.`url` = ?').raw().all(fileUrl).map(row =>
-                    ({url: row[0], curhash: row[1], uphash: row[2],
-                      isFile: row[3], staticFileTableUrl: row[4]})
-                );
+            const actual = website.db
+                .prepare('select `curhash`,`uphash`,exists(' +
+                    'select `url` from assetFiles where `url` = ?' +
+                ') as fileEntryExists from uploadStatuses where `url` = ?')
+                .all(fileUrl, fileUrl);
             assert.deepEqual(actual, expected, message);
         };
         //
-        handleFWEvent(fileWatcher.EVENT_UNLINK, okButNotUploaded.substr(1));
-        assertChecksumEquals(okButNotUploaded, [],
+        handleFWEvent(fileWatcher.EVENT_UNLINK, notUploaded.substr(1));
+        assertChecksumEquals(notUploaded, [],
             'Should wipe completely if the file isn\'t uploaded');
         //
-        handleFWEvent(fileWatcher.EVENT_UNLINK, okAndUploaded.substr(1));
-        assertChecksumEquals(okAndUploaded, [{url: okAndUploaded, curhash: null,
-            uphash: 'hash', isFile: 1, staticFileTableUrl: null}],
+        handleFWEvent(fileWatcher.EVENT_UNLINK, uploaded.substr(1));
+        assertChecksumEquals(uploaded, [{curhash: null,
+            uphash: 'hash', fileEntryExists: 0}],
             'Should mark as removed if the file is uploaded');
         //
         if (website.db.prepare('delete from uploadStatuses where `url` = ?')
-                      .run(okAndUploaded).changes < 1)
+                      .run(uploaded).changes < 1)
             throw new Error('Failed to clean test data.');
     });
     QUnit.test('EVENT_RENAME handles <existingTemplate>.jsx.htm', assert => {
@@ -205,20 +210,21 @@ QUnit.module('file-watchers.js', hooks => {
                    [testUser2,'',hasUsersTo,[]]]
         }));
     });
-    QUnit.test('EVENT_RENAME handless <file>.css|js', assert => {
+    QUnit.test('EVENT_RENAME handles <file>.css|js', assert => {
+        assert.notOk('todo');
         const notOkFrom = '/foo.css';
         const notOkTo = '/renamed.css';
         const okAndUploadedFrom = '/foo2.css';
         const okAndUploadedTo = '/renamed2.css';
-        if (website.db.prepare('insert into staticFileResources values (?,0),(?,1)')
+        if (website.db.prepare('insert into assetFiles values (?),(?)')
                       .run(notOkFrom, okAndUploadedFrom).changes < 1 ||
             website.db.prepare('insert into uploadStatuses values (?,\'hash\',\'hash\',1)')
                       .run(okAndUploadedFrom).changes < 1)
             throw new Error('Failed to insert test data.');
         const assertStoredNewName = (from, expected) => {
-            const actual = website.db.prepare('select sfr.*,us.`url` from staticFileResources sfr \
-                left join uploadStatuses us on (us.`url`=sfr.`url`) \
-                where sfr.`url` in (?,?)').raw().all(from, expected.url).map(row =>
+            const actual = website.db.prepare('select af.*,us.`url` from assetFiles af \
+                left join uploadStatuses us on (us.`url`=af.`url`) \
+                where af.`url` in (?,?)').raw().all(from, expected.url).map(row =>
                     ({url: row[0], isOk: row[1], uploadStatusesUrl: row[2]})
                 );
             assert.equal(actual.length, 1);
@@ -236,7 +242,7 @@ QUnit.module('file-watchers.js', hooks => {
         //
         if (website.db.prepare('delete from uploadStatuses where `url` in(?,?)')
                       .run(okAndUploadedFrom, okAndUploadedTo).changes < 1 ||
-            website.db.prepare('delete from staticFileResources where `url` in(?,?)')
+            website.db.prepare('delete from assetFiles where `url` in(?,?)')
                       .run(notOkFrom, notOkTo).changes < 1)
             throw new Error('Failed to clean test data.');
     });

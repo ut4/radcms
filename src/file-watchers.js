@@ -25,29 +25,29 @@ exports.init = () => {
  */
 function handleFWEvent(type, fileName) {
     const fileExt = fileName.substr(fileName.lastIndexOf('.') + 1);
+    const assetFileExts = app.currentWebsite.config.assetFileExts;
     if (type == fileWatcher.EVENT_ADD) {
         if (fileExt == TEMPLATE_EXT)
             handleTemplateCreateEvent(fileName);
-        else if (fileExt == 'css' || fileExt == 'js')
-            handleCssOrJsFileCreateEvent('/' + fileName);
+        else if (assetFileExts.indexOf(fileExt) > -1)
+            handleAssetFileCreateEvent('/' + fileName);
     } else if (type == fileWatcher.EVENT_CHANGE) {
         if (fileExt == TEMPLATE_EXT)
-            handleTemplateModifyEventEvent(fileName);
-        else if (fileExt == 'css' || fileExt == 'js')
-            handleCssOrJsFileModifyEventEvent('/' + fileName);
+            handleTemplateModifyEvent(fileName);
+        else if (assetFileExts.indexOf(fileExt) > -1)
+            handleAssetFileModifyEvent('/' + fileName);
         else if (fileExt == CONFIG_EXT)
             handleConfigFileModifyEvent(fileName);
     } else if (type == fileWatcher.EVENT_UNLINK) {
         if (fileExt == TEMPLATE_EXT)
-            handleTemplateDeleteEventEvent(fileName);
-        else if (fileExt == 'css' || fileExt == 'js')
-            handleCssOrJsFileDeleteEvent('/' + fileName);
+            handleTemplateDeleteEvent(fileName);
+        else if (assetFileExts.indexOf(fileExt) > -1)
+            handleAssetFileDeleteEvent('/' + fileName);
     } else if (type == fileWatcher.EVENT_RENAME) {
         if (fileExt == TEMPLATE_EXT)
             handleTemplateRenameEvent.apply(null, fileName.split('>'));
-        else if (fileExt == 'css' || fileExt == 'js')
-            handleCssOrJsFileRenameEvent.apply(null, fileName.split('>'));
-        else return;
+        else if (assetFileExts.indexOf(fileExt) > -1)
+            handleAssetFileRenameEvent.apply(null, fileName.split('>'));
     }
 }
 
@@ -61,18 +61,17 @@ function handleTemplateCreateEvent(fileName) {
 /**
  * @param {string} fileName eg. '/file.css'
  */
-function handleCssOrJsFileCreateEvent(fileName) {
-    // Register the file, and set its `isOk` to 0
-    app.currentWebsite.db
-        .prepare('insert or replace into staticFileResources values (?, 0)')
-        .run(fileName);
+function handleAssetFileCreateEvent(fileName) {
+    const w = app.currentWebsite.db;
+    w.prepare('insert or replace into assetFiles values (?)').run(fileName);
+    insertOrUpdateCurChecksumIfInUse(fileName);
     app.log('[Info]: ' + 'Registered "' + fileName + '"');
 }
 
 /**
  * @param {string} fileName eg. 'layout.jsx.htm'
  */
-function handleTemplateModifyEventEvent(fileName) {
+function handleTemplateModifyEvent(fileName) {
     try {
         if (app.currentWebsite.compileAndCacheTemplate(fileName)) {
             app.log('[Info]: Cached "' + fileName + '"');
@@ -87,22 +86,26 @@ function handleTemplateModifyEventEvent(fileName) {
 /**
  * @param {string} fileName eg. '/file.css'
  */
-function handleCssOrJsFileModifyEventEvent(fileName) {
-    // Check if this file is registered (and update it's isOk)
-    const numAffected = app.currentWebsite.db
-        .prepare('update staticFileResources set `isOk` = 1 where `url` = ?')
-        .run(fileName).changes;
-    // It is -> insert or update the new checksum
-    if (numAffected > 0) {
-        app.currentWebsite.db.prepare('insert or replace into uploadStatuses values \
+function handleAssetFileModifyEvent(fileName) {
+    insertOrUpdateCurChecksumIfInUse(fileName);
+    app.log('[Info]: Updated "' + fileName + '"');
+}
+
+/**
+ * @param {string} fileUrl eg. '/file.css'
+ */
+function insertOrUpdateCurChecksumIfInUse(fileUrl) {
+    const db = app.currentWebsite.db;
+    // Check if $fileUrl has references somewhere
+    if (db.prepare('select `fileUrl` from assetFileRefs where `fileUrl` = ? limit 1')
+          .raw().get(fileUrl)) {
+        // It has -> update the local checksum (curhash)
+        db.prepare('insert or replace into uploadStatuses values \
             (?,?,(select `uphash` from uploadStatuses where `url`=?),1)').run(
-                fileName,
-                diff.sha1(app.currentWebsite.readOwnFile(fileName)),
-                fileName
-            );
-        app.log('[Info]: Updated "' + fileName + '"');
-    } else {
-        app.log('[Debug]: An unknown file "' + fileName + '" was modified, skipping.');
+            fileUrl,
+            diff.sha1(app.currentWebsite.readOwnFile(fileUrl)),
+            fileUrl
+        );
     }
 }
 
@@ -122,7 +125,7 @@ function handleConfigFileModifyEvent(fileName) {
 /**
  * @param {string} fileName eg. 'layout.jsx.htm'
  */
-function handleTemplateDeleteEventEvent(fileName) {
+function handleTemplateDeleteEvent(fileName) {
     if (!templateCache.has(fileName)) {
         app.log('[Debug]: An unknown template "' + fileName + '" was deleted, skipping.');
         return;
@@ -134,9 +137,9 @@ function handleTemplateDeleteEventEvent(fileName) {
 /**
  * @param {string} fileName eg. '/file.css'
  */
-function handleCssOrJsFileDeleteEvent(fileName) {
+function handleAssetFileDeleteEvent(fileName) {
     if (app.currentWebsite.db
-            .prepare('delete from staticFileResources where `url` = ?')
+            .prepare('delete from assetFiles where `url` = ?')
             .run(fileName).changes < 1) {
         app.log('[Debug]: An unknown file "' + fileName + '" was deleted, skipping.');
         return;
@@ -145,7 +148,7 @@ function handleCssOrJsFileDeleteEvent(fileName) {
     if (app.currentWebsite.db
             .prepare('delete from uploadStatuses where `url` = ? and `uphash` is null')
             .run(fileName).changes < 1) {
-        // Otherwise mark it as removed
+        // Otherwise mark as removed
         app.currentWebsite.db
             .prepare('update uploadStatuses set `curhash` = null where `url` = ?')
             .run(fileName);
@@ -186,19 +189,14 @@ function handleTemplateRenameEvent(from, to) {
  * @param {string} from eg. 'file.js'
  * @param {string} to eg. 'renamed.js'
  */
-function handleCssOrJsFileRenameEvent(from, to) {
+function handleAssetFileRenameEvent(from, to) {
     from = '/' + from;
     to = '/' + to;
     app.currentWebsite.db
-        .prepare('insert or replace into staticFileResources values\
-            (?,coalesce((select `isOk` from staticFileResources where `url`=?),0))')
+        .prepare('update assetFiles set `url` = ? where `url` = ?')
         .run(to, from);
-    app.currentWebsite.db
-        .prepare('delete from staticFileResources where `url` = ?')
-        .run(from);
-    app.currentWebsite.db
-        .prepare('update uploadStatuses set `url` = ? where `url` = ?')
-        .run(to, from);
+    // todo
+    //
     app.log('[Info]: Renamed "' + from + '" > "' + to + '"');
 }
 
