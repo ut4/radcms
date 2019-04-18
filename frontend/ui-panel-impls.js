@@ -1,4 +1,4 @@
-import {myLink, contentNodeList} from './common-components.js';
+import {view, myLink, contentNodeList} from './common-components.js';
 
 /*
  * Implements end-user management views (editing items, creating new items
@@ -36,12 +36,10 @@ class GenericListUIPanelImpl {
 
 class StaticMenuAddPageView {
     render() {
-        return $el('div', {className: 'view'},
-            $el('div', null, [
-                $el('p', null, '...'),
-                $el('button', {onClick: () => myRedirect('/')}, 'x')
-            ])
-        );
+        return view($el('div', null, [
+            $el('p', null, '...'),
+            $el('button', {onClick: () => myRedirect('/')}, 'x')
+        ]));
     }
 }
 

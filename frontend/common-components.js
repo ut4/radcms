@@ -1,3 +1,13 @@
+/**
+ * @param {string|VDOMNode} content
+ */
+function view(content) {
+    return $el('div', {className: 'view'},
+        $el('button', {onClick: () => myRedirect('/')}, featherSvg('x')),
+        content
+    );
+}
+
 class Form extends preact.Component {
     /**
      * @param {Object} props {
@@ -171,4 +181,4 @@ class Toaster extends preact.Component {
     }
 }
 
-export {Form, myLink, contentNodeList, featherSvg, Toaster};
+export {view, Form, myLink, contentNodeList, featherSvg, Toaster};

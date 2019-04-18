@@ -1,5 +1,5 @@
 import services from './common-services.js';
-import {Form} from './common-components.js';
+import {view, Form} from './common-components.js';
 
 /**
  * #/edit-site-graph.
@@ -18,26 +18,24 @@ class SiteGraphEditView extends preact.Component {
         );
     }
     render() {
-        return $el('div', {className: 'view'}, $el('div', null,
-            $el(Form, {onConfirm: () => this.confirm(),
-                       doDisableConfirmButton: () => this.state.numDeletables == 0,
-                       confirmButtonText: 'Save changes'},
-                $el('h2', null, 'Edit site graph'),
-                this.state.pages && $el('table', {className: 'striped'},
-                    $el('thead', null, $el('tr', null,
-                        $el('th', null, 'Url'),
-                        $el('th', null, '')
-                    )),
-                    $el('tbody', null, this.state.pages.map((page, i) =>
-                        $el('tr', {className: !page.doDelete ? '' : 'line-through'},
-                            $el('td', null, page.url),
-                            $el('td', null, $el('button', {
-                                onClick: () => { this.handleSetDeletableClick(i); },
-                                type: 'button'
-                            }, !page.doDelete ? 'Delete' : 'Undo'))
-                        )
-                    ))
-                )
+        return view($el(Form, {onConfirm: () => this.confirm(),
+                               doDisableConfirmButton: () => this.state.numDeletables == 0,
+                               confirmButtonText: 'Save changes'},
+            $el('h2', null, 'Edit site graph'),
+            this.state.pages && $el('table', {className: 'striped'},
+                $el('thead', null, $el('tr', null,
+                    $el('th', null, 'Url'),
+                    $el('th', null, '')
+                )),
+                $el('tbody', null, this.state.pages.map((page, i) =>
+                    $el('tr', {className: !page.doDelete ? '' : 'line-through'},
+                        $el('td', null, page.url),
+                        $el('td', null, $el('button', {
+                            onClick: () => { this.handleSetDeletableClick(i); },
+                            type: 'button'
+                        }, !page.doDelete ? 'Delete' : 'Undo'))
+                    )
+                ))
             )
         ));
     }

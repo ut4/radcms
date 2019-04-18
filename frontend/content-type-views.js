@@ -1,4 +1,4 @@
-import {Form} from './common-components.js';
+import {view, Form} from './common-components.js';
 import services from './common-services.js';
 import {dataTypes} from './content-views.js';
 import {featherSvg} from './common-components.js';
@@ -19,7 +19,7 @@ class ManageContentTypesView extends preact.Component {
     }
     render() {
         if (!this.state.contentTypes) return null;
-        return $el('div', {className: 'view'}, $el('div', null,
+        return view($el('div', null,
             $el('h2', null, 'Manage content types'),
             $el('div', {className: 'list content-types-list'},
                 this.state.contentTypes.map(ctype => {
@@ -28,10 +28,6 @@ class ManageContentTypesView extends preact.Component {
                         asNormal ? this.buildNormalStateEls(ctype) : this.buildEditStateEls()
                     );
                 })
-            ),
-            $el('div', {className: 'form-buttons'},
-                $el('button', {className: 'text-button',
-                               onClick: () => myRedirect('/')}, 'Close')
             )
         ));
     }
@@ -163,11 +159,9 @@ class ManageContentTypesView extends preact.Component {
  */
 class CreateContentTypeView extends preact.Component {
     render() {
-        return $el('div', {className: 'view'}, $el('div', null,
-            $el(Form, {onConfirm: e => e},
-                $el('h2', null, 'Create content type'),
-                $el('p', null, 'todo')
-            )
+        return view($el(Form, {onConfirm: e => e},
+            $el('h2', null, 'Create content type'),
+            $el('p', null, 'todo')
         ));
     }
 }

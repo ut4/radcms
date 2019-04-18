@@ -1,5 +1,5 @@
-import {Form} from './common-components.js';
 import services from './common-services.js';
+import {view, Form} from './common-components.js';
 
 const EXTRA_FIELD_SEPARATOR = '__separator__';
 const dataTypes = [
@@ -218,29 +218,25 @@ class AddContentView extends preact.Component {
     }
     render() {
         if (!this.state.selectedContentType) return null;
-        return $el('div', {className: 'view'}, $el('div', null,
-            $el(Form, {onConfirm: e => this.confirm(e)},
-                $el('h2', null, 'Add content'),
-                $el('label', null,
-                    $el('span', null, 'Nimi'),
-                    $el('input', {
-                        name: 'cnodeName',
-                        value: this.state.cnodeName,
-                        onChange: e => Form.receiveInputValue(e, this)
-                    }, null)
-                ),
-                $el('label', null,
-                    $el('span', {'data-help-text': 'Dev note: Voit luoda uusia sisältötyyppejä muokkaamalla site.ini-tiedostoa.'}, 'Tyyppi'),
-                    $el('select', {onChange: e => this.receiveContentTypeSelection(e),
-                                   value: this.state.contentTypes.indexOf(this.state.selectedContentType)},
-                        this.state.contentTypes.map((type, i) =>
-                            $el('option', {value: i}, type.name)
-                        ))
-                ),
-                $el(ContentNodeFieldList, {fieldsData: this.state.fieldsData,
-                                           fieldsInfo: this.state.selectedContentType.fields,
-                                           ref: cmp => { this.fieldListCmp = cmp; }}, null)
-            )
+        return view($el(Form, {onConfirm: e => this.confirm(e)},
+            $el('h2', null, 'Add content'),
+            $el('label', null,
+                $el('span', null, 'Nimi'),
+                $el('input', {name: 'cnodeName',
+                              value: this.state.cnodeName,
+                              onChange: e => Form.receiveInputValue(e, this)}, null)
+            ),
+            $el('label', null,
+                $el('span', {'data-help-text': 'Dev note: Voit luoda uusia sisältötyyppejä muokkaamalla site.ini-tiedostoa.'}, 'Tyyppi'),
+                $el('select', {onChange: e => this.receiveContentTypeSelection(e),
+                               value: this.state.contentTypes.indexOf(this.state.selectedContentType)},
+                    this.state.contentTypes.map((type, i) =>
+                        $el('option', {value: i}, type.name)
+                    ))
+            ),
+            $el(ContentNodeFieldList, {fieldsData: this.state.fieldsData,
+                                       fieldsInfo: this.state.selectedContentType.fields,
+                                       ref: cmp => { this.fieldListCmp = cmp; }}, null)
         ));
     }
     receiveContentTypeSelection(e) {
@@ -293,13 +289,11 @@ class EditContentView extends preact.Component {
     }
     render() {
         if (!this.state.fieldsInfo) return null;
-        return $el('div', {className: 'view'}, $el('div', null,
-            $el(Form, {onConfirm: e => this.confirm(e)},
-                $el('h2', null, 'Edit content'),
-                $el(ContentNodeFieldList, {fieldsData: this.state.fieldsData,
-                                           fieldsInfo: this.state.fieldsInfo,
-                                           ref: cmp => { this.fieldListCmp = cmp; }}, null)
-            )
+        return view($el(Form, {onConfirm: e => this.confirm(e)},
+            $el('h2', null, 'Edit content'),
+            $el(ContentNodeFieldList, {fieldsData: this.state.fieldsData,
+                                       fieldsInfo: this.state.fieldsInfo,
+                                       ref: cmp => { this.fieldListCmp = cmp; }}, null)
         ));
     }
     confirm() {

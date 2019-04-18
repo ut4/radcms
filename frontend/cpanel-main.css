@@ -3,6 +3,10 @@
 .open { overflow: hidden; }
 .view { float: left; padding: 48px 1px 1px; border-radius: 2px;
     width: calc(100% - 270px); margin: 8px 0 1px 8px; }
+.view > button { float: right; margin: -49px -1px 0 0; padding: 8px;
+    background-color: transparent; }
+.view > button:hover:enabled { background-color: transparent; }
+.view > button .feather { float: left; width: 18px; height: 18px; }
 .view > div:nth-of-type(1), .view > form:first-of-type { padding: 15px;
     border-radius: 1px; border-top: 1px solid rgba(0,0,0,0.15); }
 .view h2 { font: normal 24px/24px "Fira sans heavy"; margin: -55px 0 27px -2px; }
@@ -52,6 +56,8 @@
 /**/
 .light { color: #4d4d4d; }
 .light .open { background-color: rgba(255,255,255,0.6); }
+.light .view > button { color: #444; }
+.light .view > button:hover:enabled { color: #222; }
 .light .view > div:first-of-type, .light .view > form:first-of-type {
     background-color: #fff; }
 .light #control-panel, .view { background: linear-gradient(to bottom, #fff, #f2f2f2);

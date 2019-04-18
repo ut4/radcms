@@ -1,5 +1,5 @@
 import services from './common-services.js';
-import {myLink, Form} from './common-components.js';
+import {view, myLink, Form} from './common-components.js';
 
 /**
  * #/generate-website.
@@ -27,11 +27,9 @@ class WebsiteGenerateView extends preact.Component {
         } else {
             content = this.state.unexpectedError;
         }
-        return $el('div', {className: 'view'}, $el('div', null,
-            $el(Form, {onConfirm: () => this.confirm(), noAutoClose: true}, [
-                $el('h2', null, 'Generate website'),
-                $el('div', null, content)
-            ])
+        return view($el(Form, {onConfirm: () => this.confirm(), noAutoClose: true},
+            $el('h2', null, 'Generate website'),
+            $el('div', null, content)
         ));
     }
     confirm() {
@@ -97,47 +95,44 @@ class WebsiteUploadView extends preact.Component {
         );
     }
     render() {
-        return $el('div', {className: 'view'}, $el('div', null,
-            $el(Form, {
-                onConfirm: () => this.confirm(),
-                confirmButtonText: 'Upload website',
-                doDisableConfirmButton: () => this.state.uploading || this.state.noData,
-                noAutoClose: true
-            }, [
-                $el('h2', null, 'Upload website'),
-                !this.state.noData ? [$el('div', {className: 'fieldset'}, [
-                    $el('h3', null, 'Credentials'),
-                    $el('label', null, [
-                        $el('span', null, 'FTP remote url'),
-                        $el('input', {
-                            name: 'ftpRemoteUrl',
-                            value: this.state.remoteUrl,
-                            onChange: e => Form.receiveInputValue(e, this, 'remoteUrl')
-                        }, null)
-                    ]),
-                    $el('label', null, [
-                        $el('span', null, 'FTP username'),
-                        $el('input', {
-                            name: 'ftpUsername',
-                            value: this.state.username,
-                            onChange: e => Form.receiveInputValue(e, this, 'username')
-                        }, null)
-                    ]),
-                    $el('label', null, [
-                        $el('span', null, 'FTP password'),
-                        $el('input', {
-                            name: 'ftpPassword',
-                            type: 'password',
-                            value: this.state.password,
-                            onChange: e => Form.receiveInputValue(e, this, 'password')
-                        }, null)
-                    ])
+        return view($el(Form, {onConfirm: () => this.confirm(),
+                               confirmButtonText: 'Upload website',
+                               doDisableConfirmButton: () =>
+                                   this.state.uploading || this.state.noData,
+                               noAutoClose: true},
+            $el('h2', null, 'Upload website'),
+            !this.state.noData ? [$el('div', {className: 'fieldset'}, [
+                $el('h3', null, 'Credentials'),
+                $el('label', null, [
+                    $el('span', null, 'FTP remote url'),
+                    $el('input', {
+                        name: 'ftpRemoteUrl',
+                        value: this.state.remoteUrl,
+                        onChange: e => Form.receiveInputValue(e, this, 'remoteUrl')
+                    }, null)
                 ]),
-                this.state.pages.length ? myLink('/edit-site-graph', 'Too many pages? Edit them here.') : '',
-                this.state.pages.length ? uploadList(this.state.pages, 'Page') : '',
-                this.state.files.length ? uploadList(this.state.files, 'File') : ''] :
-                'Nothing to upload.'
-            ])
+                $el('label', null, [
+                    $el('span', null, 'FTP username'),
+                    $el('input', {
+                        name: 'ftpUsername',
+                        value: this.state.username,
+                        onChange: e => Form.receiveInputValue(e, this, 'username')
+                    }, null)
+                ]),
+                $el('label', null, [
+                    $el('span', null, 'FTP password'),
+                    $el('input', {
+                        name: 'ftpPassword',
+                        type: 'password',
+                        value: this.state.password,
+                        onChange: e => Form.receiveInputValue(e, this, 'password')
+                    }, null)
+                ])
+            ]),
+            this.state.pages.length ? myLink('/edit-site-graph', 'Too many pages? Edit them here.') : '',
+            this.state.pages.length ? uploadList(this.state.pages, 'Page') : '',
+            this.state.files.length ? uploadList(this.state.files, 'File') : ''] :
+            'Nothing to upload.'
         ));
     }
     confirm() {
