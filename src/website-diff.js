@@ -227,6 +227,7 @@ class LocalDiff {
                         (fileUrl = el.props.src)
                     ) || (
                         el.tagName === 'link' &&
+                        el.props.rel &&
                         (fileUrl = el.props.href) &&
                         (el.props.rel.indexOf('stylesheet') > -1 ||
                          el.props.rel.indexOf('icon') > -1)

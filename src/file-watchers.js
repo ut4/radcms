@@ -192,10 +192,35 @@ function handleTemplateRenameEvent(from, to) {
 function handleAssetFileRenameEvent(from, to) {
     from = '/' + from;
     to = '/' + to;
-    app.currentWebsite.db
-        .prepare('update assetFiles set `url` = ? where `url` = ?')
+    //
+    const w = app.currentWebsite;
+    w.db.prepare('update assetFiles set `url` = ? where `url` = ?')
         .run(to, from);
-    // todo
+    const cur = w.db.prepare(
+        'select `curhash`,`uphash` from uploadStatuses where `url` = ? ' +
+        'union all '+
+        'select null as `curhash`, null as `uphash` from ' +
+        'assetFileRefs where `fileUrl` = ?').all(from, to);
+    if (cur.length) {
+        let oldIsUploaded = false;
+        let curhash = false;
+        cur.forEach(row => {
+            oldIsUploaded = oldIsUploaded || row.uphash != null;
+            curhash = curhash || row.curhash;
+        });
+        if (!oldIsUploaded) {
+            w.db.prepare('insert or replace into uploadStatuses values ' +
+                         '(?, ?, (select `uphash` from uploadStatuses where `url` = ?), 1)')
+                .run(to, curhash || diff.sha1(w.readOwnFile(to)), to);
+            if (curhash) w.db.prepare('delete from uploadStatuses where `url` = ?')
+                             .run(from);
+        } else {
+            w.db.prepare('insert into uploadStatuses values (?, ?, null, 1)')
+                .run(to, curhash);
+            w.db.prepare('update uploadStatuses set `curhash` = null where `url` = ?')
+                .run(from);
+        }
+    }
     //
     app.log('[Info]: Renamed "' + from + '" > "' + to + '"');
 }

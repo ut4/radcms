@@ -7,7 +7,7 @@ const diff = require('../src/website-diff.js');
 
 QUnit.module('file-watchers.js', hooks => {
     const mockTemplate = {fname:'template-a.jsx.htm', contents:null};
-    const mockFiles = {};
+    let mockFiles = {};
     let website;
     let readFileStub;
     let sha1Stub;
@@ -128,6 +128,7 @@ QUnit.module('file-watchers.js', hooks => {
                 .prepare('delete from assetFileRefs where `fileUrl` in(?,?,?)')
                 .run(uploaded, notUploaded, newUrl)
                 .changes < 3) throw new Error('Failed to clean test data.');
+        mockFiles = {};
     });
     QUnit.test('EVENT_UNLINK <existingTemplate>.jsx.htm uncaches the file', assert => {
         assert.expect(2);
@@ -211,39 +212,59 @@ QUnit.module('file-watchers.js', hooks => {
         }));
     });
     QUnit.test('EVENT_RENAME handles <file>.css|js', assert => {
-        assert.notOk('todo');
-        const notOkFrom = '/foo.css';
-        const notOkTo = '/renamed.css';
-        const okAndUploadedFrom = '/foo2.css';
-        const okAndUploadedTo = '/renamed2.css';
-        if (website.db.prepare('insert into assetFiles values (?),(?)')
-                      .run(notOkFrom, okAndUploadedFrom).changes < 1 ||
-            website.db.prepare('insert into uploadStatuses values (?,\'hash\',\'hash\',1)')
-                      .run(okAndUploadedFrom).changes < 1)
+        const a = {from: '/foo.css', to: '/foo-new.css'};
+        const b = {from: '/bar.js', to: '/bar-new.js'};
+        const c = {from: 'baz.png', to: 'baz-to.png'};
+        mockFiles[b.to] = 'var p';
+        if (website.db.prepare('insert into assetFiles values (?),(?),(?)')
+                      .run(a.from, b.from, c.from).changes < 1 ||
+            website.db.prepare('insert into assetFileRefs values (?,\'\'),(?,\'\')')
+                      .run(a.from, b.to).changes < 1 ||
+            website.db.prepare('insert into uploadStatuses values (?,\'h\',\'h\',1)')
+                      .run(a.from).changes < 1)
             throw new Error('Failed to insert test data.');
-        const assertStoredNewName = (from, expected) => {
-            const actual = website.db.prepare('select af.*,us.`url` from assetFiles af \
-                left join uploadStatuses us on (us.`url`=af.`url`) \
-                where af.`url` in (?,?)').raw().all(from, expected.url).map(row =>
-                    ({url: row[0], isOk: row[1], uploadStatusesUrl: row[2]})
-                );
-            assert.equal(actual.length, 1);
-            assert.deepEqual(actual[0], expected);
+        const assertUpdatedAssetFiles = expected => {
+            const actual = website.db.prepare(
+            'select `url` from assetFiles').all();
+            assert.deepEqual(actual, expected);
+        };
+        const assertUpdatedUploadStatuses = (expected, message) => {
+            const actual = website.db.prepare(
+            'select `url`,`curhash`, `uphash` from uploadStatuses').all();
+            assert.deepEqual(actual, expected, message);
         };
         //
-        handleFWEvent(fileWatcher.EVENT_RENAME, notOkFrom.substr(1) + '>' +
-            notOkTo.substr(1));
-        assertStoredNewName(notOkFrom, {url: notOkTo, isOk: 0, uploadStatusesUrl: null});
+        handleFWEvent(fileWatcher.EVENT_RENAME, a.from.substr(1) + '>' +
+            a.to.substr(1));
+        assertUpdatedAssetFiles([{url:a.to}, {url:b.from}, {url:c.from}]);
+        assertUpdatedUploadStatuses([
+            {url: a.from, curhash: null, uphash: 'h'},
+            {url: a.to, curhash: 'h', uphash: null}
+        ], 'Should create a status for the new name, and mark the old one as removed');
         //
-        handleFWEvent(fileWatcher.EVENT_RENAME, okAndUploadedFrom.substr(1) +
-            '>' + okAndUploadedTo.substr(1));
-        assertStoredNewName(okAndUploadedFrom, {url: okAndUploadedTo, isOk: 1,
-            uploadStatusesUrl: okAndUploadedTo});
+        handleFWEvent(fileWatcher.EVENT_RENAME, b.from.substr(1) + '>' +
+            b.to.substr(1));
+        assertUpdatedAssetFiles([{url:a.to}, {url:b.to}, {url:c.from}]);
+        const e = [
+            {url: a.from, curhash: null, uphash: 'h'},
+            {url: a.to, curhash: 'h', uphash: null},
+            {url: b.to, curhash: diff.sha1(mockFiles[b.to]), uphash: null}
+        ];
+        assertUpdatedUploadStatuses(e, 'Should insert a status if the new name \
+            has a reference');
         //
-        if (website.db.prepare('delete from uploadStatuses where `url` in(?,?)')
-                      .run(okAndUploadedFrom, okAndUploadedTo).changes < 1 ||
-            website.db.prepare('delete from assetFiles where `url` in(?,?)')
-                      .run(notOkFrom, notOkTo).changes < 1)
+        handleFWEvent(fileWatcher.EVENT_RENAME, c.from.substr(1) + '>' +
+            c.to.substr(1));
+        assertUpdatedAssetFiles([{url:a.to}, {url:b.to}, {url:c.from}]);
+        assertUpdatedUploadStatuses(e);
+        //
+        if (website.db.prepare('delete from uploadStatuses')
+                      .run().changes < 1 ||
+            website.db.prepare('delete from assetFiles')
+                      .run().changes < 1 ||
+            website.db.prepare('delete from assetFileRefs')
+                      .run().changes < 1)
             throw new Error('Failed to clean test data.');
+        mockFiles = {};
     });
 });

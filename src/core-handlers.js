@@ -18,8 +18,10 @@ exports.init = () => {
 
 function handleStaticFileRequest(req, res) {
     let filePath = '';
+    const headers = {};
     if (req.path.indexOf('/frontend/') === 0) {
         filePath = path.join(__dirname, '..' + req.path);
+        headers['Cache-Control'] = 'public,max-age=86400'; // 24h
     } else if (app.currentWebsite) {
         filePath = app.currentWebsite.dirPath + req.path.substr(1);
     }
@@ -29,7 +31,8 @@ function handleStaticFileRequest(req, res) {
             return;
         }
         const mime = getMime(req.path.substr(req.path.lastIndexOf('.') + 1));
-        res.send(200, [file, 'binary'], mime ? {'Content-Type': mime} : null);
+        if (mime) headers['Content-Type'] = mime;
+        res.send(200, [file, 'binary'], headers);
     });
 }
 
