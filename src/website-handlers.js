@@ -37,7 +37,7 @@ exports.init = () => {
                 return handleGetWaitingUploadsRequest;
             if (url === '/api/websites/current/templates')
                 return handleGetAllTemplatesRequest;
-            if (url === '/api/websites/current/site-graph')
+            if (url.indexOf('/api/websites/current/site-graph') > -1)
                 return handleGetSiteGraphRequest;
             return handlePageRequest;
         }
@@ -62,7 +62,8 @@ exports.init = () => {
 function handlePageRequest(req, res) {
     const w = app.currentWebsite;
     const page = w.graph.getPage(req.path !== '/' ? req.path : w.config.homeUrl);
-    const dataToFrontend = {directiveElems: [], allContentNodes: [], page: {}};
+    const dataToFrontend = {directiveElems: [], allContentNodes: [], page: {},
+                            sitePath: w.dirPath};
     let html;
     let code = 200;
     if (page) {
@@ -241,17 +242,23 @@ function handleGetAllTemplatesRequest(_, res) {
 }
 
 /**
- * GET /api/websites/current/site-graph: Returns the contents of the site graph.
+ * GET /api/websites/current/site-graph[?files=any]: Returns the contents of the
+ * site graph.
  *
  * Example response:
  * {
- *     "pages":[{"url":"/home"}]
+ *     "pages":[{"url":"/home"}],
+ *     "files":[{"url":"/theme.css"}]
  * }
  */
-function handleGetSiteGraphRequest(_, res) {
-    const out = {pages: []};
-    for (const url in app.currentWebsite.graph.pages) {
+function handleGetSiteGraphRequest(req, res) {
+    const out = {pages: [], files: []};
+    const w = app.currentWebsite;
+    for (const url in w.graph.pages) {
         out.pages.push({url: url});
+    }
+    if (req.params.files) {
+        out.files = getAllFiles(w);
     }
     res.json(200, out);
 }
@@ -259,34 +266,75 @@ function handleGetSiteGraphRequest(_, res) {
 /**
  * GET /api/websites/current/generate: writes all pages to a local disk.
  *
+ * Payload:
+ * {
+ *     pages: Array<number>; // List of indices referring to the "pages"-array of GET /api/website/site-graph
+ *     files: Array<number>; // List of indices referring to the "files"-array of GET /api/website/site-graph
+ * }
+ *
  * Example response:
  * {
- *     "wrotePagesNum": 5,
  *     "tookSecs": 0.002672617,
+ *     "wrotePagesNum": 5,
+ *     "wroteFilesNum": 2,
  *     "totalPages": 6,
- *     "outPath": "/my/site/path/out",
+ *     "totalFiles": 2,
  *     "issues": ["/some-url>Some error."]
  * }
  */
-function handleGenerateRequest(_, res) {
+function handleGenerateRequest(req, res) {
     const w = app.currentWebsite;
     const out = {
-        wrotePagesNum: 0,
         tookSecs: w.performance.now(),
+        wrotePagesNum: 0,
+        wroteFilesNum: 0,
         totalPages: w.graph.pageCount,
-        outPath: w.dirPath + 'out',
+        totalFiles: req.data.files.length,
         issues: []
     };
+    let numPendingItems = out.totalPages + out.totalFiles;
+    const onItemCompleted = () => {
+        if (!--numPendingItems) {
+            out.tookSecs = (w.performance.now() - out.tookSecs) / 1000;
+            res.json(200, out);
+        }
+    };
     try {
+        // 1. Validate
+        const allFiles = out.totalFiles ? getAllFiles(w) : [];
+        const errors = [];
+        for (let i = 0; i < out.totalFiles; ++i) {
+            if (!allFiles[i]) errors.push(req.data.files[i] +
+                ' is not valid file index (min: 0, max: ' + (out.totalFiles - 1) + ')');
+        }
+        if (errors.length) { res.plain(400, errors.join('\n')); return; }
+        // 2. Copy asset files
+        const outPath = w.dirPath + 'out';
+        const fromDir = w.dirPath.substr(0, w.dirPath.length - 1);
+        for (let i = 0; i < out.totalFiles; ++i) {
+            const filePath = allFiles[req.data.files[i]].url;
+            const targetPath = outPath + filePath;
+            //                    '/path/out/file.js' -> '/path/out'
+            ensureDirExists(w.fs, targetPath.substr(0, targetPath.lastIndexOf('/')), () => {
+                w.fs.copyFile(fromDir + filePath, targetPath, err => {
+                    if (err) throw err;
+                    out.wroteFilesNum += 1;
+                    onItemCompleted();
+                });
+            });
+        }
+        // 3. Generate and write pages
         w.generate((renderedOutput, page) => {
             // 'path/out' + '/foo'
-            const dirPath = out.outPath + page.url;
-            if (!w.fs.existsSync(dirPath)) {
-                w.fs.mkdirSync(dirPath, {recursive: true});
-            }
-            // 'path/out/foo' + '/index.html'
-            w.fs.writeFileSync(dirPath + '/index.html', renderedOutput);
-            out.wrotePagesNum += 1;
+            const dirPath = outPath + page.url;
+            ensureDirExists(w.fs, dirPath, () => {
+                // 'path/out/foo' + '/index.html'
+                w.fs.writeFile(dirPath + '/index.html', renderedOutput, err => {
+                    if (err) throw err;
+                    out.wrotePagesNum += 1;
+                    onItemCompleted();
+                });
+            });
             return true;
         }, out.issues);
     } catch (e) {
@@ -294,8 +342,6 @@ function handleGenerateRequest(_, res) {
         res.plain(500, 'Failed to generate the site.');
         return;
     }
-    out.tookSecs = (w.performance.now() - out.tookSecs) / 1000;
-    res.json(200, out);
 }
 
 /**
@@ -307,14 +353,14 @@ function handleGenerateRequest(_, res) {
  *     remoteUrl: string; // required
  *     username: string;  // required
  *     password: string;  // required
- *     pageUrls: {        // required if fileNames.length == 0
+ *     pageUrls: Array<{  // required if fileNames.length == 0
  *         url: string;
  *         isDeleted: number;
- *     }[];
- *     fileNames: {       // required if pageUrls.length == 0
+ *     }>;
+ *     fileNames: Array<{ // required if pageUrls.length == 0
  *         fileName: string;
  *         isDeleted: number;
- *     }[];
+ *     }>;
  * }
  *
  * Example response chunk:
@@ -475,7 +521,7 @@ function handleUpdatePageRequest(req, res) {
  *
  * Payload:
  * {
- *     deleted: string[]; // required
+ *     deleted: Array<string>; // required
  * }
  *
  * Example response:
@@ -509,11 +555,7 @@ function rejectRequest(_, res) {
 
 /**
  * @param {string} html <html>...<p>foo</p></body>...
- * @param {Object} dataToFrontend {
- *     page: {url: <str>, layoutFileName: <str>},
- *     directiveElems: [{uiPanelType: <str>, contentType: <str>, contentNodes: [<cnode>...]...}...],
- *     allContentNodes: [{..., defaults: {id: <id>, name: <name>...}}],
- * }
+ * @param {Object} dataToFrontend {page: Object; directiveElems: Object[]...}
  * @returns {string} <html>...<p>foo</p><iframe...</body>...
  */
 function injectControlPanelIFrame(html, dataToFrontend) {
@@ -524,11 +566,26 @@ function injectControlPanelIFrame(html, dataToFrontend) {
     return html;
 }
 
+function getAllFiles(w) {
+    return w.db.prepare('select `url` from uploadStatuses ' +
+                        'where `curhash` is not null and `isFile` = 1').all();
+}
+
 function waterfall(getterFns, i = 0) {
     if (!getterFns.length) return;
     return getterFns[i]().then(() => {
         if (++i < getterFns.length) return waterfall(getterFns, i);
         // else we're done
+    });
+}
+
+function ensureDirExists(fs, dirPath, then) {
+    fs.stat(dirPath, err => {
+        if (!err) { then(); return; }
+        fs.mkdir(dirPath, {recursive: true}, err => {
+            if (err) throw err;
+            then();
+        });
     });
 }
 

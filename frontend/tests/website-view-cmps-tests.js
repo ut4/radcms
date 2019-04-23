@@ -97,46 +97,51 @@ QUnit.module('WebsiteCreateViewComponent', hooks => {
     });
 });
 
+
 QUnit.module('WebsiteGenerateViewComponent', hooks => {
     let httpStub;
+    let emptySiteGraphResponse = '{"pages":[],"files":[]}';
     hooks.beforeEach(() => {
         httpStub = sinon.stub(services, 'myFetch');
+        httpStub.onCall(0).returns(Promise.resolve({responseText: emptySiteGraphResponse}));
     });
     hooks.afterEach(() => {
         httpStub.restore();
     });
     QUnit.test('sends request to backend', assert => {
-        const responseText = JSON.stringify({
-            outPath: '/my/site/path/out',
+        const testRespText = JSON.stringify({
             wrotePagesNum: 5,
+            wroteFilesNum: 2,
             tookSecs: 0.002672617,
             totalPages: 6,
+            totalFiles: 2,
             issues: []
         });
-        httpStub.onCall(0).returns(Promise.resolve({responseText}));
-        const toastSpy = sinon.spy(window, 'toast');
-        const redirectSpy = sinon.spy(window, 'myRedirect');
-        const tree = itu.renderIntoDocument($el(WebsiteGenerateView, null, null));
+        httpStub.onCall(1).returns(Promise.resolve({responseText: testRespText}));
         //
-        const formButtons = itu.findRenderedDOMElementWithClass(tree, 'form-buttons');
-        formButtons.querySelector('button[type="submit"]').click();
-        //
-        const postCall = httpStub.getCall(0);
-        assert.ok(postCall !== null, 'Should send request to backend');
-        assert.equal(postCall.args[0], '/api/websites/current/generate');
-        assert.equal(postCall.args[1].method, 'POST');
         const done = assert.async();
-        postCall.returnValue.then(() => {
-            assert.ok(toastSpy.calledAfter(httpStub), 'Should show success message');
-            const r = JSON.parse(responseText);
-            assert.equal(toastSpy.getCall(0).args[0], [
-                'Wrote ', r.wrotePagesNum, '/', r.totalPages, ' pages to "',
-                r.outPath, '" in ', r.tookSecs.toFixed(6), ' secs.'
-            ].join(''));
-            assert.ok(redirectSpy.calledAfter(toastSpy), 'Should redirect');
-            toastSpy.restore();
-            redirectSpy.restore();
-            done();
+        const testSitePath = '/my/site/path/';
+        const tree = itu.renderIntoDocument($el(WebsiteGenerateView,
+            {sitePath: testSitePath}, null));
+        httpStub.getCall(0).returnValue.then(() => { // Wait for GET /website/site-graph
+            //
+            const formButtons = itu.findRenderedDOMElementWithClass(tree, 'form-buttons');
+            const contentEl = itu.findRenderedDOMElementWithTag(tree, 'form').querySelector('div');
+            formButtons.querySelector('button[type="submit"]').click();
+            //
+            const postCall = httpStub.getCall(1);
+            assert.ok(postCall !== null, 'Should send request to backend');
+            assert.equal(postCall.args[0], '/api/websites/current/generate');
+            assert.equal(postCall.args[1].method, 'POST');
+            assert.equal(postCall.args[1].data, emptySiteGraphResponse);
+            postCall.returnValue.then(resp => {
+                const r = JSON.parse(resp.responseText);
+                assert.equal(contentEl.children[0].textContent,
+                'Wrote ' + r.wrotePagesNum + '/' + r.totalPages + ' pages and copied ' +
+                r.wroteFilesNum + '/' + r.totalFiles + ' asset files to "' + testSitePath +
+                'out" in ' + r.tookSecs.toFixed(6) + ' secs.');
+                done();
+            });
         });
     });
     QUnit.test('displays issues and warnings', assert => {
@@ -147,27 +152,25 @@ QUnit.module('WebsiteGenerateViewComponent', hooks => {
             totalPages: 6,
             issues: ['/some-url>Some error.']
         });
-        httpStub.onCall(0).returns(Promise.resolve({responseText}));
-        const tree = itu.renderIntoDocument($el(WebsiteGenerateView, null, null));
+        httpStub.onCall(1).returns(Promise.resolve({responseText}));
         //
-        const formButtons = itu.findRenderedDOMElementWithClass(tree, 'form-buttons');
-        formButtons.querySelector('button[type="submit"]').click();
-        //
-        const postCall = httpStub.getCall(0);
-        assert.ok(postCall !== null, 'Should send request to backend');
-        assert.equal(postCall.args[0], '/api/websites/current/generate');
-        assert.equal(postCall.args[1].method, 'POST');
         const done = assert.async();
-        postCall.returnValue.then(() => {
-            const form = itu.findRenderedDOMElementWithTag(tree, 'form');
-            const mainContent = form.children[1].children[0];
-            const firstError = form.children[1].children[1];
-            const g = JSON.parse(responseText);
-            assert.equal(mainContent.textContent, ['Wrote ', g.wrotePagesNum, '/',
-                g.totalPages, ' pages to "', g.outPath,
-                '", but had the following issues:'].join(''));
-            assert.equal(firstError.textContent, '/some-url: Some error.');
-            done();
+        const tree = itu.renderIntoDocument($el(WebsiteGenerateView,
+            {sitePath: '/'}, null));
+        httpStub.getCall(0).returnValue.then(() => { // Wait for GET /website/site-graph
+            const formButtons = itu.findRenderedDOMElementWithClass(tree, 'form-buttons');
+            formButtons.querySelector('button[type="submit"]').click();
+            //
+            const postCall = httpStub.getCall(1);
+            assert.ok(postCall !== null, 'Should send request to backend');
+            assert.equal(postCall.args[0], '/api/websites/current/generate');
+            assert.equal(postCall.args[1].method, 'POST');
+            postCall.returnValue.then(() => {
+                const form = itu.findRenderedDOMElementWithTag(tree, 'form');
+                const firstError = form.children[1].children[2];
+                assert.equal(firstError.textContent, '/some-url: Some error.');
+                done();
+            });
         });
     });
 });

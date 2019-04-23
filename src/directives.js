@@ -50,7 +50,7 @@ function Link(props, domTree) {
  * </html>
  *
  * @param {{
- *     items: Object[];
+ *     items: Array<Object>;
  *     contentType: string;
  *     listFn: (items: Object[]): JsxElem;
  *     noItemsFn?: (void): JsxElem;
@@ -86,7 +86,7 @@ function List(props, domTree) {
  * </html>
  *
  * @param {{
- *     articles: Object[];
+ *     articles: Array<Object>;
  *     url: string;
  *     paginationOptions?: {nthPage: number; limit: number;};
  * }} props

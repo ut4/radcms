@@ -109,16 +109,20 @@ class MyResponse {
 
 const webApp = {
     /**
+     * A list of functions that return a function (accept request), or
+     * undefined (pass request).
+     *
      * @property {Array<(url: string, method: string): (myReq: MyRequest, myRes: MyResponse): any>}
      */
     routeMatchers: [],
     /**
-     *
+     * @param {() => void} onOk
+     * @param {(err: Error) => void)} onErr
      */
     start(onOk, onErr) {
         const server = http.createServer(this._handleRequest.bind(this));
         server.listen(3000);
-        server.on('listening',  onOk);
+        server.on('listening', onOk);
         server.on('error', onErr);
     },
     /**
@@ -143,7 +147,7 @@ const webApp = {
         // GET or DELETE -> call the matchers right away
         if (req.method === 'GET' || req.method === 'DELETE') {
             this._matchAndDispatchRequest(myReq, myRes);
-        // POST or PUT -> collect the json data first before calling the matchers
+        // POST or PUT -> collect the json data first, and then call the matchers
         } else if (req.method === 'POST' || req.method === 'PUT') {
             let requestBody = '';
             req.on('data', chunk => { requestBody += chunk; });

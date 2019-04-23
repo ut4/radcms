@@ -98,7 +98,7 @@ function myLink(to, children, full, attrs) {
 
 /**
  * @param {Object} props {
- *     cnodes: Object[];
+ *     cnodes: Array<Object>;
  *     createLinkText: string;
  *     currentPageUrl: string;
  *     contentType?: string;

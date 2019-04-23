@@ -55,7 +55,6 @@
 
 /**/
 .light { color: #4d4d4d; }
-.light .open { background-color: rgba(255,255,255,0.6); }
 .light .view > button { color: #444; }
 .light .view > button:hover:enabled { color: #222; }
 .light .view > div:first-of-type, .light .view > form:first-of-type {

@@ -167,6 +167,7 @@ QUnit.module('website-handlers.js (2)', hooks => {
         page1 = siteGraph.addPage(pages[0].url, '', layout1.fileName, {}, 1);
         page2 = siteGraph.addPage(pages[1].url, '', layout2.fileName, {}, 1);
         page3 = siteGraph.addPage(pages[2].url, '', layout2.fileName, {}, 1);
+        siteGraph.pageCount = 3;
         templateCache.put(layout1.fileName, transpiler.transpileToFn(layout1.contents));
         templateCache.put(layout2.fileName, transpiler.transpileToFn(layout2.contents));
         if (website.db.prepare('insert into self values (1,?)')
@@ -253,7 +254,8 @@ QUnit.module('website-handlers.js (2)', hooks => {
         const expectedPageData = JSON.stringify({
             directiveElems:[],
             allContentNodes:[{content:'Hello',defaults:{id:1,name:'home',dataBatchConfigId:1}}],
-            page:{url:req.path,layoutFileName:layout1.fileName}
+            page:{url:req.path,layoutFileName:layout1.fileName},
+            sitePath:app.currentWebsite.dirPath
         });
         const actualPageData = pcs[1] ? pcs[1].substr(0, expectedPageData.length) : '';
         assert.equal(actualPageData, expectedPageData);
@@ -262,7 +264,8 @@ QUnit.module('website-handlers.js (2)', hooks => {
         const body2 = sendRespSpy.callInfo[1][1];
         const pcs2 = body2.split('function getCurrentPageData(){return ');
         assert.ok(pcs2.length == 2, 'Should contain getCurrentPageData() declaration');
-        const expectedPageData2 = JSON.stringify({directiveElems:[],allContentNodes:[],page:{}});
+        const expectedPageData2 = JSON.stringify({directiveElems:[],allContentNodes:[],
+            page:{},sitePath:website.dirPath});
         const actualPageData2 = pcs2[1] ? pcs2[1].substr(0, expectedPageData2.length) : '';
         assert.equal(actualPageData2, expectedPageData2);
     });
@@ -295,29 +298,49 @@ QUnit.module('website-handlers.js (2)', hooks => {
                       .run().changes < 5) throw new Error('Failed to reset test data.');
     });
     QUnit.test('POST \'/api/websites/current/generate\' generates the site', assert => {
-        assert.expect(16);
-        const existsStub = new Stub(website.fs, 'existsSync');
-        const makeDirStub = new Stub(website.fs, 'mkdirSync');
-        const writeFileStub = new Stub(website.fs, 'writeFileSync');
-        const req = webApp.makeRequest('/api/websites/current/generate', 'POST');
+        assert.expect(24);
+        const existsStub = new Stub(website.fs, 'stat', (path, then) =>
+            then(!path.endsWith('out') ? new Error() : null));
+        const makeDirStub = new Stub(website.fs, 'mkdir', (_, _2, then) => then());
+        const copyFileStub = new Stub(website.fs, 'copyFile', (_, _2, then) => then());
+        const writeFileStub = new Stub(website.fs, 'writeFile', (_, _2, then) => then());
+        //
+        const fileIndices = [0];
+        const req = webApp.makeRequest('/api/websites/current/generate', 'POST',
+                                       {files: fileIndices});
         const res = webApp.makeResponse();
         const sendRespSpy = new Stub(res, 'json');
-        //
         webApp.getHandler(req.path, req.method)(req, res);
         const [statusCode, body] = [...sendRespSpy.callInfo[0]];
         assert.equal(statusCode, 200);
         assert.equal(body.wrotePagesNum, 3);
+        assert.equal(body.wroteFilesNum, 1);
         assert.equal(body.totalPages, website.graph.pageCount);
-        assert.equal(body.outPath, website.dirPath + 'out');
+        assert.equal(body.totalFiles, fileIndices.length);
         assert.equal(body.issues.length, 0);
-        assert.equal(makeDirStub.callInfo.length, 3, 'should make dirs for all pages');
-        assert.equal(makeDirStub.callInfo[0][0], website.dirPath+'out/home');
-        assert.equal(makeDirStub.callInfo[1][0], website.dirPath+'out/page2');
-        assert.equal(makeDirStub.callInfo[2][0], website.dirPath+'out/page3');
-        assert.equal(writeFileStub.callInfo.length, 3, 'should write all pages to /out');
-        assert.equal(writeFileStub.callInfo[0][0], website.dirPath+'out/home/index.html');
-        assert.equal(writeFileStub.callInfo[1][0], website.dirPath+'out/page2/index.html');
-        assert.equal(writeFileStub.callInfo[2][0], website.dirPath+'out/page3/index.html');
+        assert.equal(existsStub.callInfo.length, 4,
+            'should check that each item has a directory');
+        const outPath = website.dirPath + 'out';
+        assert.equal(existsStub.callInfo[0][0], outPath);
+        assert.equal(existsStub.callInfo[1][0], outPath+'/home');
+        assert.equal(existsStub.callInfo[2][0], outPath+'/page2');
+        assert.equal(existsStub.callInfo[3][0], outPath+'/page3');
+        //
+        assert.equal(makeDirStub.callInfo.length, 3, 'should make a dir for each page');
+        assert.equal(makeDirStub.callInfo[0][0], outPath+'/home');
+        assert.equal(makeDirStub.callInfo[1][0], outPath+'/page2');
+        assert.equal(makeDirStub.callInfo[2][0], outPath+'/page3');
+        //
+        assert.equal(copyFileStub.callInfo.length, 1, 'should copy each file to /out');
+        assert.deepEqual(
+            [copyFileStub.callInfo[0][0], copyFileStub.callInfo[0][1]],
+            [website.dirPath+mockFileNames[0].substr(1), outPath+mockFileNames[0]],
+            'should write each file to /out');
+        //
+        assert.equal(writeFileStub.callInfo.length, 3, 'should write each page to /out');
+        assert.equal(writeFileStub.callInfo[0][0], outPath+'/home/index.html');
+        assert.equal(writeFileStub.callInfo[1][0], outPath+'/page2/index.html');
+        assert.equal(writeFileStub.callInfo[2][0], outPath+'/page3/index.html');
         assert.ok(writeFileStub.callInfo[0][1].indexOf('<p>'+homeContentCnt.json.content) > -1,
             'should write the contents of \'/home\'');
         assert.ok(writeFileStub.callInfo[1][1].indexOf('<p>'+page2ContentCnt.json.content) > -1,
@@ -327,6 +350,7 @@ QUnit.module('website-handlers.js (2)', hooks => {
         //
         existsStub.restore();
         makeDirStub.restore();
+        copyFileStub.restore();
         writeFileStub.restore();
     });
     QUnit.test('POST \'/api/websites/current/upload\' uploads pages and files', assert => {

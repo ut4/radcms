@@ -6,7 +6,7 @@ import {view, myLink, contentNodeList} from './common-components.js';
  */
 class GenericListUIPanelImpl {
     /**
-     * @param {{contentType: string; contentNodes: Object[]; uiPanelType: string; [any]: string;}} directiveElem
+     * @param {{contentType: string; contentNodes: Array<Object>; uiPanelType: string; [any]: string;}} directiveElem
      */
     constructor(directiveElem) {
         this.dir = directiveElem;

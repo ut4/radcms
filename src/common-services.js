@@ -72,7 +72,12 @@ const fileWatcher = {
         }
         watcher = chokidar.watch(path, {
             cwd: path,
-            ignored: new RegExp('^.*\\.(?!(' + (exts ? exts + '|' : '') + 'ini|jsx|htm))'),
+            ignored: new RegExp(
+                // Ignore paths that start with $path + 'out/' (eg. '/full/path/to/my/site/out/')
+                '^(' + path.replace('/', '\\/') + 'out\\/|' +
+                // Ignore files that don't have one of these extensions
+                '.*\\.(?!(' + (exts ? exts + '|' : '') + 'ini|jsx|htm)))'
+            ),
             disableGlobbing: true,
             ignoreInitial: true,
             depth: 1

@@ -37,14 +37,26 @@ class ControlPanel extends preact.Component {
     /**
      * @param {Object} props {
      *     currentPageData: {
-     *         page: {url: <str>, layoutFileName: <str>},
-     *         directiveElems: [{uiPanelType: <str>, contentNodes: [<cnode>...]...}...],
-     *         allContentNodes: [{..., defaults: {id: <id>, name: <name>...}}],
+     *         page: {
+     *             url: string;
+     *             layoutFileName: string;
+     *         },
+     *         directiveElems: Array<{
+     *             uiPanelType: string;
+     *             contentType: string;
+     *             contentNodes: Array<{
+     *                 [string]?: any;
+     *                 defaults: {id: number; name: string; dataBatchConfigId: number;}
+     *             }>
+     *         }>,
+     *         allContentNodes: Array<...>;
+     *         sitePath: string;
      *     };
      * }
      */
     constructor(props) {
         super(props);
+        ControlPanel.currentPageData = props.currentPageData;
         this.currentPageUiPanels = [];
         props.currentPageData.directiveElems.forEach(obj => {
             const Cls = cpanelApp.getUiPanelImpl(obj.uiPanelType);

@@ -7,7 +7,7 @@ class FileDialog extends preact.Component {
      * @param {Object} props {
      *     provideDirListFn: (path: string): Promise<{
      *         root: string;
-     *         entries: {name: string; isDir: string;}[]
+     *         entries: Array<{name: string; isDir: string;}>
      *     }>;
      *     onConfirm: (path: string): any;
      * }
