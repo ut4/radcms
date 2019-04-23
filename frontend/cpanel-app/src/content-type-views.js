@@ -1,7 +1,6 @@
-import {view, Form} from './common-components.js';
-import services from './common-services.js';
+import {view, Form, featherSvg} from '../../src/common-components.js';
+import services from '../../src/common-services.js';
 import {dataTypes} from './content-views.js';
-import {featherSvg} from './common-components.js';
 
 /**
  * #/manage-content-types

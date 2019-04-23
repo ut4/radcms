@@ -1,5 +1,6 @@
-import services from './common-services.js';
-import {view, myLink, Form} from './common-components.js';
+import services from '../../src/common-services.js';
+import {view, myLink, Form} from '../../src/common-components.js';
+import {ControlPanel} from './cpanel-app.js';
 
 /**
  * #/generate-website.
@@ -7,47 +8,86 @@ import {view, myLink, Form} from './common-components.js';
 class WebsiteGenerateView extends preact.Component {
     constructor(props) {
         super(props);
-        this.state = {genDetails: null, unexpectedError: null};
+        this.outPath = (props.sitePath || ControlPanel.currentPageData.sitePath) + 'out';
+        this.state = {pages: null, files: null, genResults: null,
+                      doDisableSubmit: false};
+        services.myFetch('/api/websites/current/site-graph?files=1').then(req => {
+            const siteGraph = JSON.parse(req.responseText);
+            siteGraph.pages.forEach((_, i) => { siteGraph.pages[i].selected = true; });
+            siteGraph.files.forEach((_, i) => { siteGraph.files[i].selected = true; });
+            this.setState(siteGraph);
+        }, () => {
+            toast('Failed to fetch site graph.', 'error');
+        });
     }
     render() {
-        let content;
-        const g = this.state.genDetails;
-        if (!g) {
-            content = 'Generate the website to local directory \'<todo>/out/\'?';
-        } else if (!this.unexpectedError) {
+        let content = '';
+        if (this.state.pages) {
+            content = $el('div', {className: 'list list-small'},
+                $el('p', null, 'Write selected pages and files to "' + this.outPath + '"?'),
+                $el('h3', null, 'Pages'),
+                this.buildCheckboxList('pages'),
+                $el('h3', null, 'Files'),
+                this.buildCheckboxList('files')
+            );
+        } else if (this.state.genResults) {
+            const g = this.state.genResults;
             content = [
-                $el('div', null, ['Wrote ', g.wrotePagesNum, '/', g.totalPages,
-                                  ' pages to "', g.outPath,
-                                  '", but had the following issues:'].join('')),
-                g.issues.map(str => {
-                    const [url, ...message] = str.split('>');
-                    return $el('div', null, url + ': ' + message.join('>'));
-                })
+                $el('p', null, ['Wrote ', g.wrotePagesNum, '/', g.totalPages,
+                    ' pages and copied ', g.wroteFilesNum, '/', g.totalFiles,
+                    ' asset files to "', this.outPath, '" in ', g.tookSecs.toFixed(6),
+                    ' secs.'].join(''))
             ];
-        } else {
-            content = this.state.unexpectedError;
+            if (g.issues.length) {
+                content.push($el('h3', null, 'Issues'));
+                content.push(...g.issues.map(str =>
+                    $el('div', null, str.replace(/>/g, ': '))
+                ));
+            }
         }
-        return view($el(Form, {onConfirm: () => this.confirm(), noAutoClose: true},
+        return view($el(Form, {onConfirm: () => this.confirm(),
+                               confirmButtonText: 'Generate',
+                               doDisableConfirmButton: () => this.state.doDisableSubmit,
+                               noAutoClose: true},
             $el('h2', null, 'Generate website'),
             $el('div', null, content)
         ));
     }
+    buildCheckboxList(type) {
+        const list = this.state[type];
+        const disabled = type == 'pages'; // Not supported yet
+        return $el('div', null, list.length
+            ? list.map(item =>
+                $el('div', null,
+                $el('input', {type: 'checkbox',
+                              id: 'cb-' + item.url,
+                              checked: item.selected,
+                              disabled,
+                              onChange: e => {
+                                  item.selected = e.target.checked;
+                                  this.setState({[type]: this.state[type]});
+                              }}),
+                $el('label', {for: 'cb-' + item.url, className: 'inline'}, item.url),
+            ))
+            : $el('div', null, '-')
+        );
+    }
     confirm() {
+        this.setState({doDisableSubmit: true});
         services.myFetch('/api/websites/current/generate', {
             method: 'POST',
-            headers: {'Content-Type': 'application/json'}
+            headers: {'Content-Type': 'application/json'},
+            data: JSON.stringify({
+                pages: this.state.pages.map((p, i) => p.selected ? i : -1)
+                                       .filter(idx => idx > -1),
+                files: this.state.files.map((f, i) => f.selected ? i : -1)
+                                       .filter(idx => idx > -1)
+            })
         }).then(req => {
-            const g = JSON.parse(req.responseText);
-            if (!g.issues.length) {
-                toast(['Wrote ', g.wrotePagesNum, '/', g.totalPages, ' pages to "',
-                       g.outPath, '" in ', g.tookSecs.toFixed(6),
-                       ' secs.'].join(''), 'success');
-                myRedirect('/');
-            } else {
-                this.setState({genDetails: JSON.parse(req.responseText)});
-            }
-        }, req => {
-            this.setState({unexpectedError: req.responseText});
+            this.setState({genResults: JSON.parse(req.responseText),
+                           pages: null, doDisableSubmit: false});
+        }, () => {
+            this.setState({pages: null, doDisableSubmit: false});
         });
     }
 }
@@ -87,7 +127,7 @@ class WebsiteUploadView extends preact.Component {
         };
         services.myFetch('/api/websites/current/waiting-uploads').then(
             res => {
-                var data = JSON.parse(res.responseText);
+                const data = JSON.parse(res.responseText);
                 this.setState({pages: data.pages, files: data.files,
                     noData: data.pages.length == 0 && data.files.length == 0});
             },
@@ -204,7 +244,7 @@ class WebsiteUploadView extends preact.Component {
 }
 
 /**
- * @param {{url: string; uploadStatus: number;}[]} items
+ * @param {Array<{url: string; uploadStatus: number;}>} items
  * @param {string} name
  */
 function uploadList(items, name) {

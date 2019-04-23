@@ -3,21 +3,11 @@
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
         <link rel="stylesheet" href="/frontend/common.css">
-        <link rel="stylesheet" href="/frontend/app.css">
+        <link rel="stylesheet" href="/frontend/main-app/app.css">
     </head>
     <body class="light">
         <div id="app"></div>
         <script src="/frontend/vendor/vendor.bundle.min.js"></script>
-        <script type="module">
-            /*
-             * Require all components
-             */
-            import './globals.js';
-            import {App} from './app.js';
-            /*
-             * main()
-             */
-            preact.render($el(App, null, null), document.getElementById('app'));
-        </script>
+        <script src="/frontend/main-app/main.js" type="module"></script>
     </body>
 </html>

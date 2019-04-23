@@ -39,9 +39,9 @@ const signals = {
      * @param {any?} arg
      */
     emit: function(whichSignal, arg) {
-        var l = this._listeners.length;
-        for (var i = 0; i < l; ++i) {
-            var listener = this._listeners[i];
+        const l = this._listeners.length;
+        for (let i = 0; i < l; ++i) {
+            const listener = this._listeners[i];
             if (listener.listeningTo == whichSignal &&
                 listener.fn(arg) === false) break;
         }

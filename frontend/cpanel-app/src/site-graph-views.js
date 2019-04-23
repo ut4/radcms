@@ -1,5 +1,5 @@
-import services from './common-services.js';
-import {view, Form} from './common-components.js';
+import services from '../../src/common-services.js';
+import {view, Form} from '../../src/common-components.js';
 
 /**
  * #/edit-site-graph.

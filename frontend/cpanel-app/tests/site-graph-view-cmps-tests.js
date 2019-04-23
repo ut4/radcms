@@ -1,5 +1,5 @@
-import {SiteGraphEditView} from './../site-graph-views.js';
-import services from './../common-services.js';
+import {SiteGraphEditView} from '../src/site-graph-views.js';
+import services from '../../src/common-services.js';
 const itu = Inferno.TestUtils;
 
 QUnit.module('SiteGraphEditComponent', hooks => {

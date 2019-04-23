@@ -1,4 +1,4 @@
-import {view, myLink, contentNodeList} from './common-components.js';
+import {view, myLink, contentNodeList} from '../../src/common-components.js';
 
 /*
  * Implements end-user management views (editing items, creating new items

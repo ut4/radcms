@@ -1,6 +1,6 @@
-import {cpanelApp, ControlPanel} from './../cpanel.js';
-import services from './../common-services.js';
-import utils from './my-test-utils.js';
+import {cpanelApp, ControlPanel} from '../src/cpanel-app.js';
+import services from '../../src/common-services.js';
+import utils from '../../tests/my-test-utils.js';
 const itu = Inferno.TestUtils;
 
 class TestUiPanelImpl {

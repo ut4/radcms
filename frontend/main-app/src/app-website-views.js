@@ -1,6 +1,6 @@
-import {Form, featherSvg} from './common-components.js';
-import {FileDialog} from './file-dialog.js';
-import services from './common-services.js';
+import {Form, featherSvg} from '../../src/common-components.js';
+import {FileDialog} from '../../src/file-dialog.js';
+import services from '../../src/common-services.js';
 
 /**
  * #/: Lists websites returned by GET /api/websites.

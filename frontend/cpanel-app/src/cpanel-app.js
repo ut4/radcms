@@ -1,5 +1,5 @@
-import services from './common-services.js';
-import {myLink, contentNodeList, featherSvg, Toaster} from './common-components.js';
+import services from '../../src/common-services.js';
+import {myLink, contentNodeList, featherSvg, Toaster} from '../../src/common-components.js';
 import {GenericListUIPanelImpl, StaticMenuUIPanelImpl} from './ui-panel-impls.js';
 import {WebsiteGenerateView, WebsiteUploadView} from './website-views.js';
 import {AddContentView, EditContentView} from './content-views.js';
@@ -31,7 +31,7 @@ const cpanelApp = {
 };
 
 /*
- * Main component.
+ * The root component of cpanel.html.
  */
 class ControlPanel extends preact.Component {
     /**
@@ -88,6 +88,9 @@ class ControlPanel extends preact.Component {
             }, () => {
                 toast('Failed to fetch templates.', 'error');
             });
+    }
+    static getCurrentPageData() {
+        return ControlPanel.currentPageData;
     }
     render() {
         return $el('div', {className: this.state.className}, [

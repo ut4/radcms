@@ -1,5 +1,5 @@
 import {WebsiteListView, WebsiteCreateView, WebsiteImportView} from './app-website-views.js';
-import {Toaster} from './common-components.js';
+import {Toaster} from '../../src/common-components.js';
 
 /**
  * The root component of app.html.
