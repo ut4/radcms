@@ -13,7 +13,7 @@ exports.import = function(type, arg) {
     throw new TypeError('Not implemented');
     var data = null;
     var errors = null;
-    if (type == 'wp') data = wpXmlFileToInsaneData(arg);
+    if (type == 'wp') data = wpXmlFileToRadData(arg);
     errors = _validateData(data);
     if (errors) throw new Error(errors);
     errors = _insertContentNodes(data.contentNodes);
@@ -23,7 +23,7 @@ exports.import = function(type, arg) {
 /**
  * @param {string} wpFilePath '/path/to/my-wp-site.xml'
  */
-function wpXmlFileToInsaneData(wpFilePath) {
+function wpXmlFileToRadData(wpFilePath) {
     var xmlReader = new xml.XmlReader();
     var n = xmlReader.parse(wpFilePath);
     if (!(n = n.getFirstChild()) || n.name != 'rss' ||

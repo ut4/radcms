@@ -109,7 +109,7 @@ class ControlPanel extends preact.Component {
                 ]),
                 $el('div', {className: !this.state.tabA ? 'hidden' : ''}, this.makeMainTabItems()),
                 $el('div', {className: this.state.tabA ? 'hidden' : ''}, this.makeDevTabItems()),
-                $el('h1', null, 'InsaneCMS')
+                $el('h1', null, 'RadCMS')
             ]),
             $el(preactRouter,
                 {

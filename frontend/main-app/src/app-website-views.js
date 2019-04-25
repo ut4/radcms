@@ -37,7 +37,7 @@ class WebsiteListView extends preact.Component {
             ));
         }
         content.push($el('div', null, $el('div', {className: 'box'},
-            $el('a', {href: '#/import-website'}, 'Import website')
+            $el('a', {href: '#/import-website'}, featherSvg('plus'), 'Import website')
         )));
         return $el('div', null,
             $el('h2', null, 'My websites'),

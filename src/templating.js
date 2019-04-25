@@ -12,7 +12,7 @@ const {transpiler} = require('./jsx/transpiler.js');
 
 class ElNode { constructor(tagName, props, children) {
     this.tagName = tagName;
-    this.props = props;
+    this.props = props || {};
     this.children = children;
 } }
 class TextNode { constructor(chars) {
@@ -143,7 +143,7 @@ class DomTree {
      */
     _lazilyExecFnCmp(node) {
         if (node._cachedFnResult === null) {
-            node._cachedFnResult = node.fn(node.props || {}, this);
+            node._cachedFnResult = node.fn(node.props, this);
             if (!(node._cachedFnResult instanceof ElNode))
                 node._cachedFnResult = node._cachedFnResult.toString();
         }

@@ -550,7 +550,7 @@ function handleUpdateSiteGraphRequest(req, res) {
 
 function rejectRequest(_, res) {
     // Precondition Required
-    res.send(428, 'The current website is not set (app.currentWebsite == null)');
+    res.send(428, 'No website is selected. <a href="/frontend/app.html">To dashboard</a>.');
 }
 
 /**
