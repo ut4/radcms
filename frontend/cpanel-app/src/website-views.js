@@ -67,7 +67,7 @@ class WebsiteGenerateView extends preact.Component {
                                   item.selected = e.target.checked;
                                   this.setState({[type]: this.state[type]});
                               }}),
-                $el('label', {for: 'cb-' + item.url, className: 'inline'}, item.url),
+                $el('label', {for: 'cb-' + item.url, className: 'inline'}, item.url)
             ))
             : $el('div', null, '-')
         );

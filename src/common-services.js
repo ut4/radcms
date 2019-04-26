@@ -70,13 +70,15 @@ const fileWatcher = {
             resetAddEventTimeout();
             watcher.close();
         }
+        let outDirPath = path + 'out/';
+        if (process.platform == 'win32') outDirPath = outDirPath.replace(/\//g, '\\');
         watcher = chokidar.watch(path, {
             cwd: path,
             ignored: new RegExp(
                 // Ignore paths that start with $path + 'out/' (eg. '/full/path/to/my/site/out/')
-                '^(' + path.replace('/', '\\/') + 'out\\/|' +
+                '^' + outDirPath + '|'+
                 // Ignore files that don't have one of these extensions
-                '.*\\.(?!(' + (exts ? exts + '|' : '') + 'ini|jsx|htm)))'
+                '^(?!.*(' + (exts ? exts + '|' : '') + 'ini|jsx|htm)$).*$'
             ),
             disableGlobbing: true,
             ignoreInitial: true,

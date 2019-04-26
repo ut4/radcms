@@ -12,7 +12,7 @@ class Dirent {
     isBlockDevice() { throw new Error('Not implemented'); }
     isCharacterDevice() { throw new Error('Not implemented'); }
     isDirectory() {
-        return fs.statSync(this.rootDirPath + this.name).isDirectory();
+        return fs.lstatSync(this.rootDirPath + this.name).isDirectory();
     }
     isFIFO() { throw new Error('Not implemented'); }
     isFile() {
