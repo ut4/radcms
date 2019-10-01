@@ -126,7 +126,7 @@ function contentNodeList(props) {
  */
 function featherSvg(iconId) {
     return $el('svg', {className: 'feather'},
-        $el('use', {'xlink:href': '/frontend/assets/feather-sprite.svg#' + iconId},
+        $el('use', {'xlink:href': 'frontend/assets/feather-sprite.svg#' + iconId},
             null)
     );
 }

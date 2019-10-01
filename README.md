@@ -1,3 +1,3 @@
 # RadCMC
 
-RadCMS is simply the most radical static site cms ever created.
+RadCMS is simply the most radical cms ever created.

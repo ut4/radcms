@@ -69,25 +69,16 @@ class ControlPanel extends preact.Component {
             )
         );
         this.state = {className: '', templates: [], selectedTemplateIdx: null,
-                      tabA: true, numWaitingUploads: 0};
-        services.signals.listen('numWaitingUploadsChanged', newValProvideFn => {
-            this.setState({numWaitingUploads: newValProvideFn(this.state.numWaitingUploads)});
-        });
-        services.myFetch('/api/websites/current/num-waiting-uploads')
-            .then(res => {
-                this.state.numWaitingUploads = parseInt(res.responseText);
-                return services.myFetch('/api/websites/current/templates');
-            }, () => {
-                toast('Failed to fetch waiting items.', 'error');
-            }).then(res => {
-                const templates = JSON.parse(res.responseText);
-                const fname = props.currentPageData.page.layoutFileName;
-                this.setState({templates: templates,
-                    selectedTemplateIdx: templates.findIndex(t => t.fileName == fname),
-                    numWaitingUploads: this.state.numWaitingUploads});
-            }, () => {
-                toast('Failed to fetch templates.', 'error');
-            });
+                      tabA: true};
+        //services.myFetch('/api/websites/current/templates')
+        //    .then(res => {
+        //        const templates = JSON.parse(res.responseText);
+        //        const fname = props.currentPageData.page.layoutFileName;
+        //        this.setState({templates: templates,
+        //            selectedTemplateIdx: templates.findIndex(t => t.fileName == fname)});
+        //    }, () => {
+        //        toast('Failed to fetch templates.', 'error');
+        //    });
     }
     static getCurrentPageData() {
         return ControlPanel.currentPageData;
@@ -133,18 +124,12 @@ class ControlPanel extends preact.Component {
         ]);
     }
     makeMainTabItems() {
-        const uploadBtnAttrs = {};
-        if (this.state.numWaitingUploads > 0) {
-            const l = this.state.numWaitingUploads;
-            uploadBtnAttrs['data-num-waiting-uploads'] = l;
-            uploadBtnAttrs['title'] = 'Upload ' + l + ' waiting items.';
-        }
         return $el('div', null,
             $el('section', {className: 'quick-links'},
                 $el('h3', null, 'Quick links:'),
                 $el('div', null,
                     myLink('/upload-website', [featherSvg('upload-cloud'), 'Upload'],
-                           false, uploadBtnAttrs),
+                           false),
                     myLink('/generate-website', [featherSvg('save'), 'Generate'])
                 )
             ),
