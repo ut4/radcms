@@ -30,4 +30,19 @@ class DDC {
                                                   ++$this->batchCount, $this));
         return $this->batches[$len - 1];
     }
+    /**
+     * @return string
+     * @throws \RunTimeException
+     */
+    public function toSql() {
+        if (!$this->batches) {
+            throw new \RuntimeException('Can\'t generate from empty config.');
+        }
+        return implode(' union all ', array_map(function ($batch) {
+            return 'select * from (' .
+                'select `id`,`name`,`json`, ' . $batch->id . ' as `dbcId` ' .
+                'from contentNodes where ' . $batch->toSql() .
+            ')';
+        }, $this->batches));
+    }
 }

@@ -3,15 +3,31 @@
 namespace RadCms;
 
 class LayoutLookup {
+    private $rules;
+    /**
+     * @param array $rules = null [(object)['pattern' => '', 'layoutFileName' => ''],...]
+     */
+    public function __construct($rules = null) {
+        $this->setRules($rules ?: [(object)['pattern' => '.*',
+                                            'layoutFileName' => 'main-layout.tmp.php']]);
+    }
+    /**
+     * @param array $rules ks. __construct
+     */
+    public function setRules($rules) {
+        $this->rules = array_map(function ($rule) {
+            $rule->pattern = '/^' . str_replace('/', '\\/', $rule->pattern) . '$/i';
+            return $rule;
+        }, $rules);
+    }
     /**
      * @param string $url
      * @return string
      */
     public function findLayoutFor($url) {
-        return [
-            '/' => 'main-layout.tmp.php',
-            '/art1' => 'article-layout.tmp.php',
-            '/art2' => 'article-layout.tmp.php',
-        ][$url];
+        foreach ($this->rules as $rule) {
+            if (preg_match($rule->pattern, $url)) return $rule->layoutFileName;
+        }
+        return '';
     }
 }

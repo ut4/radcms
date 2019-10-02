@@ -3,6 +3,7 @@
 namespace RadCms;
 
 use RadCms\Router;
+use RadCms\Common\Db;
 use RadCms\Content\ContentModule;
 use RadCms\Auth\AuthModule;
 use RadCms\Website\WebsiteModule;
@@ -15,7 +16,7 @@ abstract class RadCms {
      * @param string $path
      */
     public static function handleRequest($path) {
-        $services = (object) ['router' => new Router()];
+        $services = (object) ['router' => new Router(), 'db' => new Db()];
         ContentModule::init($services);
         AuthModule::init($services);
         WebsiteModule::init($services);
