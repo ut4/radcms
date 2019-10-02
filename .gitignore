@@ -2,6 +2,8 @@ frontend/*.bundle.*
 out/
 internal/
 target/
+vendor/
+config.php
 Cargo.lock
 duktape.c
 duk_source_meta.json

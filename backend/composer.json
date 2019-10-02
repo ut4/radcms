@@ -1,0 +1,8 @@
+{
+    "name": "radcms/radcms",
+    "description": "RadCMS is simply the most radical cms ever created.",
+    "type": "project",
+    "autoload": {
+        "psr-4": {"RadCms\\": "src/"}
+    }
+}
