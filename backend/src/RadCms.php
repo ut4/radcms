@@ -15,8 +15,9 @@ abstract class RadCms {
      *
      * @param string $path
      */
-    public static function handleRequest($path) {
-        $services = (object) ['router' => new Router(), 'db' => new Db()];
+    public static function handleRequest($path, &$config) {
+        $services = (object) ['router' => new Router(), 'db' => new Db($config)];
+        $config = ['wiped' => 'clean'];
         ContentModule::init($services);
         AuthModule::init($services);
         WebsiteModule::init($services);

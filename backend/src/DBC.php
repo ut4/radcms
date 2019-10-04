@@ -56,6 +56,9 @@ class DBC {
         $footer = (object) ['content' => 'Hello'];
         $art1 = (object) ['title' => 'Art1', 'body' => '...1', 'defaults' => (object)['name' => 'art1']];
         $art2 = (object) ['title' => 'Art2', 'body' => '...2', 'defaults' => (object)['name' => 'art2']];
+        if ($this->ddc->batches[0]->whereExpr == "name='footer'") {
+            return $footer;
+        }
         if ($this->ddc->batches[0]->isFetchAll) // main-layout
             return [
                 [

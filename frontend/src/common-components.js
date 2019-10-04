@@ -1,3 +1,5 @@
+const $el = preact.createElement;
+
 /**
  * @param {string|VDOMNode} content
  */
@@ -142,7 +144,7 @@ class Toaster extends preact.Component {
         this.state = {messages: []};
     }
     /**
-     * @param {string} message
+     * @param {string|function} message
      * @param {string} level
      */
     addMessage(message, level) {
@@ -152,7 +154,7 @@ class Toaster extends preact.Component {
         this.setState({messages: this.state.messages});
     }
     /**
-     * @param {{message: string; level: string; timeoutId: number;}?} message
+     * @param {{message: string|function; level: string; timeoutId: number;}?} message
      */
     removeMessage(message) {
         const messages = this.state.messages;
@@ -174,7 +176,9 @@ class Toaster extends preact.Component {
                 return $el('div', {className: 'toaster-message ' + message.level,
                                    onClick: () => this.removeMessage(message)},
                     featherSvg(icon),
-                    $el('span', null, message.message)
+                    typeof message.message != 'function'
+                        ? $el('span', null, message.message)
+                        : $el(message.message)
                 );
             })
         );

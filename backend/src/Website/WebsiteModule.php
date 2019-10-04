@@ -11,9 +11,9 @@ abstract class WebsiteModule {
      */
     public static function init($services) {
         $makeCtrl = function () use ($services){
-            return new WebsiteControllers(new LayoutLookup(json_decode($services->db->fetchAll(
-                                              'select `layoutMatchers` from [[p]]websiteConfig'
-                                          ))),
+            return new WebsiteControllers(new LayoutLookup(json_decode($services->db->fetchOne(
+                                              'select `layoutMatchers` from ${p}websiteConfigs'
+                                          )['layoutMatchers'])),
                                           new Templating());
         };
         $services->router->addMatcher(function ($url, $method) use ($makeCtrl) {
