@@ -58,13 +58,13 @@ class ControlPanel extends preact.Component {
         super(props);
         ControlPanel.currentPageData = props.currentPageData;
         this.currentPageUiPanels = [];
-        props.currentPageData.directiveElems.forEach(obj => {
+        props.currentPageData.renderedDirectives.forEach(obj => {
             const Cls = cpanelApp.getUiPanelImpl(obj.uiPanelType);
             if (!Cls) return;
             this.currentPageUiPanels.push(new Cls(obj));
         });
         this.looseContentNodes = props.currentPageData.allContentNodes.filter(n =>
-            !props.currentPageData.directiveElems.some(elem =>
+            !props.currentPageData.renderedDirectives.some(elem =>
                 elem.contentNodes.some(n2 => n.defaults.name == n2.defaults.name)
             )
         );

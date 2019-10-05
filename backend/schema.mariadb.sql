@@ -23,6 +23,7 @@ CREATE TABLE ${p}contentNodes (
     `name` VARCHAR(78) NOT NULL,
     `json` TEXT,
     `contentTypeId` SMALLINT UNSIGNED NOT NULL,
+    `parent` SMALLINT UNSIGNED DEFAULT NULL,
     FOREIGN KEY(`contentTypeId`) references ${p}contentTypes(`id`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARSET = utf8mb4;

@@ -4,7 +4,7 @@ internal/
 target/
 vendor/
 config.php
-Cargo.lock
+*.lock
 duktape.c
 duk_source_meta.json
 node_modules

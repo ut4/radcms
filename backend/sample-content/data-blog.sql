@@ -1,9 +1,9 @@
 insert into ${p}websiteConfigs values
-(1, '${siteName}', '[{"pattern":"/art.+","layoutFileName":"article-layout.tmp.php"},{"pattern":".*","layoutFileName":"main-layout.tmp.php"}]');
+(1, '${siteName}', '[{"pattern":"/art.+","layoutFileName":"article-layout.tmpl.php"},{"pattern":".*","layoutFileName":"main-layout.tmpl.php"}]');
 
 insert into ${p}contentTypes values
 (1, '${Generic blobs.name}', '${Generic blobs.fields}'),
-(2, '${Article.name}', '${Article.fields}');
+(2, '${Articles.name}', '${Articles.fields}');
 
 insert into ${p}contentNodes values
 (1, 'footer', '{"body":"(c) 2034 MySite"}', 1, NULL),

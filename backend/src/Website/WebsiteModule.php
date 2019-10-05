@@ -3,7 +3,6 @@
 namespace RadCms\Website;
 
 use RadCms\LayoutLookup;
-use RadCms\Templating;
 
 abstract class WebsiteModule {
     /**
@@ -14,7 +13,7 @@ abstract class WebsiteModule {
             return new WebsiteControllers(new LayoutLookup(json_decode($services->db->fetchOne(
                                               'select `layoutMatchers` from ${p}websiteConfigs'
                                           )['layoutMatchers'])),
-                                          new Templating());
+                                          $services->db);
         };
         $services->router->addMatcher(function ($url, $method) use ($makeCtrl) {
             if ($method == 'GET') return [$makeCtrl(), 'handlePageRequest'];

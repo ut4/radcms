@@ -25,35 +25,35 @@ class Db {
         }
     }
     /**
-     * .
+     * @param string $query
+     * @param array $params = null
+     * @return array
+     * @throws \PDOException
      */
-    public function fetchAll($query, $where = null) {
+    public function fetchAll($query, array $params = null) {
         $prep = $this->pdo->prepare($this->q($query));
-        $prep->execute($where);
+        $prep->execute($params);
         return $prep->fetchAll(\PDO::FETCH_ASSOC);
-        return '[' .
-            '{"pattern":"/art.+","layoutFileName":"article-layout.tmp.php"},' .
-            '{"pattern":".*","layoutFileName":"main-layout.tmp.php"}' .
-        ']';
     }
     /**
      * @param string $query
-     * @param string $where = null
-     * @return array|bool
+     * @param array $params = null
+     * @return object|bool
+     * @throws \PDOException
      */
-    public function fetchOne($query, $where = null) {
+    public function fetchOne($query, array $params = null) {
         $prep = $this->pdo->prepare($this->q($query));
-        $prep->execute($where);
+        $prep->execute($params);
         return $prep->fetch(\PDO::FETCH_ASSOC);
     }
     /**
      * @param string $sql
-     * @param array $bind = null
+     * @param array $params = null
      * @return int
      */
-    public function exec($sql, array $bind = null) {
+    public function exec($sql, array $params = null) {
         $prep = $this->pdo->prepare(str_replace('${p}', $this->tablePrefix, $sql));
-        $prep->execute($bind);
+        $prep->execute($params);
         return $prep->rowCount();
     }
     /**

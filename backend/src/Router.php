@@ -24,7 +24,7 @@ class Router {
         }
         if ($handler) {
             $res = new Response();
-            call_user_func($handler, $req, $res);
+            $handler($req, $res);
         }
         else throw new \RuntimeException("No route for {$req->path}"); 
     }

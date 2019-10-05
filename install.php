@@ -47,8 +47,7 @@ class Installer {
         if (($requestContentType ?: $_SERVER['CONTENT_TYPE']) !== 'application/json') {
             return [400, 'expected content-type "application/json"'];
         }
-        if (!($input = json_decode(call_user_func($fileGetContentsFn,
-                                                  'php://input'), true))) {
+        if (!($input = json_decode($fileGetContentsFn('php://input'), true))) {
             return [400, 'invalid json input'];
         }
         // todo check if index.php already exists
@@ -88,6 +87,7 @@ class Installer {
         try {
             $this->openDbConnAndCreateDbSchema($data);
             $sampleContent = $this->insertSampleContentToDb($data);
+            if (!$sampleContent) return 'Failed to insert sample content.';
         } catch (PDOException $_) {
             return 'A database error occured.';
         }
@@ -171,28 +171,29 @@ define('RAD_SITE_PATH', '{$this->sitePath}');
 function validateAndSanitizeInput(&$input, $sitePath, $fileExistsFn,
                                   $installKeyPath = '') {
     $errors = [];
+    $isEmpty = function ($key) use ($input) { return !isset($input[$key]) || !$input[$key]; };
     //
     if (!validateInstallKey($input, $installKeyPath))
         array_push($errors, 'installKey is not valid');
-    if (!isset($input['dbHost'])) array_push($errors, 'dbHost required');
-    if (!isset($input['dbDatabase'])) array_push($errors, 'dbDatabase required');
-    if (!isset($input['dbUser'])) array_push($errors, 'dbUser required');
-    if (!isset($input['dbPass'])) array_push($errors, 'dbPass required');
-    if (!isset($input['dbTablePrefix'])) array_push($errors, 'dbTablePrefix required');
-    if (!isset($input['dbCharset'])) $input['dbCharset'] = 'utf8';
+    if ($isEmpty('dbHost')) array_push($errors, 'dbHost required');
+    if ($isEmpty('dbDatabase')) array_push($errors, 'dbDatabase required');
+    if ($isEmpty('dbUser')) array_push($errors, 'dbUser required');
+    if ($isEmpty('dbPass')) array_push($errors, 'dbPass required');
+    if ($isEmpty('dbTablePrefix')) array_push($errors, 'dbTablePrefix required');
+    if ($isEmpty('dbCharset')) $input['dbCharset'] = 'utf8';
     else if (!in_array($input['dbCharset'], ['utf8']))
         array_push($errors, 'Invalid dbCharset');
     //
-    if (!isset($input['siteName'])) $input['siteName'] = 'My Site';
-    if (!isset($input['baseUrl'])) array_push($errors, 'baseUrl required');
+    if ($isEmpty('siteName')) $input['siteName'] = 'My Site';
+    if ($isEmpty('baseUrl')) array_push($errors, 'baseUrl required');
     else rtrim($input['baseUrl'], '/') . '/';
-    if (!isset($input['radPath'])) $input['radPath'] = dirname($sitePath) . '/backend/';
+    if ($isEmpty('radPath')) $input['radPath'] = dirname($sitePath) . '/backend/';
     else {
         $input['radPath'] = rtrim($input['radPath'], '/') . '/';
-        if (!call_user_func($fileExistsFn, $input['radPath'] . 'src/Common/Db.php'))
+        if (!$fileExistsFn($input['radPath'] . 'src/Common/Db.php'))
             array_push($errors, 'radPath "' . $input['radPath'] . '" not valid');
     }
-    if (!isset($input['sampleContent'])) $input['sampleContent'] = 'blog';
+    if ($isEmpty('sampleContent')) $input['sampleContent'] = 'blog';
     else if (!in_array($input['sampleContent'], ['minimal', 'blog']))
         array_push($errors, 'Invalid sampleContent name "' .
                             $input['sampleContent'] . '"');
@@ -215,70 +216,107 @@ function getSampleContent($name) {
     $genericContentType = ['name' => 'Generic blobs',
                            'friendlyName' => 'Geneerinen',
                            'fields' => ['content' => 'richtext']];
-    $articleContentType = ['name' => 'Article',
+    $articleContentType = ['name' => 'Articles',
                            'friendlyName' => 'Artikkeli',
                            'fields' => ['title' => 'text', 'body' => 'richtext']];
     return [
         'minimal' => [
             'contentTypes' => [$genericContentType],
             'files' => [
-                'main-layout.tmp.php' => <<<'EOT'
-<?php $footer = $fetchOne("Generic blobs")->where("name='footer'")->exec() ?>
+                'main-layout.tmpl.php' => <<<'EOT'
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <title>Hello</title>
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <meta name="generator" content="RadCMS 0.0.0">
 </head>
 <body>
-    <h1>Hello</h1>
-    <footer><?= $footer->content ?></footer>
+    <header>
+        <h1>Hello</h1>
+    </header>
+    <div id="main">
+        <?= $this->Generic("name='home-content'") ?>
+    </div>
+    <footer>
+        &copy; MySite <?= date('Y') ?>
+    </footer>
 </body>
 </html>
+EOT
+,
+                'Generic.tmpl.php' => <<<'EOT'
+<?php
+    $node = is_string($props)
+        ? $this->fetchOne('Generic blobs')->where($props)->exec()
+        : null;
+    echo $node ? $node->content : 'No content found.';
+?>
 EOT
             ]
         ],
         'blog' => [
             'contentTypes' => [$genericContentType, $articleContentType],
             'files' => [
-                'main-layout.tmp.php' => <<<'EOT'
-<?php list($arts, $footer) = $fetchAll("Articles")
-                         ->fetchOne("Generic blobs")->where("name='footer'")
-                         ->exec(); ?>
+                'main-layout.tmpl.php' => <<<'EOT'
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<title>Hello</title>
-<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-<meta name="generator" content="RadCMS 0.0.0">
-</head>
-<body>
-<?= $ArticleList($arts) ?>
-<footer><?= $footer->content ?></footer>
-</body>
-</html>
-EOT,
-                'article-layout.tmp.php' => <<<'EOT'
-<?php list($art, $footer) = $fetchOne("Articles")->where("name='{$url[0]}'")
-                       ->fetchOne("Generic blobs")->where("name='footer'")
-                       ->exec(); ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <title><?= $art->title ?></title>
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>Hello</title>
     <meta name="generator" content="RadCMS 0.0.0">
 </head>
 <body>
-    <a href="<?= $Url(/) ?>">Back</a>
+    <header>
+        <h1>Hello</h1>
+    </header>
+    <div id="main">
+        <?= $this->Articles() ?>
+    </div>
+    <footer>
+        &copy; MySite <?= date('Y') ?>
+    </footer>
+</body>
+</html>
+EOT
+,
+                'Articles.tmpl.php' => <<<'EOT'
+<?php
+$articles = $this->fetchAll('Articles')->exec();
+//
+foreach ($articles as $art): ?>
     <article>
         <h2><?= $art->title ?></h2>
-        <div><?= $art->body ?></div>
+        <div>
+            <p><?= substr($art->body, 0, 6) . '... ' ?></p>
+            <a href="<?= $this->url($art->defaults->name) ?>">Read more</a>
+        </div>
     </article>
-    <footer><?= $footer->content ?></footer>
+<?php endforeach; ?>
+EOT
+,
+                'article-layout.tmpl.php' => <<<'EOT'
+<?php $article = $this->fetchOne('Articles')->where("name='{$url[0]}'")->exec(); ?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title><?= $article->title ?></title>
+    <meta name="generator" content="RadCMS 0.0.0">
+</head>
+<body>
+    <header>
+        <h1>My site</h1>
+    </header>
+    <div id="main">
+        <a href="<?= $this->url('/') ?>">Back</a>
+        <article>
+            <h2><?= $article->title ?></h2>
+            <div><?= $article->body ?></div>
+        </article>
+    </div>
+    <footer>
+        &copy; MySite <?= date('Y') ?>
+    </footer>
 </body>
-'/html>
+</html>
 EOT
                 ]
         ],

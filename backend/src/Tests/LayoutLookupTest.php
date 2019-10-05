@@ -1,11 +1,11 @@
 <?php
 
-namespace Rad\Test;
+namespace Rad\Tests;
 
 use RadCms\LayoutLookup;
 use PHPUnit\Framework\TestCase;
 
-final class LayoutLookupTests extends TestCase {
+final class LayoutLookupTest extends TestCase {
     public function testGetLayoutReturnsLayoutNameBasedOnPassedRules() {
         $rule1 = (object)['pattern' => 'foo', 'layoutFileName' => 'file1.php'];
         $rule2 = (object)['pattern' => 'bar.*', 'layoutFileName' => 'file2.php'];

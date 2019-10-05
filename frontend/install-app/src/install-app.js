@@ -44,11 +44,12 @@ class InstallApp extends preact.Component {
                     $el('label', null,
                         $el('span', {'data-help-text': 'Sisältö, jolla sivusto alustetaan.'}, 'Esimerkkisisältö'),
                         $el('select', {name: 'sampleContent',
-                                       value: this.state.sampleContent,
-                                       onClick: e => Form.receiveInputValue(e, this)},
+                                       value: this.state.sampleContent},
                             [{name: 'minimal', friendlyName: 'Minimaalinen'},
                              {name: 'blog', friendlyName: 'Blogi'}].map(opt =>
-                                $el('option', {value: opt.name}, opt.friendlyName)
+                                $el('option', {value: opt.name,
+                                               onClick: e => Form.receiveInputValue(e, this, 'sampleContent')},
+                                    opt.friendlyName)
                             ))
                     )
                 ),
