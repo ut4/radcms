@@ -235,7 +235,8 @@ function getSampleContent($name) {
         <h1>Hello</h1>
     </header>
     <div id="main">
-        <?= $this->Generic("name='home-content'") ?>
+        <?= $this->Generic(['name' => 'home-content',
+                            'frontendPanelTitle' => 'Home content']) ?>
     </div>
     <footer>
         &copy; MySite <?= date('Y') ?>
@@ -246,11 +247,12 @@ EOT
 ,
                 'Generic.tmpl.php' => <<<'EOT'
 <?php
-    $node = is_string($props)
-        ? $this->fetchOne('Generic blobs')->where($props)->exec()
-        : null;
-    echo $node ? $node->content : 'No content found.';
-?>
+use RadCms\Templating\FrontendPanelType;
+$node = $this->fetchOne('Generic blobs')
+                ->where("name='{$props['name']}'")
+                ->createFrontendPanel(FrontendPanelType::Generic, $props['frontendPanelTitle'])
+                ->exec();
+echo $node ? $node->content : 'No content found.'; ?>
 EOT
             ]
         ],
@@ -269,7 +271,7 @@ EOT
         <h1>Hello</h1>
     </header>
     <div id="main">
-        <?= $this->Articles() ?>
+        <?= $this->Articles(['frontendPanelTitle' => 'Homepage articles']) ?>
     </div>
     <footer>
         &copy; MySite <?= date('Y') ?>
@@ -280,7 +282,10 @@ EOT
 ,
                 'Articles.tmpl.php' => <<<'EOT'
 <?php
-$articles = $this->fetchAll('Articles')->exec();
+use RadCms\Templating\FrontendPanelType;
+$articles = $this->fetchAll('Articles')
+                 ->createFrontendPanel(FrontendPanelType::List, $props['frontendPanelTitle'])
+                 ->exec();
 //
 foreach ($articles as $art): ?>
     <article>
@@ -294,7 +299,9 @@ foreach ($articles as $art): ?>
 EOT
 ,
                 'article-layout.tmpl.php' => <<<'EOT'
-<?php $article = $this->fetchOne('Articles')->where("name='{$url[0]}'")->exec(); ?>
+<?php
+$article = null;
+$rendered = $this->Article(['name' => $url[0], 'bindTo' => &$article]); ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -307,10 +314,7 @@ EOT
     </header>
     <div id="main">
         <a href="<?= $this->url('/') ?>">Back</a>
-        <article>
-            <h2><?= $article->title ?></h2>
-            <div><?= $article->body ?></div>
-        </article>
+        <?= $rendered ?>
     </div>
     <footer>
         &copy; MySite <?= date('Y') ?>
@@ -318,6 +322,22 @@ EOT
 </body>
 </html>
 EOT
+,
+                    'Article.tmpl.php' => <<<'EOT'
+<?php
+use RadCms\Templating\FrontendPanelType;
+$article = $this->fetchOne('Articles')
+                ->where("name='{$props['name']}'")
+                ->createFrontendPanel(FrontendPanelType::Generic, 'Article')
+                ->exec();
+if (array_key_exists('bindTo', $props))
+    $props['bindTo'] = $article; ?>
+<article>
+    <h2><?= $article->title ?></h2>
+    <div><?= $article->body ?></div>
+</article>
+EOT
+,
                 ]
         ],
     ][$name];

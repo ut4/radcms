@@ -33,14 +33,13 @@ class WebsiteControllers {
         if (!$layout) {
             return $res->send('404');
         }
-        $tmplCtx = ['contentNodeDao' => new ContentNodeDAO($this->db), 'renderedDirectives' => []];
-        $tmplVars = ['url' => $req->path ? explode('/', ltrim($req->path, '/')) : ['']];
-        $html = (new Template(RAD_SITE_PATH . $layout, $tmplCtx))->render($tmplVars);
+        $cd = new ContentNodeDAO($this->db);
+        $template = new Template(RAD_SITE_PATH . $layout, ['contentNodeDao' => $cd]);
+        $html = $template->render(['url' => $req->path ? explode('/', ltrim($req->path, '/')) : ['']]);
         if ($req->user && ($bodyEnd = strpos($html, '</body>')) > 1) {
             $dataToFrontend = [
                 'page' => ['url' => $req->path],
-                'renderedDirectives' => [],
-                'allContentNodes' => []
+                'panels' => $cd->getFrontendPanelInfos(),
             ];
             $html = substr($html, 0, $bodyEnd) . '<iframe src="frontend/cpanel.html" id="insn-cpanel-iframe" style="position:fixed;border:none;height:100%;width:275px;right:0;top:0"></iframe><script>function setIframeVisible(setVisible){document.getElementById(\'insn-cpanel-iframe\').style.width=setVisible?\'100%\':\'275px\';}function getCurrentPageData(){return ' . json_encode($dataToFrontend) . ';}</script>' . substr($html, $bodyEnd);
         }

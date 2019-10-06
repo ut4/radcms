@@ -6,105 +6,68 @@ use RadCms\Common\Db;
 
 class DAO {
     private $db;
-    private $contentTypeName;
-    private $isFetchOne;
-    private $whereExpr;
-    private $orderByExpr;
-    private $limitExpr;
+    private $counter;
+    private $frontendPanelInfos;
     /**
      * @param RadCms\Common\Db $db = null
      */
     public function __construct(Db $db = null) {
         $this->db = $db;
+        $this->counter = 0;
+        $this->frontendPanelInfos = [];
     }
     /**
      * @param string $contentTypeName
-     * @return $this
+     * @return \RadCms\Content\Query
      */
     public function fetchOne($contentTypeName) {
-        $this->newQuery($contentTypeName, true);
-        return $this;
+        return new Query(++$this->counter, $contentTypeName, true, $this);
     }
     /**
      * @param string $contentTypeName eg. 'Article', 'Product', 'Movie', 'Employee'
-     * @return $this
+     * @return \RadCms\Content\Query
      */
     public function fetchAll($contentTypeName) {
-        $this->newQuery($contentTypeName, false);
-        return $this;
+        return new Query(++$this->counter, $contentTypeName, false, $this);
     }
     /**
-     * @param string $expr
-     * @return $this
+     * @param string $queryId
+     * @param string $panelType
+     * @param string $title = ''
      */
-    public function where($expr) {
-        $this->whereExpr = $expr;
-        return $this;
+    public function addFrontendPanelInfo($queryId, $panelType, $title) {
+        $this->frontendPanelInfos[$queryId] = (object)[
+            'id' => $queryId,
+            'type' => $panelType,
+            'title' => $title,
+            'contentNodes' => null
+        ];
     }
     /**
+     * @param string $sql
+     * @param string $queryId
+     * @param bool $isFetchOne
      * @return array|object|null
      */
-    public function exec() {
-        if ($this->isFetchOne) {
-            $row = $this->db->fetchOne($this->toSql());
-            return $row ? makeContentNode($row) : null;
-        }
-        $rows = $this->db->fetchAll($this->toSql());
-        return is_array($rows) ? array_map('RadCMS\Content\makeContentNode', $rows) : [];
-    }
-    /**
-     * @return string
-     * @throws \RuntimeException
-     */
-    public function toSql() {
-        if (($errors = $this->selfValidate()) != '') {
-            throw new \RuntimeException($errors);
-        }
-        $where = '';
-        if ($this->isFetchOne) {
-            $where = $this->whereExpr;
+    public function doExec($sql, $queryId, $isFetchOne) {
+        $fetchResult = null;
+        if ($isFetchOne) {
+            $row = $this->db->fetchOne($sql);
+            $fetchResult = $row ? makeContentNode($row) : null;
         } else {
-            $where = '`contentTypeId` = (select `id` from ${p}contentTypes where `name` = \'' .
-                        $this->contentTypeName . '\')' .
-                      (!$this->whereExpr ? '' : ' and ' . $this->whereExpr);
+            $rows = $this->db->fetchAll($sql);
+            $fetchResult = is_array($rows) ? array_map('RadCMS\Content\makeContentNode', $rows) : [];
         }
-        return 'select `id`,`name`,`json` from ${p}contentNodes where ' .
-                $where .
-                (!$this->orderByExpr ? '' : ' order by ' . $this->orderByExpr) .
-                (!$this->limitExpr ? '' : ' limit ' . $this->limitExpr);
+        if (isset($this->frontendPanelInfos[$queryId])) {
+            $this->frontendPanelInfos[$queryId]->contentNodes = $fetchResult;
+        }
+        return $fetchResult;
     }
     /**
-     * .
+     * @return array Array<{id: string; type: string; ...}>
      */
-    private function newQuery($contentTypeName, $isFetchOne) {
-        $this->contentTypeName = $contentTypeName;
-        $this->isFetchOne = $isFetchOne;
-        $this->whereExpr = null;
-        $this->orderByExpr = null;
-        $this->limitExpr = null;
-    }
-    /**
-     * @return string
-     */
-    private function selfValidate() {
-        $errors = [];
-        $MAX_CNT_TYPE_NAME_LEN = 64;
-        $MAX_WHERE_LEN = 2048;
-        if (!$this->contentTypeName) {
-            array_push($errors, 'contentTypeName is required');
-        } else if (mb_strlen($this->contentTypeName) > $MAX_CNT_TYPE_NAME_LEN) {
-            array_push($errors, 'contentTypeName too long (max ' .
-                $MAX_CNT_TYPE_NAME_LEN . ', was ' . mb_strlen($this->contentTypeName) . ').');
-        }
-        if ($this->isFetchOne) {
-            if (!$this->whereExpr) {
-                array_push($errors, 'fetchOne(...)->where() is required.');
-            } else if (mb_strlen($this->whereExpr) > $MAX_WHERE_LEN) {
-                array_push($errors, 'fetchOne(...)->where() too long (max ' .
-                $MAX_WHERE_LEN . ', was ' . mb_strlen($this->whereExpr) . ').');
-            }
-        }
-        return $errors ? implode('\n', $errors) : '';
+    public function getFrontendPanelInfos() {
+        return array_values($this->frontendPanelInfos);
     }
 }
 

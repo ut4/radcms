@@ -14,10 +14,10 @@ class Template {
      * @param mixed &$ctx = null
      * @param array $vars = null
      */
-    public function __construct($file, &$ctx = null, array $vars = null) {
+    public function __construct($file, $ctx = null, array $vars = null) {
         $this->vars = $vars;
         $this->__file = $file;
-        $this->__ctx = &$ctx;
+        $this->__ctx = $ctx;
         $this->__aliases = [];
     }
     /**
@@ -38,8 +38,6 @@ class Template {
      * @return string
      */
     public function __call($name, $args) {
-        if (isset($this->__callWatchers[$name]))
-            $this->__callWatchers[$name]->__invoke($name, $args[0]);
         if (isset($this->__aliases[$name]))
             $name = $this->__aliases[$name];
         return $this->doRender(RAD_SITE_PATH . $name . '.tmpl.php',

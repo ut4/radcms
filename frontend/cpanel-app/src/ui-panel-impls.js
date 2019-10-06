@@ -1,35 +1,77 @@
 import {view, myLink, contentNodeList} from '../../src/common-components.js';
 
 /*
- * Implements end-user management views (editing items, creating new items
- * etc.) for <RadList/> directive elements.
+ * Implementoi hallintapaneeliosion <?php $this->fetchAll(...)->createFrontendPanel('Generic', 'My title') ?> kutsuille, jonka kautta loppukäyttäjä voi muokata sisältöä.
  */
-class GenericListUIPanelImpl {
+class GenericUIPanelImpl {
     /**
-     * @param {{contentType: string; contentNodes: Array<Object>; uiPanelType: string; [any]: string;}} directiveElem
+     * @param {FrontendPanelConfig} config
      */
-    constructor(directiveElem) {
-        this.dir = directiveElem;
-        this.label = this.dir.contentTypeLabel || this.dir.contentType;
+    constructor(config) {
+        this.type = 'Generic';
+        this.config = config;
+        if (config.contentNodes.length) {
+            this.cnodeId = config.contentNodes[0].defaults.id;
+            this.cnodeName = config.contentNodes[0].defaults.name;
+        } else {
+            this.cnodeId = 0;
+        }
     }
     getRoutes() {
         return [];
     }
     getTitle() {
-        return this.label + ' list';
+        return this.config.title;
     }
     getIcon() {
-        return this.dir.icon || 'layers';
+        return this.config.icon || 'layers';
+    }
+    /**
+     * @param {Object} ctx
+     */
+    getMenuItems(ctx) {
+        return this.cnodeId
+        ? [
+            $el('span', null, this.cnodeName),
+            myLink('/edit-content/' + this.cnodeId + '?returnTo=' +
+                   encodeURIComponent(ctx.currentPageData.page.url), 'Edit')
+        ]
+        : [
+            $el('span', null, 'No content'),
+            myLink('/add-content' + '?returnTo=' + encodeURIComponent(ctx.currentPageData.page.url), 'Create')
+        ];
+    }
+}
+
+/*
+ * Implementoi hallintapaneeliosion <?php $this->fetchAll(...)->createFrontendPanel('List', 'My title') ?> kutsuille.
+ */
+class GenericListUIPanelImpl {
+    /**
+     * @param {FrontendPanelConfig} config
+     */
+    constructor(config) {
+        this.type = 'List';
+        this.config = config;
+    }
+    getRoutes() {
+        return [];
+    }
+    getTitle() {
+        return this.config.title;
+    }
+    getIcon() {
+        return this.config.icon || 'layers';
     }
     /**
      * @param {Object} ctx
      */
     getMenuItems(ctx) {
         return contentNodeList({
-            cnodes: this.dir.contentNodes,
+            cnodes: this.config.contentNodes,
             createLinkText: 'Add ' + this.label,
             currentPageUrl: ctx.currentPageData.page.url,
-            contentType: this.dir.contentType
+            contentType: this.config.contentType
         });
     }
 }
@@ -44,15 +86,15 @@ class StaticMenuAddPageView {
 }
 
 /*
- * Implements end-user management views (adding links, reordering links etc.)
- * for <RadStaticMenu/> directives.
+ * Implementoi hallintapaneeliosion <?php $this->fetchAll(...)->createFrontendPanel('StaticMenu', 'My menu') ?> kutsuille.
  */
 class StaticMenuUIPanelImpl {
     /**
      * @see GenericListUIPanelImpl
      */
-    constructor(directiveElem) {
-        this.dir = directiveElem;
+    constructor(config) {
+        this.type = 'StaticMenu';
+        this.config = config;
     }
     getRoutes() {
         return [
@@ -69,10 +111,10 @@ class StaticMenuUIPanelImpl {
      * @param {Object} ctx
      */
     getMenuItems() {
-        return this.dir.contentNodes.map(article => {
+        return this.config.contentNodes.map(article => {
             return $el('span', null, article.title);
         }).concat(myLink('/static-menu-add-page', 'Add page'));
     }
 }
 
-export {GenericListUIPanelImpl, StaticMenuUIPanelImpl};
+export {GenericUIPanelImpl, GenericListUIPanelImpl, StaticMenuUIPanelImpl};

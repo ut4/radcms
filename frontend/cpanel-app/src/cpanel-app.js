@@ -1,6 +1,6 @@
 import services from '../../src/common-services.js';
 import {myLink, contentNodeList, featherSvg, Toaster} from '../../src/common-components.js';
-import {GenericListUIPanelImpl, StaticMenuUIPanelImpl} from './ui-panel-impls.js';
+import {GenericUIPanelImpl, GenericListUIPanelImpl, StaticMenuUIPanelImpl} from './ui-panel-impls.js';
 import {WebsiteGenerateView, WebsiteUploadView} from './website-views.js';
 import {AddContentView, EditContentView} from './content-views.js';
 import {ManageContentTypesView, CreateContentTypeView} from './content-type-views.js';
@@ -8,7 +8,8 @@ import {SiteGraphEditView} from './site-graph-views.js';
 
 const cpanelApp = {
     _uiPanelImpls: {
-        'EditableList': GenericListUIPanelImpl,
+        'List': GenericListUIPanelImpl,
+        'Generic': GenericUIPanelImpl,
         'StaticMenu': StaticMenuUIPanelImpl
     },
     /**
@@ -35,60 +36,34 @@ const cpanelApp = {
  */
 class ControlPanel extends preact.Component {
     /**
-     * @param {Object} props {
-     *     currentPageData: {
-     *         page: {
-     *             url: string;
-     *             layoutFileName: string;
-     *         },
-     *         directiveElems: Array<{
-     *             uiPanelType: string;
-     *             contentType: string;
-     *             contentNodes: Array<{
-     *                 [string]?: any;
-     *                 defaults: {id: number; name: string; dataBatchConfigId: number;}
-     *             }>
-     *         }>,
-     *         allContentNodes: Array<...>;
-     *         sitePath: string;
-     *     };
-     * }
+     * @param {{page: {url: string;}; panels: Array<FrontendPanelConfig>;}} props
      */
     constructor(props) {
         super(props);
-        ControlPanel.currentPageData = props.currentPageData;
         this.currentPageUiPanels = [];
-        props.currentPageData.renderedDirectives.forEach(obj => {
-            const Cls = cpanelApp.getUiPanelImpl(obj.uiPanelType);
+        const allContentNodes = [];
+        props.currentPageData.panels.forEach(obj => {
+            if (!Array.isArray(obj.contentNodes)) obj.contentNodes = [obj.contentNodes];
+            if (!obj.contentNodes[0]) obj.contentNodes = [];
+            allContentNodes.push(...obj.contentNodes);
+            const Cls = cpanelApp.getUiPanelImpl(obj.type);
             if (!Cls) return;
             this.currentPageUiPanels.push(new Cls(obj));
         });
-        this.looseContentNodes = props.currentPageData.allContentNodes.filter(n =>
-            !props.currentPageData.renderedDirectives.some(elem =>
+        this.looseContentNodes = allContentNodes.filter(n =>
+            !props.currentPageData.panels.some(elem =>
                 elem.contentNodes.some(n2 => n.defaults.name == n2.defaults.name)
             )
         );
         this.state = {className: '', templates: [], selectedTemplateIdx: null,
                       tabA: true};
-        //services.myFetch('/api/websites/current/templates')
-        //    .then(res => {
-        //        const templates = JSON.parse(res.responseText);
-        //        const fname = props.currentPageData.page.layoutFileName;
-        //        this.setState({templates: templates,
-        //            selectedTemplateIdx: templates.findIndex(t => t.fileName == fname)});
-        //    }, () => {
-        //        toast('Failed to fetch templates.', 'error');
-        //    });
-    }
-    static getCurrentPageData() {
-        return ControlPanel.currentPageData;
     }
     render() {
-        return $el('div', {className: this.state.className}, [
+        return $el('div', {className: this.state.className},
             $el(Toaster, null, null),
-            $el('div', {id: 'control-panel'}, [
+            $el('div', {id: 'control-panel'},
                 myLink('/frontend/app.html', 'Back to dashboard', true),
-                $el('div', {className: 'tab-links'}, [
+                $el('div', {className: 'tab-links'},
                     $el('button', {
                         className: this.state.tabA ? 'current' : '',
                         onClick: () => { if (!this.state.tabA) this.setState({tabA: true}); }
@@ -96,12 +71,12 @@ class ControlPanel extends preact.Component {
                     $el('button', {
                         className: !this.state.tabA ? 'current' : '',
                         onClick: () => { if (this.state.tabA) this.setState({tabA: false}); }
-                    }, 'For devs'),
-                ]),
+                    }, 'For devs')
+                ),
                 $el('div', {className: !this.state.tabA ? 'hidden' : ''}, this.makeMainTabItems()),
                 $el('div', {className: this.state.tabA ? 'hidden' : ''}, this.makeDevTabItems()),
                 $el('h1', null, 'RadCMS')
-            ]),
+            ),
             $el(preactRouter,
                 {
                     history: History.createHashHistory(),
@@ -121,7 +96,7 @@ class ControlPanel extends preact.Component {
                     $el(CreateContentTypeView, {path: '/create-content-type'}, null),
                 ].concat(...this.currentPageUiPanels.map(panel=>panel.getRoutes()))
             )
-        ]);
+        );
     }
     makeMainTabItems() {
         return $el('div', null,
@@ -135,14 +110,13 @@ class ControlPanel extends preact.Component {
             ),
             $el('section', null,
                 $el('h3', null, 'On this page:'),
-                ...this.currentPageUiPanels.map((panel, i) => {
+                ...this.currentPageUiPanels.map(panel => {
                     return $el(ControlPanelSection, {
                         title: panel.getTitle(),
                         icon: typeof panel.getIcon == 'function' ? panel.getIcon() : null,
-                        className: 'ui-panel ui-panel-' +
-                            this.props.currentPageData.directiveElems[i].uiPanelType
+                        className: 'ui-panel ui-panel-' + panel.type
                     }, panel.getMenuItems(this.props));
-                }).concat($el(ControlPanelSection, {
+                }).concat(!this.looseContentNodes.length && $el(ControlPanelSection, {
                     title: 'Other',
                     className: ''
                 }, contentNodeList({
@@ -154,28 +128,28 @@ class ControlPanel extends preact.Component {
         );
     }
     makeDevTabItems() {
-        return $el('div', {className: 'list list-small'}, [
-            $el('div', null, [
-                $el('h3', null, ['Layout', $el('span', null, 'Render this page using:')]),
+        return $el('div', {className: 'list list-small'},
+            $el('div', null,
+                $el('h3', null, 'Layout', $el('span', null, 'Render this page using:')),
                 this.state.templates.length && $el('select', {
                     value: this.state.selectedTemplateIdx,
                     onChange: e => { this.handleCurrentPageTemplateChange(e); },
                 }, this.state.templates.map((t, i) =>
                     $el('option', {value: i}, t.fileName)
                 ))
-            ]),
-            $el('div', null, [
+            ),
+            $el('div', null,
                 $el('h3', null, 'Content types'),
-                $el('div', {className: 'list list-small'}, [
+                $el('div', {className: 'list list-small'},
                     $el('div', null, myLink('/manage-content-types', 'Manage')),
                     $el('div', null, myLink('/create-content-type', 'Add new'))
-                ])
-            ]),
-            $el('div', null, [
+                )
+            ),
+            $el('div', null,
                 $el('h3', null, 'Site graph'),
                 myLink('/edit-site-graph', 'Delete entries')
-            ])
-        ]);
+            )
+        );
     }
     handleCurrentPageTemplateChange(e) {
         this.setState({selectedTemplateIdx: parseInt(e.target.value)});
@@ -204,8 +178,8 @@ class ControlPanelSection extends preact.Component {
         this.state = {collapsed: false};
     }
     render() {
-        return $el('div', {className: this.props.className}, [
-            $el('h4', null, [
+        return $el('div', {className: this.props.className},
+            $el('h4', null,
                 $el('span', null,
                     featherSvg(this.props.icon || 'feather'),
                     this.props.title
@@ -213,11 +187,11 @@ class ControlPanelSection extends preact.Component {
                 $el('button', {onClick: () => this.setState({collapsed: !this.state.collapsed})},
                     '[' + (!this.state.collapsed ? '-' : '+') + ']'
                 )
-            ]),
+            ),
             $el('div', {
                 className: !this.state.collapsed ? '' : 'hidden'
             }, this.props.children)
-        ]);
+        );
     }
 }
 

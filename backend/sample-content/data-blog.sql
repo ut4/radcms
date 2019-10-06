@@ -1,5 +1,5 @@
 insert into ${p}websiteConfigs values
-(1, '${siteName}', '[{"pattern":"/art.+","layoutFileName":"article-layout.tmpl.php"},{"pattern":".*","layoutFileName":"main-layout.tmpl.php"}]');
+(1, '${siteName}', '[{"pattern":"art.+","layoutFileName":"article-layout.tmpl.php"},{"pattern":".*","layoutFileName":"main-layout.tmpl.php"}]');
 
 insert into ${p}contentTypes values
 (1, '${Generic blobs.name}', '${Generic blobs.fields}'),
