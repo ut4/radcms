@@ -15,15 +15,16 @@ class Router {
     }
     /**
      * @param Request $req
+     * @param Request $res = null
      */
-    public function dispatch(Request $req) {
+    public function dispatch(Request $req, Response $res = null) {
         $handler = null;
         foreach ($this->matchers as $matcher) {
             $handler = $matcher($req->path, $req->method);
             if ($handler) break;
         }
         if ($handler) {
-            $res = new Response();
+            if (!$res) $res = new Response();
             $handler($req, $res);
         }
         else throw new \RuntimeException("No route for {$req->path}"); 

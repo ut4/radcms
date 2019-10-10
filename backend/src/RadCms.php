@@ -9,21 +9,30 @@ use RadCms\Auth\AuthModule;
 use RadCms\Website\WebsiteModule;
 use RadCms\Request;
 
-abstract class RadCms {
+class RadCms {
+    public $services;
     /**
      * RadCMS:n entry-point.
      *
-     * @param string $path
+     * @param \RadCms\Request $request
      */
-    public static function handleRequest($path, &$config) {
-        $services = (object) ['router' => new Router(), 'db' => new Db($config)];
-        $config = ['wiped' => 'clean'];
-        ContentModule::init($services);
-        AuthModule::init($services);
-        WebsiteModule::init($services);
-        //
-        $request = new Request($path);
+    public function handleRequest($request) {
         $request->user = (object) ['id' => 1];
-        $services->router->dispatch($request);
+        $this->services->router->dispatch($request);
+    }
+
+    ////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * @param array &$config
+     */
+    public static function create(&$config) {
+        $app = new RadCms();
+        $app->services = (object) ['router' => new Router(), 'db' => new Db($config)];
+        $config = ['wiped' => 'clean'];
+        ContentModule::init($app->services);
+        AuthModule::init($app->services);
+        WebsiteModule::init($app->services);
+        return $app;
     }
 }

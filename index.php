@@ -3,8 +3,6 @@
 require 'config.php';
 require RAD_BASE_PATH . 'vendor/autoload.php';
 
-\RadCms\RadCms::handleRequest(
-    // /mybase/ -> /, /mybase/foo -> /foo
-    str_replace(RAD_BASE_URL, '', $_SERVER['REQUEST_URI']),
-    $config
+\RadCms\RadCms::create($config)->handleRequest(
+    \RadCms\Request::createFromGlobals(RAD_BASE_URL)
 );

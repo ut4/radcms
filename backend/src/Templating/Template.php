@@ -21,10 +21,10 @@ class Template {
         $this->__aliases = [];
     }
     /**
-     * @param array $locals
+     * @param array $locals = []
      * @return string
      */
-    public function render(array $locals) {
+    public function render(array $locals = []) {
         return $this->doRender($this->__file, $locals);
     }
     /**
