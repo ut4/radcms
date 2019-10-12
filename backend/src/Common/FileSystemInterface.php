@@ -28,10 +28,20 @@ interface FileSystemInterface {
      * @param string $path
      * @return bool
      */
+    public function rmDir($path);
+    /**
+     * @param string $path
+     * @return bool
+     */
     public function isFile($path);
     /**
      * @param string $path
      * @return bool
      */
     public function isDir($path);
+    /**
+     * @param string $path
+     * @return array|false Array<string>
+     */
+    public function readDir($path);
 }

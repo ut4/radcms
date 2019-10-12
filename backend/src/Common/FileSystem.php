@@ -6,10 +6,9 @@ class FileSystem implements FileSystemInterface {
     /**
      * @param string $path
      * @param string $content
-     * @param int $dirPerms = 0755
      * @return int|false
      */
-    public function write($path, $content, $dirPerms = 0755) {
+    public function write($path, $content) {
         return file_put_contents($path, $content, LOCK_EX);
     }
     /**
@@ -38,6 +37,14 @@ class FileSystem implements FileSystemInterface {
     }
     /**
      * @param string $path
+     * @param resource $context = null
+     * @return bool
+     */
+    public function rmDir($path, $context = null) {
+        return @rmdir($path);
+    }
+    /**
+     * @param string $path
      * @return bool
      */
     public function isFile($path) {
@@ -49,5 +56,14 @@ class FileSystem implements FileSystemInterface {
      */
     public function isDir($path) {
         return is_dir($path);
+    }
+    /**
+     * @param string $path
+     * @param string $filter = '*'
+     * @param int $flags = GLOB_ERR
+     * @return array|false Array<string>
+     */
+    public function readDir($path, $filter = '*', $flags = GLOB_ERR) {
+        return glob(rtrim($path, '/') . '/' . $filter, $flags);
     }
 }

@@ -13,7 +13,8 @@ abstract class WebsiteModule {
             return new WebsiteControllers(new LayoutLookup(json_decode($services->db->fetchOne(
                                               'select `layoutMatchers` from ${p}websiteConfigs'
                                           )['layoutMatchers'])),
-                                          $services->db);
+                                          $services->db,
+                                          $services->contentTypes);
         };
         $services->router->addMatcher(function ($url, $method) use ($makeCtrl) {
             if ($method == 'GET') return [$makeCtrl(), 'handlePageRequest'];

@@ -10,19 +10,19 @@ class Query {
     private $id;
     private $isFetchOne;
     private $dao;
-    private $contentTypeName;
+    private $contentType;
     private $whereExp;
     private $orderByExp;
     private $limitExp;
     /**
      * $param integer $id
-     * $param string $contentTypeName
+     * $param \RadCms\Content\ContentTypeDef $contentType
      * $param bool $isFetchOne
      * $param \RadCms\Content\DAO $dao
      */
-    public function __construct($id, $contentTypeName, $isFetchOne, DAO $dao) {
+    public function __construct($id, ContentTypeDef $contentType, $isFetchOne, DAO $dao) {
         $this->id = strval($id);
-        $this->contentTypeName = $contentTypeName;
+        $this->contentType = $contentType;
         $this->isFetchOne = $isFetchOne;
         $this->dao = $dao;
         $this->whereExpr = null;
@@ -44,7 +44,7 @@ class Query {
      */
     public function createFrontendPanel($panelType, $title = '') {
         $this->dao->addFrontendPanelInfo($this->id, $panelType,
-            $title ? $title : $this->contentTypeName);
+            $title ? $title : $this->contentType->name);
         return $this;
     }
     /**
@@ -61,32 +61,20 @@ class Query {
         if (($errors = $this->selfValidate()) != '') {
             throw new \RuntimeException($errors);
         }
-        $where = '';
-        if ($this->isFetchOne) {
-            $where = $this->whereExpr;
-        } else {
-            $where = '`contentTypeId` = (select `id` from ${p}contentTypes where `name` = \'' .
-                     $this->contentTypeName . '\')' .
-                     (!$this->whereExpr ? '' : ' and ' . $this->whereExpr);
-        }
-        return 'select `id`,`name`,`json` from ${p}contentNodes where ' .
-                $where .
-                (!$this->orderByExpr ? '' : ' order by ' . $this->orderByExpr) .
-                (!$this->limitExpr ? '' : ' limit ' . $this->limitExpr);
+        return 'select ' . implode(',', array_map(function($name) {
+                   return "`{$name}`";
+               }, array_keys($this->contentType->fields))) .
+               ' from ${p}' . $this->contentType->name .
+               (!$this->whereExpr ? '' : ' where ' . $this->whereExpr) .
+               (!$this->orderByExpr ? '' : ' order by ' . $this->orderByExpr) .
+               (!$this->limitExpr ? '' : ' limit ' . $this->limitExpr);
     }
     /**
      * @return string
      */
     private function selfValidate() {
-        $errors = [];
-        $MAX_CNT_TYPE_NAME_LEN = 64;
         $MAX_WHERE_LEN = 2048;
-        if (!$this->contentTypeName) {
-            array_push($errors, 'contentTypeName is required');
-        } else if (mb_strlen($this->contentTypeName) > $MAX_CNT_TYPE_NAME_LEN) {
-            array_push($errors, 'contentTypeName too long (max ' .
-                $MAX_CNT_TYPE_NAME_LEN . ', was ' . mb_strlen($this->contentTypeName) . ').');
-        }
+        $errors = ContentTypeValidator::validate($this->contentType);
         if ($this->isFetchOne) {
             if (!$this->whereExpr) {
                 array_push($errors, 'fetchOne(...)->where() is required.');

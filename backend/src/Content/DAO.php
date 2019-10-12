@@ -3,15 +3,19 @@
 namespace RadCms\Content;
 
 use RadCms\Common\Db;
+use RadCms\Framework\GenericArray;
 
 class DAO {
     private $db;
+    private $contentTypes;
     private $counter;
     private $frontendPanelInfos;
     /**
-     * @param RadCms\Common\Db $db = null
+     * @param \RadCms\Framework\GenericArray $contentTypes = null Array<ContentTypeDef>
+     * @param \RadCms\Common\Db $db = null
      */
-    public function __construct(Db $db = null) {
+    public function __construct(GenericArray $contentTypes, Db $db = null) {
+        $this->contentTypes = $contentTypes;
         $this->db = $db;
         $this->counter = 0;
         $this->frontendPanelInfos = [];
@@ -21,14 +25,18 @@ class DAO {
      * @return \RadCms\Content\Query
      */
     public function fetchOne($contentTypeName) {
-        return new Query(++$this->counter, $contentTypeName, true, $this);
+        if (!($type = $this->contentTypes->find('name', $contentTypeName)))
+            throw new \InvalidArgumentException("Content type `{$contentTypeName}` not registered");
+        return new Query(++$this->counter, $type, true, $this);
     }
     /**
      * @param string $contentTypeName eg. 'Article', 'Product', 'Movie', 'Employee'
      * @return \RadCms\Content\Query
      */
     public function fetchAll($contentTypeName) {
-        return new Query(++$this->counter, $contentTypeName, false, $this);
+        if (!($type = $this->contentTypes->find('name', $contentTypeName)))
+            throw new \InvalidArgumentException("Content type `{$contentTypeName}` not registered");
+        return new Query(++$this->counter, $type, false, $this);
     }
     /**
      * @param string $queryId
@@ -50,18 +58,18 @@ class DAO {
      * @return array|object|null
      */
     public function doExec($sql, $queryId, $isFetchOne) {
-        $fetchResult = null;
+        $out = null;
         if ($isFetchOne) {
             $row = $this->db->fetchOne($sql);
-            $fetchResult = $row ? makeContentNode($row) : null;
+            $out = $row ? makeContentNode($row) : null;
         } else {
             $rows = $this->db->fetchAll($sql);
-            $fetchResult = is_array($rows) ? array_map('RadCMS\Content\makeContentNode', $rows) : [];
+            $out = is_array($rows) ? array_map('RadCMS\Content\makeContentNode', $rows) : [];;
         }
         if (isset($this->frontendPanelInfos[$queryId])) {
-            $this->frontendPanelInfos[$queryId]->contentNodes = $fetchResult;
+            $this->frontendPanelInfos[$queryId]->contentNodes = $out;
         }
-        return $fetchResult;
+        return $out;
     }
     /**
      * @return array Array<{id: string; type: string; ...}>
@@ -75,7 +83,5 @@ class DAO {
  *
  */
 function makeContentNode($row) {
-    $out = json_decode($row['json']);
-    $out->defaults = (object)['id' => $row['id'], 'name' => $row['name']];
-    return $out;
+    return (object)$row;
 }

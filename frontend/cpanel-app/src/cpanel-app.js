@@ -51,8 +51,8 @@ class ControlPanel extends preact.Component {
             this.currentPageUiPanels.push(new Cls(obj));
         });
         this.looseContentNodes = allContentNodes.filter(n =>
-            !props.currentPageData.panels.some(elem =>
-                elem.contentNodes.some(n2 => n.defaults.name == n2.defaults.name)
+            !props.currentPageData.panels.some(panel =>
+                panel.contentNodes.some(n2 => panel.id+n.id == panel.id+n2.id)
             )
         );
         this.state = {className: '', templates: [], selectedTemplateIdx: null,
