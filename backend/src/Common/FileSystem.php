@@ -28,6 +28,14 @@ class FileSystem implements FileSystemInterface {
     }
     /**
      * @param string $path
+     * @param string $destPath
+     * @return bool
+     */
+    public function copy($path, $destPath) {
+        return @copy($path, $destPath);
+    }
+    /**
+     * @param string $path
      * @param int $perms = 0755
      * @param bool $recursive = true
      * @return bool

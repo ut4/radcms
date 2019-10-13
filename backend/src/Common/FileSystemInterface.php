@@ -21,6 +21,12 @@ interface FileSystemInterface {
     public function unlink($path);
     /**
      * @param string $path
+     * @param string $destPath
+     * @return bool
+     */
+    public function copy($path, $destPath);
+    /**
+     * @param string $path
      * @return int|false
      */
     public function mkDir($path);

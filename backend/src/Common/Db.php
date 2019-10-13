@@ -60,8 +60,7 @@ class Db {
      * @return bool
      */
     public function beginTransaction() {
-        $this->transactionLevel++;
-        if ($this->transactionLevel === 1) {
+        if (++$this->transactionLevel === 1) {
             return $this->pdo->beginTransaction();
         }
         return false;
@@ -70,17 +69,16 @@ class Db {
      * @return bool
      */
     public function commit() {
-        if ($this->transactionLevel === 1) {
+        if (--$this->transactionLevel === 0) {
             return $this->pdo->commit();
         }
-        $this->transactionLevel--;
         return false;
     }
     /**
      * @return bool
      */
     public function rollback() {
-        if ($this->transactionLevel === 0) {
+        if (--$this->transactionLevel === 0) {
             return $this->pdo->rollBack();
         }
         return false;

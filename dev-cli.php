@@ -16,27 +16,22 @@ if ($action == 'create-installer') {
  * kaikki sen tarvitsemat tiedostot).
  */
 function createInstaller() {
-    $backendSrcPath = __DIR__ . '/backend/src/';
-    $buildAssetsPath = __DIR__ . '/backend/build-files/';
-    $sitePath = __DIR__ . '/';
-    $phar = new Phar($sitePath . 'installer.phar');
-    $phar->addFile($backendSrcPath . 'Common/Db.php');
-    $phar->addFile($backendSrcPath . 'Request.php');
-    $phar->addFile($backendSrcPath . 'Response.php');
-    $phar->addFile($backendSrcPath . 'Router.php');
-    $phar->addFile($backendSrcPath . 'Templating/Template.php');
-    $phar->addFile($backendSrcPath . 'Templating/DefaultFunctions.php');
-    $phar->addFile($backendSrcPath . 'Installer/InstallerApp.php');
-    $phar->addFile($backendSrcPath . 'Installer/InstallerControllers.php');
-    $phar->addFile($backendSrcPath . 'Installer/main-view.tmpl.php');
-    $phar->addFile($buildAssetsPath . 'Psr4Autoloader.php');
+    $backendPath = __DIR__ . '/backend/';
+    $backendSrcPath = $backendPath . 'src/';
+    $buildAssetsPath = $backendPath . 'build-files/';
+    $phar = new Phar(__DIR__ . '/installer.phar');
+    $getClassMap = include $buildAssetsPath . 'classmap.php';
+    $classMap = $getClassMap($backendSrcPath, $buildAssetsPath);
+    foreach ($classMap as $filePath) $phar->addFile($filePath);
     $phar->setStub(
 "<?php
 define('RAD_BASE_PATH', '{$backendSrcPath}');
 include 'phar://' . __FILE__ . '/{$buildAssetsPath}Psr4Autoloader.php';
+include 'phar://' . __FILE__ . '/{$buildAssetsPath}LoggerInterface.php';
 \$loader = new Psr\Psr4Autoloader();
 \$loader->register();
 \$loader->addNamespace('RadCms', 'phar://' . __FILE__ . '/{$backendSrcPath}');
+\RadCms\Common\LoggerAccess::setLogger(new \RadCms\Common\ErrorLogLogger());
 //
 return function (\$url, \$DIR) {
     \RadCms\Installer\InstallerApp::create(\$DIR)->handleRequest(\$url);

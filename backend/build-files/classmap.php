@@ -1,0 +1,25 @@
+<?php
+// tässä tiedostossa filut, jotka installer.phar tarvitsee toimiakseen
+return function ($backendSrcPath, $buildAssetsPath) { return [
+    $backendSrcPath . 'Common/Db.php',
+    $backendSrcPath . 'Common/LoggerAccess.php',
+    $backendSrcPath . 'Common/ErrorLogLogger.php',
+    $backendSrcPath . 'Common/FileSystem.php',
+    $backendSrcPath . 'Common/FileSystemInterface.php',
+    $backendSrcPath . 'Framework/Validator.php',
+    $backendSrcPath . 'Framework/GenericArray.php',
+    $backendSrcPath . 'Content/ContentTypeDef.php',
+    $backendSrcPath . 'Content/ContentTypeMigrator.php',
+    $backendSrcPath . 'Content/ContentTypeValidator.php',
+    $backendSrcPath . 'Request.php',
+    $backendSrcPath . 'Response.php',
+    $backendSrcPath . 'Router.php',
+    $backendSrcPath . 'Templating/Template.php',
+    $backendSrcPath . 'Templating/DefaultFunctions.php',
+    $backendSrcPath . 'Installer/InstallerApp.php',
+    $backendSrcPath . 'Installer/InstallerControllers.php',
+    $backendSrcPath . 'Installer/Installer.php',
+    $backendSrcPath . 'Installer/main-view.tmpl.php',
+    $buildAssetsPath . 'Psr4Autoloader.php',
+    $buildAssetsPath . 'LoggerInterface.php',
+]; };

@@ -7,12 +7,15 @@ use RadCms\Request;
 
 class InstallerApp {
     private $router;
+    private $makeCtrl;
     /**
      * @param string $sitePath Absoluuttinen polku applikaation public-kansioon (sama kuin install.php:n sijainti)
+     * @param \Closure $makeCtrl Function<($sitePath: string): \RadCms\Installer\InstallerControllers>
      */
-    public function __construct($sitePath) {
+    public function __construct($sitePath, \Closure $makeCtrl = null) {
         $this->router = new Router();
-        $this->registerRoutes((object) ['sitePath' => $sitePath]);
+        $this->makeCtrl = $makeCtrl;
+        $this->registerRoutes($sitePath);
     }
 
     /**
@@ -32,13 +35,12 @@ class InstallerApp {
     /**
      * Rekisteröi handlerit installerin sisältämille http-reiteille.
      */
-    private function registerRoutes($context) {
-        $makeCtrl = function () use ($context) {
-            return new InstallerControllers($context->sitePath);
-        };
-        $this->router->addMatcher(function ($url, $method) use ($makeCtrl) {
-            if (strpos($url, '/') === 0)
-                return [$makeCtrl(), $method == 'GET' ? 'renderHomeView' : 'handleInstallRequest'];
+    private function registerRoutes($sitePath) {
+        $this->router->addMatcher(function ($url, $method) use ($sitePath) {
+            if (strpos($url, '/') === 0) {
+                $ctrl = $this->makeCtrl->__invoke($sitePath);
+                return [$ctrl, $method == 'GET' ? 'renderHomeView' : 'handleInstallRequest'];
+            }
         });
     }
 
@@ -46,9 +48,13 @@ class InstallerApp {
 
     /**
      * @param string $DIR
+     * @param \Closure $makeCtrl = function ($sitePath) { return new InstallerControllers($sitePath); };
      * @return \RadCms\Installer\InstallerApp
      */
-    public static function create($DIR = '') {
-        return new InstallerApp(str_replace('\\', '/', $DIR) . '/');
+    public static function create($DIR = '', \Closure $makeCtrl = null) {
+        return new InstallerApp(str_replace('\\', '/', $DIR) . '/',
+                                $makeCtrl ?: function ($sitePath) {
+                                    return new InstallerControllers($sitePath);
+                                });
     }
 }

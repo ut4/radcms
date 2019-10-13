@@ -1,0 +1,12 @@
+[
+    {
+        "name": "GenericBlobs",
+        "friendlyName": "Geneerinen",
+        "fields": {"name": "text", "content": "richtext"}
+    },
+    {
+        "name": "Articles",
+        "friendlyName": "Artikkelit",
+        "fields": {"slug": "text", "title": "text", "body": "text"}
+    }
+]
