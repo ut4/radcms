@@ -1,9 +1,8 @@
 <?php
 
-namespace RadCms\Content;
+namespace RadCms\ContentType;
 
 use RadCms\Common\Db;
-use RadCms\Framework\GenericArray;
 
 /**
  * Luokka joka asentaa/päivittää/poistaa sisältötyyppejä tietokantaan.
@@ -19,25 +18,25 @@ class ContentTypeMigrator {
         $this->db = $db;
     }
     /**
-     * @param \RadCms\Framework\GenericArray $contentTypes Array<\RadCms\Content\ContentTypeDef>
+     * @param \RadCms\ContentType\ContentTypeCollection $contentTypes
      * @param string $size = 'medium' 'tiny' | 'small' | 'medium' | '' | 'big'
      * @return bool
      * @throws \RuntimeException
      */
-    public function installMany(GenericArray $contentTypes, $size = 'medium') {
+    public function installMany(ContentTypeCollection $contentTypes, $size = 'medium') {
         if (!in_array($size, self::COLLECTION_SIZES)) {
             throw new \RuntimeException('Not valid content type collection size ' .
                                         implode(' | ', self::COLLECTION_SIZES));
         }
-        $typeDefs = $contentTypes->toArray();
-        $errors = array_reduce($typeDefs, function ($all, $def) {
+        $ctypeDefs = $contentTypes->toArray();
+        $errors = array_reduce($ctypeDefs, function ($all, $def) {
             return array_merge($all, ContentTypeValidator::validate($def));
         }, []);
         if ($errors) {
             throw new \RuntimeException('Invalid content type(s): ' . implode(',', $errors));
         }
         $sql = '';
-        foreach ($typeDefs as $type) {
+        foreach ($ctypeDefs as $type) {
             $sql .= 'CREATE TABLE ${p}' . $type->name . '(' .
                 '`id` ' . strtoupper($size) . 'INT UNSIGNED NOT NULL AUTO_INCREMENT' .
                 ', ' . $this->buildFieldsSql($type->fields) .

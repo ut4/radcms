@@ -1,7 +1,7 @@
 import '../src/globals.js';
-import {ControlPanel} from './src/cpanel-app.js';
+import ControlPanelApp from './src/ControlPanelApp.js';
 
-preact.render($el(ControlPanel, {
+preact.render($el(ControlPanelApp, {
     currentPageData: window.parent.getCurrentPageData()
 }, null), document.getElementById('cpanel-app'));
 

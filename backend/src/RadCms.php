@@ -9,8 +9,6 @@ use RadCms\Auth\AuthModule;
 use RadCms\Website\WebsiteModule;
 use RadCms\Common\FileSystemInterface;
 use RadCms\Common\FileSystem;
-use RadCms\Framework\GenericArray;
-use RadCms\Content\ContentTypeDef;
 use RadCms\Plugins\PluginInterface;
 use Monolog\Logger;
 use Monolog\Handler\ErrorLogHandler;
@@ -43,18 +41,17 @@ class RadCms {
         $app = new RadCms();
         $app->services = (object) ['router' => new Router(),
                                    'db' => !$getDb ? new Db($config) : $getDb(),
-                                   'plugins' => [],
-                                   'contentTypes' => new GenericArray(ContentTypeDef::class)];
+                                   'plugins' => []];
         $config = ['wiped' => 'clean'];
         //
         ContentModule::init($app->services);
         AuthModule::init($app->services);
-        WebsiteModule::init($app->services);
         $app->services->plugins = self::registerPlugins($pluginsDir,
                                                         $fs ?: new FileSystem());
         foreach ($app->services->plugins as $plugin) {
-            $plugin::init($app->services);
+            $plugin->init($app->services);
         }
+        WebsiteModule::init($app->services);
         //
         $logger = new Logger('mainLogger');
         $logger->pushHandler(new ErrorLogHandler());

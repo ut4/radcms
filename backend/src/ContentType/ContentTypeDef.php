@@ -1,6 +1,6 @@
 <?php
 
-namespace RadCms\Content;
+namespace RadCms\ContentType;
 
 class ContentTypeDef {
     public $name;
@@ -15,5 +15,13 @@ class ContentTypeDef {
         $this->name = $name;
         $this->friendlyName = $friendlyName;
         $this->fields = $fields;
+    }
+    /**
+     * @return string
+     */
+    public function fieldsToSql() {
+        return implode(', ', array_map(function($name) {
+            return "`{$name}`";
+        }, array_keys($this->fields)));
     }
 }

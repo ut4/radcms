@@ -22,6 +22,12 @@ class GenericArray {
         array_push($this->vals, new $this->T(...$args));
     }
     /**
+     * @param \RadCms\Framework\GenericArray $other
+     */
+    public function merge(GenericArray $other) {
+        $this->vals = array_merge($this->vals, $other->toArray());
+    }
+    /**
      * @param string $key
      * @param string $val
      * @return object|null

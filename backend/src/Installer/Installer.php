@@ -5,9 +5,9 @@ namespace RadCms\Installer;
 use RadCms\Common\Db;
 use RadCms\Common\LoggerAccess;
 use RadCms\Common\FileSystemInterface;
-use RadCms\Content\ContentTypeMigrator;
-use RadCms\Framework\GenericArray;
-use RadCms\Content\ContentTypeDef;
+use RadCms\ContentType\ContentTypeMigrator;
+use RadCms\ContentType\ContentTypeDef;
+use RadCms\ContentType\ContentTypeCollection;
 
 class Installer {
     private $sitePath;
@@ -89,7 +89,7 @@ class Installer {
         if (!($contentTypesInput = json_decode($json, true)))
             return 'Failed to parse ' . $path;
         //
-        $contentTypes = new GenericArray(ContentTypeDef::class);
+        $contentTypes = new ContentTypeCollection();
         foreach ($contentTypesInput as $type) $contentTypes->add(
             isset($type['name']) ? $type['name'] : '',
             isset($type['friendlyName']) ? $type['friendlyName'] : '',

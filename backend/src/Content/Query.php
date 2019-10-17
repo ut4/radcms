@@ -2,6 +2,9 @@
 
 namespace RadCms\Content;
 
+use RadCms\ContentType\ContentTypeDef;
+use RadCms\ContentType\ContentTypeValidator;
+
 /**
  * Luokka jonka templaattien <?php $this->fetchOne|All() ?> instansoi ja
  * palauttaa. Ei tarkoitettu käytettäväksi manuaalisesti.
@@ -16,7 +19,7 @@ class Query {
     private $limitExp;
     /**
      * $param integer $id
-     * $param \RadCms\Content\ContentTypeDef $contentType
+     * $param \RadCms\ContentType\ContentTypeDef $contentType
      * $param bool $isFetchOne
      * $param \RadCms\Content\DAO $dao
      */
@@ -61,9 +64,7 @@ class Query {
         if (($errors = $this->selfValidate()) != '') {
             throw new \RuntimeException($errors);
         }
-        return 'select ' . implode(',', array_map(function($name) {
-                   return "`{$name}`";
-               }, array_keys($this->contentType->fields))) .
+        return 'select `id`, ' . $this->contentType->fieldsToSql() .
                ' from ${p}' . $this->contentType->name .
                (!$this->whereExpr ? '' : ' where ' . $this->whereExpr) .
                (!$this->orderByExpr ? '' : ' order by ' . $this->orderByExpr) .

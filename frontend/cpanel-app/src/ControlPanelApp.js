@@ -1,40 +1,12 @@
 import services from '../../src/common-services.js';
 import {myLink, contentNodeList, featherSvg, Toaster} from '../../src/common-components.js';
-import {GenericUIPanelImpl, GenericListUIPanelImpl, StaticMenuUIPanelImpl} from './ui-panel-impls.js';
-import {WebsiteGenerateView, WebsiteUploadView} from './website-views.js';
-import {AddContentView, EditContentView} from './content-views.js';
-import {ManageContentTypesView, CreateContentTypeView} from './content-type-views.js';
-import {SiteGraphEditView} from './site-graph-views.js';
+import uiPanelRegister from './UiPanelRegister.js';
+import ContentAddView from './Content/ContentAddView.js';
+import ContentEditView from './Content/ContentEditView.js';
+import ContentTypesManageView from './ContentType/ContentTypesManageView.js';
+import ContentTypeCreateView from './ContentType/ContentTypeCreateView.js';
 
-const cpanelApp = {
-    _uiPanelImpls: {
-        'List': GenericListUIPanelImpl,
-        'Generic': GenericUIPanelImpl,
-        'StaticMenu': StaticMenuUIPanelImpl
-    },
-    /**
-     * @param {string} name
-     * @param {Object} impl
-     * @throws {TypeError}
-     */
-    registerUiPanelImpl: function(name, impl) {
-        if (this._uiPanelImpls.hasOwnProperty(name))
-            throw new TypeError('Impl \''+name+'\' already exists.');
-        this._uiPanelImpls[name] = impl;
-    },
-    /**
-     * @param {string} name
-     * @returns {Object|undefined}
-     */
-    getUiPanelImpl: function(name) {
-        return this._uiPanelImpls[name];
-    }
-};
-
-/*
- * The root component of cpanel.html.
- */
-class ControlPanel extends preact.Component {
+class ControlPanelApp extends preact.Component {
     /**
      * @param {{page: {url: string;}; panels: Array<FrontendPanelConfig>;}} props
      */
@@ -46,8 +18,8 @@ class ControlPanel extends preact.Component {
             if (!Array.isArray(obj.contentNodes)) obj.contentNodes = [obj.contentNodes];
             if (!obj.contentNodes[0]) obj.contentNodes = [];
             allContentNodes.push(...obj.contentNodes);
-            const Cls = cpanelApp.getUiPanelImpl(obj.type);
-            if (!Cls) return;
+            const Cls = uiPanelRegister.getUiPanelImpl(obj.type);
+            if (!Cls) return console.error(`UI panel type ${obj.type} not implemented.`);
             this.currentPageUiPanels.push(new Cls(obj));
         });
         this.looseContentNodes = allContentNodes.filter(n =>
@@ -87,13 +59,10 @@ class ControlPanel extends preact.Component {
                         this.setState({className: !isIndex ? 'open' : ''});
                     }
                 }, [
-                    $el(WebsiteGenerateView, {path: '/generate-website'}, null),
-                    $el(WebsiteUploadView, {path: '/upload-website'}, null),
-                    $el(SiteGraphEditView, {path: '/edit-site-graph'}, null),
-                    $el(AddContentView, {path: '/add-content/:initialContentTypeName?'}, null),
-                    $el(EditContentView, {path: '/edit-content/:contentNodeId'}, null),
-                    $el(ManageContentTypesView, {path: '/manage-content-types'}, null),
-                    $el(CreateContentTypeView, {path: '/create-content-type'}, null),
+                    $el(ContentAddView, {path: '/add-content/:initialContentTypeName?'}, null),
+                    $el(ContentEditView, {path: '/edit-content/:contentNodeId'}, null),
+                    $el(ContentTypesManageView, {path: '/manage-content-types'}, null),
+                    $el(ContentTypeCreateView, {path: '/create-content-type'}, null),
                 ].concat(...this.currentPageUiPanels.map(panel=>panel.getRoutes()))
             )
         );
@@ -195,4 +164,4 @@ class ControlPanelSection extends preact.Component {
     }
 }
 
-export {cpanelApp, ControlPanel};
+export default ControlPanelApp;

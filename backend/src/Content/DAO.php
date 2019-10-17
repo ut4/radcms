@@ -3,20 +3,28 @@
 namespace RadCms\Content;
 
 use RadCms\Common\Db;
-use RadCms\Framework\GenericArray;
+use RadCms\ContentType\ContentTypeCollection;
 
 class DAO {
     private $db;
-    private $contentTypes;
     private $counter;
     private $frontendPanelInfos;
+    private static $contentTypes;
     /**
-     * @param \RadCms\Framework\GenericArray $contentTypes = null Array<ContentTypeDef>
      * @param \RadCms\Common\Db $db = null
+     * @param \RadCms\ContentType\ContentTypeCollection $contentTypes = null
+     * @param bool $autopopulateContentTypes = true
      */
-    public function __construct(GenericArray $contentTypes, Db $db = null) {
-        $this->contentTypes = $contentTypes;
+    public function __construct(Db $db = null,
+                                ContentTypeCollection $contentTypes = null,
+                                $autopopulateContentTypes = true) {
         $this->db = $db;
+        if (!self::$contentTypes)
+            self::$contentTypes = new ContentTypeCollection();
+        if ($contentTypes)
+            self::$contentTypes->merge($contentTypes);
+        else if ($autopopulateContentTypes && !self::$contentTypes->toArray())
+            self::$contentTypes->populateFromDb($db);
         $this->counter = 0;
         $this->frontendPanelInfos = [];
     }
@@ -25,7 +33,7 @@ class DAO {
      * @return \RadCms\Content\Query
      */
     public function fetchOne($contentTypeName) {
-        if (!($type = $this->contentTypes->find('name', $contentTypeName)))
+        if (!($type = self::$contentTypes->find('name', $contentTypeName)))
             throw new \InvalidArgumentException("Content type `{$contentTypeName}` not registered");
         return new Query(++$this->counter, $type, true, $this);
     }
@@ -34,7 +42,7 @@ class DAO {
      * @return \RadCms\Content\Query
      */
     public function fetchAll($contentTypeName) {
-        if (!($type = $this->contentTypes->find('name', $contentTypeName)))
+        if (!($type = self::$contentTypes->find('name', $contentTypeName)))
             throw new \InvalidArgumentException("Content type `{$contentTypeName}` not registered");
         return new Query(++$this->counter, $type, false, $this);
     }
