@@ -1,11 +1,13 @@
-import {view, Form, featherSvg} from '../../src/common-components.js';
-import services from '../../src/common-services.js';
-import {dataTypes} from './content-views.js';
+import {view, featherSvg} from '../../../src/common-components.js';
+import services from '../../../src/common-services.js';
+const dataTypes = [
+    {name: 'text'},
+];
 
 /**
  * #/manage-content-types
  */
-class ManageContentTypesView extends preact.Component {
+class ContentTypesManageView extends preact.Component {
     constructor(props) {
         super(props);
         this.state = {contentTypes: null, openItem: null, doDisableConfirmButton: false};
@@ -153,16 +155,4 @@ class ManageContentTypesView extends preact.Component {
     }
 }
 
-/**
- * #/create-content-type
- */
-class CreateContentTypeView extends preact.Component {
-    render() {
-        return view($el(Form, {onConfirm: e => e},
-            $el('h2', null, 'Create content type'),
-            $el('p', null, 'todo')
-        ));
-    }
-}
-
-export {ManageContentTypesView, CreateContentTypeView};
+export default ContentTypesManageView;

@@ -7,8 +7,6 @@ use RadCms\Request;
 use RadCms\Response;
 use RadCms\Templating\Template;
 use RadCms\Content\DAO as ContentNodeDAO;
-use RadCms\Common\Db;
-use RadCms\Framework\GenericArray;
 
 class WebsiteControllers {
     private $layoutLookup;
@@ -17,14 +15,12 @@ class WebsiteControllers {
      * Handlaa sivupyynnöt, (GET '/' tai GET '/sivunnimi').
      *
      * @param \RadCms\LayoutLookup $layoutLookup
-     * @param \RadCms\Common\Db $db
-     * @param \RadCms\Framework\GenericArray $contentTypes Array<\RadCms\Content\ContentTypeDef>
+     * @param \RadCms\Content\DAO $cnd
      */
     public function __construct(LayoutLookup $layoutLookup,
-                                Db $db,
-                                GenericArray $contentTypes) {
+                                ContentNodeDAO $cnd) {
         $this->layoutLookup = $layoutLookup;
-        $this->cnd = new ContentNodeDAO($contentTypes, $db);
+        $this->cnd = $cnd;
     }
     /**
      * GET *: handlaa sivupyynnön.

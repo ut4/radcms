@@ -7,7 +7,6 @@ use RadCms\Common\Db;
 use RadCms\Content\ContentModule;
 use RadCms\Auth\AuthModule;
 use RadCms\Website\WebsiteModule;
-use RadCms\Plugins\MyPlugin\MyPlugin;
 use RadCms\Common\FileSystemInterface;
 use RadCms\Common\FileSystem;
 use RadCms\Plugin\PluginInterface;
@@ -42,18 +41,21 @@ class RadCms {
         $app = new RadCms();
         $app->services = (object) ['router' => new Router(),
                                    'db' => !$getDb ? new Db($config) : $getDb(),
-                                   'plugins' => [],
-                                   'contentTypes' => new GenericArray(ContentTypeDef::class)];
+                                   'plugins' => []];
         $config = ['wiped' => 'clean'];
+        //
         ContentModule::init($app->services);
         AuthModule::init($app->services);
-        WebsiteModule::init($app->services);
-        MyPlugin::init($app->services);
         $app->services->plugins = self::registerPlugins($pluginsDir,
                                                         $fs ?: new FileSystem());
         foreach ($app->services->plugins as $plugin) {
-            $plugin::init($app->services);
+            $plugin->init($app->services);
         }
+        WebsiteModule::init($app->services);
+        //
+        $logger = new Logger('mainLogger');
+        $logger->pushHandler(new ErrorLogHandler());
+        LoggerAccess::setLogger($logger);
         return $app;
     }
     private static function registerPlugins($pluginsDir,

@@ -7,35 +7,7 @@ import ContentTypeCreateView from './ContentType/ContentTypeCreateView.js';
 import PluginsManageView from './Plugin/PluginsManageView.js';
 import './FormModule.js';
 
-const cpanelApp = {
-    _uiPanelImpls: {
-        'List': GenericListUIPanelImpl,
-        'Generic': GenericUIPanelImpl,
-        'StaticMenu': StaticMenuUIPanelImpl
-    },
-    /**
-     * @param {string} name
-     * @param {Object} impl
-     * @throws {TypeError}
-     */
-    registerUiPanelImpl: function(name, impl) {
-        if (this._uiPanelImpls.hasOwnProperty(name))
-            throw new TypeError('Impl \''+name+'\' already exists.');
-        this._uiPanelImpls[name] = impl;
-    },
-    /**
-     * @param {string} name
-     * @returns {Object|undefined}
-     */
-    getUiPanelImpl: function(name) {
-        return this._uiPanelImpls[name];
-    }
-};
-
-/*
- * The root component of cpanel.html.
- */
-class ControlPanel extends preact.Component {
+class ControlPanelApp extends preact.Component {
     /**
      * @param {{page: {url: string;}; panels: Array<FrontendPanelConfig>;}} props
      */
@@ -47,8 +19,8 @@ class ControlPanel extends preact.Component {
             if (!Array.isArray(obj.contentNodes)) obj.contentNodes = [obj.contentNodes];
             if (!obj.contentNodes[0]) obj.contentNodes = [];
             allContentNodes.push(...obj.contentNodes);
-            const Cls = cpanelApp.getUiPanelImpl(obj.type);
-            if (!Cls) return;
+            const Cls = uiPanelRegister.getUiPanelImpl(obj.type);
+            if (!Cls) return console.error(`UI panel type ${obj.type} not implemented.`);
             this.currentPageUiPanels.push(new Cls(obj));
         });
         this.looseContentNodes = allContentNodes.filter(n =>
@@ -158,4 +130,4 @@ class ControlPanelSection extends preact.Component {
     }
 }
 
-export {cpanelApp, ControlPanel};
+export default ControlPanelApp;

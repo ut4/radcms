@@ -1,20 +1,15 @@
 <?php
 
-namespace RadCms\Content;
+namespace RadCms\ContentType;
 
 abstract class ContentTypeValidator {
     const MAX_NAME_LEN = 64;
     /**
-     * @param \RadCms\Content\ContentTypeDef $contentType
+     * @param \RadCms\ContentType\ContentTypeDef $contentType
      * @return array Array<string>
      */
     public static function validate(ContentTypeDef $contentType) {
-        $errors = [];
-        if (!ctype_alpha($contentType->name) ||
-            !ctype_upper(mb_substr($contentType->name, 0, 1)))
-            array_push($errors, 'ContentType.name must be capitalized and contain only [a-ZA-Z]');
-        if (mb_strlen($contentType->name) > self::MAX_NAME_LEN)
-            array_push($errors, 'ContentType.name must be <= 64 chars long');
+        $errors = self::validateName($contentType->name);
         //
         if (!count($contentType->fields)) {
             array_push($errors, 'ContentType.fields must contain at least one field');
@@ -27,6 +22,19 @@ abstract class ContentTypeValidator {
                 !in_array($dataType, ContentTypeMigrator::FIELD_DATA_TYPES))
                 array_push($errors, "`{$dataType}` is not valid data type");
         }
+        return $errors;
+    }
+    /**
+     * @param string $contentTypeName
+     * @return array Array<string>
+     */
+    public static function validateName($contentTypeName) {
+        $errors = [];
+        if (!ctype_alpha($contentTypeName) ||
+            !ctype_upper(mb_substr($contentTypeName, 0, 1)))
+            array_push($errors, 'ContentType.name must be capitalized and contain only [a-ZA-Z]');
+        if (mb_strlen($contentTypeName) > self::MAX_NAME_LEN)
+            array_push($errors, 'ContentType.name must be <= 64 chars long');
         return $errors;
     }
 }

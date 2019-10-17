@@ -6,13 +6,26 @@ use RadCms\Installer\InstallerApp;
 use PHPUnit\Framework\TestCase;
 use RadCms\Request;
 use RadCms\Tests\Common\HttpTestUtils;
-
+use RadCms\Common\Db;
+use RadCms\Installer\InstallerControllers;
+use RadCms\Common\FileSystem;
 
 final class InstallerTest extends TestCase {
     use HttpTestUtils;
+    const TEST_DB_NAME = 'db1';
+    private static $db = null;
+    public static function getDb(array $config) {
+        if (!self::$db) self::$db = new Db($config);
+        self::$db->beginTransaction();
+        return self::$db;
+    }
+    public static function tearDownAfterClass() {
+        if (self::$db) {
+            self::$db->rollback();
+            self::$db->exec('drop database if exists ' . self::TEST_DB_NAME);
+        }
+    }
     public function testInstallerValidatesMissingValues() {
-        $app = InstallerApp::create();
-        //
         $input = (object)['sampleContent' => 'test-content', 'dbCharset' => 'utf8'];
         $res = $this->createMockResponse(json_encode([
             'baseUrl !present',
@@ -23,11 +36,10 @@ final class InstallerTest extends TestCase {
             'dbDatabase !present',
             'dbTablePrefix !present',
         ]), 400);
+        $app = InstallerApp::create();
         $app->handleRequest(new Request('/', 'POST', $input), $res);
     }
     public function testInstallerValidatesInvalidValues() {
-        $app = InstallerApp::create();
-        //
         $input = (object)[
             'baseUrl' => [],
             'radPath' => 'notValid',
@@ -50,11 +62,10 @@ final class InstallerTest extends TestCase {
             'dbTablePrefix !present',
             'dbCharset !in',
         ]), 400);
+        $app = InstallerApp::create();
         $app->handleRequest(new Request('/', 'POST', $input), $res);
     }
     public function testInstallerFillsDefaultValues() {
-        $app = InstallerApp::create();
-        //
         $input = (object)[
             'baseUrl' => 'foo',
             'radPath' => dirname(dirname(__DIR__)),
@@ -65,10 +76,150 @@ final class InstallerTest extends TestCase {
             'dbDatabase' => 'name',
             'dbTablePrefix' => 'p_',
         ];
-        $res = $this->createMockResponse('{"ok":"ok"}');
+        $res = $this->createMockResponse($this->anything(), 500);
+        $app = InstallerApp::create('', function () {
+            return new InstallerControllers('', null, function () {
+                throw new \PDOException('...');
+            });
+        });
         $app->handleRequest(new Request('/', 'POST', $input), $res);
         $this->assertEquals('My Site', $input->siteName);
         $this->assertEquals('foo/', $input->baseUrl);
         $this->assertEquals('utf8', $input->dbCharset);
+    }
+    public function testInstallerCreatesDbSchemaAndInsertsSampleContent() {
+        $s = $this->setupInstallerTest1();
+        $this->addFsExpectation('checksRadPathIsValid', $s);
+        $this->addFsExpectation('readsDataFiles', $s);
+        $this->addFsExpectation('readsSampleContentTemplateFilesDir', $s);
+        $this->addFsExpectation('clonesSampleContentTemplateFiles', $s);
+        $this->addFsExpectation('generatesConfigFile', $s);
+        //
+        $res = $this->createMockResponse('{"ok":"ok"}');
+        $app = InstallerApp::create($s->targetDir, function ($sitePath) use ($s) {
+            return new InstallerControllers($sitePath, $s->mockFs, [get_class(), 'getDb']);
+        });
+        $app->handleRequest(new Request('/', 'POST', $s->input), $res);
+        //
+        $this->verifyCreatedNewDatabase($s);
+        $this->verifyCreatedSampleContentTypes($s);
+        $this->verifyInsertedSampleContent($s);
+    }
+    private function setupInstallerTest1() {
+        include RAD_SITE_PATH . 'config.php';
+        return (object) [
+            'input' => (object) [
+                'baseUrl' => 'foo',
+                'radPath' => RAD_BASE_PATH,
+                'sampleContent' => 'test-content',
+                'dbHost' => $config['db.host'],
+                'dbUser' => $config['db.user'],
+                'dbPass' => $config['db.pass'],
+                'dbDatabase' => self::TEST_DB_NAME,
+                'dbTablePrefix' => 'p_',
+            ],
+            'targetDir' => 'c:/foo',
+            'sampleContentBasePath' => RAD_BASE_PATH . 'sample-content/test-content/',
+            'mockFs' => $this->createMock(FileSystem::class),
+        ];
+    }
+    private function addFsExpectation($expectation, $s) {
+        if ($expectation == 'checksRadPathIsValid') {
+            $s->mockFs->expects($this->once())
+                ->method('isFile')
+                ->willReturn(true);
+            return;
+        }
+        if ($expectation == 'readsDataFiles') {
+            $s->mockFs->expects($this->exactly(3))
+                ->method('read')
+                ->withConsecutive(
+                    [$s->input->radPath . 'schema.mariadb.sql'],
+                    [$s->sampleContentBasePath . 'content-types.json'],
+                    [$s->sampleContentBasePath . 'sample-data.sql']
+                )
+                ->willReturnOnConsecutiveCalls(
+                    'use ${database};' .
+                    ' create table ${p}websiteConfigs (`activeContentTypes` TEXT);' .
+                    ' insert into ${p}websiteConfigs values (\'\');',
+                    //
+                    '[{"name":"Movies","friendlyName":"Elokuvat","fields":{"title":"text"}}]',
+                    //
+                    'insert into ${p}Movies values (1,\'Foo\')'
+                );
+            return;
+        }
+        if ($expectation == 'readsSampleContentTemplateFilesDir') {
+            $s->mockFs->expects($this->once())
+                ->method('readDir')
+                ->with($s->sampleContentBasePath, '*.tmpl.php')
+                ->willReturn([
+                    $s->sampleContentBasePath . 'main.tmpl.php',
+                    $s->sampleContentBasePath . 'Another.tmpl.php'
+                ]);
+            return;
+        }
+        if ($expectation == 'clonesSampleContentTemplateFiles') {
+            $s->mockFs->expects($this->exactly(2))
+                ->method('copy')
+                ->withConsecutive([
+                    $s->sampleContentBasePath . 'main.tmpl.php',
+                    $s->targetDir . '/main.tmpl.php'
+                ], [
+                    $s->sampleContentBasePath . 'Another.tmpl.php',
+                    $s->targetDir . '/Another.tmpl.php'
+                ])
+                ->willReturn(true);
+            return;
+        }
+        if ($expectation == 'generatesConfigFile') {
+            $s->mockFs->expects($this->once())
+                ->method('write')
+                ->with($s->targetDir . '/config.php',
+"<?php
+if (!defined('RAD_BASE_PATH')) {
+define('RAD_BASE_URL', '{$s->input->baseUrl}/');
+define('RAD_BASE_PATH', '{$s->input->radPath}');
+define('RAD_SITE_PATH', '{$s->targetDir}/');
+}
+\$config = [
+    'db.host'        => '{$s->input->dbHost}',
+    'db.database'    => '{$s->input->dbDatabase}',
+    'db.user'        => '{$s->input->dbUser}',
+    'db.pass'        => '{$s->input->dbPass}',
+    'db.tablePrefix' => '{$s->input->dbTablePrefix}',
+    'db.charset'     => 'utf8',
+];
+"
+)
+                ->willReturn(true);
+            return;
+        }
+        throw new \Exception('Shouldn\'t happen');
+    }
+    private function verifyCreatedNewDatabase($s) {
+        $this->assertEquals(1, count(self::$db->fetchAll(
+            'select `table_name` from information_schema.tables' .
+            ' where `table_schema` = ? and `table_name` = ?',
+            [$s->input->dbDatabase, $s->input->dbTablePrefix.'websiteConfigs']
+        )));
+    }
+    private function verifyCreatedSampleContentTypes($s) {
+        $this->assertEquals(1, count(self::$db->fetchAll(
+            'select `table_name` from information_schema.tables' .
+            ' where `table_schema` = ? and `table_name` = ?',
+            [$s->input->dbDatabase, $s->input->dbTablePrefix . 'Movies']
+        )));
+    }
+    private function verifyInsertedSampleContent($s) {
+        $websiteStates = self::$db->fetchAll(
+            'select `activeContentTypes` from ${p}websiteConfigs'
+        );
+        $this->assertEquals(1, count($websiteStates));
+        $this->assertEquals('[["Movies","Elokuvat",{"title":"text"}]]',
+                            $websiteStates[0]['activeContentTypes']);
+        $this->assertEquals(1, count(self::$db->fetchAll(
+            'select `title` from ${p}Movies'
+        )));
     }
 }

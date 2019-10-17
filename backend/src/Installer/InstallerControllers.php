@@ -12,13 +12,18 @@ use RadCms\Framework\Validator;
 class InstallerControllers {
     private $sitePath;
     private $fs;
+    private $makeDb;
     /**
      * @param string $sitePath ks. InstallerApp::__construct
      * @param \RadCms\Common\FileSystemInterface $fs = null
+     * @param callable $makeDb = null
      */
-    public function __construct($sitePath, FileSystemInterface $fs = null) {
+    public function __construct($sitePath,
+                                FileSystemInterface $fs = null,
+                                $makeDb = null) {
         $this->sitePath = $sitePath;
         $this->fs = $fs ?: new FileSystem();
+        $this->makeDb = $makeDb;
     }
     /**
      * GET /.
@@ -38,7 +43,7 @@ class InstallerControllers {
             $res->status(400)->send(json_encode($errors));
             return;
         }
-        $result = (new Installer())->doInstall($req->body);
+        $result = (new Installer($this->sitePath, $this->fs, $this->makeDb))->doInstall($req->body);
         $res->status($result == 'ok' ? 200 : 500)
             ->send(json_encode([($result == 'ok' ? 'ok' : 'error') => $result]));
     }

@@ -18,7 +18,9 @@ trait HttpTestUtils {
             ->willReturn($stub);
         $stub->expects($this->once())
             ->method('send')
-            ->with($this->equalTo($expectedBody))
+            ->with(is_string($expectedBody)
+                ? $this->equalTo($expectedBody)
+                : $expectedBody)
             ->willReturn($stub);
         return $stub;
     }

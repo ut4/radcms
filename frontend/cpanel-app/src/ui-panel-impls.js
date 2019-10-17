@@ -11,8 +11,8 @@ class GenericUIPanelImpl {
         this.type = 'Generic';
         this.config = config;
         if (config.contentNodes.length) {
-            this.cnodeId = config.contentNodes[0].defaults.id;
-            this.cnodeName = config.contentNodes[0].defaults.name;
+            this.cnodeId = config.contentNodes[0].id;
+            this.cnodeName = config.contentNodes[0].name;
         } else {
             this.cnodeId = 0;
         }
