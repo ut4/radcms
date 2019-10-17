@@ -2,7 +2,7 @@
     {
         "name": "GenericBlobs",
         "friendlyName": "Geneerinen",
-        "fields": {"name": "text", "content": "richtext"}
+        "fields": {"name": "text", "content": "text"}
     },
     {
         "name": "Articles",

@@ -35,6 +35,15 @@ class ContentTypeMigrator {
         if ($errors) {
             throw new \RuntimeException('Invalid content type(s): ' . implode(',', $errors));
         }
+        $this->createContentTypes($ctypeDefs, $size);
+        if ($this->updateActiveContentTypes($ctypeDefs) < 1) {
+            throw new \RuntimeException('Failed to update websiteConfigs.`activeContentTypes`');
+        }
+    }
+    /**
+     * .
+     */
+    private function createContentTypes($ctypeDefs, $size) {
         $sql = '';
         foreach ($ctypeDefs as $type) {
             $sql .= 'CREATE TABLE ${p}' . $type->name . '(' .
@@ -43,7 +52,16 @@ class ContentTypeMigrator {
                 ', PRIMARY KEY (`id`)' .
             ') DEFAULT CHARSET = utf8mb4;';
         }
-        return $this->db->exec($sql) > 0;
+        $this->db->exec($sql);
+    }
+    /**
+     * .
+     */
+    private function updateActiveContentTypes($ctypeDefs) {
+        return $this->db->exec('UPDATE ${p}websiteConfigs SET `activeContentTypes` = ?',
+                               [json_encode(array_map(function ($t) {
+                                   return [$t->name, $t->friendlyName, $t->fields];
+                               }, $ctypeDefs))]);
     }
     /**
      * @param array $fields

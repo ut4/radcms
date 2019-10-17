@@ -4,6 +4,9 @@
     "type": "project",
     "require": {
         "php": "~7.1",
+        "ext-pdo_mysql": "*",
+        "ext-mbstring": "*",
+        "ext-ctype": "*",
         "psr/log": "^1.1",
         "monolog/monolog": "^1.25"
     },

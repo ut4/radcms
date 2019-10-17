@@ -6,7 +6,6 @@ use RadCms\Common\Db;
 use RadCms\Common\LoggerAccess;
 use RadCms\Common\FileSystemInterface;
 use RadCms\ContentType\ContentTypeMigrator;
-use RadCms\ContentType\ContentTypeDef;
 use RadCms\ContentType\ContentTypeCollection;
 
 class Installer {
@@ -68,8 +67,9 @@ class Installer {
         }
         try {
             $sql = $this->fs->read("{$s->radPath}schema.mariadb.sql");
-            $sql = str_replace('${database}', $s->dbDatabase, $sql);
             if (!$sql) return "Failed to read {$s->radPath}schema.mariadb.sql}";
+            $sql = str_replace('${database}', $s->dbDatabase, $sql);
+            $sql = str_replace('${siteName}', $s->siteName, $sql);
             $this->db->exec($sql);
             $this->db->attr(\PDO::ATTR_EMULATE_PREPARES, 0);
         } catch (\PDOException $e) {
@@ -111,7 +111,6 @@ class Installer {
         $path = "{$s->radPath}sample-content/{$s->sampleContent}/sample-data.sql";
         $sql = $this->fs->read($path);
         if (!$sql) return "Failed to read {$path}";
-        $sql = str_replace('${siteName}', $s->siteName, $sql);
         try {
             $this->db->exec($sql);
         } catch (\PDOException $e) {
