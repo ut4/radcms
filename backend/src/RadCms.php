@@ -10,9 +10,10 @@ use RadCms\Website\WebsiteModule;
 use RadCms\Plugins\MyPlugin\MyPlugin;
 use RadCms\Common\FileSystemInterface;
 use RadCms\Common\FileSystem;
-use RadCms\Framework\GenericArray;
-use RadCms\Content\ContentTypeDef;
-use RadCms\Plugins\PluginInterface;
+use RadCms\Plugin\PluginInterface;
+use Monolog\Logger;
+use Monolog\Handler\ErrorLogHandler;
+use RadCms\Common\LoggerAccess;
 
 class RadCms {
     public $services;
@@ -30,7 +31,7 @@ class RadCms {
 
     /**
      * @param array &$config
-     * @param string $pluhinsDir = 'Plugins'
+     * @param string $pluginsDir = 'Plugins'
      * @param \RadCms\Common\FileSystemInterface $fs = null
      * @param callable $getDb = null
      */
@@ -66,7 +67,7 @@ class RadCms {
                 throw new \RuntimeException("Main plugin class \"{$clsPath}\" missing");
             array_push($out, new $clsPath());
             if (!($out[count($out) - 1] instanceof PluginInterface))
-                throw new \RuntimeException("A plugin (\"{$clsPath}\") must implement RadCms\Plugins\PluginInterface");
+                throw new \RuntimeException("A plugin (\"{$clsPath}\") must implement RadCms\Plugin\PluginInterface");
         }
         return $out;
     }

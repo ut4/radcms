@@ -36,7 +36,7 @@ final class RadCmsTest extends TestCase {
         );
         $runInvalid('_InvalidPlugin',
             'A plugin ("RadCms\Tests\_InvalidPlugin\_InvalidPlugin") must implement' .
-            ' RadCms\Plugins\PluginInterface'
+            ' RadCms\Plugin\PluginInterface'
         );
     }
     public function testCreateAppInitializesValidPlugins() {

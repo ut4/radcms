@@ -11,8 +11,8 @@ abstract class ContentModule {
      * @param object $services
      */
     public static function init($services) {
-        $makeCtrl = function () {
-            return new ContentControllers();
+        $makeCtrl = function () use ($services) {
+            return new ContentControllers($services->db);
         };
         $services->router->addMatcher(function ($url, $method) use ($makeCtrl) {
             if (strpos($url, '/api/content/') === 0) return [$makeCtrl(), 'handleGetContentNode'];
