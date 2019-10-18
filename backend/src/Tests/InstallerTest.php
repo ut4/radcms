@@ -3,27 +3,17 @@
 namespace Rad\Tests;
 
 use RadCms\Installer\InstallerApp;
-use PHPUnit\Framework\TestCase;
+use RadCms\Tests\Self\DbTestCase;
 use RadCms\Request;
-use RadCms\Tests\Common\HttpTestUtils;
-use RadCms\Common\Db;
+use RadCms\Tests\Self\HttpTestUtils;
 use RadCms\Installer\InstallerControllers;
 use RadCms\Common\FileSystem;
 
-final class InstallerTest extends TestCase {
+final class InstallerTest extends DbTestCase {
     use HttpTestUtils;
     const TEST_DB_NAME = 'db1';
-    private static $db = null;
-    public static function getDb(array $config) {
-        if (!self::$db) self::$db = new Db($config);
-        self::$db->beginTransaction();
-        return self::$db;
-    }
-    public static function tearDownAfterClass() {
-        if (self::$db) {
-            self::$db->rollback();
-            self::$db->exec('drop database if exists ' . self::TEST_DB_NAME);
-        }
+    public static function tearDownAfterClass($_=null) {
+        parent::tearDownAfterClass('drop database if exists ' . self::TEST_DB_NAME);
     }
     public function testInstallerValidatesMissingValues() {
         $input = (object)['sampleContent' => 'test-content', 'dbCharset' => 'utf8'];
@@ -140,8 +130,8 @@ final class InstallerTest extends TestCase {
                 )
                 ->willReturnOnConsecutiveCalls(
                     'use ${database};' .
-                    ' create table ${p}websiteConfigs (`activeContentTypes` TEXT);' .
-                    ' insert into ${p}websiteConfigs values (\'\');',
+                    ' create table ${p}websiteState (`activeContentTypes` TEXT);' .
+                    ' insert into ${p}websiteState values (\'\');',
                     //
                     '[{"name":"Movies","friendlyName":"Elokuvat","fields":{"title":"text"}}]',
                     //
@@ -201,7 +191,7 @@ define('RAD_SITE_PATH', '{$s->targetDir}/');
         $this->assertEquals(1, count(self::$db->fetchAll(
             'select `table_name` from information_schema.tables' .
             ' where `table_schema` = ? and `table_name` = ?',
-            [$s->input->dbDatabase, $s->input->dbTablePrefix.'websiteConfigs']
+            [$s->input->dbDatabase, $s->input->dbTablePrefix.'websiteState']
         )));
     }
     private function verifyCreatedSampleContentTypes($s) {
@@ -213,7 +203,7 @@ define('RAD_SITE_PATH', '{$s->targetDir}/');
     }
     private function verifyInsertedSampleContent($s) {
         $websiteStates = self::$db->fetchAll(
-            'select `activeContentTypes` from ${p}websiteConfigs'
+            'select `activeContentTypes` from ${p}websiteState'
         );
         $this->assertEquals(1, count($websiteStates));
         $this->assertEquals('[["Movies","Elokuvat",{"title":"text"}]]',

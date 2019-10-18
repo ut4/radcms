@@ -14,9 +14,11 @@ abstract class ContentModule {
         $makeCtrl = function () use ($services) {
             return new ContentControllers($services->db);
         };
-        $services->router->addMatcher(function ($url, $method) use ($makeCtrl) {
-            if (strpos($url, '/api/content/') === 0) return [$makeCtrl(), 'handleGetContentNode'];
-            if (strpos($url, '/api/content-types/') === 0) return [$makeCtrl(), 'handleGetContentType'];
+        $services->router->map('GET', '/api/content/[i:id]', function () use ($makeCtrl) {
+            return [$makeCtrl(), 'handleGetContentNode'];
+        });
+        $services->router->map('GET', '/api/content-types/[i:id]', function () use ($makeCtrl) {
+            return [$makeCtrl(), 'handleGetContentType'];
         });
     }
 }

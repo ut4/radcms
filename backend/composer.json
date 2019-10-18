@@ -8,7 +8,8 @@
         "ext-mbstring": "*",
         "ext-ctype": "*",
         "psr/log": "^1.1",
-        "monolog/monolog": "^1.25"
+        "monolog/monolog": "^1.25",
+        "altorouter/altorouter": "^1.2"
     },
     "autoload": {
         "psr-4": {"RadCms\\": "src/"}

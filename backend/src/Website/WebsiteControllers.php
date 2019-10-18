@@ -39,12 +39,9 @@ class WebsiteControllers {
             $dataToFrontend = [
                 'page' => ['url' => $req->path],
                 'panels' => $this->cnd->getFrontendPanelInfos(),
+                'baseUrl' => RAD_BASE_URL,
             ];
-            $html = substr($html, 0, $bodyEnd) . '<iframe src="frontend/cpanel.html" id="insn-cpanel-iframe" style="position:fixed;border:none;height:100%;width:275px;right:0;top:0"></iframe><script>function setIframeVisible(setVisible){document.getElementById(\'insn-cpanel-iframe\').style.width=setVisible?\'100%\':\'275px\';}function getCurrentPageData(){return ' . json_encode($dataToFrontend) . ';}</script>' .
-'<pre style="position: fixed; bottom: 0px; right: 13px;">Time:  '.
-round((microtime(true) - $_SERVER['REQUEST_TIME_FLOAT']) * 1000, 2). ' ms'. PHP_EOL.
-'Memory: '. round(memory_get_usage() / 1024, 2). ' kb'.PHP_EOL.
-'</pre>'. substr($html, $bodyEnd);
+            $html = substr($html, 0, $bodyEnd) . '<iframe src="frontend/cpanel.html" id="insn-cpanel-iframe" style="position:fixed;border:none;height:100%;width:275px;right:0;top:0"></iframe><script>function setIframeVisible(setVisible){document.getElementById(\'insn-cpanel-iframe\').style.width=setVisible?\'100%\':\'275px\';}function getCurrentPageData(){return ' . json_encode($dataToFrontend) . ';}</script>' . substr($html, $bodyEnd);
         }
         $res->send($html);
     }

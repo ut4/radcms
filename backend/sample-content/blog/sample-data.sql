@@ -1,4 +1,4 @@
-update ${p}websiteConfigs set
+update ${p}websiteState set
 `layoutMatchers` = '[{"pattern":"art.+","layoutFileName":"article-layout.tmpl.php"},{"pattern":".*","layoutFileName":"main-layout.tmpl.php"}]';
 
 insert into ${p}GenericBlobs values

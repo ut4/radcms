@@ -5,7 +5,6 @@ import ContentEditView from './Content/ContentEditView.js';
 import ContentTypesManageView from './ContentType/ContentTypesManageView.js';
 import ContentTypeCreateView from './ContentType/ContentTypeCreateView.js';
 import PluginsManageView from './Plugin/PluginsManageView.js';
-import './FormModule.js';
 
 class ControlPanelApp extends preact.Component {
     /**

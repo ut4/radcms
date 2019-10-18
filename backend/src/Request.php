@@ -40,7 +40,7 @@ class Request {
             }
         }
         return new Request(
-            $urlPath ?: str_replace($BASE_URL, '', $_SERVER['REQUEST_URI']),
+            $urlPath ?: substr($_SERVER['REQUEST_URI'], strlen($BASE_URL) - 1),
             $method,
             $body
         );

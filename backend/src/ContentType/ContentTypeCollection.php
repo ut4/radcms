@@ -16,7 +16,7 @@ class ContentTypeCollection extends GenericArray {
      * \RadCms\Common\Db $db = unll
      */
     public function populateFromDb(Db $db = null) {
-        $row = $db->fetchOne('select `activeContentTypes` from ${p}websiteConfigs');
+        $row = $db->fetchOne('select `activeContentTypes` from ${p}websiteState');
         if (!$row || !($parsed = json_decode($row['activeContentTypes'], true)))
             throw new \InvalidArgumentException('Invalid dbResult');
         foreach ($parsed as $single) {

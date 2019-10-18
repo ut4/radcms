@@ -1,6 +1,6 @@
 <?php
 // tässä tiedostossa filut, jotka installer.phar tarvitsee toimiakseen
-return function ($backendSrcPath, $buildAssetsPath) { return [
+return function ($backendSrcPath, $buildAssetsPath, $backendPath) { return [
     $backendSrcPath . 'Common/Db.php',
     $backendSrcPath . 'Common/LoggerAccess.php',
     $backendSrcPath . 'Common/ErrorLogLogger.php',
@@ -14,7 +14,6 @@ return function ($backendSrcPath, $buildAssetsPath) { return [
     $backendSrcPath . 'ContentType/ContentTypeValidator.php',
     $backendSrcPath . 'Request.php',
     $backendSrcPath . 'Response.php',
-    $backendSrcPath . 'Router.php',
     $backendSrcPath . 'Templating/Template.php',
     $backendSrcPath . 'Templating/DefaultFunctions.php',
     $backendSrcPath . 'Installer/InstallerApp.php',
@@ -23,4 +22,5 @@ return function ($backendSrcPath, $buildAssetsPath) { return [
     $backendSrcPath . 'Installer/main-view.tmpl.php',
     $buildAssetsPath . 'Psr4Autoloader.php',
     $buildAssetsPath . 'LoggerInterface.php',
+    $backendPath . 'vendor/altorouter/altorouter/AltoRouter.php',
 ]; };

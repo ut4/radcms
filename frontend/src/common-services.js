@@ -14,7 +14,7 @@ function myFetch(url, options = {}) {
                 options.progress(e.target, e.lengthComputable ? e.loaded / e.total * 100 : -1);
             };
         }
-        req.open(options.method || 'GET', url, true);
+        req.open(options.method || 'GET', myFetch.baseUrl + url, true);
         Object.keys(options.headers || {}).forEach(key => {
             req.setRequestHeader(key, options.headers[key]);
         });
@@ -24,6 +24,7 @@ function myFetch(url, options = {}) {
         throw err;
     });
 }
+myFetch.baseUrl = '/';
 
 const signals = {
     _listeners: [],

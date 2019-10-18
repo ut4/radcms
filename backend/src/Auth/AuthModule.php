@@ -14,8 +14,8 @@ abstract class AuthModule {
         $makeCtrl = function () {
             return new AuthControllers();
         };
-        $services->router->addMatcher(function ($url, $method) use ($makeCtrl) {
-            if (strpos($url, '/login') === 0) return [$makeCtrl(), 'renderLoginView'];
+        $services->router->map('GET', '/login', function () use ($makeCtrl) {
+            return [$makeCtrl(), 'renderLoginView'];
         });
     }
 }

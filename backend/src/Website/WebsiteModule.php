@@ -12,25 +12,21 @@ abstract class WebsiteModule {
      */
     public static function init($services) {
         $makeCtrl = function () use ($services) {
-            list ($layoutMatchers, $contentTypes) = self::fetchWebsiteState($services->db);
+            list ($layoutMatchers, $contentTypes) = self::parseWebsiteState($services->websiteStateRaw);
             return new WebsiteControllers(new LayoutLookup($layoutMatchers),
                                           new DAO($services->db, $contentTypes));
         };
-        $services->router->addMatcher(function ($url, $method) use ($makeCtrl) {
-            if ($method == 'GET') return [$makeCtrl(), 'handlePageRequest'];
+        $services->router->map('GET', '*', function () use ($makeCtrl) {
+            return [$makeCtrl(), 'handlePageRequest'];
         });
     }
     /**
      * throws \RuntimeException
      */
-    private static function fetchWebsiteState($db) {
-        $row = $db->fetchOne(
-            'select `layoutMatchers`,`activeContentTypes` from ${p}websiteConfigs');
-        if (!$row)
-            throw new \RuntimeException('Failed to fetch website state');
-        if (!($layoutMatchers = json_decode($row['layoutMatchers'])))
+    private static function parseWebsiteState($websiteStateRaw) {
+        if (!($layoutMatchers = json_decode($websiteStateRaw['layoutMatchers'])))
             throw new \RuntimeException('Failed to parse layoutMatchers');
-        if (!($ctypesData = json_decode($row['activeContentTypes'], true)))
+        if (!($ctypesData = json_decode($websiteStateRaw['activeContentTypes'], true)))
             throw new \InvalidArgumentException('Failed to parse activeContentTypes');
         $ctypes = new ContentTypeCollection();
         foreach ($ctypesData as $single) $ctypes->add(...$single);

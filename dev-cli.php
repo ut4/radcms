@@ -21,13 +21,14 @@ function createInstaller() {
     $buildAssetsPath = $backendPath . 'build-files/';
     $phar = new Phar(__DIR__ . '/installer.phar');
     $getClassMap = include $buildAssetsPath . 'classmap.php';
-    $classMap = $getClassMap($backendSrcPath, $buildAssetsPath);
+    $classMap = $getClassMap($backendSrcPath, $buildAssetsPath, $backendPath);
     foreach ($classMap as $filePath) $phar->addFile($filePath);
     $phar->setStub(
 "<?php
 define('RAD_BASE_PATH', '{$backendSrcPath}');
 include 'phar://' . __FILE__ . '/{$buildAssetsPath}Psr4Autoloader.php';
 include 'phar://' . __FILE__ . '/{$buildAssetsPath}LoggerInterface.php';
+include 'phar://' . __FILE__ . '/{$backendPath}vendor/altorouter/altorouter/AltoRouter.php';
 \$loader = new Psr\Psr4Autoloader();
 \$loader->register();
 \$loader->addNamespace('RadCms', 'phar://' . __FILE__ . '/{$backendSrcPath}');

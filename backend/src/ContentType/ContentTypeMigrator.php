@@ -37,7 +37,7 @@ class ContentTypeMigrator {
         }
         $this->createContentTypes($ctypeDefs, $size);
         if ($this->updateActiveContentTypes($ctypeDefs) < 1) {
-            throw new \RuntimeException('Failed to update websiteConfigs.`activeContentTypes`');
+            throw new \RuntimeException('Failed to update websiteState.`activeContentTypes`');
         }
     }
     /**
@@ -58,7 +58,7 @@ class ContentTypeMigrator {
      * .
      */
     private function updateActiveContentTypes($ctypeDefs) {
-        return $this->db->exec('UPDATE ${p}websiteConfigs SET `activeContentTypes` = ?',
+        return $this->db->exec('UPDATE ${p}websiteState SET `activeContentTypes` = ?',
                                [json_encode(array_map(function ($t) {
                                    return [$t->name, $t->friendlyName, $t->fields];
                                }, $ctypeDefs))]);

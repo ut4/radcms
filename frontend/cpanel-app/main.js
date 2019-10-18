@@ -1,9 +1,11 @@
 import '../src/globals.js';
+import services from '../src/common-services.js';
 import ControlPanelApp from './src/ControlPanelApp.js';
 
-preact.render($el(ControlPanelApp, {
-    currentPageData: window.parent.getCurrentPageData()
-}, null), document.getElementById('cpanel-app'));
+const currentPageData = window.parent.getCurrentPageData();
+services.myFetch.baseUrl = currentPageData.baseUrl.substr(0, currentPageData.baseUrl.length-1);
+preact.render($el(ControlPanelApp, {currentPageData}, null),
+              document.getElementById('cpanel-app'));
 
 //
 var parentUrlPcs = window.parent.location.href.split('#');
