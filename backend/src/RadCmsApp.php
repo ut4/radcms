@@ -29,7 +29,7 @@ class RadCmsApp {
         $request->user = (object) ['id' => 1];
         if (($match = $this->ctx->router->match($request->path, $request->method))) {
             $request->params = (object)$match['params'];
-            $this->setupIocContainer($injector ?: new Injector(), $request);
+            $this->setupIocContainer($injector ?? new Injector(), $request);
             $this->ctx->injector->execute($this->makeRouteMatchInvokePath($match));
         } else {
             throw new \RuntimeException("No route for {$request->path}");
@@ -52,8 +52,8 @@ class RadCmsApp {
     private function makeRouteMatchInvokePath($match) {
         $ctrlInfo = $match['target']();
         if (!is_array($ctrlInfo) ||
-            !isset($ctrlInfo[0]) || !is_string($ctrlInfo[0]) ||
-            !isset($ctrlInfo[1]) || !is_string($ctrlInfo[1])) {
+            !is_string($ctrlInfo[0] ?? null) ||
+            !is_string($ctrlInfo[1] ?? null)) {
             throw new \UnexpectedValueException(
                 'A route must return [\'Ctrl\\Class\\Path\', \'methodName\'].');
         }
@@ -85,7 +85,7 @@ class RadCmsApp {
         AuthModule::init($app->ctx);
         PluginModule::init($app->ctx);
         $app->ctx->plugins = self::scanAndMakePlugins($pluginsDir,
-                                                      $fs ?: new FileSystem(),
+                                                      $fs ?? new FileSystem(),
                                                       $app->ctx);
         foreach ($app->ctx->plugins->toArray() as $plugin) {
             if ($plugin->isInstalled) $plugin->impl->init($app->ctx);

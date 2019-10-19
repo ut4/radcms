@@ -22,7 +22,6 @@ final class PluginControllersTest extends DbTestCase {
         $this->cleanupTest1($s);
     }
     private function setupTest1() {
-        include RAD_SITE_PATH . 'config.php';
         $testPluginName = '_ValidPlugin';
         $mockFs = $this->createMock(FileSystem::class);
         $mockFs->expects($this->once())->method('readDir')->willReturn(
@@ -67,7 +66,6 @@ final class PluginControllersTest extends DbTestCase {
         $this->cleanupTest2();
     }
     private function setupTest2() {
-        include RAD_SITE_PATH . 'config.php';
         $testPluginName = '_ValidAndInstalledPlugin';
         $mockFs = $this->createMock(FileSystem::class);
         $mockFs->expects($this->once())->method('readDir')->willReturn(

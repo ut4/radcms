@@ -14,8 +14,7 @@ final class RadCmsTest extends DbTestCase {
      * @before
      */
     public function beforeEach() {
-        include RAD_SITE_PATH . 'config.php';
-        $this->config = $config;
+        $this->config = include RAD_SITE_PATH . 'config.php';
     }
     public function testCreateAppScansPluginsFromDisk() {
         $testPluginDirName = 'Tests';

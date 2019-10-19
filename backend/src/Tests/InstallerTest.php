@@ -96,7 +96,7 @@ final class InstallerTest extends DbTestCase {
         $this->verifyInsertedSampleContent($s);
     }
     private function setupInstallerTest1() {
-        include RAD_SITE_PATH . 'config.php';
+        $config = include RAD_SITE_PATH . 'config.php';
         return (object) [
             'input' => (object) [
                 'baseUrl' => 'foo',

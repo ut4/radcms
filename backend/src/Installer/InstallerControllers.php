@@ -22,7 +22,7 @@ class InstallerControllers {
                                 FileSystemInterface $fs = null,
                                 $makeDb = null) {
         $this->sitePath = $sitePath;
-        $this->fs = $fs ?: new FileSystem();
+        $this->fs = $fs ?? new FileSystem();
         $this->makeDb = $makeDb;
     }
     /**

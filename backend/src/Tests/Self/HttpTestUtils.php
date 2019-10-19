@@ -46,8 +46,8 @@ trait HttpTestUtils {
      * @param \Closure $makeDb = [get_class(), 'getDb']
      */
     public function makeRequest($req, $res, $mockFs, $makeDb = null) {
-        include RAD_SITE_PATH . 'config.php';
-        $app = RadCmsApp::create($config, 'Tests', $mockFs, $makeDb ?: [get_class(), 'getDb']);
+        $app = RadCmsApp::create(include RAD_SITE_PATH . 'config.php', 'Tests',
+                                 $mockFs, $makeDb ?? [get_class(), 'getDb']);
         $injector = new Injector;
         $injector->delegate(Response::class, function() use ($res) { return $res; });
         $app->handleRequest($req, $injector);

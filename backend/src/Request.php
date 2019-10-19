@@ -16,7 +16,7 @@ class Request {
     public function __construct($path, $method = 'GET', $body = null) {
         $this->path = $path;
         $this->method = $method;
-        $this->body = $body ?: new \stdClass();
+        $this->body = $body ?? new \stdClass();
         $this->params = (object)[];
     }
 
@@ -42,7 +42,7 @@ class Request {
             }
         }
         return new Request(
-            $urlPath ?: substr($_SERVER['REQUEST_URI'], strlen($BASE_URL) - 1),
+            $urlPath ?? substr($_SERVER['REQUEST_URI'], strlen($BASE_URL) - 1),
             $method,
             $body
         );

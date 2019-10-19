@@ -24,7 +24,7 @@ class Installer {
         $this->sitePath = $sitePath;
         $this->fs = $fs;
         $this->db = null;
-        $this->makeDb = $makeDb ?: function ($c) { return new Db($c); };
+        $this->makeDb = $makeDb ?? function ($c) { return new Db($c); };
     }
     /**
      * @param object $settings
@@ -91,9 +91,9 @@ class Installer {
         //
         $contentTypes = new ContentTypeCollection();
         foreach ($contentTypesInput as $type) $contentTypes->add(
-            isset($type['name']) ? $type['name'] : '',
-            isset($type['friendlyName']) ? $type['friendlyName'] : '',
-            isset($type['fields']) ? $type['fields'] : ''
+            $type['name'] ?? '',
+            $type['friendlyName'] ?? '',
+            $type['fields'] ?? ''
         );
         try {
             (new ContentTypeMigrator($this->db))->installMany($contentTypes);
@@ -151,7 +151,7 @@ define('RAD_BASE_URL', '{$s->baseUrl}');
 define('RAD_BASE_PATH', '{$s->radPath}');
 define('RAD_SITE_PATH', '{$this->sitePath}');
 }
-\$config = [
+return [
     'db.host'        => '{$s->dbHost}',
     'db.database'    => '{$s->dbDatabase}',
     'db.user'        => '{$s->dbUser}',

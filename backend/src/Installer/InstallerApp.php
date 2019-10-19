@@ -31,7 +31,7 @@ class InstallerApp {
             : $urlOrRequest;
         if (($match = $this->router->match($request->path, $request->method))) {
             $request->params = $match['params'];
-            $match['target']()($request, $response ?: new Response());
+            $match['target']()($request, $response ?? new Response());
         } else {
             header($_SERVER['SERVER_PROTOCOL'] . ' 404 Not Found');
         }
@@ -59,7 +59,7 @@ class InstallerApp {
      */
     public static function create($DIR = '', \Closure $makeCtrl = null) {
         return new InstallerApp(str_replace('\\', '/', $DIR) . '/',
-                                $makeCtrl ?: function ($sitePath) {
+                                $makeCtrl ?? function ($sitePath) {
                                     return new InstallerControllers($sitePath);
                                 });
     }

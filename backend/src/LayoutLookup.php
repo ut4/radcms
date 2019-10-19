@@ -8,7 +8,7 @@ class LayoutLookup {
      * @param array $rules = null [(object)['pattern' => '', 'layoutFileName' => ''],...]
      */
     public function __construct($rules = null) {
-        $this->setRules($rules ?: [(object)['pattern' => '.*',
+        $this->setRules($rules ?? [(object)['pattern' => '.*',
                                             'layoutFileName' => 'main-layout.tmpl.php']]);
     }
     /**
