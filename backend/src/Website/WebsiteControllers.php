@@ -26,8 +26,8 @@ class WebsiteControllers {
     /**
      * GET *: handlaa sivupyynnön.
      *
-     * @param Request $request
-     * @param Response $response
+     * @param \RadCms\Request $request
+     * @param \RadCms\Response $response
      */
     public function handlePageRequest(Request $req, Response $res) {
         $layout = $this->layoutLookup->findLayoutFor($req->path);

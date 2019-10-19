@@ -19,8 +19,8 @@ class ContentControllers {
     /**
      * GET /api/content/:id.
      *
-     * @param Request $req
-     * @param Response $res
+     * @param \RadCms\Request $req
+     * @param \RadCms\Response $res
      */
     public function handleGetContentNode(Request $req, Response $res) {
         return $res->type('json')->send([
@@ -33,8 +33,8 @@ class ContentControllers {
     /**
      * GET /api/content-type/:id.
      *
-     * @param Request $req
-     * @param Response $res
+     * @param \RadCms\Request $req
+     * @param \RadCms\Response $res
      */
     public function handleGetContentType(Request $req, Response $res) {
         return $res->type('json')->send([

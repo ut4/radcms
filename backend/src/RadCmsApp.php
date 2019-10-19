@@ -17,7 +17,7 @@ use Monolog\Handler\ErrorLogHandler;
 use RadCms\Common\LoggerAccess;
 use RadCms\Plugin\PluginCollection;
 
-class RadCms {
+class RadCmsApp {
     public $ctx;
     /**
      * RadCMS:n entry-point.
@@ -66,13 +66,13 @@ class RadCms {
      * @param array &$config
      * @param string $pluginsDir = 'Plugins'
      * @param \RadCms\Common\FileSystemInterface $fs = null
-     * @param callable $makeDb = new Db($config)
+     * @param \Closure $makeDb = new Db($config)
      */
     public static function create(&$config,
                                   $pluginsDir = 'Plugins',
                                   $fs = null,
                                   $makeDb = null) {
-        $app = new RadCms();
+        $app = new RadCmsApp();
         $app->ctx = (object) ['injector' => null,
                               'router' => new AltoRouter(),
                               'db' => !$makeDb ? new Db($config) : $makeDb($config),

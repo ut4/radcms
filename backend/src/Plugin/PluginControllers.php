@@ -20,8 +20,8 @@ class PluginControllers {
     /**
      * GET /api/plugins: listaa kaikki lisäosat.
      *
-     * @param Request $request
-     * @param Response $response
+     * @param \RadCms\Request $request
+     * @param \RadCms\Response $response
      */
     public function handleGetPluginsRequest(Response $res) {
         $res->type('json')->send(array_map(function ($plugin) {
@@ -31,9 +31,9 @@ class PluginControllers {
     /**
      * GET /api/plugins/:name/install: asentaa lisäosan $name.
      *
-     * @param Request $request
-     * @param Response $response
-     * @param PluginInstaller $installer
+     * @param \RadCms\Request $request
+     * @param \RadCms\Response $response
+     * @param \RadCms\PluginInstaller $installer
      */
     public function handleInstallPluginRequest(Request $req,
                                                Response $res,
@@ -58,9 +58,9 @@ class PluginControllers {
     /**
      * GET /api/plugins/:name/uninstall: poistaa lisäosan $name.
      *
-     * @param Request $request
-     * @param Response $response
-     * @param PluginInstaller $installer
+     * @param \RadCms\Request $request
+     * @param \RadCms\Response $response
+     * @param \RadCms\PluginInstaller $installer
      */
     public function handleUninstallPluginRequest(Request $req,
                                                  Response $res,

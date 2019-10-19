@@ -28,8 +28,8 @@ class InstallerControllers {
     /**
      * GET /.
      *
-     * @param Request $_
-     * @param Response $res
+     * @param \RadCms\Request $_
+     * @param \RadCms\Response $res
      */
     public function renderHomeView(Request $_, Response $res) {
         $template = new Template(__DIR__ . '/main-view.tmpl.php');
