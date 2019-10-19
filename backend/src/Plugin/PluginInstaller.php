@@ -21,14 +21,38 @@ class PluginInstaller {
      * @return string|null 'Some error message', or null on success
      */
     public function install(Plugin $plugin) {
+        if ($plugin->isInstalled) {
+            return 'Plugin is already installed.';
+        }
         if (!$plugin->impl) {
             $plugin->instantiate();
         }
         $errorMessage = $plugin->impl->install($this->contentTypeMigrator);
         if (!is_string($errorMessage) || !$errorMessage) {
-            return $this->db->exec('update ${p}websiteState' .
-                                   ' set `installedPlugins` = JSON_MERGE_PATCH(`installedPlugins`, ?)',
-                                   ['["' . $plugin->name . '"]']) === 1
+            return $this->db->exec('UPDATE ${p}websiteState SET `installedPlugins`' .
+                                   ' = JSON_SET(`installedPlugins`, ?, 1)',
+                                   ['$."' . $plugin->name . '"']) === 1
+                ? null
+                : 'Failed to update websiteState.`installedPlugins`';
+        }
+        return $errorMessage;
+    }
+    /**
+     * @param \RadCms\Plugin\Plugin $plugin
+     * @return string|null 'Some error message', or null on success
+     */
+    public function uninstall(Plugin $plugin) {
+        if (!$plugin->isInstalled) {
+            return 'Plugin is already uninstalled.';
+        }
+        if (!$plugin->impl) {
+            $plugin->instantiate();
+        }
+        $errorMessage = $plugin->impl->uninstall($this->contentTypeMigrator);
+        if (!is_string($errorMessage) || !$errorMessage) {
+            return $this->db->exec('UPDATE ${p}websiteState SET `installedPlugins`' .
+                                   ' = JSON_REMOVE(`installedPlugins`, ?)',
+                                   ['$."' . $plugin->name . '"']) === 1
                 ? null
                 : 'Failed to update websiteState.`installedPlugins`';
         }

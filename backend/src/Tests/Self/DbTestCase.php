@@ -13,7 +13,7 @@ class DbTestCase extends TestCase {
         } else {
             self::$db->tablePrefix = $config['db.tablePrefix'];
             if (self::$db->database != $config['db.database']) {
-                self::$db->exec('use ' . $config['db.database'] . ';');
+                self::$db->exec('USE ' . $config['db.database'] . ';');
             }
         }
         self::$db->beginTransaction();

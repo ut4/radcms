@@ -12,8 +12,8 @@ use RadCms\Common\FileSystem;
 final class InstallerTest extends DbTestCase {
     use HttpTestUtils;
     const TEST_DB_NAME = 'db1';
-    public static function tearDownAfterClass($_=null) {
-        parent::tearDownAfterClass('drop database if exists ' . self::TEST_DB_NAME);
+    public static function tearDownAfterClass($_ = null) {
+        parent::tearDownAfterClass('DROP DATABASE IF EXISTS ' . self::TEST_DB_NAME);
     }
     public function testInstallerValidatesMissingValues() {
         $input = (object)['sampleContent' => 'test-content', 'dbCharset' => 'utf8'];
@@ -129,13 +129,13 @@ final class InstallerTest extends DbTestCase {
                     [$s->sampleContentBasePath . 'sample-data.sql']
                 )
                 ->willReturnOnConsecutiveCalls(
-                    'use ${database};' .
-                    ' create table ${p}websiteState (`activeContentTypes` TEXT);' .
-                    ' insert into ${p}websiteState values (\'[]\');',
+                    'USE ${database};' .
+                    ' CREATE TABLE ${p}websiteState (`activeContentTypes` TEXT);' .
+                    ' INSERT INTO ${p}websiteState values (\'{}\');',
                     //
                     '[{"name":"Movies","friendlyName":"Elokuvat","fields":{"title":"text"}}]',
                     //
-                    'insert into ${p}Movies values (1,\'Foo\')'
+                    'INSERT INTO ${p}Movies values (1,\'Foo\')'
                 );
             return;
         }
@@ -189,28 +189,28 @@ define('RAD_SITE_PATH', '{$s->targetDir}/');
     }
     private function verifyCreatedNewDatabase($s) {
         $this->assertEquals(1, count(self::$db->fetchAll(
-            'select `table_name` from information_schema.tables' .
-            ' where `table_schema` = ? and `table_name` = ?',
+            'SELECT `table_name` FROM information_schema.tables' .
+            ' WHERE `table_schema` = ? AND `table_name` = ?',
             [$s->input->dbDatabase, $s->input->dbTablePrefix.'websiteState']
         )));
     }
     private function verifyCreatedSampleContentTypes($s) {
         $this->assertEquals(1, count(self::$db->fetchAll(
-            'select `table_name` from information_schema.tables' .
-            ' where `table_schema` = ? and `table_name` = ?',
+            'SELECT `table_name` FROM information_schema.tables' .
+            ' WHERE `table_schema` = ? AND `table_name` = ?',
             [$s->input->dbDatabase, $s->input->dbTablePrefix . 'Movies']
         )));
     }
     private function verifyInsertedSampleContent($s) {
         $this->assertEquals(1, count(self::$db->fetchAll(
-            'select `title` from ${p}Movies'
+            'SELECT `title` FROM ${p}Movies'
         )));
         //
         $websiteStates = self::$db->fetchAll(
-            'select `activeContentTypes` from ${p}websiteState'
+            'SELECT `activeContentTypes` FROM ${p}websiteState'
         );
         $this->assertEquals(1, count($websiteStates));
-        $this->assertEquals('[["Movies", "Elokuvat", {"title": "text"}]]',
+        $this->assertEquals('{"Movies": ["Elokuvat", {"title": "text"}]}',
                             $websiteStates[0]['activeContentTypes']);
     }
 }

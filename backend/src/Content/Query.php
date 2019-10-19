@@ -64,11 +64,11 @@ class Query {
         if (($errors = $this->selfValidate()) != '') {
             throw new \RuntimeException($errors);
         }
-        return 'select `id`, ' . $this->contentType->fieldsToSql() .
-               ' from ${p}' . $this->contentType->name .
-               (!$this->whereExpr ? '' : ' where ' . $this->whereExpr) .
-               (!$this->orderByExpr ? '' : ' order by ' . $this->orderByExpr) .
-               (!$this->limitExpr ? '' : ' limit ' . $this->limitExpr);
+        return 'SELECT `id`, ' . $this->contentType->fieldsToSql() .
+               ' FROM ${p}' . $this->contentType->name .
+               (!$this->whereExpr ? '' : ' WHERE ' . $this->whereExpr) .
+               (!$this->orderByExpr ? '' : ' ORDER BY ' . $this->orderByExpr) .
+               (!$this->limitExpr ? '' : ' LIMIT ' . $this->limitExpr);
     }
     /**
      * @return string

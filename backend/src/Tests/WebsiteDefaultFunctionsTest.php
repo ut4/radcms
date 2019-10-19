@@ -6,6 +6,7 @@ use RadCms\Templating\DefaultFunctions;
 use RadCms\Content\DAO;
 use PHPUnit\Framework\TestCase;
 use RadCms\ContentType\ContentTypeCollection;
+use RadCms\Common\Db;
 
 final class WebsiteDefaultFunctionsTest extends TestCase {
     use DefaultFunctions; // trait jota testataan
@@ -20,24 +21,25 @@ final class WebsiteDefaultFunctionsTest extends TestCase {
         $ctypes->add('Generics', '', ['content' => 'text']);
         $ctypes->add('Articles', '', ['title' => 'text', 'body' => 'text']);
         $ctypes->add($this->A_LONG_STRING, '', ['foo' => 'text']);
-        $this->__ctx = ['contentNodeDao' => new DAO(null, $ctypes)];
+        $this->__ctx = ['contentNodeDao' => new DAO($this->createMock(Db::class),
+                                                    $ctypes)];
     }
     public function testToSqlGeneratesFetchOneQuery() {
         $query1 = $this->fetchOne('Generics')->where('id=\'1\'');
         $this->assertEquals(
-            'select `id`, `content` from ${p}Generics where id=\'1\'',
+            'SELECT `id`, `content` FROM ${p}Generics WHERE id=\'1\'',
             $query1->toSql()
         );
         $query2 = $this->fetchOne('Generics')->where('id=\'2\'');
         $this->assertEquals(
-            'select `id`, `content` from ${p}Generics where id=\'2\'',
+            'SELECT `id`, `content` FROM ${p}Generics WHERE id=\'2\'',
             $query2->toSql()
         );
     }
     public function testToSqlGeneratesFetchAllQuery() {
         $query1 = $this->fetchAll('Articles');
         $this->assertEquals(
-            'select `id`, `title`, `body` from ${p}Articles',
+            'SELECT `id`, `title`, `body` FROM ${p}Articles',
             $query1->toSql()
         );
     }

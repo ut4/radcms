@@ -110,8 +110,8 @@ function contentNodeList(props) {
     return [
         $el('ul', null, props.cnodes.map(c =>
             $el('li', null, [
-                $el('span', null, c.defaults.name),
-                myLink('/edit-content/' + c.defaults.id + '?returnTo=' +
+                $el('span', null, c.name || '#' + c.id),
+                myLink('/edit-content/' + c.id + '?returnTo=' +
                        encodeURIComponent(props.currentPageUrl), 'Edit')
             ])
         )),

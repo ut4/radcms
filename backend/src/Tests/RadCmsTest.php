@@ -60,11 +60,12 @@ final class RadCmsTest extends DbTestCase {
                           $testPluginDirPath . '/_ValidPlugin']);
         $app = RadCms::create($this->config, $testPluginDirName, $mockFs, function ($c) {
             $db = self::getDb($c);
-            $db->exec('update ${p}websiteState set `installedPlugins`=' .
-                      '\'["_ValidAndInstalledPlugin"]\'');
+            $db->exec('UPDATE ${p}websiteState SET `installedPlugins`=' .
+                      ' JSON_SET(`installedPlugins`, ?, 1)',
+                      ['$."_ValidAndInstalledPlugin"']);
             return $db;
         });
-        $actuallyRegisteredPlugins = $app->services->plugins->toArray();
+        $actuallyRegisteredPlugins = $app->ctx->plugins->toArray();
         $this->assertEquals(2, count($actuallyRegisteredPlugins));
         $this->assertEquals('_ValidAndInstalledPlugin', $actuallyRegisteredPlugins[0]->name);
         $this->assertEquals('_ValidPlugin', $actuallyRegisteredPlugins[1]->name);
@@ -74,5 +75,10 @@ final class RadCmsTest extends DbTestCase {
         $this->assertEquals(true, _ValidAndInstalledPlugin::$initialized);
         $this->assertEquals(false, _ValidPlugin::$instantiated);
         $this->assertEquals(false, _ValidPlugin::$initialized);
+        //
+        if (self::$db->exec('UPDATE ${p}websiteState SET `installedPlugins`=' .
+                            ' JSON_REMOVE(`installedPlugins`, ?)',
+                            ['$."_ValidAndInstalledPlugin"']) < 1)
+            throw new \RuntimeException('Failed to clean test data.');
     }
 }

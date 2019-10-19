@@ -1,5 +1,5 @@
-update ${p}websiteState set
+UPDATE ${p}websiteState SET
 `layoutMatchers` = '[{"pattern":".*","layoutFileName":"main-layout.tmpl.php"}]';
 
-insert into ${p}GenericBlobs values
+INSERT INTO ${p}GenericBlobs VALUES
 (1, 'home-content', 'Hello World!');

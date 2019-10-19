@@ -24,7 +24,7 @@ function myFetch(url, options = {}) {
         throw err;
     });
 }
-myFetch.baseUrl = '/';
+myFetch.baseUrl = '';
 
 const signals = {
     _listeners: [],

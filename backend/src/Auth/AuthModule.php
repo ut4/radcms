@@ -8,14 +8,11 @@ abstract class AuthModule {
     /**
      * Rekisteröi /auth-alkuiset http-reitit.
      *
-     * @param object $services
+     * @param object $ctx
      */
-    public static function init($services) {
-        $makeCtrl = function () {
-            return new AuthControllers();
-        };
-        $services->router->map('GET', '/login', function () use ($makeCtrl) {
-            return [$makeCtrl(), 'renderLoginView'];
+    public static function init($ctx) {
+        $ctx->router->map('GET', '/login', function () {
+            return [AuthControllers::class, 'renderLoginView'];
         });
     }
 }

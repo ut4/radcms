@@ -8,12 +8,13 @@ use RadCms\Response;
 use RadCms\Templating\Template;
 use RadCms\Content\DAO as ContentNodeDAO;
 
+/**
+ * Handlaa sivupyynnöt, (GET '/' tai GET '/sivunnimi').
+ */
 class WebsiteControllers {
     private $layoutLookup;
     private $cnd;
     /**
-     * Handlaa sivupyynnöt, (GET '/' tai GET '/sivunnimi').
-     *
      * @param \RadCms\LayoutLookup $layoutLookup
      * @param \RadCms\Content\DAO $cnd
      */

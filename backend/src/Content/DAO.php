@@ -11,11 +11,11 @@ class DAO {
     private $frontendPanelInfos;
     private static $contentTypes;
     /**
-     * @param \RadCms\Common\Db $db = null
+     * @param \RadCms\Common\Db $db
      * @param \RadCms\ContentType\ContentTypeCollection $contentTypes = null
      * @param bool $autopopulateContentTypes = true
      */
-    public function __construct(Db $db = null,
+    public function __construct(Db $db,
                                 ContentTypeCollection $contentTypes = null,
                                 $autopopulateContentTypes = true) {
         $this->db = $db;

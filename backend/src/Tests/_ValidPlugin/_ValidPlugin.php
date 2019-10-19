@@ -5,9 +5,9 @@ namespace RadCms\Tests\_ValidPlugin;
 use RadCms\Plugin\PluginInterface;
 
 class _ValidPlugin implements PluginInterface {
-    public static $instantiated = false;
-    public static $initialized = false;
-    public static $installed = false;
+    public static $instantiated = null;
+    public static $initialized = null;
+    public static $installed = null;
     public function __construct() {
         self::$instantiated = true;
     }
@@ -16,5 +16,8 @@ class _ValidPlugin implements PluginInterface {
     }
     public function install($ctx) {
         self::$installed = true;
+    }
+    public function uninstall($ctx) {
+        //
     }
 }

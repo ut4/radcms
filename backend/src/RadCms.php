@@ -18,26 +18,46 @@ use RadCms\Common\LoggerAccess;
 use RadCms\Plugin\PluginCollection;
 
 class RadCms {
-    public $services;
+    public $ctx;
     /**
      * RadCMS:n entry-point.
      *
      * @param \RadCms\Request $request
+     * @param \Auryn\Injector $injector = new Auryn\Injector
      */
     public function handleRequest($request, $injector = null) {
         $request->user = (object) ['id' => 1];
-        if (($match = $this->services->router->match($request->path, $request->method))) {
+        if (($match = $this->ctx->router->match($request->path, $request->method))) {
             $request->params = (object)$match['params'];
-            if (strpos($request->path, 'plugins') > 0) { // @tempHack
-                if (!$injector) $injector = new Injector;
-                $injector->share($this->services->db);
-                $injector->share($this->services->plugins);
-                $injector->share($request);
-                $injector->execute(implode('::', $match['target']()));
-            } else $match['target']()($request, new Response());
+            $this->setupIocContainer($injector ?: new Injector(), $request);
+            $this->ctx->injector->execute($this->makeRouteMatchInvokePath($match));
         } else {
             throw new \RuntimeException("No route for {$request->path}");
         }
+    }
+    /**
+     * @param \Auryn\Injector $injector
+     * @param \RadCms\Request $request
+     */
+    private function setupIocContainer($injector, $request) {
+        $this->ctx->injector = $injector;
+        $this->ctx->injector->share($this->ctx->db);
+        $this->ctx->injector->share($this->ctx->plugins);
+        $this->ctx->injector->share($request);
+    }
+    /**
+     * @param array $match
+     * @return string 'Cls\Path\To\Some\Controller::methodName'
+     */
+    private function makeRouteMatchInvokePath($match) {
+        $ctrlInfo = $match['target']();
+        if (!is_array($ctrlInfo) ||
+            !isset($ctrlInfo[0]) || !is_string($ctrlInfo[0]) ||
+            !isset($ctrlInfo[1]) || !is_string($ctrlInfo[1])) {
+            throw new \UnexpectedValueException(
+                'A route must return [\'Ctrl\\Class\\Path\', \'methodName\'].');
+        }
+        return $ctrlInfo[0] . '::' . $ctrlInfo[1];
     }
 
     ////////////////////////////////////////////////////////////////////////////
@@ -46,30 +66,31 @@ class RadCms {
      * @param array &$config
      * @param string $pluginsDir = 'Plugins'
      * @param \RadCms\Common\FileSystemInterface $fs = null
-     * @param callable $getDb = null
+     * @param callable $makeDb = new Db($config)
      */
     public static function create(&$config,
                                   $pluginsDir = 'Plugins',
                                   $fs = null,
-                                  $getDb = null) {
+                                  $makeDb = null) {
         $app = new RadCms();
-        $app->services = (object) ['router' => new AltoRouter(),
-                                   'db' => !$getDb ? new Db($config) : $getDb($config),
-                                   'websiteStateRaw' => '',
-                                   'plugins' => null];
-        $app->services->router->addMatchTypes(['w' => '[0-9A-Za-z_]++']);
+        $app->ctx = (object) ['injector' => null,
+                              'router' => new AltoRouter(),
+                              'db' => !$makeDb ? new Db($config) : $makeDb($config),
+                              'websiteStateRaw' => null,
+                              'plugins' => null];
+        $app->ctx->router->addMatchTypes(['w' => '[0-9A-Za-z_]++']);
         $config = ['wiped' => 'clean'];
         //
-        ContentModule::init($app->services);
-        AuthModule::init($app->services);
-        PluginModule::init($app->services);
-        $app->services->plugins = self::scanAndMakePlugins($pluginsDir,
-                                                           $fs ?: new FileSystem(),
-                                                           $app->services);
-        foreach ($app->services->plugins->toArray() as $plugin) {
-            if ($plugin->isInstalled) $plugin->impl->init($app->services);
+        ContentModule::init($app->ctx);
+        AuthModule::init($app->ctx);
+        PluginModule::init($app->ctx);
+        $app->ctx->plugins = self::scanAndMakePlugins($pluginsDir,
+                                                      $fs ?: new FileSystem(),
+                                                      $app->ctx);
+        foreach ($app->ctx->plugins->toArray() as $plugin) {
+            if ($plugin->isInstalled) $plugin->impl->init($app->ctx);
         }
-        WebsiteModule::init($app->services);
+        WebsiteModule::init($app->ctx);
         //
         $logger = new Logger('mainLogger');
         $logger->pushHandler(new ErrorLogHandler());
@@ -77,10 +98,10 @@ class RadCms {
         return $app;
     }
     private static function scanAndMakePlugins($pluginsDir,
-                                        FileSystemInterface $fs,
-                                        $services) {
+                                               FileSystemInterface $fs,
+                                               $ctx) {
         $pluginCollection = self::scanAndMakePluginsFromDisk($pluginsDir, $fs);
-        self::syncPluginStates($pluginCollection, $services);
+        self::syncPluginStates($pluginCollection, $ctx);
         self::instantiateInstalledPlugins($pluginCollection);
         return $pluginCollection;
     }
@@ -99,18 +120,18 @@ class RadCms {
         }
         return $out;
     }
-    private static function syncPluginStates($pluginCollection, $services) {
-        if (!($services->websiteStateRaw = $services->db->fetchOne(
+    private static function syncPluginStates($pluginCollection, $ctx) {
+        if (!($ctx->websiteStateRaw = $ctx->db->fetchOne(
             'select `layoutMatchers`,`activeContentTypes`,`installedPlugins`' .
             ' from ${p}websiteState'
         ))) {
             throw new \RuntimeException('Failed to fetch websiteState');
         }
-        $installedPluginNames = json_decode($services->websiteStateRaw['installedPlugins']);
+        $installedPluginNames = json_decode($ctx->websiteStateRaw['installedPlugins'], true);
         if (!is_array($installedPluginNames)) $installedPluginNames = [];
         // Lisäosa on asennettu vain jos siitä löytyy merkintä tietokannasta.
         foreach ($pluginCollection->toArray() as &$plugin) {
-            $plugin->isInstalled = in_array($plugin->name, $installedPluginNames);
+            $plugin->isInstalled = array_key_exists($plugin->name, $installedPluginNames);
         }
     }
     private static function instantiateInstalledPlugins($pluginCollection) {

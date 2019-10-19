@@ -43,10 +43,11 @@ trait HttpTestUtils {
      * @param \RadCms\Request $req
      * @param \RadCms\Response $res
      * @param \RadCms\Common\FileSystemInterface $mockFs
+     * @param \callable $makeDb = [get_class(), 'getDb']
      */
-    public function makeRequest($req, $res, $mockFs) {
+    public function makeRequest($req, $res, $mockFs, $makeDb = null) {
         include RAD_SITE_PATH . 'config.php';
-        $app = RadCms::create($config, 'Tests', $mockFs, [get_class(), 'getDb']);
+        $app = RadCms::create($config, 'Tests', $mockFs, $makeDb ?: [get_class(), 'getDb']);
         $injector = new Injector;
         $injector->delegate(Response::class, function() use ($res) { return $res; });
         $app->handleRequest($req, $injector);

@@ -8,16 +8,16 @@ use RadCms\ContentType\ContentTypeCollection;
 
 abstract class WebsiteModule {
     /**
-     * @param object $services
+     * @param object $ctx
      */
-    public static function init($services) {
-        $makeCtrl = function () use ($services) {
-            list ($layoutMatchers, $contentTypes) = self::parseWebsiteState($services->websiteStateRaw);
-            return new WebsiteControllers(new LayoutLookup($layoutMatchers),
-                                          new DAO($services->db, $contentTypes));
-        };
-        $services->router->map('GET', '*', function () use ($makeCtrl) {
-            return [$makeCtrl(), 'handlePageRequest'];
+    public static function init($ctx) {
+        $ctx->router->map('GET', '*', function () use ($ctx) {
+            $ctx->injector->delegate(WebsiteControllers::class, function () use ($ctx) {
+                list ($layoutMatchers, $contentTypes) = self::parseWebsiteState($ctx->websiteStateRaw);
+                return new WebsiteControllers(new LayoutLookup($layoutMatchers),
+                                              new DAO($ctx->db, $contentTypes));
+            });
+            return [WebsiteControllers::class, 'handlePageRequest'];
         });
     }
     /**
@@ -29,7 +29,8 @@ abstract class WebsiteModule {
         if (!($ctypesData = json_decode($websiteStateRaw['activeContentTypes'], true)))
             throw new \InvalidArgumentException('Failed to parse activeContentTypes');
         $ctypes = new ContentTypeCollection();
-        foreach ($ctypesData as $single) $ctypes->add(...$single);
+        foreach ($ctypesData as $ctypeName => $remainingArgs)
+            $ctypes->add($ctypeName, ...$remainingArgs);
         return [$layoutMatchers, $ctypes];
     }
 }

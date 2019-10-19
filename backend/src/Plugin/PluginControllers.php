@@ -33,6 +33,7 @@ class PluginControllers {
      *
      * @param Request $request
      * @param Response $response
+     * @param PluginInstaller $installer
      */
     public function handleInstallPluginRequest(Request $req,
                                                Response $res,
@@ -59,8 +60,26 @@ class PluginControllers {
      *
      * @param Request $request
      * @param Response $response
+     * @param PluginInstaller $installer
      */
-    public function handleUninstallPluginRequest(Request $req, Response $res) {
-        $res->type('json')->send(['ok' => 'ok ' . $req->params->name]);
+    public function handleUninstallPluginRequest(Request $req,
+                                                 Response $res,
+                                                 PluginInstaller $installer) {
+        if (($plugin = $this->plugins->find('name', $req->params->name))) {
+            try {
+                $errorMessage = $installer->uninstall($plugin);
+                if (!$errorMessage) {
+                    $res->type('json')->send(['ok' => 'ok']);
+                    return;
+                }
+            } catch (\Exception $e) {
+                LoggerAccess::getLogger('error', $e->getTraceAsString());
+                $errorMessage = 'Failed to uninstall a plugin (see the logger ' .
+                                'output for details).';
+            }
+        } else {
+            $errorMessage = "Plugin `{$req->params->name}` not found.";
+        }
+        $res->type('json')->status(500)->send(['error' => $errorMessage]);
     }
 }

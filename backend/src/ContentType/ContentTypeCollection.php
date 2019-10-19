@@ -19,8 +19,8 @@ class ContentTypeCollection extends GenericArray {
         $row = $db->fetchOne('select `activeContentTypes` from ${p}websiteState');
         if (!$row || !($parsed = json_decode($row['activeContentTypes'], true)))
             throw new \InvalidArgumentException('Invalid dbResult');
-        foreach ($parsed as $single) {
-            $this->add(...$single);
+        foreach ($parsed as $ctypeName => $remainingArgs) {
+            $this->add($ctypeName, ...$remainingArgs);
         }
     }
 }

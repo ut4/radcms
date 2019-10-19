@@ -6,19 +6,20 @@ use RadCms\Tests\Self\DbTestCase;
 use RadCms\Tests\Self\HttpTestUtils;
 use RadCms\Common\FileSystem;
 use RadCms\Tests\_ValidPlugin\_ValidPlugin;
+use RadCms\Tests\_ValidAndInstalledPlugin\_ValidAndInstalledPlugin;
 use RadCms\Request;
 
 final class PluginControllersTest extends DbTestCase {
     use HttpTestUtils;
-    public function testPUTInstallInstallsPluginAndLogsItToDatabase() {
+    public function testPUTInstallInstallsPluginAndRegistersItToDatabase() {
         $s = $this->setupTest1();
         //
         $req = new Request("/api/plugins/{$s->testPluginName}/install", 'PUT');
         $this->makeRequest($req, $s->res, $s->mockFs);
         //
         $this->verifyInstalledPlugin();
-        $this->verifyLoggedPluginToDb($s);
-        $this->cleanupTest1();
+        $this->verifyRegisteredPluginToDb($s);
+        $this->cleanupTest1($s);
     }
     private function setupTest1() {
         include RAD_SITE_PATH . 'config.php';
@@ -35,16 +36,70 @@ final class PluginControllersTest extends DbTestCase {
     private function verifyInstalledPlugin() {
         $this->assertEquals(true, _ValidPlugin::$installed);
     }
-    private function verifyLoggedPluginToDb($s) {
-        $rows = self::$db->fetchAll('select `installedPlugins` from ${p}websiteState');
+    private function verifyRegisteredPluginToDb($s) {
+        $rows = self::$db->fetchAll('SELECT `installedPlugins` FROM ${p}websiteState');
         $this->assertEquals(1, count($rows));
-        $this->assertEquals('["' . $s->testPluginName . '"]', $rows[0]['installedPlugins']);
+        $parsed = json_decode($rows[0]['installedPlugins'], true);
+        $this->assertEquals(true, array_key_exists($s->testPluginName, $parsed));
     }
-    private function cleanupTest1() {
+    private function cleanupTest1($s) {
         _ValidPlugin::$instantiated = false;
         _ValidPlugin::$initialized = false;
         _ValidPlugin::$installed = false;
-        if (self::$db->exec('update ${p}websiteState set `installedPlugins`=\'[]\'') < 1)
+        if (self::$db->exec('UPDATE ${p}websiteState SET `installedPlugins`=' .
+                            ' JSON_REMOVE(`installedPlugins`, ?)',
+                            ['$."' . $s->testPluginName . '"']) < 1)
             throw new \RuntimeException('Failed to clean test data.');
+    }
+
+
+    ////////////////////////////////////////////////////////////////////////////
+
+
+    public function testPUTUninstallUninstallsPluginAndUnregistersItFromDatabase() {
+        $s = $this->setupTest2();
+        //
+        $req = new Request("/api/plugins/{$s->testPluginName}/uninstall", 'PUT');
+        $this->makeRequest($req, $s->res, $s->mockFs, $s->makeDb);
+        //
+        $this->verifyUninstalledPlugin();
+        $this->verifyUnregisteredPluginFromDb($s);
+        $this->cleanupTest2();
+    }
+    private function setupTest2() {
+        include RAD_SITE_PATH . 'config.php';
+        $testPluginName = '_ValidAndInstalledPlugin';
+        $mockFs = $this->createMock(FileSystem::class);
+        $mockFs->expects($this->once())->method('readDir')->willReturn(
+            [RAD_BASE_PATH . 'src/Tests/' . $testPluginName]);
+        $makeDb = function ($c) use ($testPluginName) {
+            $db = self::getDb($c);
+            $db->exec('UPDATE ${p}websiteState SET `installedPlugins`=' .
+                      ' JSON_SET(`installedPlugins`, ?, ?)',
+                      ['$."' . $testPluginName . '"', 1]);
+            return $db;
+        };
+        _ValidAndInstalledPlugin::$installed = true;
+        return (object)[
+            'testPluginName' => $testPluginName,
+            'originalInstallState' => _ValidAndInstalledPlugin::$installed,
+            'res' => $this->createMockResponse(['ok' => 'ok'], 200, 'json'),
+            'mockFs' => $mockFs,
+            'makeDb' => $makeDb
+        ];
+    }
+    private function verifyUninstalledPlugin() {
+        $this->assertEquals(false, _ValidAndInstalledPlugin::$installed);
+    }
+    private function verifyUnregisteredPluginFromDb($s) {
+        $rows = self::$db->fetchAll('SELECT `installedPlugins` FROM ${p}websiteState');
+        $this->assertEquals(1, count($rows));
+        $parsed = json_decode($rows[0]['installedPlugins'], true);
+        $this->assertEquals(false, array_key_exists($s->testPluginName, $parsed));
+    }
+    private function cleanupTest2() {
+        _ValidAndInstalledPlugin::$instantiated = false;
+        _ValidAndInstalledPlugin::$initialized = false;
+        _ValidAndInstalledPlugin::$installed = false;
     }
 }
