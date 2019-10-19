@@ -1,5 +1,5 @@
 import services from '../../../src/common-services.js';
-import {view} from '../../../src/common-components.js';
+import {view, Toaster} from '../../../src/common-components.js';
 
 /**
  * #/manage-plugins
@@ -33,10 +33,10 @@ class PluginsManageView extends preact.Component {
                         $el('td', null,
                             !plugin.isInstalled
                                 ? $el('button', {onClick: () => {
-                                                     this.installPlugin(i);
+                                                     this.installPlugin(plugin, i);
                                                  }}, 'Asenna')
                                 : $el('button', {onClick: () => {
-                                                     this.uninstallPlugin(i);
+                                                     this.uninstallPlugin(plugin, i);
                                                  }}, 'Poista')
                         )
                     )
@@ -47,14 +47,40 @@ class PluginsManageView extends preact.Component {
     /**
      * @access private
      */
-    installPlugin(plugin) {
+    installPlugin(plugin, i) {
         if (plugin.isInstalled) return;
+        services.myFetch(`/api/plugins/${plugin.name}/install`, {
+            method: 'PUT',
+            headers: {'content-type': 'application/json'}
+        }).then(res => {
+            const data = JSON.parse(res.responseText);
+            if (data.ok) {
+                const plugins = this.state.plugins;
+                plugins[i].isInstalled = true;
+                this.setState({plugins});
+            } else {
+                toast(data.error, 'error');
+            }
+        });
     }
     /**
      * @access private
      */
-    uninstallPlugin(plugin) {
+    uninstallPlugin(plugin, i) {
         if (!plugin.isInstalled) return;
+        services.myFetch(`/api/plugins/${plugin.name}/uninstall`, {
+            method: 'PUT',
+            headers: {'content-type': 'application/json'}
+        }).then(res => {
+            const data = JSON.parse(res.responseText);
+            if (data.ok) {
+                const plugins = this.state.plugins;
+                plugins[i].isInstalled = false;
+                this.setState({plugins});
+            } else {
+                toast(data.error, 'error');
+            }
+        });
     }
 }
 

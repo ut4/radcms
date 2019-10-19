@@ -13,4 +13,7 @@ class _ValidAndInstalledPlugin implements PluginInterface {
     public function init($ctx) {
         self::$initialized = true;
     }
+    public function install($ctx) {
+        //
+    }
 }

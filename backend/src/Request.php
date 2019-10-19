@@ -6,6 +6,7 @@ class Request {
     public $path;
     public $method;
     public $body;
+    public $params;
     public $user;
     /**
      * @param string $path
@@ -16,13 +17,14 @@ class Request {
         $this->path = $path;
         $this->method = $method;
         $this->body = $body ?: new \stdClass();
+        $this->params = (object)[];
     }
 
     ////////////////////////////////////////////////////////////////////////////
 
     /**
      * @param string $BASE_URL
-     * @param string $urlPath = str_replace($BASE_URL, '', $_SERVER['REQUEST_URI'])
+     * @param string $urlPath = substr($_SERVER['REQUEST_URI'], strlen($BASE_URL) - 1)
      * @return \RadCms\Request
      */
     public static function createFromGlobals($BASE_URL, $urlPath = null) {

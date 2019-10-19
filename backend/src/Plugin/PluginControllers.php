@@ -4,18 +4,18 @@ namespace RadCms\Plugin;
 
 use RadCms\Request;
 use RadCms\Response;
-use RadCms\Framework\GenericArray;
+use RadCms\Common\LoggerAccess;
 
 /**
  * Handlaa /api/plugin -alkuiset pyynnöt.
  */
 class PluginControllers {
-    private $pluginCollection;
+    private $plugins;
     /**
-     * @param \RadCms\Framework\GenericArray $plugins Array<\RadCms\Plugin\PluginInterface>
+     * @param \RadCms\Plugin\PluginCollection $plugins
      */
-    public function __construct(GenericArray $pluginCollection) {
-        $this->pluginCollection = $pluginCollection;
+    public function __construct(PluginCollection $plugins) {
+        $this->plugins = $plugins;
     }
     /**
      * GET /api/plugins: listaa kaikki lisäosat.
@@ -23,9 +23,44 @@ class PluginControllers {
      * @param Request $request
      * @param Response $response
      */
-    public function handleGetPluginsRequest(Request $req, Response $res) {
+    public function handleGetPluginsRequest(Response $res) {
         $res->type('json')->send(array_map(function ($plugin) {
             return ['name' => $plugin->name, 'isInstalled' => $plugin->isInstalled];
-        }, $this->pluginCollection->toArray()));
+        }, $this->plugins->toArray()));
+    }
+    /**
+     * GET /api/plugins/:name/install: asentaa lisäosan $name.
+     *
+     * @param Request $request
+     * @param Response $response
+     */
+    public function handleInstallPluginRequest(Request $req,
+                                               Response $res,
+                                               PluginInstaller $installer) {
+        if (($plugin = $this->plugins->find('name', $req->params->name))) {
+            try {
+                $errorMessage = $installer->install($plugin);
+                if (!$errorMessage) {
+                    $res->type('json')->send(['ok' => 'ok']);
+                    return;
+                }
+            } catch (\Exception $e) {
+                LoggerAccess::getLogger('error', $e->getTraceAsString());
+                $errorMessage = 'Failed to install a plugin (see the logger ' .
+                                'output for details).';
+            }
+        } else {
+            $errorMessage = "Plugin `{$req->params->name}` not found.";
+        }
+        $res->type('json')->status(500)->send(['error' => $errorMessage]);
+    }
+    /**
+     * GET /api/plugins/:name/uninstall: poistaa lisäosan $name.
+     *
+     * @param Request $request
+     * @param Response $response
+     */
+    public function handleUninstallPluginRequest(Request $req, Response $res) {
+        $res->type('json')->send(['ok' => 'ok ' . $req->params->name]);
     }
 }

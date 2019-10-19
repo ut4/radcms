@@ -58,7 +58,8 @@ class ContentTypeMigrator {
      * .
      */
     private function updateActiveContentTypes($ctypeDefs) {
-        return $this->db->exec('UPDATE ${p}websiteState SET `activeContentTypes` = ?',
+        return $this->db->exec('UPDATE ${p}websiteState SET `activeContentTypes` =' .
+                               ' JSON_MERGE_PATCH(`activeContentTypes`, ?)',
                                [json_encode(array_map(function ($t) {
                                    return [$t->name, $t->friendlyName, $t->fields];
                                }, $ctypeDefs))]);

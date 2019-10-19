@@ -3,14 +3,16 @@
 namespace RadCms\Common;
 
 class Db {
+    public $tablePrefix;
+    public $database;
     private $pdo;
     private $transactionLevel = 0;
-    private $tablePrefix;
     /**
      * @param array $config see config.sample.php. Olettaa että on validi.
      */
     public function __construct($config) {
         $this->tablePrefix = $config['db.tablePrefix'];
+        $this->database = $config['db.database'];
         try {
             $this->pdo = new \PDO(
                 'mysql:host=' . $config['db.host'] .

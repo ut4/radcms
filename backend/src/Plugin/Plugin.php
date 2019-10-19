@@ -18,9 +18,11 @@ class Plugin {
         $this->isInstalled = false;
     }
     /**
-     * @param \RadCms\Plugin\PluginInterface $impl
+     * @return \RadCms\Plugin\PluginInterface
      */
-    public function setImpl(PluginInterface $impl) {
-        $this->impl = $impl;
+    public function instantiate() {
+        $Ctor = $this->classPath;
+        $this->impl = new $Ctor();
+        return $this->impl;
     }
 }

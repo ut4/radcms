@@ -2,6 +2,7 @@
 
 namespace RadCms;
 
+use Auryn\Injector;
 use AltoRouter;
 use RadCms\Common\Db;
 use RadCms\Content\ContentModule;
@@ -14,8 +15,7 @@ use RadCms\Plugin\PluginInterface;
 use Monolog\Logger;
 use Monolog\Handler\ErrorLogHandler;
 use RadCms\Common\LoggerAccess;
-use RadCms\Framework\GenericArray;
-use RadCms\Plugin\Plugin;
+use RadCms\Plugin\PluginCollection;
 
 class RadCms {
     public $services;
@@ -24,13 +24,19 @@ class RadCms {
      *
      * @param \RadCms\Request $request
      */
-    public function handleRequest($request) {
+    public function handleRequest($request, $injector = null) {
         $request->user = (object) ['id' => 1];
         if (($match = $this->services->router->match($request->path, $request->method))) {
-            $request->params = $match['params'];
-            $match['target']()($request, new Response());
+            $request->params = (object)$match['params'];
+            if (strpos($request->path, 'plugins') > 0) { // @tempHack
+                if (!$injector) $injector = new Injector;
+                $injector->share($this->services->db);
+                $injector->share($this->services->plugins);
+                $injector->share($request);
+                $injector->execute(implode('::', $match['target']()));
+            } else $match['target']()($request, new Response());
         } else {
-            header($_SERVER['SERVER_PROTOCOL'] . ' 404 Not Found');
+            throw new \RuntimeException("No route for {$request->path}");
         }
     }
 
@@ -50,15 +56,16 @@ class RadCms {
         $app->services = (object) ['router' => new AltoRouter(),
                                    'db' => !$getDb ? new Db($config) : $getDb($config),
                                    'websiteStateRaw' => '',
-                                   'plugins' => []];
+                                   'plugins' => null];
+        $app->services->router->addMatchTypes(['w' => '[0-9A-Za-z_]++']);
         $config = ['wiped' => 'clean'];
         //
         ContentModule::init($app->services);
         AuthModule::init($app->services);
         PluginModule::init($app->services);
-        $app->services->plugins = self::scanPlugins($pluginsDir,
-                                                    $fs ?: new FileSystem(),
-                                                    $app->services);
+        $app->services->plugins = self::scanAndMakePlugins($pluginsDir,
+                                                           $fs ?: new FileSystem(),
+                                                           $app->services);
         foreach ($app->services->plugins->toArray() as $plugin) {
             if ($plugin->isInstalled) $plugin->impl->init($app->services);
         }
@@ -69,17 +76,17 @@ class RadCms {
         LoggerAccess::setLogger($logger);
         return $app;
     }
-    private static function scanPlugins($pluginsDir,
+    private static function scanAndMakePlugins($pluginsDir,
                                         FileSystemInterface $fs,
                                         $services) {
-        $pluginCollection = self::scanPluginsFromDisk($pluginsDir, $fs);
+        $pluginCollection = self::scanAndMakePluginsFromDisk($pluginsDir, $fs);
         self::syncPluginStates($pluginCollection, $services);
         self::instantiateInstalledPlugins($pluginCollection);
         return $pluginCollection;
     }
-    private static function scanPluginsFromDisk($pluginsDir,
-                                                FileSystemInterface $fs) {
-        $out = new GenericArray(Plugin::class);
+    private static function scanAndMakePluginsFromDisk($pluginsDir,
+                                                       FileSystemInterface $fs) {
+        $out = new PluginCollection();
         $paths = $fs->readDir(RAD_BASE_PATH . 'src/' . $pluginsDir, '*', GLOB_ONLYDIR);
         foreach ($paths as $path) {
             $clsName = substr($path, strrpos($path, '/') + 1);
@@ -108,8 +115,7 @@ class RadCms {
     }
     private static function instantiateInstalledPlugins($pluginCollection) {
         foreach ($pluginCollection->toArray() as &$plugin) {
-            if ($plugin->isInstalled)
-                $plugin->setImpl(new $plugin->classPath());
+            if ($plugin->isInstalled) $plugin->instantiate();
         }
     }
 }

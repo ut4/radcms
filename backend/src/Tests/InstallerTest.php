@@ -131,7 +131,7 @@ final class InstallerTest extends DbTestCase {
                 ->willReturnOnConsecutiveCalls(
                     'use ${database};' .
                     ' create table ${p}websiteState (`activeContentTypes` TEXT);' .
-                    ' insert into ${p}websiteState values (\'\');',
+                    ' insert into ${p}websiteState values (\'[]\');',
                     //
                     '[{"name":"Movies","friendlyName":"Elokuvat","fields":{"title":"text"}}]',
                     //
@@ -202,14 +202,15 @@ define('RAD_SITE_PATH', '{$s->targetDir}/');
         )));
     }
     private function verifyInsertedSampleContent($s) {
+        $this->assertEquals(1, count(self::$db->fetchAll(
+            'select `title` from ${p}Movies'
+        )));
+        //
         $websiteStates = self::$db->fetchAll(
             'select `activeContentTypes` from ${p}websiteState'
         );
         $this->assertEquals(1, count($websiteStates));
-        $this->assertEquals('[["Movies","Elokuvat",{"title":"text"}]]',
+        $this->assertEquals('[["Movies", "Elokuvat", {"title": "text"}]]',
                             $websiteStates[0]['activeContentTypes']);
-        $this->assertEquals(1, count(self::$db->fetchAll(
-            'select `title` from ${p}Movies'
-        )));
     }
 }
