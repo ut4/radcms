@@ -4,13 +4,13 @@ namespace RadCms;
 
 use Auryn\Injector;
 use AltoRouter;
-use RadCms\Common\Db;
+use RadCms\Framework\Db;
 use RadCms\Content\ContentModule;
 use RadCms\Auth\AuthModule;
 use RadCms\Website\WebsiteModule;
 use RadCms\Plugin\PluginModule;
-use RadCms\Common\FileSystemInterface;
-use RadCms\Common\FileSystem;
+use RadCms\Framework\FileSystemInterface;
+use RadCms\Framework\FileSystem;
 use RadCms\Plugin\PluginInterface;
 use Monolog\Logger;
 use Monolog\Handler\ErrorLogHandler;
@@ -22,7 +22,7 @@ class RadCmsApp {
     /**
      * RadCMS:n entry-point.
      *
-     * @param \RadCms\Request $request
+     * @param \RadCms\Framework\Request $request
      * @param \Auryn\Injector $injector = new Auryn\Injector
      */
     public function handleRequest($request, $injector = null) {
@@ -37,7 +37,7 @@ class RadCmsApp {
     }
     /**
      * @param \Auryn\Injector $injector
-     * @param \RadCms\Request $request
+     * @param \RadCms\Framework\Request $request
      */
     private function setupIocContainer($injector, $request) {
         $this->ctx->injector = $injector;
@@ -65,7 +65,7 @@ class RadCmsApp {
     /**
      * @param array &$config
      * @param string $pluginsDir = 'Plugins'
-     * @param \RadCms\Common\FileSystemInterface $fs = null
+     * @param \RadCms\Framework\FileSystemInterface $fs = null
      * @param \Closure $makeDb = new Db($config)
      */
     public static function create(&$config,

@@ -2,8 +2,8 @@
 
 namespace RadCms\Auth;
 
-use RadCms\Request;
-use RadCms\Response;
+use RadCms\Framework\Request;
+use RadCms\Framework\Response;
 
 class AuthControllers {
     /**
@@ -15,8 +15,8 @@ class AuthControllers {
     /**
      * GET /login.
      *
-     * @param \RadCms\Request $_
-     * @param \RadCms\Response $res
+     * @param \RadCms\Framework\Request $_
+     * @param \RadCms\Framework\Response $res
      */
     public function renderLoginView(Request $_, Response $res) {
         $res->send('<label>Käyttäjänimi<input></label>');

@@ -1,6 +1,6 @@
 <?php
 
-namespace RadCms;
+namespace RadCms\Framework;
 
 class Response {
     public $contentType;

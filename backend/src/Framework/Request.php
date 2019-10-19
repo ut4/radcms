@@ -1,6 +1,6 @@
 <?php
 
-namespace RadCms;
+namespace RadCms\Framework;
 
 class Request {
     public $path;
@@ -25,7 +25,7 @@ class Request {
     /**
      * @param string $BASE_URL
      * @param string $urlPath = substr($_SERVER['REQUEST_URI'], strlen($BASE_URL) - 1)
-     * @return \RadCms\Request
+     * @return \RadCms\Framework\Request
      */
     public static function createFromGlobals($BASE_URL, $urlPath = null) {
         $method = $_SERVER['REQUEST_METHOD'];

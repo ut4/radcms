@@ -3,7 +3,7 @@
 namespace Rad\Tests;
 
 use RadCms\RadCmsApp;
-use RadCms\Common\FileSystem;
+use RadCms\Framework\FileSystem;
 use RadCms\Tests\Self\DbTestCase;
 use RadCms\Tests\_ValidAndInstalledPlugin\_ValidAndInstalledPlugin;
 use RadCms\Tests\_ValidPlugin\_ValidPlugin;

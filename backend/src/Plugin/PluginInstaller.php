@@ -2,14 +2,14 @@
 
 namespace RadCms\Plugin;
 
-use RadCms\Common\Db;
+use RadCms\Framework\Db;
 use RadCms\ContentType\ContentTypeMigrator;
 
 class PluginInstaller {
     private $db;
     private $contentTypeMigrator;
     /**
-     * @param \RadCms\Common\Db $db
+     * @param \RadCms\Framework\Db $db
      * @param \RadCms\ContentType\ContentTypeMigrator $contentTypeMigrator
      */
     public function __construct(Db $db, ContentTypeMigrator $contentTypeMigrator) {

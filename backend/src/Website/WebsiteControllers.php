@@ -2,10 +2,9 @@
 
 namespace RadCms\Website;
 
-use RadCms\LayoutLookup;
-use RadCms\Request;
-use RadCms\Response;
-use RadCms\Templating\Template;
+use RadCms\Framework\Request;
+use RadCms\Framework\Response;
+use RadCms\Templating\MagicTemplate;
 use RadCms\Content\DAO as ContentNodeDAO;
 
 /**
@@ -15,7 +14,7 @@ class WebsiteControllers {
     private $layoutLookup;
     private $cnd;
     /**
-     * @param \RadCms\LayoutLookup $layoutLookup
+     * @param \RadCms\Website\LayoutLookup $layoutLookup
      * @param \RadCms\Content\DAO $cnd
      */
     public function __construct(LayoutLookup $layoutLookup,
@@ -26,15 +25,15 @@ class WebsiteControllers {
     /**
      * GET *: handlaa sivupyynnön.
      *
-     * @param \RadCms\Request $request
-     * @param \RadCms\Response $response
+     * @param \RadCms\Framework\Request $request
+     * @param \RadCms\Framework\Response $response
      */
     public function handlePageRequest(Request $req, Response $res) {
         $layout = $this->layoutLookup->findLayoutFor($req->path);
         if (!$layout) {
             return $res->send('404');
         }
-        $template = new Template(RAD_SITE_PATH . $layout, ['contentNodeDao' => $this->cnd]);
+        $template = new MagicTemplate(RAD_SITE_PATH . $layout, null, $this->cnd);
         $html = $template->render(['url' => $req->path ? explode('/', ltrim($req->path, '/')) : ['']]);
         if ($req->user && ($bodyEnd = strpos($html, '</body>')) > 1) {
             $dataToFrontend = [

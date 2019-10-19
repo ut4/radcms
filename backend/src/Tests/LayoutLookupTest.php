@@ -2,7 +2,7 @@
 
 namespace Rad\Tests;
 
-use RadCms\LayoutLookup;
+use RadCms\Website\LayoutLookup;
 use PHPUnit\Framework\TestCase;
 
 final class LayoutLookupTest extends TestCase {

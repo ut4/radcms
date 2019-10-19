@@ -2,7 +2,7 @@
 
 namespace RadCms\ContentType;
 
-use RadCms\Common\Db;
+use RadCms\Framework\Db;
 
 /**
  * Luokka joka asentaa/päivittää/poistaa sisältötyyppejä tietokantaan.
@@ -12,7 +12,7 @@ class ContentTypeMigrator {
     const COLLECTION_SIZES = ['tiny', 'small', 'medium', '', 'big'];
     private $db;
     /**
-     * @param \RadCms\Common\Db $db
+     * @param \RadCms\Framework\Db $db
      */
     public function __construct(Db $db) {
         $this->db = $db;

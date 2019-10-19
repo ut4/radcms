@@ -1,6 +1,6 @@
 <?php
 
-namespace RadCms\Common;
+namespace RadCms\Framework;
 
 class FileSystem implements FileSystemInterface {
     /**

@@ -2,9 +2,9 @@
 
 namespace RadCms\Installer;
 
-use RadCms\Common\Db;
+use RadCms\Framework\Db;
 use RadCms\Common\LoggerAccess;
-use RadCms\Common\FileSystemInterface;
+use RadCms\Framework\FileSystemInterface;
 use RadCms\ContentType\ContentTypeMigrator;
 use RadCms\ContentType\ContentTypeCollection;
 
@@ -15,8 +15,8 @@ class Installer {
     private $makeDb;
     /**
      * @param string $sitePath
-     * @param \RadCms\Common\FileSystemInterface $fs
-     * @param callable $makeDb = function ($c) { return new \RadCms\Common\Db($c); }
+     * @param \RadCms\Framework\FileSystemInterface $fs
+     * @param callable $makeDb = function ($c) { return new \RadCms\Framework\Db($c); }
      */
     public function __construct($sitePath,
                                 FileSystemInterface $fs,

@@ -2,12 +2,12 @@
 
 namespace RadCms\Installer;
 
-use RadCms\Request;
-use RadCms\Response;
-use RadCms\Templating\Template;
-use RadCms\Common\FileSystemInterface;
-use RadCms\Common\FileSystem;
+use RadCms\Framework\Request;
+use RadCms\Framework\Response;
+use RadCms\Framework\FileSystemInterface;
+use RadCms\Framework\FileSystem;
 use RadCms\Framework\Validator;
+use RadCms\Framework\Template;
 
 class InstallerControllers {
     private $sitePath;
@@ -15,7 +15,7 @@ class InstallerControllers {
     private $makeDb;
     /**
      * @param string $sitePath ks. InstallerApp::__construct
-     * @param \RadCms\Common\FileSystemInterface $fs = null
+     * @param \RadCms\Framework\FileSystemInterface $fs = null
      * @param callable $makeDb = null
      */
     public function __construct($sitePath,
@@ -28,8 +28,8 @@ class InstallerControllers {
     /**
      * GET /.
      *
-     * @param \RadCms\Request $_
-     * @param \RadCms\Response $res
+     * @param \RadCms\Framework\Request $_
+     * @param \RadCms\Framework\Response $res
      */
     public function renderHomeView(Request $_, Response $res) {
         $template = new Template(__DIR__ . '/main-view.tmpl.php');
@@ -60,7 +60,7 @@ class InstallerControllers {
         $v->check('radPath', 'present', [
             function ($input, $_key) {
                 $input->radPath = rtrim($input->radPath, '/') . '/';
-                return $this->fs->isFile($input->radPath . 'src/Common/Db.php');
+                return $this->fs->isFile($input->radPath . 'src/Framework/Db.php');
             }, '%s !srcDir'
         ]);
         $v->check('sampleContent', ['in', ['minimal', 'blog', 'test-content']]);

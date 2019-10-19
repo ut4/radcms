@@ -2,8 +2,8 @@
 
 namespace RadCms\Plugin;
 
-use RadCms\Request;
-use RadCms\Response;
+use RadCms\Framework\Request;
+use RadCms\Framework\Response;
 use RadCms\Common\LoggerAccess;
 
 /**
@@ -20,8 +20,8 @@ class PluginControllers {
     /**
      * GET /api/plugins: listaa kaikki lisäosat.
      *
-     * @param \RadCms\Request $request
-     * @param \RadCms\Response $response
+     * @param \RadCms\Framework\Request $request
+     * @param \RadCms\Framework\Response $response
      */
     public function handleGetPluginsRequest(Response $res) {
         $res->type('json')->send(array_map(function ($plugin) {
@@ -31,8 +31,8 @@ class PluginControllers {
     /**
      * GET /api/plugins/:name/install: asentaa lisäosan $name.
      *
-     * @param \RadCms\Request $request
-     * @param \RadCms\Response $response
+     * @param \RadCms\Framework\Request $request
+     * @param \RadCms\Framework\Response $response
      * @param \RadCms\PluginInstaller $installer
      */
     public function handleInstallPluginRequest(Request $req,
@@ -58,8 +58,8 @@ class PluginControllers {
     /**
      * GET /api/plugins/:name/uninstall: poistaa lisäosan $name.
      *
-     * @param \RadCms\Request $request
-     * @param \RadCms\Response $response
+     * @param \RadCms\Framework\Request $request
+     * @param \RadCms\Framework\Response $response
      * @param \RadCms\PluginInstaller $installer
      */
     public function handleUninstallPluginRequest(Request $req,

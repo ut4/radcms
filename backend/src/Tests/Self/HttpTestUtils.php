@@ -4,7 +4,7 @@ namespace RadCms\Tests\Self;
 
 use RadCms\RadCmsApp;
 use Auryn\Injector;
-use RadCms\Response;
+use RadCms\Framework\Response;
 
 trait HttpTestUtils {
     /**
@@ -40,14 +40,15 @@ trait HttpTestUtils {
         return $stub;
     }
     /**
-     * @param \RadCms\Request $req
-     * @param \RadCms\Response $res
-     * @param \RadCms\Common\FileSystemInterface $mockFs
+     * @param \RadCms\Framework\Request $req
+     * @param \RadCms\Framework\Response $res
+     * @param \RadCms\Framework\FileSystemInterface $mockFs
      * @param \Closure $makeDb = [get_class(), 'getDb']
      */
     public function makeRequest($req, $res, $mockFs, $makeDb = null) {
-        $app = RadCmsApp::create(include RAD_SITE_PATH . 'config.php', 'Tests',
-                                 $mockFs, $makeDb ?? [get_class(), 'getDb']);
+        $config = include RAD_SITE_PATH . 'config.php';
+        $app = RadCmsApp::create($config, 'Tests', $mockFs,
+                                 $makeDb ?? [get_class(), 'getDb']);
         $injector = new Injector;
         $injector->delegate(Response::class, function() use ($res) { return $res; });
         $app->handleRequest($req, $injector);

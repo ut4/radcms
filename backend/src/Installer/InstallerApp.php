@@ -3,8 +3,8 @@
 namespace RadCms\Installer;
 
 use AltoRouter;
-use RadCms\Request;
-use RadCms\Response;
+use RadCms\Framework\Request;
+use RadCms\Framework\Response;
 
 class InstallerApp {
     private $router;
@@ -22,8 +22,8 @@ class InstallerApp {
     /**
      * RadCMS:n installerin entry-point.
      *
-     * @param string|\RadCms\Request $urlOrRequest
-     * @param \RadCms\Response $response = null
+     * @param string|\RadCms\Framework\Request $urlOrRequest
+     * @param \RadCms\Framework\Response $response = null
      */
     public function handleRequest($urlOrRequest, $response = null) {
         $request = !($urlOrRequest instanceof Request)

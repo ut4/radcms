@@ -4,10 +4,10 @@ namespace Rad\Tests;
 
 use RadCms\Installer\InstallerApp;
 use RadCms\Tests\Self\DbTestCase;
-use RadCms\Request;
+use RadCms\Framework\Request;
 use RadCms\Tests\Self\HttpTestUtils;
 use RadCms\Installer\InstallerControllers;
-use RadCms\Common\FileSystem;
+use RadCms\Framework\FileSystem;
 
 final class InstallerTest extends DbTestCase {
     use HttpTestUtils;
@@ -172,7 +172,7 @@ define('RAD_BASE_URL', '{$s->input->baseUrl}/');
 define('RAD_BASE_PATH', '{$s->input->radPath}');
 define('RAD_SITE_PATH', '{$s->targetDir}/');
 }
-\$config = [
+return [
     'db.host'        => '{$s->input->dbHost}',
     'db.database'    => '{$s->input->dbDatabase}',
     'db.user'        => '{$s->input->dbUser}',

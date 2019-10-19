@@ -2,9 +2,9 @@
 
 namespace RadCms\Content;
 
-use RadCms\Request;
-use RadCms\Response;
-use RadCms\Common\Db;
+use RadCms\Framework\Request;
+use RadCms\Framework\Response;
+use RadCms\Framework\Db;
 
 /**
  * Handlaa /api/content, ja /api/content-type -alkuiset pyynnöt.
@@ -19,8 +19,8 @@ class ContentControllers {
     /**
      * GET /api/content/:id.
      *
-     * @param \RadCms\Request $req
-     * @param \RadCms\Response $res
+     * @param \RadCms\Framework\Request $req
+     * @param \RadCms\Framework\Response $res
      */
     public function handleGetContentNode(Request $req, Response $res) {
         return $res->type('json')->send([
@@ -33,8 +33,8 @@ class ContentControllers {
     /**
      * GET /api/content-type/:id.
      *
-     * @param \RadCms\Request $req
-     * @param \RadCms\Response $res
+     * @param \RadCms\Framework\Request $req
+     * @param \RadCms\Framework\Response $res
      */
     public function handleGetContentType(Request $req, Response $res) {
         return $res->type('json')->send([

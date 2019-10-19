@@ -3,7 +3,7 @@
 namespace RadCms\ContentType;
 
 use RadCms\Framework\GenericArray;
-use RadCms\Common\Db;
+use RadCms\Framework\Db;
 
 class ContentTypeCollection extends GenericArray {
     /**
@@ -13,7 +13,7 @@ class ContentTypeCollection extends GenericArray {
         parent::__construct(ContentTypeDef::class);
     }
     /**
-     * \RadCms\Common\Db $db = unll
+     * \RadCms\Framework\Db $db = unll
      */
     public function populateFromDb(Db $db = null) {
         $row = $db->fetchOne('select `activeContentTypes` from ${p}websiteState');

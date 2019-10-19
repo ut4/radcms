@@ -1,6 +1,6 @@
 <?php
 
-namespace RadCms;
+namespace RadCms\Website;
 
 class LayoutLookup {
     private $rules;

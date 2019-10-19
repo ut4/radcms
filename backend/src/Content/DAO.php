@@ -2,7 +2,7 @@
 
 namespace RadCms\Content;
 
-use RadCms\Common\Db;
+use RadCms\Framework\Db;
 use RadCms\ContentType\ContentTypeCollection;
 
 class DAO {
@@ -11,7 +11,7 @@ class DAO {
     private $frontendPanelInfos;
     private static $contentTypes;
     /**
-     * @param \RadCms\Common\Db $db
+     * @param \RadCms\Framework\Db $db
      * @param \RadCms\ContentType\ContentTypeCollection $contentTypes = null
      * @param bool $autopopulateContentTypes = true
      */

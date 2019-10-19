@@ -2,7 +2,7 @@
 
 namespace RadCms\Tests\Self;
 
-use RadCms\Response;
+use RadCms\Framework\Response;
 
 class MutedResponse extends Response {
     public function send($body = '') {}
