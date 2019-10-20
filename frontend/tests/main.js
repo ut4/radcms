@@ -2,7 +2,6 @@ import '../cpanel-app/tests/content-view-cmps-tests.js';
 import '../cpanel-app/tests/control-panel-cmp-tests.js';
 import '../cpanel-app/tests/site-graph-view-cmps-tests.js';
 import '../cpanel-app/tests/website-view-cmps-tests.js';
-import '../main-app/tests/app-website-view-cmps-tests.js';
 
 QUnit.config.autostart = false;
 QUnit.dump.maxDepth = 8; // default 5
