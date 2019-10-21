@@ -12,7 +12,7 @@ use RadCms\Content\DAO;
  */
 class MagicTemplate extends Template {
     private $__contentNodeDao;
-    private $__aliases;
+    private static $__aliases = [];
     /**
      * @param string $file
      * @param array $vars = null
@@ -21,7 +21,6 @@ class MagicTemplate extends Template {
     public function __construct($file, array $vars = null, DAO $dao = null) {
         parent::__construct($file, $vars);
         $this->__contentNodeDao = $dao;
-        $this->__aliases = [];
     }
     /**
      * Renderöi templaatin `${RAD_SITE_PATH}${$this->aliases[$name] || $name}.tmpl.php`.
@@ -34,9 +33,9 @@ class MagicTemplate extends Template {
      * @return string
      */
     public function __call($name, $args) {
-        if (isset($this->__aliases[$name]))
-            $name = $this->__aliases[$name];
-        return $this->doRender(RAD_SITE_PATH . $name . '.tmpl.php',
+        return $this->doRender((!array_key_exists($name, self::$__aliases)
+                                    ? RAD_SITE_PATH . $name . '.tmpl.php'
+                                    : self::$__aliases[$name]),
                                ['props' => $args ? $args[0] : new \stdClass()]);
     }
     /**
@@ -59,5 +58,15 @@ class MagicTemplate extends Template {
      */
     public function url($url) {
         return RAD_BASE_URL . ltrim($url, '/');
+    }
+    /**
+     * @param string $directiveName
+     * @param string $fullFilePath
+     * @throws \InvalidArgumentException
+     */
+    public static function addAlias($directiveName, $fullFilePath) {
+        if (array_key_exists($directiveName, self::$__aliases))
+            throw new \InvalidArgumentException("Alias {$directiveName} is already registered.");
+        self::$__aliases[$directiveName] = $fullFilePath;
     }
 }

@@ -2,7 +2,7 @@
 
 namespace Rad\Tests;
 
-use RadCms\RadCmsApp;
+use RadCms\App;
 use RadCms\Framework\FileSystem;
 use RadCms\Tests\Self\DbTestCase;
 use RadCms\Tests\_ValidAndInstalledPlugin\_ValidAndInstalledPlugin;
@@ -24,7 +24,7 @@ final class RadCmsTest extends DbTestCase {
             ->method('readDir')
             ->with($testPluginDirPath)
             ->willReturn([]);
-        RadCmsApp::create($this->config, $testPluginDirName, $mockFs, [get_class(), 'getDb']);
+        App::create($this->config, $testPluginDirName, $mockFs, [get_class(), 'getDb']);
     }
     public function testCreateAppValidatesFoundPlugins() {
         $runInvalid = function ($invalidClsPath, $config, $expectedError) {
@@ -33,7 +33,7 @@ final class RadCmsTest extends DbTestCase {
                 $mockFs->expects($this->once())
                     ->method('readDir')
                     ->willReturn(['foo/bar/baz/Tests/' . $invalidClsPath]);
-                RadCmsApp::create($config, 'Tests', $mockFs, [get_class(), 'getDb']);
+                App::create($config, 'Tests', $mockFs, [get_class(), 'getDb']);
             } catch (\RuntimeException $e) {
                 $this->assertEquals($expectedError, $e->getMessage());
             }
@@ -57,7 +57,7 @@ final class RadCmsTest extends DbTestCase {
             ->with($testPluginDirPath)
             ->willReturn([$testPluginDirPath . '/_ValidAndInstalledPlugin',
                           $testPluginDirPath . '/_ValidPlugin']);
-        $app = RadCmsApp::create($this->config, $testPluginDirName, $mockFs, function ($c) {
+        $app = App::create($this->config, $testPluginDirName, $mockFs, function ($c) {
             $db = self::getDb($c);
             $db->exec('UPDATE ${p}websiteState SET `installedPlugins`=' .
                       ' JSON_SET(`installedPlugins`, ?, 1)',

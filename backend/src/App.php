@@ -16,8 +16,11 @@ use Monolog\Logger;
 use Monolog\Handler\ErrorLogHandler;
 use RadCms\Common\LoggerAccess;
 use RadCms\Plugin\PluginCollection;
+use RadCms\Plugin\API;
+use RadCms\Framework\SessionInterface;
+use RadCms\Framework\NativeSession;
 
-class RadCmsApp {
+class App {
     public $ctx;
     /**
      * RadCMS:n entry-point.
@@ -36,14 +39,15 @@ class RadCmsApp {
         }
     }
     /**
-     * @param \Auryn\Injector $injector
+     * @param \Auryn\Injector $container
      * @param \RadCms\Framework\Request $request
      */
-    private function setupIocContainer($injector, $request) {
-        $this->ctx->injector = $injector;
+    private function setupIocContainer($container, $request) {
+        $this->ctx->injector = $container;
         $this->ctx->injector->share($this->ctx->db);
         $this->ctx->injector->share($this->ctx->plugins);
         $this->ctx->injector->share($request);
+        $this->ctx->injector->alias(SessionInterface::class, NativeSession::class);
     }
     /**
      * @param array $match
@@ -72,14 +76,15 @@ class RadCmsApp {
                                   $pluginsDir = 'Plugins',
                                   $fs = null,
                                   $makeDb = null) {
-        $app = new RadCmsApp();
+        $app = new App();
         $app->ctx = (object) ['injector' => null,
                               'router' => new AltoRouter(),
                               'db' => !$makeDb ? new Db($config) : $makeDb($config),
                               'websiteStateRaw' => null,
+                              'frontendJsFiles' => [],
                               'plugins' => null];
-        $app->ctx->router->addMatchTypes(['w' => '[0-9A-Za-z_]++']);
         $config = ['wiped' => 'clean'];
+        $app->ctx->router->addMatchTypes(['w' => '[0-9A-Za-z_]++']);
         //
         ContentModule::init($app->ctx);
         AuthModule::init($app->ctx);
@@ -87,8 +92,9 @@ class RadCmsApp {
         $app->ctx->plugins = self::scanAndMakePlugins($pluginsDir,
                                                       $fs ?? new FileSystem(),
                                                       $app->ctx);
+        $pluginApi = new API($app->ctx->router, $app->ctx->frontendJsFiles);
         foreach ($app->ctx->plugins->toArray() as $plugin) {
-            if ($plugin->isInstalled) $plugin->impl->init($app->ctx);
+            if ($plugin->isInstalled) $plugin->impl->init($pluginApi);
         }
         WebsiteModule::init($app->ctx);
         //

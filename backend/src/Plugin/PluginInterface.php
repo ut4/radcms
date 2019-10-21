@@ -4,9 +4,9 @@ namespace RadCms\Plugin;
 
 interface PluginInterface {
     /**
-     * @param object $ctx
+     * @param \RadCms\Plugin\API $api
      */
-    public function init($ctx);
+    public function init(API $api);
     /**
      * @param \RadCms\ContentType\ContentTypeMigrator $contentTypeMigrator
      * @return string|void|null 'Some error message', or null|void on success
