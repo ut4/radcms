@@ -57,7 +57,8 @@ class MagicTemplate extends Template {
      * @return string
      */
     public function url($url) {
-        return RAD_BASE_URL . ltrim($url, '/');
+        static $indexFile = !RAD_QUERY_VAR ? '' : 'index.php?' . RAD_QUERY_VAR . '=/';
+        return RAD_BASE_URL . $indexFile . ltrim($url, '/');
     }
     /**
      * @param string $directiveName

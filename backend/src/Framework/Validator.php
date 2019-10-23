@@ -59,9 +59,7 @@ class Validator {
         return true;
     }
     /**
-     * Palauttaa uuden present-rulen.
-     *
-     * @return bool
+     * @return array [($input: string, $key: string): bool, string]
      */
     public function present() {
         return [function ($input, $key) {
@@ -69,14 +67,21 @@ class Validator {
         }, '%s !present'];
     }
     /**
-     * Palauttaa uuden in-rulen.
-     *
      * @param array $arr
-     * @return bool
+     * @return array [($input: string, $key: string): bool, string]
      */
     public function in($arr) {
         return [function ($input, $key) use ($arr) {
             return $this->is($key, 'present') && in_array($input->$key, $arr);
         }, '%s !in'];
+    }
+    /**
+     * @return array [($input: string, $key: string): bool, string]
+     */
+    public function word() {
+        return [function ($input, $key) {
+            return $this->is($key, 'present') &&
+                   ctype_alnum(str_replace(['_', '-'], '', $input->$key));
+        }, '%s !word'];
     }
 }

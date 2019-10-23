@@ -57,6 +57,8 @@ class InstallerControllers {
         //
         if (!$v->is('siteName', 'present')) $input->siteName = 'My Site';
         if ($v->check('baseUrl', 'present')) $input->baseUrl = rtrim($input->baseUrl, '/') . '/';
+        if (!$v->is('mainQueryVar', 'present')) $input->mainQueryVar = '';
+        else $v->check('mainQueryVar', 'word');
         $v->check('radPath', 'present', [
             function ($input, $_key) {
                 $input->radPath = rtrim($input->radPath, '/') . '/';

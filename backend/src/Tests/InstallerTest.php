@@ -32,6 +32,7 @@ final class InstallerTest extends DbTestCase {
     public function testInstallerValidatesInvalidValues() {
         $input = (object)[
             'baseUrl' => [],
+            'mainQueryVar' => '%&"¤',
             'radPath' => 'notValid',
             'sampleContent' => 'foo',
             'dbHost' => [],
@@ -43,6 +44,7 @@ final class InstallerTest extends DbTestCase {
         ];
         $res = $this->createMockResponse(json_encode([
             'baseUrl !present',
+            'mainQueryVar !word',
             'radPath !srcDir',
             'sampleContent !in',
             'dbHost !present',
@@ -75,6 +77,7 @@ final class InstallerTest extends DbTestCase {
         $app->handleRequest(new Request('/', 'POST', $input), $res);
         $this->assertEquals('My Site', $input->siteName);
         $this->assertEquals('foo/', $input->baseUrl);
+        $this->assertEquals('', $input->mainQueryVar);
         $this->assertEquals('utf8', $input->dbCharset);
     }
     public function testInstallerCreatesDbSchemaAndInsertsSampleContent() {
@@ -100,6 +103,7 @@ final class InstallerTest extends DbTestCase {
         return (object) [
             'input' => (object) [
                 'baseUrl' => 'foo',
+                'mainQueryVar' => '',
                 'radPath' => RAD_BASE_PATH,
                 'sampleContent' => 'test-content',
                 'dbHost' => $config['db.host'],
@@ -168,7 +172,8 @@ final class InstallerTest extends DbTestCase {
                 ->with($s->targetDir . '/config.php',
 "<?php
 if (!defined('RAD_BASE_PATH')) {
-define('RAD_BASE_URL', '{$s->input->baseUrl}/');
+define('RAD_BASE_URL',  '{$s->input->baseUrl}/');
+define('RAD_QUERY_VAR', '{$s->input->mainQueryVar}');
 define('RAD_BASE_PATH', '{$s->input->radPath}');
 define('RAD_SITE_PATH', '{$s->targetDir}/');
 }

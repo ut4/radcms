@@ -50,12 +50,12 @@ class WebsiteControllers {
                 'dataToFrontend' => [
                     'page' => ['url' => $req->path],
                     'panels' => $this->cnd->getFrontendPanelInfos(),
-                    'baseUrl' => RAD_BASE_URL
+                    'baseUrl' => $template->url('/'),
                 ],
                 'pluginJsFiles' => $this->frontendJsFiles,
             ]);
             $this->session->commit();
-            $html = substr($html, 0, $bodyEnd) . '<iframe src="' . RAD_BASE_URL . 'cpanel/' . $frontendDataKey . '" id="insn-cpanel-iframe" style="position:fixed;border:none;height:100%;width:275px;right:0;top:0"></iframe><script>function setIframeVisible(setVisible){document.getElementById(\'insn-cpanel-iframe\').style.width=setVisible?\'100%\':\'275px\';}</script>' . substr($html, $bodyEnd);
+            $html = substr($html, 0, $bodyEnd) . '<iframe src="' . $template->url('/cpanel/' . $frontendDataKey) . '" id="insn-cpanel-iframe" style="position:fixed;border:none;height:100%;width:275px;right:0;top:0"></iframe><script>function setIframeVisible(setVisible){document.getElementById(\'insn-cpanel-iframe\').style.width=setVisible?\'100%\':\'275px\';}</script>' . substr($html, $bodyEnd);
         }
         $res->send($html);
     }

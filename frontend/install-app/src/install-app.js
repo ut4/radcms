@@ -16,6 +16,7 @@ class InstallApp extends preact.Component {
             dbCharset: 'utf8',
             siteName: 'test',
             baseUrl: '/',
+            mainQueryVar: '',
             radPath: this.sitePath + 'backend/',
             sampleContent: 'minimal'
         } : JSON.parse(l);
@@ -35,6 +36,11 @@ class InstallApp extends preact.Component {
                         $el('span', {'data-help-text': '.'}, 'Sivuston baseUrl'),
                         $el('input', {name: 'baseUrl', onChange: e => Form.receiveInputValue(e, this),
                                       value: this.state.baseUrl}, null)
+                    ),
+                    $el('label', null,
+                        $el('span', {'data-help-text': 'Url-parametri (index.php?parametrinNimi=/) mikäli url-rewrite -säännöt ei ole käytössä.'}, 'Url-parametri'),
+                        $el('input', {name: 'mainQueryVar', onChange: e => Form.receiveInputValue(e, this),
+                                      value: this.state.mainQueryVar}, null)
                     ),
                     $el('label', null,
                         $el('span', {'data-help-text': 'RadCMS lähdekoodin sijainti serverillä. Mikäli puuttuu, käytetään oletusta <todo>'}, 'RadCMS-backendin sijainti'),
@@ -103,7 +109,7 @@ class InstallApp extends preact.Component {
         }).then(() => {
             toast($el('p', null,
                 'Asennus onnistui. ',
-                $el('a', {href: this.state.baseUrl}, 'Siirry'),
+                $el('a', {href: this.state.baseUrl + (!this.state.mainQueryVar ? '' : 'index.php?' + this.state.mainQueryVar + '=/')}, 'Siirry'),
                 ' uudelle sivustolle.'
             ), 'success');
             window.scrollTo(0, 0);

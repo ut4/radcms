@@ -147,7 +147,8 @@ class Installer {
             $this->sitePath . 'config.php',
 "<?php
 if (!defined('RAD_BASE_PATH')) {
-define('RAD_BASE_URL', '{$s->baseUrl}');
+define('RAD_BASE_URL',  '{$s->baseUrl}');
+define('RAD_QUERY_VAR', '{$s->mainQueryVar}');
 define('RAD_BASE_PATH', '{$s->radPath}');
 define('RAD_SITE_PATH', '{$this->sitePath}');
 }
