@@ -1,6 +1,6 @@
 <?php
 
-namespace Rad\Tests;
+namespace RadCms\Tests;
 
 use RadCms\Tests\Self\DbTestCase;
 use RadCms\Tests\Self\HttpTestUtils;

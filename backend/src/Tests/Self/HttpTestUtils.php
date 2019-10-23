@@ -42,14 +42,18 @@ trait HttpTestUtils {
     /**
      * @param \RadCms\Framework\Request $req
      * @param \RadCms\Framework\Response $res
-     * @param \RadCms\Framework\FileSystemInterface $mockFs
-     * @param \Closure $makeDb = [get_class(), 'getDb']
+     * @param \RadCms\Framework\FileSystemInterface|\RadCms\App $mockFsOrApp
+     * @param \Closure $makeDb = null
      */
-    public function makeRequest($req, $res, $mockFs, $makeDb = null) {
-        $config = include RAD_SITE_PATH . 'config.php';
-        $app = App::create($config, 'Tests', $mockFs,
-                           $makeDb ?? [get_class(), 'getDb']);
-        $injector = new Injector;
+    public function makeRequest($req, $res, $mockFsOrApp, $makeDb = null) {
+        if (!($mockFsOrApp instanceof App)) {
+            $config = include RAD_SITE_PATH . 'config.php';
+            $app = App::create($config, 'Tests', $mockFsOrApp,
+                               $makeDb ?? [get_class(), 'getDb']);
+        } else {
+            $app = $mockFsOrApp;
+        }
+        $injector = new Injector();
         $injector->delegate(Response::class, function() use ($res) { return $res; });
         $app->handleRequest($req, $injector);
     }

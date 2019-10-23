@@ -3,6 +3,8 @@
 namespace RadCms\Tests\_ValidAndInstalledPlugin;
 
 use RadCms\Plugin\PluginInterface;
+use RadCms\Plugin\API;
+use RadCms\ContentType\ContentTypeMigrator;
 
 class _ValidAndInstalledPlugin implements PluginInterface {
     public static $instantiated = null;
@@ -11,13 +13,13 @@ class _ValidAndInstalledPlugin implements PluginInterface {
     public function __construct() {
         self::$instantiated = true;
     }
-    public function init($ctx) {
+    public function init(API $api) {
         self::$initialized = true;
     }
-    public function install($ctx) {
+    public function install(ContentTypeMigrator $migrator) {
         //
     }
-    public function uninstall($ctx) {
+    public function uninstall(ContentTypeMigrator $migrator) {
         self::$installed = false;
     }
 }

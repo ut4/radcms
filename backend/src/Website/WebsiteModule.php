@@ -7,12 +7,11 @@ use RadCms\ContentType\ContentTypeCollection;
 use RadCms\Framework\NativeSession;
 
 abstract class WebsiteModule {
-    private static $session;
     /**
      * @param object $ctx
      */
     public static function init($ctx) {
-        $ctx->router->map('GET', '/cpanel/[i:dataKey]', function () use ($ctx) {
+        $ctx->router->map('GET', '/cpanel/[i:dataKey]', function () {
             return [AdminControllers::class, 'handleRenderCpanelRequest'];
         });
         $ctx->router->map('GET', '*', function () use ($ctx) {

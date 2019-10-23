@@ -1,6 +1,6 @@
 <?php
 
-namespace Rad\Tests;
+namespace RadCms\Tests;
 
 use RadCms\Website\LayoutLookup;
 use PHPUnit\Framework\TestCase;

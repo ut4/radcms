@@ -1,6 +1,6 @@
 <?php
 
-namespace Rad\Tests;
+namespace RadCms\Tests;
 
 use RadCms\App;
 use RadCms\Framework\FileSystem;
@@ -59,9 +59,7 @@ final class RadCmsTest extends DbTestCase {
                           $testPluginDirPath . '/_ValidPlugin']);
         $app = App::create($this->config, $testPluginDirName, $mockFs, function ($c) {
             $db = self::getDb($c);
-            $db->exec('UPDATE ${p}websiteState SET `installedPlugins`=' .
-                      ' JSON_SET(`installedPlugins`, ?, 1)',
-                      ['$."_ValidAndInstalledPlugin"']);
+            self::markPluginAsInstalled('_ValidAndInstalledPlugin', $db);
             return $db;
         });
         $actuallyRegisteredPlugins = $app->ctx->plugins->toArray();
@@ -75,9 +73,18 @@ final class RadCmsTest extends DbTestCase {
         $this->assertEquals(false, _ValidPlugin::$instantiated);
         $this->assertEquals(false, _ValidPlugin::$initialized);
         //
-        if (self::$db->exec('UPDATE ${p}websiteState SET `installedPlugins`=' .
-                            ' JSON_REMOVE(`installedPlugins`, ?)',
-                            ['$."_ValidAndInstalledPlugin"']) < 1)
+        self::markPluginAsUninstalled('_ValidAndInstalledPlugin', self::$db);
+    }
+    public static function markPluginAsInstalled($pluginName, $db) {
+        if ($db->exec('UPDATE ${p}websiteState SET `installedPlugins`=' .
+                      ' JSON_SET(`installedPlugins`, ?, 1)',
+                      ['$."' . $pluginName . '"']) < 1)
+            throw new \RuntimeException('Failed to setup test data.');
+    }
+    public static function markPluginAsUninstalled($pluginName, $db) {
+        if ($db->exec('UPDATE ${p}websiteState SET `installedPlugins`=' .
+                      ' JSON_REMOVE(`installedPlugins`, ?)',
+                      ['$."' . $pluginName . '"']) < 1)
             throw new \RuntimeException('Failed to clean test data.');
     }
 }

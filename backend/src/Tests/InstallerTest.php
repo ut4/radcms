@@ -1,6 +1,6 @@
 <?php
 
-namespace Rad\Tests;
+namespace RadCms\Tests;
 
 use RadCms\Installer\InstallerApp;
 use RadCms\Tests\Self\DbTestCase;

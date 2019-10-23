@@ -14,6 +14,12 @@ class Response {
         $this->status($statusCode);
     }
     /**
+     * @param array|object|string $data
+     */
+    public function json($data) {
+        $this->type('json')->send($data);
+    }
+    /**
      * @param string $type 'html' | 'json'
      * @return Response
      */
@@ -33,7 +39,7 @@ class Response {
         return $this;
     }
     /**
-     * @param string|object $body = ''
+     * @param string|array|object $body = ''
      */
     public function send($body = '') {
         http_response_code($this->statusCode);
