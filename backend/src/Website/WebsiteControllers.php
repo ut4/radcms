@@ -12,20 +12,21 @@ use RadCms\Framework\SessionInterface;
  * Handlaa sivupyynnöt, (GET '/' tai GET '/sivunnimi').
  */
 class WebsiteControllers {
-    private $layoutLookup;
+    private $urlMatchers;
     private $cnd;
     private $session;
     private $frontendJsFiles;
     /**
-     * @param \RadCms\Website\LayoutLookup $layoutLookup
+     * @param \RadCms\Website\UrlMatcherCollection $urlMatchers
      * @param \RadCms\Content\DAO $cnd
+     * @param \RadCms\Framework\SessionInterface $session
      * @param array $frontendJsFiles Array<string>
      */
-    public function __construct(LayoutLookup $layoutLookup,
+    public function __construct(UrlMatcherCollection $urlMatchers,
                                 ContentNodeDAO $cnd,
                                 SessionInterface $session,
                                 $frontendJsFiles) {
-        $this->layoutLookup = $layoutLookup;
+        $this->urlMatchers = $urlMatchers;
         $this->cnd = $cnd;
         $this->session = $session;
         $this->frontendJsFiles = $frontendJsFiles;
@@ -37,12 +38,12 @@ class WebsiteControllers {
      * @param \RadCms\Framework\Response $response
      */
     public function handlePageRequest(Request $req, Response $res) {
-        $layout = $this->layoutLookup->findLayoutFor($req->path);
-        if (!$layout) {
+        $layoutFileName = $this->urlMatchers->findLayoutFor($req->path);
+        if (!$layoutFileName) {
             $res->send('404');
             return;
         }
-        $template = new MagicTemplate(RAD_SITE_PATH . $layout, null, $this->cnd);
+        $template = new MagicTemplate(RAD_SITE_PATH . $layoutFileName, null, $this->cnd);
         $html = $template->render(['url' => $req->path ? explode('/', ltrim($req->path, '/')) : ['']]);
         if ($req->user && ($bodyEnd = strpos($html, '</body>')) > 1) {
             $frontendDataKey = strval(time());

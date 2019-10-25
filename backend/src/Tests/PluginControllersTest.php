@@ -59,7 +59,7 @@ final class PluginControllersTest extends DbTestCase {
         $s = $this->setupTest2();
         //
         $req = new Request("/api/plugins/{$s->testPluginName}/uninstall", 'PUT');
-        $this->makeRequest($req, $s->res, $s->mockFs, $s->makeDb);
+        $this->makeRequest($req, $s->res, $s->mockFs);
         //
         $this->verifyUninstalledPlugin();
         $this->verifyUnregisteredPluginFromDb($s);
@@ -70,20 +70,15 @@ final class PluginControllersTest extends DbTestCase {
         $mockFs = $this->createMock(FileSystem::class);
         $mockFs->expects($this->once())->method('readDir')->willReturn(
             [RAD_BASE_PATH . 'src/Tests/' . $testPluginName]);
-        $makeDb = function ($c) use ($testPluginName) {
-            $db = self::getDb($c);
-            $db->exec('UPDATE ${p}websiteState SET `installedPlugins`=' .
-                      ' JSON_SET(`installedPlugins`, ?, ?)',
-                      ['$."' . $testPluginName . '"', 1]);
-            return $db;
-        };
+        self::$db->exec('UPDATE ${p}websiteState SET `installedPlugins`=' .
+                        ' JSON_SET(`installedPlugins`, ?, ?)',
+                        ['$."' . $testPluginName . '"', 1]);
         _ValidAndInstalledPlugin::$installed = true;
         return (object)[
             'testPluginName' => $testPluginName,
             'originalInstallState' => _ValidAndInstalledPlugin::$installed,
             'res' => $this->createMockResponse(['ok' => 'ok'], 200, 'json'),
             'mockFs' => $mockFs,
-            'makeDb' => $makeDb
         ];
     }
     private function verifyUninstalledPlugin() {

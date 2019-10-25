@@ -85,7 +85,7 @@ final class InstallerTest extends DbTestCase {
         $this->addFsExpectation('checksRadPathIsValid', $s);
         $this->addFsExpectation('readsDataFiles', $s);
         $this->addFsExpectation('readsSampleContentTemplateFilesDir', $s);
-        $this->addFsExpectation('clonesSampleContentTemplateFiles', $s);
+        $this->addFsExpectation('clonesTemplateFilesAndSiteIniFile', $s);
         $this->addFsExpectation('generatesConfigFile', $s);
         //
         $res = $this->createMockResponse('{"ok":"ok"}');
@@ -129,7 +129,7 @@ final class InstallerTest extends DbTestCase {
                 ->method('read')
                 ->withConsecutive(
                     [$s->input->radPath . 'schema.mariadb.sql'],
-                    [$s->sampleContentBasePath . 'content-types.json'],
+                    [$s->sampleContentBasePath . 'site.ini'],
                     [$s->sampleContentBasePath . 'sample-data.sql']
                 )
                 ->willReturnOnConsecutiveCalls(
@@ -137,7 +137,9 @@ final class InstallerTest extends DbTestCase {
                     ' CREATE TABLE ${p}websiteState (`activeContentTypes` TEXT);' .
                     ' INSERT INTO ${p}websiteState values (\'{}\');',
                     //
-                    '[{"name":"Movies","friendlyName":"Elokuvat","fields":{"title":"text"}}]',
+                    '[ContentType:Movies]' . PHP_EOL .
+                    'friendlyName=Elokuvat' . PHP_EOL .
+                    'fields[title]=text',
                     //
                     'INSERT INTO ${p}Movies values (1,\'Foo\')'
                 );
@@ -153,15 +155,18 @@ final class InstallerTest extends DbTestCase {
                 ]);
             return;
         }
-        if ($expectation == 'clonesSampleContentTemplateFiles') {
-            $s->mockFs->expects($this->exactly(2))
+        if ($expectation == 'clonesTemplateFilesAndSiteIniFile') {
+            $s->mockFs->expects($this->exactly(3))
                 ->method('copy')
                 ->withConsecutive([
+                    $s->sampleContentBasePath . 'site.ini',
+                    $s->targetDir . '/site.ini',
+                ], [
                     $s->sampleContentBasePath . 'main.tmpl.php',
-                    $s->targetDir . '/main.tmpl.php'
+                    $s->targetDir . '/main.tmpl.php',
                 ], [
                     $s->sampleContentBasePath . 'Another.tmpl.php',
-                    $s->targetDir . '/Another.tmpl.php'
+                    $s->targetDir . '/Another.tmpl.php',
                 ])
                 ->willReturn(true);
             return;

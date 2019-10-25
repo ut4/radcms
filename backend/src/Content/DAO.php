@@ -6,25 +6,17 @@ use RadCms\Framework\Db;
 use RadCms\ContentType\ContentTypeCollection;
 
 class DAO {
-    private $db;
-    private $counter;
-    private $frontendPanelInfos;
-    private static $contentTypes;
+    protected $db;
+    protected $counter;
+    protected $frontendPanelInfos;
+    protected $contentTypes;
     /**
      * @param \RadCms\Framework\Db $db
-     * @param \RadCms\ContentType\ContentTypeCollection $contentTypes = null
-     * @param bool $autopopulateContentTypes = true
+     * @param \RadCms\ContentType\ContentTypeCollection $contentTypes
      */
-    public function __construct(Db $db,
-                                ContentTypeCollection $contentTypes = null,
-                                $autopopulateContentTypes = true) {
+    public function __construct(Db $db, ContentTypeCollection $contentTypes) {
         $this->db = $db;
-        if (!self::$contentTypes)
-            self::$contentTypes = new ContentTypeCollection();
-        if ($contentTypes)
-            self::$contentTypes->merge($contentTypes);
-        else if ($autopopulateContentTypes && !self::$contentTypes->toArray())
-            self::$contentTypes->populateFromDb($db);
+        $this->contentTypes = $contentTypes;
         $this->counter = 0;
         $this->frontendPanelInfos = [];
     }
@@ -33,8 +25,7 @@ class DAO {
      * @return \RadCms\Content\Query
      */
     public function fetchOne($contentTypeName) {
-        if (!($type = self::$contentTypes->find('name', $contentTypeName)))
-            throw new \InvalidArgumentException("Content type `{$contentTypeName}` not registered");
+        if (!($type = $this->getContentType($contentTypeName))) return;
         return new Query(++$this->counter, $type, true, $this);
     }
     /**
@@ -42,8 +33,7 @@ class DAO {
      * @return \RadCms\Content\Query
      */
     public function fetchAll($contentTypeName) {
-        if (!($type = self::$contentTypes->find('name', $contentTypeName)))
-            throw new \InvalidArgumentException("Content type `{$contentTypeName}` not registered");
+        if (!($type = $this->getContentType($contentTypeName))) return;
         return new Query(++$this->counter, $type, false, $this);
     }
     /**
@@ -84,6 +74,15 @@ class DAO {
      */
     public function getFrontendPanelInfos() {
         return array_values($this->frontendPanelInfos);
+    }
+    /**
+     * @return \RadCms\ContentType\ContentTypeDef
+     * @throws \InvalidArgumentException
+     */
+    protected function getContentType($name) {
+        if (!($type = $this->contentTypes->find($name)))
+            throw new \InvalidArgumentException("Content type `{$name}` not registered");
+        return $type;
     }
 }
 

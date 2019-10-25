@@ -43,13 +43,12 @@ trait HttpTestUtils {
      * @param \RadCms\Framework\Request $req
      * @param \RadCms\Framework\Response $res
      * @param \RadCms\Framework\FileSystemInterface|\RadCms\App $mockFsOrApp
-     * @param \Closure $makeDb = null
+     * @param \RadCms\Framework\Db $db = null
      */
-    public function makeRequest($req, $res, $mockFsOrApp, $makeDb = null) {
+    public function makeRequest($req, $res, $mockFsOrApp, $db = null) {
         if (!($mockFsOrApp instanceof App)) {
-            $config = include RAD_SITE_PATH . 'config.php';
-            $app = App::create($config, 'Tests', $mockFsOrApp,
-                               $makeDb ?? [get_class(), 'getDb']);
+            if (!$db) $db = DbTestCase::getDb(include RAD_SITE_PATH . 'config.php');
+            $app = App::create($db, $mockFsOrApp, 'Tests');
         } else {
             $app = $mockFsOrApp;
         }

@@ -29,7 +29,7 @@ class PluginControllers {
         }, $this->plugins->toArray()));
     }
     /**
-     * GET /api/plugins/:name/install: asentaa lisäosan $name.
+     * PUT /api/plugins/:name/install: asentaa lisäosan $name.
      *
      * @param \RadCms\Framework\Request $request
      * @param \RadCms\Framework\Response $response
@@ -38,7 +38,7 @@ class PluginControllers {
     public function handleInstallPluginRequest(Request $req,
                                                Response $res,
                                                PluginInstaller $installer) {
-        if (($plugin = $this->plugins->find('name', $req->params->name))) {
+        if (($plugin = $this->plugins->find($req->params->name))) {
             try {
                 $errorMessage = $installer->install($plugin);
                 if (!$errorMessage) {
@@ -56,7 +56,7 @@ class PluginControllers {
         $res->type('json')->status(500)->send(['error' => $errorMessage]);
     }
     /**
-     * GET /api/plugins/:name/uninstall: poistaa lisäosan $name.
+     * PUT /api/plugins/:name/uninstall: poistaa lisäosan $name.
      *
      * @param \RadCms\Framework\Request $request
      * @param \RadCms\Framework\Response $response
@@ -65,7 +65,7 @@ class PluginControllers {
     public function handleUninstallPluginRequest(Request $req,
                                                  Response $res,
                                                  PluginInstaller $installer) {
-        if (($plugin = $this->plugins->find('name', $req->params->name))) {
+        if (($plugin = $this->plugins->find($req->params->name))) {
             try {
                 $errorMessage = $installer->uninstall($plugin);
                 if (!$errorMessage) {

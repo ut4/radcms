@@ -4,6 +4,8 @@ namespace RadCms;
 
 use Auryn\Injector;
 use AltoRouter;
+use Monolog\Logger;
+use Monolog\Handler\ErrorLogHandler;
 use RadCms\Framework\Db;
 use RadCms\Content\ContentModule;
 use RadCms\Auth\AuthModule;
@@ -12,16 +14,17 @@ use RadCms\Plugin\PluginModule;
 use RadCms\Framework\FileSystemInterface;
 use RadCms\Framework\FileSystem;
 use RadCms\Plugin\PluginInterface;
-use Monolog\Logger;
-use Monolog\Handler\ErrorLogHandler;
 use RadCms\Common\LoggerAccess;
 use RadCms\Plugin\PluginCollection;
 use RadCms\Plugin\API;
 use RadCms\Framework\SessionInterface;
 use RadCms\Framework\NativeSession;
+use RadCms\Website\SiteConfig;
+use RadCms\ContentType\ContentTypeCollection;
 
 class App {
-    public $ctx;
+    private $ctx;
+    public $plugins;
     /**
      * RadCMS:n entry-point.
      *
@@ -32,8 +35,11 @@ class App {
         $request->user = (object) ['id' => 1];
         if (($match = $this->ctx->router->match($request->path, $request->method))) {
             $request->params = (object)$match['params'];
-            $this->setupIocContainer($injector ?? new Injector(), $request);
-            $this->ctx->injector->execute($this->makeRouteMatchInvokePath($match));
+            $siteConfig = new SiteConfig();
+            $siteConfig->load(new FileSystem, RAD_SITE_PATH . 'site.ini', false);
+            $injector = $injector ?? new Injector();
+            $this->setupIocContainer($injector, $request, $siteConfig->urlMatchers);
+            $injector->execute($this->makeRouteMatchInvokePath($match));
         } else {
             throw new \RuntimeException("No route for {$request->path}");
         }
@@ -41,13 +47,16 @@ class App {
     /**
      * @param \Auryn\Injector $container
      * @param \RadCms\Framework\Request $request
+     * @param \RadCms\Website\UrlMatcherCollection $urlMatchers
      */
-    private function setupIocContainer($container, $request) {
-        $this->ctx->injector = $container;
-        $this->ctx->injector->share($this->ctx->db);
-        $this->ctx->injector->share($this->ctx->plugins);
-        $this->ctx->injector->share($request);
-        $this->ctx->injector->alias(SessionInterface::class, NativeSession::class);
+    private function setupIocContainer($container, $request, $urlMatchers) {
+        $container->share($this->ctx->db);
+        $container->share($this->ctx->contentTypes);
+        $container->share($this->plugins);
+        $container->share($urlMatchers);
+        $container->share($request);
+        $container->defineParam('frontendJsFiles', $this->ctx->frontendJsFiles);
+        $container->alias(SessionInterface::class, NativeSession::class);
     }
     /**
      * @param array $match
@@ -67,52 +76,67 @@ class App {
     ////////////////////////////////////////////////////////////////////////////
 
     /**
-     * @param array &$config
-     * @param string $pluginsDir = 'Plugins'
+     * @param array|\RadCms\Framework\Db &$configOrDb
      * @param \RadCms\Framework\FileSystemInterface $fs = null
-     * @param \Closure $makeDb = new Db($config)
+     * @param string $pluginsDir = 'Plugins'
      */
-    public static function create(&$config,
-                                  $pluginsDir = 'Plugins',
+    public static function create(&$configOrDb,
                                   $fs = null,
-                                  $makeDb = null) {
-        $app = new App();
-        $app->ctx = (object) ['injector' => null,
-                              'router' => new AltoRouter(),
-                              'db' => !$makeDb ? new Db($config) : $makeDb($config),
-                              'websiteStateRaw' => null,
-                              'frontendJsFiles' => [],
-                              'plugins' => null];
-        $config = ['wiped' => 'clean'];
-        $app->ctx->router->addMatchTypes(['w' => '[0-9A-Za-z_]++']);
-        //
-        ContentModule::init($app->ctx);
-        AuthModule::init($app->ctx);
-        PluginModule::init($app->ctx);
-        $app->ctx->plugins = self::scanAndMakePlugins($pluginsDir,
-                                                      $fs ?? new FileSystem(),
-                                                      $app->ctx);
-        $pluginApi = new API($app->ctx->router, $app->ctx->frontendJsFiles);
-        foreach ($app->ctx->plugins->toArray() as $plugin) {
-            if ($plugin->isInstalled) $plugin->impl->init($pluginApi);
-        }
-        WebsiteModule::init($app->ctx);
-        //
+                                  $pluginsDir = 'Plugins') {
         $logger = new Logger('mainLogger');
         $logger->pushHandler(new ErrorLogHandler());
         LoggerAccess::setLogger($logger);
+        //
+        $app = new App();
+        $app->plugins = null;
+        $configWasProvided = !($configOrDb instanceof Db);
+        $app->ctx = (object) ['router' => new AltoRouter(),
+                              'db' => $configWasProvided ? new Db($configOrDb) : $configOrDb,
+                              'contentTypes' => null,
+                              'frontendJsFiles' => []];
+        $app->ctx->router->addMatchTypes(['w' => '[0-9A-Za-z_]++']);
+        if ($configWasProvided) $configOrDb = ['wiped' => 'clean'];
+        //
+        [$installedPluginNames, $app->ctx->contentTypes] = self::fetchAndParseWebsiteState($app->ctx->db);
+        self::scanAndInitPlugins($pluginsDir, $fs ?? new FileSystem(), $app, $installedPluginNames);
+        ContentModule::init($app->ctx);
+        AuthModule::init($app->ctx);
+        PluginModule::init($app->ctx);
+        WebsiteModule::init($app->ctx);
+        //
         return $app;
     }
-    private static function scanAndMakePlugins($pluginsDir,
-                                               FileSystemInterface $fs,
-                                               $ctx) {
-        $pluginCollection = self::scanAndMakePluginsFromDisk($pluginsDir, $fs);
-        self::syncPluginStates($pluginCollection, $ctx);
-        self::instantiateInstalledPlugins($pluginCollection);
-        return $pluginCollection;
+    private static function fetchAndParseWebsiteState($db) {
+        if (!($row = $db->fetchOne(
+            'select `activeContentTypes`, `installedPlugins`' .
+            ' from ${p}websiteState'
+        ))) {
+            throw new \RuntimeException('Failed to fetch websiteState');
+        }
+        //
+        $installedPluginNames = json_decode($row['installedPlugins'], true);
+        if (!is_array($installedPluginNames)) $installedPluginNames = [];
+        //
+        if (!($ctypesData = json_decode($row['activeContentTypes'], true)))
+            throw new \RuntimeException('Failed to parse activeContentTypes');
+        $contentTypes = new ContentTypeCollection();
+        foreach ($ctypesData as $ctypeName => $remainingArgs)
+            $contentTypes->add($ctypeName, ...$remainingArgs);
+        //
+        return [$installedPluginNames, $contentTypes];
     }
-    private static function scanAndMakePluginsFromDisk($pluginsDir,
-                                                       FileSystemInterface $fs) {
+    private static function scanAndInitPlugins($pluginsDir, $fs, $app, $installedPluginNames) {
+        $app->plugins = self::scanPluginsFromDisk($pluginsDir, $fs);
+        $pluginApi = new API($app->ctx->router, $app->ctx->frontendJsFiles);
+        foreach ($app->plugins->toArray() as &$plugin) {
+            if (($plugin->isInstalled = array_key_exists($plugin->name, $installedPluginNames))) {
+                $plugin->instantiate();
+                $plugin->impl->init($pluginApi);
+            }
+        }
+    }
+    private static function scanPluginsFromDisk($pluginsDir,
+                                                FileSystemInterface $fs) {
         $out = new PluginCollection();
         $paths = $fs->readDir(RAD_BASE_PATH . 'src/' . $pluginsDir, '*', GLOB_ONLYDIR);
         foreach ($paths as $path) {
@@ -125,24 +149,5 @@ class App {
             $out->add($clsName, $clsPath);
         }
         return $out;
-    }
-    private static function syncPluginStates($pluginCollection, $ctx) {
-        if (!($ctx->websiteStateRaw = $ctx->db->fetchOne(
-            'select `layoutMatchers`,`activeContentTypes`,`installedPlugins`' .
-            ' from ${p}websiteState'
-        ))) {
-            throw new \RuntimeException('Failed to fetch websiteState');
-        }
-        $installedPluginNames = json_decode($ctx->websiteStateRaw['installedPlugins'], true);
-        if (!is_array($installedPluginNames)) $installedPluginNames = [];
-        // Lisäosa on asennettu vain jos siitä löytyy merkintä tietokannasta.
-        foreach ($pluginCollection->toArray() as &$plugin) {
-            $plugin->isInstalled = array_key_exists($plugin->name, $installedPluginNames);
-        }
-    }
-    private static function instantiateInstalledPlugins($pluginCollection) {
-        foreach ($pluginCollection->toArray() as &$plugin) {
-            if ($plugin->isInstalled) $plugin->instantiate();
-        }
     }
 }

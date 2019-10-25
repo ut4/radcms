@@ -28,11 +28,11 @@ class GenericArray {
         $this->vals = array_merge($this->vals, $other->toArray());
     }
     /**
-     * @param string $key
      * @param string $val
+     * @param string $key = 'name'
      * @return object|null
      */
-    public function find($key, $val) {
+    public function find($val, $key = 'name') {
         foreach ($this->vals as $t) {
             if ($t->$key === $val) return $t;
         }

@@ -1,7 +1,0 @@
-[
-    {
-        "name": "GenericBlobs",
-        "friendlyName": "Geneerinen",
-        "fields": {"name": "text", "content": "text"}
-    }
-]

@@ -7,32 +7,34 @@ use RadCms\ContentType\ContentTypeMigrator;
 use RadCms\Tests\Self\HttpTestUtils;
 use RadCms\App;
 use RadCms\Framework\FileSystem;
-use RadCms\Tests\RadCmsTest;
+use RadCms\Tests\AppTest;
 use RadCms\Framework\Request;
 use RadCms\Tests\Self\MutedResponse;
+use RadCms\Tests\_MoviesPlugin\_MoviesPlugin;
 
 final class PluginsAPIIntegrationTest extends DbTestCase {
     use HttpTestUtils;
-    private $config;
+    private $testPlugin;
     /**
      * @before
      */
     public function beforeEach() {
-        $this->config = include RAD_SITE_PATH . 'config.php';
+        $db = self::getDb(include RAD_SITE_PATH . 'config.php');
+        // Tekee suunnilleen saman kuin PUT /api/plugins/_MoviesPlugin/install
+        $this->testPlugin = new _MoviesPlugin();
+        $this->testPlugin->install(new ContentTypeMigrator($db));
+        AppTest::markPluginAsInstalled('_MoviesPlugin', $db);
     }
     /**
      * @after
      */
     public function afterEach() {
-        RadCmsTest::markPluginAsUninstalled('_MoviesPlugin', self::$db);
-        if (self::$db->exec('UPDATE ${p}websiteState SET `activeContentTypes` =' .
-                            ' JSON_REMOVE(`activeContentTypes`, \'$."Movies"\')') < 1)
-            throw new \RuntimeException('Failed to clean test data.');
-        self::$db->exec('DROP TABLE ${p}Movies');
+        // Tekee suunnilleen saman kuin PUT /api/plugins/_MoviesPlugin/uninstall
+        $this->testPlugin->uninstall(new ContentTypeMigrator(self::$db));
+        AppTest::markPluginAsUninstalled('_MoviesPlugin', self::$db);
     }
     public function testPluginCanCRUDRead() {
         $s = $this->setupTest1();
-        $this->simulatePluginInstall($s);
         $this->insertTestMovie();
         $this->setExpectedResponseBody('[{"id":"1","title":"Fus"}]', $s);
         $this->sendListMoviesRequest($s);
@@ -41,17 +43,9 @@ final class PluginsAPIIntegrationTest extends DbTestCase {
         $mockFs = $this->createMock(FileSystem::class);
         $mockFs->method('readDir')->willReturn([RAD_BASE_PATH . 'src/Tests/_MoviesPlugin']);
         return (object) [
-            'app' => App::create($this->config, 'Tests', $mockFs, function ($c) {
-                $db = self::getDb($c);
-                RadCmsTest::markPluginAsInstalled('_MoviesPlugin', $db);
-                return $db;
-            }),
+            'app' => App::create(self::$db, $mockFs, 'Tests'),
             'expectedResponseBody' => null
         ];
-    }
-    private function simulatePluginInstall($s) {
-        $testPlugin = $s->app->ctx->plugins->toArray()[0];
-        $testPlugin->impl->install(new ContentTypeMigrator(self::$db));
     }
     private function insertTestMovie() {
         if (self::$db->exec('INSERT INTO ${p}Movies VALUES (1,\'Fus\')') < 1)

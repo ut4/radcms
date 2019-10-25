@@ -7,6 +7,7 @@ use RadCms\Common\LoggerAccess;
 use RadCms\Framework\FileSystemInterface;
 use RadCms\ContentType\ContentTypeMigrator;
 use RadCms\ContentType\ContentTypeCollection;
+use RadCms\Website\SiteConfig;
 
 class Installer {
     private $sitePath;
@@ -34,7 +35,7 @@ class Installer {
         if (($error = $this->openDbAndCreateSchema($settings)) ||
             ($error = $this->createSampleContentTypes($settings)) ||
             ($error = $this->insertWebsiteAndSampleContent($settings)) ||
-            ($error = $this->cloneSampleContentTemplateFiles($settings)) ||
+            ($error = $this->cloneTemplatesAndIniFile($settings)) ||
             ($error = $this->generateConfigFile($settings))) {
             return $error;
         }
@@ -83,20 +84,14 @@ class Installer {
      * @return string|null
      */
     private function createSampleContentTypes($s) {
-        $path = "{$s->radPath}sample-content/{$s->sampleContent}/content-types.json";
-        if (!($json = $this->fs->read($path)))
-            return 'Failed to read ' . $path;
-        if (!($contentTypesInput = json_decode($json, true)))
-            return 'Failed to parse ' . $path;
-        //
-        $contentTypes = new ContentTypeCollection();
-        foreach ($contentTypesInput as $type) $contentTypes->add(
-            $type['name'] ?? '',
-            $type['friendlyName'] ?? '',
-            $type['fields'] ?? ''
-        );
+        $ini = new SiteConfig();
         try {
-            (new ContentTypeMigrator($this->db))->installMany($contentTypes);
+            $ini->load($this->fs, "{$s->radPath}sample-content/{$s->sampleContent}/site.ini");
+        } catch (\RuntimeException $e) {
+            return $e->getMessage();
+        }
+        try {
+            (new ContentTypeMigrator($this->db))->installMany($ini->contentTypes);
         } catch (\RuntimeException | \PDOException $e) {
             LoggerAccess::getLogger()->log('error', $e->getMessage());
             return 'Failed to create sample content types';
@@ -123,12 +118,14 @@ class Installer {
      * @param object $s settings
      * @return string|null
      */
-    private function cloneSampleContentTemplateFiles($s) {
+    private function cloneTemplatesAndIniFile($s) {
         $dirPath = "{$s->radPath}sample-content/{$s->sampleContent}/";
         $dirPathLen = mb_strlen($dirPath);
-        $fileNames = array_map(function ($filePath) use ($dirPathLen) {
-            return substr($filePath, $dirPathLen);
-        }, $this->fs->readDir($dirPath, '*.tmpl.php'));
+        //
+        $fileNames = ['site.ini'];
+        foreach ($this->fs->readDir($dirPath, '*.tmpl.php') as $filePath) {
+            $fileNames[] = substr($filePath, $dirPathLen);
+        }
         //
         foreach ($fileNames as $fileName) {
             if (!$this->fs->copy($dirPath . $fileName,
