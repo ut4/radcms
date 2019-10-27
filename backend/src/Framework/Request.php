@@ -37,7 +37,7 @@ class Request {
             else {
                 if (!($json = file_get_contents('php://input')))
                     $body = new \stdClass();
-                else if (($body = json_decode($json)) === null)
+                elseif (($body = json_decode($json)) === null)
                     throw new \RuntimeException('Invalid json input');
             }
         }

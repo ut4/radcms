@@ -46,4 +46,11 @@ class Response {
         header('Content-Type: ' .  $this->contentType);
         echo is_string($body) ? $body : json_encode($body);
     }
+    /**
+     * @param string $to
+     * @param bool $isPermanent = true
+     */
+    public function redirect($to, $isPermanent = true) {
+        header('Location: ' . $to, true, $isPermanent ? 301 : 302);
+    }
 }

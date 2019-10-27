@@ -33,7 +33,7 @@ final class PluginsAPIIntegrationTest extends DbTestCase {
         }
     }
     public static function tearDownAfterClass($_ = null) {
-        parent::tearDownAfterClass($_);
+        parent::tearDownAfterClass(null);
         self::$db->exec('UPDATE ${p}websiteState SET' .
                         ' `installedContentTypesLastUpdated` = NULL');
     }
@@ -79,5 +79,33 @@ final class PluginsAPIIntegrationTest extends DbTestCase {
             ->willReturn($res);
         $req = new Request('/movies', 'GET');
         $this->makeRequest($req, $res, $s->app);
+    }
+
+
+    ////////////////////////////////////////////////////////////////////////////
+
+
+    public function testPluginCanCRUDCreate() {
+        $s = $this->setupTest2();
+        $this->setExpectedResponseBody('{"my":"response"}', $s);
+        $this->sendInsertMovieRequest($s);
+        $this->verifyMovieWasInsertedToDb();
+    }
+    private function setupTest2() {
+        return $this->setupTest1();
+    }
+    private function sendInsertMovieRequest($s) {
+        $res = $this->createMock(MutedResponse::class);
+        $res->expects($this->once())
+            ->method('json')
+            ->with($s->expectedResponseBody)
+            ->willReturn($res);
+        $req = new Request('/movies', 'POST', (object) ['title' => 'A movie']);
+        $this->makeRequest($req, $res, $s->app);
+    }
+    private function verifyMovieWasInsertedToDb() {
+        $this->assertEquals(1, count(self::$db->fetchAll(
+            'SELECT `id` FROM ${p}Movies WHERE `title` = \'A movie\''
+        )));
     }
 }

@@ -29,7 +29,7 @@ class Validator {
      * @return bool
      */
     public function is($key, ...$rules) {
-        array_push($rules, false);
+        $rules[] = false;
         return $this->check($key, ...$rules);
     }
     /**
@@ -45,14 +45,14 @@ class Validator {
         foreach ($rules as $rule) {
             if (is_string($rule)) {
                 $rule = $this->$rule();
-            } else if (is_array($rule) && is_string($rule[0])) {
+            } elseif (is_array($rule) && is_string($rule[0])) {
                 [$rname, $args] = $rule;
                 $rule = $this->$rname($args);
-            } else if (is_bool($rule)) {
+            } elseif (is_bool($rule)) {
                 break;
             }
             if (!$rule[0]($this->input, $key)) {
-                if ($doLog) array_push($this->errors, sprintf($rule[1], $key));
+                if ($doLog) $this->errors[] = sprintf($rule[1], $key);
                 return false;
             }
         }

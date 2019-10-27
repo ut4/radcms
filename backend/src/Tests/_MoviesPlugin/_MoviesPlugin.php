@@ -15,6 +15,8 @@ class _MoviesPlugin implements PluginInterface {
     public function init(API $api) {
         $api->registerRoute('GET', '/movies', MoviesControllers::class,
                             'handleGetMoviesRequest');
+        $api->registerRoute('POST', '/movies', MoviesControllers::class,
+                            'handleCreateMovieRequest');
     }
     public function install(ContentTypeMigrator $contentTypeMigrator) {
         $contentTypeMigrator->installMany($this->myContentTypes);

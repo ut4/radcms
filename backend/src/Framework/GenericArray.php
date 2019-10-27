@@ -21,9 +21,9 @@ class GenericArray {
      */
     public function add($firstArgOrT, ...$remainingArgs) {
         if (!is_a($firstArgOrT, $this->T))
-            array_push($this->vals, new $this->T($firstArgOrT, ...$remainingArgs));
+            $this->vals[] = new $this->T($firstArgOrT, ...$remainingArgs);
         else
-            array_push($this->vals, $firstArgOrT);
+            $this->vals[] = $firstArgOrT;
     }
     /**
      * @param \RadCms\Framework\GenericArray $other
@@ -34,7 +34,7 @@ class GenericArray {
     /**
      * @param string $val
      * @param string $key = 'name'
-     * @return object|null
+     * @return object|null T
      */
     public function find($val, $key = 'name') {
         foreach ($this->vals as $t) {
@@ -45,7 +45,7 @@ class GenericArray {
     /**
      * @param string $val
      * @param string $key = 'name'
-     * @return object|null
+     * @return mixed
      */
     public function filter($val, $key = 'name') {
         $out = new static();

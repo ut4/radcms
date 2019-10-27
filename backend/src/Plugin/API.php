@@ -37,7 +37,7 @@ class API {
      * @param string $scriptFileName
      */
     public function registerJsFile($scriptFileName) {
-        array_push($this->jsFiles, $scriptFileName);
+        $this->jsFiles[] = $scriptFileName;
     }
     /**
      * Rekisteröi reitti. Esim. mapRoute('GET',

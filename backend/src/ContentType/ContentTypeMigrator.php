@@ -107,8 +107,8 @@ class ContentTypeMigrator {
         $placeholders = [];
         $values = [];
         foreach ($ctypeDefs as $t) {
-            array_push($values, '$."' . $t->name . '"');
-            array_push($placeholders, '?');
+            $values[] = '$."' . $t->name . '"';
+            $placeholders[] = '?';
         }
         if ($this->db->exec('UPDATE ${p}websiteState SET `installedContentTypes` =' .
                             ' JSON_REMOVE(`installedContentTypes`' .
@@ -125,10 +125,10 @@ class ContentTypeMigrator {
     private function buildFieldsSql($fields) {
         $out = [];
         foreach ($fields as $name => $dataType) {
-            array_push($out, "`{$name}` " . [
+            $out[] = "`{$name}` " . [
                 'text' => 'TEXT',
                 'json' => 'TEXT'
-            ][$dataType]);
+            ][$dataType];
         }
         return implode(',', $out);
     }

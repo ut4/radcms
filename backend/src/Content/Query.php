@@ -78,10 +78,11 @@ class Query {
         $errors = ContentTypeValidator::validate($this->contentType);
         if ($this->isFetchOne) {
             if (!$this->whereExpr) {
-                array_push($errors, 'fetchOne(...)->where() is required.');
-            } else if (mb_strlen($this->whereExpr) > $MAX_WHERE_LEN) {
-                array_push($errors, 'fetchOne(...)->where() too long (max ' .
-                $MAX_WHERE_LEN . ', was ' . mb_strlen($this->whereExpr) . ').');
+                $errors[] = 'fetchOne(...)->where() is required.';
+            } elseif (mb_strlen($this->whereExpr) > $MAX_WHERE_LEN) {
+                $errors[] = 'fetchOne(...)->where( too long (max ' .
+                            $MAX_WHERE_LEN . ', was ' .
+                            mb_strlen($this->whereExpr) . ').';
             }
         }
         return $errors ? implode('\n', $errors) : '';

@@ -12,15 +12,15 @@ abstract class ContentTypeValidator {
         $errors = self::validateName($contentType->name);
         //
         if (!count($contentType->fields)) {
-            array_push($errors, 'ContentType.fields must contain at least one field');
+            $errors[] = 'ContentType.fields must contain at least one field';
             return $errors;
         }
         foreach ($contentType->fields as $name => $dataType) {
             if (!is_string($name) || !preg_match('/^[a-zA-Z_]+$/', $name))
-                array_push($errors, "`{$name}` must contain only [a-zA-Z_]");
+                $errors[] = "`{$name}` must contain only [a-zA-Z_]";
             if (!is_string($dataType) ||
                 !in_array($dataType, ContentTypeMigrator::FIELD_DATA_TYPES))
-                array_push($errors, "`{$dataType}` is not valid data type");
+                $errors[] = "`{$dataType}` is not valid data type";
         }
         return $errors;
     }
@@ -41,9 +41,9 @@ abstract class ContentTypeValidator {
         $errors = [];
         if (!ctype_alpha($contentTypeName) ||
             !ctype_upper(mb_substr($contentTypeName, 0, 1)))
-            array_push($errors, 'ContentType.name must be capitalized and contain only [a-ZA-Z]');
+            $errors[] = 'ContentType.name must be capitalized and contain only [a-ZA-Z]';
         if (mb_strlen($contentTypeName) > self::MAX_NAME_LEN)
-            array_push($errors, 'ContentType.name must be <= 64 chars long');
+            $errors[] = 'ContentType.name must be <= 64 chars long';
         return $errors;
     }
     /**
@@ -55,7 +55,7 @@ abstract class ContentTypeValidator {
         $errors = [];
         foreach ($contentType->fields as $key => $_) {
             if (!property_exists($input, $key))
-                array_push($errors, "`{$key}` for `{$contentType->name}` is required.");
+                $errors[] = "`{$key}` for `{$contentType->name}` is required.";
         }
         return $errors;
     }

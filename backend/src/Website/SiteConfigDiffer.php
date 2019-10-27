@@ -39,7 +39,7 @@ class SiteConfigDiffer {
             if (!$currentDataType)
                 $out->added[] = (object)['name' => $name,
                                          'dataType' => $dataType];
-            else if ($dataType != $currentDataType)
+            elseif ($dataType != $currentDataType)
                 $out->dataTypeChanged[] = (object)['name' => $name,
                                                    'oldDataType' => $currentDataType,
                                                    'newDataType' => $dataType];
