@@ -43,17 +43,18 @@ trait HttpTestUtils {
      * @param \RadCms\Framework\Request $req
      * @param \RadCms\Framework\Response $res
      * @param \RadCms\Framework\FileSystemInterface|\RadCms\App $mockFsOrApp
-     * @param \RadCms\Framework\Db $db = null
+     * @param \Callable $alterInjectorFn = null ($injector: \Auryn\Injector): void
      */
-    public function makeRequest($req, $res, $mockFsOrApp, $db = null) {
+    public function makeRequest($req, $res, $mockFsOrApp, $alterInjectorFn = null) {
         if (!($mockFsOrApp instanceof App)) {
-            if (!$db) $db = DbTestCase::getDb(include RAD_SITE_PATH . 'config.php');
+            $db = DbTestCase::getDb();
             $app = App::create($db, $mockFsOrApp, 'Tests');
         } else {
             $app = $mockFsOrApp;
         }
         $injector = new Injector();
         $injector->delegate(Response::class, function() use ($res) { return $res; });
+        if ($alterInjectorFn) $alterInjectorFn($injector);
         $app->handleRequest($req, $injector);
     }
 }

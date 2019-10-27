@@ -134,8 +134,9 @@ final class InstallerTest extends DbTestCase {
                 )
                 ->willReturnOnConsecutiveCalls(
                     'USE ${database};' .
-                    ' CREATE TABLE ${p}websiteState (`activeContentTypes` TEXT);' .
-                    ' INSERT INTO ${p}websiteState values (\'{}\');',
+                    ' CREATE TABLE ${p}websiteState (`installedContentTypes` TEXT' .
+                                                     ', `installedContentTypesLastUpdated` TEXT);' .
+                    ' INSERT INTO ${p}websiteState values (\'{}\',null);',
                     //
                     '[ContentType:Movies]' . PHP_EOL .
                     'friendlyName=Elokuvat' . PHP_EOL .
@@ -217,10 +218,10 @@ return [
         )));
         //
         $websiteStates = self::$db->fetchAll(
-            'SELECT `activeContentTypes` FROM ${p}websiteState'
+            'SELECT `installedContentTypes` FROM ${p}websiteState'
         );
         $this->assertEquals(1, count($websiteStates));
         $this->assertEquals('{"Movies": ["Elokuvat", {"title": "text"}]}',
-                            $websiteStates[0]['activeContentTypes']);
+                            $websiteStates[0]['installedContentTypes']);
     }
 }

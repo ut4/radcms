@@ -84,9 +84,10 @@ class Installer {
      * @return string|null
      */
     private function createSampleContentTypes($s) {
-        $ini = new SiteConfig();
+        $ini = new SiteConfig($this->fs);
         try {
-            $ini->load($this->fs, "{$s->radPath}sample-content/{$s->sampleContent}/site.ini");
+            $ini->selfLoad("{$s->radPath}sample-content/{$s->sampleContent}/site.ini",
+                           false);
         } catch (\RuntimeException $e) {
             return $e->getMessage();
         }

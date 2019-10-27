@@ -11,38 +11,40 @@ use RadCms\ContentType\ContentTypeCollection;
 class SiteConfig {
     public $urlMatchers;
     public $contentTypes;
-    /**
-     * .
-     */
-    public function __construct() {
-        $this->urlMatchers = null;
-        $this->contentTypes = null;
-    }
+    public $lastModTime;
+    private $fs;
     /**
      * @param \RadCms\Framework\FileSystemInterface $fs
+     */
+    public function __construct(FileSystemInterface $fs) {
+        $this->fs = $fs;
+        $this->urlMatchers = null;
+        $this->contentTypes = null;
+        $this->lastModTime = 0;
+    }
+    /**
      * @param string $filePath Absoluuttinen polku parsattavaan tiedostoon Esim. '/home/me/foo/site.ini'.
-     * @param bool $loadContentTypes = true
+     * @param bool $checkLastModTime = true
      * @throws \RuntimeException
      */
-    public function load(FileSystemInterface $fs,
-                         $filePath,
-                         $loadContentTypes = true) {
-        if (!($iniStr = $fs->read($filePath)))
+    public function selfLoad($filePath, $checkLastModTime = true) {
+        if ($checkLastModTime && !($this->lastModTime = $this->fs->lastModTime($filePath)))
+            throw new \RuntimeException('Failed to read mtime of ' . $filePath);
+        if (!($iniStr = $this->fs->read($filePath)))
             throw new \RuntimeException('Failed to read ' . $filePath);
         [$this->urlMatchers, $this->contentTypes] =
-            $this->parse($iniStr, $filePath, $loadContentTypes);
+            $this->parse($iniStr, $filePath);
     }
     /**
      * @param string $iniStr
      * @param string $filePath
-     * @param bool $loadContentTypes
-     * @return array [\RadCms\Website\UrlMatcherCollection, Array<[object]>]
+     * @return array [\RadCms\Website\UrlMatcherCollection, \RadCms\ContentType\ContentTypeCollection]
      */
-    private function parse($iniStr, $filePath, $loadContentTypes) {
+    private function parse($iniStr, $filePath) {
         if (!($parsed = parse_ini_string($iniStr, true, INI_SCANNER_RAW)))
             throw new \RuntimeException('Failed to parse ' . $filePath);
         return [$this->collectUrlMatchers($parsed),
-                $loadContentTypes ? $this->collectContentTypes($parsed) : []];
+                $this->collectContentTypes($parsed)];
     }
     /**
      * @param array $parsedIniData
@@ -60,7 +62,7 @@ class SiteConfig {
     }
     /**
      * @param array $parsedIniData
-     * @return array Array<object>
+     * @return \RadCms\ContentType\ContentTypeCollection
      */
     private function collectContentTypes($parsedIniData) {
         $out = new ContentTypeCollection();

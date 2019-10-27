@@ -7,6 +7,7 @@ use RadCms\Framework\Response;
 use RadCms\Templating\MagicTemplate;
 use RadCms\Content\DAO as ContentNodeDAO;
 use RadCms\Framework\SessionInterface;
+use RadCms\AppState;
 
 /**
  * Handlaa sivupyynnöt, (GET '/' tai GET '/sivunnimi').
@@ -15,21 +16,22 @@ class WebsiteControllers {
     private $urlMatchers;
     private $cnd;
     private $session;
-    private $frontendJsFiles;
+    private $pluginJsFiles;
     /**
-     * @param \RadCms\Website\UrlMatcherCollection $urlMatchers
      * @param \RadCms\Content\DAO $cnd
      * @param \RadCms\Framework\SessionInterface $session
-     * @param array $frontendJsFiles Array<string>
      */
-    public function __construct(UrlMatcherCollection $urlMatchers,
+    public function __construct(SiteConfig $siteConfig,
+                                AppState $appState,
                                 ContentNodeDAO $cnd,
-                                SessionInterface $session,
-                                $frontendJsFiles) {
-        $this->urlMatchers = $urlMatchers;
+                                SessionInterface $session) {
+        $siteConfig->selfLoad(RAD_SITE_PATH . 'site.ini');
+        if ($siteConfig->lastModTime > $appState->contentTypesLastUpdated)
+            $appState->diffAndSaveChangesToDb($siteConfig->contentTypes);
+        $this->urlMatchers = $siteConfig->urlMatchers;
         $this->cnd = $cnd;
         $this->session = $session;
-        $this->frontendJsFiles = $frontendJsFiles;
+        $this->pluginJsFiles = $appState->pluginJsFiles;
     }
     /**
      * GET *: handlaa sivupyynnön.
@@ -53,7 +55,7 @@ class WebsiteControllers {
                     'panels' => $this->cnd->getFrontendPanelInfos(),
                     'baseUrl' => $template->url('/'),
                 ],
-                'pluginJsFiles' => $this->frontendJsFiles,
+                'pluginJsFiles' => $this->pluginJsFiles,
             ]);
             $this->session->commit();
             $html = substr($html, 0, $bodyEnd) . '<iframe src="' . $template->url('/cpanel/' . $frontendDataKey) . '" id="insn-cpanel-iframe" style="position:fixed;border:none;height:100%;width:275px;right:0;top:0"></iframe><script>function setIframeVisible(setVisible){document.getElementById(\'insn-cpanel-iframe\').style.width=setVisible?\'100%\':\'275px\';}</script>' . substr($html, $bodyEnd);

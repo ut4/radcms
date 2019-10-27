@@ -8,8 +8,8 @@ use RadCms\Framework\Db;
  * Luokka joka asentaa/päivittää/poistaa sisältötyyppejä tietokantaan.
  */
 class ContentTypeMigrator {
-    const FIELD_DATA_TYPES = ['text', 'json'];
-    const COLLECTION_SIZES = ['tiny', 'small', 'medium', '', 'big'];
+    public const FIELD_DATA_TYPES = ['text', 'json'];
+    private const COLLECTION_SIZES = ['tiny', 'small', 'medium', '', 'big'];
     private $db;
     /**
      * @param \RadCms\Framework\Db $db
@@ -28,10 +28,10 @@ class ContentTypeMigrator {
             throw new \RuntimeException('Not valid content type collection size ' .
                                         implode(' | ', self::COLLECTION_SIZES));
         }
+        $this->validateContentTypes($contentTypes);
         $ctypeDefs = $contentTypes->toArray();
-        $this->validateContentTypes($ctypeDefs);
         $this->createContentTypes($ctypeDefs, $size);
-        $this->addActiveContentTypes($ctypeDefs);
+        $this->addToInstalledContentTypes($ctypeDefs);
     }
     /**
      * @param \RadCms\ContentType\ContentTypeCollection $contentTypes
@@ -39,22 +39,18 @@ class ContentTypeMigrator {
      * @throws \RuntimeException
      */
     public function uninstallMany(ContentTypeCollection $contentTypes) {
+        $this->validateContentTypes($contentTypes);
         $ctypeDefs = $contentTypes->toArray();
-        $this->validateContentTypes($ctypeDefs);
         $this->removeContentTypes($ctypeDefs);
-        $this->removeActiveContentTypes($ctypeDefs);
+        $this->removeFromInstalledContentTypes($ctypeDefs);
     }
     /**
-     * @param array $ctypeDefs Array<ContentTypeDef>
+     * @param \RadCms\ContentType\ContentTypeCollection $contentTypes
      * @throws \RuntimeException
      */
-    private function validateContentTypes($ctypeDefs) {
-        $errors = array_reduce($ctypeDefs, function ($all, $def) {
-            return array_merge($all, ContentTypeValidator::validate($def));
-        }, []);
-        if ($errors) {
+    private function validateContentTypes($contentTypes) {
+        if (($errors = ContentTypeValidator::validateAll($contentTypes)))
             throw new \RuntimeException('Invalid content type(s): ' . implode(',', $errors));
-        }
     }
     /**
      * @param array $ctypeDefs Array<ContentTypeDef>
@@ -82,31 +78,34 @@ class ContentTypeMigrator {
      * @param array $ctypeDefs Array<ContentTypeDef>
      * @throws \RuntimeException
      */
-    private function addActiveContentTypes($ctypeDefs) {
-        if ($this->db->exec('UPDATE ${p}websiteState SET `activeContentTypes` =' .
-                            ' JSON_MERGE_PATCH(`activeContentTypes`, ?)',
+    private function addToInstalledContentTypes($ctypeDefs) {
+        if ($this->db->exec('UPDATE ${p}websiteState SET `installedContentTypes` =' .
+                            ' JSON_MERGE_PATCH(`installedContentTypes`, ?)' .
+                            ', `installedContentTypesLastUpdated` = UNIX_TIMESTAMP()',
                             [json_encode(array_reduce($ctypeDefs, function ($map, $t) {
                                 $map[$t->name] = [$t->friendlyName, $t->fields];
                                 return $map;
                             }, []))]) < 1) {
-            throw new \RuntimeException('Failed to update websiteState.`activeContentTypes`');
+            throw new \RuntimeException('Failed to update websiteState.`installedContentTypes`');
         }
     }
     /**
      * @param array $ctypeDefs Array<ContentTypeDef>
      * @throws \RuntimeException
      */
-    private function removeActiveContentTypes($ctypeDefs) {
+    private function removeFromInstalledContentTypes($ctypeDefs) {
         $placeholders = [];
         $values = [];
         foreach ($ctypeDefs as $t) {
             array_push($values, '$."' . $t->name . '"');
             array_push($placeholders, '?');
         }
-        if ($this->db->exec('UPDATE ${p}websiteState SET `activeContentTypes` =' .
-                            ' JSON_REMOVE(`activeContentTypes`, ' .
-                            implode(',', $placeholders) . ')', $values) < 1) {
-            throw new \RuntimeException('Failed to update websiteState.`activeContentTypes`');
+        if ($this->db->exec('UPDATE ${p}websiteState SET `installedContentTypes` =' .
+                            ' JSON_REMOVE(`installedContentTypes`' .
+                                         ', ' . implode(',', $placeholders) . ')' .
+                            ', `installedContentTypesLastUpdated` = UNIX_TIMESTAMP()',
+                            $values) < 1) {
+            throw new \RuntimeException('Failed to update websiteState.`installedContentTypes`');
         }
     }
     /**

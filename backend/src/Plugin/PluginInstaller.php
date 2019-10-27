@@ -18,7 +18,7 @@ class PluginInstaller {
     }
     /**
      * @param \RadCms\Plugin\Plugin $plugin
-     * @return string|null 'Some error message', or null on success
+     * @return null|string null on success or 'Some error message'
      */
     public function install(Plugin $plugin) {
         if ($plugin->isInstalled) {
@@ -39,7 +39,7 @@ class PluginInstaller {
     }
     /**
      * @param \RadCms\Plugin\Plugin $plugin
-     * @return string|null 'Some error message', or null on success
+     * @return null|string null on success or 'Some error message'
      */
     public function uninstall(Plugin $plugin) {
         if (!$plugin->isInstalled) {

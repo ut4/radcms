@@ -74,4 +74,11 @@ class FileSystem implements FileSystemInterface {
     public function readDir($path, $filter = '*', $flags = GLOB_ERR) {
         return glob(rtrim($path, '/') . '/' . $filter, $flags);
     }
+    /**
+     * @param string $path
+     * @return int|false
+     */
+    public function lastModTime($path) {
+        return @filemtime($path);
+    }
 }

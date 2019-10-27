@@ -16,10 +16,14 @@ class GenericArray {
         $this->vals = [];
     }
     /**
-     * @param array ...$args Params to $this->T
+     * @param mixed|T ...$firstArgOrT
+     * @param array ...$args
      */
-    public function add(...$args) {
-        array_push($this->vals, new $this->T(...$args));
+    public function add($firstArgOrT, ...$remainingArgs) {
+        if (!is_a($firstArgOrT, $this->T))
+            array_push($this->vals, new $this->T($firstArgOrT, ...$remainingArgs));
+        else
+            array_push($this->vals, $firstArgOrT);
     }
     /**
      * @param \RadCms\Framework\GenericArray $other
@@ -37,6 +41,12 @@ class GenericArray {
             if ($t->$key === $val) return $t;
         }
         return null;
+    }
+    /**
+     * @return int
+     */
+    public function length() {
+        return count($this->vals);
     }
     /**
      * @return array Array<$this->T>

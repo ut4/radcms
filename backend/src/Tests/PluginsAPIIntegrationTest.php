@@ -19,7 +19,7 @@ final class PluginsAPIIntegrationTest extends DbTestCase {
      * @before
      */
     public function beforeEach() {
-        $db = self::getDb(include RAD_SITE_PATH . 'config.php');
+        $db = self::getDb();
         // Tekee suunnilleen saman kuin PUT /api/plugins/_MoviesPlugin/install
         $this->testPlugin = new _MoviesPlugin();
         $this->testPlugin->install(new ContentTypeMigrator($db));
@@ -32,6 +32,13 @@ final class PluginsAPIIntegrationTest extends DbTestCase {
         // Tekee suunnilleen saman kuin PUT /api/plugins/_MoviesPlugin/uninstall
         $this->testPlugin->uninstall(new ContentTypeMigrator(self::$db));
         AppTest::markPluginAsUninstalled('_MoviesPlugin', self::$db);
+    }
+    /**
+     * @afterClass
+     */
+    public static function afterClass() {
+        self::$db->exec('UPDATE ${p}websiteState SET' .
+                        ' `installedContentTypesLastUpdated` = NULL');
     }
     public function testPluginCanCRUDRead() {
         $s = $this->setupTest1();

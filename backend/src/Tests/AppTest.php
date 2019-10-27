@@ -7,13 +7,14 @@ use RadCms\Framework\FileSystem;
 use RadCms\Tests\Self\DbTestCase;
 use RadCms\Tests\_ValidAndInstalledPlugin\_ValidAndInstalledPlugin;
 use RadCms\Tests\_ValidPlugin\_ValidPlugin;
+use RadCms\Tests\Self\CtxExposingApp;
 
 final class AppTest extends DbTestCase {
     /**
      * @beforeClass
      */
     public static function beforeClass() {
-        self::$db = self::getDb(include RAD_SITE_PATH . 'config.php');
+        self::$db = self::getDb();
     }
     public function testCreateAppScansPluginsFromDisk() {
         $testPluginDirName = 'Tests';
@@ -55,8 +56,8 @@ final class AppTest extends DbTestCase {
             ->willReturn([$testPluginDirPath . '/_ValidAndInstalledPlugin',
                           $testPluginDirPath . '/_ValidPlugin']);
         self::markPluginAsInstalled('_ValidAndInstalledPlugin', self::$db);
-        $app = App::create(self::$db, $mockFs, $testPluginDirName);
-        $actuallyRegisteredPlugins = $app->plugins->toArray();
+        $app = CtxExposingApp::create(self::$db, $mockFs, $testPluginDirName);
+        $actuallyRegisteredPlugins = $app->getPlugins()->toArray();
         $this->assertEquals(2, count($actuallyRegisteredPlugins));
         $this->assertEquals('_ValidAndInstalledPlugin', $actuallyRegisteredPlugins[0]->name);
         $this->assertEquals('_ValidPlugin', $actuallyRegisteredPlugins[1]->name);

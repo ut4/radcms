@@ -11,6 +11,13 @@ use RadCms\Framework\Request;
 
 final class PluginControllersTest extends DbTestCase {
     use HttpTestUtils;
+    private $afterTest;
+    /**
+     * @after
+     */
+    public function afterEach() {
+        $this->afterTest->__invoke();
+    }
     public function testPUTInstallInstallsPluginAndRegistersItToDatabase() {
         $s = $this->setupTest1();
         //
@@ -19,13 +26,21 @@ final class PluginControllersTest extends DbTestCase {
         //
         $this->verifyInstalledPlugin();
         $this->verifyRegisteredPluginToDb($s);
-        $this->cleanupTest1($s);
     }
     private function setupTest1() {
         $testPluginName = '_ValidPlugin';
         $mockFs = $this->createMock(FileSystem::class);
         $mockFs->expects($this->once())->method('readDir')->willReturn(
             [RAD_BASE_PATH . 'src/Tests/' . $testPluginName]);
+        $this->afterTest = function () use ($testPluginName) {
+            _ValidPlugin::$instantiated = false;
+            _ValidPlugin::$initialized = false;
+            _ValidPlugin::$installed = false;
+            if (self::$db->exec('UPDATE ${p}websiteState SET `installedPlugins`=' .
+                                ' JSON_REMOVE(`installedPlugins`, ?)',
+                                ['$."' . $testPluginName . '"']) < 1)
+                throw new \RuntimeException('Failed to clean test data.');
+        };
         return (object)[
             'testPluginName' => $testPluginName,
             'res' => $this->createMockResponse(['ok' => 'ok'], 200, 'json'),
@@ -41,15 +56,6 @@ final class PluginControllersTest extends DbTestCase {
         $parsed = json_decode($rows[0]['installedPlugins'], true);
         $this->assertEquals(true, array_key_exists($s->testPluginName, $parsed));
     }
-    private function cleanupTest1($s) {
-        _ValidPlugin::$instantiated = false;
-        _ValidPlugin::$initialized = false;
-        _ValidPlugin::$installed = false;
-        if (self::$db->exec('UPDATE ${p}websiteState SET `installedPlugins`=' .
-                            ' JSON_REMOVE(`installedPlugins`, ?)',
-                            ['$."' . $s->testPluginName . '"']) < 1)
-            throw new \RuntimeException('Failed to clean test data.');
-    }
 
 
     ////////////////////////////////////////////////////////////////////////////
@@ -63,7 +69,6 @@ final class PluginControllersTest extends DbTestCase {
         //
         $this->verifyUninstalledPlugin();
         $this->verifyUnregisteredPluginFromDb($s);
-        $this->cleanupTest2();
     }
     private function setupTest2() {
         $testPluginName = '_ValidAndInstalledPlugin';
@@ -74,6 +79,11 @@ final class PluginControllersTest extends DbTestCase {
                         ' JSON_SET(`installedPlugins`, ?, ?)',
                         ['$."' . $testPluginName . '"', 1]);
         _ValidAndInstalledPlugin::$installed = true;
+        $this->afterTest = function () {
+            _ValidAndInstalledPlugin::$instantiated = false;
+            _ValidAndInstalledPlugin::$initialized = false;
+            _ValidAndInstalledPlugin::$installed = false;
+        };
         return (object)[
             'testPluginName' => $testPluginName,
             'originalInstallState' => _ValidAndInstalledPlugin::$installed,
@@ -89,10 +99,5 @@ final class PluginControllersTest extends DbTestCase {
         $this->assertEquals(1, count($rows));
         $parsed = json_decode($rows[0]['installedPlugins'], true);
         $this->assertEquals(false, array_key_exists($s->testPluginName, $parsed));
-    }
-    private function cleanupTest2() {
-        _ValidAndInstalledPlugin::$instantiated = false;
-        _ValidAndInstalledPlugin::$initialized = false;
-        _ValidAndInstalledPlugin::$installed = false;
     }
 }

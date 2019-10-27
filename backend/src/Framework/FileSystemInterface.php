@@ -50,4 +50,9 @@ interface FileSystemInterface {
      * @return array|false Array<string>
      */
     public function readDir($path);
+    /**
+     * @param string $path
+     * @return int|false
+     */
+    public function lastModTime($path);
 }

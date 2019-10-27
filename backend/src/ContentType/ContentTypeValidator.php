@@ -25,6 +25,15 @@ abstract class ContentTypeValidator {
         return $errors;
     }
     /**
+     * @param \RadCms\ContentType\ContentTypeCollection $contentTypes
+     * @return array Array<string>
+     */
+    public static function validateAll(ContentTypeCollection $contentTypes) {
+        return array_reduce($contentTypes->toArray(), function ($all, $def) {
+            return array_merge($all, ContentTypeValidator::validate($def));
+        }, []);
+    }
+    /**
      * @param string $contentTypeName
      * @return array Array<string>
      */
@@ -35,6 +44,19 @@ abstract class ContentTypeValidator {
             array_push($errors, 'ContentType.name must be capitalized and contain only [a-ZA-Z]');
         if (mb_strlen($contentTypeName) > self::MAX_NAME_LEN)
             array_push($errors, 'ContentType.name must be <= 64 chars long');
+        return $errors;
+    }
+    /**
+     * @param \RadCms\ContentType\ContentTypeDef $contentType
+     * @param object $input
+     * @return array Array<string>
+     */
+    public static function validateInsertData(ContentTypeDef $contentType, $input) {
+        $errors = [];
+        foreach ($contentType->fields as $key => $_) {
+            if (!property_exists($input, $key))
+                array_push($errors, "`{$key}` for `{$contentType->name}` is required.");
+        }
         return $errors;
     }
 }
