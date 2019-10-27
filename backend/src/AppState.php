@@ -41,12 +41,14 @@ class AppState {
     }
     /**
      * @param \RadCms\ContentType\ContentTypeCollection $newDefsFromFile
+     * @param string $origin 'site.ini' | 'SomePlugin.ini'
      */
-    public function diffAndSaveChangesToDb(ContentTypeCollection $newDefsFromFile) {
-        $currentDefsFromDb = $this->contentTypes;
+    public function diffAndSaveChangesToDb(ContentTypeCollection $newDefsFromFile,
+                                           $origin) {
+        $currentDefsFromDb = $this->contentTypes->filter($origin, 'origin');
         [$ctypesDiff, $fieldsDiff] = (new SiteConfigDiffer())
             ->run($newDefsFromFile, $currentDefsFromDb);
-        (new ContentTypeSyncer($this->db))->sync($ctypesDiff, $fieldsDiff);
+        return (new ContentTypeSyncer($this->db))->sync($ctypesDiff, $fieldsDiff);
     }
     /**
      * .

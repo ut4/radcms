@@ -27,6 +27,7 @@ class PluginInstaller {
         if (!$plugin->impl) {
             $plugin->instantiate();
         }
+        $this->contentTypeMigrator->setOrigin($plugin);
         $errorMessage = $plugin->impl->install($this->contentTypeMigrator);
         if (!is_string($errorMessage) || !$errorMessage) {
             return $this->db->exec('UPDATE ${p}websiteState SET `installedPlugins`' .

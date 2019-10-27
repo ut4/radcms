@@ -5,6 +5,9 @@ namespace RadCms\ContentType;
 use RadCms\Framework\Db;
 use RadCms\Common\LoggerAccess;
 
+/**
+ * .
+ */
 class ContentTypeSyncer {
     private $db;
     public function __construct(Db $db) {
@@ -24,6 +27,12 @@ class ContentTypeSyncer {
         $this->db->beginTransaction();
         $migrator = new ContentTypeMigrator($this->db);
         try {
+            if ($ctypesDiff->deleted->length()) {
+                $migrator->uninstallMany($ctypesDiff->deleted);
+                LoggerAccess::getLogger()->log('debug',
+                    'Uninstalled ' . $ctypesDiff->deleted->length() . ' content types.');
+            }
+            //
             if ($ctypesDiff->added->length()) {
                 $migrator->installMany($ctypesDiff->added);
                 LoggerAccess::getLogger()->log('debug',

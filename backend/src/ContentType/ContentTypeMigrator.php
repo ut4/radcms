@@ -3,6 +3,7 @@
 namespace RadCms\ContentType;
 
 use RadCms\Framework\Db;
+use RadCms\Plugin\Plugin;
 
 /**
  * Luokka joka asentaa/päivittää/poistaa sisältötyyppejä tietokantaan.
@@ -11,11 +12,13 @@ class ContentTypeMigrator {
     public const FIELD_DATA_TYPES = ['text', 'json'];
     private const COLLECTION_SIZES = ['tiny', 'small', 'medium', '', 'big'];
     private $db;
+    private $origin;
     /**
      * @param \RadCms\Framework\Db $db
      */
     public function __construct(Db $db) {
         $this->db = $db;
+        $this->origin = 'site.ini';
     }
     /**
      * @param \RadCms\ContentType\ContentTypeCollection $contentTypes
@@ -43,6 +46,13 @@ class ContentTypeMigrator {
         $ctypeDefs = $contentTypes->toArray();
         $this->removeContentTypes($ctypeDefs);
         $this->removeFromInstalledContentTypes($ctypeDefs);
+    }
+    /**
+     * @param string $origin
+     * @throws \RuntimeException
+     */
+    public function setOrigin(Plugin $plugin) {
+        $this->origin = $plugin->name . '.ini';
     }
     /**
      * @param \RadCms\ContentType\ContentTypeCollection $contentTypes
@@ -83,7 +93,7 @@ class ContentTypeMigrator {
                             ' JSON_MERGE_PATCH(`installedContentTypes`, ?)' .
                             ', `installedContentTypesLastUpdated` = UNIX_TIMESTAMP()',
                             [json_encode(array_reduce($ctypeDefs, function ($map, $t) {
-                                $map[$t->name] = [$t->friendlyName, $t->fields];
+                                $map[$t->name] = [$t->friendlyName, $t->fields, $this->origin];
                                 return $map;
                             }, []))]) < 1) {
             throw new \RuntimeException('Failed to update websiteState.`installedContentTypes`');

@@ -11,35 +11,41 @@ use RadCms\Tests\AppTest;
 use RadCms\Framework\Request;
 use RadCms\Tests\Self\MutedResponse;
 use RadCms\Tests\_MoviesPlugin\_MoviesPlugin;
+use RadCms\Plugin\Plugin;
 
 final class PluginsAPIIntegrationTest extends DbTestCase {
     use HttpTestUtils;
     private $testPlugin;
-    /**
-     * @before
-     */
-    public function beforeEach() {
-        $db = self::getDb();
+    public function setupTestPlugin() {
         // Tekee suunnilleen saman kuin PUT /api/plugins/_MoviesPlugin/install
-        $this->testPlugin = new _MoviesPlugin();
-        $this->testPlugin->install(new ContentTypeMigrator($db));
+        $db = self::getDb();
+        $this->testPlugin = new Plugin('_MoviesPlugin', _MoviesPlugin::class);
+        $m = new ContentTypeMigrator($db);
+        $m->setOrigin($this->testPlugin);
+        $this->testPlugin->instantiate()->install($m);
         AppTest::markPluginAsInstalled('_MoviesPlugin', $db);
     }
-    /**
-     * @after
-     */
-    public function afterEach() {
-        // Tekee suunnilleen saman kuin PUT /api/plugins/_MoviesPlugin/uninstall
-        $this->testPlugin->uninstall(new ContentTypeMigrator(self::$db));
-        AppTest::markPluginAsUninstalled('_MoviesPlugin', self::$db);
+    public function tearDown() {
+        if ($this->testPlugin) {
+            // Tekee suunnilleen saman kuin PUT /api/plugins/_MoviesPlugin/uninstall
+            $this->testPlugin->impl->uninstall(new ContentTypeMigrator(self::$db));
+            AppTest::markPluginAsUninstalled('_MoviesPlugin', self::$db);
+        }
     }
-    /**
-     * @afterClass
-     */
-    public static function afterClass() {
+    public static function tearDownAfterClass($_ = null) {
+        parent::tearDownAfterClass($_);
         self::$db->exec('UPDATE ${p}websiteState SET' .
                         ' `installedContentTypesLastUpdated` = NULL');
     }
+    public function testPluginCanInstallContentType() {
+        $this->testPlugin = null;
+        $this->assertEquals('todo', '');
+    }
+
+
+    ////////////////////////////////////////////////////////////////////////////
+
+
     public function testPluginCanCRUDRead() {
         $s = $this->setupTest1();
         $this->insertTestMovie();
@@ -47,6 +53,7 @@ final class PluginsAPIIntegrationTest extends DbTestCase {
         $this->sendListMoviesRequest($s);
     }
     private function setupTest1() {
+        $this->setupTestPlugin();
         $mockFs = $this->createMock(FileSystem::class);
         $mockFs->method('readDir')->willReturn([RAD_BASE_PATH . 'src/Tests/_MoviesPlugin']);
         return (object) [

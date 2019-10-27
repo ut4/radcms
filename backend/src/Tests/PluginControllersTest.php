@@ -12,10 +12,7 @@ use RadCms\Framework\Request;
 final class PluginControllersTest extends DbTestCase {
     use HttpTestUtils;
     private $afterTest;
-    /**
-     * @after
-     */
-    public function afterEach() {
+    public function tearDown() {
         $this->afterTest->__invoke();
     }
     public function testPUTInstallInstallsPluginAndRegistersItToDatabase() {
@@ -24,7 +21,7 @@ final class PluginControllersTest extends DbTestCase {
         $req = new Request("/api/plugins/{$s->testPluginName}/install", 'PUT');
         $this->makeRequest($req, $s->res, $s->mockFs);
         //
-        $this->verifyInstalledPlugin();
+        $this->verifyCalledPluginImplsInstallMethod();
         $this->verifyRegisteredPluginToDb($s);
     }
     private function setupTest1() {
@@ -32,13 +29,12 @@ final class PluginControllersTest extends DbTestCase {
         $mockFs = $this->createMock(FileSystem::class);
         $mockFs->expects($this->once())->method('readDir')->willReturn(
             [RAD_BASE_PATH . 'src/Tests/' . $testPluginName]);
-        $this->afterTest = function () use ($testPluginName) {
+        $this->afterTest = function () {
             _ValidPlugin::$instantiated = false;
             _ValidPlugin::$initialized = false;
             _ValidPlugin::$installed = false;
-            if (self::$db->exec('UPDATE ${p}websiteState SET `installedPlugins`=' .
-                                ' JSON_REMOVE(`installedPlugins`, ?)',
-                                ['$."' . $testPluginName . '"']) < 1)
+            if (self::$db->exec('UPDATE ${p}websiteState SET' .
+                                ' `installedPlugins` = \'{}\'') < 1)
                 throw new \RuntimeException('Failed to clean test data.');
         };
         return (object)[
@@ -47,7 +43,7 @@ final class PluginControllersTest extends DbTestCase {
             'mockFs' => $mockFs,
         ];
     }
-    private function verifyInstalledPlugin() {
+    private function verifyCalledPluginImplsInstallMethod() {
         $this->assertEquals(true, _ValidPlugin::$installed);
     }
     private function verifyRegisteredPluginToDb($s) {
@@ -67,7 +63,7 @@ final class PluginControllersTest extends DbTestCase {
         $req = new Request("/api/plugins/{$s->testPluginName}/uninstall", 'PUT');
         $this->makeRequest($req, $s->res, $s->mockFs);
         //
-        $this->verifyUninstalledPlugin();
+        $this->verifyCalledPluginImplsUninstallMethod();
         $this->verifyUnregisteredPluginFromDb($s);
     }
     private function setupTest2() {
@@ -91,7 +87,7 @@ final class PluginControllersTest extends DbTestCase {
             'mockFs' => $mockFs,
         ];
     }
-    private function verifyUninstalledPlugin() {
+    private function verifyCalledPluginImplsUninstallMethod() {
         $this->assertEquals(false, _ValidAndInstalledPlugin::$installed);
     }
     private function verifyUnregisteredPluginFromDb($s) {

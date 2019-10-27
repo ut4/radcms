@@ -8,6 +8,7 @@ use RadCms\Templating\MagicTemplate;
 use RadCms\Content\DAO as ContentNodeDAO;
 use RadCms\Framework\SessionInterface;
 use RadCms\AppState;
+use RadCms\Common\LoggerAccess;
 
 /**
  * Handlaa sivupyynnöt, (GET '/' tai GET '/sivunnimi').
@@ -18,6 +19,8 @@ class WebsiteControllers {
     private $session;
     private $pluginJsFiles;
     /**
+     * @param \RadCms\Website\SiteConfig $siteConfig
+     * @param \RadCms\AppState $appState
      * @param \RadCms\Content\DAO $cnd
      * @param \RadCms\Framework\SessionInterface $session
      */
@@ -26,8 +29,12 @@ class WebsiteControllers {
                                 ContentNodeDAO $cnd,
                                 SessionInterface $session) {
         $siteConfig->selfLoad(RAD_SITE_PATH . 'site.ini');
-        if ($siteConfig->lastModTime > $appState->contentTypesLastUpdated)
-            $appState->diffAndSaveChangesToDb($siteConfig->contentTypes);
+        if ($siteConfig->lastModTime > $appState->contentTypesLastUpdated &&
+            ($err = $appState->diffAndSaveChangesToDb($siteConfig->contentTypes,
+                                                      'site.ini'))) {
+            LoggerAccess::getLogger()->log('error', 'Failed to sync site.ini'.
+                                                    ': ' . $err);
+        }
         $this->urlMatchers = $siteConfig->urlMatchers;
         $this->cnd = $cnd;
         $this->session = $session;

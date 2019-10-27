@@ -10,10 +10,7 @@ use RadCms\Tests\_ValidPlugin\_ValidPlugin;
 use RadCms\Tests\Self\CtxExposingApp;
 
 final class AppTest extends DbTestCase {
-    /**
-     * @beforeClass
-     */
-    public static function beforeClass() {
+    public static function setUpBeforeClass() {
         self::$db = self::getDb();
     }
     public function testCreateAppScansPluginsFromDisk() {

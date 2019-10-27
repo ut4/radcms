@@ -9,20 +9,19 @@ use RadCms\Framework\FileSystem;
 use RadCms\Framework\SessionInterface;
 use RadCms\Framework\NativeSession;
 use RadCms\Framework\Db;
+use RadCms\Tests\Self\ContentTypeDbTestUtils;
 
 final class WebsiteControllersTest extends DbTestCase {
     use HttpTestUtils;
-    /**
-     * @after
-     */
-    public function afterEach() {
+    use ContentTypeDbTestUtils;
+    private $afterTest;
+    public function tearDown() {
         $this->afterTest->__invoke();
     }
     public function testConstructorScansSiteIniAndInstallsNewContentTypeToDb() {
         $s = $this->setupTest1();
-        $mockLastContentTypesUpdatedAt = 10;
-        $newerThanLastUpdatedAt = $mockLastContentTypesUpdatedAt + 10;
-        $this->setupDb($mockLastContentTypesUpdatedAt);
+        $newerThanLastUpdatedAt = $s->mockLastContentTypesUpdatedAt + 10;
+        $this->setupDb($s);
         $this->stubFsToReturnNoPlugins($s);
         $this->stubFsToReturnThisLastModTimeForSiteIni($s, $newerThanLastUpdatedAt);
         $this->stubFsToReturnThisSiteIni($s, '[ContentType:NewType]' . PHP_EOL .
@@ -35,17 +34,19 @@ final class WebsiteControllersTest extends DbTestCase {
         //
         $this->verifyInstalledNewContentTypeToDb();
     }
-    private function setupTest1() {
+    private function setupTest1($testContentTypeName = 'NewType') {
         $s = (object)[
             'mockFs' => $this->createMock(FileSystem::class),
             'mockSess' => $this->createMock(SessionInterface::class),
             'setupInjector' => null,
+            'mockLastContentTypesUpdatedAt' => 10,
+            'testExistingContentTypesJson' => '{}'
         ];
-        $this->afterTest = function () {
+        $this->afterTest = function () use ($testContentTypeName) {
             self::$db->exec('UPDATE ${p}websiteState SET' .
                             ' `installedContentTypes` = \'{}\'' .
                             ', `installedContentTypesLastUpdated` = NULL');
-            self::$db->exec('DROP TABLE ${p}NewType');
+            self::$db->exec('DROP TABLE IF EXISTS ${p}' . $testContentTypeName);
         };
         $s->setupInjector = function ($injector) use ($s) {
             $injector->delegate(Db::class, function () use ($s) {
@@ -60,11 +61,12 @@ final class WebsiteControllersTest extends DbTestCase {
         };
         return $s;
     }
-    private function setupDb($mockLastContentTypesUpdatedAt) {
+    private function setupDb($s) {
         if (self::getDb()->exec('UPDATE ${p}websiteState SET' .
                                 ' `installedContentTypes` = ?' .
                                 ', `installedContentTypesLastUpdated` = ?',
-                                ['{}', $mockLastContentTypesUpdatedAt]) < 1)
+                                [$s->testExistingContentTypesJson,
+                                 $s->mockLastContentTypesUpdatedAt]) < 1)
             throw new \RuntimeException('Failed to setup test data.');
     }
     private function stubFsToReturnNoPlugins($s) {
@@ -84,14 +86,41 @@ final class WebsiteControllersTest extends DbTestCase {
             ->willReturn($contents);
     }
     private function verifyInstalledNewContentTypeToDb() {
-        $this->assertEquals(1, count(self::$db->fetchAll(
-            'SELECT `table_name` FROM information_schema.tables' .
-            ' WHERE `table_schema` = ? AND `table_name` = ?',
-            [self::$db->database, self::$db->tablePrefix . 'NewType']
-        )));
-        $this->assertEquals(1, self::$db->fetchOne(
-            'SELECT JSON_CONTAINS_PATH(`installedContentTypes`, \'one\',' .
-            ' \'$."NewType"\') as `containsKey` FROM ${p}websiteState'
-        )['containsKey']);
+        $this->verifyContentTypeIsInstalled('NewType', true, self::$db);
+    }
+
+
+    ////////////////////////////////////////////////////////////////////////////
+
+
+    public function testConstructorScansSiteIniAndUninstallsDisappearedContentTypeFromDb() {
+        $s = $this->setupTest2();
+        $newerThanLastUpdatedAt = $s->mockLastContentTypesUpdatedAt + 10;
+        $this->setupDb2($s);
+        $this->stubFsToReturnNoPlugins($s);
+        $this->stubFsToReturnThisLastModTimeForSiteIni($s, $newerThanLastUpdatedAt);
+        $this->stubFsToReturnThisSiteIni($s, 'dummy = value');
+        //
+        $req = new Request('/foo', 'GET');
+        $res = $this->createMockResponse('404', 200);
+        $this->makeRequest($req, $res, $s->mockFs, $s->setupInjector);
+        //
+        $this->verifyUninstalledDisappearedContentType();
+    }
+    private function setupTest2() {
+        $s = $this->setupTest1('FromSiteIni');
+        $s->testExistingContentTypesJson = json_encode([
+            'FromSiteIni' => ['FriendlyName', ['field' => 'text'], 'site.ini'],
+            'FromSomePlugin' => ['FriendlyName', ['field' => 'text'], 'some-plugin.ini'],
+        ]);
+        return $s;
+    }
+    private function setupDb2($s) {
+        $this->setupDb($s);
+        self::$db->exec('CREATE TABLE ${p}FromSiteIni (`field` TEXT);');
+    }
+    private function verifyUninstalledDisappearedContentType() {
+        $this->verifyContentTypeIsInstalled('FromSiteIni', false, self::$db);
+        $this->verifyContentTypeIsInstalled('FromSomePlugin', true, self::$db, false);
     }
 }

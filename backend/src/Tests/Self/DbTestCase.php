@@ -15,6 +15,7 @@ class DbTestCase extends TestCase {
         if (!self::$db) {
             self::$db = new Db($config);
         } else {
+            self::$db->database = $config['db.database'];
             self::$db->tablePrefix = $config['db.tablePrefix'];
             if ($config['db.database']) {
                 self::$db->exec('USE ' . $config['db.database'] . ';');
@@ -23,9 +24,6 @@ class DbTestCase extends TestCase {
         self::$db->beginTransaction();
         return self::$db;
     }
-    /**
-     * @afterClass
-     */
     public static function tearDownAfterClass($cleanupSql = null) {
         if (self::$db) {
             self::$db->rollback();

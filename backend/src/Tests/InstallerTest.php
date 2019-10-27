@@ -8,9 +8,11 @@ use RadCms\Framework\Request;
 use RadCms\Tests\Self\HttpTestUtils;
 use RadCms\Installer\InstallerControllers;
 use RadCms\Framework\FileSystem;
+use RadCms\Tests\Self\ContentTypeDbTestUtils;
 
 final class InstallerTest extends DbTestCase {
     use HttpTestUtils;
+    use ContentTypeDbTestUtils;
     const TEST_DB_NAME = 'db1';
     public static function tearDownAfterClass($_ = null) {
         parent::tearDownAfterClass('DROP DATABASE IF EXISTS ' . self::TEST_DB_NAME);
@@ -95,7 +97,7 @@ final class InstallerTest extends DbTestCase {
         $app->handleRequest(new Request('/', 'POST', $s->input), $res);
         //
         $this->verifyCreatedNewDatabase($s);
-        $this->verifyCreatedSampleContentTypes($s);
+        $this->verifyContentTypeIsInstalled('Movies', true, self::$db);
         $this->verifyInsertedSampleContent($s);
     }
     private function setupInstallerTest1() {
@@ -202,26 +204,13 @@ return [
         $this->assertEquals(1, count(self::$db->fetchAll(
             'SELECT `table_name` FROM information_schema.tables' .
             ' WHERE `table_schema` = ? AND `table_name` = ?',
-            [$s->input->dbDatabase, $s->input->dbTablePrefix.'websiteState']
+            [$s->input->dbDatabase, $s->input->dbTablePrefix . 'websiteState']
         )));
-    }
-    private function verifyCreatedSampleContentTypes($s) {
-        $this->assertEquals(1, count(self::$db->fetchAll(
-            'SELECT `table_name` FROM information_schema.tables' .
-            ' WHERE `table_schema` = ? AND `table_name` = ?',
-            [$s->input->dbDatabase, $s->input->dbTablePrefix . 'Movies']
-        )));
+        self::$db->database = $s->input->dbDatabase;
     }
     private function verifyInsertedSampleContent($s) {
         $this->assertEquals(1, count(self::$db->fetchAll(
             'SELECT `title` FROM ${p}Movies'
         )));
-        //
-        $websiteStates = self::$db->fetchAll(
-            'SELECT `installedContentTypes` FROM ${p}websiteState'
-        );
-        $this->assertEquals(1, count($websiteStates));
-        $this->assertEquals('{"Movies": ["Elokuvat", {"title": "text"}]}',
-                            $websiteStates[0]['installedContentTypes']);
     }
 }

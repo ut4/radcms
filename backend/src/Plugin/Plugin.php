@@ -8,7 +8,7 @@ class Plugin {
     public $classPath;
     public $isInstalled;
     /**
-     * @param string $name
+     * @param string $name // Same as "PluginName.php" minus ".php"
      * @param string $classPath <base>/Plugins/<PluginName>/<PluginName>.php
      */
     public function __construct($name, $classPath) {

@@ -43,6 +43,18 @@ class GenericArray {
         return null;
     }
     /**
+     * @param string $val
+     * @param string $key = 'name'
+     * @return object|null
+     */
+    public function filter($val, $key = 'name') {
+        $out = new static();
+        foreach ($this->vals as $t) {
+            if ($t->$key === $val) $out->add($t);
+        }
+        return $out;
+    }
+    /**
      * @return int
      */
     public function length() {

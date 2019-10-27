@@ -11,10 +11,7 @@ use RadCms\Templating\MagicTemplate;
 final class MagicTemplateTest extends TestCase {
     private $template;
     private $A_LONG_STRING;
-    /**
-     * @before
-     */
-    public function beforeEach() {
+    public function setup() {
         $this->A_LONG_STRING = str_repeat('-', 65);
         $ctypes = new ContentTypeCollection();
         $ctypes->add('Generics', '', ['content' => 'text']);
