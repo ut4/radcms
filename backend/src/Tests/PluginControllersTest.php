@@ -39,7 +39,7 @@ final class PluginControllersTest extends DbTestCase {
         };
         return (object)[
             'testPluginName' => $testPluginName,
-            'res' => $this->createMockResponse(['ok' => 'ok'], 200, 'json'),
+            'res' => $this->createMockResponse(['ok' => 'ok'], 200),
             'mockFs' => $mockFs,
         ];
     }
@@ -83,7 +83,7 @@ final class PluginControllersTest extends DbTestCase {
         return (object)[
             'testPluginName' => $testPluginName,
             'originalInstallState' => _ValidAndInstalledPlugin::$installed,
-            'res' => $this->createMockResponse(['ok' => 'ok'], 200, 'json'),
+            'res' => $this->createMockResponse(['ok' => 'ok'], 200),
             'mockFs' => $mockFs,
         ];
     }

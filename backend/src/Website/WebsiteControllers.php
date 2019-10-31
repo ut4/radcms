@@ -52,7 +52,7 @@ class WebsiteControllers {
                                       ContentTypeCollection $contentTypes) {
         $layoutFileName = $this->urlMatchers->findLayoutFor($req->path);
         if (!$layoutFileName) {
-            $res->send('404');
+            $res->html('404');
             return;
         }
         $cnd = new ContentNodeDAO($db, $contentTypes, $req->user);
@@ -71,6 +71,6 @@ class WebsiteControllers {
             $this->session->commit();
             $html = substr($html, 0, $bodyEnd) . '<iframe src="' . $template->url('/cpanel/' . $frontendDataKey) . '" id="insn-cpanel-iframe" style="position:fixed;border:none;height:100%;width:275px;right:0;top:0"></iframe><script>function setIframeVisible(setVisible){document.getElementById(\'insn-cpanel-iframe\').style.width=setVisible?\'100%\':\'275px\';}</script>' . substr($html, $bodyEnd);
         }
-        $res->send($html);
+        $res->html($html);
     }
 }

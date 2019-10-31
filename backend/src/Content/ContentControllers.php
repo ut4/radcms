@@ -23,7 +23,7 @@ class ContentControllers {
      * @param \RadCms\Framework\Response $res
      */
     public function handleGetContentNode(Request $req, Response $res) {
-        return $res->type('json')->send([
+        return $res->json([
             'id' => 1,
             'name' => 'footer',
             'json' => json_encode(['content' => '(c) 2034 MySitea']),
@@ -37,7 +37,7 @@ class ContentControllers {
      * @param \RadCms\Framework\Response $res
      */
     public function handleGetContentType(Request $req, Response $res) {
-        return $res->type('json')->send([
+        return $res->json([
             'id' => 1, 
             'name' => 'Generic blobs',
             'fields' => ['content' => 'richtext']

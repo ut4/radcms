@@ -19,7 +19,7 @@ class AdminControllers {
                                               Response $res,
                                               SessionInterface $sess) {
         $sess->start();
-        $res->send((new Template(RAD_BASE_PATH . 'src/Website/cpanel.tmpl.php'))
+        $res->html((new Template(RAD_BASE_PATH . 'src/Website/cpanel.tmpl.php'))
             ->render($sess->get($req->params->dataKey)));
     }
 }

@@ -6,29 +6,10 @@ class Response {
     public $contentType;
     public $statusCode;
     /**
-     * @param string $contentType = 'html'
      * @param integer $statusCode = 200
      */
-    public function __construct($contentType = 'html', $statusCode = 200) {
-        $this->type($contentType);
-        $this->status($statusCode);
-    }
-    /**
-     * @param array|object|string $data
-     */
-    public function json($data) {
-        $this->type('json')->send($data);
-    }
-    /**
-     * @param string $type 'html' | 'json'
-     * @return Response
-     */
-    public function type($type) {
-        $this->contentType = [
-            'html' => 'text/html',
-            'json' => 'application/json',
-        ][$type];
-        return $this;
+    public function __construct($statusCode = 200) {
+        $this->statusCode = $statusCode;
     }
     /**
      * @param integer $statusCode
@@ -39,9 +20,32 @@ class Response {
         return $this;
     }
     /**
+     * @param array|object|string $data
+     */
+    public function json($data) {
+        $this->type('json')->send($data);
+    }
+    /**
+     * @param string $data
+     */
+    public function html($body) {
+        $this->type('html')->send($body);
+    }
+    /**
+     * @param string $type 'html' | 'json'
+     * @return Response
+     */
+    protected function type($type) {
+        $this->contentType = [
+            'html' => 'text/html',
+            'json' => 'application/json',
+        ][$type];
+        return $this;
+    }
+    /**
      * @param string|array|object $body = ''
      */
-    public function send($body = '') {
+    protected function send($body = '') {
         http_response_code($this->statusCode);
         header('Content-Type: ' .  $this->contentType);
         echo is_string($body) ? $body : json_encode($body);

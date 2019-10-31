@@ -14,5 +14,8 @@ abstract class AuthModule {
         $ctx->router->map('GET', '/login', function () {
             return [AuthControllers::class, 'renderLoginView'];
         });
+        $ctx->router->map('POST', '/login', function () {
+            return [AuthControllers::class, 'handleLoginFormSubmit'];
+        });
     }
 }

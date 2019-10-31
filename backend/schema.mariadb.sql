@@ -2,6 +2,15 @@ USE ${database};
 
 DROP TABLE IF EXISTS ${p}contentRevisions;
 DROP TABLE IF EXISTS ${p}websiteState;
+DROP TABLE IF EXISTS ${p}users;
+
+CREATE TABLE ${p}users (
+    `id` CHAR(36) NOT NULL,
+    `username` VARCHAR(42) NOT NULL UNIQUE,
+    `email` VARCHAR(191) NOT NULL UNIQUE, -- 191 * 4 = 767 bytes = max key length
+    `passwordHash` VARCHAR(255) NOT NULL,
+    PRIMARY KEY (`id`)
+) DEFAULT CHARSET = utf8mb4;
 
 CREATE TABLE ${p}websiteState (
     `id` SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,

@@ -24,7 +24,7 @@ class PluginControllers {
      * @param \RadCms\Framework\Response $response
      */
     public function handleGetPluginsRequest(Response $res) {
-        $res->type('json')->send(array_map(function ($plugin) {
+        $res->json(array_map(function ($plugin) {
             return ['name' => $plugin->name, 'isInstalled' => $plugin->isInstalled];
         }, $this->plugins->toArray()));
     }
@@ -42,7 +42,7 @@ class PluginControllers {
             try {
                 $errorMessage = $installer->install($plugin);
                 if (!$errorMessage) {
-                    $res->type('json')->send(['ok' => 'ok']);
+                    $res->json(['ok' => 'ok']);
                     return;
                 }
             } catch (\Exception $e) {
@@ -53,7 +53,7 @@ class PluginControllers {
         } else {
             $errorMessage = "Plugin `{$req->params->name}` not found.";
         }
-        $res->type('json')->status(500)->send(['error' => $errorMessage]);
+        $res->status(500)->json(['error' => $errorMessage]);
     }
     /**
      * PUT /api/plugins/:name/uninstall: poistaa lisäosan $name.
@@ -69,7 +69,7 @@ class PluginControllers {
             try {
                 $errorMessage = $installer->uninstall($plugin);
                 if (!$errorMessage) {
-                    $res->type('json')->send(['ok' => 'ok']);
+                    $res->json(['ok' => 'ok']);
                     return;
                 }
             } catch (\Exception $e) {
@@ -80,6 +80,6 @@ class PluginControllers {
         } else {
             $errorMessage = "Plugin `{$req->params->name}` not found.";
         }
-        $res->type('json')->status(500)->send(['error' => $errorMessage]);
+        $res->status(500)->json(['error' => $errorMessage]);
     }
 }

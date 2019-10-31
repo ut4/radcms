@@ -33,19 +33,19 @@ class InstallerControllers {
      */
     public function renderHomeView(Request $_, Response $res) {
         $template = new Template(__DIR__ . '/main-view.tmpl.php');
-        $res->send($template->render(['sitePath' => $this->sitePath]));
+        $res->html($template->render(['sitePath' => $this->sitePath]));
     }
     /**
      * POST /.
      */
     public function handleInstallRequest(Request $req, Response $res) {
         if (($errors = $this->validateInstallInput($req->body))) {
-            $res->status(400)->send(json_encode($errors));
+            $res->status(400)->json(json_encode($errors));
             return;
         }
         $result = (new Installer($this->sitePath, $this->fs, $this->makeDb))->doInstall($req->body);
         $res->status($result == 'ok' ? 200 : 500)
-            ->send(json_encode([($result == 'ok' ? 'ok' : 'error') => $result]));
+            ->json(json_encode([($result == 'ok' ? 'ok' : 'error') => $result]));
     }
     /**
      * Validoi POST / input-datan, ja palauttaa virheet taulukkona.

@@ -5,20 +5,22 @@ namespace RadCms\Tests\Self;
 use RadCms\App;
 use Auryn\Injector;
 use RadCms\Framework\Response;
+use RadCms\Framework\FileSystemInterface;
 
 trait HttpTestUtils {
     /**
      * @param string $expectedBody
      * @param string $expectedStatus = 200
-     * @param string $expectedContentType = null
+     * @param string $expectedContentType = 'json'
      * @return \PHPUnit\Framework\MockObject\MockObject
      */
     public function createMockResponse($expectedBody,
                                        $expectedStatus = 200,
-                                       $expectedContentType = null) {
+                                       $expectedContentType = 'json') {
         $stub = $this->createMock(MutedResponse::class);
         if ($expectedStatus == 200) {
-            $stub->method('status')->willReturn($stub);
+            $stub->method('status')
+                ->willReturn($stub);
         } else {
             $stub->expects($this->atLeastOnce())
                 ->method('status')
@@ -26,28 +28,26 @@ trait HttpTestUtils {
                 ->willReturn($stub);
         }
         $stub->expects($this->once())
-            ->method('send')
+            ->method($expectedContentType)
             ->with(is_string($expectedBody)
                 ? $this->equalTo($expectedBody)
                 : $expectedBody)
             ->willReturn($stub);
-        if ($expectedContentType) {
-            $stub->expects($this->atLeastOnce())
-                ->method('type')
-                ->with($expectedContentType)
-                ->willReturn($stub);
-        }
         return $stub;
     }
     /**
      * @param \RadCms\Framework\Request $req
      * @param \RadCms\Framework\Response $res
-     * @param \RadCms\Framework\FileSystemInterface|\RadCms\App $mockFsOrApp
+     * @param \RadCms\Framework\FileSystemInterface|\RadCms\App $mockFsOrApp = null
      * @param \Callable $alterInjectorFn = null ($injector: \Auryn\Injector): void
      */
-    public function makeRequest($req, $res, $mockFsOrApp, $alterInjectorFn = null) {
+    public function makeRequest($req, $res, $mockFsOrApp = null, $alterInjectorFn = null) {
         if (!($mockFsOrApp instanceof App)) {
             $db = DbTestCase::getDb();
+            if (!$mockFsOrApp) {
+                $mockFsOrApp = $this->createMock(FileSystemInterface::class);
+                $mockFsOrApp->method('readDir')->willReturn([]); // plugins
+            }
             $app = App::create($db, $mockFsOrApp, 'Tests');
         } else {
             $app = $mockFsOrApp;

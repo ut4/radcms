@@ -90,7 +90,7 @@ final class InstallerTest extends DbTestCase {
         $this->addFsExpectation('clonesTemplateFilesAndSiteIniFile', $s);
         $this->addFsExpectation('generatesConfigFile', $s);
         //
-        $res = $this->createMockResponse('{"ok":"ok"}');
+        $res = $this->createMockResponse('{"ok":"ok"}', 200);
         $app = InstallerApp::create($s->targetDir, function ($sitePath) use ($s) {
             return new InstallerControllers($sitePath, $s->mockFs, [get_class(), 'getDb']);
         });

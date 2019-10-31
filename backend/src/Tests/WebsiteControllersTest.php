@@ -29,7 +29,7 @@ final class WebsiteControllersTest extends DbTestCase {
                                              'fields[name] = text');
         //
         $req = new Request('/foo', 'GET');
-        $res = $this->createMockResponse('404', 200);
+        $res = $this->createMockResponse('404', 200, 'html');
         $this->makeRequest($req, $res, $s->mockFs, $s->setupInjector);
         //
         $this->verifyInstalledNewContentTypeToDb();
@@ -102,7 +102,7 @@ final class WebsiteControllersTest extends DbTestCase {
         $this->stubFsToReturnThisSiteIni($s, 'dummy = value');
         //
         $req = new Request('/foo', 'GET');
-        $res = $this->createMockResponse('404', 200);
+        $res = $this->createMockResponse('404', 200, 'html');
         $this->makeRequest($req, $res, $s->mockFs, $s->setupInjector);
         //
         $this->verifyUninstalledDisappearedContentType();
