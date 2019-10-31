@@ -6,7 +6,6 @@ use RadCms\Framework\Db;
 use RadCms\Common\LoggerAccess;
 use RadCms\Framework\FileSystemInterface;
 use RadCms\ContentType\ContentTypeMigrator;
-use RadCms\ContentType\ContentTypeCollection;
 use RadCms\Website\SiteConfig;
 
 class Installer {
@@ -15,7 +14,7 @@ class Installer {
     private $db;
     private $makeDb;
     /**
-     * @param string $sitePath
+     * @param string $sitePath ks. InstallerApp::__construct
      * @param \RadCms\Framework\FileSystemInterface $fs
      * @param callable $makeDb = function ($c) { return new \RadCms\Framework\Db($c); }
      */

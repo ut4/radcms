@@ -64,11 +64,19 @@ class Query {
         if (($errors = $this->selfValidate()) != '') {
             throw new \RuntimeException($errors);
         }
-        return 'SELECT `id`, ' . $this->contentType->fieldsToSql() .
-               ' FROM ${p}' . $this->contentType->name .
-               (!$this->whereExpr ? '' : ' WHERE ' . $this->whereExpr) .
-               (!$this->orderByExpr ? '' : ' ORDER BY ' . $this->orderByExpr) .
-               (!$this->limitExpr ? '' : ' LIMIT ' . $this->limitExpr);
+        $q = 'SELECT `id`, ' . $this->contentType->fieldsToSql() .
+             ' FROM ${p}' . $this->contentType->name .
+             (!$this->whereExpr ? '' : ' WHERE ' . $this->whereExpr) .
+             (!$this->orderByExpr ? '' : ' ORDER BY ' . $this->orderByExpr) .
+             (!$this->limitExpr ? '' : ' LIMIT ' . $this->limitExpr);
+        if (!$this->dao->useRevisions) {
+            return $q;
+        }
+        return 'SELECT a.*,r.`revisionSnapshot`,r.`contentType`,r.`createdAt`' .
+               ' FROM (' . $q . ') as a' .
+               ' LEFT JOIN ${p}contentRevisions r ON (r.`contentId` = a.`id` AND '.
+                                                     ' r.`contentType` = \'' .
+                                                     $this->contentType->name . '\')';
     }
     /**
      * @return string
