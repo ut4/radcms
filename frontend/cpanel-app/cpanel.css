@@ -48,13 +48,14 @@
 #control-panel h1 { letter-spacing: -1px; font-size: 13px; font-weight: normal;
     background-color: #fff; margin: 0; text-align: right; padding: 0 15px 8px;
     color: rgba(0,0,0,0.6); }
+#control-panel h1 img { width: 16px; margin: 4px 4px -3px 0; }
 
 .content-types-list > div { transition: padding 0.15s linear; }
 .content-types-list > div > *:first-child button { margin-left: 6px; }
 .content-types-list > div > table { max-width: 390px; }
 
 /**/
-.light { color: #4d4d4d; }
+.light { background-color: transparent }
 .light .view > button { color: #444; }
 .light .view > button:hover:enabled { color: #222; }
 .light .view > div:first-of-type, .light .view > form:first-of-type {

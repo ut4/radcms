@@ -5,6 +5,7 @@ namespace RadCms\Auth;
 use RadCms\Framework\Request;
 use RadCms\Framework\Response;
 use RadCms\Framework\Validator;
+use RadCms\Templating\MagicTemplate;
 
 class AuthControllers {
     private $auth;
@@ -17,11 +18,10 @@ class AuthControllers {
     /**
      * GET /login.
      *
-     * @param \RadCms\Framework\Request $_
      * @param \RadCms\Framework\Response $res
      */
-    public function renderLoginView(Request $_, Response $res) {
-        $res->html('<label>Käyttäjänimi<input></label>');
+    public function renderLoginView(Response $res) {
+        $res->html((new MagicTemplate(__DIR__ . '/login.tmpl.php'))->render());
     }
     /**
      * POST /login.

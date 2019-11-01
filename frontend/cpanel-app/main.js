@@ -15,7 +15,7 @@ const cpanelBoot = {
         //
         window.rad.runRegisteredOnLoadFns([uiPanelRegister, services, components]);
         //
-        preact.render(preact.createElement(ControlPanelApp, {currentPageData}, null),
+        preact.render(preact.createElement(ControlPanelApp, currentPageData, null),
                       document.getElementById('cpanel-app'));
 
         //

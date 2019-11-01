@@ -30,13 +30,13 @@ final class WebsiteControllersTest extends DbTestCase {
         //
         $req = new Request('/foo', 'GET');
         $res = $this->createMockResponse('404', 200, 'html');
-        $this->makeRequest($req, $res, $s->mockFs, $s->setupInjector);
+        $this->makeRequest($req, $res, $s->ctx, $s->setupInjector);
         //
         $this->verifyInstalledNewContentTypeToDb();
     }
     private function setupTest1($testContentTypeName = 'NewType') {
         $s = (object)[
-            'mockFs' => $this->createMock(FileSystem::class),
+            'ctx' => (object)['fs' => $this->createMock(FileSystem::class)],
             'mockSess' => $this->createMock(SessionInterface::class),
             'setupInjector' => null,
             'mockLastContentTypesUpdatedAt' => 10,
@@ -49,11 +49,11 @@ final class WebsiteControllersTest extends DbTestCase {
             self::$db->exec('DROP TABLE IF EXISTS ${p}' . $testContentTypeName);
         };
         $s->setupInjector = function ($injector) use ($s) {
-            $injector->delegate(Db::class, function () use ($s) {
+            $injector->delegate(Db::class, function () {
                 return self::$db;
             });
             $injector->delegate(FileSystem::class, function () use ($s) {
-                return $s->mockFs;
+                return $s->ctx->fs;
             });
             $injector->delegate(NativeSession::class, function () use ($s) {
                 return $s->mockSess;
@@ -70,17 +70,17 @@ final class WebsiteControllersTest extends DbTestCase {
             throw new \RuntimeException('Failed to setup test data.');
     }
     private function stubFsToReturnNoPlugins($s) {
-        $s->mockFs
+        $s->ctx->fs
             ->method('readDir')
             ->willReturn([]);
     }
     private function stubFsToReturnThisLastModTimeForSiteIni($s, $mtime) {
-        $s->mockFs->expects($this->once())
+        $s->ctx->fs->expects($this->once())
             ->method('lastModTime')
             ->willReturn($mtime);
     }
     private function stubFsToReturnThisSiteIni($s, $contents) {
-        $s->mockFs->expects($this->once())
+        $s->ctx->fs->expects($this->once())
             ->method('read')
             ->with($this->stringEndsWith('site.ini'))
             ->willReturn($contents);
@@ -103,7 +103,7 @@ final class WebsiteControllersTest extends DbTestCase {
         //
         $req = new Request('/foo', 'GET');
         $res = $this->createMockResponse('404', 200, 'html');
-        $this->makeRequest($req, $res, $s->mockFs, $s->setupInjector);
+        $this->makeRequest($req, $res, $s->ctx, $s->setupInjector);
         //
         $this->verifyUninstalledDisappearedContentType();
     }

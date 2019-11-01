@@ -18,8 +18,9 @@ class AdminControllers {
     public function handleRenderCpanelRequest(Request $req,
                                               Response $res,
                                               SessionInterface $sess) {
-        $sess->start();
+        if ($data = $sess->get($req->params->dataKey))
+            $sess->remove($req->params->dataKey);
         $res->html((new Template(RAD_BASE_PATH . 'src/Website/cpanel.tmpl.php'))
-            ->render($sess->get($req->params->dataKey)));
+            ->render($data));
     }
 }

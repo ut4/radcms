@@ -54,10 +54,10 @@ final class PluginsAPIIntegrationTest extends DbTestCase {
     }
     private function setupTest1() {
         $this->setupTestPlugin();
-        $mockFs = $this->createMock(FileSystem::class);
-        $mockFs->method('readDir')->willReturn([RAD_BASE_PATH . 'src/Tests/_MoviesPlugin']);
+        $ctx = (object)['fs' => $this->createMock(FileSystem::class)];
+        $ctx->fs->method('readDir')->willReturn([RAD_BASE_PATH . 'src/Tests/_MoviesPlugin']);
         return (object) [
-            'app' => App::create(self::$db, $mockFs, 'Tests'),
+            'ctx' => $ctx,
             'expectedResponseBody' => null
         ];
     }
@@ -78,7 +78,7 @@ final class PluginsAPIIntegrationTest extends DbTestCase {
             ->with($s->expectedResponseBody)
             ->willReturn($res);
         $req = new Request('/movies', 'GET');
-        $this->makeRequest($req, $res, $s->app);
+        $this->makeRequest($req, $res, $s->ctx);
     }
 
 
@@ -101,7 +101,7 @@ final class PluginsAPIIntegrationTest extends DbTestCase {
             ->with($s->expectedResponseBody)
             ->willReturn($res);
         $req = new Request('/movies', 'POST', (object) ['title' => 'A movie']);
-        $this->makeRequest($req, $res, $s->app);
+        $this->makeRequest($req, $res, $s->ctx);
     }
     private function verifyMovieWasInsertedToDb() {
         $this->assertEquals(1, count(self::$db->fetchAll(

@@ -27,18 +27,18 @@ class GenericUIPanelImpl {
         return this.config.icon || 'layers';
     }
     /**
-     * @param {Object} ctx
+     * @param {Object} currentPageData
      */
-    getMenuItems(ctx) {
+    getMenuItems(currentPageData) {
         return this.cnodeId
         ? [
             $el('span', null, this.cnodeName),
             myLink('/edit-content/' + this.cnodeId + '?returnTo=' +
-                   encodeURIComponent(ctx.currentPageData.page.url), 'Edit')
+                   encodeURIComponent(currentPageData.page.url), 'Edit')
         ]
         : [
             $el('span', null, 'No content'),
-            myLink('/add-content' + '?returnTo=' + encodeURIComponent(ctx.currentPageData.page.url), 'Create')
+            myLink('/add-content' + '?returnTo=' + encodeURIComponent(currentPageData.page.url), 'Create')
         ];
     }
 }
@@ -64,13 +64,13 @@ class GenericListUIPanelImpl {
         return this.config.icon || 'layers';
     }
     /**
-     * @param {Object} ctx
+     * @param {Object} currentPageData
      */
-    getMenuItems(ctx) {
+    getMenuItems(currentPageData) {
         return contentNodeList({
             cnodes: this.config.contentNodes,
             createLinkText: 'Add ' + this.label,
-            currentPageUrl: ctx.currentPageData.page.url,
+            currentPageUrl: currentPageData.page.url,
             contentType: this.config.contentType
         });
     }

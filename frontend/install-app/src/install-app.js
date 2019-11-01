@@ -26,7 +26,7 @@ class InstallApp extends preact.Component {
             $el(Toaster),
             $el(Form, {onConfirm: e => this.confirm(e), confirmButtonText: 'Asenna', noAutoClose: true},
                 $el('h2', null, 'Asenna RadCMS'),
-                $el('div', {className: 'view-content box'},
+                $el('div', {className: 'box'},
                     $el('label', null,
                         $el('span', {'data-help-text': 'Sivustoprojektin nimi, ei pakollinen.'}, 'Sivuston nimi'),
                         $el('input', {name: 'siteName', onChange: e => Form.receiveInputValue(e, this),

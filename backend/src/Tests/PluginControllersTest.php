@@ -19,15 +19,15 @@ final class PluginControllersTest extends DbTestCase {
         $s = $this->setupTest1();
         //
         $req = new Request("/api/plugins/{$s->testPluginName}/install", 'PUT');
-        $this->makeRequest($req, $s->res, $s->mockFs);
+        $this->makeRequest($req, $s->res, $s->ctx);
         //
         $this->verifyCalledPluginImplsInstallMethod();
         $this->verifyRegisteredPluginToDb($s);
     }
     private function setupTest1() {
         $testPluginName = '_ValidPlugin';
-        $mockFs = $this->createMock(FileSystem::class);
-        $mockFs->expects($this->once())->method('readDir')->willReturn(
+        $ctx = (object)['fs' => $this->createMock(FileSystem::class)];
+        $ctx->fs->expects($this->once())->method('readDir')->willReturn(
             [RAD_BASE_PATH . 'src/Tests/' . $testPluginName]);
         $this->afterTest = function () {
             _ValidPlugin::$instantiated = false;
@@ -40,7 +40,7 @@ final class PluginControllersTest extends DbTestCase {
         return (object)[
             'testPluginName' => $testPluginName,
             'res' => $this->createMockResponse(['ok' => 'ok'], 200),
-            'mockFs' => $mockFs,
+            'ctx' => $ctx,
         ];
     }
     private function verifyCalledPluginImplsInstallMethod() {
@@ -61,15 +61,15 @@ final class PluginControllersTest extends DbTestCase {
         $s = $this->setupTest2();
         //
         $req = new Request("/api/plugins/{$s->testPluginName}/uninstall", 'PUT');
-        $this->makeRequest($req, $s->res, $s->mockFs);
+        $this->makeRequest($req, $s->res, $s->ctx);
         //
         $this->verifyCalledPluginImplsUninstallMethod();
         $this->verifyUnregisteredPluginFromDb($s);
     }
     private function setupTest2() {
         $testPluginName = '_ValidAndInstalledPlugin';
-        $mockFs = $this->createMock(FileSystem::class);
-        $mockFs->expects($this->once())->method('readDir')->willReturn(
+        $ctx = (object)['fs' => $this->createMock(FileSystem::class)];
+        $ctx->fs->expects($this->once())->method('readDir')->willReturn(
             [RAD_BASE_PATH . 'src/Tests/' . $testPluginName]);
         self::$db->exec('UPDATE ${p}websiteState SET `installedPlugins`=' .
                         ' JSON_SET(`installedPlugins`, ?, ?)',
@@ -84,7 +84,7 @@ final class PluginControllersTest extends DbTestCase {
             'testPluginName' => $testPluginName,
             'originalInstallState' => _ValidAndInstalledPlugin::$installed,
             'res' => $this->createMockResponse(['ok' => 'ok'], 200),
-            'mockFs' => $mockFs,
+            'ctx' => $ctx,
         ];
     }
     private function verifyCalledPluginImplsUninstallMethod() {

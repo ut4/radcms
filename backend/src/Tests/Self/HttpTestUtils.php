@@ -6,6 +6,7 @@ use RadCms\App;
 use Auryn\Injector;
 use RadCms\Framework\Response;
 use RadCms\Framework\FileSystemInterface;
+use RadCms\Auth\Authenticator;
 
 trait HttpTestUtils {
     /**
@@ -38,20 +39,25 @@ trait HttpTestUtils {
     /**
      * @param \RadCms\Framework\Request $req
      * @param \RadCms\Framework\Response $res
-     * @param \RadCms\Framework\FileSystemInterface|\RadCms\App $mockFsOrApp = null
+     * @param object $ctx = null
      * @param \Callable $alterInjectorFn = null ($injector: \Auryn\Injector): void
      */
-    public function makeRequest($req, $res, $mockFsOrApp = null, $alterInjectorFn = null) {
-        if (!($mockFsOrApp instanceof App)) {
-            $db = DbTestCase::getDb();
-            if (!$mockFsOrApp) {
-                $mockFsOrApp = $this->createMock(FileSystemInterface::class);
-                $mockFsOrApp->method('readDir')->willReturn([]); // plugins
-            }
-            $app = App::create($db, $mockFsOrApp, 'Tests');
-        } else {
-            $app = $mockFsOrApp;
+    public function makeRequest($req, $res, $ctx = null, $alterInjectorFn = null) {
+        if (!$ctx) {
+            $ctx = (object)['db' => null, 'fs' => null];
         }
+        if (!isset($ctx->db)) {
+            $ctx->db = DbTestCase::getDb();
+        }
+        if (!isset($ctx->fs)) {
+            $ctx->fs = $this->createMock(FileSystemInterface::class);
+            $ctx->fs->method('readDir')->willReturn([]); // plugins
+        }
+        if (!isset($ctx->auth)) {
+            $ctx->auth = $this->createMock(Authenticator::class);
+            $ctx->auth->method('getIdentity')->willReturn('1');
+        }
+        $app = App::create($ctx, 'Tests');
         $injector = new Injector();
         $injector->delegate(Response::class, function() use ($res) { return $res; });
         if ($alterInjectorFn) $alterInjectorFn($injector);

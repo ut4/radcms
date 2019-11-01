@@ -8,13 +8,13 @@ import PluginsManageView from './Plugin/PluginsManageView.js';
 
 class ControlPanelApp extends preact.Component {
     /**
-     * @param {{page: {url: string;}; panels: Array<FrontendPanelConfig>;}} props
+     * @param {{page: {url: string;}; panels: Array<FrontendPanelConfig>; baseUrl: string;}} props
      */
     constructor(props) {
         super(props);
         this.currentPageUiPanels = [];
         const allContentNodes = [];
-        props.currentPageData.panels.forEach(obj => {
+        props.panels.forEach(obj => {
             if (!Array.isArray(obj.contentNodes)) obj.contentNodes = [obj.contentNodes];
             if (!obj.contentNodes[0]) obj.contentNodes = [];
             allContentNodes.push(...obj.contentNodes);
@@ -23,8 +23,8 @@ class ControlPanelApp extends preact.Component {
             this.currentPageUiPanels.push(new Cls(obj));
         });
         this.looseContentNodes = allContentNodes.filter(n =>
-            !props.currentPageData.panels.some(panel =>
-                panel.contentNodes.some(n2 => panel.id+n.id == panel.id+n2.id)
+            !props.panels.some(panel =>
+                panel.contentNodes.some(n2 => panel.id + n.id == panel.id + n2.id)
             )
         );
         this.state = {className: '', templates: [], selectedTemplateIdx: null,
@@ -46,7 +46,10 @@ class ControlPanelApp extends preact.Component {
                 ),
                 $el('div', {className: !this.state.tabA ? 'hidden' : ''}, this.makeMainTabItems()),
                 $el('div', {className: this.state.tabA ? 'hidden' : ''}, this.makeDevTabItems()),
-                $el('h1', null, 'RadCMS')
+                $el('h1', null,
+                    $el('img', {src: this.props.baseUrl + 'frontend/assets/logo.png'}),
+                    'RadCMS'
+                )
             ),
             $el(preactRouter,
                 {
@@ -91,7 +94,7 @@ class ControlPanelApp extends preact.Component {
                 }, contentNodeList({
                     cnodes: this.looseContentNodes,
                     createLinkText: 'Lisää sisältöä',
-                    currentPageUrl: this.props.currentPageData.page.url
+                    currentPageUrl: this.props.page.url
                 })) : null)
             )
         );

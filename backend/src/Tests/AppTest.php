@@ -16,21 +16,21 @@ final class AppTest extends DbTestCase {
     public function testCreateAppScansPluginsFromDisk() {
         $testPluginDirName = 'Tests';
         $testPluginDirPath = RAD_BASE_PATH . 'src/' . $testPluginDirName;
-        $mockFs = $this->createMock(FileSystem::class);
-        $mockFs->expects($this->once())
+        $ctx = (object)['db' => self::$db, 'fs' => $this->createMock(FileSystem::class)];
+        $ctx->fs->expects($this->once())
             ->method('readDir')
             ->with($testPluginDirPath)
             ->willReturn([]);
-        App::create(self::$db, $mockFs, $testPluginDirName);
+        App::create($ctx, $testPluginDirName);
     }
     public function testCreateAppValidatesFoundPlugins() {
         $runInvalid = function ($invalidClsPath, $expectedError) {
             try {
-                $mockFs = $this->createMock(FileSystem::class);
-                $mockFs->expects($this->once())
+                $ctx = (object)['db' => self::$db, 'fs' => $this->createMock(FileSystem::class)];
+                $ctx->fs->expects($this->once())
                     ->method('readDir')
                     ->willReturn(['foo/bar/baz/Tests/' . $invalidClsPath]);
-                App::create(self::$db, $mockFs, 'Tests');
+                App::create($ctx, 'Tests');
             } catch (\RuntimeException $e) {
                 $this->assertEquals($expectedError, $e->getMessage());
             }
@@ -46,14 +46,14 @@ final class AppTest extends DbTestCase {
     public function testCreateAppInitializesValidAndInstalledPlugins() {
         $testPluginDirName = 'Tests';
         $testPluginDirPath = RAD_BASE_PATH . 'src/' . $testPluginDirName;
-        $mockFs = $this->createMock(FileSystem::class);
-        $mockFs->expects($this->once())
+        $ctx = (object)['db' => self::$db, 'fs' => $this->createMock(FileSystem::class)];
+        $ctx->fs->expects($this->once())
             ->method('readDir')
             ->with($testPluginDirPath)
             ->willReturn([$testPluginDirPath . '/_ValidAndInstalledPlugin',
                           $testPluginDirPath . '/_ValidPlugin']);
         self::markPluginAsInstalled('_ValidAndInstalledPlugin', self::$db);
-        $app = CtxExposingApp::create(self::$db, $mockFs, $testPluginDirName);
+        $app = CtxExposingApp::create($ctx, $testPluginDirName);
         $actuallyRegisteredPlugins = $app->getPlugins()->toArray();
         $this->assertEquals(2, count($actuallyRegisteredPlugins));
         $this->assertEquals('_ValidAndInstalledPlugin', $actuallyRegisteredPlugins[0]->name);

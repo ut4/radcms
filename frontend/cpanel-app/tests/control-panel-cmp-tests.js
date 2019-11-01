@@ -7,8 +7,8 @@ class TestUiPanelImpl {
     getTitle() { return 'Test'; }
     getRoutes() { return []; }
     getIcon() { return 'feather'; }
-    getMenuItems(ctx) { return [
-        $el('div', {id: 'test-menu-item'}, ctx.currentPageData.page.url)
+    getMenuItems(currentPageData) { return [
+        $el('div', {id: 'test-menu-item'}, currentPageData.page.url)
     ]; }
 }
 

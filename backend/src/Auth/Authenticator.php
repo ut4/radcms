@@ -17,6 +17,14 @@ class Authenticator {
         $this->services = $factory;
     }
     /**
+     * Palauttaa käyttäjän id:n mikäli käyttäjä on kirjautunut, muutoin null.
+     *
+     * @return string|null
+     */
+    public function getIdentity() {
+        return $this->services->makeSession()->get('user');
+    }
+    /**
      * Asettaa käyttäjän $username kirjautuneeksi käyttäjäksi, tai heittää
      * AuthExceptionin mikäli käyttäjää ei voitu hakea kannasta tai salasana ei
      * täsmännyt. Olettaa että parametrit on jo validoitu.

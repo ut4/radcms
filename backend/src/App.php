@@ -4,18 +4,18 @@ namespace RadCms;
 
 use Auryn\Injector;
 use AltoRouter;
-use Monolog\Logger;
-use Monolog\Handler\ErrorLogHandler;
 use RadCms\Framework\Db;
 use RadCms\Content\ContentModule;
 use RadCms\Auth\AuthModule;
 use RadCms\Website\WebsiteModule;
 use RadCms\Plugin\PluginModule;
-use RadCms\Common\LoggerAccess;
 use RadCms\Framework\SessionInterface;
 use RadCms\Framework\NativeSession;
 use RadCms\Framework\FileSystemInterface;
 use RadCms\Framework\FileSystem;
+use RadCms\Auth\Authenticator;
+use RadCms\Auth\Crypto;
+use RadCms\Auth\CachingServicesFactory;
 
 class App {
     protected $ctx;
@@ -26,7 +26,7 @@ class App {
      * @param \Auryn\Injector $injector = new Auryn\Injector
      */
     public function handleRequest($request, $injector = null) {
-        $request->user = (object) ['id' => 1];
+        $request->user = $this->ctx->auth->getIdentity();
         if (($match = $this->ctx->router->match($request->path, $request->method))) {
             $request->params = (object)$match['params'];
             $injector = $injector ?? new Injector();
@@ -43,6 +43,7 @@ class App {
     private function setupIocContainer($container, $request) {
         $container->share($this->ctx->db);
         $container->share($this->ctx->state);
+        $container->share($this->ctx->auth);
         $container->share($this->ctx->state->plugins);
         $container->share($this->ctx->state->contentTypes);
         $container->share($request);
@@ -67,25 +68,16 @@ class App {
     ////////////////////////////////////////////////////////////////////////////
 
     /**
-     * @param array|\RadCms\Framework\Db &$configOrDb
+     * @param array|object &$configOrCtx
      * @param \RadCms\Framework\FileSystemInterface $fs = null
      * @param string $pluginsDir = 'Plugins'
      */
-    public static function create(&$configOrDb,
-                                  $fs = null,
-                                  $pluginsDir = 'Plugins') {
-        $logger = new Logger('mainLogger');
-        $logger->pushHandler(new ErrorLogHandler());
-        LoggerAccess::setLogger($logger);
+    public static function create(&$configOrCtx, $pluginsDir = 'Plugins') {
         //
         $app = new static();
-        $configWasProvided = !($configOrDb instanceof Db);
-        $app->ctx = (object) ['router' => new AltoRouter(),
-                              'db' => $configWasProvided ? new Db($configOrDb) : $configOrDb,
-                              'state' => null,];
+        $app->ctx = self::makeCtx($configOrCtx);
         $app->ctx->router->addMatchTypes(['w' => '[0-9A-Za-z_]++']);
-        if ($configWasProvided) $configOrDb = ['wiped' => 'clean'];
-        $app->ctx->state = new AppState($app->ctx->db, $fs ?? new FileSystem());
+        $app->ctx->state = new AppState($app->ctx->db, $app->ctx->fs ?? new FileSystem());
         $app->ctx->state->selfLoad($pluginsDir, $app->ctx->router);
         ContentModule::init($app->ctx);
         AuthModule::init($app->ctx);
@@ -93,5 +85,31 @@ class App {
         WebsiteModule::init($app->ctx);
         //
         return $app;
+    }
+    /**
+     * @param array|object &$configOrCtx
+     * @return object
+     */
+    private static function makeCtx(&$configOrCtx) {
+        if (!($configOrCtx instanceof \stdClass)) {
+            $out = (object) ['router' => new AltoRouter(),
+                             'auth' => null,
+                             'db' => new Db($configOrCtx),
+                             'state' => null,];
+            $configOrCtx = ['wiped' => 'clean'];
+            $out->auth = new Authenticator(new Crypto, new CachingServicesFactory($out->db));
+            return $out;
+        }
+        if (!isset($configOrCtx->db))
+            throw new \InvalidArgumentException('Can\'t make db without config');
+        $out = (object) ['router' => $configOrCtx->router ?? new AltoRouter(),
+                         'auth' => null,
+                         'db' => $configOrCtx->db,
+                         'state' => null,
+                         'fs' => null];
+        $out->auth = $configOrCtx->auth ??
+            new Authenticator(new Crypto, new CachingServicesFactory($out->db));
+        $out->fs = $configOrCtx->fs ?? null;
+        return $out;
     }
 }
