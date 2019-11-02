@@ -1,3 +1,5 @@
+import services from './common-services.js';
+
 const $el = preact.createElement;
 
 /**
@@ -128,7 +130,7 @@ function contentNodeList(props) {
  */
 function featherSvg(iconId) {
     return $el('svg', {className: 'feather'},
-        $el('use', {'xlink:href': 'frontend/assets/feather-sprite.svg#' + iconId},
+        $el('use', {'xlink:href': services.myFetch.baseUrl + 'frontend/assets/feather-sprite.svg#' + iconId},
             null)
     );
 }

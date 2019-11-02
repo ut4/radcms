@@ -4,6 +4,7 @@ namespace RadCms\Templating;
 
 use RadCms\Framework\Template;
 use RadCms\Content\DAO;
+use RadCms\Common\RadException;
 
 /**
  * Sisältää magikaalisen <?= $this->TemplateName(..) ?>-kutsujen mahdollistavan
@@ -41,15 +42,19 @@ class MagicTemplate extends Template {
     /**
      * @param string $contentTypeName
      * @return RadCms\Content\DAO
+     * @throws \RadCms\Common\RadException
      */
     public function fetchAll($contentTypeName) {
+        // @allow \RadCms\Common\RadException
         return $this->__contentNodeDao->fetchAll($contentTypeName);
     }
     /**
      * @param string $contentTypeName
      * @return RadCms\Content\DAO
+     * @throws \RadCms\Common\RadException
      */
     public function fetchOne($contentTypeName) {
+        // @allow \RadCms\Common\RadException
         return $this->__contentNodeDao->fetchOne($contentTypeName);
     }
     /**
@@ -63,11 +68,12 @@ class MagicTemplate extends Template {
     /**
      * @param string $directiveName
      * @param string $fullFilePath
-     * @throws \InvalidArgumentException
+     * @throws \RadCms\Common\RadException
      */
     public static function addAlias($directiveName, $fullFilePath) {
         if (array_key_exists($directiveName, self::$__aliases))
-            throw new \InvalidArgumentException("Alias {$directiveName} is already registered.");
+            throw new RadException("Alias {$directiveName} is already registered.",
+                                   RadException::BAD_INPUT);
         self::$__aliases[$directiveName] = $fullFilePath;
     }
 }

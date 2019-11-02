@@ -131,8 +131,8 @@ final class InstallerTest extends DbTestCase {
                 ->method('read')
                 ->withConsecutive(
                     [$s->input->radPath . 'schema.mariadb.sql'],
-                    [$s->sampleContentBasePath . 'site.ini'],
-                    [$s->sampleContentBasePath . 'sample-data.sql']
+                    [$s->sampleContentBasePath . 'sample-data.json'],
+                    [$s->sampleContentBasePath . 'site.ini']
                 )
                 ->willReturnOnConsecutiveCalls(
                     'USE ${database};' .
@@ -140,11 +140,14 @@ final class InstallerTest extends DbTestCase {
                                                      ', `installedContentTypesLastUpdated` TEXT);' .
                     ' INSERT INTO ${p}websiteState values (\'{}\',null);',
                     //
+                    '[' .
+                        '["Movies", {"title": "Foo"}],' .
+                        '["Movies", {"title": "Bar"}]' .
+                    ']',
+                    //
                     '[ContentType:Movies]' . PHP_EOL .
                     'friendlyName=Elokuvat' . PHP_EOL .
-                    'fields[title]=text',
-                    //
-                    'INSERT INTO ${p}Movies values (1,\'Foo\')'
+                    'fields[title]=text'
                 );
             return;
         }
@@ -209,7 +212,7 @@ return [
         self::$db->database = $s->input->dbDatabase;
     }
     private function verifyInsertedSampleContent($s) {
-        $this->assertEquals(1, count(self::$db->fetchAll(
+        $this->assertEquals(2, count(self::$db->fetchAll(
             'SELECT `title` FROM ${p}Movies'
         )));
     }

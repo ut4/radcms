@@ -4,6 +4,7 @@ namespace RadCms\Website;
 
 use RadCms\Framework\FileSystemInterface;
 use RadCms\ContentType\ContentTypeCollection;
+use RadCms\Common\RadException;
 
 /**
  * Lukee, ja pitää sisällään site.ini -tiedostoon conffatut tiedot.
@@ -25,36 +26,39 @@ class SiteConfig {
     /**
      * @param string $filePath Absoluuttinen polku parsattavaan tiedostoon Esim. '/home/me/foo/site.ini'.
      * @param bool $checkLastModTime = true
-     * @throws \RuntimeException
+     * @return bool
+     * @throws \RadCms\Common\RadException
      */
     public function selfLoad($filePath, $checkLastModTime = true) {
         if ($checkLastModTime && !($this->lastModTime = $this->fs->lastModTime($filePath)))
-            throw new \RuntimeException('Failed to read mtime of ' . $filePath);
+            throw new RadException('Failed to read mtime of ' . $filePath,
+                                   RadException::FAILED_FS_OP);
         if (!($iniStr = $this->fs->read($filePath)))
-            throw new \RuntimeException('Failed to read ' . $filePath);
-        [$this->urlMatchers, $this->contentTypes] =
-            $this->parse($iniStr, $filePath);
-    }
-    /**
-     * @param string $iniStr
-     * @param string $filePath
-     * @return array [\RadCms\Website\UrlMatcherCollection, \RadCms\ContentType\ContentTypeCollection]
-     */
-    private function parse($iniStr, $filePath) {
+            throw new RadException('Failed to read ' . $filePath,
+                                   RadException::FAILED_FS_OP);
         if (!($parsed = parse_ini_string($iniStr, true, INI_SCANNER_RAW)))
-            throw new \RuntimeException('Failed to parse ' . $filePath);
-        return [$this->collectUrlMatchers($parsed),
-                $this->collectContentTypes($parsed)];
+            throw new RadException('Failed to parse ' . $filePath,
+                                   RadException::BAD_INPUT);
+        [$this->urlMatchers, $this->contentTypes] = $this->parse($parsed);
+        return true;
     }
     /**
      * @param array $parsedIniData
+     * @return array [\RadCms\Website\UrlMatcherCollection, \RadCms\ContentType\ContentTypeCollection]
+     */
+    private function parse($parsedIniData) {
+        return [$this->collectUrlMatchers($parsedIniData),
+                $this->collectContentTypes($parsedIniData)];
+    }
+    /**
+     * @param array $parsed
      * @return \RadCms\Website\UrlMatcherCollection
      */
-    private function collectUrlMatchers($parsedIniData) {
+    private function collectUrlMatchers($parsed) {
         $out = new UrlMatcherCollection();
         static $prefix = 'UrlMatcher:';
         static $prefixLen = 11; // strlen('UrlMatcher:')
-        foreach ($parsedIniData as $sectionName => $opts) {
+        foreach ($parsed as $sectionName => $opts) {
             if (mb_strpos($sectionName, $prefix) !== 0) continue;
             $out->add($opts['pattern'], mb_substr($sectionName, $prefixLen));
         }

@@ -4,6 +4,8 @@ namespace RadCms\ContentType;
 
 use RadCms\Framework\Db;
 use RadCms\Plugin\Plugin;
+use RadCms\Content\DMO;
+use RadCms\Common\RadException;
 
 /**
  * Luokka joka asentaa/päivittää/poistaa sisältötyyppejä tietokantaan.
@@ -23,47 +25,77 @@ class ContentTypeMigrator {
     /**
      * @param \RadCms\ContentType\ContentTypeCollection $contentTypes
      * @param string $size = 'medium' 'tiny' | 'small' | 'medium' | '' | 'big'
+     * @param array $initialData = null Array<[string, object]>
      * @return bool
-     * @throws \RuntimeException
+     * @throws \RadCms\Common\RadException
      */
-    public function installMany(ContentTypeCollection $contentTypes, $size = 'medium') {
+    public function installMany(ContentTypeCollection $contentTypes,
+                                $initialData = null,
+                                $size = 'medium') {
         if (!in_array($size, self::COLLECTION_SIZES)) {
-            throw new \RuntimeException('Not valid content type collection size ' .
-                                        implode(' | ', self::COLLECTION_SIZES));
+            throw new RadException('Not valid content type collection size ' .
+                                    implode(' | ', self::COLLECTION_SIZES),
+                                    RadException::BAD_INPUT);
         }
-        $this->validateContentTypes($contentTypes);
-        $ctypeDefs = $contentTypes->toArray();
-        $this->createContentTypes($ctypeDefs, $size);
-        $this->addToInstalledContentTypes($ctypeDefs);
+        // @allow \RadCms\Common\RadException
+        return $this->validateContentTypes($contentTypes) &&
+               $this->validateInitialData($initialData) &&
+               $this->createContentTypes($contentTypes->toArray(), $size) &&
+               $this->addToInstalledContentTypes($contentTypes->toArray()) &&
+               $this->insertInitialData($initialData, $contentTypes);
     }
     /**
      * @param \RadCms\ContentType\ContentTypeCollection $contentTypes
      * @return bool
-     * @throws \RuntimeException
+     * @throws \RadCms\Common\RadException
      */
     public function uninstallMany(ContentTypeCollection $contentTypes) {
-        $this->validateContentTypes($contentTypes);
-        $ctypeDefs = $contentTypes->toArray();
-        $this->removeContentTypes($ctypeDefs);
-        $this->removeFromInstalledContentTypes($ctypeDefs);
+        // @allow \RadCms\Common\RadException
+        return $this->validateContentTypes($contentTypes) &&
+               $this->removeContentTypes($contentTypes->toArray()) &&
+               $this->removeFromInstalledContentTypes($contentTypes->toArray());
     }
     /**
      * @param string $origin
-     * @throws \RuntimeException
      */
     public function setOrigin(Plugin $plugin) {
         $this->origin = $plugin->name . '.ini';
     }
     /**
      * @param \RadCms\ContentType\ContentTypeCollection $contentTypes
-     * @throws \RuntimeException
+     * @return bool
+     * @throws \RadCms\Common\RadException
      */
     private function validateContentTypes($contentTypes) {
-        if (($errors = ContentTypeValidator::validateAll($contentTypes)))
-            throw new \RuntimeException('Invalid content type(s): ' . implode(',', $errors));
+        if (!($errors = ContentTypeValidator::validateAll($contentTypes)))
+            return true;
+        throw new RadException(implode(',', $errors), RadException::BAD_INPUT);
+    }
+    /**
+     * @param array|null $data
+     * @return bool
+     * @throws \RadCms\Common\RadException
+     */
+    private function validateInitialData($data) {
+        if ($data === null)
+            return true;
+        if (!is_array($data))
+            throw new RadException('initialData must be an array', RadException::BAD_INPUT);
+        foreach ($data as $item) {
+            if (!is_array($item) ||
+                count($item) != 2 ||
+                !is_string($item[0]) ||
+                !($item[1] instanceof \stdClass))
+                    throw new RadException(
+                        'initialData entry must be [["ContentTypeName", {"key":"value"}]]',
+                        RadException::BAD_INPUT);
+        }
+        return true;
     }
     /**
      * @param array $ctypeDefs Array<ContentTypeDef>
+     * @return bool
+     * @throws \RadCms\Common\RadException
      */
     private function createContentTypes($ctypeDefs, $size) {
         $sql = '';
@@ -74,34 +106,72 @@ class ContentTypeMigrator {
                 ', PRIMARY KEY (`id`)' .
             ') DEFAULT CHARSET = utf8mb4;';
         }
-        $this->db->exec($sql);
-    }
-    /**
-     * @param array $ctypeDefs Array<ContentTypeDef>
-     */
-    private function removeContentTypes($ctypeDefs) {
-        $this->db->exec(implode('', array_map(function ($type) {
-            return 'DROP TABLE ${p}' . $type->name . ';';
-        }, $ctypeDefs)));
-    }
-    /**
-     * @param array $ctypeDefs Array<ContentTypeDef>
-     * @throws \RuntimeException
-     */
-    private function addToInstalledContentTypes($ctypeDefs) {
-        if ($this->db->exec('UPDATE ${p}websiteState SET `installedContentTypes` =' .
-                            ' JSON_MERGE_PATCH(`installedContentTypes`, ?)' .
-                            ', `installedContentTypesLastUpdated` = UNIX_TIMESTAMP()',
-                            [json_encode(array_reduce($ctypeDefs, function ($map, $t) {
-                                $map[$t->name] = [$t->friendlyName, $t->fields, $this->origin];
-                                return $map;
-                            }, []))]) < 1) {
-            throw new \RuntimeException('Failed to update websiteState.`installedContentTypes`');
+        try {
+            $this->db->exec($sql);
+            return true;
+        } catch (\PDOException $e) {
+            throw new RadException($e->getMessage(), RadException::FAILED_DB_OP);
         }
     }
     /**
      * @param array $ctypeDefs Array<ContentTypeDef>
-     * @throws \RuntimeException
+     * @return bool
+     * @throws \RadCms\Common\RadException
+     */
+    private function removeContentTypes($ctypeDefs) {
+        try {
+            $this->db->exec(implode('', array_map(function ($type) {
+                return 'DROP TABLE ${p}' . $type->name . ';';
+            }, $ctypeDefs)));
+            return true;
+        } catch (\PDOException $e) {
+            throw new RadException($e->getMessage(), RadException::FAILED_DB_OP);
+        }
+    }
+    /**
+     * @param array $ctypeDefs Array<ContentTypeDef>
+     * @return bool
+     * @throws \RadCms\Common\RadException
+     */
+    private function addToInstalledContentTypes($ctypeDefs) {
+        try {
+            if ($this->db->exec(
+                'UPDATE ${p}websiteState SET `installedContentTypes` =' .
+                ' JSON_MERGE_PATCH(`installedContentTypes`, ?)' .
+                ', `installedContentTypesLastUpdated` = UNIX_TIMESTAMP()',
+                [json_encode(array_reduce($ctypeDefs, function ($map, $t) {
+                    $map[$t->name] = [$t->friendlyName, $t->fields, $this->origin];
+                    return $map;
+                }, []))]) > 0) {
+                return true;
+            }
+            throw new RadException('Failed to update websiteState.`installedContentTypes`',
+                                   RadException::INEFFECTUAL_DB_OP);
+        } catch (\PDOException $e) {
+            throw new RadException($e->getMessage(), RadException::FAILED_DB_OP);
+        }
+    }
+    /**
+     * @param array|null $data Array<[string, object]>
+     * @param \RadCms\ContentType\ContentTypeCollection $contentTypes
+     * @return bool
+     * @throws \RadCms\Common\RadException
+     */
+    private function insertInitialData($data, $contentTypes) {
+        if (!$data) return true;
+        $dmo = new DMO($this->db, $contentTypes,
+                       false // no revisions
+                       );
+        foreach ($data as [$contentTypeName, $data]) {
+            // @allow \RadCms\Common\RadException
+            $dmo->insert($contentTypeName, $data);
+        }
+        return true;
+    }
+    /**
+     * @param array $ctypeDefs Array<ContentTypeDef>
+     * @return bool
+     * @throws \RadCms\Common\RadException
      */
     private function removeFromInstalledContentTypes($ctypeDefs) {
         $placeholders = [];
@@ -110,12 +180,18 @@ class ContentTypeMigrator {
             $values[] = '$."' . $t->name . '"';
             $placeholders[] = '?';
         }
-        if ($this->db->exec('UPDATE ${p}websiteState SET `installedContentTypes` =' .
-                            ' JSON_REMOVE(`installedContentTypes`' .
-                                         ', ' . implode(',', $placeholders) . ')' .
-                            ', `installedContentTypesLastUpdated` = UNIX_TIMESTAMP()',
-                            $values) < 1) {
-            throw new \RuntimeException('Failed to update websiteState.`installedContentTypes`');
+        try {
+            if ($this->db->exec('UPDATE ${p}websiteState SET `installedContentTypes` =' .
+                                ' JSON_REMOVE(`installedContentTypes`' .
+                                            ', ' . implode(',', $placeholders) . ')' .
+                                ', `installedContentTypesLastUpdated` = UNIX_TIMESTAMP()',
+                                $values) > 0) {
+                return true;
+            }
+            throw new RadException('Failed to update websiteState.`installedContentTypes`',
+                                   RadException::INEFFECTUAL_DB_OP);
+        } catch (\PDOException $e) {
+            throw new RadException($e->getMessage(), RadException::FAILED_DB_OP);
         }
     }
     /**

@@ -2,10 +2,15 @@
 
 namespace RadCms\Auth;
 
+use RadCms\Common\RadException;
+
 /**
  * Auth-moduulin julkinen API: sisältää metodit kuten isLoggedIn() ja login().
  */
 class Authenticator {
+    public const INVALID_CREDENTIAL  = 201010;
+    public const USER_ALREADY_EXISTS = 201011;
+    public const FAILED_TO_SEND_MAIL = 201012;
     private $crypto;
     private $services;
     /**
@@ -26,19 +31,21 @@ class Authenticator {
     }
     /**
      * Asettaa käyttäjän $username kirjautuneeksi käyttäjäksi, tai heittää
-     * AuthExceptionin mikäli käyttäjää ei voitu hakea kannasta tai salasana ei
+     * RadExceptionin mikäli käyttäjää ei voitu hakea kannasta tai salasana ei
      * täsmännyt. Olettaa että parametrit on jo validoitu.
      *
      * @param string $username
      * @param string $password
-     * @throws \RadCms\Auth\AuthException
+     * @return bool
+     * @throws \RadCms\Common\RadException
      */
     public function login($username, $password) {
         $user = $this->services->makeUserRepo()->getUser($username);
         if (!$user)
-            throw new AuthException('User not found', AuthException::INVALID_CREDENTIAL);
+            throw new RadException('User not found', self::INVALID_CREDENTIAL);
         if (!$this->crypto->verifyPass($password, $user->passwordHash))
-            throw new AuthException('Invalid password', AuthException::INVALID_CREDENTIAL);
+            throw new RadException('Invalid password', self::INVALID_CREDENTIAL);
         $this->services->makeSession()->put('user', $user->id);
+        return true;
     }
 }

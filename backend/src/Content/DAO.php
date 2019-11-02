@@ -4,6 +4,7 @@ namespace RadCms\Content;
 
 use RadCms\Framework\Db;
 use RadCms\ContentType\ContentTypeCollection;
+use RadCms\Common\RadException;
 
 class DAO {
     public $useRevisions;
@@ -30,7 +31,8 @@ class DAO {
      * @return \RadCms\Content\Query
      */
     public function fetchOne($contentTypeName) {
-        if (!($type = $this->getContentType($contentTypeName))) return;
+        // @allow \RadCms\Common\RadException
+        $type = $this->getContentType($contentTypeName);
         return new Query(++$this->counter, $type, true, $this);
     }
     /**
@@ -38,7 +40,8 @@ class DAO {
      * @return \RadCms\Content\Query
      */
     public function fetchAll($contentTypeName) {
-        if (!($type = $this->getContentType($contentTypeName))) return;
+        // @allow \RadCms\Common\RadException
+        $type = $this->getContentType($contentTypeName);
         return new Query(++$this->counter, $type, false, $this);
     }
     /**
@@ -62,6 +65,7 @@ class DAO {
      */
     public function doExec($sql, $queryId, $isFetchOne) {
         $out = null;
+        // @allow \PDOException
         $rows = $this->db->fetchAll($sql);
         if ($isFetchOne) {
             $out = $rows ? $this->makeContentNode($rows[0], $rows) : null;
@@ -70,6 +74,7 @@ class DAO {
                 return $this->makeContentNode($row, $rows);
             }, $rows) : [];
         }
+        //
         if (isset($this->frontendPanelInfos[$queryId])) {
             $this->frontendPanelInfos[$queryId]->contentNodes = $out;
         }
@@ -83,11 +88,12 @@ class DAO {
     }
     /**
      * @return \RadCms\ContentType\ContentTypeDef
-     * @throws \InvalidArgumentException
+     * @throws \RadCms\Common\RadException
      */
-    protected function getContentType($name) {
+    public function getContentType($name) {
         if (!($type = $this->contentTypes->find($name)))
-            throw new \InvalidArgumentException("Content type `{$name}` not registered");
+            throw new RadException("Content type `{$name}` not registered",
+                                   RadException::BAD_INPUT);
         return $type;
     }
     /**

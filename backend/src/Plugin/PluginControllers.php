@@ -5,6 +5,7 @@ namespace RadCms\Plugin;
 use RadCms\Framework\Request;
 use RadCms\Framework\Response;
 use RadCms\Common\LoggerAccess;
+use RadCms\Common\RadException;
 
 /**
  * Handlaa /api/plugin -alkuiset pyynnöt.
@@ -40,13 +41,12 @@ class PluginControllers {
                                                PluginInstaller $installer) {
         if (($plugin = $this->plugins->find($req->params->name))) {
             try {
-                $errorMessage = $installer->install($plugin);
-                if (!$errorMessage) {
+                if ($installer->install($plugin)) {
                     $res->json(['ok' => 'ok']);
                     return;
                 }
-            } catch (\Exception $e) {
-                LoggerAccess::getLogger('error', $e->getTraceAsString());
+            } catch (RadException $e) {
+                LoggerAccess::getLogger()->log('error', $e->getTraceAsString());
                 $errorMessage = 'Failed to install a plugin (see the logger ' .
                                 'output for details).';
             }
@@ -67,13 +67,12 @@ class PluginControllers {
                                                  PluginInstaller $installer) {
         if (($plugin = $this->plugins->find($req->params->name))) {
             try {
-                $errorMessage = $installer->uninstall($plugin);
-                if (!$errorMessage) {
+                if ($installer->uninstall($plugin)) {
                     $res->json(['ok' => 'ok']);
                     return;
                 }
-            } catch (\Exception $e) {
-                LoggerAccess::getLogger('error', $e->getTraceAsString());
+            } catch (RadException $e) {
+                LoggerAccess::getLogger()->log('error', $e->getTraceAsString());
                 $errorMessage = 'Failed to uninstall a plugin (see the logger ' .
                                 'output for details).';
             }

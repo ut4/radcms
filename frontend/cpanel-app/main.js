@@ -10,8 +10,8 @@ const cpanelBoot = {
      */
     boot(currentPageData) {
         services.myFetch.baseUrl = currentPageData.baseUrl.endsWith('/')
-            ? currentPageData.baseUrl.substr(0, currentPageData.baseUrl.length-1)
-            : currentPageData.baseUrl;
+            ? currentPageData.baseUrl
+            : currentPageData.baseUrl + '/';
         //
         window.rad.runRegisteredOnLoadFns([uiPanelRegister, services, components]);
         //

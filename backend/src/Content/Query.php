@@ -4,6 +4,7 @@ namespace RadCms\Content;
 
 use RadCms\ContentType\ContentTypeDef;
 use RadCms\ContentType\ContentTypeValidator;
+use RadCms\Common\RadException;
 
 /**
  * Luokka jonka templaattien <?php $this->fetchOne|All() ?> instansoi ja
@@ -58,11 +59,12 @@ class Query {
     }
     /**
      * @return string
-     * @throws \RuntimeException
+     * @throws \RadCms\Common\RadException
      */
     public function toSql() {
         if (($errors = $this->selfValidate()) != '') {
-            throw new \RuntimeException($errors);
+            throw new RadException($errors, RadException::BAD_INPUT);
+        }
         }
         $q = 'SELECT `id`, ' . $this->contentType->fieldsToSql() .
              ' FROM ${p}' . $this->contentType->name .

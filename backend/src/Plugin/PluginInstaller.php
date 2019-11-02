@@ -4,6 +4,7 @@ namespace RadCms\Plugin;
 
 use RadCms\Framework\Db;
 use RadCms\ContentType\ContentTypeMigrator;
+use RadCms\Common\RadException;
 
 class PluginInstaller {
     private $db;
@@ -18,7 +19,8 @@ class PluginInstaller {
     }
     /**
      * @param \RadCms\Plugin\Plugin $plugin
-     * @return null|string null on success or 'Some error message'
+     * @return bool
+     * @throws \RadCms\Common\RadException
      */
     public function install(Plugin $plugin) {
         if ($plugin->isInstalled) {
@@ -28,19 +30,17 @@ class PluginInstaller {
             $plugin->instantiate();
         }
         $this->contentTypeMigrator->setOrigin($plugin);
-        $errorMessage = $plugin->impl->install($this->contentTypeMigrator);
-        if (!is_string($errorMessage) || !$errorMessage) {
-            return $this->db->exec('UPDATE ${p}websiteState SET `installedPlugins`' .
-                                   ' = JSON_SET(`installedPlugins`, ?, 1)',
-                                   ['$."' . $plugin->name . '"']) === 1
-                ? null
-                : 'Failed to update websiteState.`installedPlugins`';
-        }
-        return $errorMessage;
+        // @allow \RadCms\Common\RadException
+        $plugin->impl->install($this->contentTypeMigrator);
+        // @allow \RadCms\Common\RadException
+        return $this->updateInstalledPlugins('UPDATE ${p}websiteState SET `installedPlugins`' .
+                                             ' = JSON_SET(`installedPlugins`, ?, 1)',
+                                             $plugin->name);
     }
     /**
      * @param \RadCms\Plugin\Plugin $plugin
-     * @return null|string null on success or 'Some error message'
+     * @return bool
+     * @throws \RadCms\Common\RadException
      */
     public function uninstall(Plugin $plugin) {
         if (!$plugin->isInstalled) {
@@ -49,14 +49,28 @@ class PluginInstaller {
         if (!$plugin->impl) {
             $plugin->instantiate();
         }
-        $errorMessage = $plugin->impl->uninstall($this->contentTypeMigrator);
-        if (!is_string($errorMessage) || !$errorMessage) {
-            return $this->db->exec('UPDATE ${p}websiteState SET `installedPlugins`' .
-                                   ' = JSON_REMOVE(`installedPlugins`, ?)',
-                                   ['$."' . $plugin->name . '"']) === 1
-                ? null
-                : 'Failed to update websiteState.`installedPlugins`';
+        // @allow \RadCms\Common\RadException
+        $plugin->impl->uninstall($this->contentTypeMigrator);
+        // @allow \RadCms\Common\RadException
+        return $this->updateInstalledPlugins('UPDATE ${p}websiteState SET `installedPlugins`' .
+                                             ' = JSON_REMOVE(`installedPlugins`, ?)',
+                                             $plugin->name);
+    }
+    /**
+     * @param string $sql
+     * @param string $pluginName
+     * @return bool
+     * @throws \RadCms\Common\RadException
+     */
+    private function updateInstalledPlugins($sql, $pluginName) {
+        try {
+            if ($this->db->exec($sql, ['$."' . $pluginName . '"']) === 1) {
+                return true;
+            }
+            throw new RadException('Failed to update websiteState.`installedPlugins`',
+                                   RadException::INEFFECTUAL_DB_OP);
+        } catch (\PDOException $e) {
+            throw new RadException($e->getMessage(), RadException::FAILED_DB_OP);
         }
-        return $errorMessage;
     }
 }

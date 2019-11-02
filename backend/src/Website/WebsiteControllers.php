@@ -27,6 +27,7 @@ class WebsiteControllers {
     public function __construct(SiteConfig $siteConfig,
                                 AppState $appState,
                                 SessionInterface $session) {
+        // @allow \RadCms\Common\RadException
         $siteConfig->selfLoad(RAD_SITE_PATH . 'site.ini');
         if ($siteConfig->lastModTime > $appState->contentTypesLastUpdated &&
             ($err = $appState->diffAndSaveChangesToDb($siteConfig->contentTypes,

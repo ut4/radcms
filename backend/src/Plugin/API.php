@@ -25,8 +25,10 @@ class API {
      *
      * @param string $directiveName
      * @param string $fullFilePath
+     * @throws \RadCms\Common\RadException
      */
     public function registerDirective($directiveName, $fullFilePath) {
+        // @allow \RadCms\Common\RadException
         MagicTemplate::addAlias($directiveName, $fullFilePath);
     }
     /**

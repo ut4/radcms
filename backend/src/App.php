@@ -16,6 +16,7 @@ use RadCms\Framework\FileSystem;
 use RadCms\Auth\Authenticator;
 use RadCms\Auth\Crypto;
 use RadCms\Auth\CachingServicesFactory;
+use RadCms\Common\RadException;
 
 class App {
     protected $ctx;
@@ -31,9 +32,10 @@ class App {
             $request->params = (object)$match['params'];
             $injector = $injector ?? new Injector();
             $this->setupIocContainer($injector, $request);
+            // @allow \RadCms\Common\RadException
             $injector->execute($this->makeRouteMatchInvokePath($match));
         } else {
-            throw new \RuntimeException("No route for {$request->path}");
+            throw new RadException("No route for {$request->path}");
         }
     }
     /**
@@ -53,14 +55,16 @@ class App {
     /**
      * @param array $match
      * @return string 'Cls\Path\To\Some\Controller::methodName'
+     * @throws \RadCms\Common\RadException
      */
     private function makeRouteMatchInvokePath($match) {
         $ctrlInfo = $match['target']();
         if (!is_array($ctrlInfo) ||
             !is_string($ctrlInfo[0] ?? null) ||
             !is_string($ctrlInfo[1] ?? null)) {
-            throw new \UnexpectedValueException(
-                'A route must return [\'Ctrl\\Class\\Path\', \'methodName\'].');
+            throw new RadException(
+                'A route must return [\'Ctrl\\Class\\Path\', \'methodName\'].',
+                RadException::BAD_INPUT);
         }
         return $ctrlInfo[0] . '::' . $ctrlInfo[1];
     }

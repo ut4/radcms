@@ -6,6 +6,7 @@ use RadCms\Framework\Request;
 use RadCms\Framework\Response;
 use RadCms\Framework\Validator;
 use RadCms\Templating\MagicTemplate;
+use RadCms\Common\RadException;
 
 class AuthControllers {
     private $auth;
@@ -38,7 +39,7 @@ class AuthControllers {
             $this->auth->login($req->body->username,
                                $req->body->password);
             $res->json(['ok' => 'ok']);
-        } catch (AuthException $e) {
+        } catch (RadException $e) {
             $res->status(401)->json(['err' => $e->getMessage()]);
         }
     }

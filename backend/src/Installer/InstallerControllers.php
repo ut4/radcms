@@ -8,6 +8,8 @@ use RadCms\Framework\FileSystemInterface;
 use RadCms\Framework\FileSystem;
 use RadCms\Framework\Validator;
 use RadCms\Framework\Template;
+use RadCms\Common\RadException;
+use RadCms\Common\LoggerAccess;
 
 class InstallerControllers {
     private $sitePath;
@@ -43,9 +45,15 @@ class InstallerControllers {
             $res->status(400)->json(json_encode($errors));
             return;
         }
-        $result = (new Installer($this->sitePath, $this->fs, $this->makeDb))->doInstall($req->body);
-        $res->status($result == 'ok' ? 200 : 500)
-            ->json(json_encode([($result == 'ok' ? 'ok' : 'error') => $result]));
+        try {
+            (new Installer($this->sitePath, $this->fs, $this->makeDb))
+                ->doInstall($req->body);
+            $res->json(json_encode(['ok' => 'ok']));
+        } catch (RadException $e) {
+            LoggerAccess::getLogger()->log('error', $e->getTraceAsString());
+            $res->status($e->getCode() != RadException::BAD_INPUT ? 500 : 400)
+                ->json(json_encode(['error' => $e->getCode()]));
+        }
     }
     /**
      * Validoi POST / input-datan, ja palauttaa virheet taulukkona.

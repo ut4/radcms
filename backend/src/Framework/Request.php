@@ -2,6 +2,8 @@
 
 namespace RadCms\Framework;
 
+use RadCms\Common\RadException;
+
 class Request {
     public $path;
     public $method;
@@ -26,6 +28,7 @@ class Request {
      * @param string $BASE_URL
      * @param string $urlPath = substr($_SERVER['REQUEST_URI'], strlen($BASE_URL) - 1)
      * @return \RadCms\Framework\Request
+     * @throws \RadCms\Common\RadException
      */
     public static function createFromGlobals($BASE_URL, $urlPath = null) {
         $method = $_SERVER['REQUEST_METHOD'];
@@ -38,7 +41,7 @@ class Request {
                 if (!($json = file_get_contents('php://input')))
                     $body = new \stdClass();
                 elseif (($body = json_decode($json)) === null)
-                    throw new \RuntimeException('Invalid json input');
+                    throw new RadException('Invalid json input', RadException::BAD_INPUT);
             }
         }
         return new Request(

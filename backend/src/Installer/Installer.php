@@ -7,6 +7,7 @@ use RadCms\Common\LoggerAccess;
 use RadCms\Framework\FileSystemInterface;
 use RadCms\ContentType\ContentTypeMigrator;
 use RadCms\Website\SiteConfig;
+use RadCms\Common\RadException;
 
 class Installer {
     private $sitePath;
@@ -31,18 +32,16 @@ class Installer {
      * @return string 'ok' | 'Some error message'
      */
     public function doInstall($settings) {
-        if (($error = $this->openDbAndCreateSchema($settings)) ||
-            ($error = $this->createSampleContentTypes($settings)) ||
-            ($error = $this->insertWebsiteAndSampleContent($settings)) ||
-            ($error = $this->cloneTemplatesAndIniFile($settings)) ||
-            ($error = $this->generateConfigFile($settings))) {
-            return $error;
-        }
-        return 'ok';
+        // @allow \RadCms\Common\RadException
+        return $this->openDbAndCreateSchema($settings) &&
+               $this->createSampleContentTypesAndInsertSampleContent($settings) &&
+               $this->cloneTemplatesAndIniFile($settings) &&
+               $this->generateConfigFile($settings);
     }
     /**
      * @param object $s settings
-     * @return string|null
+     * @return bool
+     * @throws \RadCms\Common\RadException
      */
     private function openDbAndCreateSchema($s) {
         try {
@@ -55,92 +54,80 @@ class Installer {
                 'db.charset'     => $s->dbCharset,
             ]);
         } catch (\PDOException $e) {
-            LoggerAccess::getLogger()->log('error', $e->getMessage());
-            return 'Failed to connect to the database';
+            throw new RadException($e->getMessage(), RadException::FAILED_DB_OP);
         }
         try {
             $this->db->attr(\PDO::ATTR_EMULATE_PREPARES, 1);
             $this->db->exec('CREATE DATABASE ' . $s->dbDatabase);
         } catch (\PDOException $e) {
-            LoggerAccess::getLogger()->log('error', $e->getMessage());
-            return 'Failed to create the database';
+            throw new RadException($e->getMessage(), RadException::FAILED_DB_OP);
         }
         try {
             $sql = $this->fs->read("{$s->radPath}schema.mariadb.sql");
-            if (!$sql) return "Failed to read {$s->radPath}schema.mariadb.sql}";
+            if (!$sql)
+                throw new RadException("Failed to read {$s->radPath}schema.mariadb.sql}",
+                                       RadException::FAILED_FS_OP);
             $sql = str_replace('${database}', $s->dbDatabase, $sql);
             $sql = str_replace('${siteName}', $s->siteName, $sql);
             $this->db->exec($sql);
             $this->db->attr(\PDO::ATTR_EMULATE_PREPARES, 0);
         } catch (\PDOException $e) {
-            LoggerAccess::getLogger()->log('error', $e->getMessage());
-            return 'Failed to insert sample content';
+            throw new RadException($e->getMessage(), RadException::FAILED_DB_OP);
         }
-        return null;
+        return true;
     }
     /**
      * @param object $s settings
-     * @return string|null
+     * @return bool
+     * @throws \RadCms\Common\RadException
      */
-    private function createSampleContentTypes($s) {
+    private function createSampleContentTypesAndInsertSampleContent($s) {
+        $path = "{$s->radPath}sample-content/{$s->sampleContent}/sample-data.json";
+        $json = $this->fs->read($path);
+        if (!$json)
+            throw new RadException("Failed to read {$path}", RadException::FAILED_FS_OP);
+        if (($sampleContent = json_decode($json)) === null)
+            throw new RadException("Failed to parse {$path}", RadException::FAILED_FS_OP);
+        //
         $ini = new SiteConfig($this->fs);
-        try {
-            $ini->selfLoad("{$s->radPath}sample-content/{$s->sampleContent}/site.ini",
-                           false);
-        } catch (\RuntimeException $e) {
-            return $e->getMessage();
-        }
-        try {
-            (new ContentTypeMigrator($this->db))->installMany($ini->contentTypes);
-        } catch (\RuntimeException | \PDOException $e) {
-            LoggerAccess::getLogger()->log('error', $e->getMessage());
-            return 'Failed to create sample content types';
-        }
-        return null;
+        // @allow \RadCms\Common\RadException
+        return $ini->selfLoad("{$s->radPath}sample-content/{$s->sampleContent}/site.ini", false) &&
+               (new ContentTypeMigrator($this->db))->installMany($ini->contentTypes,
+                                                                 $sampleContent);
     }
     /**
      * @param object $s settings
-     * @return string|null
-     */
-    private function insertWebsiteAndSampleContent($s) {
-        $path = "{$s->radPath}sample-content/{$s->sampleContent}/sample-data.sql";
-        $sql = $this->fs->read($path);
-        if (!$sql) return "Failed to read {$path}";
-        try {
-            $this->db->exec($sql);
-        } catch (\PDOException $e) {
-            LoggerAccess::getLogger()->log('error', $e->getMessage());
-            return 'Failed to insert sample content';
-        }
-        return null;
-    }
-    /**
-     * @param object $s settings
-     * @return string|null
+     * @return bool
+     * @throws \RadCms\Common\RadException
      */
     private function cloneTemplatesAndIniFile($s) {
         $dirPath = "{$s->radPath}sample-content/{$s->sampleContent}/";
         $dirPathLen = mb_strlen($dirPath);
         //
         $fileNames = ['site.ini'];
-        foreach ($this->fs->readDir($dirPath, '*.tmpl.php') as $filePath) {
-            $fileNames[] = substr($filePath, $dirPathLen);
+        if (!($filePaths = $this->fs->readDir($dirPath, '*.tmpl.php')))
+            throw new RadException("Failed to read {$dirPath}",
+                                   RadException::FAILED_FS_OP);
+        foreach ($filePaths as $path) {
+            $fileNames[] = substr($path, $dirPathLen);
         }
         //
         foreach ($fileNames as $fileName) {
             if (!$this->fs->copy($dirPath . $fileName,
                                  $this->sitePath . $fileName)) {
-                return 'Failed to write ' . $this->sitePath . $fileName;
+                throw new RadException('Failed to copy ' . $this->sitePath . $fileName,
+                                       RadException::FAILED_FS_OP);
             }
         }
-        return null;
+        return true;
     }
     /**
      * @param object $s settings
-     * @return string|null
+     * @return bool
+     * @throws \RadCms\Common\RadException
      */
     private function generateConfigFile($s) {
-        return $this->fs->write(
+        if ($this->fs->write(
             $this->sitePath . 'config.php',
 "<?php
 if (!defined('RAD_BASE_PATH')) {
@@ -158,6 +145,8 @@ return [
     'db.charset'     => '{$s->dbCharset}',
 ];
 "
-        ) ? null : 'Failed to generate config.php';
+        )) return true;
+        throw new RadException('Failed to generate config.php',
+                               RadException::FAILED_FS_OP);
     }
 }
