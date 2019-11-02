@@ -12,12 +12,14 @@ use RadCms\Common\RadException;
  */
 class Query {
     private $id;
+    private $contentType;
     private $isFetchOne;
     private $dao;
-    private $contentType;
-    private $whereExp;
-    private $orderByExp;
-    private $limitExp;
+    private $whereExpr;
+    private $orderByExpr;
+    private $limitExpr;
+    private $joinDef;
+    private $collector;
     /**
      * $param integer $id
      * $param \RadCms\ContentType\ContentTypeDef $contentType
@@ -29,9 +31,6 @@ class Query {
         $this->contentType = $contentType;
         $this->isFetchOne = $isFetchOne;
         $this->dao = $dao;
-        $this->whereExpr = null;
-        $this->orderByExpr = null;
-        $this->limitExpr = null;
     }
     /**
      * @param string $expr
@@ -39,6 +38,35 @@ class Query {
      */
     public function where($expr) {
         $this->whereExpr = $expr;
+        return $this;
+    }
+    /**
+     * @param string $contentType
+     * @param string $expr
+     * @param bool $isLeft = false
+     * @return $this
+     */
+    public function join($contentType, $expr, $isLeft = false) {
+        $this->joinDef = (object)['contentType' => $contentType,
+                                  'expr' => $expr,
+                                  'isLeft' => $isLeft];
+        return $this;
+    }
+    /**
+     * @param string $contentType
+     * @param string $expr
+     * @return $this
+     */
+    public function leftJoin($contentType, $expr) {
+        return $this->join($contentType, $expr, true);
+    }
+    /**
+     * @param string $toField
+     * @param \Closure $fn
+     * @return array|object|null
+     */
+    public function collectJoin($toField, \Closure $fn) {
+        $this->collector = [$fn, $toField];
         return $this;
     }
     /**
@@ -55,30 +83,59 @@ class Query {
      * @return array|object|null
      */
     public function exec() {
-        return $this->dao->doExec($this->toSql(), $this->id, $this->isFetchOne);
+        return $this->dao->doExec($this->toSql(), $this->id, $this->isFetchOne,
+                                  $this->collector);
     }
     /**
      * @return string
      * @throws \RadCms\Common\RadException
      */
     public function toSql() {
-        if (($errors = $this->selfValidate()) != '') {
+        if (($errors = $this->selfValidate())) {
             throw new RadException($errors, RadException::BAD_INPUT);
         }
+        //
+        $mainQ = 'SELECT `id`, ' . $this->contentType->fieldsToSql() .
+                 ' FROM ${p}' . $this->contentType->name .
+                 (!$this->whereExpr ? '' : ' WHERE ' . $this->whereExpr) .
+                 (!$this->orderByExpr ? '' : ' ORDER BY ' . $this->orderByExpr) .
+                 (!$this->limitExpr ? '' : ' LIMIT ' . $this->limitExpr);
+        //
+        $joins = [];
+        $fields = [];
+        if ($this->joinDef) $this->addContentTypeJoin($joins, $fields);
+        if ($this->dao->useRevisions) $this->addRevisionsJoin($joins, $fields);
+        //
+        if (!$joins) {
+            return $mainQ;
         }
-        $q = 'SELECT `id`, ' . $this->contentType->fieldsToSql() .
-             ' FROM ${p}' . $this->contentType->name .
-             (!$this->whereExpr ? '' : ' WHERE ' . $this->whereExpr) .
-             (!$this->orderByExpr ? '' : ' ORDER BY ' . $this->orderByExpr) .
-             (!$this->limitExpr ? '' : ' LIMIT ' . $this->limitExpr);
-        if (!$this->dao->useRevisions) {
-            return $q;
-        }
-        return 'SELECT a.*,r.`revisionSnapshot`,r.`contentType`,r.`createdAt`' .
-               ' FROM (' . $q . ') as a' .
-               ' LEFT JOIN ${p}contentRevisions r ON (r.`contentId` = a.`id` AND '.
-                                                     ' r.`contentType` = \'' .
-                                                     $this->contentType->name . '\')';
+        return 'SELECT a.*' .
+               ', ' . implode(', ', $fields) .
+               ' FROM (' . $mainQ . ') AS a' .
+               ' ' . implode(' ', $joins);
+    }
+    /**
+     * @param array &$joins
+     * @param array &$fields
+     */
+    private function addContentTypeJoin(&$joins, &$fields) {
+        $joins[] = (!$this->joinDef->isLeft ? '' : 'LEFT ') . 'JOIN' .
+                    ' ${p}' . $this->joinDef->contentType . ' AS b' .
+                    ' ON (' . $this->joinDef->expr . ')';
+        $fields[] = 'b.`id` AS `bId`, ' .
+                    $this->dao->getContentType($this->joinDef->contentType)
+                              ->fieldsToSql(function ($fieldName) {
+                                  return 'b.`'.$fieldName.'` AS `b'.ucfirst($fieldName).'`';
+                              });
+    }
+    /**
+     * @param array &$joins
+     * @param array &$fields
+     */
+    private function addRevisionsJoin(&$joins, &$fields) {
+        $joins[] = 'LEFT JOIN ${p}contentRevisions r ON (r.`contentId` = a.`id`' .
+                   ' AND r.`contentType` = \'' . $this->contentType->name . '\')';
+        $fields[] = 'r.`revisionSnapshot`, r.`contentType`, r.`createdAt`';
     }
     /**
      * @return string
@@ -86,6 +143,13 @@ class Query {
     private function selfValidate() {
         $MAX_WHERE_LEN = 2048;
         $errors = ContentTypeValidator::validate($this->contentType);
+        if ($this->joinDef) {
+            $errors = array_merge($errors,
+                ContentTypeValidator::validateName($this->joinDef->contentType));
+            if (!$this->collector)
+                $errors[] = 'join() was used, but no collectJoin(\'field\',' .
+                            ' function () {}) was provided';
+        }
         if ($this->isFetchOne) {
             if (!$this->whereExpr) {
                 $errors[] = 'fetchOne(...)->where() is required.';

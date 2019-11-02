@@ -61,9 +61,10 @@ class DAO {
      * @param string $sql
      * @param string $queryId
      * @param bool $isFetchOne
+     * @param array $joinRowsCollector = null ks. $this->runUserDefinedJoinCollector
      * @return array|object|null
      */
-    public function doExec($sql, $queryId, $isFetchOne) {
+    public function doExec($sql, $queryId, $isFetchOne, $joinRowsCollector) {
         $out = null;
         // @allow \PDOException
         $rows = $this->db->fetchAll($sql);
@@ -74,6 +75,10 @@ class DAO {
                 return $this->makeContentNode($row, $rows);
             }, $rows) : [];
         }
+        //
+        if ($joinRowsCollector)
+            $this->provideJoinMatchesToUserDefinedCollector($joinRowsCollector,
+                $out, $rows, $isFetchOne);
         //
         if (isset($this->frontendPanelInfos[$queryId])) {
             $this->frontendPanelInfos[$queryId]->contentNodes = $out;
@@ -124,5 +129,20 @@ class DAO {
             return $out;
         }
         return $head;
+    }
+    private function provideJoinMatchesToUserDefinedCollector($collector,
+                                                              &$out,
+                                                              $rows,
+                                                              $isFetchOne) {
+        [$fn, $fieldName] = $collector;
+        foreach (($isFetchOne ? [$out] : $out) as &$node) {
+            $node->$fieldName = [];
+            foreach ($rows as $row) {
+                if (
+                    $row['id'] == $node->id &&
+                    $row['bId']                // Ei tyhjiä rivejä (left join)
+                ) $fn($node, $row);
+            }
+        }
     }
 }
