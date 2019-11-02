@@ -29,6 +29,8 @@ class WebsiteControllers {
                                 SessionInterface $session) {
         // @allow \RadCms\Common\RadException
         $siteConfig->selfLoad(RAD_SITE_PATH . 'site.ini');
+        // @allow \RadCms\Common\RadException
+        $siteConfig->validateUrlMatchers();
         if ($siteConfig->lastModTime > $appState->contentTypesLastUpdated &&
             ($err = $appState->diffAndSaveChangesToDb($siteConfig->contentTypes,
                                                       'site.ini'))) {
@@ -46,6 +48,7 @@ class WebsiteControllers {
      * @param \RadCms\Framework\Response $response
      * @param \RadCms\Framework\Db $db
      * @param \RadCms\ContentType\ContentTypeCollection $contentTypes
+     * @throw \Radcms\Common\RadException
      */
     public function handlePageRequest(Request $req,
                                       Response $res,

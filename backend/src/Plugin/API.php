@@ -46,16 +46,24 @@ class API {
      *                                    // ks. http://altorouter.com/usage/mapping-routes.html
      *                                    '/my-plugin/foo/[i:id]/[w:name]',
      *                                    MyController::class,
-     *                                    'doSomething')
+     *                                    'doSomething',
+     *                                    true)
      *
      * @param string $method 'GET', 'POST'
      * @param string $url
      * @param string $ctrlCassPath
      * @param string $ctrlMethodNme
+     * @param string $requireAuthenticated = true
      */
-    public function registerRoute($method, $url, $ctrlCassPath, $ctrlMethodName) {
-        $this->router->map($method, $url, function () use ($ctrlCassPath, $ctrlMethodName) {
-            return [$ctrlCassPath, $ctrlMethodName];
+    public function registerRoute($method,
+                                  $url,
+                                  $ctrlCassPath,
+                                  $ctrlMethodName,
+                                  $requireAuthenticated = true) {
+        $this->router->map($method, $url, function () use ($ctrlCassPath,
+                                                           $ctrlMethodName,
+                                                           $requireAuthenticated) {
+            return [$ctrlCassPath, $ctrlMethodName, $requireAuthenticated];
         });
     }
 }

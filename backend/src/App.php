@@ -17,6 +17,7 @@ use RadCms\Auth\Authenticator;
 use RadCms\Auth\Crypto;
 use RadCms\Auth\CachingServicesFactory;
 use RadCms\Common\RadException;
+use RadCms\Framework\Response;
 
 class App {
     protected $ctx;
@@ -33,7 +34,12 @@ class App {
             $injector = $injector ?? new Injector();
             $this->setupIocContainer($injector, $request);
             // @allow \RadCms\Common\RadException
-            $injector->execute($this->makeRouteMatchInvokePath($match));
+            [$ctrlClassPath, $ctrlMethodName, $requireAuth] =
+                $this->validateRouteMatch($match);
+            if ($requireAuth && !$request->user)
+                (new Response(403))->json(['err' => 'Login required']);
+            else
+                $injector->execute($ctrlClassPath . '::' . $ctrlMethodName);
         } else {
             throw new RadException("No route for {$request->path}");
         }
@@ -54,19 +60,22 @@ class App {
     }
     /**
      * @param array $match
-     * @return string 'Cls\Path\To\Some\Controller::methodName'
+     * @return array [string, string, bool]
      * @throws \RadCms\Common\RadException
      */
-    private function makeRouteMatchInvokePath($match) {
-        $ctrlInfo = $match['target']();
-        if (!is_array($ctrlInfo) ||
-            !is_string($ctrlInfo[0] ?? null) ||
-            !is_string($ctrlInfo[1] ?? null)) {
+    private function validateRouteMatch($match) {
+        $routeInfo = $match['target']();
+        if (!is_array($routeInfo) ||
+            count($routeInfo) !== 3 ||
+            !is_string($routeInfo[0]) ||
+            !is_string($routeInfo[1]) ||
+            !is_bool($routeInfo[2])) {
             throw new RadException(
-                'A route must return [\'Ctrl\\Class\\Path\', \'methodName\'].',
+                'A route (' . json_encode($routeInfo) . ') must return [\'Ctrl\\Class\\Path\',' .
+                ' \'methodName\', \'requireAuth\' ? true : false].',
                 RadException::BAD_INPUT);
         }
-        return $ctrlInfo[0] . '::' . $ctrlInfo[1];
+        return $routeInfo;
     }
 
     ////////////////////////////////////////////////////////////////////////////

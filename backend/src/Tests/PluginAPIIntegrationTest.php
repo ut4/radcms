@@ -5,7 +5,6 @@ namespace RadCms\Tests;
 use RadCms\Tests\Self\DbTestCase;
 use RadCms\ContentType\ContentTypeMigrator;
 use RadCms\Tests\Self\HttpTestUtils;
-use RadCms\App;
 use RadCms\Framework\FileSystem;
 use RadCms\Tests\AppTest;
 use RadCms\Framework\Request;
@@ -13,7 +12,7 @@ use RadCms\Tests\Self\MutedResponse;
 use RadCms\Tests\_MoviesPlugin\_MoviesPlugin;
 use RadCms\Plugin\Plugin;
 
-final class PluginsAPIIntegrationTest extends DbTestCase {
+final class PluginAPIIntegrationTest extends DbTestCase {
     use HttpTestUtils;
     private $testPlugin;
     public function setupTestPlugin() {

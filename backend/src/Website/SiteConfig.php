@@ -80,4 +80,17 @@ class SiteConfig {
         }
         return $out;
     }
+    /**
+     * @return bool
+     * @throws \RadCms\Common\RadException
+     */
+    public function validateUrlMatchers() {
+        foreach ($this->urlMatchers->toArray() as $matcher) {
+            if (!$this->fs->isFile(RAD_SITE_PATH . $matcher->layoutFileName))
+                throw new RadException('Failed to locate site.ini UrlMatcher layout file "' .
+                                       RAD_SITE_PATH . $matcher->layoutFileName . '"',
+                                       RadException::BAD_INPUT);
+        }
+        return true;
+    }
 }

@@ -12,10 +12,10 @@ abstract class AuthModule {
      */
     public static function init($ctx) {
         $ctx->router->map('GET', '/login', function () {
-            return [AuthControllers::class, 'renderLoginView'];
+            return [AuthControllers::class, 'renderLoginView', false];
         });
         $ctx->router->map('POST', '/login', function () {
-            return [AuthControllers::class, 'handleLoginFormSubmit'];
+            return [AuthControllers::class, 'handleLoginFormSubmit', false];
         });
     }
 }

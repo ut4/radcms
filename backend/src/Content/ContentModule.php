@@ -12,10 +12,10 @@ abstract class ContentModule {
      */
     public static function init($ctx) {
         $ctx->router->map('GET', '/api/content/[i:id]', function () {
-            return [ContentControllers::class, 'handleGetContentNode'];
+            return [ContentControllers::class, 'handleGetContentNode', true];
         });
         $ctx->router->map('GET', '/api/content-types/[i:id]', function () {
-            return [ContentControllers::class, 'handleGetContentType'];
+            return [ContentControllers::class, 'handleGetContentType', true];
         });
     }
 }
