@@ -3,7 +3,6 @@
 namespace RadCms\Installer;
 
 use RadCms\Framework\Db;
-use RadCms\Common\LoggerAccess;
 use RadCms\Framework\FileSystemInterface;
 use RadCms\ContentType\ContentTypeMigrator;
 use RadCms\Website\SiteConfig;

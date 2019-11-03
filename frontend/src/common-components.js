@@ -7,7 +7,7 @@ const $el = preact.createElement;
  */
 function view(content) {
     return $el('div', {className: 'view'},
-        $el('button', {onClick: () => myRedirect('/')}, featherSvg('x')),
+        $el('button', {onClick: () => services.redirect('/')}, featherSvg('x')),
         content
     );
 }
@@ -65,7 +65,7 @@ class Form extends preact.Component {
             this.props.close();
             return;
         }
-        myRedirect('/');
+        services.redirect('/');
     }
 }
 
@@ -83,7 +83,7 @@ function myLink(to, children, full, attrs) {
         href: (!full ? '#' : '') + to.split('?')[0],
         onclick: e => {
             e.preventDefault();
-            myRedirect(to, full);
+            services.redirect(to, full);
         },
     };
     if (attrs) for (const key in attrs) {

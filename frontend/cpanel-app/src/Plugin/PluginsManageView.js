@@ -37,7 +37,7 @@ class PluginsManageView extends preact.Component {
                                                  }}, 'Asenna')
                                 : $el('button', {onClick: () => {
                                                      this.uninstallPlugin(plugin, i);
-                                                 }}, 'Poista')
+                                                 }}, 'Poista asennus')
                         )
                     )
                 ))

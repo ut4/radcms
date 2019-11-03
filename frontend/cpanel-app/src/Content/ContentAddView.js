@@ -87,7 +87,7 @@ class ContentAddView extends preact.Component {
                 contentTypeId: this.state.cnodeContentTypeId
             })
         }).then(() => {
-            myRedirect(this.props.returnTo || '/', true);
+            services.redirect(this.props.returnTo || '/', true);
         }, () => {
             toast('Failed to create the content.', 'error');
         });

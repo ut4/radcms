@@ -17,7 +17,6 @@ const cpanelBoot = {
         //
         preact.render(preact.createElement(ControlPanelApp, currentPageData, null),
                       document.getElementById('cpanel-app'));
-
         //
         var parentUrlPcs = window.parent.location.href.split('#');
         var tmp = parentUrlPcs[0].split('?rescan=');
@@ -30,7 +29,6 @@ const cpanelBoot = {
         } else {
             document.querySelector('base').href = window.parent.location;
         }
-
         //
         window.parent.addEventListener('hashchange', e => {
             if (e.newURL !== e.oldURL) window.location.replace(

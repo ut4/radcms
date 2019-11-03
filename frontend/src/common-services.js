@@ -1,3 +1,11 @@
+function redirect(to, full) {
+    if (!full) {
+        window.parent.location.hash = '#' + to;
+    } else {
+        window.parent.location.href = window.parent.location.origin + to;
+    }
+}
+
 function myFetch(url, options = {}) {
     const req = new XMLHttpRequest();
     return new Promise((resolve, reject) => {
@@ -51,8 +59,9 @@ const signals = {
 
 /** Mockable, application-wide container */
 const services = {
+    redirect,
     myFetch,
-    signals
+    signals,
 };
 
 export default services;
