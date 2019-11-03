@@ -13,10 +13,16 @@ class _MoviesPlugin implements PluginInterface {
         $this->myContentTypes->add('Movies', 'Elokuvat', ['title' => 'text']);
     }
     public function init(API $api) {
+        $api->registerJsFile('file1.js');
+        $api->registerJsFile('file2.js', ['id' => 'file2']);
+        $api->registerFrontendAdminPanel('MoviesAdmin', 'Elokuvat-app');
+        //
         $api->registerRoute('GET', '/movies', MoviesControllers::class,
-                            'handleGetMoviesRequest');
+                            'handleGetMoviesRequest', false);
         $api->registerRoute('POST', '/movies', MoviesControllers::class,
-                            'handleCreateMovieRequest');
+                            'handleCreateMovieRequest', false);
+        $api->registerRoute('GET', '/noop', MoviesControllers::class,
+                            'handleNoopRequest', false);
     }
     public function install(ContentTypeMigrator $contentTypeMigrator) {
         $contentTypeMigrator->installMany($this->myContentTypes);

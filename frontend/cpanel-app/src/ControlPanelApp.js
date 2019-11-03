@@ -8,25 +8,32 @@ import PluginsManageView from './Plugin/PluginsManageView.js';
 
 class ControlPanelApp extends preact.Component {
     /**
-     * @param {{page: {url: string;}; panels: Array<FrontendPanelConfig>; baseUrl: string;}} props
+     * @param {ControlPanelAppProps} props
      */
     constructor(props) {
         super(props);
         this.currentPageUiPanels = [];
+        this.adminUiPanels = [];
+        const makePanel = (config, to) => {
+            const Cls = uiPanelRegister.getUiPanelImpl(config.impl);
+            if (!Cls) return console.error(`UI panel ${config.impl} not implemented.`);
+            to.push(new Cls(config));
+        };
         const allContentNodes = [];
-        props.panels.forEach(obj => {
-            if (!Array.isArray(obj.contentNodes)) obj.contentNodes = [obj.contentNodes];
-            if (!obj.contentNodes[0]) obj.contentNodes = [];
-            allContentNodes.push(...obj.contentNodes);
-            const Cls = uiPanelRegister.getUiPanelImpl(obj.type);
-            if (!Cls) return console.error(`UI panel type ${obj.type} not implemented.`);
-            this.currentPageUiPanels.push(new Cls(obj));
+        props.contentPanels.forEach(c => {
+            if (!Array.isArray(c.contentNodes)) c.contentNodes = [c.contentNodes];
+            if (!c.contentNodes[0]) c.contentNodes = [];
+            allContentNodes.push(...c.contentNodes);
+            makePanel(c, this.currentPageUiPanels);
         });
         this.looseContentNodes = allContentNodes.filter(n =>
-            !props.panels.some(panel =>
+            !props.contentPanels.some(panel =>
                 panel.contentNodes.some(n2 => panel.id + n.id == panel.id + n2.id)
             )
         );
+        props.adminPanels.forEach(c => {
+            makePanel(c, this.adminUiPanels);
+        });
         this.state = {className: '', templates: [], selectedTemplateIdx: null,
                       tabA: true};
     }
@@ -66,7 +73,8 @@ class ControlPanelApp extends preact.Component {
                     $el(ContentTypesManageView, {path: '/manage-content-types'}, null),
                     $el(ContentTypeCreateView, {path: '/create-content-type'}, null),
                     $el(PluginsManageView, {path: '/manage-plugins'}, null),
-                ].concat(...this.currentPageUiPanels.map(panel=>panel.getRoutes()))
+                ].concat(...this.adminUiPanels.map(panel=>panel.getRoutes()))
+                 .concat(...this.currentPageUiPanels.map(panel=>panel.getRoutes()))
             )
         );
     }
@@ -86,7 +94,7 @@ class ControlPanelApp extends preact.Component {
                     $el(ControlPanelSection, {
                         title: panel.getTitle(),
                         icon: typeof panel.getIcon == 'function' ? panel.getIcon() : null,
-                        className: 'ui-panel ui-panel-' + panel.type
+                        className: 'ui-panel ui-panel-' + panel.getName()
                     }, panel.getMenuItems(this.props))
                 ).concat(this.looseContentNodes.length ? $el(ControlPanelSection, {
                     title: 'Other',
@@ -101,10 +109,16 @@ class ControlPanelApp extends preact.Component {
     }
     makeDevTabItems() {
         return $el('div', {className: 'list list-small'},
-            $el('div', null,
+            ...this.adminUiPanels.map(panel =>
+                $el('div', null,
+                    $el('h3', null, panel.getTitle(), $el('span', null, 'Lisäosa')),
+                    ...(panel.getMenuItems() || []),
+                )
+            )
+            .concat($el('div', null,
                 $el('h3', null, 'Lisäosat'),
                 $el('div', null, myLink('/manage-plugins', 'Hallitse')),
-            )
+            ))
         );
     }
 }

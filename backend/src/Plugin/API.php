@@ -10,18 +10,23 @@ use RadCms\Templating\MagicTemplate;
  */
 class API {
     private $router;
-    private $jsFiles;
+    private $onJsFileRegistered;
+    private $onAdminPanelRegistered;
     /**
      * @param \AltoRouter $ctx
-     * @param array &$jsFilesOut
+     * @param \Closure $onJsFileRegistered
+     * @param \Closure $onAdminPanelRegistered
      */
-    public function __construct(AltoRouter $router, &$jsFilesOut) {
+    public function __construct(AltoRouter $router,
+                                $onJsFileRegistered,
+                                $onAdminPanelRegistered) {
         $this->router = $router;
-        $this->jsFiles =& $jsFilesOut;
+        $this->onJsFileRegistered = $onJsFileRegistered;
+        $this->onAdminPanelRegistered = $onAdminPanelRegistered;
     }
     /**
      * Rekisteröi <?= $this->DirectiveName(...) ?> käytettäväksi templaatteihin.
-     * Esim. registerDirective('MPMovies', RAD_BASE_PATH . 'src/Plugins/MyPlugin/movies.inc');
+     * Esimerkki: registerDirective('MPMovies', RAD_BASE_PATH . 'src/Plugins/MyPlugin/movies.inc');
      *
      * @param string $directiveName
      * @param string $fullFilePath
@@ -33,21 +38,25 @@ class API {
     }
     /**
      * Rekisteröi <script src="<?= $scriptFileName ?>"> sisällytettäväksi
-     * cpanel.php-tiedostoon. Saa sisältää vain /^[a-zA-Z0-9_.]+\.js$/. Esim.
-     * registerJsFile('MyFile.js');
+     * cpanel.php-tiedostoon. Esimerkki: registerJsFile('MyFile.js', ['type' => 'module']);
      *
      * @param string $scriptFileName
      */
-    public function registerJsFile($scriptFileName) {
-        $this->jsFiles[] = $scriptFileName;
+    public function registerJsFile($scriptFileName, array $attrs = []) {
+        $this->onJsFileRegistered->__invoke((object)[
+            'fileName' => $scriptFileName,
+            'attrs' => $attrs
+        ]);
     }
     /**
-     * Rekisteröi reitti. Esim. mapRoute('GET',
-     *                                    // ks. http://altorouter.com/usage/mapping-routes.html
-     *                                    '/my-plugin/foo/[i:id]/[w:name]',
-     *                                    MyController::class,
-     *                                    'doSomething',
-     *                                    true)
+     * Rekisteröi reitti. Esimerkki: mapRoute(
+     *     'GET',
+     *     // ks. http://altorouter.com/usage/mapping-routes.html
+     *     '/my-plugin/foo/[i:id]/[w:name]',
+     *     MyController::class,
+     *     'doSomething',
+     *     true
+     * )
      *
      * @param string $method 'GET', 'POST'
      * @param string $url
@@ -65,5 +74,19 @@ class API {
                                                            $requireAuthenticated) {
             return [$ctrlCassPath, $ctrlMethodName, $requireAuthenticated];
         });
+    }
+    /**
+     * Rekisteröi osion hallintapaneelin Devaajille-välilehteen. $panelImplName sama
+     * kuin JS-API:n uiPanelRegister.registerUiPanelImpl(<tämä>, ...). Esimerkki:
+     * registerFrontendAdminPanel('MoviesApp', 'ElokuvatApp').
+     *
+     * @param string $panelImplName
+     * @param string $title
+     */
+    public function registerFrontendAdminPanel($panelImplName, $title) {
+        $this->onAdminPanelRegistered->__invoke((object)[
+            'impl' => $panelImplName,
+            'title' => $title,
+        ]);
     }
 }

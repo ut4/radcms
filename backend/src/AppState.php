@@ -17,6 +17,7 @@ class AppState {
     public $plugins;
     public $contentTypes;
     public $pluginJsFiles;
+    public $pluginFrontendAdminPanelInfos;
     public $contentTypesLastUpdated;
     private $db;
     private $fs;
@@ -28,6 +29,7 @@ class AppState {
         $this->plugins = new PluginCollection();
         $this->contentTypes = new ContentTypeCollection();
         $this->pluginJsFiles = [];
+        $this->pluginFrontendAdminPanelInfos = [];
         $this->db = $db;
         $this->fs = $fs;
     }
@@ -39,7 +41,9 @@ class AppState {
     public function selfLoad($pluginsDir, AltoRouter $router) {
         // @allow \RadCms\Common\RadException
         $installedPluginNames = $this->fetchState();
-        $pluginAPI = new API($router, $this->pluginJsFiles);
+        $pluginAPI = new API($router,
+                             function ($f) { $this->pluginJsFiles[] = $f; },
+                             function ($p) { $this->pluginFrontendAdminPanelInfos[] = $p; });
         // @allow \RadCms\Common\RadException
         $this->scanAndInitPlugins($pluginsDir, $pluginAPI, $installedPluginNames);
     }

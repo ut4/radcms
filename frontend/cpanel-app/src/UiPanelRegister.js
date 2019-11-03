@@ -1,10 +1,9 @@
-import {GenericUIPanelImpl, GenericListUIPanelImpl, StaticMenuUIPanelImpl} from './ui-panel-impls.js';
+import {GenericUIPanelImpl, GenericListUIPanelImpl} from './ui-panel-impls.js';
 
 const uiPanelRegister = {
     _uiPanelImpls: {
-        'List': GenericListUIPanelImpl,
         'Generic': GenericUIPanelImpl,
-        'StaticMenu': StaticMenuUIPanelImpl
+        'List': GenericListUIPanelImpl,
     },
     /**
      * @param {string} name

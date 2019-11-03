@@ -41,4 +41,7 @@ class MoviesControllers {
             ? ['my' => 'response']
             : ['my' => 'response']);
     }
+    public function handleNoopRequest() {
+        //
+    }
 }

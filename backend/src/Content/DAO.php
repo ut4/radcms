@@ -46,15 +46,15 @@ class DAO {
     }
     /**
      * @param string $queryId
-     * @param string $panelType
+     * @param string $implName
      * @param string $title = ''
      */
-    public function addFrontendPanelInfo($queryId, $panelType, $title) {
+    public function addFrontendPanelInfo($queryId, $implName, $title) {
         $this->frontendPanelInfos[$queryId] = (object)[
             'id' => $queryId,
-            'type' => $panelType,
+            'impl' => $implName,
             'title' => $title,
-            'contentNodes' => null
+            'contentNodes' => null,
         ];
     }
     /**
@@ -86,7 +86,7 @@ class DAO {
         return $out;
     }
     /**
-     * @return array Array<{id: string; type: string; ...}>
+     * @return array Array<{id: string; impl: string; ...}>
      */
     public function getFrontendPanelInfos() {
         return array_values($this->frontendPanelInfos);

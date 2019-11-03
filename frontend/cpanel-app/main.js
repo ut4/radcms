@@ -6,7 +6,7 @@ import uiPanelRegister from './src/UiPanelRegister.js';
 
 const cpanelBoot = {
     /**
-     * @param {{page: {url: string;}; panels: Array<{id: string; type: string; title: string; contentNodes: Array<Object>;}>; baseUrl: string;}} currentPageData
+     * @param {ControlPanelAppProps} currentPageData
      */
     boot(currentPageData) {
         services.myFetch.baseUrl = currentPageData.baseUrl.endsWith('/')

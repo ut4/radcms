@@ -14,15 +14,7 @@ function view(content) {
 
 class Form extends preact.Component {
     /**
-     * @param {Object} props {
-     *     onConfirm: (e: Event) => any;
-     *     onCancel?: (e: Event) => any;
-     *     close?: Function;
-     *     doDisableConfirmButton?: () => boolean;
-     *     noAutoClose?: bool;
-     *     confirmButtonText?: string;
-     *     cancelButtonText?: string;
-     * }
+     * @param {FormProps} props
      */
     constructor(props) {
         super(props);

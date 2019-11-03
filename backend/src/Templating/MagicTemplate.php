@@ -66,6 +66,13 @@ class MagicTemplate extends Template {
         return RAD_BASE_URL . $indexFile . ltrim($url, '/');
     }
     /**
+     * @param string $str
+     * @return string
+     */
+    public function e($str) {
+        return htmlspecialchars($str);
+    }
+    /**
      * @param string $directiveName
      * @param string $fullFilePath
      * @throws \RadCms\Common\RadException

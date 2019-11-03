@@ -11,6 +11,7 @@ use RadCms\Framework\Request;
 use RadCms\Tests\Self\MutedResponse;
 use RadCms\Tests\_MoviesPlugin\_MoviesPlugin;
 use RadCms\Plugin\Plugin;
+use RadCms\AppState;
 
 final class PluginAPIIntegrationTest extends DbTestCase {
     use HttpTestUtils;
@@ -106,5 +107,36 @@ final class PluginAPIIntegrationTest extends DbTestCase {
         $this->assertEquals(1, count(self::$db->fetchAll(
             'SELECT `id` FROM ${p}Movies WHERE `title` = \'A movie\''
         )));
+    }
+
+
+    ////////////////////////////////////////////////////////////////////////////
+
+
+    public function testPluginCanRegisterJsFilesAndAdminPanels() {
+        $s = $this->setupTest3();
+        $res = $this->createMock(MutedResponse::class);
+        $req = new Request('/noop', 'GET');
+        $app = $this->makeRequest($req, $res, $s->ctx);
+        $this->verifyJsFilesWereRegistered($app->getCtx()->state);
+    }
+    private function setupTest3() {
+        return $this->setupTest1();
+    }
+    private function verifyJsFilesWereRegistered(AppState $appState) {
+        $this->assertEquals(2, count($appState->pluginJsFiles));
+        $this->assertEquals([(object)[
+            'fileName' => 'file1.js',
+            'attrs' => []
+        ], (object)[
+            'fileName' => 'file2.js',
+            'attrs' => ['id' => 'file2']
+        ]], $appState->pluginJsFiles);
+        //
+        $this->assertEquals(1, count($appState->pluginFrontendAdminPanelInfos));
+        $this->assertEquals((object)[
+            'impl' => 'MoviesAdmin',
+            'title' => 'Elokuvat-app',
+        ], $appState->pluginFrontendAdminPanelInfos[0]);
     }
 }

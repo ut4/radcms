@@ -13,6 +13,7 @@
         <script>window.rad = (function () {
             var onLoadFns = [];
             return {
+                React: preact,
                 createElement: preact.createElement,
                 onLoad: function(fnToRun) {
                     if (typeof fnToRun != 'function')
@@ -24,9 +25,11 @@
                 }
             };
         }())</script>
-        <?php foreach ($pluginJsFiles as $url) {
-            if (preg_match('/^[a-zA-Z0-9_.]+\.js$/', $url))
-                echo '<script src="' . RAD_BASE_URL . $url . '"></script>';
+        <?php foreach ($pluginJsFiles as $f) {
+            $attrs = [];
+            foreach ($f->attrs as $key => $val) $attrs[] = " {$key}=\"{$val}\"";
+            echo '<script src="' . RAD_BASE_URL . htmlspecialchars($f->fileName) .
+                 '"' . htmlspecialchars(implode('' , $attrs), ENT_NOQUOTES) . '></script>';
         } ?>
         <script type="module">
             import cpanelBoot from '<?= RAD_BASE_URL ?>frontend/cpanel-app/main.js';

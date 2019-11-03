@@ -2,7 +2,7 @@
 
 namespace RadCms\Templating;
 
-abstract class FrontendPanelType {
+abstract class StockFrontendPanelImpls {
     const List = 'List';
     const Generic = 'Generic';
 }
