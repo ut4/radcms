@@ -6,16 +6,15 @@ import uiPanelRegister from './src/UiPanelRegister.js';
 
 const cpanelBoot = {
     /**
-     * @param {ControlPanelAppProps} currentPageData
+     * @param {ControlPanelAppProps} props
      */
-    boot(currentPageData) {
-        services.myFetch.baseUrl = currentPageData.baseUrl.endsWith('/')
-            ? currentPageData.baseUrl
-            : currentPageData.baseUrl + '/';
+    boot(props) {
+        services.config = {baseUrl: props.baseUrl, assetBaseUrl: props.assetBaseUrl};
+        services.myFetch.baseUrl = services.config.baseUrl;
         //
         window.rad.runRegisteredOnLoadFns([uiPanelRegister, services, components]);
         //
-        preact.render(preact.createElement(ControlPanelApp, currentPageData, null),
+        preact.render(preact.createElement(ControlPanelApp, props, null),
                       document.getElementById('cpanel-app'));
         //
         var parentUrlPcs = window.parent.location.href.split('#');

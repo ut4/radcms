@@ -4,7 +4,7 @@
     <title>RadCMS - Login</title>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <meta name="robots" content="noindex,nofollow,noarchive,nosnippet">
-    <link rel="stylesheet" href="<?= $this->url('frontend/common.css') ?>">
+    <link rel="stylesheet" href="<?= $this->assetUrl('frontend/common.css') ?>">
     <style>
         form { text-align: center; max-width: 300px; margin: 0 auto; }
         img { width: 100px; margin: 20px 0; }
@@ -13,7 +13,7 @@
 </head>
 <body class="light">
     <form onSubmit="handleFormSubmit(event)">
-        <img src="<?= $this->url('frontend/assets/logo.png') ?>">
+        <img src="<?= $this->assetUrl('frontend/assets/logo.png') ?>">
         <div class="hidden box no-highlight-stripe" id="main-err"></div>
         <div class="box no-highlight-stripe">
             <label>

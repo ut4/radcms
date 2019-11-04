@@ -1,7 +1,7 @@
 <?php
-use RadCms\Templating\FrontendPanelType;
+use RadCms\Templating\StockFrontendPanelImpls;
 $node = $this->fetchOne('GenericBlobs')
                 ->where("name='{$props['name']}'")
-                ->createFrontendPanel(FrontendPanelType::Generic, $props['frontendPanelTitle'])
+                ->createFrontendPanel(StockFrontendPanelImpls::Generic, $props['frontendPanelTitle'])
                 ->exec();
 echo $node ? $node->content : 'No content found.'; ?>

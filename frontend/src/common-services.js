@@ -62,6 +62,7 @@ const services = {
     redirect,
     myFetch,
     signals,
+    config: {},
 };
 
 export default services;

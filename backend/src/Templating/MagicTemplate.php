@@ -59,11 +59,19 @@ class MagicTemplate extends Template {
     }
     /**
      * @param string $url
+     * @param bool $withIndexFile = true
      * @return string
      */
-    public function url($url) {
+    public function url($url, $withIndexFile = true) {
         static $indexFile = !RAD_QUERY_VAR ? '' : 'index.php?' . RAD_QUERY_VAR . '=/';
-        return RAD_BASE_URL . $indexFile . ltrim($url, '/');
+        return RAD_BASE_URL . ($withIndexFile ? $indexFile : '') . ltrim($url, '/');
+    }
+    /**
+     * @param string $url
+     * @return string
+     */
+    public function assetUrl($url) {
+        return $this->url($url, false);
     }
     /**
      * @param string $str

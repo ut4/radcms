@@ -1,8 +1,8 @@
 <?php
-use RadCms\Templating\FrontendPanelType;
+use RadCms\Templating\StockFrontendPanelImpls;
 $article = $this->fetchOne('Articles')
                 ->where("slug='{$props['slug']}'")
-                ->createFrontendPanel(FrontendPanelType::Generic, 'Article')
+                ->createFrontendPanel(StockFrontendPanelImpls::Generic, 'Article')
                 ->exec();
 if (array_key_exists('bindTo', $props))
     $props['bindTo'] = $article; ?>

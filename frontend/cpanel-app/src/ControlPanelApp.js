@@ -54,7 +54,7 @@ class ControlPanelApp extends preact.Component {
                 $el('div', {className: !this.state.tabA ? 'hidden' : ''}, this.makeMainTabItems()),
                 $el('div', {className: this.state.tabA ? 'hidden' : ''}, this.makeDevTabItems()),
                 $el('h1', null,
-                    $el('img', {src: this.props.baseUrl + 'frontend/assets/logo.png'}),
+                    $el('img', {src: this.props.assetBaseUrl + 'frontend/assets/logo.png'}),
                     'RadCMS'
                 )
             ),
