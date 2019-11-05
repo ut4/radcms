@@ -10,26 +10,29 @@ use RadCms\Common\RadException;
  * Lukee, ja pitää sisällään site.ini -tiedostoon conffatut tiedot.
  */
 class SiteConfig {
+    public const ASSET_TYPES = ['local-stylesheet', 'local-javascript'];
     public $urlMatchers;
     public $contentTypes;
     public $lastModTime;
+    private $assets;
     private $fs;
     /**
      * @param \RadCms\Framework\FileSystemInterface $fs
      */
     public function __construct(FileSystemInterface $fs) {
-        $this->fs = $fs;
-        $this->urlMatchers = null;
-        $this->contentTypes = null;
         $this->lastModTime = 0;
+        $this->fs = $fs;
     }
     /**
      * @param string $filePath Absoluuttinen polku parsattavaan tiedostoon Esim. '/home/me/foo/site.ini'.
      * @param bool $checkLastModTime = true
+     * @param bool $autoSelfValidate = true
      * @return bool
      * @throws \RadCms\Common\RadException
      */
-    public function selfLoad($filePath, $checkLastModTime = true) {
+    public function selfLoad($filePath,
+                             $checkLastModTime = true,
+                             $autoSelfValidate = true) {
         if ($checkLastModTime && !($this->lastModTime = $this->fs->lastModTime($filePath)))
             throw new RadException('Failed to read mtime of ' . $filePath,
                                    RadException::FAILED_FS_OP);
@@ -39,28 +42,31 @@ class SiteConfig {
         if (!($parsed = parse_ini_string($iniStr, true, INI_SCANNER_RAW)))
             throw new RadException('Failed to parse ' . $filePath,
                                    RadException::BAD_INPUT);
-        [$this->urlMatchers, $this->contentTypes] = $this->parse($parsed);
-        return true;
+        return $this->collectAll($parsed) &&
+               (!$autoSelfValidate || $this->selfValidate());
     }
     /**
      * @param array $parsedIniData
-     * @return array [\RadCms\Website\UrlMatcherCollection, \RadCms\ContentType\ContentTypeCollection]
+     * @return bool
+     * @throws \RadCms\Common\RadException
      */
-    private function parse($parsedIniData) {
-        return [$this->collectUrlMatchers($parsedIniData),
-                $this->collectContentTypes($parsedIniData)];
+    private function collectAll($parsedIniData) {
+        $this->urlMatchers = $this->collectUrlMatchers($parsedIniData);
+        $this->contentTypes = $this->collectContentTypes($parsedIniData);
+        $this->assets = $this->collectAssets($parsedIniData);
+        return true;
     }
     /**
-     * @param array $parsed
+     * @param array $iniData
      * @return \RadCms\Website\UrlMatcherCollection
      */
-    private function collectUrlMatchers($parsed) {
+    private function collectUrlMatchers($iniData) {
         $out = new UrlMatcherCollection();
         static $prefix = 'UrlMatcher:';
         static $prefixLen = 11; // strlen('UrlMatcher:')
-        foreach ($parsed as $sectionName => $opts) {
+        foreach ($iniData as $sectionName => $opts) {
             if (mb_strpos($sectionName, $prefix) !== 0) continue;
-            $out->add($opts['pattern'], mb_substr($sectionName, $prefixLen));
+            $out->add($opts['pattern'] ?? '', $opts['layout'] ?? '');
         }
         return $out;
     }
@@ -68,15 +74,29 @@ class SiteConfig {
      * @param array $parsedIniData
      * @return \RadCms\ContentType\ContentTypeCollection
      */
-    private function collectContentTypes($parsedIniData) {
+    private function collectContentTypes($iniData) {
         $out = new ContentTypeCollection();
         static $prefix = 'ContentType:';
         static $prefixLen = 12; // strlen('ContentType:')
-        foreach ($parsedIniData as $sectionName => $opts) {
+        foreach ($iniData as $sectionName => $opts) {
             if (mb_strpos($sectionName, $prefix) !== 0) continue;
-            $out->add(mb_substr($sectionName, $prefixLen),
-                      $opts['friendlyName'],
-                      $opts['fields']);
+            $name = mb_substr($sectionName, $prefixLen);
+            $out->add($name, $opts['friendlyName'] ?? $name, $opts['fields'] ?? []);
+        }
+        return $out;
+    }
+    /**
+     * @param array $iniData
+     * @return array $errors
+     */
+    private function collectAssets($iniData) {
+        $out = [];
+        static $prefix = 'AssetFile:';
+        static $prefixLen = 10; // strlen('AssetFile:')
+        foreach ($iniData as $sectionName => $opts) {
+            if (mb_strpos($sectionName, $prefix) !== 0) continue;
+            $out[] = (object)['url' => $opts['url'] ?? '',
+                              'type' => $opts['type'] ?? ''];
         }
         return $out;
     }
@@ -84,13 +104,52 @@ class SiteConfig {
      * @return bool
      * @throws \RadCms\Common\RadException
      */
-    public function validateUrlMatchers() {
-        foreach ($this->urlMatchers->toArray() as $matcher) {
-            if (!$this->fs->isFile(RAD_SITE_PATH . $matcher->layoutFileName))
-                throw new RadException('Failed to locate site.ini UrlMatcher layout file "' .
-                                       RAD_SITE_PATH . $matcher->layoutFileName . '"',
-                                       RadException::BAD_INPUT);
+    private function selfValidate() {
+        $errors = [];
+        if ($this->urlMatchers->length()) {
+            foreach ($this->urlMatchers->toArray() as $matcher) {
+                if (!$matcher->origPattern)
+                    $errors[] = '$urlMatcher->pattern can\'t be empty ([UrlMatcher:' .
+                                $matcher->url . '] pattern = some-regexp)';
+                elseif (@preg_match($matcher->pattern, null) === false)
+                    $errors[] = $matcher->origPattern . ' (' . $matcher->pattern
+                                . ') is not valid regexp';
+                if (!$this->fs->isFile(RAD_SITE_PATH . $matcher->layoutFileName))
+                    $errors[] = 'Failed to locate UrlMatcher layout file `' .
+                                RAD_SITE_PATH . $matcher->layoutFileName . '`';
+            }
+        } else {
+            $errors[] = 'At least one `[UrlMatcher:name] pattern = /some-url` is required';
         }
-        return true;
+        //
+        if (!$this->contentTypes->length()) {
+            $errors[] = 'At least one `[ContentType:MyContentType] fields[name] = data-type` is required';
+        }
+        //
+        foreach ($this->assets as $asset) {
+            if (!$asset->url)
+                $errors[] = '[AssetFile:name] must define field `url = file.css`';
+            if (array_search($asset->type, self::ASSET_TYPES) === false)
+                $errors[] = '[AssetFile:name] must define field' .
+                            ' `type = ' . implode('|', self::ASSET_TYPES) . '`';
+        }
+        if (!$errors) {
+            return true;
+        }
+        throw new RadException('site.ini was invalid:' . PHP_EOL .
+                               implode(PHP_EOL, $errors),
+                               RadException::BAD_INPUT);
+    }
+    /**
+     * @return string[]
+     */
+    public function __get($name) {
+        if ($name == 'cssAssets') {
+            $out = [];
+            foreach ($this->assets as $a)
+                if ($a->type == 'local-stylesheet') $out[] = $a->url;
+            return $out;
+        }
+        throw new RadException("What's {$name}?", RadException::BAD_INPUT);
     }
 }

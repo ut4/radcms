@@ -8,7 +8,6 @@ use RadCms\Templating\MagicTemplate;
 use RadCms\Content\DAO as ContentNodeDAO;
 use RadCms\Framework\SessionInterface;
 use RadCms\AppState;
-use RadCms\Common\LoggerAccess;
 use RadCms\Framework\Db;
 use RadCms\ContentType\ContentTypeCollection;
 
@@ -16,7 +15,7 @@ use RadCms\ContentType\ContentTypeCollection;
  * Handlaa sivupyynnöt, (GET '/' tai GET '/sivunnimi').
  */
 class WebsiteControllers {
-    private $urlMatchers;
+    private $siteCfg;
     private $session;
     private $appState;
     /**
@@ -28,16 +27,12 @@ class WebsiteControllers {
                                 AppState $appState,
                                 SessionInterface $session) {
         // @allow \RadCms\Common\RadException
-        $siteConfig->selfLoad(RAD_SITE_PATH . 'site.ini');
-        // @allow \RadCms\Common\RadException
-        $siteConfig->validateUrlMatchers();
-        if ($siteConfig->lastModTime > $appState->contentTypesLastUpdated &&
-            ($err = $appState->diffAndSaveChangesToDb($siteConfig->contentTypes,
-                                                      'site.ini'))) {
-            LoggerAccess::getLogger()->log('error', 'Failed to sync site.ini'.
-                                                    ': ' . $err);
+        if ($siteConfig->selfLoad(RAD_SITE_PATH . 'site.ini') &&
+            $siteConfig->lastModTime > $appState->contentTypesLastUpdated) {
+            // @allow \RadCms\Common\RadException
+            $appState->diffAndSaveChangesToDb($siteConfig->contentTypes, 'site.ini');
         }
-        $this->urlMatchers = $siteConfig->urlMatchers;
+        $this->siteCfg = $siteConfig;
         $this->session = $session;
         $this->appState = $appState;
     }
@@ -54,13 +49,15 @@ class WebsiteControllers {
                                       Response $res,
                                       Db $db,
                                       ContentTypeCollection $contentTypes) {
-        $layoutFileName = $this->urlMatchers->findLayoutFor($req->path);
+        $layoutFileName = $this->siteCfg->urlMatchers->findLayoutFor($req->path);
         if (!$layoutFileName) {
             $res->html('404');
             return;
         }
         $cnd = new ContentNodeDAO($db, $contentTypes, $req->user);
-        $template = new MagicTemplate(RAD_SITE_PATH . $layoutFileName, null, $cnd);
+        $template = new MagicTemplate(RAD_SITE_PATH . $layoutFileName,
+                                      ['cssFiles' => $this->siteCfg->cssAssets],
+                                      $cnd);
         $html = $template->render(['url' => $req->path ? explode('/', ltrim($req->path, '/')) : ['']]);
         if ($req->user && ($bodyEnd = strpos($html, '</body>')) > 1) {
             $frontendDataKey = strval(time());

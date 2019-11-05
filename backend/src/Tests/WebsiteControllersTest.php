@@ -18,13 +18,13 @@ final class WebsiteControllersTest extends DbTestCase {
     public function tearDown() {
         $this->afterTest->__invoke();
     }
-    public function testConstructorScansSiteIniAndInstallsNewContentTypeToDb() {
+    public function testConstructorScansSiteCfgAndInstallsNewContentTypeToDb() {
         $s = $this->setupTest1();
         $newerThanLastUpdatedAt = $s->mockLastContentTypesUpdatedAt + 10;
         $this->setupDb($s);
         $this->stubFsToReturnNoPlugins($s);
-        $this->stubFsToReturnThisLastModTimeForSiteIni($s, $newerThanLastUpdatedAt);
-        $this->stubFsToReturnThisSiteIni($s, '[ContentType:NewType]' . PHP_EOL .
+        $this->stubFsToReturnThisLastModTimeForSiteCfg($s, $newerThanLastUpdatedAt);
+        $this->stubFsToReturnThisSiteCfg($s, '[ContentType:NewType]' . PHP_EOL .
                                              'friendlyName = My type' . PHP_EOL .
                                              'fields[name] = text');
         //
@@ -42,6 +42,9 @@ final class WebsiteControllersTest extends DbTestCase {
             'mockLastContentTypesUpdatedAt' => 10,
             'testExistingContentTypesJson' => '{}'
         ];
+        $s->ctx->fs->method('isFile')
+                   ->with($this->stringEndsWith('.tmpl.php'))
+                   ->willReturn(true);
         $this->afterTest = function () use ($testContentTypeName) {
             self::$db->exec('UPDATE ${p}websiteState SET' .
                             ' `installedContentTypes` = \'{}\'' .
@@ -74,16 +77,22 @@ final class WebsiteControllersTest extends DbTestCase {
             ->method('readDir')
             ->willReturn([]);
     }
-    private function stubFsToReturnThisLastModTimeForSiteIni($s, $mtime) {
+    private function stubFsToReturnThisLastModTimeForSiteCfg($s, $mtime) {
         $s->ctx->fs->expects($this->once())
             ->method('lastModTime')
             ->willReturn($mtime);
     }
-    private function stubFsToReturnThisSiteIni($s, $contents) {
+    private function stubFsToReturnThisSiteCfg($s, $contents) {
         $s->ctx->fs->expects($this->once())
             ->method('read')
             ->with($this->stringEndsWith('site.ini'))
-            ->willReturn($contents);
+            ->willReturn($contents . PHP_EOL .
+                        '[ContentType:Existing]' . PHP_EOL .
+                        'friendlyName = Existing type' . PHP_EOL .
+                        'fields[name] = text' . PHP_EOL .
+                        '[UrlMatcher:d]' . PHP_EOL .
+                        'pattern=/' . PHP_EOL .
+                        'layout=foo.tmpl.php');
     }
     private function verifyInstalledNewContentTypeToDb() {
         $this->verifyContentTypeIsInstalled('NewType', true, self::$db);
@@ -93,13 +102,13 @@ final class WebsiteControllersTest extends DbTestCase {
     ////////////////////////////////////////////////////////////////////////////
 
 
-    public function testConstructorScansSiteIniAndUninstallsDisappearedContentTypeFromDb() {
+    public function testConstructorScansSiteCfgAndUninstallsDisappearedContentTypeFromDb() {
         $s = $this->setupTest2();
         $newerThanLastUpdatedAt = $s->mockLastContentTypesUpdatedAt + 10;
         $this->setupDb2($s);
         $this->stubFsToReturnNoPlugins($s);
-        $this->stubFsToReturnThisLastModTimeForSiteIni($s, $newerThanLastUpdatedAt);
-        $this->stubFsToReturnThisSiteIni($s, 'dummy = value');
+        $this->stubFsToReturnThisLastModTimeForSiteCfg($s, $newerThanLastUpdatedAt);
+        $this->stubFsToReturnThisSiteCfg($s, 'dummy = value');
         //
         $req = new Request('/foo', 'GET');
         $res = $this->createMockResponse('404', 200, 'html');
@@ -108,19 +117,19 @@ final class WebsiteControllersTest extends DbTestCase {
         $this->verifyUninstalledDisappearedContentType();
     }
     private function setupTest2() {
-        $s = $this->setupTest1('FromSiteIni');
+        $s = $this->setupTest1('FromSiteCfg');
         $s->testExistingContentTypesJson = json_encode([
-            'FromSiteIni' => ['FriendlyName', ['field' => 'text'], 'site.ini'],
+            'FromSiteCfg' => ['FriendlyName', ['field' => 'text'], 'site.ini'],
             'FromSomePlugin' => ['FriendlyName', ['field' => 'text'], 'some-plugin.ini'],
         ]);
         return $s;
     }
     private function setupDb2($s) {
         $this->setupDb($s);
-        self::$db->exec('CREATE TABLE ${p}FromSiteIni (`field` TEXT);');
+        self::$db->exec('CREATE TABLE ${p}FromSiteCfg (`field` TEXT);');
     }
     private function verifyUninstalledDisappearedContentType() {
-        $this->verifyContentTypeIsInstalled('FromSiteIni', false, self::$db);
+        $this->verifyContentTypeIsInstalled('FromSiteCfg', false, self::$db);
         $this->verifyContentTypeIsInstalled('FromSomePlugin', true, self::$db, false);
     }
 }

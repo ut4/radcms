@@ -34,7 +34,7 @@ class Installer {
         // @allow \RadCms\Common\RadException
         return $this->openDbAndCreateSchema($settings) &&
                $this->createSampleContentTypesAndInsertSampleContent($settings) &&
-               $this->cloneTemplatesAndIniFile($settings) &&
+               $this->cloneTemplatesAndCfgFile($settings) &&
                $this->generateConfigFile($settings);
     }
     /**
@@ -88,10 +88,10 @@ class Installer {
         if (($sampleContent = json_decode($json)) === null)
             throw new RadException("Failed to parse {$path}", RadException::FAILED_FS_OP);
         //
-        $ini = new SiteConfig($this->fs);
+        $cfg = new SiteConfig($this->fs);
         // @allow \RadCms\Common\RadException
-        return $ini->selfLoad("{$s->radPath}sample-content/{$s->sampleContent}/site.ini", false) &&
-               (new ContentTypeMigrator($this->db))->installMany($ini->contentTypes,
+        return $cfg->selfLoad("{$s->radPath}sample-content/{$s->sampleContent}/site.ini", false, false) &&
+               (new ContentTypeMigrator($this->db))->installMany($cfg->contentTypes,
                                                                  $sampleContent);
     }
     /**
@@ -99,7 +99,7 @@ class Installer {
      * @return bool
      * @throws \RadCms\Common\RadException
      */
-    private function cloneTemplatesAndIniFile($s) {
+    private function cloneTemplatesAndCfgFile($s) {
         $dirPath = "{$s->radPath}sample-content/{$s->sampleContent}/";
         $dirPathLen = mb_strlen($dirPath);
         //

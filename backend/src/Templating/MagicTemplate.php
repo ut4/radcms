@@ -74,6 +74,14 @@ class MagicTemplate extends Template {
         return $this->url($url, false);
     }
     /**
+     * @return string
+     */
+    public function cssFiles() {
+        return implode(' ', array_map(function ($url) {
+            return '<link href="' . $this->assetUrl($this->e($url)) . '" rel="stylesheet">';
+        }, $this->cssFiles));
+    }
+    /**
      * @param string $str
      * @return string
      */

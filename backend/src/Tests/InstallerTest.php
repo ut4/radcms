@@ -87,7 +87,7 @@ final class InstallerTest extends DbTestCase {
         $this->addFsExpectation('checksRadPathIsValid', $s);
         $this->addFsExpectation('readsDataFiles', $s);
         $this->addFsExpectation('readsSampleContentTemplateFilesDir', $s);
-        $this->addFsExpectation('clonesTemplateFilesAndSiteIniFile', $s);
+        $this->addFsExpectation('clonesTemplateFilesAndSiteCfgFile', $s);
         $this->addFsExpectation('generatesConfigFile', $s);
         //
         $res = $this->createMockResponse('{"ok":"ok"}', 200);
@@ -161,7 +161,7 @@ final class InstallerTest extends DbTestCase {
                 ]);
             return;
         }
-        if ($expectation == 'clonesTemplateFilesAndSiteIniFile') {
+        if ($expectation == 'clonesTemplateFilesAndSiteCfgFile') {
             $s->mockFs->expects($this->exactly(3))
                 ->method('copy')
                 ->withConsecutive([
