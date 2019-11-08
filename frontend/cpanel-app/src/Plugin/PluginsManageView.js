@@ -55,9 +55,7 @@ class PluginsManageView extends preact.Component {
         }).then(res => {
             const data = JSON.parse(res.responseText);
             if (data.ok) {
-                const plugins = this.state.plugins;
-                plugins[i].isInstalled = true;
-                this.setState({plugins});
+                services.redirect('/', true);
             } else {
                 toast(data.error, 'error');
             }
@@ -74,9 +72,7 @@ class PluginsManageView extends preact.Component {
         }).then(res => {
             const data = JSON.parse(res.responseText);
             if (data.ok) {
-                const plugins = this.state.plugins;
-                plugins[i].isInstalled = false;
-                this.setState({plugins});
+                services.redirect('/', true);
             } else {
                 toast(data.error, 'error');
             }

@@ -54,8 +54,8 @@ class MoviesControllers {
                 'title' => $req->body->title,
             ]);
             $res->json($numAffectedRows > 0
-                ? ['my' => 'response']
-                : ['my' => 'response']);
+                ? ['my' => 'response2']
+                : ['my' => 'response2']);
         } catch (RadException $e) {
             LoggerAccess::getLogger()->debug($e->getTraceAsString());
             $res->status($e->getCode() == RadException::BAD_INPUT ? 400 : 500)

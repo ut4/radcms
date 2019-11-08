@@ -32,7 +32,8 @@ final class ContentControllersTest extends DbTestCase {
     public function testGETContentReturnsContentNode() {
         $s = $this->setupTest1();
         $this->insertTestContentNode($s->productId);
-        $this->setExpectedResponseBody('{"id":"1","title":"Tuotteen nimi"}', $s);
+        $this->setExpectedResponseBody('{"id":"1","title":"Tuotteen nimi"' .
+                                        ',"contentType":"Products"}', $s);
         $this->sendGetContentNodeRequest($s);
     }
     private function setupTest1() {

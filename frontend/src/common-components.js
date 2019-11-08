@@ -105,13 +105,13 @@ function contentNodeList(props) {
         $el('ul', null, props.cnodes.map(c =>
             $el('li', null, [
                 $el('span', null, c.name || '#' + c.id),
-                myLink('/edit-content/' + c.id + '?returnTo=' +
-                       encodeURIComponent(props.currentPageUrl), 'Edit')
+                myLink('/edit-content/' + c.id + '/' + c.contentType + '?returnTo=' +
+                       encodeURIComponent(props.currentPagePath), 'Edit')
             ])
         )),
         $el('div', null, myLink(
             '/add-content' + (!props.contentType ? '' : '/' + props.contentType) +
-                '?returnTo=' + encodeURIComponent(props.currentPageUrl),
+                '?returnTo=' + encodeURIComponent(props.currentPagePath),
             props.createLinkText || 'Create content'
         ))
     ];

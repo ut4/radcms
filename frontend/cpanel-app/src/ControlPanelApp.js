@@ -69,7 +69,7 @@ class ControlPanelApp extends preact.Component {
                     }
                 }, [
                     $el(ContentAddView, {path: '/add-content/:initialContentTypeName?'}, null),
-                    $el(ContentEditView, {path: '/edit-content/:contentNodeId'}, null),
+                    $el(ContentEditView, {path: '/edit-content/:id/:contentTypeName'}, null),
                     $el(ContentTypesManageView, {path: '/manage-content-types'}, null),
                     $el(ContentTypeCreateView, {path: '/create-content-type'}, null),
                     $el(PluginsManageView, {path: '/manage-plugins'}, null),
@@ -102,7 +102,7 @@ class ControlPanelApp extends preact.Component {
                 }, contentNodeList({
                     cnodes: this.looseContentNodes,
                     createLinkText: 'Lisää sisältöä',
-                    currentPageUrl: this.props.page.url
+                    currentPagePath: this.props.currentPagePath
                 })) : null)
             )
         );

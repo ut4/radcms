@@ -63,8 +63,9 @@ abstract class ContentTypeValidator {
             if (!$v->check($key, 'present'))
                 continue;
             $validationRules = [
-                'text' => ['string']
-            ][$f->dataType];
+                'text' => ['string'],
+                'json' => ['string'],
+            ][$f->dataType] ?? null;
             if (!$validationRules)
                 throw new \RuntimeException('Shouldn\'t happen');
             $v->check($key, ...$validationRules);

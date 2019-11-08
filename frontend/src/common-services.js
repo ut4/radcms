@@ -1,8 +1,10 @@
+const config = {};
+
 function redirect(to, full) {
     if (!full) {
         window.parent.location.hash = '#' + to;
     } else {
-        window.parent.location.href = window.parent.location.origin + to;
+        window.parent.location.href = window.parent.location.origin + config.baseUrl + to.substr(1);
     }
 }
 
@@ -22,7 +24,7 @@ function myFetch(url, options = {}) {
                 options.progress(e.target, e.lengthComputable ? e.loaded / e.total * 100 : -1);
             };
         }
-        req.open(options.method || 'GET', myFetch.baseUrl + url.substr(1), true);
+        req.open(options.method || 'GET', config.baseUrl + url.substr(1), true);
         Object.keys(options.headers || {}).forEach(key => {
             req.setRequestHeader(key, options.headers[key]);
         });
@@ -32,7 +34,6 @@ function myFetch(url, options = {}) {
         throw err;
     });
 }
-myFetch.baseUrl = '';
 
 const signals = {
     _listeners: [],
@@ -62,7 +63,7 @@ const services = {
     redirect,
     myFetch,
     signals,
-    config: {},
+    config,
 };
 
 export default services;

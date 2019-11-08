@@ -9,8 +9,8 @@ const cpanelBoot = {
      * @param {ControlPanelAppProps} props
      */
     boot(props) {
-        services.config = {baseUrl: props.baseUrl, assetBaseUrl: props.assetBaseUrl};
-        services.myFetch.baseUrl = services.config.baseUrl;
+        services.config.baseUrl = props.baseUrl;
+        services.config.assetBaseUrl = props.assetBaseUrl;
         //
         window.rad.runRegisteredOnLoadFns([uiPanelRegister, services, components]);
         //

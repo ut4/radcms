@@ -63,10 +63,10 @@ class WebsiteControllers {
             $frontendDataKey = strval(time());
             $this->session->put($frontendDataKey, [
                 'dataToFrontend' => [
-                    'page' => ['url' => $req->path],
                     'contentPanels' => $cnd->getFrontendPanelInfos(),
                     'adminPanels' => $this->appState->pluginFrontendAdminPanelInfos,
                     'baseUrl' => $template->url('/'),
+                    'currentPagePath' => $req->path,
                     'assetBaseUrl' => $template->assetUrl('/'),
                 ],
                 'pluginJsFiles' => $this->appState->pluginJsFiles,

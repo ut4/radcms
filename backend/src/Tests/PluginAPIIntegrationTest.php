@@ -54,7 +54,8 @@ final class PluginAPIIntegrationTest extends DbTestCase {
     public function testPluginCanCRUDRead() {
         $s = $this->setupTest1();
         $this->insertTestMovie();
-        $this->setExpectedResponseBody('[{"id":"1","title":"Fus"}]', $s);
+        $this->setExpectedResponseBody('[{"id":"1","title":"Fus"' .
+                                         ',"contentType":"Movies"}]', $s);
         $this->sendListMoviesRequest($s);
     }
     private function setupTest1() {
@@ -121,7 +122,7 @@ final class PluginAPIIntegrationTest extends DbTestCase {
 
     public function testPluginCanCRUDUpdate() {
         $s = $this->setupTest3();
-        $this->setExpectedResponseBody('{"my":"response"}', $s);
+        $this->setExpectedResponseBody('{"my":"response2"}', $s);
         $newTitle = 'Updated';
         $this->sendUpdateMovieRequest($s, $newTitle);
         $this->verifyMovieWasUpdatedToDb($newTitle);

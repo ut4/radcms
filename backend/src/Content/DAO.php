@@ -61,10 +61,10 @@ class DAO {
      * @param string $sql
      * @param string $queryId
      * @param bool $isFetchOne
-     * @param array $joinRowsCollector = null ks. $this->runUserDefinedJoinCollector
+     * @param object $join = null { $contentType: string; $collector: [\Closure, string]; }
      * @return array|object|null
      */
-    public function doExec($sql, $queryId, $isFetchOne, $joinRowsCollector) {
+    public function doExec($sql, $queryId, $isFetchOne, $join = null) {
         $out = null;
         // @allow \PDOException
         $rows = $this->db->fetchAll($sql);
@@ -76,8 +76,8 @@ class DAO {
             }, $rows) : [];
         }
         //
-        if ($joinRowsCollector)
-            $this->provideJoinMatchesToUserDefinedCollector($joinRowsCollector,
+        if ($join)
+            $this->provideRowsToUserDefinedJoinCollector($join,
                 $out, $rows, $isFetchOne);
         //
         if (isset($this->frontendPanelInfos[$queryId])) {
@@ -116,8 +116,8 @@ class DAO {
                 $row['id'] != $head->id ||
                 $row['contentType'] != $head->contentType) continue;
             $l = array_push($revs, json_decode($row['revisionSnapshot']));
-            if ($row['createdAt'] > $latest->time) {
-                $latest->time = $row['createdAt'];
+            if ($row['revisionCreatedAt'] > $latest->time) {
+                $latest->time = $row['revisionCreatedAt'];
                 $latest->index = $l - 1;
             }
         }
@@ -130,17 +130,18 @@ class DAO {
         }
         return $head;
     }
-    private function provideJoinMatchesToUserDefinedCollector($collector,
-                                                              &$out,
-                                                              $rows,
-                                                              $isFetchOne) {
-        [$fn, $fieldName] = $collector;
+    private function provideRowsToUserDefinedJoinCollector($join,
+                                                           &$out,
+                                                           $rows,
+                                                           $isFetchOne) {
+        $joinContentTypeName = $join->contentType;
+        [$fn, $fieldName] = $join->collector;
         foreach (($isFetchOne ? [$out] : $out) as &$node) {
             $node->$fieldName = [];
             foreach ($rows as $row) {
                 if (
                     $row['id'] == $node->id &&
-                    $row['bId']                // Ei tyhjiä rivejä (left join)
+                    $row['bContentType'] == $joinContentTypeName
                 ) $fn($node, $row);
             }
         }

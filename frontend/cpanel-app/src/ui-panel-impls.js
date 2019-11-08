@@ -10,7 +10,7 @@ class GenericUIPanelImpl {
     constructor(config) {
         this.config = config;
         if ((this.node = config.contentNodes[0] || null))
-            this.nodeName = this.node.name ? this.node.name : ('#' + this.node.id);
+            this.nodeName = this.node.name || '#' + this.node.id;
     }
     getName() {
         return 'Generic';
@@ -25,18 +25,18 @@ class GenericUIPanelImpl {
         return [];
     }
     /**
-     * @param {Object} currentPageData
+     * @param {Object} cpanelProps
      */
-    getMenuItems(currentPageData) {
+    getMenuItems(cpanelProps) {
         return this.node
         ? [
             $el('span', null, this.nodename),
-            myLink('/edit-content/' + this.node.id + '?returnTo=' +
-                   encodeURIComponent(currentPageData.page.url), 'Edit')
+            myLink('/edit-content/' + this.node.id + '/' + this.node.contentType + '?returnTo=' +
+                   encodeURIComponent(cpanelProps.currentPagePath), 'Edit')
         ]
         : [
             $el('span', null, 'No content'),
-            myLink('/add-content' + '?returnTo=' + encodeURIComponent(currentPageData.page.url), 'Create')
+            myLink('/add-content?returnTo=' + encodeURIComponent(cpanelProps.currentPagePath), 'Create')
         ];
     }
 }
@@ -64,13 +64,13 @@ class GenericListUIPanelImpl {
         return [];
     }
     /**
-     * @param {Object} currentPageData
+     * @param {Object} cpanelProps
      */
-    getMenuItems(currentPageData) {
+    getMenuItems(cpanelProps) {
         return contentNodeList({
             cnodes: this.config.contentNodes,
             createLinkText: 'Add ' + this.label,
-            currentPageUrl: currentPageData.page.url,
+            currentPagePath: cpanelProps.currentPagePath,
             contentType: this.config.contentType
         });
     }

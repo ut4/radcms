@@ -2,64 +2,57 @@ import services from '../../../src/common-services.js';
 import {view, Form} from '../../../src/common-components.js';
 import ContentNodeFieldList from './ContentNodeFieldList.js';
 
-const EXTRA_FIELD_SEPARATOR = '__separator__';
-
 /**
- * #/edit-content/:contentNodeId
+ * #/edit-content/:id/:contentTypeName
  */
 class ContentEditView extends preact.Component {
     /**
-     * @param {Object} props {
-     *     contentNodeId: string;
-     * }
+     * @param {{id: string; contentTypeName: string;}} props
      */
     constructor(props) {
         super(props);
         this.state = {
-            cnodeName: '',
-            cnodeContentTypeId: '',
-            fieldsData: null, // {title: 'Article 1', body:'Lorem ipsum'...}
-            fieldsInfo: null  // {title: 'text', body: 'richtext'...}
+            cnode: null,
+            ctype: null,
         };
-        services.myFetch('/api/content/' + props.contentNodeId).then(
+        services.myFetch(`/api/content/${props.id}/${props.contentTypeName}`).then(
             res => {
-                const contentNode = JSON.parse(res.responseText);
-                this.state.cnodeName = contentNode.name;
-                this.state.cnodeContentTypeId = contentNode.contentTypeId;
-                this.state.fieldsData = JSON.parse(contentNode.json);
-                return services.myFetch('/api/content-types/' + contentNode.contentTypeId);
+                this.state.cnode = JSON.parse(res.responseText);
+                return services.myFetch('/api/content-types/' + props.contentTypeName);
             },
             res => { toast(res.responseText, 'error'); }
         ).then(
             res => {
-                this.state.fieldsInfo = JSON.parse(res.responseText).fields;
-                this.setState(this.state);
+                this.state.ctype = JSON.parse(res.responseText);
+                this.setState({cnode: this.state.cnode, ctype: this.state.ctype});
             },
             res => { toast(res.responseText, 'error'); }
         );
     }
+    /**
+     * @access private
+     */
     render() {
-        if (!this.state.fieldsInfo) return null;
-        return view($el(Form, {onConfirm: e => this.confirm(e)},
-            $el('h2', null, 'Edit content'),
-            $el(ContentNodeFieldList, {fieldsData: this.state.fieldsData,
-                                       fieldsInfo: this.state.fieldsInfo,
-                                       ref: cmp => { this.fieldListCmp = cmp; }}, null)
+        if (!this.state.ctype) return null;
+        return view($el(Form, {onConfirm: e => this.handleFormSubmit(e)},
+            $el('h2', null, 'Muokkaa sisältöä'),
+            $el(ContentNodeFieldList, {cnode: this.state.cnode,
+                                       ctype: this.state.ctype,
+                                       ref: cmp => { if (cmp) this.fieldListCmp = cmp; }}, null)
         ));
     }
-    confirm() {
-        return services.myFetch('/api/content', {
+    /**
+     * @access private
+     */
+    handleFormSubmit() {
+        return services.myFetch(`/api/content/${this.props.id}/${this.props.contentTypeName}`, {
             method: 'PUT',
             headers: {'Content-Type': 'application/json'},
-            data: JSON.stringify({
-                name: this.state.cnodeName,
-                json: JSON.stringify(this.fieldListCmp.getFieldsData()),
-                contentTypeId: this.state.cnodeContentTypeId
-            })
+            data: JSON.stringify(this.fieldListCmp.getResult())
         }).then(() => {
             services.redirect(this.props.returnTo || '/', true);
         }, () => {
-            toast('Failed to create the content.', 'error');
+            toast('Sisällön tallennus epäonnistui.', 'error');
         });
     }
 }

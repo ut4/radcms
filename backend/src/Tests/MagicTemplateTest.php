@@ -20,14 +20,16 @@ final class MagicTemplateTest extends TestCase {
     public function testFetchOneGeneratesSql() {
         $query1 = $this->template->fetchOne('Generics')->where('id=\'1\'');
         $this->assertEquals(
-            'SELECT `id`, `content` FROM ${p}Generics WHERE id=\'1\'',
+            'SELECT `id`, `content`, \'Generics\' AS `contentType`' .
+            ' FROM ${p}Generics WHERE id=\'1\'',
             $query1->toSql()
         );
     }
     public function testFetchAllGeneratesSql() {
         $query1 = $this->template->fetchAll('Generics');
         $this->assertEquals(
-            'SELECT `id`, `content` FROM ${p}Generics',
+            'SELECT `id`, `content`, \'Generics\' AS `contentType`' .
+            ' FROM ${p}Generics',
             $query1->toSql()
         );
     }
