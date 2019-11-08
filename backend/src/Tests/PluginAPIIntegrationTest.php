@@ -37,6 +37,11 @@ final class PluginAPIIntegrationTest extends DbTestCase {
         self::$db->exec('UPDATE ${p}websiteState SET' .
                         ' `installedContentTypesLastUpdated` = NULL');
     }
+
+
+    ////////////////////////////////////////////////////////////////////////////
+
+
     public function testPluginCanInstallContentType() {
         $this->testPlugin = null;
         $this->assertEquals('todo', '');
@@ -58,11 +63,12 @@ final class PluginAPIIntegrationTest extends DbTestCase {
         $ctx->fs->method('readDir')->willReturn([RAD_BASE_PATH . 'src/Tests/_MoviesPlugin']);
         return (object) [
             'ctx' => $ctx,
-            'expectedResponseBody' => null
+            'expectedResponseBody' => null,
+            'testMovieId' => null,
         ];
     }
-    private function insertTestMovie() {
-        if (self::$db->exec('INSERT INTO ${p}Movies VALUES (1,\'Fus\')') < 1)
+    private function insertTestMovie($id = '1') {
+        if (self::$db->exec('INSERT INTO ${p}Movies VALUES (?,\'Fus\')', [$id]) < 1)
             throw new \RuntimeException('Failed to insert test data');
     }
     private function setExpectedResponseBody($expectedJson, $s) {
@@ -113,14 +119,49 @@ final class PluginAPIIntegrationTest extends DbTestCase {
     ////////////////////////////////////////////////////////////////////////////
 
 
-    public function testPluginCanRegisterJsFilesAndAdminPanels() {
+    public function testPluginCanCRUDUpdate() {
         $s = $this->setupTest3();
+        $this->setExpectedResponseBody('{"my":"response"}', $s);
+        $newTitle = 'Updated';
+        $this->sendUpdateMovieRequest($s, $newTitle);
+        $this->verifyMovieWasUpdatedToDb($newTitle);
+    }
+    private function setupTest3() {
+        $out = $this->setupTest1();
+        $out->testMovieId = '10';
+        // @allow \RuntimeException
+        $this->insertTestMovie($out->testMovieId);
+        return $out;
+    }
+    private function sendUpdateMovieRequest($s, $newTitle) {
+        $res = $this->createMock(MutedResponse::class);
+        $res->expects($this->once())
+            ->method('json')
+            ->with($s->expectedResponseBody)
+            ->willReturn($res);
+        $req = new Request('/movies/' . $s->testMovieId, 'PUT',
+                           (object) ['title' => $newTitle]);
+        $this->makeRequest($req, $res, $s->ctx);
+    }
+    private function verifyMovieWasUpdatedToDb($newTitle) {
+        $this->assertEquals(1, count(self::$db->fetchAll(
+            'SELECT `id` FROM ${p}Movies WHERE `title` = ?',
+            [$newTitle]
+        )));
+    }
+
+
+    ////////////////////////////////////////////////////////////////////////////
+
+
+    public function testPluginCanRegisterJsFilesAndAdminPanels() {
+        $s = $this->setupTest4();
         $res = $this->createMock(MutedResponse::class);
         $req = new Request('/noop', 'GET');
         $app = $this->makeRequest($req, $res, $s->ctx);
         $this->verifyJsFilesWereRegistered($app->getCtx()->state);
     }
-    private function setupTest3() {
+    private function setupTest4() {
         return $this->setupTest1();
     }
     private function verifyJsFilesWereRegistered(AppState $appState) {

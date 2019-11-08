@@ -140,7 +140,7 @@ class ContentTypeMigrator {
                 ' JSON_MERGE_PATCH(`installedContentTypes`, ?)' .
                 ', `installedContentTypesLastUpdated` = UNIX_TIMESTAMP()',
                 [json_encode(array_reduce($ctypeDefs, function ($map, $t) {
-                    $map[$t->name] = [$t->friendlyName, $t->fields, $this->origin];
+                    $map[$t->name] = array_merge($t->serialize(), [$this->origin]);
                     return $map;
                 }, []))]) > 0) {
                 return true;
@@ -200,11 +200,11 @@ class ContentTypeMigrator {
      */
     private function buildFieldsSql($fields) {
         $out = [];
-        foreach ($fields as $name => $dataType) {
+        foreach ($fields as $name => $f) {
             $out[] = "`{$name}` " . [
                 'text' => 'TEXT',
                 'json' => 'TEXT'
-            ][$dataType];
+            ][$f->dataType];
         }
         return implode(',', $out);
     }

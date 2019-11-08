@@ -49,8 +49,8 @@ class AuthControllers {
     private function validateLoginFormInput($input) {
         $v = new Validator($input);
         //
-        $v->check('username', 'present');
-        $v->check('password', 'present');
+        $v->check('username', 'nonEmptyString');
+        $v->check('password', 'nonEmptyString');
         //
         return $v->errors;
     }

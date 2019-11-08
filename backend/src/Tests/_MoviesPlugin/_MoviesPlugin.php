@@ -21,6 +21,8 @@ class _MoviesPlugin implements PluginInterface {
                             'handleGetMoviesRequest', false);
         $api->registerRoute('POST', '/movies', MoviesControllers::class,
                             'handleCreateMovieRequest', false);
+        $api->registerRoute('PUT', '/movies/[i:movieId]', MoviesControllers::class,
+                            'handleUpdateMovieRequest', false);
         $api->registerRoute('GET', '/noop', MoviesControllers::class,
                             'handleNoopRequest', false);
     }

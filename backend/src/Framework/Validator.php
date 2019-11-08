@@ -63,8 +63,24 @@ class Validator {
      */
     public function present() {
         return [function ($input, $key) {
-            return isset($input->$key) && is_string($input->$key) && $input->$key;
-        }, '%s !present'];
+            return isset($input->$key);
+        }, '%s is required'];
+    }
+    /**
+     * @return array [($input: string, $key: string): bool, string]
+     */
+    public function string() {
+        return [function ($input, $key) {
+            return $this->present()[0]($input, $key) && is_string($input->$key);
+        }, '%s must be a string'];
+    }
+    /**
+     * @return array [($input: string, $key: string): bool, string]
+     */
+    public function nonEmptyString() {
+        return [function ($input, $key) {
+            return $this->string()[0]($input, $key) && strlen($input->$key) > 0;
+        }, '%s must be a non-empty string'];
     }
     /**
      * @param array $arr
@@ -72,16 +88,16 @@ class Validator {
      */
     public function in($arr) {
         return [function ($input, $key) use ($arr) {
-            return $this->is($key, 'present') && in_array($input->$key, $arr);
-        }, '%s !in'];
+            return $this->present()[0]($input, $key) && in_array($input->$key, $arr);
+        }, '%s must be one of ' . json_encode($arr)];
     }
     /**
      * @return array [($input: string, $key: string): bool, string]
      */
     public function word() {
         return [function ($input, $key) {
-            return $this->is($key, 'present') &&
+            return $this->present()[0]($input, $key) &&
                    ctype_alnum(str_replace(['_', '-'], '', $input->$key));
-        }, '%s !word'];
+        }, '%s must be a word'];
     }
 }

@@ -34,15 +34,16 @@ class SiteConfigDiffer {
      * @param object &$out ['added' => array, 'dataTypeChanged' => array]
      */
     private function diffFields($fromFile, $fromDb, &$out) {
-        foreach ($fromFile as $name => $dataType) {
-            $currentDataType = $fromDb[$name] ?? null;
-            if (!$currentDataType)
+        foreach ($fromFile as $name => $f) {
+            $current = $fromDb[$name] ?? null;
+            if (!$current)
                 $out->added[] = (object)['name' => $name,
-                                         'dataType' => $dataType];
-            elseif ($dataType != $currentDataType)
+                                         'dataType' => $f->dataType,
+                                         'widget' => $f->widget];
+            elseif ($f->dataType != $current->dataType)
                 $out->dataTypeChanged[] = (object)['name' => $name,
-                                                   'oldDataType' => $currentDataType,
-                                                   'newDataType' => $dataType];
+                                                   'oldDataType' => $current->dataType,
+                                                   'newDataType' => $f->dataType];
         }
         foreach ($fromDb as $name => $_) {
             if (!array_key_exists($name, $fromFile))

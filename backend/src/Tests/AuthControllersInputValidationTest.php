@@ -11,16 +11,16 @@ final class AuthControllersInputValidationTest extends TestCase {
     public function testPOSTLoginRejectsEmptyInput() {
         $req = new Request('/login', 'POST', new \stdClass);
         $res = $this->createMockResponse(
-            ['username !present',
-            'password !present'], 400);
+            ['username must be a non-empty string',
+            'password must be a non-empty string'], 400);
         $this->makeRequest($req, $res);
     }
     public function testPOSTLoginRejectsEmptyValues() {
         $req = new Request('/login', 'POST', (object)['username'=>'',
                                                       'password'=>'']);
         $res = $this->createMockResponse(
-            ['username !present',
-            'password !present'], 400);
+            ['username must be a non-empty string',
+            'password must be a non-empty string'], 400);
         $this->makeRequest($req, $res);
     }
 }

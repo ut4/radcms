@@ -63,23 +63,23 @@ class InstallerControllers {
     private function validateInstallInput(&$input) {
         $v = new Validator($input);
         //
-        if (!$v->is('siteName', 'present')) $input->siteName = 'My Site';
-        if ($v->check('baseUrl', 'present')) $input->baseUrl = rtrim($input->baseUrl, '/') . '/';
-        if (!$v->is('mainQueryVar', 'present')) $input->mainQueryVar = '';
+        if (!$v->is('siteName', 'nonEmptyString')) $input->siteName = 'My Site';
+        if ($v->check('baseUrl', 'nonEmptyString')) $input->baseUrl = rtrim($input->baseUrl, '/') . '/';
+        if (!$v->is('mainQueryVar', 'nonEmptyString')) $input->mainQueryVar = '';
         else $v->check('mainQueryVar', 'word');
-        $v->check('radPath', 'present', [
+        $v->check('radPath', 'nonEmptyString', [
             function ($input, $_key) {
                 $input->radPath = rtrim($input->radPath, '/') . '/';
                 return $this->fs->isFile($input->radPath . 'src/Framework/Db.php');
-            }, '%s !srcDir'
+            }, '%s is not valid sourcedir'
         ]);
         $v->check('sampleContent', ['in', ['minimal', 'blog', 'test-content']]);
-        $v->check('dbHost', 'present');
-        $v->check('dbUser', 'present');
-        $v->check('dbPass', 'present');
-        $v->check('dbDatabase', 'present');
-        $v->check('dbTablePrefix', 'present');
-        if (!$v->is('dbCharset', 'present')) $input->dbCharset = 'utf8';
+        $v->check('dbHost', 'nonEmptyString');
+        $v->check('dbUser', 'nonEmptyString');
+        $v->check('dbPass', 'nonEmptyString');
+        $v->check('dbDatabase', 'nonEmptyString');
+        $v->check('dbTablePrefix', 'nonEmptyString');
+        if (!$v->is('dbCharset', 'nonEmptyString')) $input->dbCharset = 'utf8';
         else $v->check('dbCharset', ['in', ['utf8']]);
         //
         return $v->errors;

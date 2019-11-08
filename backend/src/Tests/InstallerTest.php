@@ -20,13 +20,13 @@ final class InstallerTest extends DbTestCase {
     public function testInstallerValidatesMissingValues() {
         $input = (object)['sampleContent' => 'test-content', 'dbCharset' => 'utf8'];
         $res = $this->createMockResponse(json_encode([
-            'baseUrl !present',
-            'radPath !present',
-            'dbHost !present',
-            'dbUser !present',
-            'dbPass !present',
-            'dbDatabase !present',
-            'dbTablePrefix !present',
+            'baseUrl must be a non-empty string',
+            'radPath must be a non-empty string',
+            'dbHost must be a non-empty string',
+            'dbUser must be a non-empty string',
+            'dbPass must be a non-empty string',
+            'dbDatabase must be a non-empty string',
+            'dbTablePrefix must be a non-empty string',
         ]), 400);
         $app = InstallerApp::create();
         $app->handleRequest(new Request('/', 'POST', $input), $res);
@@ -45,16 +45,16 @@ final class InstallerTest extends DbTestCase {
             'dbCharset' => 'notValid',
         ];
         $res = $this->createMockResponse(json_encode([
-            'baseUrl !present',
-            'mainQueryVar !word',
-            'radPath !srcDir',
-            'sampleContent !in',
-            'dbHost !present',
-            'dbUser !present',
-            'dbPass !present',
-            'dbDatabase !present',
-            'dbTablePrefix !present',
-            'dbCharset !in',
+            'baseUrl must be a non-empty string',
+            'mainQueryVar must be a word',
+            'radPath is not valid sourcedir',
+            'sampleContent must be one of ["minimal","blog","test-content"]',
+            'dbHost must be a non-empty string',
+            'dbUser must be a non-empty string',
+            'dbPass must be a non-empty string',
+            'dbDatabase must be a non-empty string',
+            'dbTablePrefix must be a non-empty string',
+            'dbCharset must be one of ["utf8"]',
         ]), 400);
         $app = InstallerApp::create();
         $app->handleRequest(new Request('/', 'POST', $input), $res);

@@ -1,7 +1,7 @@
 import {myLink, contentNodeList} from '../../src/common-components.js';
 
 /*
- * Implementoi hallintapaneeliosion <?php $this->fetchAll(...)->createFrontendPanel('Generic', 'My title') ?> kutsuille, jonka kautta loppukäyttäjä voi muokata sisältöä.
+ * Implementoi hallintapaneeliosion <?php $this->fetchOne(...)->createFrontendPanel('Generic', 'My title') ?> kutsuille, jonka kautta loppukäyttäjä voi muokata sisältöä.
  */
 class GenericUIPanelImpl {
     /**
@@ -9,12 +9,8 @@ class GenericUIPanelImpl {
      */
     constructor(config) {
         this.config = config;
-        if (config.contentNodes.length) {
-            this.cnodeId = config.contentNodes[0].id;
-            this.cnodeName = config.contentNodes[0].name;
-        } else {
-            this.cnodeId = 0;
-        }
+        if ((this.node = config.contentNodes[0] || null))
+            this.nodeName = this.node.name ? this.node.name : ('#' + this.node.id);
     }
     getName() {
         return 'Generic';
@@ -32,10 +28,10 @@ class GenericUIPanelImpl {
      * @param {Object} currentPageData
      */
     getMenuItems(currentPageData) {
-        return this.cnodeId
+        return this.node
         ? [
-            $el('span', null, this.cnodeName),
-            myLink('/edit-content/' + this.cnodeId + '?returnTo=' +
+            $el('span', null, this.nodename),
+            myLink('/edit-content/' + this.node.id + '?returnTo=' +
                    encodeURIComponent(currentPageData.page.url), 'Edit')
         ]
         : [
