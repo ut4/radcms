@@ -6,6 +6,7 @@ use Auryn\Injector;
 use AltoRouter;
 use RadCms\Framework\Db;
 use RadCms\Content\ContentModule;
+use RadCms\ContentType\ContentTypeModule;
 use RadCms\Auth\AuthModule;
 use RadCms\Website\WebsiteModule;
 use RadCms\Plugin\PluginModule;
@@ -93,6 +94,7 @@ class App {
         $app->ctx->state = new AppState($app->ctx->db, $app->ctx->fs ?? new FileSystem());
         $app->ctx->state->selfLoad($pluginsDir, $app->ctx->router);
         ContentModule::init($app->ctx);
+        ContentTypeModule::init($app->ctx);
         AuthModule::init($app->ctx);
         PluginModule::init($app->ctx);
         WebsiteModule::init($app->ctx);

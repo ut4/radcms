@@ -5,9 +5,11 @@ namespace RadCms\Content;
 use RadCms\Framework\Request;
 use RadCms\Framework\Response;
 use RadCms\Framework\Db;
+use RadCms\Content\DAO;
+use RadCms\Content\DMO;
 
 /**
- * Handlaa /api/content, ja /api/content-type -alkuiset pyynnöt.
+ * Handlaa /api/content -alkuiset pyynnöt.
  */
 class ContentControllers {
     /**
@@ -17,30 +19,30 @@ class ContentControllers {
         $this->db = $db;
     }
     /**
-     * GET /api/content/:id.
+     * GET /api/content/:contentType/:id.
      *
      * @param \RadCms\Framework\Request $req
      * @param \RadCms\Framework\Response $res
+     * @param \RadCms\Content\DAO $dao
      */
-    public function handleGetContentNode(Request $req, Response $res) {
-        return $res->json([
-            'id' => 1,
-            'name' => 'footer',
-            'json' => json_encode(['content' => '(c) 2034 MySitea']),
-            'contentTypeId' => 1
-        ]);
+    public function handleGetContentNode(Request $req, Response $res, DAO $dao) {
+        // @allow \RadCMS\Common\RadException
+        $node = $dao->fetchOne($req->params->contentTypeName)
+                    ->where("`id`={$req->params->id}") // aina [0-9]
+                    ->exec();
+        if ($node) $res->json($node);
+        else $res->status(404)->json(['got' => 'nothing']);
     }
     /**
-     * GET /api/content-type/:id.
+     * PUT /api/content/:contentType/:id.
      *
      * @param \RadCms\Framework\Request $req
      * @param \RadCms\Framework\Response $res
+     * @param \RadCms\Content\DMO $dmo
      */
-    public function handleGetContentType(Request $req, Response $res) {
-        return $res->json([
-            'id' => 1, 
-            'name' => 'Generic blobs',
-            'fields' => ['content' => 'richtext']
-        ]);
+    public function handleUpdateContentNode(Request $req, Response $res, DMO $dmo) {
+        // @allow \RadCMS\Common\RadException
+        $numRows = $dmo->update($req->params->id, $req->params->contentTypeName, $req->body);
+        $res->json(['numAffectedRows' => $numRows]);
     }
 }
