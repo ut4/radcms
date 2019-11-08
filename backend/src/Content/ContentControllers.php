@@ -28,7 +28,7 @@ class ContentControllers {
     public function handleGetContentNode(Request $req, Response $res, DAO $dao) {
         // @allow \RadCMS\Common\RadException
         $node = $dao->fetchOne($req->params->contentTypeName)
-                    ->where("`id`={$req->params->id}") // aina [0-9]
+                    ->where('`id` = ?', [$req->params->id]) // aina [0-9]
                     ->exec();
         if ($node) $res->json($node);
         else $res->status(404)->json(['got' => 'nothing']);

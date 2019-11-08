@@ -51,12 +51,14 @@ class AppState {
      * @param \RadCms\ContentType\ContentTypeCollection $newDefsFromFile
      * @param string $origin 'site.ini' | 'SomePlugin.ini'
      * @throws \RadCms\Common\RadException
+     * @return bool
      */
     public function diffAndSaveChangesToDb(ContentTypeCollection $newDefsFromFile,
                                            $origin) {
         $currentDefsFromDb = $this->contentTypes->filter($origin, 'origin');
         [$ctypesDiff, $fieldsDiff] = (new SiteConfigDiffer())
             ->run($newDefsFromFile, $currentDefsFromDb);
+        // @allow \RadCms\Common\RadException
         return (new ContentTypeSyncer($this->db))->sync($ctypesDiff, $fieldsDiff);
     }
     /**

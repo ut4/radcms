@@ -15,7 +15,7 @@ class Query {
     private $contentType;
     private $isFetchOne;
     private $dao;
-    private $whereExpr;
+    private $whereDef;
     private $orderByExpr;
     private $limitExpr;
     private $joinDefs;
@@ -34,21 +34,27 @@ class Query {
     }
     /**
      * @param string $expr
+     * @param array $bindVals = null
      * @return $this
      */
-    public function where($expr) {
-        $this->whereExpr = $expr;
+    public function where($expr, array $bindVals = null) {
+        $this->whereDef = (object)['expr' => $expr, 'bindVals' => $bindVals];
         return $this;
     }
     /**
      * @param string $contentType
      * @param string $expr
+     * @param array $bindVals = null
      * @param bool $isLeft = false
      * @return $this
      */
-    public function join($contentType, $expr, $isLeft = false) {
+    public function join($contentType,
+                         $expr,
+                         array $bindVals = null,
+                         $isLeft = false) {
         $this->joinDefs[] = (object)['contentType' => $contentType,
                                      'expr' => $expr,
+                                     'bindVals' => $bindVals,
                                      'isLeft' => $isLeft,
                                      'collector' => null];
         return $this;
@@ -56,10 +62,11 @@ class Query {
     /**
      * @param string $contentType
      * @param string $expr
+     * @param array $bindVals = null
      * @return $this
      */
-    public function leftJoin($contentType, $expr) {
-        return $this->join($contentType, $expr, true);
+    public function leftJoin($contentType, $expr, array $bindVals = null) {
+        return $this->join($contentType, $expr, $bindVals, true);
     }
     /**
      * @param string $toField
@@ -85,8 +92,14 @@ class Query {
      * @return array|object|null
      */
     public function exec() {
+        $bindVals = [];
+        if ($this->whereDef && $this->whereDef->bindVals)
+            $bindVals = array_merge($bindVals, $this->whereDef->bindVals);
+        foreach ($this->joinDefs as $d)
+            if ($d->bindVals) $bindVals = array_merge($bindVals, $d->bindVals);
+        //
         return $this->dao->doExec($this->toSql(), $this->id, $this->isFetchOne,
-                                  $this->joinDefs[0] ?? null);
+                                  $bindVals ?? null, $this->joinDefs[0] ?? null);
     }
     /**
      * @return string
@@ -98,10 +111,10 @@ class Query {
         }
         //
         $mainQ = 'SELECT `id`, ' .
-                 $this->contentType->fieldsToSql() .
+                 $this->contentType->fieldsToSqlCols() .
                  ', \'' . $this->contentType->name . '\' AS `contentType`' .
                  ' FROM ${p}' . $this->contentType->name .
-                 (!$this->whereExpr ? '' : ' WHERE ' . $this->whereExpr) .
+                 (!$this->whereDef ? '' : ' WHERE ' . $this->whereDef->expr) .
                  (!$this->orderByExpr ? '' : ' ORDER BY ' . $this->orderByExpr) .
                  (!$this->limitExpr ? '' : ' LIMIT ' . $this->limitExpr);
         //
@@ -130,7 +143,7 @@ class Query {
                     ' ON (' . $joinDef->expr . ')';
         $fields[] = 'b.`id` AS `bId`, \'' . $ctypeName . '\' AS `bContentType`, ' .
                     $this->dao->getContentType($ctypeName)
-                              ->fieldsToSql(function ($fieldName) {
+                              ->fieldsToSqlCols(function ($fieldName) {
                                   return 'b.`'.$fieldName.'` AS `b'.ucfirst($fieldName).'`';
                               });
     }
@@ -147,7 +160,6 @@ class Query {
      * @return string
      */
     private function selfValidate() {
-        $MAX_WHERE_LEN = 2048;
         $errors = ContentTypeValidator::validate($this->contentType);
         foreach ($this->joinDefs as $d) {
             $errors = array_merge($errors,
@@ -157,12 +169,8 @@ class Query {
                             ' function () {}) was provided';
         }
         if ($this->isFetchOne) {
-            if (!$this->whereExpr) {
+            if (!$this->whereDef) {
                 $errors[] = 'fetchOne(...)->where() is required.';
-            } elseif (mb_strlen($this->whereExpr) > $MAX_WHERE_LEN) {
-                $errors[] = 'fetchOne(...)->where( too long (max ' .
-                            $MAX_WHERE_LEN . ', was ' .
-                            mb_strlen($this->whereExpr) . ').';
             }
         }
         return $errors ? implode('\n', $errors) : '';

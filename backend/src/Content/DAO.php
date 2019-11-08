@@ -61,13 +61,18 @@ class DAO {
      * @param string $sql
      * @param string $queryId
      * @param bool $isFetchOne
+     * @param array $bindVals = null
      * @param object $join = null { $contentType: string; $collector: [\Closure, string]; }
      * @return array|object|null
      */
-    public function doExec($sql, $queryId, $isFetchOne, $join = null) {
+    public function doExec($sql,
+                           $queryId,
+                           $isFetchOne,
+                           $bindVals = null,
+                           $join = null) {
         $out = null;
         // @allow \PDOException
-        $rows = $this->db->fetchAll($sql);
+        $rows = $this->db->fetchAll($sql, $bindVals);
         if ($isFetchOne) {
             $out = $rows ? $this->makeContentNode($rows[0], $rows) : null;
         } else {
@@ -78,7 +83,7 @@ class DAO {
         //
         if ($join)
             $this->provideRowsToUserDefinedJoinCollector($join,
-                $out, $rows, $isFetchOne);
+                $rows, $isFetchOne, $out);
         //
         if (isset($this->frontendPanelInfos[$queryId])) {
             $this->frontendPanelInfos[$queryId]->contentNodes = $out;
@@ -131,9 +136,9 @@ class DAO {
         return $head;
     }
     private function provideRowsToUserDefinedJoinCollector($join,
-                                                           &$out,
                                                            $rows,
-                                                           $isFetchOne) {
+                                                           $isFetchOne,
+                                                           &$out) {
         $joinContentTypeName = $join->contentType;
         [$fn, $fieldName] = $join->collector;
         foreach (($isFetchOne ? [$out] : $out) as &$node) {

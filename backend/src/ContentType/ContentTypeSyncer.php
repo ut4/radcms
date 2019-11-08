@@ -4,6 +4,7 @@ namespace RadCms\ContentType;
 
 use RadCms\Framework\Db;
 use RadCms\Common\LoggerAccess;
+use RadCms\Common\RadException;
 
 /**
  * .
@@ -16,7 +17,8 @@ class ContentTypeSyncer {
     /**
      * @param object ['added' => \RadCms\ContentType\ContentTypeCollection, 'deleted' => \RadCms\ContentType\ContentTypeCollection]
      * @param object ['added' => [], 'deleted' => [], 'dataTypeChanged' => []]
-     * @return null|string null on success or 'Some error message'
+     * @return bool
+     * @throws \RadCms\Common\RadException
      */
     public function sync($ctypesDiff, $fieldsDiff) {
         if (($ctypesDiff->deleted->length() + $ctypesDiff->added->length() +
@@ -39,13 +41,10 @@ class ContentTypeSyncer {
                     'Installed ' . $ctypesDiff->added->length() . ' content types.');
             }
             $this->db->commit();
-            return null;
-        } catch (\PDOException $e) {
+            return true;
+        } catch (RadException $e) {
             $this->db->rollback();
-            return 'Failed to sync content types.';
-        } catch (\RuntimeException $e) {
-            $this->db->rollback();
-            return $e->getMessage();
+            throw $e;
         }
     }
 }

@@ -31,7 +31,7 @@ class ContentTypeDef {
      * @param \Closure $formatterFn = null ($fieldName: string): string
      * @return string
      */
-    public function fieldsToSql($formatterFn = null) {
+    public function fieldsToSqlCols($formatterFn = null) {
         return implode(', ', array_map($formatterFn ?? function($name) {
             return "`{$name}`";
         }, array_keys($this->fields)));
