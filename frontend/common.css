@@ -160,6 +160,10 @@ label select {
     box-sizing: border-box;
     width: 100%;
 }
+input[type="checkbox"] {
+    width: initial;
+    margin-top: 4px;
+}
 label .text-error,
 .input-set .text-error {
     display: inline-block;

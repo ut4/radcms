@@ -12,3 +12,16 @@ h2 {
     font: normal 26px/26px "Fira sans heavy";
     margin-top: 15px;
 }
+.fieldset {
+    border: 1px solid #cecece;
+    border-radius: 2px;
+    padding: 20px 14px 10px;
+    margin: 12px 0 0 0;
+}
+.fieldset .legend {
+    font: normal 14px/5px "Fira sans light";
+    margin: -23px 0 0 -2px;
+    background-color: #fff;
+    position: absolute;
+    padding: 0 2px;
+}

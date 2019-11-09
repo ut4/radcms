@@ -1,4 +1,6 @@
-const config = {};
+const config = {
+    baseUrl: '',
+};
 
 function redirect(to, full) {
     if (!full) {

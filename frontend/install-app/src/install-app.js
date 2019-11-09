@@ -18,7 +18,8 @@ class InstallApp extends preact.Component {
             baseUrl: '/',
             mainQueryVar: '',
             radPath: this.sitePath + 'backend/',
-            sampleContent: 'minimal'
+            sampleContent: 'minimal',
+            useDevMode: false,
         } : JSON.parse(l);
     }
     render() {
@@ -30,22 +31,17 @@ class InstallApp extends preact.Component {
                     $el('label', null,
                         $el('span', {'data-help-text': 'Sivustoprojektin nimi, ei pakollinen.'}, 'Sivuston nimi'),
                         $el('input', {name: 'siteName', onChange: e => Form.receiveInputValue(e, this),
-                                      value: this.state.siteName}, null)
+                                      value: this.state.siteName})
                     ),
                     $el('label', null,
-                        $el('span', {'data-help-text': '.'}, 'Sivuston baseUrl'),
+                        $el('span', {'data-help-text': 'Sivuston relatiivinen sijainti serverin public_html -kansiossa.'}, 'Baseurl'),
                         $el('input', {name: 'baseUrl', onChange: e => Form.receiveInputValue(e, this),
-                                      value: this.state.baseUrl}, null)
+                                      value: this.state.baseUrl})
                     ),
                     $el('label', null,
-                        $el('span', {'data-help-text': 'Url-parametri (index.php?parametrinNimi=/) mikäli url-rewrite -säännöt ei ole käytössä.'}, 'Url-parametri'),
-                        $el('input', {name: 'mainQueryVar', onChange: e => Form.receiveInputValue(e, this),
-                                      value: this.state.mainQueryVar}, null)
-                    ),
-                    $el('label', null,
-                        $el('span', {'data-help-text': 'RadCMS lähdekoodin sijainti serverillä. Mikäli puuttuu, käytetään oletusta <todo>'}, 'RadCMS-backendin sijainti'),
+                        $el('span', {'data-help-text': 'RadCMS lähdekoodin absoluuttinen sijainti serverillä.'}, 'RadCMS-backendin sijainti'),
                         $el('input', {name: 'radPath', onChange: e => Form.receiveInputValue(e, this),
-                                      value: this.state.radPath}, null)
+                                      value: this.state.radPath})
                     ),
                     $el('label', null,
                         $el('span', {'data-help-text': 'Sisältö, jolla sivusto alustetaan.'}, 'Esimerkkisisältö'),
@@ -57,43 +53,59 @@ class InstallApp extends preact.Component {
                                                onClick: e => Form.receiveInputValue(e, this, 'sampleContent')},
                                     opt.friendlyName)
                             ))
+                    ),
+                    $el('div', {class: 'fieldset'},
+                        $el('div', {class: 'legend'}, 'Lisäasetukset'),
+                        $el('label', null,
+                            $el('span', {'data-help-text': 'Url-parametri (index.php?parametrinNimi=/) mikäli url-rewrite -säännöt ei ole käytössä.'}, 'Url-parametri'),
+                            $el('input', {name: 'mainQueryVar', onChange: e => Form.receiveInputValue(e, this),
+                                          value: this.state.mainQueryVar})
+                        ),
+                        $el('label', null,
+                            $el('input', {type: 'checkbox', onChange: e => this.setState({useDevMode: e.target.checked}),
+                                          value: this.state.useDevMode}),
+                            $el('span', {'data-help-text': 'Ruksaa mikäli sivusto on vielä kehitysvaiheessa.'}, 'Käytä dev-modea')
+                        )
                     )
                 ),
                 $el('div', {className: 'view-content box'},
                     $el('label', null,
                         $el('span', {'data-help-text': 'Tietokantaserverin osoite (host).'}, 'Tietokannan osoite'),
                         $el('input', {name: 'dbHost', onChange: e => Form.receiveInputValue(e, this),
-                                      value: this.state.dbHost}, null)
+                                      value: this.state.dbHost})
                     ),
                     $el('label', null,
-                        $el('span', {'data-help-text': 'Tietokantakäyttäjän nimi, jolla yhdistetään RadCMS:n tietokantaan.'}, 'Tietokantakäyttäjä'),
+                        $el('span', {'data-help-text': 'Tietokantakäyttäjän nimi, jota RadCMS käyttää luodessaan tietokantayhteyden.'}, 'Tietokantakäyttäjä'),
                         $el('input', {name: 'dbUser', onChange: e => Form.receiveInputValue(e, this),
-                                      value: this.state.dbUser}, null)
+                                      value: this.state.dbUser})
                     ),
                     $el('label', null,
-                        $el('span', {'data-help-text': 'Tietokantakäyttäjän salasana, jolla yhdistetään RadCMS:n tietokantaan.'}, 'Tietokantakäyttäjän salasana'),
+                        $el('span', {'data-help-text': 'Tietokantakäyttäjän salasana, jota RadCMS käyttää luodessaan tietokantayhteyden.'}, 'Tietokantakäyttäjän salasana'),
                         $el('input', {name: 'dbPass', onChange: e => Form.receiveInputValue(e, this),
                                       value: this.state.dbPass,
-                                      type: 'password'}, null)
+                                      type: 'password'})
                     ),
                     $el('label', null,
                         $el('span', {'data-help-text': 'Luotavan RadCMS-tietokannan nimi.'}, 'Tietokannan nimi'),
                         $el('input', {name: 'dbDatabase', onChange: e => Form.receiveInputValue(e, this),
-                                      value: this.state.dbDatabase}, null)
+                                      value: this.state.dbDatabase})
                     ),
-                    $el('label', null,
-                        $el('span', {'data-help-text': 'Prefix, jota käytetään RadCMS:n tietokantataulujen etuliitteenä.'}, 'Tietokantataulujen prefix'),
-                        $el('input', {name: 'dbTablePrefix', onChange: e => Form.receiveInputValue(e, this),
-                                      value: this.state.dbTablePrefix}, null)
-                    ),
-                    $el('label', null,
-                        $el('span', {'data-help-text': '.'}, 'Tietokannan charset'),
-                        $el('select', {name: 'dbCharset',
-                                       value: this.state.dbCharset,
-                                       onClick: e => Form.receiveInputValue(e, this)},
-                            ['utf8'].map(opt =>
-                                $el('option', {value: opt}, opt)
-                            ))
+                    $el('div', {class: 'fieldset'},
+                        $el('div', {class: 'legend'}, 'Lisäasetukset'),
+                        $el('label', null,
+                            $el('span', {'data-help-text': 'Prefix, jota käytetään RadCMS:n tietokantataulujen etuliitteenä.'}, 'Tietokantataulujen prefix'),
+                            $el('input', {name: 'dbTablePrefix', onChange: e => Form.receiveInputValue(e, this),
+                                          value: this.state.dbTablePrefix})
+                        ),
+                        $el('label', null,
+                            $el('span', {'data-help-text': '.'}, 'Tietokannan charset'),
+                            $el('select', {name: 'dbCharset',
+                                           value: this.state.dbCharset,
+                                           onClick: e => Form.receiveInputValue(e, this)},
+                                ['utf8'].map(opt =>
+                                    $el('option', {value: opt}, opt)
+                                ))
+                        )
                     )
                 )
             )
@@ -106,14 +118,18 @@ class InstallApp extends preact.Component {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             data: JSON.stringify(data)
-        }).then(() => {
+        })
+        .then(res => JSON.parse(res.responseText))
+        .then(() => {
             toast($el('p', null,
                 'Asennus onnistui. ',
                 $el('a', {href: this.state.baseUrl + (!this.state.mainQueryVar ? '' : 'index.php?' + this.state.mainQueryVar + '=/')}, 'Siirry'),
                 ' uudelle sivustolle.'
             ), 'success');
             window.scrollTo(0, 0);
-        }, () => {
+        })
+        .catch(err => {
+            console.error(err);
             toast('Asennus epäonnistui', 'error');
             window.scrollTo(0, 0);
         });

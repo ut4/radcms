@@ -18,25 +18,31 @@ final class InstallerTest extends DbTestCase {
         parent::tearDownAfterClass('DROP DATABASE IF EXISTS ' . self::TEST_DB_NAME);
     }
     public function testInstallerValidatesMissingValues() {
-        $input = (object)['sampleContent' => 'test-content', 'dbCharset' => 'utf8'];
+        $input = (object)['sampleContent' => 'test-content'];
         $res = $this->createMockResponse(json_encode([
+            'siteName must be a string',
             'baseUrl must be a non-empty string',
             'radPath must be a non-empty string',
+            'mainQueryVar must be a string',
+            'useDevMode is required',
             'dbHost must be a non-empty string',
             'dbUser must be a non-empty string',
             'dbPass must be a non-empty string',
             'dbDatabase must be a non-empty string',
             'dbTablePrefix must be a non-empty string',
+            'dbCharset must be one of ["utf8"]',
         ]), 400);
         $app = InstallerApp::create();
         $app->handleRequest(new Request('/', 'POST', $input), $res);
     }
     public function testInstallerValidatesInvalidValues() {
         $input = (object)[
+            'siteName' => [],
             'baseUrl' => [],
-            'mainQueryVar' => '%&"¤',
             'radPath' => 'notValid',
             'sampleContent' => 'foo',
+            'mainQueryVar' => '%&"¤',
+            'useDevMode' => true,
             'dbHost' => [],
             'dbUser' => [],
             'dbPass' => [],
@@ -45,10 +51,11 @@ final class InstallerTest extends DbTestCase {
             'dbCharset' => 'notValid',
         ];
         $res = $this->createMockResponse(json_encode([
+            'siteName must be a string',
             'baseUrl must be a non-empty string',
-            'mainQueryVar must be a word',
             'radPath is not valid sourcedir',
             'sampleContent must be one of ["minimal","blog","test-content"]',
+            'mainQueryVar must be a word',
             'dbHost must be a non-empty string',
             'dbUser must be a non-empty string',
             'dbPass must be a non-empty string',
@@ -61,14 +68,18 @@ final class InstallerTest extends DbTestCase {
     }
     public function testInstallerFillsDefaultValues() {
         $input = (object)[
+            'siteName' => '',
             'baseUrl' => 'foo',
             'radPath' => dirname(dirname(__DIR__)),
             'sampleContent' => 'test-content',
+            'mainQueryVar' => '',
+            'useDevMode' => true,
             'dbHost' => 'locahost',
             'dbUser' => 'test',
             'dbPass' => 'pass',
             'dbDatabase' => 'name',
             'dbTablePrefix' => 'p_',
+            'dbCharset' => 'utf8',
         ];
         $res = $this->createMockResponse($this->anything(), 500);
         $app = InstallerApp::create('', function () {
@@ -80,7 +91,6 @@ final class InstallerTest extends DbTestCase {
         $this->assertEquals('My Site', $input->siteName);
         $this->assertEquals('foo/', $input->baseUrl);
         $this->assertEquals('', $input->mainQueryVar);
-        $this->assertEquals('utf8', $input->dbCharset);
     }
     public function testInstallerCreatesDbSchemaAndInsertsSampleContent() {
         $s = $this->setupInstallerTest1();
@@ -104,15 +114,18 @@ final class InstallerTest extends DbTestCase {
         $config = include RAD_SITE_PATH . 'config.php';
         return (object) [
             'input' => (object) [
+                'siteName' => '',
                 'baseUrl' => 'foo',
-                'mainQueryVar' => '',
                 'radPath' => RAD_BASE_PATH,
                 'sampleContent' => 'test-content',
+                'mainQueryVar' => '',
+                'useDevMode' => true,
                 'dbHost' => $config['db.host'],
                 'dbUser' => $config['db.user'],
                 'dbPass' => $config['db.pass'],
                 'dbDatabase' => self::TEST_DB_NAME,
                 'dbTablePrefix' => 'p_',
+                'dbCharset' => 'utf8',
             ],
             'targetDir' => 'c:/foo',
             'sampleContentBasePath' => RAD_BASE_PATH . 'sample-content/test-content/',
@@ -187,6 +200,8 @@ define('RAD_BASE_URL',  '{$s->input->baseUrl}/');
 define('RAD_QUERY_VAR', '{$s->input->mainQueryVar}');
 define('RAD_BASE_PATH', '{$s->input->radPath}');
 define('RAD_SITE_PATH', '{$s->targetDir}/');
+define('RAD_DEVMODE',   1 << 1);
+define('RAD_FLAGS',     RAD_DEVMODE);
 }
 return [
     'db.host'        => '{$s->input->dbHost}',

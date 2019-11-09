@@ -126,6 +126,7 @@ class Installer {
      * @throws \RadCms\Common\RadException
      */
     private function generateConfigFile($s) {
+        $flags = $s->useDevMode ? 'RAD_DEVMODE' : '0';
         if ($this->fs->write(
             $this->sitePath . 'config.php',
 "<?php
@@ -134,6 +135,8 @@ define('RAD_BASE_URL',  '{$s->baseUrl}');
 define('RAD_QUERY_VAR', '{$s->mainQueryVar}');
 define('RAD_BASE_PATH', '{$s->radPath}');
 define('RAD_SITE_PATH', '{$this->sitePath}');
+define('RAD_DEVMODE',   1 << 1);
+define('RAD_FLAGS',     {$flags});
 }
 return [
     'db.host'        => '{$s->dbHost}',

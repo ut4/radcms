@@ -5,6 +5,8 @@ namespace RadCms\Templating;
 use RadCms\Framework\Template;
 use RadCms\Content\DAO;
 use RadCms\Common\RadException;
+use RadCms\Common\LoggerAccess;
+use RadCms\Framework\FileSystem;
 
 /**
  * Sisältää magikaalisen <?= $this->TemplateName(..) ?>-kutsujen mahdollistavan
@@ -13,15 +15,21 @@ use RadCms\Common\RadException;
  */
 class MagicTemplate extends Template {
     private $__contentNodeDao;
+    private $__fileExists;
     private static $__aliases = [];
     /**
      * @param string $file
      * @param array $vars = null
      * @param \RadCms\Content\DAO $dao = null
+     * @param \RadCms\Framework\FileSystem $fs = null
      */
-    public function __construct($file, array $vars = null, DAO $dao = null) {
+    public function __construct($file,
+                                array $vars = null,
+                                DAO $dao = null,
+                                FileSystem $fs = null) {
         parent::__construct($file, $vars);
         $this->__contentNodeDao = $dao;
+        $this->__fileExists = function ($path) use ($fs) { return $fs->isFile($path); };
     }
     /**
      * Renderöi templaatin `${RAD_SITE_PATH}${$this->aliases[$name] || $name}.tmpl.php`.
@@ -34,10 +42,25 @@ class MagicTemplate extends Template {
      * @return string
      */
     public function __call($name, $args) {
-        return $this->doRender((!array_key_exists($name, self::$__aliases)
-                                    ? RAD_SITE_PATH . $name . '.tmpl.php'
-                                    : self::$__aliases[$name]),
-                               ['props' => $args ? $args[0] : new \stdClass()]);
+        try {
+            $directiveFilePath = !array_key_exists($name, self::$__aliases)
+                ? RAD_SITE_PATH . $name . '.tmpl.php'
+                : self::$__aliases[$name];
+            if (!$this->__fileExists->__invoke($directiveFilePath)) {
+                throw new RadException('Did you forget to $api->registerDire' .
+                                       'ctive(\'$name\', \'/file.php\')?',
+                                       RadException::BAD_INPUT);
+            }
+            return $this->doRender($directiveFilePath,
+                                   ['props' => $args ? $args[0] : new \stdClass()]);
+        } catch (RadException $e) {
+            if (!(RAD_FLAGS & RAD_DEVMODE)) {
+                LoggerAccess::getLogger()->error($e->getTraceAsString());
+                return "Hmm, {$name}() teki jotain odottamatonta.";
+            } else {
+                throw $e;
+            }
+        }
     }
     /**
      * @param string $contentTypeName

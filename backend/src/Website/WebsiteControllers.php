@@ -10,6 +10,7 @@ use RadCms\Framework\SessionInterface;
 use RadCms\AppState;
 use RadCms\Framework\Db;
 use RadCms\ContentType\ContentTypeCollection;
+use RadCms\Framework\FileSystem;
 
 /**
  * Handlaa sivupyynnöt, (GET '/' tai GET '/sivunnimi').
@@ -28,7 +29,8 @@ class WebsiteControllers {
                                 SessionInterface $session) {
         // @allow \RadCms\Common\RadException
         if ($siteConfig->selfLoad(RAD_SITE_PATH . 'site.ini') &&
-            $siteConfig->lastModTime > $appState->contentTypesLastUpdated) {
+            ((RAD_FLAGS & RAD_DEVMODE) &&
+             $siteConfig->lastModTime > $appState->contentTypesLastUpdated)) {
             // @allow \RadCms\Common\RadException
             $appState->diffAndSaveChangesToDb($siteConfig->contentTypes, 'site.ini');
         }
@@ -48,7 +50,8 @@ class WebsiteControllers {
     public function handlePageRequest(Request $req,
                                       Response $res,
                                       Db $db,
-                                      ContentTypeCollection $contentTypes) {
+                                      ContentTypeCollection $contentTypes,
+                                      FileSystem $fs) {
         $layoutFileName = $this->siteCfg->urlMatchers->findLayoutFor($req->path);
         if (!$layoutFileName) {
             $res->html('404');
@@ -57,7 +60,8 @@ class WebsiteControllers {
         $cnd = new ContentNodeDAO($db, $contentTypes, $req->user);
         $template = new MagicTemplate(RAD_SITE_PATH . $layoutFileName,
                                       ['cssFiles' => $this->siteCfg->cssAssets],
-                                      $cnd);
+                                      $cnd,
+                                      $fs);
         $html = $template->render(['url' => $req->path ? explode('/', ltrim($req->path, '/')) : ['']]);
         if ($req->user && ($bodyEnd = strpos($html, '</body>')) > 1) {
             $frontendDataKey = strval(time());
