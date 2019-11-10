@@ -70,8 +70,8 @@ class WebsiteControllers {
                     'contentPanels' => $cnd->getFrontendPanelInfos(),
                     'adminPanels' => $this->appState->pluginFrontendAdminPanelInfos,
                     'baseUrl' => $template->url('/'),
-                    'currentPagePath' => $req->path,
                     'assetBaseUrl' => $template->assetUrl('/'),
+                    'currentPagePath' => $req->path,
                 ],
                 'pluginJsFiles' => $this->appState->pluginJsFiles,
             ]);

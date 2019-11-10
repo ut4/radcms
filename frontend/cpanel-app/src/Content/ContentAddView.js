@@ -1,5 +1,5 @@
 import services from '../../../src/common-services.js';
-import {view, Form} from '../../../src/common-components.js';
+import {View, Form} from '../../../src/common-components.js';
 
 /**
  * #/add-content[/:initialComponentTypeName?returnto=<url>]
@@ -47,7 +47,7 @@ class ContentAddView extends preact.Component {
     }
     render() {
         if (!this.state.selectedContentType) return null;
-        return view($el(Form, {onConfirm: e => this.confirm(e)},
+        return $el(View, null, $el(Form, {onConfirm: e => this.handleSubmit(e)},
             $el('h2', null, 'Add content'),
             $el('label', null,
                 $el('span', null, 'Nimi'),
@@ -76,7 +76,7 @@ class ContentAddView extends preact.Component {
         }
         this.setState(newState);
     }
-    confirm() {
+    handleSubmit() {
         this.state.cnodeContentTypeId = this.state.selectedContentType.id;
         return services.myFetch('/api/content', {
             method: 'POST',

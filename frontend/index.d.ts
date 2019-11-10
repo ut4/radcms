@@ -15,9 +15,13 @@ interface FrontendPanelConfig {
     contentNodes?: Array<Object>;
 }
 
-interface ControlPanelAppProps {
-    page: {url: string;};
+interface SiteInfo {
+    baseUrl: string;         // /foo/, tai /foo/index.php?q=/
+    assetBaseUrl: string;    // /foo/
+    currentPagePath: string; // /
+}
+
+interface ControlPanelAppProps extends SiteInfo {
     contentPanels: Array<FrontendPanelConfig>;
     adminPanels: Array<FrontendPanelConfig>;
-    baseUrl: string;
 }

@@ -1,4 +1,4 @@
-import {view, featherSvg} from '../../../src/common-components.js';
+import {View, FeatherSvg} from '../../../src/common-components.js';
 import services from '../../../src/common-services.js';
 const dataTypes = [
     {name: 'text'},
@@ -20,7 +20,7 @@ class ContentTypesManageView extends preact.Component {
     }
     render() {
         if (!this.state.contentTypes) return null;
-        return view($el('div', null,
+        return $el(View, null, $el('div', null,
             $el('h2', null, 'Manage content types'),
             $el('div', {className: 'list content-types-list'},
                 this.state.contentTypes.map(ctype => {
@@ -44,7 +44,7 @@ class ContentTypesManageView extends preact.Component {
             $el('h3', null, ctype.name,
                 $el('button', {onClick: () => this.openForEdit(ctype),
                                className: 'nice-button icon-button small'},
-                    featherSvg('edit-2'),
+                    $el(FeatherSvg, {iconId: 'edit-2'}),
                     'Edit'
                 )
             ),
@@ -81,10 +81,10 @@ class ContentTypesManageView extends preact.Component {
                 $el('input', {onInput: e => this.receiveInputValue(e, name),
                               value: this.state.openItem.name,
                               className: 'h3'}, null),
-                $el('button', {onClick: () => this.confirm(),
+                $el('button', {onClick: () => this.handleSubmit(),
                                className: 'nice-button icon-button small',
                                disabled: this.state.doDisableConfirmButton},
-                    featherSvg('check'), 'Save changes'
+                    $el(FeatherSvg, {iconId: 'check'}), 'Save changes'
                 ),
                 $el('button', {onClick: () => this.cancel(),
                                className: 'text-button'}, 'Cancel')
@@ -127,7 +127,7 @@ class ContentTypesManageView extends preact.Component {
                 .reduce((c, ir) => c + !ir.isMarkedForDeletion, 0) === 0
         });
     }
-    confirm() {
+    handleSubmit() {
         const ctype = this.state.openItem; // {id, name, fields}
         const fields = ctype.fields.reduce((obj, ir) => {
             if (!ir.isMarkedForDeletion) obj[ir.name] = ir.dataType;

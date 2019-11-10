@@ -1,5 +1,5 @@
 import services from '../../../src/common-services.js';
-import {view, Toaster} from '../../../src/common-components.js';
+import {View} from '../../../src/common-components.js';
 
 /**
  * #/manage-plugins
@@ -20,7 +20,7 @@ class PluginsManageView extends preact.Component {
      * @access protected
      */
     render() {
-        return view($el('div', null,
+        return $el(View, null, $el('div', null,
             $el('h2', null, 'Lisäosat'),
             this.state.plugins && $el('table', {className: 'striped'},
                 $el('thead', null, $el('tr', null,

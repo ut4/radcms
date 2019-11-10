@@ -3,6 +3,9 @@ import services from '../../src/common-services.js';
 const $el = preact.createElement;
 
 class InstallApp extends preact.Component {
+    /**
+     * @param {{sitePath: string;}} props
+     */
     constructor(props) {
         super(props);
         const l = sessionStorage.lastTyped;
@@ -22,10 +25,13 @@ class InstallApp extends preact.Component {
             useDevMode: false,
         } : JSON.parse(l);
     }
+    /**
+     * @access protected
+     */
     render() {
         return $el('div', null,
             $el(Toaster),
-            $el(Form, {onConfirm: e => this.confirm(e), confirmButtonText: 'Asenna', noAutoClose: true},
+            $el(Form, {onConfirm: e => this.handleSubmit(e), confirmButtonText: 'Asenna', noAutoClose: true},
                 $el('h2', null, 'Asenna RadCMS'),
                 $el('div', {className: 'box'},
                     $el('label', null,
@@ -46,12 +52,11 @@ class InstallApp extends preact.Component {
                     $el('label', null,
                         $el('span', {'data-help-text': 'Sisältö, jolla sivusto alustetaan.'}, 'Esimerkkisisältö'),
                         $el('select', {name: 'sampleContent',
-                                       value: this.state.sampleContent},
+                                       value: this.state.sampleContent,
+                                       onChange: e => Form.receiveInputValue(e, this)},
                             [{name: 'minimal', friendlyName: 'Minimaalinen'},
                              {name: 'blog', friendlyName: 'Blogi'}].map(opt =>
-                                $el('option', {value: opt.name,
-                                               onClick: e => Form.receiveInputValue(e, this, 'sampleContent')},
-                                    opt.friendlyName)
+                                $el('option', {value: opt.name}, opt.friendlyName)
                             ))
                     ),
                     $el('div', {class: 'fieldset'},
@@ -111,7 +116,10 @@ class InstallApp extends preact.Component {
             )
         );
     }
-    confirm() {
+    /**
+     * @access private
+     */
+    handleSubmit() {
         const data = this.state;
         sessionStorage.lastTyped = JSON.stringify(data);
         services.myFetch('', {
@@ -135,4 +143,5 @@ class InstallApp extends preact.Component {
         });
     }
 }
-export {InstallApp};
+
+export default InstallApp;

@@ -1,4 +1,4 @@
-import {Form, featherSvg} from './common-components.js';
+import {Form, FeatherSvg} from './common-components.js';
 
 const DOUBLE_CLICK_TIME_WINDOW = 250; // ms
 
@@ -39,7 +39,7 @@ class FileDialog extends preact.Component {
                 $el('div', {className: 'top'},
                     $el('button', {onClick: () => this.loadParentDir(),
                                    disabled: !this.currentRootHasParentDir(),
-                                   type: 'button'}, featherSvg('arrow-up')),
+                                   type: 'button'}, $el(FeatherSvg, {iconId: 'arrow-up'})),
                     this.makeClickablePath()
                 ),
                 $el('div', {className: 'main'}, this.makeMainPanel()),

@@ -1,77 +1,75 @@
-import {myLink, contentNodeList} from '../../src/common-components.js';
+import {MyLink, ContentNodeList} from '../../src/common-components.js';
 
 /*
- * Implementoi hallintapaneeliosion <?php $this->fetchOne(...)->createFrontendPanel('Generic', 'My title') ?> kutsuille, jonka kautta loppukäyttäjä voi muokata sisältöä.
+ * Implementoi hallintapaneeliosion <?php $this->fetchOne(...)->createFrontendPanel('Generic', 'My title') ?> kutsuille, jolla loppukäyttäjä voi muokata sisältöä.
  */
-class GenericUIPanelImpl {
+class GenericUIPanelImpl extends preact.Component {
+    static getRoutes() {
+        return [];
+    }
     /**
-     * @param {FrontendPanelConfig} config
+     * @param {{dataFromBackend: FrontendPanelConfig; siteInfo: SiteInfo;}} props
      */
-    constructor(config) {
-        this.config = config;
-        if ((this.node = config.contentNodes[0] || null))
+    constructor(props) {
+        super(props);
+        this.currentPagePath = props.siteInfo.currentPagePath;
+        if ((this.node = props.dataFromBackend.contentNodes[0] || null))
             this.nodeName = this.node.name || '#' + this.node.id;
     }
     getName() {
         return 'Generic';
     }
     getTitle() {
-        return this.config.title;
+        return this.props.dataFromBackend.title;
     }
     getIcon() {
-        return this.config.icon || 'layers';
+        return 'file-text';
     }
-    getRoutes() {
-        return [];
-    }
-    /**
-     * @param {Object} cpanelProps
-     */
-    getMenuItems(cpanelProps) {
+    render() {
         return this.node
-        ? [
-            $el('span', null, this.nodename),
-            myLink('/edit-content/' + this.node.id + '/' + this.node.contentType + '?returnTo=' +
-                   encodeURIComponent(cpanelProps.currentPagePath), 'Edit')
-        ]
-        : [
-            $el('span', null, 'No content'),
-            myLink('/add-content?returnTo=' + encodeURIComponent(cpanelProps.currentPagePath), 'Create')
-        ];
+            ? $el('div', null,
+                $el('span', null, this.nodename),
+                $el(MyLink, {to: '/edit-content/' + this.node.id + '/' + this.node.contentType + '?returnTo=' +
+                    encodeURIComponent(this.currentPagePath)}, 'Edit')
+            )
+            : $el('div', null,
+                $el('span', null, 'No content'),
+                $el(MyLink, {to: '/add-content?returnTo=' + encodeURIComponent(this.currentPagePath)}, 'Create')
+            );
     }
 }
 
 /*
  * Implementoi hallintapaneeliosion <?php $this->fetchAll(...)->createFrontendPanel('List', 'My title') ?> kutsuille.
  */
-class GenericListUIPanelImpl {
+class GenericListUIPanelImpl extends preact.Component {
+    static getRoutes() {
+        return [];
+    }
     /**
-     * @param {FrontendPanelConfig} config
+     * @param {{dataFromBackend: FrontendPanelConfig; siteInfo: SiteInfo;}} props
      */
-    constructor(config) {
-        this.config = config;
+    constructor(props) {
+        super(props);
+        this.cnodes = props.dataFromBackend.contentNodes;
+        this.currentPagePath = props.siteInfo.currentPagePath;
+        this.label = '';
     }
     getName() {
         return 'List';
     }
     getTitle() {
-        return this.config.title;
+        return this.props.dataFromBackend.title;
     }
     getIcon() {
-        return this.config.icon || 'layers';
+        return 'layers';
     }
-    getRoutes() {
-        return [];
-    }
-    /**
-     * @param {Object} cpanelProps
-     */
-    getMenuItems(cpanelProps) {
-        return contentNodeList({
-            cnodes: this.config.contentNodes,
+    render() {
+        return $el(ContentNodeList, {
+            cnodes: this.cnodes,
             createLinkText: 'Add ' + this.label,
-            currentPagePath: cpanelProps.currentPagePath,
-            contentType: this.config.contentType
+            currentPagePath: this.currentPagePath,
+            contentType: (this.cnodes[0] || {}).contentType
         });
     }
 }

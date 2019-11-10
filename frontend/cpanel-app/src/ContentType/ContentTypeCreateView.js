@@ -1,11 +1,11 @@
-import {view, Form} from '../../../src/common-components.js';
+import {View, Form} from '../../../src/common-components.js';
 
 /**
  * #/create-content-type
  */
 class ContentTypeCreateView extends preact.Component {
     render() {
-        return view($el(Form, {onConfirm: e => e},
+        return $el(View, null, $el(Form, {onConfirm: e => e},
             $el('h2', null, 'Create content type'),
             $el('p', null, 'todo')
         ));

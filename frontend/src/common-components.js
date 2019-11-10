@@ -3,12 +3,14 @@ import services from './common-services.js';
 const $el = preact.createElement;
 
 /**
- * @param {string|VDOMNode} content
+ * @param {Object} content
  */
-function view(content) {
+function View(props) {
     return $el('div', {className: 'view'},
-        $el('button', {onClick: () => services.redirect('/')}, featherSvg('x')),
-        content
+        $el('button', {onClick: () => services.redirect('/')},
+            $el(FeatherSvg, {iconId: 'x'})
+        ),
+        props.children
     );
 }
 
@@ -20,8 +22,11 @@ class Form extends preact.Component {
         super(props);
         if (!props.onConfirm) throw new TypeError('props.onConfirm() is required.');
     }
+    /**
+     * @access protected
+     */
     render() {
-        return $el('form', {onSubmit: e => this.confirm(e)},
+        return $el('form', {onSubmit: e => this.handleSubmit(e)},
             this.props.children,
             $el('div', {className: 'form-buttons'},
                 $el('button', {
@@ -37,7 +42,10 @@ class Form extends preact.Component {
             )
         );
     }
-    confirm(e) {
+    /**
+     * @access private
+     */
+    handleSubmit(e) {
         e.preventDefault();
         const res = this.props.onConfirm(e);
         if (!this.props.noAutoClose && res && res instanceof Promise) {
@@ -48,18 +56,30 @@ class Form extends preact.Component {
             this.close();
         }
     }
+    /**
+     * @access public
+     */
     static receiveInputValue(e, dhis, name) {
         dhis.setState({[name || e.target.name]: e.target.value});
     }
+    /**
+     * @access private
+     */
     cancel(e) {
         if (this.props.onCancel) this.props.onCancel(e);
         this.close();
     }
+    /**
+     * @access private
+     */
     doDisableConfirmButton() {
         return typeof this.props.doDisableConfirmButton === 'function'
             ? this.props.doDisableConfirmButton()
             : false;
     }
+    /**
+     * @access protected
+     */
     close() {
         if (this.props.close) {
             this.props.close();
@@ -73,56 +93,44 @@ class Form extends preact.Component {
  * Sets window.parent.location.hash = '#' + $to (or window.parent.location.href = $to
  * if $full = true).
  *
- * @param {string} to eg. '/edit-content/1'
- * @param {string|VDOMNode} children eg. 'Edit content' or $el('span', null, 'foo')
- * @param {bool?} full = false
- * @param {Object?} attrs = null
+ * @param {{to: string; full?: bool; attrs?: Object;}} props
  */
-function myLink(to, children, full, attrs) {
-    let props = {
-        href: (!full ? '#' : '') + to.split('?')[0],
-        onclick: e => {
+function MyLink(props) {
+    return $el('a', Object.assign({
+        href: (!props.full ? '#' : '') + props.to.split('?')[0],
+        onClick: e => {
             e.preventDefault();
-            services.redirect(to, full);
+            services.redirect(props.to, props.full);
         },
-    };
-    if (attrs) for (const key in attrs) {
-        props[key] = attrs[key];
-    }
-    return $el('a', props, children);
+    }, props.attrs), props.children);
 }
 
 /**
- * @param {Object} props {
- *     cnodes: Array<Object>;
- *     createLinkText: string;
- *     currentPageUrl: string;
- *     contentType?: string;
- * }
+ * @param {{cnodes: Array<Object>; createLinkText: string; currentPageUrl: string; contentType?: string;}} props
  */
-function contentNodeList(props) {
-    return [
+function ContentNodeList(props) {
+    return $el('div', null,
         $el('ul', null, props.cnodes.map(c =>
-            $el('li', null, [
+            $el('li', null,
                 $el('span', null, c.name || '#' + c.id),
-                myLink('/edit-content/' + c.id + '/' + c.contentType + '?returnTo=' +
-                       encodeURIComponent(props.currentPagePath), 'Edit')
-            ])
+                $el(MyLink, {to: '/edit-content/' + c.id + '/' + c.contentType + '?returnTo=' +
+                                 encodeURIComponent(props.currentPagePath)}, 'Edit')
+            )
         )),
-        $el('div', null, myLink(
-            '/add-content' + (!props.contentType ? '' : '/' + props.contentType) +
-                '?returnTo=' + encodeURIComponent(props.currentPagePath),
-            props.createLinkText || 'Create content'
-        ))
-    ];
+        $el('div', null,
+            $el(MyLink, {to: '/add-content' + (!props.contentType ? '' : '/' + props.contentType) +
+                             '?returnTo=' + encodeURIComponent(props.currentPagePath)},
+                props.createLinkText || 'Create content')
+        )
+    );
 }
 
 /**
- * @param {string} iconId eg. 'activity' (see: feathericons.com)
+ * @param {{iconId: string;}} eg. 'activity' (see: feathericons.com)
  */
-function featherSvg(iconId) {
+function FeatherSvg(props) {
     return $el('svg', {className: 'feather'},
-        $el('use', {'xlink:href': services.config.assetBaseUrl + 'frontend/assets/feather-sprite.svg#' + iconId},
+        $el('use', {'xlink:href': services.config.assetBaseUrl + 'frontend/assets/feather-sprite.svg#' + props.iconId},
             null)
     );
 }
@@ -164,12 +172,12 @@ class Toaster extends preact.Component {
         if (!this.state.messages.length) return;
         return $el('div', {className: 'toaster'},
             this.state.messages.map(message => {
-                let icon = 'check';
-                if (message.level == 'error') icon = 'alert-triangle';
-                if (message.level == 'info') icon = 'info';
+                let iconId = 'check';
+                if (message.level == 'error') iconId = 'alert-triangle';
+                if (message.level == 'info') iconId = 'info';
                 return $el('div', {className: 'toaster-message ' + message.level,
                                    onClick: () => this.removeMessage(message)},
-                    featherSvg(icon),
+                    $el(FeatherSvg, {iconId}),
                     typeof message.message != 'function'
                         ? $el('span', null, message.message)
                         : $el(message.message)
@@ -179,4 +187,33 @@ class Toaster extends preact.Component {
     }
 }
 
-export {view, Form, myLink, contentNodeList, featherSvg, Toaster};
+class Tabs extends preact.Component {
+    /**
+     * @param {Object} props
+     */
+    constructor(props) {
+        super(props);
+        this.state = {tabIdx: 0};
+    }
+    /**
+     * @access protected
+     */
+    render() {
+        return $el('div', {className: 'tab-links'},
+            ...this.props.items.map((text, i) =>
+                $el('button', {className: this.state.tabIdx != i ? '' : 'current',
+                               onClick: () => this.setCurrentTab(i)}, text)
+            )
+        );
+    }
+    /**
+     * @access private
+     */
+    setCurrentTab(idx) {
+        if (this.state.tabIdx == idx) return;
+        this.setState({tabIdx: idx});
+        this.props.onChange(idx);
+    }
+}
+
+export {View, Form, MyLink, ContentNodeList, FeatherSvg, Toaster, Tabs};

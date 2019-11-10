@@ -1,5 +1,5 @@
 import services from '../../../src/common-services.js';
-import {view, Form} from '../../../src/common-components.js';
+import {View, Form} from '../../../src/common-components.js';
 import ContentNodeFieldList from './ContentNodeFieldList.js';
 
 /**
@@ -34,7 +34,7 @@ class ContentEditView extends preact.Component {
      */
     render() {
         if (!this.state.ctype) return null;
-        return view($el(Form, {onConfirm: e => this.handleFormSubmit(e)},
+        return $el(View, null, $el(Form, {onConfirm: e => this.handleFormSubmit(e)},
             $el('h2', null, 'Muokkaa sisältöä'),
             $el(ContentNodeFieldList, {cnode: this.state.cnode,
                                        ctype: this.state.ctype,
