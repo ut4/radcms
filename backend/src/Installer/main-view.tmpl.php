@@ -11,7 +11,7 @@
         <script src="frontend/vendor/vendor.bundle.min.js"></script>
         <script type="module">
             import InstallApp from './frontend/install-app/src/InstallApp.js';
-            preact.render(preact.createElement(InstallApp, {sitePath: '<?= $sitePath ?>'}),
+            preact.render(preact.createElement(InstallApp, {indexFilePath: '<?= $indexFilePath ?>'}),
                           document.getElementById('install-app'));
         </script>
     </body>

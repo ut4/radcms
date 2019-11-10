@@ -9,7 +9,7 @@ use RadCms\Framework\FileSystem;
 use RadCms\Tests\AppTest;
 use RadCms\Framework\Request;
 use RadCms\Tests\Self\MutedResponse;
-use RadCms\Tests\_MoviesPlugin\_MoviesPlugin;
+use MySite\Plugins\MoviesPlugin\MoviesPlugin;
 use RadCms\Plugin\Plugin;
 use RadCms\AppState;
 
@@ -17,19 +17,19 @@ final class PluginAPIIntegrationTest extends DbTestCase {
     use HttpTestUtils;
     private $testPlugin;
     public function setupTestPlugin() {
-        // Tekee suunnilleen saman kuin PUT /api/plugins/_MoviesPlugin/install
+        // Tekee suunnilleen saman kuin PUT /api/plugins/MoviesPlugin/install
         $db = self::getDb();
-        $this->testPlugin = new Plugin('_MoviesPlugin', _MoviesPlugin::class);
+        $this->testPlugin = new Plugin('MoviesPlugin', MoviesPlugin::class);
         $m = new ContentTypeMigrator($db);
         $m->setOrigin($this->testPlugin);
         $this->testPlugin->instantiate()->install($m);
-        AppTest::markPluginAsInstalled('_MoviesPlugin', $db);
+        AppTest::markPluginAsInstalled('MoviesPlugin', $db);
     }
     public function tearDown() {
         if ($this->testPlugin) {
-            // Tekee suunnilleen saman kuin PUT /api/plugins/_MoviesPlugin/uninstall
+            // Tekee suunnilleen saman kuin PUT /api/plugins/MoviesPlugin/uninstall
             $this->testPlugin->impl->uninstall(new ContentTypeMigrator(self::$db));
-            AppTest::markPluginAsUninstalled('_MoviesPlugin', self::$db);
+            AppTest::markPluginAsUninstalled('MoviesPlugin', self::$db);
         }
     }
     public static function tearDownAfterClass($_ = null) {
@@ -61,7 +61,7 @@ final class PluginAPIIntegrationTest extends DbTestCase {
     private function setupTest1() {
         $this->setupTestPlugin();
         $ctx = (object)['fs' => $this->createMock(FileSystem::class)];
-        $ctx->fs->method('readDir')->willReturn([RAD_BASE_PATH . 'src/Tests/_MoviesPlugin']);
+        $ctx->fs->method('readDir')->willReturn([RAD_SITE_PATH . 'Plugins/MoviesPlugin']);
         return (object) [
             'ctx' => $ctx,
             'expectedResponseBody' => null,

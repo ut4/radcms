@@ -9,19 +9,19 @@ use RadCms\Website\SiteConfig;
 use RadCms\Common\RadException;
 
 class Installer {
-    private $sitePath;
+    private $indexFilePath;
     private $fs;
     private $db;
     private $makeDb;
     /**
-     * @param string $sitePath ks. InstallerApp::__construct
+     * @param string $indexFilePath ks. InstallerApp::__construct
      * @param \RadCms\Framework\FileSystemInterface $fs
      * @param callable $makeDb = function ($c) { return new \RadCms\Framework\Db($c); }
      */
-    public function __construct($sitePath,
+    public function __construct($indexFilePath,
                                 FileSystemInterface $fs,
                                 callable $makeDb = null) {
-        $this->sitePath = $sitePath;
+        $this->indexFilePath = $indexFilePath;
         $this->fs = $fs;
         $this->db = null;
         $this->makeDb = $makeDb ?? function ($c) { return new Db($c); };
@@ -111,10 +111,14 @@ class Installer {
             $fileNames[] = substr($path, $dirPathLen);
         }
         //
+        if (!$this->fs->isDir($s->sitePath) && !$this->fs->mkDir($s->sitePath))
+            throw new RadException('Failed to create ' . $s->sitePath,
+                                   RadException::FAILED_FS_OP);
+        //
         foreach ($fileNames as $fileName) {
             if (!$this->fs->copy($dirPath . $fileName,
-                                 $this->sitePath . $fileName)) {
-                throw new RadException('Failed to copy ' . $this->sitePath . $fileName,
+                                 $s->sitePath . $fileName)) {
+                throw new RadException('Failed to copy ' . $s->sitePath . $fileName,
                                        RadException::FAILED_FS_OP);
             }
         }
@@ -128,15 +132,16 @@ class Installer {
     private function generateConfigFile($s) {
         $flags = $s->useDevMode ? 'RAD_DEVMODE' : '0';
         if ($this->fs->write(
-            $this->sitePath . 'config.php',
+            $this->indexFilePath . 'config.php',
 "<?php
 if (!defined('RAD_BASE_PATH')) {
-define('RAD_BASE_URL',  '{$s->baseUrl}');
-define('RAD_QUERY_VAR', '{$s->mainQueryVar}');
-define('RAD_BASE_PATH', '{$s->radPath}');
-define('RAD_SITE_PATH', '{$this->sitePath}');
-define('RAD_DEVMODE',   1 << 1);
-define('RAD_FLAGS',     {$flags});
+define('RAD_BASE_URL',   '{$s->baseUrl}');
+define('RAD_QUERY_VAR',  '{$s->mainQueryVar}');
+define('RAD_BASE_PATH',  '{$s->radPath}');
+define('RAD_INDEX_PATH', '{$this->indexFilePath}');
+define('RAD_SITE_PATH',  '{$s->sitePath}');
+define('RAD_DEVMODE',    1 << 1);
+define('RAD_FLAGS',      {$flags});
 }
 return [
     'db.host'        => '{$s->dbHost}',

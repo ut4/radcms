@@ -10,13 +10,13 @@ class InstallerApp {
     private $router;
     private $makeCtrl;
     /**
-     * @param string $sitePath Absoluuttinen polku applikaation public-kansioon (sama kuin install.php:n sijainti)
-     * @param \Closure $makeCtrl Function<($sitePath: string): \RadCms\Installer\InstallerControllers>
+     * @param string $indexFilePath Absoluuttinen polku applikaation public-kansioon (sama kuin index|install.php:n sijainti). Esim. '/var/www/html/dir/'
+     * @param \Closure $makeCtrl Function<($indexFilePath: string): \RadCms\Installer\InstallerControllers>
      */
-    public function __construct($sitePath, \Closure $makeCtrl = null) {
+    public function __construct($indexFilePath, \Closure $makeCtrl = null) {
         $this->router = new AltoRouter();
         $this->makeCtrl = $makeCtrl;
-        $this->registerRoutes($sitePath);
+        $this->registerRoutes($indexFilePath);
     }
 
     /**
@@ -39,13 +39,13 @@ class InstallerApp {
     /**
      * Rekisteröi handlerit installerin sisältämille http-reiteille.
      */
-    private function registerRoutes($sitePath) {
-        $this->router->map('GET', '/', function () use ($sitePath) {
-            $ctrl = $this->makeCtrl->__invoke($sitePath);
+    private function registerRoutes($indexFilePath) {
+        $this->router->map('GET', '/', function () use ($indexFilePath) {
+            $ctrl = $this->makeCtrl->__invoke($indexFilePath);
             return [$ctrl, 'renderHomeView'];
         });
-        $this->router->map('POST', '/', function () use ($sitePath) {
-            $ctrl = $this->makeCtrl->__invoke($sitePath);
+        $this->router->map('POST', '/', function () use ($indexFilePath) {
+            $ctrl = $this->makeCtrl->__invoke($indexFilePath);
             return [$ctrl, 'handleInstallRequest'];
         });
     }
@@ -54,13 +54,13 @@ class InstallerApp {
 
     /**
      * @param string $DIR
-     * @param \Closure $makeCtrl = function ($sitePath) { return new InstallerControllers($sitePath); };
+     * @param \Closure $makeCtrl = function ($indexFilePath) { return new InstallerControllers($indexFilePath); };
      * @return \RadCms\Installer\InstallerApp
      */
-    public static function create($DIR = '', \Closure $makeCtrl = null) {
+    public static function create($DIR, \Closure $makeCtrl = null) {
         return new InstallerApp(str_replace('\\', '/', $DIR) . '/',
-                                $makeCtrl ?? function ($sitePath) {
-                                    return new InstallerControllers($sitePath);
+                                $makeCtrl ?? function ($indexFilePath) {
+                                    return new InstallerControllers($indexFilePath);
                                 });
     }
 }

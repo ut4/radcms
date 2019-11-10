@@ -23,6 +23,7 @@ final class InstallerTest extends DbTestCase {
             'siteName must be a string',
             'baseUrl must be a non-empty string',
             'radPath must be a non-empty string',
+            'sitePath must be a non-empty string',
             'mainQueryVar must be a string',
             'useDevMode is required',
             'dbHost must be a non-empty string',
@@ -32,7 +33,7 @@ final class InstallerTest extends DbTestCase {
             'dbTablePrefix must be a non-empty string',
             'dbCharset must be one of ["utf8"]',
         ]), 400);
-        $app = InstallerApp::create();
+        $app = InstallerApp::create('');
         $app->handleRequest(new Request('/', 'POST', $input), $res);
     }
     public function testInstallerValidatesInvalidValues() {
@@ -40,6 +41,7 @@ final class InstallerTest extends DbTestCase {
             'siteName' => [],
             'baseUrl' => [],
             'radPath' => 'notValid',
+            'sitePath' => [],
             'sampleContent' => 'foo',
             'mainQueryVar' => '%&"¤',
             'useDevMode' => true,
@@ -54,6 +56,7 @@ final class InstallerTest extends DbTestCase {
             'siteName must be a string',
             'baseUrl must be a non-empty string',
             'radPath is not valid sourcedir',
+            'sitePath must be a non-empty string',
             'sampleContent must be one of ["minimal","blog","test-content"]',
             'mainQueryVar must be a word',
             'dbHost must be a non-empty string',
@@ -63,7 +66,7 @@ final class InstallerTest extends DbTestCase {
             'dbTablePrefix must be a non-empty string',
             'dbCharset must be one of ["utf8"]',
         ]), 400);
-        $app = InstallerApp::create();
+        $app = InstallerApp::create('');
         $app->handleRequest(new Request('/', 'POST', $input), $res);
     }
     public function testInstallerFillsDefaultValues() {
@@ -71,6 +74,7 @@ final class InstallerTest extends DbTestCase {
             'siteName' => '',
             'baseUrl' => 'foo',
             'radPath' => dirname(dirname(__DIR__)),
+            'sitePath' => 'c:/my-site',
             'sampleContent' => 'test-content',
             'mainQueryVar' => '',
             'useDevMode' => true,
@@ -90,6 +94,7 @@ final class InstallerTest extends DbTestCase {
         $app->handleRequest(new Request('/', 'POST', $input), $res);
         $this->assertEquals('My Site', $input->siteName);
         $this->assertEquals('foo/', $input->baseUrl);
+        $this->assertEquals('c:/my-site/', $input->sitePath);
         $this->assertEquals('', $input->mainQueryVar);
     }
     public function testInstallerCreatesDbSchemaAndInsertsSampleContent() {
@@ -97,12 +102,13 @@ final class InstallerTest extends DbTestCase {
         $this->addFsExpectation('checksRadPathIsValid', $s);
         $this->addFsExpectation('readsDataFiles', $s);
         $this->addFsExpectation('readsSampleContentTemplateFilesDir', $s);
+        $this->addFsExpectation('createsSiteTemplatesDir', $s);
         $this->addFsExpectation('clonesTemplateFilesAndSiteCfgFile', $s);
         $this->addFsExpectation('generatesConfigFile', $s);
         //
         $res = $this->createMockResponse('{"ok":"ok"}', 200);
-        $app = InstallerApp::create($s->targetDir, function ($sitePath) use ($s) {
-            return new InstallerControllers($sitePath, $s->mockFs, [get_class(), 'getDb']);
+        $app = InstallerApp::create($s->indexFilePath, function ($indexFilePath) use ($s) {
+            return new InstallerControllers($indexFilePath, $s->mockFs, [get_class(), 'getDb']);
         });
         $app->handleRequest(new Request('/', 'POST', $s->input), $res);
         //
@@ -111,12 +117,13 @@ final class InstallerTest extends DbTestCase {
         $this->verifyInsertedSampleContent($s);
     }
     private function setupInstallerTest1() {
-        $config = include RAD_SITE_PATH . 'config.php';
+        $config = include __DIR__ . '/Self/config.php';
         return (object) [
             'input' => (object) [
                 'siteName' => '',
                 'baseUrl' => 'foo',
                 'radPath' => RAD_BASE_PATH,
+                'sitePath' => 'c:/my-site/',
                 'sampleContent' => 'test-content',
                 'mainQueryVar' => '',
                 'useDevMode' => true,
@@ -127,7 +134,7 @@ final class InstallerTest extends DbTestCase {
                 'dbTablePrefix' => 'p_',
                 'dbCharset' => 'utf8',
             ],
-            'targetDir' => 'c:/foo',
+            'indexFilePath' => 'c:/foo',
             'sampleContentBasePath' => RAD_BASE_PATH . 'sample-content/test-content/',
             'mockFs' => $this->createMock(FileSystem::class),
         ];
@@ -174,18 +181,28 @@ final class InstallerTest extends DbTestCase {
                 ]);
             return;
         }
+        if ($expectation == 'createsSiteTemplatesDir') {
+            $s->mockFs->expects($this->once())
+                ->method('isDir')
+                ->willReturn(false);
+            $s->mockFs->expects($this->once())
+                ->method('mkDir')
+                ->with($s->input->sitePath)
+                ->willReturn(true);
+            return;
+        }
         if ($expectation == 'clonesTemplateFilesAndSiteCfgFile') {
             $s->mockFs->expects($this->exactly(3))
                 ->method('copy')
                 ->withConsecutive([
                     $s->sampleContentBasePath . 'site.ini',
-                    $s->targetDir . '/site.ini',
+                    $s->input->sitePath . 'site.ini',
                 ], [
                     $s->sampleContentBasePath . 'main.tmpl.php',
-                    $s->targetDir . '/main.tmpl.php',
+                    $s->input->sitePath . 'main.tmpl.php',
                 ], [
                     $s->sampleContentBasePath . 'Another.tmpl.php',
-                    $s->targetDir . '/Another.tmpl.php',
+                    $s->input->sitePath . 'Another.tmpl.php',
                 ])
                 ->willReturn(true);
             return;
@@ -193,15 +210,16 @@ final class InstallerTest extends DbTestCase {
         if ($expectation == 'generatesConfigFile') {
             $s->mockFs->expects($this->once())
                 ->method('write')
-                ->with($s->targetDir . '/config.php',
+                ->with($s->indexFilePath . '/config.php',
 "<?php
 if (!defined('RAD_BASE_PATH')) {
-define('RAD_BASE_URL',  '{$s->input->baseUrl}/');
-define('RAD_QUERY_VAR', '{$s->input->mainQueryVar}');
-define('RAD_BASE_PATH', '{$s->input->radPath}');
-define('RAD_SITE_PATH', '{$s->targetDir}/');
-define('RAD_DEVMODE',   1 << 1);
-define('RAD_FLAGS',     RAD_DEVMODE);
+define('RAD_BASE_URL',   '{$s->input->baseUrl}/');
+define('RAD_QUERY_VAR',  '{$s->input->mainQueryVar}');
+define('RAD_BASE_PATH',  '{$s->input->radPath}');
+define('RAD_INDEX_PATH', '{$s->indexFilePath}/');
+define('RAD_SITE_PATH',  '{$s->input->sitePath}');
+define('RAD_DEVMODE',    1 << 1);
+define('RAD_FLAGS',      RAD_DEVMODE);
 }
 return [
     'db.host'        => '{$s->input->dbHost}',

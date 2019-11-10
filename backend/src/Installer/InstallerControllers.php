@@ -12,18 +12,18 @@ use RadCms\Common\RadException;
 use RadCms\Common\LoggerAccess;
 
 class InstallerControllers {
-    private $sitePath;
+    private $indexFilePath;
     private $fs;
     private $makeDb;
     /**
-     * @param string $sitePath ks. InstallerApp::__construct
+     * @param string $indexFilePath ks. InstallerApp::__construct
      * @param \RadCms\Framework\FileSystemInterface $fs = null
      * @param callable $makeDb = null
      */
-    public function __construct($sitePath,
+    public function __construct($indexFilePath,
                                 FileSystemInterface $fs = null,
                                 $makeDb = null) {
-        $this->sitePath = $sitePath;
+        $this->indexFilePath = $indexFilePath;
         $this->fs = $fs ?? new FileSystem();
         $this->makeDb = $makeDb;
     }
@@ -35,7 +35,7 @@ class InstallerControllers {
      */
     public function renderHomeView(Request $_, Response $res) {
         $template = new Template(__DIR__ . '/main-view.tmpl.php');
-        $res->html($template->render(['sitePath' => $this->sitePath]));
+        $res->html($template->render(['indexFilePath' => $this->indexFilePath]));
     }
     /**
      * POST /.
@@ -46,7 +46,7 @@ class InstallerControllers {
             return;
         }
         try {
-            (new Installer($this->sitePath, $this->fs, $this->makeDb))
+            (new Installer($this->indexFilePath, $this->fs, $this->makeDb))
                 ->doInstall($req->body);
             $res->json(json_encode(['ok' => 'ok']));
         } catch (RadException $e) {
@@ -73,6 +73,8 @@ class InstallerControllers {
                 return $this->fs->isFile($input->radPath . 'src/Framework/Db.php');
             }, '%s is not valid sourcedir'
         ]);
+        if ($v->check('sitePath', 'nonEmptyString'))
+            $input->sitePath = rtrim($input->sitePath, '/') . '/';
         $v->check('sampleContent', ['in', ['minimal', 'blog', 'test-content']]);
         if ($v->is('mainQueryVar', 'nonEmptyString')) $v->check('mainQueryVar', 'word');
         else $v->check('mainQueryVar', 'string');

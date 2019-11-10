@@ -9,8 +9,7 @@ class DbTestCase extends TestCase {
     protected static $db = null;
     public static function getDb(array $config = null) {
         if (!$config) {
-            $config = include RAD_SITE_PATH . 'config.php';
-            $config['db.database'] = 'radTestSuiteDb';
+            $config = include __DIR__ . '/config.php';
         }
         if (!self::$db) {
             self::$db = new Db($config);

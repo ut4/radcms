@@ -4,25 +4,29 @@ const $el = preact.createElement;
 
 class InstallApp extends preact.Component {
     /**
-     * @param {{sitePath: string;}} props
+     * @param {{indexFilePath: string;}} props
      */
     constructor(props) {
         super(props);
         const l = sessionStorage.lastTyped;
-        this.sitePath = props.sitePath;
+        this.indexFilePath = props.indexFilePath;
+        const pcs = this.indexFilePath.split('/');
+        const indedDirParent = pcs.slice(0, pcs.length - 2).join('/') + '/';
         this.state = !l ? {
+            siteName: 'test',
+            baseUrl: '/',
+            radPath: indedDirParent + 'backend/',
+            sitePath: indedDirParent + 'my-site/',
+            sampleContent: 'minimal',
+            mainQueryVar: '',
+            useDevMode: false,
+            //
             dbHost: '127.0.0.1',
             dbDatabase: 'rad',
             dbUser: 'username',
             dbPass: '',
             dbTablePrefix: 'rad_',
             dbCharset: 'utf8',
-            siteName: 'test',
-            baseUrl: '/',
-            mainQueryVar: '',
-            radPath: this.sitePath + 'backend/',
-            sampleContent: 'minimal',
-            useDevMode: false,
         } : JSON.parse(l);
     }
     /**
@@ -40,7 +44,7 @@ class InstallApp extends preact.Component {
                                       value: this.state.siteName})
                     ),
                     $el('label', null,
-                        $el('span', {'data-help-text': 'Sivuston relatiivinen sijainti serverin public_html -kansiossa.'}, 'Baseurl'),
+                        $el('span', {'data-help-text': 'Sivuston baseUrl: "/" mikäli sivusto sijaitsee "/<public_html>" -kansion juuressa, tai esim. "/kansio/" mikäli se sijaitsee "/<public_html>/kansio/" -kansiossa.'}, 'Baseurl'),
                         $el('input', {name: 'baseUrl', onChange: e => Form.receiveInputValue(e, this),
                                       value: this.state.baseUrl})
                     ),
@@ -48,6 +52,11 @@ class InstallApp extends preact.Component {
                         $el('span', {'data-help-text': 'RadCMS lähdekoodin absoluuttinen sijainti serverillä.'}, 'RadCMS-backendin sijainti'),
                         $el('input', {name: 'radPath', onChange: e => Form.receiveInputValue(e, this),
                                       value: this.state.radPath})
+                    ),
+                    $el('label', null,
+                        $el('span', {'data-help-text': 'Sivuston omien tiedostojen absoluuttinen sijainti serverillä.'}, 'Sivuston sijainti'),
+                        $el('input', {name: 'sitePath', onChange: e => Form.receiveInputValue(e, this),
+                                      value: this.state.sitePath})
                     ),
                     $el('label', null,
                         $el('span', {'data-help-text': 'Sisältö, jolla sivusto alustetaan.'}, 'Esimerkkisisältö'),

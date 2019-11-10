@@ -34,18 +34,17 @@ class AppState {
         $this->fs = $fs;
     }
     /**
-     * @param string $pluginsDir 'Plugins', 'MyDir'
      * @param AltoRouter $router
      * @throws \RadCms\Common\RadException
      */
-    public function selfLoad($pluginsDir, AltoRouter $router) {
+    public function selfLoad(AltoRouter $router) {
         // @allow \RadCms\Common\RadException
         $installedPluginNames = $this->fetchState();
         $pluginAPI = new API($router,
                              function ($f) { $this->pluginJsFiles[] = $f; },
                              function ($p) { $this->pluginFrontendAdminPanelInfos[] = $p; });
         // @allow \RadCms\Common\RadException
-        $this->scanAndInitPlugins($pluginsDir, $pluginAPI, $installedPluginNames);
+        $this->scanAndInitPlugins($pluginAPI, $installedPluginNames);
     }
     /**
      * @param \RadCms\ContentType\ContentTypeCollection $newDefsFromFile
@@ -92,16 +91,13 @@ class AppState {
         return $installedPluginNames;
     }
     /**
-     * @param string $pluginDir
      * @param \RadCms\Plugin\PluginAPI $pluginAPI
-     * @param array $installedPluginNames Array<string>
+     * @param string[] $installedPluginNames
      * @throws \RadCms\Common\RadException
      */
-    private function scanAndInitPlugins($pluginsDir,
-                                        API $pluginAPI,
-                                        $installedPluginNames) {
+    private function scanAndInitPlugins(API $pluginAPI, $installedPluginNames) {
         // @allow \RadCms\Common\RadException
-        $this->scanPluginsFromDisk($pluginsDir);
+        $this->scanPluginsFromDisk();
         foreach ($this->plugins->toArray() as &$plugin) {
             if (($plugin->isInstalled = array_key_exists($plugin->name,
                                                          $installedPluginNames))) {
@@ -111,14 +107,13 @@ class AppState {
         }
     }
     /**
-     * @param string $pluginDir
      * @throws \RadCms\Common\RadException
      */
-    private function scanPluginsFromDisk($pluginsDir) {
-        $paths = $this->fs->readDir(RAD_BASE_PATH . 'src/' . $pluginsDir, '*', GLOB_ONLYDIR);
+    private function scanPluginsFromDisk() {
+        $paths = $this->fs->readDir(RAD_SITE_PATH . 'Plugins', '*', GLOB_ONLYDIR);
         foreach ($paths as $path) {
             $clsName = substr($path, strrpos($path, '/') + 1);
-            $clsPath = "RadCms\\{$pluginsDir}\\{$clsName}\\{$clsName}";
+            $clsPath = "MySite\\Plugins\\{$clsName}\\{$clsName}";
             if (!class_exists($clsPath))
                 throw new RadException("Main plugin class \"{$clsPath}\" missing",
                                        RadException::BAD_INPUT);

@@ -84,15 +84,14 @@ class App {
     /**
      * @param array|object &$configOrCtx
      * @param \RadCms\Framework\FileSystemInterface $fs = null
-     * @param string $pluginsDir = 'Plugins'
      */
-    public static function create(&$configOrCtx, $pluginsDir = 'Plugins') {
+    public static function create(&$configOrCtx) {
         //
         $app = new static();
         $app->ctx = self::makeCtx($configOrCtx);
         $app->ctx->router->addMatchTypes(['w' => '[0-9A-Za-z_]++']);
         $app->ctx->state = new AppState($app->ctx->db, $app->ctx->fs ?? new FileSystem());
-        $app->ctx->state->selfLoad($pluginsDir, $app->ctx->router);
+        $app->ctx->state->selfLoad($app->ctx->router);
         ContentModule::init($app->ctx);
         ContentTypeModule::init($app->ctx);
         AuthModule::init($app->ctx);

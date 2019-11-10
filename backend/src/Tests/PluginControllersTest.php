@@ -5,8 +5,8 @@ namespace RadCms\Tests;
 use RadCms\Tests\Self\DbTestCase;
 use RadCms\Tests\Self\HttpTestUtils;
 use RadCms\Framework\FileSystem;
-use RadCms\Tests\_ValidPlugin\_ValidPlugin;
-use RadCms\Tests\_ValidAndInstalledPlugin\_ValidAndInstalledPlugin;
+use MySite\Plugins\ValidPlugin\ValidPlugin;
+use MySite\Plugins\ValidAndInstalledPlugin\ValidAndInstalledPlugin;
 use RadCms\Framework\Request;
 
 final class PluginControllersTest extends DbTestCase {
@@ -25,14 +25,14 @@ final class PluginControllersTest extends DbTestCase {
         $this->verifyRegisteredPluginToDb($s);
     }
     private function setupTest1() {
-        $testPluginName = '_ValidPlugin';
+        $testPluginName = 'ValidPlugin';
         $ctx = (object)['fs' => $this->createMock(FileSystem::class)];
         $ctx->fs->expects($this->once())->method('readDir')->willReturn(
-            [RAD_BASE_PATH . 'src/Tests/' . $testPluginName]);
+            [RAD_SITE_PATH . 'Plugins/' . $testPluginName]);
         $this->afterTest = function () {
-            _ValidPlugin::$instantiated = false;
-            _ValidPlugin::$initialized = false;
-            _ValidPlugin::$installed = false;
+            ValidPlugin::$instantiated = false;
+            ValidPlugin::$initialized = false;
+            ValidPlugin::$installed = false;
             if (self::$db->exec('UPDATE ${p}websiteState SET' .
                                 ' `installedPlugins` = \'{}\'') < 1)
                 throw new \RuntimeException('Failed to clean test data.');
@@ -44,7 +44,7 @@ final class PluginControllersTest extends DbTestCase {
         ];
     }
     private function verifyCalledPluginImplsInstallMethod() {
-        $this->assertEquals(true, _ValidPlugin::$installed);
+        $this->assertEquals(true, ValidPlugin::$installed);
     }
     private function verifyRegisteredPluginToDb($s) {
         $rows = self::$db->fetchAll('SELECT `installedPlugins` FROM ${p}websiteState');
@@ -67,28 +67,28 @@ final class PluginControllersTest extends DbTestCase {
         $this->verifyUnregisteredPluginFromDb($s);
     }
     private function setupTest2() {
-        $testPluginName = '_ValidAndInstalledPlugin';
+        $testPluginName = 'ValidAndInstalledPlugin';
         $ctx = (object)['fs' => $this->createMock(FileSystem::class)];
         $ctx->fs->expects($this->once())->method('readDir')->willReturn(
-            [RAD_BASE_PATH . 'src/Tests/' . $testPluginName]);
+            [RAD_SITE_PATH. 'Plugins/' . $testPluginName]);
         self::$db->exec('UPDATE ${p}websiteState SET `installedPlugins`=' .
                         ' JSON_SET(`installedPlugins`, ?, ?)',
                         ['$."' . $testPluginName . '"', 1]);
-        _ValidAndInstalledPlugin::$installed = true;
+        ValidAndInstalledPlugin::$installed = true;
         $this->afterTest = function () {
-            _ValidAndInstalledPlugin::$instantiated = false;
-            _ValidAndInstalledPlugin::$initialized = false;
-            _ValidAndInstalledPlugin::$installed = false;
+            ValidAndInstalledPlugin::$instantiated = false;
+            ValidAndInstalledPlugin::$initialized = false;
+            ValidAndInstalledPlugin::$installed = false;
         };
         return (object)[
             'testPluginName' => $testPluginName,
-            'originalInstallState' => _ValidAndInstalledPlugin::$installed,
+            'originalInstallState' => ValidAndInstalledPlugin::$installed,
             'res' => $this->createMockResponse(['ok' => 'ok'], 200),
             'ctx' => $ctx,
         ];
     }
     private function verifyCalledPluginImplsUninstallMethod() {
-        $this->assertEquals(false, _ValidAndInstalledPlugin::$installed);
+        $this->assertEquals(false, ValidAndInstalledPlugin::$installed);
     }
     private function verifyUnregisteredPluginFromDb($s) {
         $rows = self::$db->fetchAll('SELECT `installedPlugins` FROM ${p}websiteState');

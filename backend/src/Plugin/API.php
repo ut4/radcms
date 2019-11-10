@@ -26,7 +26,7 @@ class API {
     }
     /**
      * Rekisteröi <?= $this->DirectiveName(...) ?> käytettäväksi templaatteihin.
-     * Esimerkki: registerDirective('MPMovies', RAD_BASE_PATH . 'src/Plugins/MyPlugin/movies.inc');
+     * Esimerkki: registerDirective('MPMovies', RAD_SITE_PATH . 'Plugins/MyPlugin/movies.inc');
      *
      * @param string $directiveName
      * @param string $fullFilePath

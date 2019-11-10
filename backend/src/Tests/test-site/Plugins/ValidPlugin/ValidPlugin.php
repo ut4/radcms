@@ -1,12 +1,12 @@
 <?php
 
-namespace RadCms\Tests\_ValidPlugin;
+namespace MySite\Plugins\ValidPlugin;
 
 use RadCms\Plugin\PluginInterface;
 use RadCms\Plugin\API;
 use RadCms\ContentType\ContentTypeMigrator;
 
-class _ValidPlugin implements PluginInterface {
+class ValidPlugin implements PluginInterface {
     public static $instantiated = null;
     public static $initialized = null;
     public static $installed = null;

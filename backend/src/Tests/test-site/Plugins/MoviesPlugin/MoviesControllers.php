@@ -1,6 +1,6 @@
 <?php
 
-namespace RadCms\Tests\_MoviesPlugin;
+namespace MySite\Plugins\MoviesPlugin;
 
 use RadCms\Framework\Response;
 use RadCms\Content\DAO;

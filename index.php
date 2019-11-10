@@ -1,7 +1,8 @@
 <?php
 
 $config = require 'config.php';
-require RAD_BASE_PATH . 'vendor/autoload.php';
+$loader = require RAD_BASE_PATH . 'vendor/autoload.php';
+$loader->addPsr4('MySite\\', RAD_SITE_PATH);
 
 ////////////////////////////////////////////////////////////////////////////////
 $logger = new \Monolog\Logger('mainLogger');

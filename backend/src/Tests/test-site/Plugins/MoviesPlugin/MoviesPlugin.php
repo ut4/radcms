@@ -1,13 +1,13 @@
 <?php
 
-namespace RadCms\Tests\_MoviesPlugin;
+namespace MySite\Plugins\MoviesPlugin;
 
 use RadCms\Plugin\PluginInterface;
 use RadCms\Plugin\API;
 use RadCms\ContentType\ContentTypeCollection;
 use RadCms\ContentType\ContentTypeMigrator;
 
-class _MoviesPlugin implements PluginInterface {
+class MoviesPlugin implements PluginInterface {
     public function __construct() {
         $this->myContentTypes = new ContentTypeCollection();
         $this->myContentTypes->add('Movies', 'Elokuvat', ['title' => 'text']);
