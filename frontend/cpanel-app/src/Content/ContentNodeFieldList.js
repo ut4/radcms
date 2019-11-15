@@ -1,6 +1,6 @@
 class ContentNodeFieldList extends preact.Component {
     /**
-     * @param {{ctype: Object; cnode: Object;}} props
+     * @param {{ctype: ContentType; cnode: ContentNode;}} props
      */
     constructor(props) {
         super(props);

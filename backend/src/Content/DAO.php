@@ -46,14 +46,16 @@ class DAO {
     }
     /**
      * @param string $queryId
+     * @param string $contentTypeName
      * @param string $implName
      * @param string $title = ''
      */
-    public function addFrontendPanelInfo($queryId, $implName, $title) {
+    public function addFrontendPanelInfo($queryId, $contentTypeName, $implName, $title) {
         $this->frontendPanelInfos[$queryId] = (object)[
             'id' => $queryId,
             'impl' => $implName,
             'title' => $title,
+            'contentTypeName' => $contentTypeName,
             'contentNodes' => null,
         ];
     }

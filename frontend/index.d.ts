@@ -12,6 +12,7 @@ interface FrontendPanelConfig {
     id?: string;
     impl: string; // 'Generic' | 'List' | ...
     title: string;
+    contentTypeName?: string;
     contentNodes?: Array<Object>;
 }
 
@@ -24,4 +25,15 @@ interface SiteInfo {
 interface ControlPanelAppProps extends SiteInfo {
     contentPanels: Array<FrontendPanelConfig>;
     adminPanels: Array<FrontendPanelConfig>;
+}
+
+interface ContentNode {
+    id: string;
+    [key: string]: any;
+}
+
+interface ContentType {
+    name: string;
+    friendlyName: string;
+    fields: Array<{name: string; dataType: string; widget?: string;}>;
 }

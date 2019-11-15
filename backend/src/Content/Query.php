@@ -84,7 +84,7 @@ class Query {
      * @return $this
      */
     public function createFrontendPanel($panelType, $title = '') {
-        $this->dao->addFrontendPanelInfo($this->id, $panelType,
+        $this->dao->addFrontendPanelInfo($this->id, $this->contentType->name, $panelType,
             $title ? $title : $this->contentType->name);
         return $this;
     }

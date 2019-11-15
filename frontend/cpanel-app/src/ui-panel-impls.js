@@ -1,4 +1,6 @@
-import {MyLink, ContentNodeList} from '../../src/common-components.js';
+import {MyLink} from '../../src/common-components.js';
+import ContentNodeList from './Content/ContentNodeList.js';
+import CNodeUtils from './Content/Utils.js';
 
 /*
  * Implementoi hallintapaneeliosion <?php $this->fetchOne(...)->createFrontendPanel('Generic', 'My title') ?> kutsuille, jolla loppukäyttäjä voi muokata sisältöä.
@@ -13,8 +15,9 @@ class GenericUIPanelImpl extends preact.Component {
     constructor(props) {
         super(props);
         this.currentPagePath = props.siteInfo.currentPagePath;
+        this.newNodeContentType = props.dataFromBackend.contentTypeName;
         if ((this.node = props.dataFromBackend.contentNodes[0] || null))
-            this.nodeName = this.node.name || '#' + this.node.id;
+            this.nodeName = CNodeUtils.makeTitle(this.node);
     }
     getName() {
         return 'Generic';
@@ -29,12 +32,11 @@ class GenericUIPanelImpl extends preact.Component {
         return this.node
             ? $el('div', null,
                 $el('span', null, this.nodename),
-                $el(MyLink, {to: '/edit-content/' + this.node.id + '/' + this.node.contentType + '?returnTo=' +
-                    encodeURIComponent(this.currentPagePath)}, 'Edit')
+                $el(MyLink, {to: `/edit-content/${this.node.id}/${this.node.contentType}?returnTo=${encodeURIComponent(this.currentPagePath)}`}, `${this.nodeName}: Muokkaa`)
             )
             : $el('div', null,
                 $el('span', null, 'No content'),
-                $el(MyLink, {to: '/add-content?returnTo=' + encodeURIComponent(this.currentPagePath)}, 'Create')
+                $el(MyLink, {to: `/add-content/${this.newNodeContentType}?returnTo=${encodeURIComponent(this.currentPagePath)}`}, 'Luo')
             );
     }
 }

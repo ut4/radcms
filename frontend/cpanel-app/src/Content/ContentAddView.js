@@ -1,95 +1,82 @@
 import services from '../../../src/common-services.js';
 import {View, Form} from '../../../src/common-components.js';
+import ContentNodeFieldList from './ContentNodeFieldList.js';
 
 /**
  * #/add-content[/:initialComponentTypeName?returnto=<url>]
  */
 class ContentAddView extends preact.Component {
     /**
-     * @param {Object} props {
-     *     initialContentTypeName?: string;
-     *     returnTo?: string;
-     * }
+     * @param {{initialContentTypeName: string; returnTo?: string;}} props
      */
     constructor(props) {
         super(props);
-        this.fieldListCmp = null;
         this.state = {
-            cnodeName: '',
-            cnodeContentTypeId: 0,
-            fieldsData: null,
-            selectedContentType: null,
-            contentTypes: []
+            contentTypes: null,
+            newCnode: null,
+            ctype: null,
         };
         services.myFetch('/api/content-types').then(
             res => {
-                let newState = {
-                    contentTypes: JSON.parse(res.responseText),
-                    fieldsData: {},
-                    selectedContentType: null
-                };
-                if (props.initialContentTypeName) {
-                    newState.selectedContentType = newState.contentTypes.find(
-                        t => t.name === props.initialContentTypeName
-                    );
-                }
-                if (!newState.selectedContentType) {
-                    newState.selectedContentType = newState.contentTypes[0];
-                }
-                for (let name in newState.selectedContentType.fields) {
-                    newState.fieldsData[name] = '';
-                }
+                const newState = {contentTypes: JSON.parse(res.responseText)};
+                const ctypeName = props.initialContentTypeName || newState.contentTypes[0].name;
+                this.setContentTypeAndCreateEmptyContentNode(ctypeName, newState);
                 this.setState(newState);
             },
-            () => { toast('Failed to fetch content types. Maybe refreshing ' +
-                          'the page will help?', 'error'); }
+            () => { toast('Jokin meni pieleen.', 'error'); }
         );
     }
+    /**
+     * @access protected
+     */
     render() {
-        if (!this.state.selectedContentType) return null;
-        return $el(View, null, $el(Form, {onConfirm: e => this.handleSubmit(e)},
-            $el('h2', null, 'Add content'),
+        if (!this.state.contentTypes) return null;
+        if (!this.state.ctype) return $el(`Sisältötyyppiä ${this.props.initialContentType} ei löytynyt.`);
+        return $el(View, null, $el(Form, {onConfirm: e => this.handleFormSubmit(e)},
+            $el('h2', null, 'Lisää sisältöä'),
             $el('label', null,
-                $el('span', null, 'Nimi'),
-                $el('input', {name: 'cnodeName',
-                              value: this.state.cnodeName,
-                              onChange: e => Form.receiveInputValue(e, this)}, null)
-            ),
-            $el('label', null,
-                $el('span', {'data-help-text': 'Dev note: Voit luoda uusia sisältötyyppejä muokkaamalla site.ini-tiedostoa.'}, 'Tyyppi'),
+                $el('span', {'data-help-text': 'Dev note: Voit luoda uusia sisältötyyppejä muokkaamalla site.ini-tiedostoa.'}, 'Sisältötyyppi'),
                 $el('select', {onChange: e => this.receiveContentTypeSelection(e),
-                               value: this.state.contentTypes.indexOf(this.state.selectedContentType)},
-                    this.state.contentTypes.map((type, i) =>
-                        $el('option', {value: i}, type.name)
+                               value: this.state.ctype.name},
+                    this.state.contentTypes.map(type =>
+                        $el('option', {value: type.name}, type.friendlyName)
                     ))
             ),
-            $el(ContentNodeFieldList, {fieldsData: this.state.fieldsData,
-                                       fieldsInfo: this.state.selectedContentType.fields,
-                                       ref: cmp => { this.fieldListCmp = cmp; }}, null)
+            $el(ContentNodeFieldList, {cnode: this.state.newCnode,
+                                       ctype: this.state.ctype,
+                                       ref: cmp => { if (cmp) this.fieldListCmp = cmp; },
+                                       key: this.state.ctype.name})
         ));
     }
-    receiveContentTypeSelection(e) {
-        let newState = {selectedContentType: null, fieldsData: {}};
-        newState.selectedContentType = this.state.contentTypes[e.target.value];
-        for (let name in newState.selectedContentType.fields) {
-            newState.fieldsData[name] = '';
-        }
-        this.setState(newState);
-    }
-    handleSubmit() {
-        this.state.cnodeContentTypeId = this.state.selectedContentType.id;
-        return services.myFetch('/api/content', {
+    /**
+     * @access private
+     */
+    handleFormSubmit() {
+        return services.myFetch(`/api/content/${this.state.ctype.name}`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            data: JSON.stringify({
-                name: this.state.cnodeName,
-                json: JSON.stringify(this.fieldListCmp.getFieldsData()),
-                contentTypeId: this.state.cnodeContentTypeId
-            })
+            data: JSON.stringify(this.fieldListCmp.getResult())
         }).then(() => {
             services.redirect(this.props.returnTo || '/', true);
         }, () => {
-            toast('Failed to create the content.', 'error');
+            toast('Sisällön luonti epäonnistui.', 'error');
+        });
+    }
+    /**
+     * @access private
+     */
+    receiveContentTypeSelection(e) {
+        this.setContentTypeAndCreateEmptyContentNode(e.target.value, this.state);
+        this.setState({ctype: this.state.ctype, newCnode: this.state.newCnode});
+    }
+    /**
+     * @access private
+     */
+    setContentTypeAndCreateEmptyContentNode(ctypeName, newState) {
+        newState.ctype = newState.contentTypes.find(t => t.name == ctypeName);
+        newState.newCnode = {};
+        newState.ctype.fields.forEach(field => {
+            newState.newCnode[field.name] = '';
         });
     }
 }

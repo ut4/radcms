@@ -106,26 +106,6 @@ function MyLink(props) {
 }
 
 /**
- * @param {{cnodes: Array<Object>; createLinkText: string; currentPageUrl: string; contentType?: string;}} props
- */
-function ContentNodeList(props) {
-    return $el('div', null,
-        $el('ul', null, props.cnodes.map(c =>
-            $el('li', null,
-                $el('span', null, c.name || '#' + c.id),
-                $el(MyLink, {to: '/edit-content/' + c.id + '/' + c.contentType + '?returnTo=' +
-                                 encodeURIComponent(props.currentPagePath)}, 'Edit')
-            )
-        )),
-        $el('div', null,
-            $el(MyLink, {to: '/add-content' + (!props.contentType ? '' : '/' + props.contentType) +
-                             '?returnTo=' + encodeURIComponent(props.currentPagePath)},
-                props.createLinkText || 'Create content')
-        )
-    );
-}
-
-/**
  * @param {{iconId: string;}} eg. 'activity' (see: feathericons.com)
  */
 function FeatherSvg(props) {
@@ -216,4 +196,4 @@ class Tabs extends preact.Component {
     }
 }
 
-export {View, Form, MyLink, ContentNodeList, FeatherSvg, Toaster, Tabs};
+export {View, Form, MyLink, FeatherSvg, Toaster, Tabs};

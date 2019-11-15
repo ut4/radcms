@@ -34,12 +34,10 @@
 #control-panel h4 { margin: 0 0 6px 0; border-radius: 2px; padding: 10px 0 4px;
     position: relative; overflow: hidden; }
 #control-panel h4 .feather { float: left; margin: 1px 8px 0 8px; width: 17px; height: 17px; }
-.quick-links a { padding: 9px 5px 0; display: inline-block; margin-bottom: 6px;
-    color: #26cbc5; width: 50%; text-align: center; box-sizing: border-box;
-    line-height: 19px; }
-.quick-links a:hover { color: #20aba6; }
-.quick-links a .feather { float: left; stroke: #496362; width: 20px;
-    height: 20px; }
+.quick-links a { padding-top: 30px; display: inline-block; width: 50%; text-align: center;
+    box-sizing: border-box; position: relative; margin-bottom: 5px; }
+.quick-links a .feather { position: absolute; stroke: #496362; width: 20px;
+    height: 20px; top: 7px; left: 50%; margin-left: -12px; }
 [data-num-waiting-uploads]::after { position: absolute; width: 18px; height: 18px;
     content: attr(data-num-waiting-uploads); margin: -15px 0 0; line-height: 19px;
     font-size: 10px; font-weight: bold; color: #fff; border-radius: 50%;

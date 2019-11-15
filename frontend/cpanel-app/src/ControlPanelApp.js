@@ -79,8 +79,8 @@ class ControlPanelApp extends preact.Component {
             $el('section', {className: 'quick-links'},
                 $el('h3', null, 'Pikalinkit:'),
                 $el('div', null,
-                    $el(MyLink, {to: '/todo'},
-                        $el(FeatherSvg, {iconId: 'upload-cloud'}), 'Link1'
+                    $el(MyLink, {to: '/add-content'},
+                        $el(FeatherSvg, {iconId: 'plus-circle'}), 'Luo sisältöä'
                     ),
                     $el(MyLink, {to: '/todo'},
                         $el(FeatherSvg, {iconId: 'save'}), 'Link2'
