@@ -18,6 +18,7 @@ return function ($backendSrcPath, $buildAssetsPath, $backendPath) { return [
     $backendSrcPath . 'ContentType/ContentTypeDef.php',
     $backendSrcPath . 'ContentType/ContentTypeMigrator.php',
     $backendSrcPath . 'ContentType/ContentTypeValidator.php',
+    $backendSrcPath . 'ContentType/FieldCollection.php',
     $backendSrcPath . 'Installer/InstallerApp.php',
     $backendSrcPath . 'Installer/InstallerControllers.php',
     $backendSrcPath . 'Installer/Installer.php',

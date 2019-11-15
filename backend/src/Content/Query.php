@@ -111,7 +111,7 @@ class Query {
         }
         //
         $mainQ = 'SELECT `id`, ' .
-                 $this->contentType->fieldsToSqlCols() .
+                 $this->contentType->fields->toSqlCols() .
                  ', \'' . $this->contentType->name . '\' AS `contentType`' .
                  ' FROM ${p}' . $this->contentType->name .
                  (!$this->whereDef ? '' : ' WHERE ' . $this->whereDef->expr) .
@@ -142,9 +142,9 @@ class Query {
                     ' ${p}' . $ctypeName . ' AS b' .
                     ' ON (' . $joinDef->expr . ')';
         $fields[] = 'b.`id` AS `bId`, \'' . $ctypeName . '\' AS `bContentType`, ' .
-                    $this->dao->getContentType($ctypeName)
-                              ->fieldsToSqlCols(function ($fieldName) {
-                                  return 'b.`'.$fieldName.'` AS `b'.ucfirst($fieldName).'`';
+                    $this->dao->getContentType($ctypeName)->fields
+                              ->toSqlCols(function ($f) {
+                                  return 'b.`'.$f->name.'` AS `b'.ucfirst($f->name).'`';
                               });
     }
     /**

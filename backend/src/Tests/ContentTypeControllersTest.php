@@ -31,8 +31,8 @@ final class ContentTypeControllersTest extends DbTestCase {
         $s = $this->setupTest1();
         $this->setExpectedResponseBody(json_encode(['name' => 'Events',
             'friendlyName' => 'Tapahtumat', 'fields' => [
-                ['dataType' => 'text', 'widget' => null, 'name' => 'name'],
-                ['dataType' => 'text', 'widget' => 'image', 'name' => 'pic'],
+                ['name' => 'name', 'dataType' => 'text', 'widget' => null],
+                ['name' => 'pic', 'dataType' => 'text', 'widget' => 'image'],
             ], 'origin' => 'site.ini']), $s);
         $this->sendGetContentTypeRequest($s);
     }
@@ -66,11 +66,11 @@ final class ContentTypeControllersTest extends DbTestCase {
         $s = $this->setupTest2();
         $this->setExpectedResponseBody(json_encode([
             ['name' => 'Events', 'friendlyName' => 'Tapahtumat', 'fields' => [
-                ['dataType' => 'text', 'widget' => null, 'name' => 'name'],
-                ['dataType' => 'text', 'widget' => 'image', 'name' => 'pic'],
+                ['name' => 'name', 'dataType' => 'text', 'widget' => null],
+                ['name' => 'pic', 'dataType' => 'text', 'widget' => 'image'],
             ], 'origin' => 'site.ini'],
             ['name' => 'Locations', 'friendlyName' => 'Paikat', 'fields' => [
-                ['dataType' => 'text', 'widget' => null, 'name' => 'name'],
+                ['name' => 'name', 'dataType' => 'text', 'widget' => null],
             ], 'origin' => 'site.ini']
         ]), $s);
         $this->sendGetAllContentTypesRequest($s);

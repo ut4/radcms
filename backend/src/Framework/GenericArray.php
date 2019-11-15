@@ -6,12 +6,12 @@ namespace RadCms\Framework;
  * Array<T>.
  */
 class GenericArray {
-    private $T;
-    private $vals;
+    protected $T;
+    protected $vals;
     /**
      * @param class $T
      */
-    public function __construct($T) {
+    protected function __construct($T) {
         $this->T = $T;
         $this->vals = [];
     }

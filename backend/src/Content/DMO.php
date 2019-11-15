@@ -25,10 +25,10 @@ class DMO extends DAO {
             throw new RadException(implode(PHP_EOL, $errors),
                                    RadException::BAD_INPUT);
         $q = ['cols' => [], 'qs' => [], 'vals' => []];
-        foreach ($type->fields as $name => $_) {
-            $q['cols'][] = '`' . $name . '`';
+        foreach ($type->fields->toArray() as $f) {
+            $q['cols'][] = '`' . $f->name . '`';
             $q['qs'][] = '?';
-            $q['vals'][] = $data->$name;
+            $q['vals'][] = $data->{$f->name};
         }
         try {
             $numRows = $this->db->exec('INSERT INTO ${p}' . $contentTypeName .
@@ -58,9 +58,9 @@ class DMO extends DAO {
                                    RadException::BAD_INPUT);
         //
         $q = ['colQs' => [], 'vals' => []];
-        foreach ($type->fields as $name => $_) {
-            $q['colQs'][] = '`' . $name . '` = ?';
-            $q['vals'][] = $data->$name;
+        foreach ($type->fields->toArray() as $f) {
+            $q['colQs'][] = '`' . $f->name . '` = ?';
+            $q['vals'][] = $data->{$f->name};
         }
         $q['vals'][] = $id;
         try {

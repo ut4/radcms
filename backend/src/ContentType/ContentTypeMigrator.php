@@ -41,7 +41,7 @@ class ContentTypeMigrator {
         return $this->validateContentTypes($contentTypes) &&
                $this->validateInitialData($initialData) &&
                $this->createContentTypes($contentTypes->toArray(), $size) &&
-               $this->addToInstalledContentTypes($contentTypes->toArray()) &&
+               $this->addToInstalledContentTypes($contentTypes->toCompactForm($this->origin)) &&
                $this->insertInitialData($initialData, $contentTypes);
     }
     /**
@@ -93,7 +93,7 @@ class ContentTypeMigrator {
         return true;
     }
     /**
-     * @param array $ctypeDefs Array<ContentTypeDef>
+     * @param ContentTypeDef[] $ctypeDefs
      * @return bool
      * @throws \RadCms\Common\RadException
      */
@@ -102,7 +102,7 @@ class ContentTypeMigrator {
         foreach ($ctypeDefs as $type) {
             $sql .= 'CREATE TABLE ${p}' . $type->name . '(' .
                 '`id` ' . strtoupper($size) . 'INT UNSIGNED NOT NULL AUTO_INCREMENT' .
-                ', ' . $this->buildFieldsSql($type->fields) .
+                ', ' . $type->fields->toSqlTableFields() .
                 ', PRIMARY KEY (`id`)' .
             ') DEFAULT CHARSET = utf8mb4;';
         }
@@ -114,7 +114,7 @@ class ContentTypeMigrator {
         }
     }
     /**
-     * @param array $ctypeDefs Array<ContentTypeDef>
+     * @param ContentTypeDef[] $ctypeDefs
      * @return bool
      * @throws \RadCms\Common\RadException
      */
@@ -129,20 +129,17 @@ class ContentTypeMigrator {
         }
     }
     /**
-     * @param array $ctypeDefs Array<ContentTypeDef>
+     * @param array $compactCtypes see ContentTypeCollection->toCompactForm()
      * @return bool
      * @throws \RadCms\Common\RadException
      */
-    private function addToInstalledContentTypes($ctypeDefs) {
+    private function addToInstalledContentTypes($compactCtypes) {
         try {
             if ($this->db->exec(
                 'UPDATE ${p}websiteState SET `installedContentTypes` =' .
                 ' JSON_MERGE_PATCH(`installedContentTypes`, ?)' .
                 ', `installedContentTypesLastUpdated` = UNIX_TIMESTAMP()',
-                [json_encode(array_reduce($ctypeDefs, function ($map, $t) {
-                    $map[$t->name] = array_merge($t->serialize(), [$this->origin]);
-                    return $map;
-                }, []))]) > 0) {
+                [json_encode($compactCtypes)]) > 0) {
                 return true;
             }
             throw new RadException('Failed to update websiteState.`installedContentTypes`',
@@ -169,7 +166,7 @@ class ContentTypeMigrator {
         return true;
     }
     /**
-     * @param array $ctypeDefs Array<ContentTypeDef>
+     * @param ContentTypeDef[] $ctypeDefs
      * @return bool
      * @throws \RadCms\Common\RadException
      */
@@ -193,19 +190,5 @@ class ContentTypeMigrator {
         } catch (\PDOException $e) {
             throw new RadException($e->getMessage(), RadException::FAILED_DB_OP);
         }
-    }
-    /**
-     * @param array $fields
-     * @return string
-     */
-    private function buildFieldsSql($fields) {
-        $out = [];
-        foreach ($fields as $name => $f) {
-            $out[] = "`{$name}` " . [
-                'text' => 'TEXT',
-                'json' => 'TEXT'
-            ][$f->dataType];
-        }
-        return implode(',', $out);
     }
 }

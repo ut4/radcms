@@ -29,25 +29,25 @@ class SiteConfigDiffer {
         return [$ctypesDiff, $fieldsDiff];
     }
     /**
-     * @param object $fromFile ['name' => 'dataType' ...]
-     * @param object $froDb ['name' => 'dataType' ...]
+     * @param \RadCms\ContentType\FieldCollection $fromFile
+     * @param \RadCms\ContentType\FieldCollection $froDb
      * @param object &$out ['added' => array, 'dataTypeChanged' => array]
      */
     private function diffFields($fromFile, $fromDb, &$out) {
-        foreach ($fromFile as $name => $f) {
-            $current = $fromDb[$name] ?? null;
+        foreach ($fromFile->toArray() as $f) {
+            $current = $fromDb->find($f->name) ?? null;
             if (!$current)
-                $out->added[] = (object)['name' => $name,
+                $out->added[] = (object)['name' => $f->name,
                                          'dataType' => $f->dataType,
                                          'widget' => $f->widget];
             elseif ($f->dataType != $current->dataType)
-                $out->dataTypeChanged[] = (object)['name' => $name,
+                $out->dataTypeChanged[] = (object)['name' => $f->name,
                                                    'oldDataType' => $current->dataType,
                                                    'newDataType' => $f->dataType];
         }
-        foreach ($fromDb as $name => $_) {
-            if (!array_key_exists($name, $fromFile))
-                $out->deleted[] = (object) ['name' => $name];
+        foreach ($fromDb->toArray() as $f) {
+            if (!$fromFile->find($f->name))
+                $out->deleted[] = (object) ['name' => $f->name];
         }
     }
 }

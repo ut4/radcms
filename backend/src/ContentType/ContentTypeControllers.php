@@ -27,34 +27,17 @@ class ContentTypeControllers {
                                          Response $res,
                                          ContentTypeCollection $ctypes) {
         $ctype = $ctypes->find($req->params->name);
-        if ($ctype)
-            $res->json(makeResponseContentType($ctype));
-        else
-            $res->status(404)->json(['got' => 'nothing']);
+        if ($ctype) $res->json($ctype);
+        else $res->status(404)->json(['got' => 'nothing']);
     }
     /**
      * GET /api/content-type.
      *
-     * @param \RadCms\Framework\Request $req
      * @param \RadCms\Framework\Response $res
      * @param \RadCms\ContentType\ContentTypeCollection $ctypes
      */
-    public function handleGetAllContentTypes(Request $req,
-                                             Response $res,
+    public function handleGetAllContentTypes(Response $res,
                                              ContentTypeCollection $ctypes) {
-        $res->json(array_map('\\RadCms\\ContentType\\makeResponseContentType',
-                   $ctypes->toArray()));
+        $res->json($ctypes->toArray());
     }
-}
-
-function makeResponseContentType($ctype) {
-    $out = clone $ctype;
-    $fieldsAsArray = [];
-    foreach ($out->fields as $name => $f) {
-        $c = clone $f;
-        $c->name = $name;
-        $fieldsAsArray[] = $c;
-    }
-    $out->fields = $fieldsAsArray;
-    return $out;
 }

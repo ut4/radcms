@@ -61,14 +61,14 @@ final class WebsiteControllersTest extends DbTestCase {
         };
         return $s;
     }
-    private function setTheseContentTypesAsInstalled($serializedContentTypes, $s) {
+    private function setTheseContentTypesAsInstalled($compactContentTypes, $s) {
         if (self::getDb()->exec('UPDATE ${p}websiteState SET' .
                                 ' `installedContentTypes` = ?' .
                                 ', `installedContentTypesLastUpdated` = ?',
-                                [json_encode($serializedContentTypes),
+                                [json_encode($compactContentTypes),
                                  $s->mockLastContentTypesUpdatedAt]) < 1)
             throw new \RuntimeException('Failed to setup test data.');
-        if (array_key_exists('NewType', $serializedContentTypes))
+        if (array_key_exists('NewType', $compactContentTypes))
             self::getDb()->exec('CREATE TABLE ${p}NewType (`id` INTEGER);');
     }
     private function stubFsToReturnNoPlugins($s) {

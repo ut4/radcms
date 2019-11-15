@@ -9,18 +9,18 @@ abstract class ContentTypeValidator {
     const FIELD_WIDGETS = ['image'];
     /**
      * @param \RadCms\ContentType\ContentTypeDef $contentType
-     * @return array Array<string>
+     * @return string[]
      */
     public static function validate(ContentTypeDef $contentType) {
         $errors = self::validateName($contentType->name);
         //
-        if (!count($contentType->fields)) {
+        if (!$contentType->fields->length()) {
             $errors[] = 'ContentType.fields must contain at least one field';
             return $errors;
         }
-        foreach ($contentType->fields as $name => $f) {
-            if (!is_string($name) || !preg_match('/^[a-zA-Z_]+$/', $name))
-                $errors[] = "`{$name}` must contain only [a-zA-Z_]";
+        foreach ($contentType->fields->toArray() as $f) {
+            if (!is_string($f->name) || !preg_match('/^[a-zA-Z_]+$/', $f->name))
+                $errors[] = "`{$f->name}` must contain only [a-zA-Z_]";
             if (!is_string($f->dataType) ||
                 !in_array($f->dataType, ContentTypeMigrator::FIELD_DATA_TYPES))
                 $errors[] = "`{$f->dataType}` is not valid data type";
@@ -32,7 +32,7 @@ abstract class ContentTypeValidator {
     }
     /**
      * @param \RadCms\ContentType\ContentTypeCollection $contentTypes
-     * @return array Array<string>
+     * @return string[]
      */
     public static function validateAll(ContentTypeCollection $contentTypes) {
         return array_reduce($contentTypes->toArray(), function ($all, $def) {
@@ -41,7 +41,7 @@ abstract class ContentTypeValidator {
     }
     /**
      * @param string $contentTypeName
-     * @return array Array<string>
+     * @return string[]
      */
     public static function validateName($contentTypeName) {
         $errors = [];
@@ -59,16 +59,14 @@ abstract class ContentTypeValidator {
      */
     public static function validateInsertData(ContentTypeDef $contentType, $input) {
         $v = new Validator($input);
-        foreach ($contentType->fields as $key => $f) {
-            if (!$v->check($key, 'present'))
-                continue;
+        foreach ($contentType->fields->toArray() as $f) {
             $validationRules = [
                 'text' => ['string'],
                 'json' => ['string'],
             ][$f->dataType] ?? null;
             if (!$validationRules)
                 throw new \RuntimeException('Shouldn\'t happen');
-            $v->check($key, ...$validationRules);
+            $v->check($f->name, ...$validationRules);
         }
         return $v->errors;
     }
