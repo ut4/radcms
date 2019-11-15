@@ -25,31 +25,81 @@ final class ContentControllersTest extends DbTestCase {
         parent::tearDownAfterClass($_);
         // @allow \RadCms\Common\RadException
         self::$migrator->uninstallMany(self::$testContentTypes);
+        InstallerTest::clearInstalledContentTypesFromDb();
     }
     public function tearDown() {
         $this->afterTest->__invoke();
     }
-    public function testGETContentReturnsContentNode() {
+    public function testPOSTContentCreatesContentNode() {
         $s = $this->setupTest1();
-        $this->insertTestContentNode($s->productId);
-        $this->setExpectedResponseBody('{"id":"1","title":"Tuotteen nimi"' .
-                                        ',"contentType":"Products"}', $s);
-        $this->sendGetContentNodeRequest($s);
+        $this->setExpectedResponseBody(
+            $this->callback(function ($actualResponse) use ($s) {
+                $s->httpReturnBody = $actualResponse;
+                return true; // ignore
+            }),
+            $s
+        );
+        $this->sendCreateContentNodeRequest($s);
+        $this->verifyPOSTContentReturnedLastInsertId($s);
+        $this->verifyContentNodeWasInsertedToDb($s);
     }
     private function setupTest1() {
         $this->afterTest = function () {
             $this->deleteAllTestContentNodes();
         };
+        $s = (object) [
+            'expectedResponseBody' => null,
+            'httpReturnBody' => null,
+            'newProduct' => (object)['title' => 'Uuden tuoteen nimi'],
+        ];
+        return $s;
+    }
+    private function setExpectedResponseBody($expected, $s, $actualDataFilterFn = null) {
+        $s->expectedResponseBody = is_string($expected) ? $this->callback(
+            function ($actualData) use ($expected) {
+                //if ($actualDataFilterFn) $actualData = $actualDataFilterFn($actualData);
+                return json_encode($actualData) == $expected;
+            }) : $expected;
+    }
+    private function sendCreateContentNodeRequest($s) {
+        $res = $this->createMock(MutedResponse::class);
+        $res->expects($this->once())
+            ->method('json')
+            ->with($s->expectedResponseBody)
+            ->willReturn($res);
+        $req = new Request('/api/content/Products', 'POST', $s->newProduct);
+        $this->makeRequest($req, $res);
+    }
+    private function verifyPOSTContentReturnedLastInsertId($s) {
+        $this->assertEquals('1', $s->httpReturnBody['numAffectedRows']);
+        $this->assertEquals(true, $s->httpReturnBody['lastInsertId'] > 0);
+    }
+    private function verifyContentNodeWasInsertedToDb($s) {
+        $this->assertEquals($s->newProduct->title, self::$db->fetchOne(
+            'SELECT `title` FROM ${p}Products WHERE `id` = ?',
+            [$s->httpReturnBody['lastInsertId']]
+        )['title']);
+    }
+
+
+    ////////////////////////////////////////////////////////////////////////////
+
+
+    public function testGETContentReturnsContentNode() {
+        $s = $this->setupTest2();
+        $this->insertTestContentNode($s->productId);
+        $this->setExpectedResponseBody('{"id":"10","title":"Tuotteen nimi"' .
+                                        ',"contentType":"Products"}', $s);
+        $this->sendGetContentNodeRequest($s);
+    }
+    private function setupTest2() {
+        $this->afterTest = function () {
+            $this->deleteAllTestContentNodes();
+        };
         return (object) [
-            'productId' => 1,
+            'productId' => 10,
             'expectedResponseBody' => null,
         ];
-    }
-    private function setExpectedResponseBody($expectedJson, $s) {
-        $s->expectedResponseBody = $this->callback(
-            function ($actualData) use ($expectedJson) {
-                return json_encode($actualData) == $expectedJson;
-            });
     }
     private function sendGetContentNodeRequest($s) {
         $res = $this->createMock(MutedResponse::class);
@@ -57,8 +107,7 @@ final class ContentControllersTest extends DbTestCase {
             ->method('json')
             ->with($s->expectedResponseBody)
             ->willReturn($res);
-        $req = new Request('/api/content/' . $s->productId . '/Products',
-                           'GET');
+        $req = new Request('/api/content/' . $s->productId . '/Products', 'GET');
         $this->makeRequest($req, $res);
     }
 
@@ -67,15 +116,15 @@ final class ContentControllersTest extends DbTestCase {
 
 
     public function testPUTContentUpdatesContentNode() {
-        $s = $this->setupTest2();
+        $s = $this->setupTest3();
         $this->insertTestContentNode($s->productId);
         $this->setExpectedResponseBody('{"numAffectedRows":1}', $s);
         $this->sendUpdateContentNodeRequest($s);
         $this->verifyContentNodeWasUpdatedToDb($s);
     }
-    private function setupTest2() {
-        $s = $this->setupTest1();
-        $s->productId = 2;
+    private function setupTest3() {
+        $s = $this->setupTest2();
+        $s->productId = 20;
         $s->newData = (object)['title' => 'Päivitetty tuotteen nimi'];
         return $s;
     }

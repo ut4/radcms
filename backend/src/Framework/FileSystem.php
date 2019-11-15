@@ -69,7 +69,7 @@ class FileSystem implements FileSystemInterface {
      * @param string $path
      * @param string $filter = '*'
      * @param int $flags = GLOB_ERR
-     * @return array|false Array<string>
+     * @return string[]|false
      */
     public function readDir($path, $filter = '*', $flags = GLOB_ERR) {
         return glob(rtrim($path, '/') . '/' . $filter, $flags);

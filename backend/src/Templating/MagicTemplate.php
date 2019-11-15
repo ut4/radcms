@@ -48,7 +48,7 @@ class MagicTemplate extends Template {
                 : self::$__aliases[$name];
             if (!$this->__fileExists->__invoke($directiveFilePath)) {
                 throw new RadException('Did you forget to $api->registerDire' .
-                                       'ctive(\'$name\', \'/file.php\')?',
+                                       'ctive(\''.$name.'\', \'/file.php\')?',
                                        RadException::BAD_INPUT);
             }
             return $this->doRender($directiveFilePath,

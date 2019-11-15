@@ -19,7 +19,20 @@ class ContentControllers {
         $this->db = $db;
     }
     /**
-     * GET /api/content/:contentType/:id.
+     * POST /api/content/:contentTypeName.
+     *
+     * @param \RadCms\Framework\Request $req
+     * @param \RadCms\Framework\Response $res
+     * @param \RadCms\Content\DMO $dmo
+     */
+    public function handleCreateContentNode(Request $req, Response $res, DMO $dmo) {
+        // @allow \RadCMS\Common\RadException
+        $numRows = $dmo->insert($req->params->contentTypeName, $req->body);
+        $res->json(['numAffectedRows' => $numRows,
+                    'lastInsertId' => $dmo->lastInsertId]);
+    }
+    /**
+     * GET /api/content/:contentTypeName/:id.
      *
      * @param \RadCms\Framework\Request $req
      * @param \RadCms\Framework\Response $res
@@ -34,7 +47,7 @@ class ContentControllers {
         else $res->status(404)->json(['got' => 'nothing']);
     }
     /**
-     * PUT /api/content/:contentType/:id.
+     * PUT /api/content/:contentTypeName/:id.
      *
      * @param \RadCms\Framework\Request $req
      * @param \RadCms\Framework\Response $res

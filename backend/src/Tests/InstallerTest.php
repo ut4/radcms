@@ -249,4 +249,9 @@ return [
             'SELECT `title` FROM ${p}Movies'
         )));
     }
+    public static function clearInstalledContentTypesFromDb() {
+        self::getDb()->exec('UPDATE ${p}websiteState SET' .
+                            ' `installedContentTypes` = \'{}\'' .
+                            ', `installedContentTypesLastUpdated` = NULL');
+    }
 }

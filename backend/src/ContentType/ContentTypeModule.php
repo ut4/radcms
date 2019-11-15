@@ -12,5 +12,8 @@ abstract class ContentTypeModule {
         $ctx->router->map('GET', '/api/content-types/[w:name]', function () {
             return [ContentTypeControllers::class, 'handleGetContentType', true];
         });
+        $ctx->router->map('GET', '/api/content-types', function () {
+            return [ContentTypeControllers::class, 'handleGetAllContentTypes', true];
+        });
     }
 }

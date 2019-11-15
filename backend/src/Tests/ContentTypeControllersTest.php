@@ -29,12 +29,11 @@ final class ContentTypeControllersTest extends DbTestCase {
     }
     public function testGETContentTypeReturnsContentType() {
         $s = $this->setupTest1();
-        $this->setExpectedResponseBody('{"name":"Events"' .
-            ',"friendlyName":"Tapahtumat","fields":' .
-                '[{"dataType":"text","widget":null,"name":"name"}' .
-                ',{"dataType":"text","widget":"image","name":"pic"}]' .
-            ',"origin":"site.ini"' .
-        '}', $s);
+        $this->setExpectedResponseBody(json_encode(['name' => 'Events',
+            'friendlyName' => 'Tapahtumat', 'fields' => [
+                ['dataType' => 'text', 'widget' => null, 'name' => 'name'],
+                ['dataType' => 'text', 'widget' => 'image', 'name' => 'pic'],
+            ], 'origin' => 'site.ini']), $s);
         $this->sendGetContentTypeRequest($s);
     }
     private function setupTest1() {
@@ -56,6 +55,38 @@ final class ContentTypeControllersTest extends DbTestCase {
             ->with($s->expectedResponseBody)
             ->willReturn($res);
         $req = new Request('/api/content-types/' . $s->contentTypeName, 'GET');
+        $this->makeRequest($req, $res);
+    }
+
+
+    ////////////////////////////////////////////////////////////////////////////
+
+
+    public function testGETContentTypesReturnsAllContentTypes() {
+        $s = $this->setupTest2();
+        $this->setExpectedResponseBody(json_encode([
+            ['name' => 'Events', 'friendlyName' => 'Tapahtumat', 'fields' => [
+                ['dataType' => 'text', 'widget' => null, 'name' => 'name'],
+                ['dataType' => 'text', 'widget' => 'image', 'name' => 'pic'],
+            ], 'origin' => 'site.ini'],
+            ['name' => 'Locations', 'friendlyName' => 'Paikat', 'fields' => [
+                ['dataType' => 'text', 'widget' => null, 'name' => 'name'],
+            ], 'origin' => 'site.ini']
+        ]), $s);
+        $this->sendGetAllContentTypesRequest($s);
+    }
+    private function setupTest2() {
+        return (object)[
+            'expectedResponseBody' => null,
+        ];
+    }
+    private function sendGetAllContentTypesRequest($s) {
+        $res = $this->createMock(MutedResponse::class);
+        $res->expects($this->once())
+            ->method('json')
+            ->with($s->expectedResponseBody)
+            ->willReturn($res);
+        $req = new Request('/api/content-types', 'GET');
         $this->makeRequest($req, $res);
     }
 }

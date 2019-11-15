@@ -47,7 +47,7 @@ interface FileSystemInterface {
     public function isDir($path);
     /**
      * @param string $path
-     * @return array|false Array<string>
+     * @return string[]|false
      */
     public function readDir($path);
     /**

@@ -34,8 +34,7 @@ final class PluginAPIIntegrationTest extends DbTestCase {
     }
     public static function tearDownAfterClass($_ = null) {
         parent::tearDownAfterClass(null);
-        self::$db->exec('UPDATE ${p}websiteState SET' .
-                        ' `installedContentTypesLastUpdated` = NULL');
+        InstallerTest::clearInstalledContentTypesFromDb();
     }
 
 

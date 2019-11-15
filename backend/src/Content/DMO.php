@@ -10,6 +10,7 @@ use RadCms\Common\RadException;
  * delete -operaatiot.
  */
 class DMO extends DAO {
+    public $lastInsertId;
     /** 
      * @param string $contentTypeName
      * @param object $data
@@ -17,6 +18,7 @@ class DMO extends DAO {
      * @throws \RadCms\Common\RadException
      */
     public function insert($contentTypeName, $data) {
+        $this->lastInsertId = 0;
         // @allow \RadCms\Common\RadException
         $type = $this->getContentType($contentTypeName);
         if (($errors = ContentTypeValidator::validateInsertData($type, $data)))
@@ -29,10 +31,12 @@ class DMO extends DAO {
             $q['vals'][] = $data->$name;
         }
         try {
-            return $this->db->exec('INSERT INTO ${p}' . $contentTypeName .
-                                   ' (' . implode(', ', $q['cols']) . ')' .
-                                   ' VALUES (' . implode(', ', $q['qs']) . ')',
-                                   $q['vals']);
+            $numRows = $this->db->exec('INSERT INTO ${p}' . $contentTypeName .
+                                       ' (' . implode(', ', $q['cols']) . ')' .
+                                       ' VALUES (' . implode(', ', $q['qs']) . ')',
+                                       $q['vals']);
+            $this->lastInsertId = $this->db->lastInsertId();
+            return $numRows;
         } catch (\PDOException $e) {
             throw new RadException($e->getMessage(), RadException::FAILED_DB_OP);
         }

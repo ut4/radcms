@@ -81,7 +81,7 @@ class DAO {
             }, $rows) : [];
         }
         //
-        if ($join)
+        if ($out && $join)
             $this->provideRowsToUserDefinedJoinCollector($join,
                 $rows, $isFetchOne, $out);
         //
@@ -141,7 +141,7 @@ class DAO {
                                                            &$out) {
         $joinContentTypeName = $join->contentType;
         [$fn, $fieldName] = $join->collector;
-        foreach (($isFetchOne ? [$out] : $out) as &$node) {
+        foreach (($isFetchOne ? [$out] : $out) as $node) {
             $node->$fieldName = [];
             foreach ($rows as $row) {
                 if (

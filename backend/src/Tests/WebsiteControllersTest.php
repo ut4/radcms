@@ -19,9 +19,7 @@ final class WebsiteControllersTest extends DbTestCase {
         'FromSomePlugin' => ['FriendlyName', ['field' => 'text'], 'some-plugin.ini'],
     ];
     public function tearDown() {
-        self::$db->exec('UPDATE ${p}websiteState SET' .
-                        ' `installedContentTypes` = \'{}\'' .
-                        ', `installedContentTypesLastUpdated` = NULL');
+        InstallerTest::clearInstalledContentTypesFromDb();
         self::$db->exec('DROP TABLE IF EXISTS ${p}NewType');
     }
     public function testConstructorScansSiteCfgAndInstallsNewContentTypeToDb() {
