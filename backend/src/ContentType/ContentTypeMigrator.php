@@ -77,7 +77,7 @@ class ContentTypeMigrator {
      * @throws \RadCms\Common\RadException
      */
     private function validateInitialData($data) {
-        if ($data === null)
+        if (!$data)
             return true;
         if (!is_array($data))
             throw new RadException('initialData must be an array', RadException::BAD_INPUT);

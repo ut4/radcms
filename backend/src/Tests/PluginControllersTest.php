@@ -16,7 +16,7 @@ final class PluginControllersTest extends DbTestCase {
         $this->afterTest->__invoke();
     }
     public function testPUTInstallInstallsPluginAndRegistersItToDatabase() {
-        $s = $this->setupTest1();
+        $s = $this->setupInstallTest();
         //
         $req = new Request("/api/plugins/{$s->testPluginName}/install", 'PUT');
         $this->makeRequest($req, $s->res, $s->ctx);
@@ -24,7 +24,7 @@ final class PluginControllersTest extends DbTestCase {
         $this->verifyCalledPluginImplsInstallMethod();
         $this->verifyRegisteredPluginToDb($s);
     }
-    private function setupTest1() {
+    private function setupInstallTest() {
         $testPluginName = 'ValidPlugin';
         $ctx = (object)['fs' => $this->createMock(FileSystem::class)];
         $ctx->fs->expects($this->once())->method('readDir')->willReturn(
@@ -58,7 +58,7 @@ final class PluginControllersTest extends DbTestCase {
 
 
     public function testPUTUninstallUninstallsPluginAndUnregistersItFromDatabase() {
-        $s = $this->setupTest2();
+        $s = $this->setupUninstallTest();
         //
         $req = new Request("/api/plugins/{$s->testPluginName}/uninstall", 'PUT');
         $this->makeRequest($req, $s->res, $s->ctx);
@@ -66,7 +66,7 @@ final class PluginControllersTest extends DbTestCase {
         $this->verifyCalledPluginImplsUninstallMethod();
         $this->verifyUnregisteredPluginFromDb($s);
     }
-    private function setupTest2() {
+    private function setupUninstallTest() {
         $testPluginName = 'ValidAndInstalledPlugin';
         $ctx = (object)['fs' => $this->createMock(FileSystem::class)];
         $ctx->fs->expects($this->once())->method('readDir')->willReturn(

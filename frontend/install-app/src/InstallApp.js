@@ -13,7 +13,7 @@ class InstallApp extends preact.Component {
         const pcs = this.indexFilePath.split('/');
         const indedDirParent = pcs.slice(0, pcs.length - 2).join('/') + '/';
         this.state = !l ? {
-            siteName: 'test',
+            siteName: 'My site',
             baseUrl: '/',
             radPath: indedDirParent + 'backend/',
             sitePath: indedDirParent + 'my-site/',

@@ -62,7 +62,8 @@ class WebsiteControllers {
                                       ['cssFiles' => $this->siteCfg->cssAssets],
                                       $cnd,
                                       $fs);
-        $html = $template->render(['url' => $req->path ? explode('/', ltrim($req->path, '/')) : ['']]);
+        $html = $template->render(['url' => $req->path ? explode('/', ltrim($req->path, '/')) : [''],
+                                   'site' => $this->appState->websiteState]);
         if ($req->user && ($bodyEnd = strpos($html, '</body>')) > 1) {
             $frontendDataKey = strval(time());
             $this->session->put($frontendDataKey, [

@@ -23,7 +23,7 @@ final class WebsiteControllersTest extends DbTestCase {
         self::$db->exec('DROP TABLE IF EXISTS ${p}NewType');
     }
     public function testConstructorScansSiteCfgAndInstallsNewContentTypeToDb() {
-        $s = $this->setupTest1();
+        $s = $this->setupDiscoverTest();
         $newerThanLastUpdatedAt = $s->mockLastContentTypesUpdatedAt + 10;
         $this->setTheseContentTypesAsInstalled(self::TEST_EXISTING_CTYPES, $s);
         $this->stubFsToReturnNoPlugins($s);
@@ -38,7 +38,7 @@ final class WebsiteControllersTest extends DbTestCase {
         //
         $this->verifyInstalledNewContentTypeToDb();
     }
-    private function setupTest1() {
+    private function setupDiscoverTest() {
         $s = (object)[
             'ctx' => (object)['fs' => $this->createMock(FileSystem::class)],
             'mockSess' => $this->createMock(SessionInterface::class),
@@ -102,7 +102,7 @@ final class WebsiteControllersTest extends DbTestCase {
 
 
     public function testConstructorScansSiteCfgAndUninstallsDisappearedContentTypeFromDb() {
-        $s = $this->setupTest2();
+        $s = $this->setupRemoveTest();
         $newerThanLastUpdatedAt = $s->mockLastContentTypesUpdatedAt + 10;
         $this->setTheseContentTypesAsInstalled(self::TEST_EXISTING_CTYPES + [
             'NewType' => ['My Type', ['name' => 'text'], 'site.ini'],
@@ -117,8 +117,8 @@ final class WebsiteControllersTest extends DbTestCase {
         //
         $this->verifyUninstalledDisappearedContentType();
     }
-    private function setupTest2() {
-        return $this->setupTest1();
+    private function setupRemoveTest() {
+        return $this->setupDiscoverTest();
     }
     private function verifyUninstalledDisappearedContentType() {
         $this->verifyContentTypeIsInstalled('NewType', false, self::$db);

@@ -31,7 +31,7 @@ final class ContentControllersTest extends DbTestCase {
         $this->afterTest->__invoke();
     }
     public function testPOSTContentCreatesContentNode() {
-        $s = $this->setupTest1();
+        $s = $this->setupPOSTTest();
         $this->setExpectedResponseBody(
             $this->callback(function ($actualResponse) use ($s) {
                 $s->httpReturnBody = $actualResponse;
@@ -43,7 +43,7 @@ final class ContentControllersTest extends DbTestCase {
         $this->verifyPOSTContentReturnedLastInsertId($s);
         $this->verifyContentNodeWasInsertedToDb($s);
     }
-    private function setupTest1() {
+    private function setupPOSTTest() {
         $this->afterTest = function () {
             $this->deleteAllTestContentNodes();
         };
@@ -86,13 +86,13 @@ final class ContentControllersTest extends DbTestCase {
 
 
     public function testGETContentReturnsContentNode() {
-        $s = $this->setupTest2();
+        $s = $this->setupGETTest();
         $this->insertTestContentNode($s->productId);
         $this->setExpectedResponseBody('{"id":"10","title":"Tuotteen nimi"' .
                                         ',"contentType":"Products"}', $s);
         $this->sendGetContentNodeRequest($s);
     }
-    private function setupTest2() {
+    private function setupGETTest() {
         $this->afterTest = function () {
             $this->deleteAllTestContentNodes();
         };
@@ -116,14 +116,14 @@ final class ContentControllersTest extends DbTestCase {
 
 
     public function testPUTContentUpdatesContentNode() {
-        $s = $this->setupTest3();
+        $s = $this->setupPUTTest();
         $this->insertTestContentNode($s->productId);
         $this->setExpectedResponseBody('{"numAffectedRows":1}', $s);
         $this->sendUpdateContentNodeRequest($s);
         $this->verifyContentNodeWasUpdatedToDb($s);
     }
-    private function setupTest3() {
-        $s = $this->setupTest2();
+    private function setupPUTTest() {
+        $s = $this->setupGETTest();
         $s->productId = 20;
         $s->newData = (object)['title' => 'Päivitetty tuotteen nimi'];
         return $s;

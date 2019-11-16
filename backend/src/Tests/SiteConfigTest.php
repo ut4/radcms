@@ -8,15 +8,15 @@ use RadCms\Framework\FileSystem;
 use RadCms\Common\RadException;
 
 final class SiteConfigTest extends TestCase {
-    public function testFoo() {
-        $s = $this->setupTest1();
+    public function testSelfLoadRejectsMissingValues() {
+        $s = $this->setupValidateTest();
         $this->stubFsToReturnThisSiteCfg($s, 'dum=my');
         $this->loadInvalidSiteCfg($s);
         $this->verifyTheseErrorsWereReported($s,
             'At least one `[UrlMatcher:name] pattern = /some-url` is required',
             'At least one `[ContentType:MyContentType] fields[name] = data-type` is required');
     }
-    private function setupTest1() {
+    private function setupValidateTest() {
         return (object)[
             'mockFs' => $this->createMock(FileSystem::class),
             'errors' => 'no-errors',
@@ -42,8 +42,8 @@ final class SiteConfigTest extends TestCase {
     ////////////////////////////////////////////////////////////////////////////
 
 
-    public function testBar() {
-        $s = $this->setupTest2();
+    public function testSelfLoadRejectsInvalidAssetFilesValues() {
+        $s = $this->setupAssetValidateTest();
         $this->stubFsToReturnThisSiteCfg($s, '[AssetFile:0]' . PHP_EOL .
                                              'no-url = here' . PHP_EOL .
                                              'no-type = here' . PHP_EOL .
@@ -56,8 +56,8 @@ final class SiteConfigTest extends TestCase {
             '[AssetFile:name] must define field `url = file.css`',
             '[AssetFile:name] must define field `type = ' . $s->assetFileTypesStr . '`');
     }
-    private function setupTest2() {
-        $s = $this->setupTest1();
+    private function setupAssetValidateTest() {
+        $s = $this->setupValidateTest();
         $s->assetFileTypesStr = implode('|', SiteConfig::ASSET_TYPES);
         return $s;
     }

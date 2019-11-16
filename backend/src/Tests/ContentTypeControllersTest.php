@@ -30,7 +30,7 @@ final class ContentTypeControllersTest extends DbTestCase {
         self::$migrator->uninstallMany(self::$testContentTypes);
     }
     public function testGETContentTypeReturnsContentType() {
-        $s = $this->setupTest1();
+        $s = $this->setupGETTest();
         $this->setExpectedResponseBody(json_encode(['name' => 'Events',
             'friendlyName' => 'Tapahtumat', 'fields' => [
                 ['name' => 'name', 'friendlyName' => 'name', 'dataType' => 'text', 'widget' => null],
@@ -38,7 +38,7 @@ final class ContentTypeControllersTest extends DbTestCase {
             ], 'origin' => 'site.ini']), $s);
         $this->sendGetContentTypeRequest($s);
     }
-    private function setupTest1() {
+    private function setupGETTest() {
         return (object)[
             'contentTypeName' => 'Events',
             'expectedResponseBody' => null,
@@ -65,7 +65,7 @@ final class ContentTypeControllersTest extends DbTestCase {
 
 
     public function testGETContentTypesReturnsAllContentTypes() {
-        $s = $this->setupTest2();
+        $s = $this->setupGETAllTest();
         $this->setExpectedResponseBody(json_encode([
             ['name' => 'Events', 'friendlyName' => 'Tapahtumat', 'fields' => [
                 ['name' => 'name', 'friendlyName' => 'name', 'dataType' => 'text', 'widget' => null],
@@ -77,7 +77,7 @@ final class ContentTypeControllersTest extends DbTestCase {
         ]), $s);
         $this->sendGetAllContentTypesRequest($s);
     }
-    private function setupTest2() {
+    private function setupGETAllTest() {
         return (object)[
             'expectedResponseBody' => null,
         ];

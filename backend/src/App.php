@@ -53,9 +53,9 @@ class App {
      */
     private function setupIocContainer($container, $request) {
         $container->share($this->ctx->db);
-        $container->share($this->ctx->state);
         $container->share($this->ctx->auth);
         $container->share($this->ctx->translator);
+        $container->share($this->ctx->state);
         $container->share($this->ctx->state->plugins);
         $container->share($this->ctx->state->contentTypes);
         $container->share($request);
@@ -125,7 +125,8 @@ class App {
                                                          new CachingServicesFactory($out->db));
         $out->fs = $userCtx->fs ?? null;
         $out->translator = $userCtx->translator ?? new Translator(function () use ($out) {
-            $mainLangFilePath = RAD_SITE_PATH . 'translations/' . $out->state->lang . '.php';
+            $mainLangFilePath = RAD_SITE_PATH . 'translations/' .
+                $out->state->websiteState->lang . '.php';
             return $this->fs->isFile($mainLangFilePath) ? include $mainLangFilePath : [];
         });
         return $out;

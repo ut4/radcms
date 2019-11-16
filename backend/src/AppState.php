@@ -16,7 +16,7 @@ use RadCms\Common\RadException;
 class AppState {
     public $plugins;
     public $contentTypes;
-    public $lang;
+    public $websiteState;
     public $pluginJsFiles;
     public $pluginFrontendAdminPanelInfos;
     public $contentTypesLastUpdated;
@@ -28,6 +28,7 @@ class AppState {
      */
     public function __construct(Db $db, FileSystemInterface $fs) {
         $this->plugins = new PluginCollection();
+        $this->websiteState = (object)['name' => null, 'lang' => null];
         $this->pluginJsFiles = [];
         $this->pluginFrontendAdminPanelInfos = [];
         $this->db = $db;
@@ -39,10 +40,11 @@ class AppState {
      */
     public function selfLoad(AltoRouter $router) {
         // @allow \RadCms\Common\RadException
-        $state = $this->fetchState();
+        $state = $this->fetchNormalizedState();
         $this->contentTypes = ContentTypeCollection::fromCompactForm($state->compactContentTypes);
         $this->contentTypesLastUpdated = $state->contentTypesLastUpdated;
-        $this->lang = $state->lang;
+        $this->websiteState->name = $state->websiteName;
+        $this->websiteState->lang = $state->lang;
         $pluginAPI = new API($router,
                              function ($f) { $this->pluginJsFiles[] = $f; },
                              function ($p) { $this->pluginFrontendAdminPanelInfos[] = $p; });
@@ -66,17 +68,14 @@ class AppState {
     /**
      * @throws \RadCms\Common\RadException
      */
-    private function fetchState() {
-        $out = (object) [
-            'compactContentTypes' => null,
-            'installedPluginNames' => null,
-            'lang' => null,
-            'contentTypesLastUpdated' => null,
-        ];
+    private function fetchNormalizedState() {
+        $out = (object) ['compactContentTypes' => null, 'installedPluginNames' => null,
+            'lang' => null, 'websiteName' => null, 'contentTypesLastUpdated' => null];
         try {
             if (!($row = $this->db->fetchOne(
-                'select `installedContentTypes`, `installedContentTypesLastUpdated`,' .
-                ' `installedPlugins`, `lang` from ${p}websiteState'
+                'select `name`, `installedContentTypes`' .
+                ', `installedContentTypesLastUpdated`' .
+                ', `installedPlugins`, `lang` from ${p}websiteState'
             ))) {
                 throw new RadException('Failed to fetch websiteState', RadException::INEFFECTUAL_DB_OP);
             }
@@ -95,6 +94,7 @@ class AppState {
             throw new RadException('Failed to parse installedContentTypes',
                                    RadException::BAD_INPUT);
         //
+        $out->websiteName = $row['name'];
         $out->lang = $row['lang'] ?? 'fi_FI';
         $out->contentTypesLastUpdated = $row['installedContentTypesLastUpdated'] ?? 0;
         return $out;

@@ -5,6 +5,7 @@ namespace RadCms\Tests;
 use RadCms\Tests\Self\DbTestCase;
 use RadCms\ContentType\ContentTypeMigrator;
 use RadCms\Tests\Self\HttpTestUtils;
+use RadCms\Tests\Self\ContentTypeDbTestUtils;
 use RadCms\Framework\FileSystem;
 use RadCms\Tests\AppTest;
 use RadCms\Framework\Request;
@@ -15,14 +16,17 @@ use RadCms\AppState;
 
 final class PluginAPIIntegrationTest extends DbTestCase {
     use HttpTestUtils;
+    use ContentTypeDbTestUtils;
     private $testPlugin;
-    public function setupTestPlugin() {
+    public function setupTestPlugin($initialData = null) {
         // Tekee suunnilleen saman kuin PUT /api/plugins/MoviesPlugin/install
         $db = self::getDb();
         $this->testPlugin = new Plugin('MoviesPlugin', MoviesPlugin::class);
         $m = new ContentTypeMigrator($db);
         $m->setOrigin($this->testPlugin);
-        $this->testPlugin->instantiate()->install($m);
+        $moviesPluginImpl = $this->testPlugin->instantiate();
+        if ($initialData) $moviesPluginImpl->setTestInitalData($initialData);
+        $moviesPluginImpl->install($m);
         AppTest::markPluginAsInstalled('MoviesPlugin', $db);
     }
     public function tearDown() {
@@ -42,23 +46,13 @@ final class PluginAPIIntegrationTest extends DbTestCase {
 
 
     public function testPluginCanInstallContentType() {
-        $this->testPlugin = null;
-        $this->assertEquals('todo', '');
+        $initialMovies = [['Movies', (object)['title' => 'Initial movie']]];
+        $s = $this->setupInstallCtypeTest($initialMovies);
+        $this->verifyContentTypeWasInstalledToDb();
+        $this->verifyInitialDataWasInsertedToDb();
     }
-
-
-    ////////////////////////////////////////////////////////////////////////////
-
-
-    public function testPluginCanCRUDRead() {
-        $s = $this->setupTest1();
-        $this->insertTestMovie();
-        $this->setExpectedResponseBody('[{"id":"1","title":"Fus"' .
-                                         ',"contentType":"Movies"}]', $s);
-        $this->sendListMoviesRequest($s);
-    }
-    private function setupTest1() {
-        $this->setupTestPlugin();
+    private function setupInstallCtypeTest($initialMovies = null) {
+        $this->setupTestPlugin($initialMovies);
         $ctx = (object)['fs' => $this->createMock(FileSystem::class)];
         $ctx->fs->method('readDir')->willReturn([RAD_SITE_PATH . 'Plugins/MoviesPlugin']);
         return (object) [
@@ -66,6 +60,27 @@ final class PluginAPIIntegrationTest extends DbTestCase {
             'expectedResponseBody' => null,
             'testMovieId' => null,
         ];
+    }
+    private function verifyContentTypeWasInstalledToDb() {
+        $this->verifyContentTypeIsInstalled('Movies', true, self::getDb());
+    }
+    private function verifyInitialDataWasInsertedToDb() {
+        $this->verifyMovieWasInsertedToDb('Initial movie');
+    }
+
+
+    ////////////////////////////////////////////////////////////////////////////
+
+
+    public function testPluginCanCRUDRead() {
+        $s = $this->setupReadTest();
+        $this->insertTestMovie();
+        $this->setExpectedResponseBody('[{"id":"1","title":"Fus"' .
+                                         ',"contentType":"Movies"}]', $s);
+        $this->sendListMoviesRequest($s);
+    }
+    private function setupReadTest() {
+        return $this->setupInstallCtypeTest();
     }
     private function insertTestMovie($id = '1') {
         if (self::$db->exec('INSERT INTO ${p}Movies VALUES (?,\'Fus\')', [$id]) < 1)
@@ -92,13 +107,13 @@ final class PluginAPIIntegrationTest extends DbTestCase {
 
 
     public function testPluginCanCRUDCreate() {
-        $s = $this->setupTest2();
+        $s = $this->setupCreateTest();
         $this->setExpectedResponseBody('{"my":"response"}', $s);
         $this->sendInsertMovieRequest($s);
-        $this->verifyMovieWasInsertedToDb();
+        $this->verifyMovieWasInsertedToDb('A movie');
     }
-    private function setupTest2() {
-        return $this->setupTest1();
+    private function setupCreateTest() {
+        return $this->setupInstallCtypeTest();
     }
     private function sendInsertMovieRequest($s) {
         $res = $this->createMock(MutedResponse::class);
@@ -109,9 +124,10 @@ final class PluginAPIIntegrationTest extends DbTestCase {
         $req = new Request('/movies', 'POST', (object) ['title' => 'A movie']);
         $this->makeRequest($req, $res, $s->ctx);
     }
-    private function verifyMovieWasInsertedToDb() {
+    private function verifyMovieWasInsertedToDb($title) {
         $this->assertEquals(1, count(self::$db->fetchAll(
-            'SELECT `id` FROM ${p}Movies WHERE `title` = \'A movie\''
+            'SELECT `id` FROM ${p}Movies WHERE `title` = ?',
+            [$title]
         )));
     }
 
@@ -120,14 +136,14 @@ final class PluginAPIIntegrationTest extends DbTestCase {
 
 
     public function testPluginCanCRUDUpdate() {
-        $s = $this->setupTest3();
+        $s = $this->setupUpdateTest();
         $this->setExpectedResponseBody('{"my":"response2"}', $s);
         $newTitle = 'Updated';
         $this->sendUpdateMovieRequest($s, $newTitle);
         $this->verifyMovieWasUpdatedToDb($newTitle);
     }
-    private function setupTest3() {
-        $out = $this->setupTest1();
+    private function setupUpdateTest() {
+        $out = $this->setupInstallCtypeTest();
         $out->testMovieId = '10';
         // @allow \RuntimeException
         $this->insertTestMovie($out->testMovieId);
@@ -155,29 +171,29 @@ final class PluginAPIIntegrationTest extends DbTestCase {
 
 
     public function testPluginCanRegisterJsFilesAndAdminPanels() {
-        $s = $this->setupTest4();
+        $s = $this->setupFileRegTest();
         $res = $this->createMock(MutedResponse::class);
         $req = new Request('/noop', 'GET');
         $app = $this->makeRequest($req, $res, $s->ctx);
         $this->verifyJsFilesWereRegistered($app->getCtx()->state);
     }
-    private function setupTest4() {
-        return $this->setupTest1();
+    private function setupFileRegTest() {
+        return $this->setupReadTest();
     }
-    private function verifyJsFilesWereRegistered(AppState $appState) {
-        $this->assertEquals(2, count($appState->pluginJsFiles));
+    private function verifyJsFilesWereRegistered(AppState $state) {
+        $this->assertEquals(2, count($state->pluginJsFiles));
         $this->assertEquals([(object)[
             'fileName' => 'file1.js',
             'attrs' => []
         ], (object)[
             'fileName' => 'file2.js',
             'attrs' => ['id' => 'file2']
-        ]], $appState->pluginJsFiles);
+        ]], $state->pluginJsFiles);
         //
-        $this->assertEquals(1, count($appState->pluginFrontendAdminPanelInfos));
+        $this->assertEquals(1, count($state->pluginFrontendAdminPanelInfos));
         $this->assertEquals((object)[
             'impl' => 'MoviesAdmin',
             'title' => 'Elokuvat-app',
-        ], $appState->pluginFrontendAdminPanelInfos[0]);
+        ], $state->pluginFrontendAdminPanelInfos[0]);
     }
 }

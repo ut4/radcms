@@ -1,7 +1,13 @@
+<?php
+// Lokaalit tässä tiedostossa: {
+//     $url: string,
+//     $site: {$name: string, $lang: string},
+// }.
+// Lue lisää: https://todo/sivutemplaattien-käyttö. ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Hello</title>
+    <title>Hello - <?= $site->name ?></title>
     <meta name="generator" content="RadCMS 0.0.0">
 </head>
 <body>
