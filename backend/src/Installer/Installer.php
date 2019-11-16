@@ -68,6 +68,7 @@ class Installer {
                                        RadException::FAILED_FS_OP);
             $sql = str_replace('${database}', $s->dbDatabase, $sql);
             $sql = str_replace('${siteName}', $s->siteName, $sql);
+            $sql = str_replace('${siteLang}','fi_FI', $sql);
             $this->db->exec($sql);
             $this->db->attr(\PDO::ATTR_EMULATE_PREPARES, 0);
         } catch (\PDOException $e) {

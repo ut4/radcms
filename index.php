@@ -12,8 +12,9 @@ $logger->pushHandler(!(RAD_FLAGS & RAD_DEVMODE)
 \RadCms\Common\LoggerAccess::setLogger($logger);
 
 ////////////////////////////////////////////////////////////////////////////////
-set_error_handler(function ($errno, $errstr, $errfile, $errline) {
-    throw new \ErrorException($errstr, 0, $errno, $errfile, $errline);
+set_error_handler(function ($_errno, $errstr, $errfile, $errline) {
+    throw new \RadCms\Common\RadException(sprintf('%s in %s on line %d', $errstr, $errfile, $errline),
+                                          \RadCms\Common\RadException::ERROR_EXCEPTION);
 });
 if (!(RAD_FLAGS & RAD_DEVMODE)) {
     error_reporting(E_RECOVERABLE_ERROR);

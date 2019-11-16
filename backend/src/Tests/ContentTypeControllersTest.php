@@ -16,8 +16,10 @@ final class ContentTypeControllersTest extends DbTestCase {
     public static function setUpBeforeClass() {
         self::$testContentTypes = new ContentTypeCollection();
         self::$testContentTypes->add('Events', 'Tapahtumat',
-                                     ['name' => 'text', 'pic' => 'text:image']);
-        self::$testContentTypes->add('Locations', 'Paikat', ['name' => 'text']);
+                                     ['name' => ['text'],
+                                      'pic' => ['text', 'Kuva', 'image']]);
+        self::$testContentTypes->add('Locations', 'Paikat',
+                                     ['name' => ['text', 'Tapahtumapaikka']]);
         self::$migrator = new ContentTypeMigrator(self::getDb());
         // @allow \RadCms\Common\RadException
         self::$migrator->installMany(self::$testContentTypes);
@@ -31,8 +33,8 @@ final class ContentTypeControllersTest extends DbTestCase {
         $s = $this->setupTest1();
         $this->setExpectedResponseBody(json_encode(['name' => 'Events',
             'friendlyName' => 'Tapahtumat', 'fields' => [
-                ['name' => 'name', 'dataType' => 'text', 'widget' => null],
-                ['name' => 'pic', 'dataType' => 'text', 'widget' => 'image'],
+                ['name' => 'name', 'friendlyName' => 'name', 'dataType' => 'text', 'widget' => null],
+                ['name' => 'pic', 'friendlyName' => 'Kuva', 'dataType' => 'text', 'widget' => 'image'],
             ], 'origin' => 'site.ini']), $s);
         $this->sendGetContentTypeRequest($s);
     }
@@ -66,11 +68,11 @@ final class ContentTypeControllersTest extends DbTestCase {
         $s = $this->setupTest2();
         $this->setExpectedResponseBody(json_encode([
             ['name' => 'Events', 'friendlyName' => 'Tapahtumat', 'fields' => [
-                ['name' => 'name', 'dataType' => 'text', 'widget' => null],
-                ['name' => 'pic', 'dataType' => 'text', 'widget' => 'image'],
+                ['name' => 'name', 'friendlyName' => 'name', 'dataType' => 'text', 'widget' => null],
+                ['name' => 'pic', 'friendlyName' => 'Kuva', 'dataType' => 'text', 'widget' => 'image'],
             ], 'origin' => 'site.ini'],
             ['name' => 'Locations', 'friendlyName' => 'Paikat', 'fields' => [
-                ['name' => 'name', 'dataType' => 'text', 'widget' => null],
+                ['name' => 'name', 'friendlyName' => 'Tapahtumapaikka', 'dataType' => 'text', 'widget' => null],
             ], 'origin' => 'site.ini']
         ]), $s);
         $this->sendGetAllContentTypesRequest($s);

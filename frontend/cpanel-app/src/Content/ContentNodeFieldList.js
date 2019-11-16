@@ -25,7 +25,7 @@ class ContentNodeFieldList extends preact.Component {
     render() {
         return $el('div', null, this.state.ctype.fields.map(field =>
             $el('label', null,
-                $el('span', null, field.name),
+                $el('span', null, field.friendlyName),
                 this.makeInput(field)
             )
         ));
@@ -35,10 +35,10 @@ class ContentNodeFieldList extends preact.Component {
      */
     makeInput(field) {
         let tagName = 'input';
-        const props = {name: field.name,
+        const props = {name: field.friendlyName,
                        type: 'text',
                        value: this.state.cnode[field.name],
-                       onChange: e => this.setCnodeValue(e)};
+                       onInput: e => this.setCnodeValue(e)};
         if (field.widget == 'image') {
             props.type = 'file';
         } else if (field.widget == 'wysiwyg') {
@@ -52,6 +52,7 @@ class ContentNodeFieldList extends preact.Component {
      */
     setCnodeValue(e) {
         this.state.cnode[e.target.name] = e.target.value;
+        this.setState({cnode: this.state.cnode});
     }
 }
 

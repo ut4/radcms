@@ -52,7 +52,7 @@ class MagicTemplate extends Template {
                                        RadException::BAD_INPUT);
             }
             return $this->doRender($directiveFilePath,
-                                   ['props' => $args ? $args[0] : new \stdClass()]);
+                $this->__locals + ['props' => $args ? $args[0] : new \stdClass()]);
         } catch (RadException $e) {
             if (!(RAD_FLAGS & RAD_DEVMODE)) {
                 LoggerAccess::getLogger()->error($e->getTraceAsString());

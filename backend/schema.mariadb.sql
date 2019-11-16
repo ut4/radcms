@@ -15,6 +15,7 @@ CREATE TABLE ${p}users (
 CREATE TABLE ${p}websiteState (
     `id` SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `name` VARCHAR(127) NOT NULL,
+    `lang` VARCHAR(12) NOT NULL,
     `installedContentTypes` JSON, -- {"Name": ["friendlyName", {"key": "datatype" ...}], "Another": [...]}
     `installedContentTypesLastUpdated` VARCHAR(11) DEFAULT NULL,
     `installedPlugins` JSON,      -- {"Name": 1, "Another": 1 ...}
@@ -30,4 +31,4 @@ CREATE TABLE ${p}contentRevisions (
 ) DEFAULT CHARSET = utf8mb4;
 
 INSERT INTO ${p}websiteState VALUES
-(1, '${siteName}', '{}', NULL, '{}');
+(1, '${siteName}', '${siteLang}', '{}', NULL, '{}');

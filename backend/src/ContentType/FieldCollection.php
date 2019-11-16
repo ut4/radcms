@@ -3,17 +3,12 @@
 namespace RadCms\ContentType;
 
 use RadCms\Framework\GenericArray;
+use RadCms\Framework\Translator;
 
 /**
  * ContentTypeDef->fields.
  */
 class FieldCollection extends GenericArray implements \JsonSerializable {
-    /**
-     * ...
-     */
-    protected function __construct() {
-        parent::__construct(\stdClass::class);
-    }
     /**
      * @param \Closure $formatterFn = null ($field: object): string
      * @return string '`name`, `name2`'
@@ -35,13 +30,16 @@ class FieldCollection extends GenericArray implements \JsonSerializable {
         }, $this->vals));
     }
     /**
+     * @param \RadCms\Framework\Translator $translator = null
      * @return array see self::fromCompactForm()
      */
-    public function toCompactForm() {
-        return array_reduce($this->vals, function ($out, $f) {
-            $out[$f->name] = $f->dataType . (!$f->widget ? '' : ':' . $f->widget);
-            return $out;
-        }, []);
+    public function toCompactForm(Translator $translator = null) {
+        $out = [];
+        foreach ($this->toArray() as $f)
+            $out[$f->name] = [$f->dataType,
+                              !$translator ? $f->friendlyName : $translator->t($f->name),
+                              $f->widget];
+        return $out;
     }
     /**
      * @return string
@@ -53,15 +51,17 @@ class FieldCollection extends GenericArray implements \JsonSerializable {
     ////////////////////////////////////////////////////////////////////////////
 
     /**
-     * @param array $compactFields ['name' => 'dataType', 'another' => 'dataType:widgetName' ...]
+     * @param array $compactFields ['name' => ['dataType'], 'another' => ['dataType', 'FriendlyName', 'widgetName'] ...]
+     * @return \RadCms\ContentType\FieldCollection
      */
     public static function fromCompactForm($compactFields) {
-        $out = new FieldCollection();
-        foreach ($compactFields as $name => $typeInfo) {
-            $pcs = explode(':', $typeInfo);
+        $out = new FieldCollection(\stdClass::class);
+        foreach ($compactFields as $name => $def) {
+            $remainingArgs = !is_string($def) ? $def : explode(':', $def);
             $out->add((object)['name' => $name,
-                               'dataType' => $pcs[0],
-                               'widget' => $pcs[1] ?? null]);
+                               'friendlyName' => $remainingArgs[1] ?? $name,
+                               'dataType' => $remainingArgs[0],
+                               'widget' => $remainingArgs[2] ?? null]);
         }
         return $out;
     }

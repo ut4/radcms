@@ -19,6 +19,7 @@ use RadCms\Auth\Crypto;
 use RadCms\Auth\CachingServicesFactory;
 use RadCms\Common\RadException;
 use RadCms\Framework\Response;
+use RadCms\Framework\Translator;
 
 class App {
     protected $ctx;
@@ -32,15 +33,16 @@ class App {
         $request->user = $this->ctx->auth->getIdentity();
         if (($match = $this->ctx->router->match($request->path, $request->method))) {
             $request->params = (object)$match['params'];
-            $injector = $injector ?? new Injector();
-            $this->setupIocContainer($injector, $request);
             // @allow \RadCms\Common\RadException
             [$ctrlClassPath, $ctrlMethodName, $requireAuth] =
                 $this->validateRouteMatch($match);
-            if ($requireAuth && !$request->user)
+            if ($requireAuth && !$request->user) {
                 (new Response(403))->json(['err' => 'Login required']);
-            else
+            } else {
+                $injector = $injector ?? new Injector();
+                $this->setupIocContainer($injector, $request);
                 $injector->execute($ctrlClassPath . '::' . $ctrlMethodName);
+            }
         } else {
             throw new RadException("No route for {$request->path}");
         }
@@ -53,6 +55,7 @@ class App {
         $container->share($this->ctx->db);
         $container->share($this->ctx->state);
         $container->share($this->ctx->auth);
+        $container->share($this->ctx->translator);
         $container->share($this->ctx->state->plugins);
         $container->share($this->ctx->state->contentTypes);
         $container->share($request);
@@ -105,25 +108,26 @@ class App {
      * @return object
      */
     private static function makeCtx(&$configOrCtx) {
+        $userCtx = new \stdClass;
+        $out = (object) ['router' => null, 'auth' => null, 'db' => null,
+                         'state' => null, 'translator' => null];
         if (!($configOrCtx instanceof \stdClass)) {
-            $out = (object) ['router' => new AltoRouter(),
-                             'auth' => null,
-                             'db' => new Db($configOrCtx),
-                             'state' => null,];
+            $out->db = new Db($configOrCtx);
             $configOrCtx = ['wiped' => 'clean'];
-            $out->auth = new Authenticator(new Crypto, new CachingServicesFactory($out->db));
-            return $out;
+        } else {
+            if (!isset($configOrCtx->db))
+                throw new \InvalidArgumentException('Can\'t make db without config');
+            $out->db = $configOrCtx->db;
+            $userCtx = $configOrCtx;
         }
-        if (!isset($configOrCtx->db))
-            throw new \InvalidArgumentException('Can\'t make db without config');
-        $out = (object) ['router' => $configOrCtx->router ?? new AltoRouter(),
-                         'auth' => null,
-                         'db' => $configOrCtx->db,
-                         'state' => null,
-                         'fs' => null];
-        $out->auth = $configOrCtx->auth ??
-            new Authenticator(new Crypto, new CachingServicesFactory($out->db));
-        $out->fs = $configOrCtx->fs ?? null;
+        $out->router = $userCtx->router ?? new AltoRouter();
+        $out->auth = $userCtx->auth ?? new Authenticator(new Crypto,
+                                                         new CachingServicesFactory($out->db));
+        $out->fs = $userCtx->fs ?? null;
+        $out->translator = $userCtx->translator ?? new Translator(function () use ($out) {
+            $mainLangFilePath = RAD_SITE_PATH . 'translations/' . $out->state->lang . '.php';
+            return $this->fs->isFile($mainLangFilePath) ? include $mainLangFilePath : [];
+        });
         return $out;
     }
 }

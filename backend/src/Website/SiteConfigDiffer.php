@@ -38,6 +38,7 @@ class SiteConfigDiffer {
             $current = $fromDb->find($f->name) ?? null;
             if (!$current)
                 $out->added[] = (object)['name' => $f->name,
+                                         'friendlyName' => $f->friendlyName,
                                          'dataType' => $f->dataType,
                                          'widget' => $f->widget];
             elseif ($f->dataType != $current->dataType)

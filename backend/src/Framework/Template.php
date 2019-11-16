@@ -3,6 +3,7 @@
 namespace RadCms\Framework;
 
 class Template {
+    protected $__locals;
     private $__vars;
     private $__file;
     /**
@@ -10,7 +11,7 @@ class Template {
      * @param array $vars = null
      */
     public function __construct($file, array $vars = null) {
-        $this->__vars = $vars;
+        $this->__vars = $vars ?? [];
         $this->__file = $file;
     }
     /**
@@ -18,6 +19,7 @@ class Template {
      * @return string
      */
     public function render(array $locals = []) {
+        $this->__locals = $locals;
         return $this->doRender($this->__file, $locals);
     }
     /**

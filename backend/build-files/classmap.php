@@ -8,6 +8,7 @@ return function ($backendSrcPath, $buildAssetsPath, $backendPath) { return [
     $backendSrcPath . 'Framework/Request.php',
     $backendSrcPath . 'Framework/Response.php',
     $backendSrcPath . 'Framework/Template.php',
+    $backendSrcPath . 'Framework/Translator.php',
     $backendSrcPath . 'Framework/Validator.php',
     $backendSrcPath . 'Common/LoggerAccess.php',
     $backendSrcPath . 'Common/ErrorLogLogger.php',

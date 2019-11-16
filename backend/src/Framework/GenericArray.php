@@ -48,7 +48,7 @@ class GenericArray {
      * @return mixed
      */
     public function filter($val, $key = 'name') {
-        $out = new static();
+        $out = new static($this->T);
         foreach ($this->vals as $t) {
             if ($t->$key === $val) $out->add($t);
         }
