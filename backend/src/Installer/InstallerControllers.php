@@ -10,22 +10,29 @@ use RadCms\Framework\Validator;
 use RadCms\Framework\Template;
 use RadCms\Common\RadException;
 use RadCms\Common\LoggerAccess;
+use RadCms\Packager\ZipPackageStream;
 
 class InstallerControllers {
     private $indexFilePath;
     private $fs;
     private $makeDb;
+    private $makeStream;
     /**
      * @param string $indexFilePath ks. InstallerApp::__construct
      * @param \RadCms\Framework\FileSystemInterface $fs = null
      * @param callable $makeDb = null
+     * @param \Closure $makePackageStream = null
      */
     public function __construct($indexFilePath,
                                 FileSystemInterface $fs = null,
-                                $makeDb = null) {
+                                $makeDb = null,
+                                $makePackageStream = null) {
         $this->indexFilePath = $indexFilePath;
         $this->fs = $fs ?? new FileSystem();
         $this->makeDb = $makeDb;
+        $this->makeStream = $makePackageStream ?? function () {
+            return new ZipPackageStream($this->fs);
+        };
     }
     /**
      * GET /.
@@ -56,6 +63,25 @@ class InstallerControllers {
         }
     }
     /**
+     * POST /from-package.
+     */
+    public function handleInstallFromPackageRequest(Request $req, Response $res) {
+        if (!$req->files->packageFile) {
+            $res->status(400)->json(['packageFile is required']);
+            return;
+        }
+        try {
+            (new Installer($this->indexFilePath, $this->fs, $this->makeDb))
+                ->doInstallFromPackage($this->makeStream->__invoke(),
+                                       $req->files->packageFile['tmp_name']);
+            $res->json(json_encode(['ok' => 'ok']));
+        } catch (RadException $e) {
+            LoggerAccess::getLogger()->log('error', $e->getTraceAsString());
+            $res->status($e->getCode() != RadException::BAD_INPUT ? 500 : 400)
+                ->json(json_encode(['error' => $e->getCode()]));
+        }
+    }
+    /**
      * Validoi POST / input-datan, ja palauttaa virheet taulukkona.
      *
      * @return array ['jokinVirhe'] tai []
@@ -65,6 +91,7 @@ class InstallerControllers {
         //
         if ($v->check('siteName', 'string'))
             if (!strlen($input->siteName)) $input->siteName = 'My Site';
+        $v->check('siteLang', ['in', ['en_US', 'fi_FI']]);
         if ($v->check('baseUrl', 'nonEmptyString'))
             $input->baseUrl = rtrim($input->baseUrl, '/') . '/';
         $v->check('radPath', 'nonEmptyString', [

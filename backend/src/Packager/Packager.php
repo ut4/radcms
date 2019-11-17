@@ -10,7 +10,8 @@ use RadCms\Framework\Db;
 use RadCms\Auth\Crypto;
 
 class Packager {
-    public const MAIN_SCHEMA_VIRTUAL_FILE_NAME = 'create-main-schema-tables.sql';
+    public const DB_CONFIG_VIRTUAL_FILE_NAME = 'db-config.json';
+    public const WEBSITE_STATE_VIRTUAL_FILE_NAME = 'website-state.json';
     /** @var \RadCms\Packager\PackageStreamInterface */
     private $writer;
     /** @var \RadCms\Auth\Crypto */
@@ -52,8 +53,11 @@ class Packager {
         $this->writer->open('');
         //
         foreach ([
-            [self::MAIN_SCHEMA_VIRTUAL_FILE_NAME, function () {
-                return $this->generateMainSchemaSql();
+            [self::DB_CONFIG_VIRTUAL_FILE_NAME, function () {
+                return $this->generateDbConfigJson();
+            }],
+            [self::WEBSITE_STATE_VIRTUAL_FILE_NAME, function () {
+                return $this->generateWebsiteStateJson();
             }],
         ] as [$virtualFilePath, $provideContents]) {
             $this->writer->write($virtualFilePath,
@@ -63,14 +67,29 @@ class Packager {
     }
     /**
      * @return string
-     * @throws \RadCms\Common\RadException
      */
-    private function generateMainSchemaSql() {
-        if (($contents = $this->fs->read(RAD_BASE_PATH . 'main-schema.mariadb.sql'))) {
-            $contents = str_replace('${database}', $this->config['db.database'], $contents);
-            return $contents;
-        }
-        throw new RadException('Failed to read ' . RAD_BASE_PATH .
-                               ' schema.mariadb.sql', RadException::FAILED_FS_OP);
+    private function generateDbConfigJson() {
+        return json_encode([
+            'dbHost' => $this->config['db.host'],
+            'dbDatabase' => $this->config['db.database'],
+            'dbUser' => $this->config['db.user'],
+            'dbPass' => $this->config['db.pass'],
+            'dbTablePrefix' => $this->config['db.tablePrefix'],
+            'dbCharset' => $this->config['db.charset'],
+        ]);
+    }
+    /**
+     * @return string
+     */
+    private function generateWebsiteStateJson() {
+        return json_encode([
+            'siteName' => $this->appState->websiteState->name,
+            'siteLang' => $this->appState->websiteState->lang,
+            'baseUrl' => RAD_BASE_URL,
+            'radPath' => RAD_BASE_PATH,
+            'sitePath' => RAD_SITE_PATH,
+            'mainQueryVar' => RAD_QUERY_VAR,
+            'useDevMode' => boolval(RAD_FLAGS & RAD_DEVMODE),
+        ]);
     }
 }

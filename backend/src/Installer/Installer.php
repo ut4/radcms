@@ -7,6 +7,8 @@ use RadCms\Framework\FileSystemInterface;
 use RadCms\ContentType\ContentTypeMigrator;
 use RadCms\Website\SiteConfig;
 use RadCms\Common\RadException;
+use RadCms\Packager\Packager;
+use RadCms\Packager\PackageStreamInterface;
 
 class Installer {
     private $indexFilePath;
@@ -27,22 +29,49 @@ class Installer {
         $this->makeDb = $makeDb ?? function ($c) { return new Db($c); };
     }
     /**
-     * @param object $settings
-     * @return string 'ok' | 'Some error message'
+     * @param object $settings Validoitu ja normalisoitu $req->body.
+     * @return bool
+     * @throws \RadCms\Common\RadException
      */
     public function doInstall($settings) {
         // @allow \RadCms\Common\RadException
-        return $this->openDbAndCreateSchema($settings) &&
+        return $this->createDb($settings) &&
+               $this->createMainSchema($settings) &&
+               $this->insertMainSchemaData($settings) &&
                $this->createSampleContentTypesAndInsertSampleContent($settings) &&
                $this->cloneTemplatesAndCfgFile($settings) &&
                $this->generateConfigFile($settings);
+    }
+    /**
+     * @param \RadCms\Packager\PackageStreamInterface $package
+     * @param string $packageFilePath '/path/to/tmp/uploaded-package-file.zip'
+     * @return bool
+     * @throws \RadCms\Common\RadException
+     */
+    public function doInstallFromPackage(PackageStreamInterface $package,
+                                         $packageFilePath) {
+        // @allow \RadCms\Common\RadException
+        $package->open($packageFilePath);
+        if (!($json1 = $package->read(Packager::DB_CONFIG_VIRTUAL_FILE_NAME)) ||
+            ($dbSettings = json_decode($json1, true)) === null)
+                throw new RadException('Failed to parse data',
+                                       RadException::BAD_INPUT);
+        if (!($json2 = $package->read(Packager::WEBSITE_STATE_VIRTUAL_FILE_NAME)) ||
+            ($siteSettings = json_decode($json2, true)) === null)
+                throw new RadException('Failed to parse data',
+                                       RadException::BAD_INPUT);
+        //
+        $settings = (object)array_merge($dbSettings, $siteSettings);
+        return $this->createDb($settings) &&
+               $this->createMainSchema($settings) &&
+               $this->insertMainSchemaData($settings);
     }
     /**
      * @param object $s settings
      * @return bool
      * @throws \RadCms\Common\RadException
      */
-    private function openDbAndCreateSchema($s) {
+    private function createDb($s) {
         try {
             $this->db = call_user_func($this->makeDb, [
                 'db.host'        => $s->dbHost,
@@ -61,16 +90,43 @@ class Installer {
         } catch (\PDOException $e) {
             throw new RadException($e->getMessage(), RadException::FAILED_DB_OP);
         }
+        return true;
+    }
+    /**
+     * @param object $s settings
+     * @return bool
+     * @throws \RadCms\Common\RadException
+     */
+    private function createMainSchema($s) {
         try {
             $sql = $this->fs->read("{$s->radPath}schema.mariadb.sql");
             if (!$sql)
                 throw new RadException("Failed to read {$s->radPath}schema.mariadb.sql}",
                                        RadException::FAILED_FS_OP);
-            $sql = str_replace('${database}', $s->dbDatabase, $sql);
-            $sql = str_replace('${siteName}', $s->siteName, $sql);
-            $sql = str_replace('${siteLang}','fi_FI', $sql);
-            $this->db->exec($sql);
+            $this->db->exec(str_replace('${database}', $s->dbDatabase, $sql));
             $this->db->attr(\PDO::ATTR_EMULATE_PREPARES, 0);
+        } catch (\PDOException $e) {
+            throw new RadException($e->getMessage(), RadException::FAILED_DB_OP);
+        }
+        return true;
+    }
+    /**
+     * @param object $s settings
+     * @return bool
+     * @throws \RadCms\Common\RadException
+     */
+    private function insertMainSchemaData($s) {
+        try {
+            if ($this->db->exec('INSERT INTO ${p}websiteState VALUES (1,?,?,?,?,?)',
+                                [
+                                    $s->siteName,
+                                    $s->siteLang,
+                                    $s->installedContentTypes ?? '{}',
+                                    $s->installedContentTypesLastUpdated ?? null,
+                                    $s->installedPlugins ?? '{}',
+                                ]) < 1)
+                throw new RadException('Failed to insert main schema data',
+                                       RadException::INEFFECTUAL_DB_OP);
         } catch (\PDOException $e) {
             throw new RadException($e->getMessage(), RadException::FAILED_DB_OP);
         }

@@ -9,8 +9,8 @@ class PlainTextPackageStream implements PackageStreamInterface {
     public function __construct(array $virtualFiles = []) {
         $this->virtualFiles = $virtualFiles;
     }
-    public function open($contents, $create = false) {
-        $this->virtualFiles = json_decode($contents);
+    public function open($filePath, $create = false) {
+        // ...
     }
     public function write($virtualFilePath, $contents) {
         $this->virtualFiles[$virtualFilePath] = $contents;

@@ -5,6 +5,7 @@ namespace RadCms\Installer;
 use AltoRouter;
 use RadCms\Framework\Request;
 use RadCms\Framework\Response;
+use RadCms\Packager\ZipPackageStream;
 
 class InstallerApp {
     private $router;
@@ -47,6 +48,10 @@ class InstallerApp {
         $this->router->map('POST', '/', function () use ($indexFilePath) {
             $ctrl = $this->makeCtrl->__invoke($indexFilePath);
             return [$ctrl, 'handleInstallRequest'];
+        });
+        $this->router->map('POST', '/from-package', function () use ($indexFilePath) {
+            $ctrl = $this->makeCtrl->__invoke($indexFilePath);
+            return [$ctrl, 'handleInstallFromPackageRequest'];
         });
     }
 

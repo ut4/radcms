@@ -9,14 +9,11 @@ use RadCms\Framework\Request;
 use RadCms\Packager\ZipPackageStream;
 use RadCms\Packager\Packager;
 
-final class PackageControllersTest extends DbTestCase {
+final class PackagerControllersTest extends DbTestCase {
     use HttpTestUtils;
     public function testPOSTPackagerPacksWebsiteAndReturnsItAsAttachment() {
         $s = $this->setupCreatePackageTest();
-        $this->setExpectedHttpAttachmentBody((new PlainTextPackageStream([
-            Packager::MAIN_SCHEMA_VIRTUAL_FILE_NAME =>
-                $this->getExpectedMainSchemaSqlContents(),
-        ]))->getResult(), $s);
+        $this->setExpectedHttpAttachmentBody(self::makeExpectedPackage()->getResult(), $s);
         $this->sendCreatePackageRequest($s);
     }
     private function setupCreatePackageTest() {
@@ -38,10 +35,36 @@ final class PackageControllersTest extends DbTestCase {
             });
         });
     }
-    private function getExpectedMainSchemaSqlContents() {
-        $out = file_get_contents(RAD_BASE_PATH . 'main-schema.mariadb.sql');
-        $config = include __DIR__ . '/test-site/config.php';
-        $out = str_replace('${database}', $config['db.database'], $out);
-        return $out;
+    public static function makeExpectedPackage($vals = null) {
+        if (!$vals) {
+            $c = include __DIR__ . '/test-site/config.php';
+            $row = self::getDb()->fetchOne('SELECT * FROM ${p}websiteState');
+            $vals = (object)[
+                'siteName' => $row['name'],
+                'siteLang' => $row['lang'],
+                'dbHost' => $c['db.host'],
+                'dbDatabase' => $c['db.database'],
+                'dbUser' => $c['db.user'],
+                'dbPass' => $c['db.pass'],
+                'dbTablePrefix' => $c['db.tablePrefix'],
+                'dbCharset' => $c['db.charset'],
+            ];
+        }
+        return new PlainTextPackageStream([
+            Packager::DB_CONFIG_VIRTUAL_FILE_NAME => json_encode([
+                'dbHost' => $vals->dbHost, 'dbDatabase' => $vals->dbDatabase,
+                'dbUser' => $vals->dbUser, 'dbPass' => $vals->dbPass,
+                'dbTablePrefix' => $vals->dbTablePrefix, 'dbCharset' => $vals->dbCharset,
+            ]),
+            Packager::WEBSITE_STATE_VIRTUAL_FILE_NAME => json_encode([
+                'siteName' => $vals->siteName,
+                'siteLang' => $vals->siteLang,
+                'baseUrl' => RAD_BASE_URL,
+                'radPath' => RAD_BASE_PATH,
+                'sitePath' => RAD_SITE_PATH,
+                'mainQueryVar' => RAD_QUERY_VAR,
+                'useDevMode' => boolval(RAD_FLAGS & RAD_DEVMODE),
+            ]),
+        ]);
     }
 }

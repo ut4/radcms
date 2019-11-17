@@ -5,21 +5,33 @@ namespace RadCms\Framework;
 use RadCms\Common\RadException;
 
 class Request {
+    /** @var string */
     public $path;
+    /** @var string */
     public $method;
+    /** @var object */
     public $body;
+    /** @var object */
+    public $files;
+    /** @var object */
     public $params;
+    /** @var mixed */
     public $user;
     /**
      * @param string $path
      * @param string $method = 'GET'
-     * @param string $body = new \stdClass()
+     * @param object $body = new \stdClass()
+     * @param object $files = new \stdClass()
      */
-    public function __construct($path, $method = 'GET', $body = null) {
+    public function __construct($path,
+                                $method = 'GET',
+                                $body = null,
+                                $files = null) {
         $this->path = $path;
         $this->method = $method;
         $this->body = $body ?? new \stdClass();
-        $this->params = (object)[];
+        $this->files = $files ?? new \stdClass();
+        $this->params = new \stdClass();
     }
 
     ////////////////////////////////////////////////////////////////////////////
@@ -32,12 +44,13 @@ class Request {
      */
     public static function createFromGlobals($BASE_URL, $urlPath = null) {
         $method = $_SERVER['REQUEST_METHOD'];
-        if ($method !== 'POST' && $method !== 'PUT') {
-            $body = new \stdClass();
-        } else {
-            if ($_SERVER['CONTENT_TYPE'] !== 'application/json')
-                $body = (object) $_POST;
-            else {
+        $body = null;
+        $files = null;
+        if ($method === 'POST' || $method === 'PUT') {
+            if ($_SERVER['CONTENT_TYPE'] !== 'application/json') {
+                $body = (object)$_POST;
+                $files = (object)$_FILES;
+            } else {
                 if (!($json = file_get_contents('php://input')))
                     $body = new \stdClass();
                 elseif (($body = json_decode($json)) === null)
@@ -47,7 +60,8 @@ class Request {
         return new Request(
             $urlPath ?? substr($_SERVER['REQUEST_URI'], strlen($BASE_URL) - 1),
             $method,
-            $body
+            $body,
+            $files
         );
     }
 }

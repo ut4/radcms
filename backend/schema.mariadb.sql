@@ -29,6 +29,3 @@ CREATE TABLE ${p}contentRevisions (
     `createdAt` VARCHAR(11),
     PRIMARY KEY (`contentId`, `contentType`)
 ) DEFAULT CHARSET = utf8mb4;
-
-INSERT INTO ${p}websiteState VALUES
-(1, '${siteName}', '${siteLang}', '{}', NULL, '{}');

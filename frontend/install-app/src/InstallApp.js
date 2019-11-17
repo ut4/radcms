@@ -14,6 +14,7 @@ class InstallApp extends preact.Component {
         const indedDirParent = pcs.slice(0, pcs.length - 2).join('/') + '/';
         this.state = !l ? {
             siteName: 'My site',
+            siteLang: 'fi_FI',
             baseUrl: '/',
             radPath: indedDirParent + 'backend/',
             sitePath: indedDirParent + 'my-site/',

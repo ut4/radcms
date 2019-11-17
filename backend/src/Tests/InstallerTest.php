@@ -13,14 +13,17 @@ use RadCms\Tests\Self\ContentTypeDbTestUtils;
 final class InstallerTest extends DbTestCase {
     use HttpTestUtils;
     use ContentTypeDbTestUtils;
-    const TEST_DB_NAME = 'db1';
+    const TEST_DB_NAME1 = 'db1';
+    const TEST_DB_NAME2 = 'db2';
     public static function tearDownAfterClass($_ = null) {
-        parent::tearDownAfterClass('DROP DATABASE IF EXISTS ' . self::TEST_DB_NAME);
+        parent::tearDownAfterClass('DROP DATABASE IF EXISTS ' . self::TEST_DB_NAME1.
+                                   ';DROP DATABASE IF EXISTS ' . self::TEST_DB_NAME2);
     }
     public function testInstallerValidatesMissingValues() {
         $input = (object)['sampleContent' => 'test-content'];
         $res = $this->createMockResponse(json_encode([
             'siteName must be a string',
+            'siteLang must be one of ["en_US","fi_FI"]',
             'baseUrl must be a non-empty string',
             'radPath must be a non-empty string',
             'sitePath must be a non-empty string',
@@ -39,6 +42,7 @@ final class InstallerTest extends DbTestCase {
     public function testInstallerValidatesInvalidValues() {
         $input = (object)[
             'siteName' => [],
+            'siteLang' => [],
             'baseUrl' => [],
             'radPath' => 'notValid',
             'sitePath' => [],
@@ -54,6 +58,7 @@ final class InstallerTest extends DbTestCase {
         ];
         $res = $this->createMockResponse(json_encode([
             'siteName must be a string',
+            'siteLang must be one of ["en_US","fi_FI"]',
             'baseUrl must be a non-empty string',
             'radPath is not valid sourcedir',
             'sitePath must be a non-empty string',
@@ -72,6 +77,7 @@ final class InstallerTest extends DbTestCase {
     public function testInstallerFillsDefaultValues() {
         $input = (object)[
             'siteName' => '',
+            'siteLang' => 'fi_FI',
             'baseUrl' => 'foo',
             'radPath' => dirname(dirname(__DIR__)),
             'sitePath' => 'c:/my-site',
@@ -99,20 +105,16 @@ final class InstallerTest extends DbTestCase {
     }
     public function testInstallerCreatesDbSchemaAndInsertsSampleContent() {
         $s = $this->setupInstallerTest1();
+        $s->mockFs = $this->createMock(FileSystem::class);
         $this->addFsExpectation('checksRadPathIsValid', $s);
         $this->addFsExpectation('readsDataFiles', $s);
         $this->addFsExpectation('readsSampleContentTemplateFilesDir', $s);
         $this->addFsExpectation('createsSiteTemplatesDir', $s);
         $this->addFsExpectation('clonesTemplateFilesAndSiteCfgFile', $s);
         $this->addFsExpectation('generatesConfigFile', $s);
-        //
-        $res = $this->createMockResponse('{"ok":"ok"}', 200);
-        $app = InstallerApp::create($s->indexFilePath, function ($indexFilePath) use ($s) {
-            return new InstallerControllers($indexFilePath, $s->mockFs, [get_class(), 'getDb']);
-        });
-        $app->handleRequest(new Request('/', 'POST', $s->input), $res);
-        //
-        $this->verifyCreatedNewDatabase($s);
+        $this->sendInstallRequest($s);
+        $this->verifyCreatedNewDatabaseAndMainSchema($s);
+        $this->verifyInsertedMainSchemaData($s);
         $this->verifyContentTypeIsInstalled('Movies', true, self::$db);
         $this->verifyInsertedSampleContent($s);
     }
@@ -121,6 +123,7 @@ final class InstallerTest extends DbTestCase {
         return (object) [
             'input' => (object) [
                 'siteName' => '',
+                'siteLang' => 'en_US',
                 'baseUrl' => 'foo',
                 'radPath' => RAD_BASE_PATH,
                 'sitePath' => 'c:/my-site/',
@@ -130,13 +133,13 @@ final class InstallerTest extends DbTestCase {
                 'dbHost' => $config['db.host'],
                 'dbUser' => $config['db.user'],
                 'dbPass' => $config['db.pass'],
-                'dbDatabase' => self::TEST_DB_NAME,
+                'dbDatabase' => self::TEST_DB_NAME1,
                 'dbTablePrefix' => 'p_',
                 'dbCharset' => 'utf8',
             ],
             'indexFilePath' => 'c:/foo',
             'sampleContentBasePath' => RAD_BASE_PATH . 'sample-content/test-content/',
-            'mockFs' => $this->createMock(FileSystem::class),
+            'mockFs' => null
         ];
     }
     private function addFsExpectation($expectation, $s) {
@@ -155,10 +158,7 @@ final class InstallerTest extends DbTestCase {
                     [$s->sampleContentBasePath . 'site.ini']
                 )
                 ->willReturnOnConsecutiveCalls(
-                    'USE ${database};' .
-                    ' CREATE TABLE ${p}websiteState (`installedContentTypes` TEXT' .
-                                                     ', `installedContentTypesLastUpdated` TEXT);' .
-                    ' INSERT INTO ${p}websiteState values (\'{}\',null);',
+                    file_get_contents(RAD_BASE_PATH . 'schema.mariadb.sql'),
                     //
                     '[' .
                         '["Movies", {"title": "Foo"}],' .
@@ -236,7 +236,14 @@ return [
         }
         throw new \Exception('Shouldn\'t happen');
     }
-    private function verifyCreatedNewDatabase($s) {
+    private function sendInstallRequest($s) {
+        $res = $this->createMockResponse('{"ok":"ok"}', 200);
+        $app = InstallerApp::create($s->indexFilePath, function ($indexFilePath) use ($s) {
+            return new InstallerControllers($indexFilePath, $s->mockFs, [get_class(), 'getDb']);
+        });
+        $app->handleRequest(new Request('/', 'POST', $s->input), $res);
+    }
+    private function verifyCreatedNewDatabaseAndMainSchema($s) {
         $this->assertEquals(1, count(self::$db->fetchAll(
             'SELECT `table_name` FROM information_schema.tables' .
             ' WHERE `table_schema` = ? AND `table_name` = ?',
@@ -244,10 +251,50 @@ return [
         )));
         self::$db->database = $s->input->dbDatabase;
     }
+    private function verifyInsertedMainSchemaData($s) {
+        $row = self::$db->fetchOne('SELECT * FROM ${p}websiteState');
+        $this->assertArrayHasKey('name', $row);
+        $this->assertEquals($s->input->siteName, $row['name']);
+        $this->assertEquals($s->input->siteLang, $row['lang']);
+    }
     private function verifyInsertedSampleContent($s) {
         $this->assertEquals(2, count(self::$db->fetchAll(
             'SELECT `title` FROM ${p}Movies'
         )));
+    }
+
+
+    ////////////////////////////////////////////////////////////////////////////
+
+
+    public function testInstallerInstallsWebsiteFromPackage() {
+        $s = $this->setupInstallFromPackageTest();
+        $this->sendInstallFromPackageRequest($s);
+        $this->verifyCreatedNewDatabaseAndMainSchema($s);
+        $this->verifyInsertedMainSchemaData($s);
+    }
+    private function setupInstallFromPackageTest() {
+        $s = $this->setupInstallerTest1();
+        $s->input->dbDatabase = self::TEST_DB_NAME2;
+        $s->files = (object) ['packageFile' => ['tmp_name' => 'foo.zip']];
+        $s->testPackage = PackagerControllersTest::makeExpectedPackage($s->input);
+        $s->mockFs = $this->getMockBuilder(FileSystem::class)
+                          ->setMethods(['mkDir', 'copy', 'write'])
+                          ->getMock();
+        return $s;
+    }
+    private function sendInstallFromPackageRequest($s) {
+        $req = new Request('/from-package', 'POST', $s->input, $s->files);
+        $res = $this->createMockResponse('{"ok":"ok"}', 200);
+        $app = InstallerApp::create($s->indexFilePath, function ($indexFilePath) use ($s) {
+            return new InstallerControllers($indexFilePath,
+                                            $s->mockFs,
+                                            [get_class(), 'getDb'],
+                                            function () use ($s) {
+                                                return $s->testPackage;
+                                            });
+        });
+        $app->handleRequest($req, $res);
     }
     public static function clearInstalledContentTypesFromDb() {
         self::getDb()->exec('UPDATE ${p}websiteState SET' .
