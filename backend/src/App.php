@@ -10,6 +10,7 @@ use RadCms\ContentType\ContentTypeModule;
 use RadCms\Auth\AuthModule;
 use RadCms\Website\WebsiteModule;
 use RadCms\Plugin\PluginModule;
+use RadCms\Packager\PackagerModule;
 use RadCms\Framework\SessionInterface;
 use RadCms\Framework\NativeSession;
 use RadCms\Framework\FileSystemInterface;
@@ -61,6 +62,7 @@ class App {
         $container->share($request);
         $container->alias(FileSystemInterface::class, FileSystem::class);
         $container->alias(SessionInterface::class, NativeSession::class);
+        PackagerModule::alterIOC($container);
     }
     /**
      * @param array $match
@@ -99,6 +101,7 @@ class App {
         ContentTypeModule::init($app->ctx);
         AuthModule::init($app->ctx);
         PluginModule::init($app->ctx);
+        PackagerModule::init($app->ctx);
         WebsiteModule::init($app->ctx);
         //
         return $app;

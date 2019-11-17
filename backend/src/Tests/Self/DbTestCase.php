@@ -9,7 +9,7 @@ class DbTestCase extends TestCase {
     protected static $db = null;
     public static function getDb(array $config = null) {
         if (!$config) {
-            $config = include __DIR__ . '/config.php';
+            $config = include dirname(__DIR__) . '/test-site/config.php';
         }
         if (!self::$db) {
             self::$db = new Db($config);

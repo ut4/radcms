@@ -117,7 +117,7 @@ final class InstallerTest extends DbTestCase {
         $this->verifyInsertedSampleContent($s);
     }
     private function setupInstallerTest1() {
-        $config = include __DIR__ . '/Self/config.php';
+        $config = include __DIR__ . '/test-site/config.php';
         return (object) [
             'input' => (object) [
                 'siteName' => '',

@@ -32,6 +32,19 @@ class Response {
         $this->type('html')->send($body);
     }
     /**
+     * @param string $data
+     * @param string $fileName = 'file.zip'
+     * @param string $mime = 'application/zip'
+     */
+    public function attachment($data,
+                               $fileName = 'file.zip',
+                               $mime = 'application/zip') {
+        header('Content-Type: ' . $mime);
+        header('Content-Length: ' . strlen($data));
+        header('Content-Disposition: attachment; filename="' . $fileName . '"');
+        echo $data;
+    }
+    /**
      * @param string $type 'html' | 'json'
      * @return Response
      */

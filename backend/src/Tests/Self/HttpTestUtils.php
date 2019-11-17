@@ -57,7 +57,7 @@ trait HttpTestUtils {
             $ctx->auth = $this->createMock(Authenticator::class);
             $ctx->auth->method('getIdentity')->willReturn('1');
         }
-        $app = CtxExposingApp::create($ctx, 'Tests');
+        $app = CtxExposingApp::create($ctx);
         $injector = new Injector();
         $injector->delegate(Response::class, function() use ($res) { return $res; });
         if ($alterInjectorFn) $alterInjectorFn($injector);
