@@ -18,18 +18,18 @@ class PackagerControllers {
         $this->packager = $packager;
     }
     /**
-     * POST /api/packager/:signingKey.
+     * POST /api/packager.
      *
      * @param \RadCms\Framework\Request $req
      * @param \RadCms\Framework\Response $res
      */
     public function handleCreatePackage(Request $req, Response $res) {
-        if (mb_strlen($req->params->signingKey) < 12) {
+        if (strlen($req->body->signingKey) < 12) {
             $res->status(400)->json(['signingKey must be >= 12 characters long']);
             return;
         }
         // @allow \RadCMS\Common\RadException
-        $data = $this->packager->packSite(RAD_SITE_PATH, $req->params->signingKey);
-        $res->attachment($data);
+        $data = $this->packager->packSite(RAD_SITE_PATH, $req->body->signingKey);
+        $res->attachment($data, 'site.rpkg', 'application/octet-stream');
     }
 }

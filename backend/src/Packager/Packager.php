@@ -40,17 +40,17 @@ class Packager {
         $this->crypto = $crypto;
         $this->appState = $state;
         $this->fs = $fs;
-        $this->cNodeDAO = new DAO($db, $state->contentTypes);
-        $this->config = include RAD_SITE_PATH . 'config.php';
+        $this->cNodeDAO = new DAO($db, $state->contentTypes->filter('site.ini', 'origin'));
+        $this->config = include RAD_INDEX_PATH . 'config.php';
     }
     /**
      * @param string $sitePath
-     * @param string $key
+     * @param string $signingKey
      * @throws \RadCms\Common\RadException
      */
-    public function packSite($sitePath, $key) {
+    public function packSite($sitePath, $signingKey) {
         // @allow \RadCms\Common\RadException
-        $this->writer->open('');
+        $this->writer->open('', true);
         //
         foreach ([
             [self::DB_CONFIG_VIRTUAL_FILE_NAME, function () {
@@ -63,7 +63,9 @@ class Packager {
             $this->writer->write($virtualFilePath,
                                  $provideContents());
         }
-        return $this->writer->getResult();
+        // @allow \RadCms\Common\RadException
+        $data = $this->writer->getResult();
+        return $this->crypto->encrypt($data, $signingKey);
     }
     /**
      * @return string
@@ -76,7 +78,7 @@ class Packager {
             'dbPass' => $this->config['db.pass'],
             'dbTablePrefix' => $this->config['db.tablePrefix'],
             'dbCharset' => $this->config['db.charset'],
-        ]);
+        ], JSON_UNESCAPED_UNICODE);
     }
     /**
      * @return string
@@ -90,6 +92,6 @@ class Packager {
             'sitePath' => RAD_SITE_PATH,
             'mainQueryVar' => RAD_QUERY_VAR,
             'useDevMode' => boolval(RAD_FLAGS & RAD_DEVMODE),
-        ]);
+        ], JSON_UNESCAPED_UNICODE);
     }
 }

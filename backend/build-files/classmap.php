@@ -1,6 +1,7 @@
 <?php
 // tässä tiedostossa filut, jotka installer.phar tarvitsee toimiakseen
 return function ($backendSrcPath, $buildAssetsPath, $backendPath) { return [
+    $backendSrcPath . 'Auth/Crypto.php',
     $backendSrcPath . 'Framework/Db.php',
     $backendSrcPath . 'Framework/FileSystem.php',
     $backendSrcPath . 'Framework/FileSystemInterface.php',
@@ -26,7 +27,7 @@ return function ($backendSrcPath, $buildAssetsPath, $backendPath) { return [
     $backendSrcPath . 'Installer/main-view.tmpl.php',
     $backendSrcPath . 'Packager/Packager.php',
     $backendSrcPath . 'Packager/PackageStreamInterface.php',
-    $backendSrcPath . 'Packager/ZipPackageStream.php',
+    $backendSrcPath . 'Packager/PlainTextPackageStream.php',
     $backendSrcPath . 'Website/SiteConfig.php',
     $backendSrcPath . 'Website/UrlMatcherCollection.php',
     $backendSrcPath . 'Website/UrlMatcher.php',

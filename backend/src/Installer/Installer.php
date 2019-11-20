@@ -9,6 +9,7 @@ use RadCms\Website\SiteConfig;
 use RadCms\Common\RadException;
 use RadCms\Packager\Packager;
 use RadCms\Packager\PackageStreamInterface;
+use RadCms\Auth\Crypto;
 
 class Installer {
     private $indexFilePath;
@@ -45,13 +46,22 @@ class Installer {
     /**
      * @param \RadCms\Packager\PackageStreamInterface $package
      * @param string $packageFilePath '/path/to/tmp/uploaded-package-file.zip'
+     * @param string $unlockKey
+     * @param \RadCms\Auth\Crypto $crypto
      * @return bool
      * @throws \RadCms\Common\RadException
      */
     public function doInstallFromPackage(PackageStreamInterface $package,
-                                         $packageFilePath) {
+                                         $packageFilePath,
+                                         $unlockKey,
+                                         Crypto $crypto) {
+        // <packagereader>
+        if (!($signed = $this->fs->read($packageFilePath)))
+            throw new RadException('Failed to read package file contents',
+                                   RadException::BAD_INPUT);
+        $unlocked = $crypto->decrypt($signed, $unlockKey);
         // @allow \RadCms\Common\RadException
-        $package->open($packageFilePath);
+        $package->open($unlocked);
         if (!($json1 = $package->read(Packager::DB_CONFIG_VIRTUAL_FILE_NAME)) ||
             ($dbSettings = json_decode($json1, true)) === null)
                 throw new RadException('Failed to parse data',
@@ -60,6 +70,7 @@ class Installer {
             ($siteSettings = json_decode($json2, true)) === null)
                 throw new RadException('Failed to parse data',
                                        RadException::BAD_INPUT);
+        // </packagereader>
         //
         $settings = (object)array_merge($dbSettings, $siteSettings);
         return $this->createDb($settings) &&
@@ -147,7 +158,7 @@ class Installer {
         //
         $cfg = new SiteConfig($this->fs);
         // @allow \RadCms\Common\RadException
-        return $cfg->selfLoad("{$s->radPath}sample-content/{$s->sampleContent}/site.ini", false, false) &&
+        return $cfg->selfLoad("{$s->radPath}sample-content/{$s->sampleContent}/site.ini", false, true) &&
                (new ContentTypeMigrator($this->db))->installMany($cfg->contentTypes,
                                                                  $sampleContent);
     }

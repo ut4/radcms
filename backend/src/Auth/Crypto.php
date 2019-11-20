@@ -2,7 +2,7 @@
 
 namespace RadCms\Auth;
 
-final class Crypto {
+class Crypto {
     /**
      * @param string $plainPass
      * @param string $hashedPass

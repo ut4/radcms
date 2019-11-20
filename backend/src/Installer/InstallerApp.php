@@ -5,7 +5,6 @@ namespace RadCms\Installer;
 use AltoRouter;
 use RadCms\Framework\Request;
 use RadCms\Framework\Response;
-use RadCms\Packager\ZipPackageStream;
 
 class InstallerApp {
     private $router;

@@ -4,9 +4,10 @@ namespace RadCms\Tests;
 
 use RadCms\Tests\Self\DbTestCase;
 use RadCms\Tests\Self\HttpTestUtils;
-use RadCms\Tests\Self\PlainTextPackageStream;
+use RadCms\Packager\PlainTextPackageStream;
 use RadCms\Framework\Request;
-use RadCms\Packager\ZipPackageStream;
+use RadCms\Auth\Crypto;
+use RadCms\Tests\Self\MockCrypto;
 use RadCms\Packager\Packager;
 
 final class PackagerControllersTest extends DbTestCase {
@@ -17,23 +18,27 @@ final class PackagerControllersTest extends DbTestCase {
         $this->sendCreatePackageRequest($s);
     }
     private function setupCreatePackageTest() {
-        return (object)[
+        $s = (object)[
             'expectedHttpAttachmentBody' => '',
+            'setupInjector' => null,
         ];
+        $s->setupInjector = function ($injector) use ($s) {
+            $injector->delegate(Crypto::class, function () {
+                return new MockCrypto();
+            });
+        };
+        return $s;
     }
     private function setExpectedHttpAttachmentBody($contents, $s) {
-        $s->expectedHttpAttachmentBody = $contents;
+        $s->expectedHttpAttachmentBody = MockCrypto::mockEncrypt($contents);
     }
     private function sendCreatePackageRequest($s) {
-        $req = new Request('/api/packager/1234567890123', 'POST');
+        $req = new Request('/api/packager', 'POST',
+                           (object)['signingKey' => 'my-encrypt-key']);
         $res = $this->createMockResponse($s->expectedHttpAttachmentBody,
                                          200,
                                          'attachment');
-        $this->makeRequest($req, $res, null, function ($injector) {
-            $injector->delegate(ZipPackageStream::class, function () {
-                return new PlainTextPackageStream();
-            });
-        });
+        $this->makeRequest($req, $res, null, $s->setupInjector);
     }
     public static function makeExpectedPackage($vals = null) {
         if (!$vals) {

@@ -11,7 +11,7 @@ class ZipPackageStream implements PackageStreamInterface {
     /** @var \RadCms\Framework\FileSystemInterface */
     private $fs;
     /** @var string */
-    private $tmpFileName;
+    private $tmpFilePath;
     /**
      * @param \RadCms\Framework\FileSystemInterface
      */
@@ -32,7 +32,9 @@ class ZipPackageStream implements PackageStreamInterface {
                                        RadException::FAILED_FS_OP);
             $flags = \ZipArchive::OVERWRITE;
         }
-        if (($res = $this->zip->open($filePath, $flags)) !== true)
+        if (($res = $this->zip->open($filePath, $flags)) === true)
+            $this->tmpFilePath = $filePath;
+        else
             throw new RadException('Failed to ' . (!$create ? 'open' : 'create') .
                                    ' zip, errcode: ' . $res,
                                    RadException::FAILED_FS_OP);
@@ -66,10 +68,10 @@ class ZipPackageStream implements PackageStreamInterface {
         if (!$this->zip->close())
             throw new RadException('Failed to close zip stream',
                                    RadException::FAILED_FS_OP);
-        if (!($c = $this->fs->read($this->tmpFileName)))
+        if (!($c = $this->fs->read($this->tmpFilePath)))
             throw new RadException('Failed to read generated zip',
                                    RadException::FAILED_FS_OP);
-        if (!$this->fs->unlink($this->tmpFileName))
+        if (!$this->fs->unlink($this->tmpFilePath))
             throw new RadException('Failed to remove temp file',
                                    RadException::FAILED_FS_OP);
         return $c;

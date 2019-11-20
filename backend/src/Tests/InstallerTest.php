@@ -9,6 +9,7 @@ use RadCms\Tests\Self\HttpTestUtils;
 use RadCms\Installer\InstallerControllers;
 use RadCms\Framework\FileSystem;
 use RadCms\Tests\Self\ContentTypeDbTestUtils;
+use RadCms\Tests\Self\MockCrypto;
 
 final class InstallerTest extends DbTestCase {
     use HttpTestUtils;
@@ -93,7 +94,7 @@ final class InstallerTest extends DbTestCase {
         ];
         $res = $this->createMockResponse($this->anything(), 500);
         $app = InstallerApp::create('', function () {
-            return new InstallerControllers('', null, function () {
+            return new InstallerControllers('', null, null, function () {
                 throw new \PDOException('...');
             });
         });
@@ -105,7 +106,6 @@ final class InstallerTest extends DbTestCase {
     }
     public function testInstallerCreatesDbSchemaAndInsertsSampleContent() {
         $s = $this->setupInstallerTest1();
-        $s->mockFs = $this->createMock(FileSystem::class);
         $this->addFsExpectation('checksRadPathIsValid', $s);
         $this->addFsExpectation('readsDataFiles', $s);
         $this->addFsExpectation('readsSampleContentTemplateFilesDir', $s);
@@ -139,12 +139,12 @@ final class InstallerTest extends DbTestCase {
             ],
             'indexFilePath' => 'c:/foo',
             'sampleContentBasePath' => RAD_BASE_PATH . 'sample-content/test-content/',
-            'mockFs' => null
+            'mockFs' => $this->createMock(FileSystem::class)
         ];
     }
     private function addFsExpectation($expectation, $s) {
         if ($expectation == 'checksRadPathIsValid') {
-            $s->mockFs->expects($this->once())
+            $s->mockFs->expects($this->atLeastOnce())
                 ->method('isFile')
                 ->willReturn(true);
             return;
@@ -167,7 +167,9 @@ final class InstallerTest extends DbTestCase {
                     //
                     '[ContentType:Movies]' . PHP_EOL .
                     'friendlyName=Elokuvat' . PHP_EOL .
-                    'fields[title]=text'
+                    'fields[title]=text' . PHP_EOL .
+                    '[UrlMatcher:Dummy]' . PHP_EOL .
+                    'pattern=/url'
                 );
             return;
         }
@@ -239,7 +241,7 @@ return [
     private function sendInstallRequest($s) {
         $res = $this->createMockResponse('{"ok":"ok"}', 200);
         $app = InstallerApp::create($s->indexFilePath, function ($indexFilePath) use ($s) {
-            return new InstallerControllers($indexFilePath, $s->mockFs, [get_class(), 'getDb']);
+            return new InstallerControllers($indexFilePath, $s->mockFs, null, [get_class(), 'getDb']);
         });
         $app->handleRequest(new Request('/', 'POST', $s->input), $res);
     }
@@ -269,6 +271,7 @@ return [
 
     public function testInstallerInstallsWebsiteFromPackage() {
         $s = $this->setupInstallFromPackageTest();
+        $this->stubFsToReturnThisAsUploadedFileContents($s->inputPackageFileContents, $s);
         $this->sendInstallFromPackageRequest($s);
         $this->verifyCreatedNewDatabaseAndMainSchema($s);
         $this->verifyInsertedMainSchemaData($s);
@@ -276,12 +279,24 @@ return [
     private function setupInstallFromPackageTest() {
         $s = $this->setupInstallerTest1();
         $s->input->dbDatabase = self::TEST_DB_NAME2;
-        $s->files = (object) ['packageFile' => ['tmp_name' => 'foo.zip']];
-        $s->testPackage = PackagerControllersTest::makeExpectedPackage($s->input);
-        $s->mockFs = $this->getMockBuilder(FileSystem::class)
-                          ->setMethods(['mkDir', 'copy', 'write'])
-                          ->getMock();
+        $s->input->unlockKey = 'my-decrypt-key';
+        $s->files = (object) ['packageFile' => ['tmp_name' => 'foo.rpkg']];
+        $s->mockCrypto = new MockCrypto();
+        $s->inputPackageFileContents = $s->mockCrypto->encrypt(
+            PackagerControllersTest::makeExpectedPackage($s->input)->getResult(), 'key');
         return $s;
+    }
+    private function stubFsToReturnThisAsUploadedFileContents($encryptedFileContents, $s) {
+        $s->mockFs
+            ->method('read')
+            ->withConsecutive(
+                [$this->stringEndsWith('.rpkg')],
+                [$this->stringEndsWith('schema.mariadb.sql')]
+            )
+            ->willReturnOnConsecutiveCalls(
+                $encryptedFileContents,
+                file_get_contents(RAD_BASE_PATH . 'schema.mariadb.sql')
+            );
     }
     private function sendInstallFromPackageRequest($s) {
         $req = new Request('/from-package', 'POST', $s->input, $s->files);
@@ -289,10 +304,8 @@ return [
         $app = InstallerApp::create($s->indexFilePath, function ($indexFilePath) use ($s) {
             return new InstallerControllers($indexFilePath,
                                             $s->mockFs,
-                                            [get_class(), 'getDb'],
-                                            function () use ($s) {
-                                                return $s->testPackage;
-                                            });
+                                            $s->mockCrypto,
+                                            [get_class(), 'getDb']);
         });
         $app->handleRequest($req, $res);
     }

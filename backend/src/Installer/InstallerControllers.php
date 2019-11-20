@@ -10,28 +10,33 @@ use RadCms\Framework\Validator;
 use RadCms\Framework\Template;
 use RadCms\Common\RadException;
 use RadCms\Common\LoggerAccess;
-use RadCms\Packager\ZipPackageStream;
+use RadCms\Packager\PlainTextPackageStream;
+use RadCms\Auth\Crypto;
 
 class InstallerControllers {
     private $indexFilePath;
     private $fs;
+    private $crypto;
     private $makeDb;
     private $makeStream;
     /**
      * @param string $indexFilePath ks. InstallerApp::__construct
      * @param \RadCms\Framework\FileSystemInterface $fs = null
+     * @param \RadCms\Auth\Crypto $crypto = null
      * @param callable $makeDb = null
      * @param \Closure $makePackageStream = null
      */
     public function __construct($indexFilePath,
                                 FileSystemInterface $fs = null,
+                                Crypto $crypto = null,
                                 $makeDb = null,
                                 $makePackageStream = null) {
         $this->indexFilePath = $indexFilePath;
         $this->fs = $fs ?? new FileSystem();
+        $this->crypto = $crypto ?? new Crypto();
         $this->makeDb = $makeDb;
         $this->makeStream = $makePackageStream ?? function () {
-            return new ZipPackageStream($this->fs);
+            return new PlainTextPackageStream();
         };
     }
     /**
@@ -66,14 +71,16 @@ class InstallerControllers {
      * POST /from-package.
      */
     public function handleInstallFromPackageRequest(Request $req, Response $res) {
-        if (!$req->files->packageFile) {
-            $res->status(400)->json(['packageFile is required']);
+        if (($errors = $this->validateInstallFromPackageInput($req))) {
+            $res->status(400)->json($errors);
             return;
         }
         try {
             (new Installer($this->indexFilePath, $this->fs, $this->makeDb))
                 ->doInstallFromPackage($this->makeStream->__invoke(),
-                                       $req->files->packageFile['tmp_name']);
+                                       $req->files->packageFile['tmp_name'],
+                                       $req->body->unlockKey,
+                                       $this->crypto);
             $res->json(json_encode(['ok' => 'ok']));
         } catch (RadException $e) {
             LoggerAccess::getLogger()->log('error', $e->getTraceAsString());
@@ -82,9 +89,7 @@ class InstallerControllers {
         }
     }
     /**
-     * Validoi POST / input-datan, ja palauttaa virheet taulukkona.
-     *
-     * @return array ['jokinVirhe'] tai []
+     * @return string[]
      */
     private function validateInstallInput(&$input) {
         $v = new Validator($input);
@@ -115,5 +120,21 @@ class InstallerControllers {
         $v->check('dbCharset', ['in', ['utf8']]);
         //
         return $v->errors;
+    }
+    /**
+     * @return string[]
+     */
+    private function validateInstallFromPackageInput($req) {
+        $errors = [];
+        if (!$req->files->packageFile) {
+            $errors[] = 'packageFile is required';
+        }
+        if (!$req->body->unlockKey) {
+            $errors[] = 'unlockKey is required';
+        } elseif (!is_string($req->body->unlockKey) ||
+                  strlen($req->body->unlockKey) < 12) {
+            $errors[] = 'unlockKey must be >= 12 characters long';
+        }
+        return $errors;
     }
 }

@@ -9,7 +9,7 @@ abstract class PackagerModule {
      * @param object $ctx
      */
     public static function init($ctx) {
-        $ctx->router->map('POST', '/api/packager/[**:signingKey]', function () {
+        $ctx->router->map('POST', '/api/packager', function () {
             return [PackagerControllers::class, 'handleCreatePackage', true];
         });
     }
@@ -17,6 +17,6 @@ abstract class PackagerModule {
      * @param \Auryn\Injector $container
      */
     public static function alterIOC($container) {
-        $container->alias(PackageStreamInterface::class, ZipPackageStream::class);
+        $container->alias(PackageStreamInterface::class, PlainTextPackageStream::class);
     }
 }
