@@ -2,7 +2,9 @@
 
 namespace RadCms\Packager;
 
-interface PackageStreamInterface {
+use RadCms\Framework\FileSystemInterface;
+
+interface PackageStreamInterface extends FileSystemInterface {
     /**
      * Tulisi heittää epäonnistuessaan \RadCms\Common\RadException.
      *
@@ -10,20 +12,6 @@ interface PackageStreamInterface {
      * @param bool $create = false
      */
     public function open($filePath, $create = false);
-    /**
-     * Tulisi heittää epäonnistuessaan \RadCms\Common\RadException.
-     *
-     * @param string $virtualFilePath
-     * @param string $contents
-     */
-    public function write($virtualFilePath, $contents);
-    /**
-     * Tulisi heittää epäonnistuessaan \RadCms\Common\RadException.
-     *
-     * @param string $virtualFilePath
-     * @return string
-     */
-    public function read($virtualFilePath);
     /**
      * Tulisi heittää epäonnistuessaan \RadCms\Common\RadException.
      *

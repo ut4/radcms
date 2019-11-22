@@ -35,11 +35,14 @@ class Installer {
      * @throws \RadCms\Common\RadException
      */
     public function doInstall($settings) {
+        $base = "{$settings->radPath}sample-content/{$settings->sampleContent}/";
         // @allow \RadCms\Common\RadException
         return $this->createDb($settings) &&
                $this->createMainSchema($settings) &&
                $this->insertMainSchemaData($settings) &&
-               $this->createSampleContentTypesAndInsertSampleContent($settings) &&
+               $this->createContentTypesAndInsertInitialData("{$base}site.ini",
+                                                             "{$base}sample-data.json",
+                                                             $this->fs) &&
                $this->cloneTemplatesAndCfgFile($settings) &&
                $this->generateConfigFile($settings);
     }
@@ -75,7 +78,10 @@ class Installer {
         $settings = (object)array_merge($dbSettings, $siteSettings);
         return $this->createDb($settings) &&
                $this->createMainSchema($settings) &&
-               $this->insertMainSchemaData($settings);
+               $this->insertMainSchemaData($settings) &&
+               $this->createContentTypesAndInsertInitialData(Packager::WEBSITE_CONFIG_VIRTUAL_FILE_NAME,
+                                                             Packager::THEME_CONTENT_DATA_VIRTUAL_FILE_NAME,
+                                                             $package);
     }
     /**
      * @param object $s settings
@@ -144,23 +150,24 @@ class Installer {
         return true;
     }
     /**
-     * @param object $s settings
+     * @param string $siteConfigFilePath '/path/to/site/site.ini'
+     * @param string $dataFilePath '/path/to/site/sample-content.json'
+     * @param \RadCms\Framework\FileSystemInterface $fs
      * @return bool
      * @throws \RadCms\Common\RadException
      */
-    private function createSampleContentTypesAndInsertSampleContent($s) {
-        $path = "{$s->radPath}sample-content/{$s->sampleContent}/sample-data.json";
-        $json = $this->fs->read($path);
+    private function createContentTypesAndInsertInitialData($siteCfgFilePath, $dataFilePath, $fs) {
+        $json = $fs->read($dataFilePath);
         if (!$json)
-            throw new RadException("Failed to read {$path}", RadException::FAILED_FS_OP);
-        if (($sampleContent = json_decode($json)) === null)
-            throw new RadException("Failed to parse {$path}", RadException::FAILED_FS_OP);
+            throw new RadException("Failed to read {$dataFilePath}", RadException::FAILED_FS_OP);
+        if (($initialData = json_decode($json)) === null)
+            throw new RadException("Failed to parse {$dataFilePath}", RadException::FAILED_FS_OP);
         //
-        $cfg = new SiteConfig($this->fs);
+        $cfg = new SiteConfig($fs);
         // @allow \RadCms\Common\RadException
-        return $cfg->selfLoad("{$s->radPath}sample-content/{$s->sampleContent}/site.ini", false, true) &&
+        return $cfg->selfLoad($siteCfgFilePath, false, true) &&
                (new ContentTypeMigrator($this->db))->installMany($cfg->contentTypes,
-                                                                 $sampleContent);
+                                                                 $initialData);
     }
     /**
      * @param object $s settings

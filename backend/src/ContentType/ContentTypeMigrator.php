@@ -85,9 +85,10 @@ class ContentTypeMigrator {
             if (!is_array($item) ||
                 count($item) != 2 ||
                 !is_string($item[0]) ||
-                !($item[1] instanceof \stdClass))
+                !is_array($item[1]) ||
+                !(($item[1][0] ?? null) instanceof \stdClass))
                     throw new RadException(
-                        'initialData entry must be [["ContentTypeName", {"key":"value"}]]',
+                        'initialData entry must be [["ContentTypeName", [{"key":"value"}]]]',
                         RadException::BAD_INPUT);
         }
         return true;
@@ -159,9 +160,10 @@ class ContentTypeMigrator {
         $dmo = new DMO($this->db, $contentTypes,
                        false // no revisions
                        );
-        foreach ($data as [$contentTypeName, $data]) {
-            // @allow \RadCms\Common\RadException
-            $dmo->insert($contentTypeName, $data);
+        foreach ($data as [$contentTypeName, $contentNodes]) {
+            foreach ($contentNodes as $data)
+                // @allow \RadCms\Common\RadException
+                $dmo->insert($contentTypeName, $data);
         }
         return true;
     }

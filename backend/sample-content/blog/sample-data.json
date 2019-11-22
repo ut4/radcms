@@ -1,6 +1,6 @@
 [
     ["GenericBlobs", {"name":"home-content","content":"(c) 2034 MySite"}],
-    ["Articles", {"slug":"art1","title":"Article 1","body":"Hello from article 1"}],
-    ["Articles", {"slug":"art2","title":"Article 2","body":"Hello from article 2"}],
-    ["Articles", {"slug":"art3","title":"Article 3","body":"Hello from article 3"}]
+    ["Articles", [{"slug":"art1","title":"Article 1","body":"Hello from article 1"},
+                  {"slug":"art2","title":"Article 2","body":"Hello from article 2"},
+                  {"slug":"art3","title":"Article 3","body":"Hello from article 3"}]]
 ]

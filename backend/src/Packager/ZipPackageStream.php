@@ -76,4 +76,31 @@ class ZipPackageStream implements PackageStreamInterface {
                                    RadException::FAILED_FS_OP);
         return $c;
     }
+
+    ////////////////////////////////////////////////////////////////////////////
+
+    public function unlink($path) {
+        throw new RadException('Not supported.');
+    }
+    public function copy($path, $destPath) {
+        throw new RadException('Not supported.');
+    }
+    public function mkDir($path) {
+        throw new RadException('Not supported.');
+    }
+    public function rmDir($path) {
+        throw new RadException('Not supported.');
+    }
+    public function isFile($path) {
+        throw new RadException('Not supported.');
+    }
+    public function isDir($path) {
+        throw new RadException('Not supported.');
+    }
+    public function readDir($path) {
+        throw new RadException('Not supported.');
+    }
+    public function lastModTime($path) {
+        throw new RadException('Not supported.');
+    }
 }

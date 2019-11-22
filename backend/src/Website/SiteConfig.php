@@ -43,7 +43,7 @@ class SiteConfig {
             throw new RadException('Failed to parse ' . $filePath,
                                    RadException::BAD_INPUT);
         return $this->collectAll($parsed) &&
-               (!$autoSelfValidate || $this->selfValidate());
+               (!$autoSelfValidate || $this->selfValidate(dirname($filePath) . '/'));
     }
     /**
      * @param array $parsedIniData
@@ -101,10 +101,11 @@ class SiteConfig {
         return $out;
     }
     /**
+     * @param string $sitePath i.e. RAD_SITE_PATH
      * @return bool
      * @throws \RadCms\Common\RadException
      */
-    private function selfValidate() {
+    private function selfValidate($sitePath) {
         $errors = [];
         if ($this->urlMatchers->length()) {
             foreach ($this->urlMatchers->toArray() as $matcher) {
@@ -114,9 +115,9 @@ class SiteConfig {
                 elseif (@preg_match($matcher->pattern, null) === false)
                     $errors[] = $matcher->origPattern . ' (' . $matcher->pattern
                                 . ') is not valid regexp';
-                if (!$this->fs->isFile(RAD_SITE_PATH . $matcher->layoutFileName))
+                if (!$this->fs->isFile($sitePath . $matcher->layoutFileName))
                     $errors[] = 'Failed to locate UrlMatcher layout file `' .
-                                RAD_SITE_PATH . $matcher->layoutFileName . '`';
+                                $sitePath . $matcher->layoutFileName . '`';
             }
         } else {
             $errors[] = 'At least one `[UrlMatcher:name] pattern = /some-url` is required';

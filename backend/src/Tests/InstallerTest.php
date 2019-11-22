@@ -10,6 +10,8 @@ use RadCms\Installer\InstallerControllers;
 use RadCms\Framework\FileSystem;
 use RadCms\Tests\Self\ContentTypeDbTestUtils;
 use RadCms\Tests\Self\MockCrypto;
+use RadCms\Packager\Packager;
+use RadCms\Packager\PlainTextPackageStream;
 
 final class InstallerTest extends DbTestCase {
     use HttpTestUtils;
@@ -161,8 +163,7 @@ final class InstallerTest extends DbTestCase {
                     file_get_contents(RAD_BASE_PATH . 'schema.mariadb.sql'),
                     //
                     '[' .
-                        '["Movies", {"title": "Foo"}],' .
-                        '["Movies", {"title": "Bar"}]' .
+                        '["Movies", [{"title": "Foo"}, {"title": "Bar"}]]' .
                     ']',
                     //
                     '[ContentType:Movies]' . PHP_EOL .
@@ -275,6 +276,8 @@ return [
         $this->sendInstallFromPackageRequest($s);
         $this->verifyCreatedNewDatabaseAndMainSchema($s);
         $this->verifyInsertedMainSchemaData($s);
+        $this->verifyInstalledThemeContentTypes($s);
+        $this->verifyInsertedThemeContentData($s);
     }
     private function setupInstallFromPackageTest() {
         $s = $this->setupInstallerTest1();
@@ -282,8 +285,12 @@ return [
         $s->input->unlockKey = 'my-decrypt-key';
         $s->files = (object) ['packageFile' => ['tmp_name' => 'foo.rpkg']];
         $s->mockCrypto = new MockCrypto();
+        $s->testSiteContentTypesData = [
+            ['SomeType', [(object)['name' => 'val1']]],
+            // AnotherTypellä ei sisältöä
+        ];
         $s->inputPackageFileContents = $s->mockCrypto->encrypt(
-            PackagerControllersTest::makeExpectedPackage($s->input)->getResult(), 'key');
+            $this->makeExpectedPackage($s)->getResult(), 'key');
         return $s;
     }
     private function stubFsToReturnThisAsUploadedFileContents($encryptedFileContents, $s) {
@@ -308,6 +315,30 @@ return [
                                             [get_class(), 'getDb']);
         });
         $app->handleRequest($req, $res);
+    }
+    private function verifyInstalledThemeContentTypes($s) {
+        [$name] = $s->testSiteContentTypesData[0];
+        $this->verifyContentTypeIsInstalled($name, true, self::$db);
+    }
+    private function verifyInsertedThemeContentData($s) {
+        [$name, $data] = $s->testSiteContentTypesData[0];
+        $rows = self::$db->fetchAll('SELECT `name` FROM ${p}' . $name);
+        $this->assertEquals(count($data), count($rows));
+        $this->assertEquals($data[0]->name, $rows[0]['name']);
+    }
+    private function makeExpectedPackage($s) {
+        return new PlainTextPackageStream([
+            Packager::DB_CONFIG_VIRTUAL_FILE_NAME =>
+                PackagerControllersTest::makeExpectedPackageFile(Packager::DB_CONFIG_VIRTUAL_FILE_NAME,
+                                                                 $s->input),
+            Packager::WEBSITE_STATE_VIRTUAL_FILE_NAME =>
+                PackagerControllersTest::makeExpectedPackageFile(Packager::WEBSITE_STATE_VIRTUAL_FILE_NAME,
+                                                                 $s->input),
+            Packager::WEBSITE_CONFIG_VIRTUAL_FILE_NAME =>
+                PackagerControllersTest::makeExpectedPackageFile(Packager::WEBSITE_CONFIG_VIRTUAL_FILE_NAME),
+            Packager::THEME_CONTENT_DATA_VIRTUAL_FILE_NAME =>
+                json_encode($s->testSiteContentTypesData, JSON_UNESCAPED_UNICODE),
+        ]);
     }
     public static function clearInstalledContentTypesFromDb() {
         self::getDb()->exec('UPDATE ${p}websiteState SET' .

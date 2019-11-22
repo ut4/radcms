@@ -46,7 +46,7 @@ final class PluginAPIIntegrationTest extends DbTestCase {
 
 
     public function testPluginCanInstallContentType() {
-        $initialMovies = [['Movies', (object)['title' => 'Initial movie']]];
+        $initialMovies = [['Movies', [(object)['title' => 'Initial movie']]]];
         $s = $this->setupInstallCtypeTest($initialMovies);
         $this->verifyContentTypeWasInstalledToDb();
         $this->verifyInitialDataWasInsertedToDb();
