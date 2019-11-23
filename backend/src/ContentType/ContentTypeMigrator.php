@@ -25,7 +25,7 @@ class ContentTypeMigrator {
     /**
      * @param \RadCms\ContentType\ContentTypeCollection $contentTypes
      * @param string $size = 'medium' 'tiny' | 'small' | 'medium' | '' | 'big'
-     * @param array $initialData = null Array<[string, object]>
+     * @param array $initialData = null [["ContentTypeName", [(object)['key' => 'value']]]]
      * @return bool
      * @throws \RadCms\Common\RadException
      */

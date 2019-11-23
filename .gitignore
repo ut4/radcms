@@ -2,7 +2,7 @@ frontend/*.bundle.*
 out/
 internal/
 target/
-vendor/
+backend/vendor
 config.php
 *.lock
 duktape.c

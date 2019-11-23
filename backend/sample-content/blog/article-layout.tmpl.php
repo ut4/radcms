@@ -11,6 +11,7 @@ $rendered = $this->Article(['slug' => $url[0], 'bindTo' => &$article]); ?>
 <head>
     <title><?= "{$article->title} - {$site->name}" ?></title>
     <meta name="generator" content="RadCMS 0.0.0">
+    <?= $this->cssFiles() ?>
 </head>
 <body>
     <header>

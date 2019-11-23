@@ -91,9 +91,13 @@ class ControlPanelApp extends preact.Component {
             ),
             $el('section', null,
                 $el('h3', null, 'Tällä sivulla:'),
-                ...this.currentPageUiPanels.map(panelCfg =>
-                    $el(ControlPanelApp.ContentTabSection, {panelCfg, siteInfo: this.siteInfo})
-                )
+                this.currentPageUiPanels.length
+                    ? this.currentPageUiPanels.map(panelCfg =>
+                        $el(ControlPanelApp.ContentTabSection, {panelCfg, siteInfo: this.siteInfo})
+                    )
+                    : [
+                        $el('div', {className: 'empty'}, 'Ei muokattavaa sisältöä.')
+                    ]
             )
         );
     }
@@ -102,7 +106,7 @@ class ControlPanelApp extends preact.Component {
      */
     makeDevTabItems() {
         return $el('div', {className: 'list list-small'},
-            ...this.adminUiPanels.map(panelCfg =>
+            this.adminUiPanels.map(panelCfg =>
                 $el(ControlPanelApp.AdminTabSection, {panelCfg, siteInfo: this.siteInfo})
             ).concat($el('div', null,
                 $el('h3', null, 'Sivusto'),

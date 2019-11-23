@@ -175,25 +175,31 @@ class Installer {
      * @throws \RadCms\Common\RadException
      */
     private function cloneTemplatesAndCfgFile($s) {
-        $dirPath = "{$s->radPath}sample-content/{$s->sampleContent}/";
-        $dirPathLen = mb_strlen($dirPath);
-        //
-        $fileNames = ['site.json', 'README.md'];
-        if (!($filePaths = $this->fs->readDir($dirPath, '*.tmpl.php')))
-            throw new RadException("Failed to read {$dirPath}",
-                                   RadException::FAILED_FS_OP);
-        foreach ($filePaths as $path) {
-            $fileNames[] = substr($path, $dirPathLen);
-        }
         //
         if (!$this->fs->isDir($s->sitePath) && !$this->fs->mkDir($s->sitePath))
             throw new RadException('Failed to create ' . $s->sitePath,
                                    RadException::FAILED_FS_OP);
         //
-        foreach ($fileNames as $fileName) {
-            if (!$this->fs->copy($dirPath . $fileName,
-                                 $s->sitePath . $fileName)) {
-                throw new RadException('Failed to copy ' . $s->sitePath . $fileName,
+        $base = "{$s->radPath}sample-content/{$s->sampleContent}/";
+        $base2 = "{$base}frontend/";
+        if (!($tmplFilePaths = $this->fs->readDir($base, '*.tmpl.php')))
+            throw new RadException("Failed to read {$base}", RadException::FAILED_FS_OP);
+        if (!($assetFilePaths = $this->fs->readDir($base2, '*.{css,js}', GLOB_ERR|GLOB_BRACE)))
+            throw new RadException("Failed to read {$base2}", RadException::FAILED_FS_OP);
+        //
+        $toBeCopied = [
+            [$base . 'site.json', $base, $s->sitePath],
+            [$base . 'README.md', $base, $s->sitePath],
+        ];
+        foreach ($tmplFilePaths as $fullFilePath)
+            $toBeCopied[] = [$fullFilePath, $base, $s->sitePath];
+        foreach ($assetFilePaths as $fullFilePath)
+            $toBeCopied[] = [$fullFilePath, $base2, $this->indexFilePath];
+        //
+        foreach ($toBeCopied as [$fullFilePath, $base, $target]) {
+            $fileName = substr($fullFilePath, mb_strlen($base));
+            if (!$this->fs->copy($fullFilePath, $target . $fileName)) {
+                throw new RadException('Failed to copy ' . $fullFilePath,
                                        RadException::FAILED_FS_OP);
             }
         }

@@ -140,22 +140,22 @@ input:hover {
 input[type="date"] {
     text-indent: 3px;
 }
-label:not(.inline), .input-set {
+label:not(.inline), .label {
     display: inline-block;
     margin-bottom: 4px;
     width: 100%;
     text-align: left;
 }
 label > span:first-of-type,
-.input-set > span:first-of-type {
+.label > span:first-of-type {
     box-sizing: border-box;
     display: inline-block;
 }
 label input,
-.input-set input,
+.label input,
 label textarea,
-.input-set textarea,
-.input-set select,
+.label textarea,
+.label select,
 label select {
     box-sizing: border-box;
     width: 100%;
@@ -165,7 +165,7 @@ input[type="checkbox"] {
     margin-top: 4px;
 }
 label .text-error,
-.input-set .text-error {
+.label .text-error {
     display: inline-block;
     width: 100%;
 }
@@ -220,14 +220,14 @@ table.striped tbody td:first-child {
 .striped tbody tr:only-child td:first-child {
     padding-left: 0;
 }
-table .input-set {
+table .label {
     max-width: 48%;
     margin: 0 2% 0 0;
 }
-table .input-set > span:first-of-type {
+table .label > span:first-of-type {
     display: none;
 }
-table .input-set input {
+table .label input {
     margin: 0;
 }
 

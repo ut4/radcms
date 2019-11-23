@@ -174,12 +174,18 @@ final class InstallerTest extends DbTestCase {
             return;
         }
         if ($expectation == 'readsSampleContentTemplateFilesDir') {
-            $s->mockFs->expects($this->once())
+            $s->mockFs->expects($this->exactly(2))
                 ->method('readDir')
-                ->with($s->sampleContentBasePath, '*.tmpl.php')
-                ->willReturn([
+                ->withConsecutive(
+                    [$s->sampleContentBasePath, '*.tmpl.php'],
+                    [$s->sampleContentBasePath . 'frontend/', '*.{css,js}', $this->anything()]
+                )
+                ->willReturnOnConsecutiveCalls([
                     $s->sampleContentBasePath . 'main.tmpl.php',
                     $s->sampleContentBasePath . 'Another.tmpl.php'
+                ], [
+                    $s->sampleContentBasePath . 'frontend/foo.css',
+                    $s->sampleContentBasePath . 'frontend/bar.js'
                 ]);
             return;
         }
@@ -194,7 +200,7 @@ final class InstallerTest extends DbTestCase {
             return;
         }
         if ($expectation == 'clonesTemplateFilesAndSiteCfgFile') {
-            $s->mockFs->expects($this->exactly(4))
+            $s->mockFs->expects($this->exactly(6))
                 ->method('copy')
                 ->withConsecutive([
                     $s->sampleContentBasePath . 'site.json',
@@ -208,6 +214,12 @@ final class InstallerTest extends DbTestCase {
                 ], [
                     $s->sampleContentBasePath . 'Another.tmpl.php',
                     $s->input->sitePath . 'Another.tmpl.php',
+                ], [
+                    $s->sampleContentBasePath . 'frontend/foo.css',
+                    $s->indexFilePath . '/foo.css',
+                ], [
+                    $s->sampleContentBasePath . 'frontend/bar.js',
+                    $s->indexFilePath . '/bar.js',
                 ])
                 ->willReturn(true);
             return;

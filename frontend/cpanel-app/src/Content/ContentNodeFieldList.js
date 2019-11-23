@@ -1,3 +1,5 @@
+import QuillEditor from '../Widgets/QuillEditor.js';
+
 class ContentNodeFieldList extends preact.Component {
     /**
      * @param {{ctype: ContentType; cnode: ContentNode;}} props
@@ -24,8 +26,8 @@ class ContentNodeFieldList extends preact.Component {
      */
     render() {
         return $el('div', null, this.state.ctype.fields.map(field =>
-            $el('label', null,
-                $el('span', null, field.friendlyName),
+            $el('div', {class: 'label'},
+                $el('label', {for: 'field-' + field.name}, field.friendlyName),
                 this.makeInput(field)
             )
         ));
@@ -35,23 +37,32 @@ class ContentNodeFieldList extends preact.Component {
      */
     makeInput(field) {
         let tagName = 'input';
-        const props = {name: field.name,
+        const props = {id: 'field-' + field.name,
+                       name: field.name,
                        type: 'text',
                        value: this.state.cnode[field.name],
                        onInput: e => this.setCnodeValue(e)};
         if (field.widget == 'image') {
             props.type = 'file';
         } else if (field.widget == 'richtext') {
-            tagName = 'textarea';
-            delete props.type;
+            return $el(QuillEditor, {
+                name: props.name,
+                value: props.value,
+                onChange: html => {
+                    this.setCnodeValue(html, field.name);
+                }
+            });
         }
         return $el(tagName, props);
     }
     /**
      * @access private
      */
-    setCnodeValue(e) {
-        this.state.cnode[e.target.name] = e.target.value;
+    setCnodeValue(e, name) {
+        if (!name)
+            this.state.cnode[e.target.name] = e.target.value;
+        else
+            this.state.cnode[name] = e;
         this.setState({cnode: this.state.cnode});
     }
 }

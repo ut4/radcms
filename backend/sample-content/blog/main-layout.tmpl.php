@@ -9,6 +9,7 @@
 <head>
     <title>Hello - <?= $site->name ?></title>
     <meta name="generator" content="RadCMS 0.0.0">
+    <?= $this->cssFiles() ?>
 </head>
 <body>
     <header>
