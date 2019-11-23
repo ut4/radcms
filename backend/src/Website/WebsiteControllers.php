@@ -28,11 +28,11 @@ class WebsiteControllers {
                                 AppState $appState,
                                 SessionInterface $session) {
         // @allow \RadCms\Common\RadException
-        if ($siteConfig->selfLoad(RAD_SITE_PATH . 'site.ini') &&
+        if ($siteConfig->selfLoad(RAD_SITE_PATH . 'site.json') &&
             ((RAD_FLAGS & RAD_DEVMODE) &&
              $siteConfig->lastModTime > $appState->contentTypesLastUpdated)) {
             // @allow \RadCms\Common\RadException
-            $appState->diffAndSaveChangesToDb($siteConfig->contentTypes, 'site.ini');
+            $appState->diffAndSaveChangesToDb($siteConfig->contentTypes, 'site.json');
         }
         $this->siteCfg = $siteConfig;
         $this->session = $session;

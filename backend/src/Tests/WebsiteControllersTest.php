@@ -15,8 +15,8 @@ final class WebsiteControllersTest extends DbTestCase {
     use HttpTestUtils;
     use ContentTypeDbTestUtils;
     private const TEST_EXISTING_CTYPES = [
-        'FromSiteIni' => ['Existing type', ['name' => 'text'], 'site.ini'],
-        'FromSomePlugin' => ['FriendlyName', ['field' => 'text'], 'some-plugin.ini'],
+        'FromSiteCfg' => ['Existing type', ['name' => 'text'], 'site.json'],
+        'FromSomePlugin' => ['FriendlyName', ['field' => 'text'], 'some-plugin.json'],
     ];
     public function tearDown() {
         InstallerTest::clearInstalledContentTypesFromDb();
@@ -28,9 +28,9 @@ final class WebsiteControllersTest extends DbTestCase {
         $this->setTheseContentTypesAsInstalled(self::TEST_EXISTING_CTYPES, $s);
         $this->stubFsToReturnNoPlugins($s);
         $this->stubFsToReturnThisLastModTimeForSiteCfg($s, $newerThanLastUpdatedAt);
-        $this->stubFsToReturnThisSiteCfg($s, '[ContentType:NewType]' . PHP_EOL .
-                                             'friendlyName = My type' . PHP_EOL .
-                                             'fields[name] = text');
+        $this->stubFsToReturnThisSiteCfg($s, json_encode(['contentTypes' => [
+                                            ['NewType', 'My type', ['name' => 'text']]
+                                        ]]));
         //
         $req = new Request('/foo', 'GET');
         $res = $this->createMockResponse('404', 200, 'html');
@@ -82,16 +82,13 @@ final class WebsiteControllersTest extends DbTestCase {
             ->willReturn($mtime);
     }
     private function stubFsToReturnThisSiteCfg($s, $contents) {
+        $parsed = json_decode($contents);
+        $parsed->contentTypes[] = ['FromSiteCfg', 'Existing type', ['name' => 'text']];
+        $parsed->urlMatchers = [['/', 'foo.tmpl.php']];
         $s->ctx->fs->expects($this->once())
             ->method('read')
-            ->with($this->stringEndsWith('site.ini'))
-            ->willReturn($contents . PHP_EOL .
-                        '[ContentType:FromSiteIni]' . PHP_EOL .
-                        'friendlyName = Existing type' . PHP_EOL .
-                        'fields[name] = text' . PHP_EOL .
-                        '[UrlMatcher:Name]' . PHP_EOL .
-                        'pattern=/' . PHP_EOL .
-                        'layout=foo.tmpl.php');
+            ->with($this->stringEndsWith('site.json'))
+            ->willReturn(json_encode($parsed));
     }
     private function verifyInstalledNewContentTypeToDb() {
         $this->verifyContentTypeIsInstalled('NewType', true, self::$db);
@@ -105,11 +102,11 @@ final class WebsiteControllersTest extends DbTestCase {
         $s = $this->setupRemoveTest();
         $newerThanLastUpdatedAt = $s->mockLastContentTypesUpdatedAt + 10;
         $this->setTheseContentTypesAsInstalled(self::TEST_EXISTING_CTYPES + [
-            'NewType' => ['My Type', ['name' => 'text'], 'site.ini'],
+            'NewType' => ['My Type', ['name' => 'text'], 'site.json'],
         ], $s);
         $this->stubFsToReturnNoPlugins($s);
         $this->stubFsToReturnThisLastModTimeForSiteCfg($s, $newerThanLastUpdatedAt);
-        $this->stubFsToReturnThisSiteCfg($s, 'NewType = disappears');
+        $this->stubFsToReturnThisSiteCfg($s, '{"contentTypes":['./*NewType disappears*/']}');
         //
         $req = new Request('/foo', 'GET');
         $res = $this->createMockResponse('404', 200, 'html');
@@ -122,7 +119,7 @@ final class WebsiteControllersTest extends DbTestCase {
     }
     private function verifyUninstalledDisappearedContentType() {
         $this->verifyContentTypeIsInstalled('NewType', false, self::$db);
-        $this->verifyContentTypeIsInstalled('FromSiteIni', true, self::$db, false);
+        $this->verifyContentTypeIsInstalled('FromSiteCfg', true, self::$db, false);
         $this->verifyContentTypeIsInstalled('FromSomePlugin', true, self::$db, false);
     }
 }

@@ -10,11 +10,11 @@ use RadCms\Common\RadException;
 final class SiteConfigTest extends TestCase {
     public function testSelfLoadRejectsMissingValues() {
         $s = $this->setupValidateTest();
-        $this->stubFsToReturnThisSiteCfg($s, 'dum=my');
+        $this->stubFsToReturnThisSiteCfg($s, '{}');
         $this->loadInvalidSiteCfg($s);
         $this->verifyTheseErrorsWereReported($s,
-            'At least one `[UrlMatcher:name] pattern = /some-url` is required',
-            'At least one `[ContentType:MyContentType] fields[name] = data-type` is required');
+            '`{..."urlMatchers": ["pattern", "layout-file.tmpl.php"]...}` is required',
+            '`{..."contentTypes": ["MyType", "Friendly name", {"name": "datatype"}]...}` is required');
     }
     private function setupValidateTest() {
         return (object)[
@@ -44,17 +44,15 @@ final class SiteConfigTest extends TestCase {
 
     public function testSelfLoadRejectsInvalidAssetFilesValues() {
         $s = $this->setupAssetValidateTest();
-        $this->stubFsToReturnThisSiteCfg($s, '[AssetFile:0]' . PHP_EOL .
-                                             'no-url = here' . PHP_EOL .
-                                             'no-type = here' . PHP_EOL .
-                                             '[AssetFile:1]' . PHP_EOL .
-                                             'url = foo.css' . PHP_EOL .
-                                             'type = invalid');
+        $this->stubFsToReturnThisSiteCfg($s, json_encode(['assetFiles' => [
+                                                 [],                     // no-url, no-type
+                                                 ['foo.css', 'invalid'], // url, invalid-type
+                                             ]]));
         $this->loadInvalidSiteCfg($s);
         $this->verifyTheseErrorsWereReported($s,
-            '[AssetFile:name] must define field `type = ' . $s->assetFileTypesStr . '`',
-            '[AssetFile:name] must define field `url = file.css`',
-            '[AssetFile:name] must define field `type = ' . $s->assetFileTypesStr . '`');
+            'Invalid assetFile type, should be one of ' . $s->assetFileTypesStr,
+            'Invalid assetFile #0, should be {..."assetFiles": [["file.ext": "asset-type"]]...}',
+            'Invalid assetFile type, should be one of ' . $s->assetFileTypesStr);
     }
     private function setupAssetValidateTest() {
         $s = $this->setupValidateTest();

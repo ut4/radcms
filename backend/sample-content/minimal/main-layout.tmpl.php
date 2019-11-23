@@ -16,7 +16,7 @@
     </header>
     <div id="main">
         <?= $this->Generic(['name' => 'home-content',
-                            'frontendPanelTitle' => 'Home content']) ?>
+                            'frontendPanelTitle' => 'Etusivuteksti']) ?>
     </div>
     <footer>
         &copy; MySite <?= date('Y') ?>

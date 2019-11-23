@@ -10,13 +10,13 @@ class ContentTypeDef {
     /**
      * @param string $name
      * @param string $friendlyName
-     * @param array $compactFields ['fieldName' => 'dataType:widget', 'another' => 'dataType'...]
-     * @param string $origin = 'site.ini' 'site.ini' | 'SomePlugin.ini'
+     * @param array|object $compactFields ['fieldName' => 'dataType:widget', 'another' => 'dataType'...]
+     * @param string $origin = 'site.json' 'site.json' | 'SomePlugin.json'
      */
     public function __construct($name,
                                 $friendlyName,
-                                array $compactFields,
-                                $origin = 'site.ini') {
+                                $compactFields,
+                                $origin = 'site.json') {
         $this->name = $name;
         $this->friendlyName = $friendlyName;
         $this->fields = FieldCollection::fromCompactForm($compactFields);

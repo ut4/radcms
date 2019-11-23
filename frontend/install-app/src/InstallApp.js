@@ -35,7 +35,7 @@ class InstallApp extends preact.Component {
      */
     render() {
         return $el('div', null,
-            $el(Toaster),
+            $el(Toaster, {autoCloseTimeoutMillis: 60000}),
             $el(Form, {onConfirm: e => this.handleSubmit(e), confirmButtonText: 'Asenna', noAutoClose: true},
                 $el('h2', null, 'Asenna RadCMS'),
                 $el('div', {className: 'box'},
@@ -140,9 +140,9 @@ class InstallApp extends preact.Component {
         .then(res => JSON.parse(res.responseText))
         .then(() => {
             toast($el('p', null,
-                'Asennus onnistui. ',
-                $el('a', {href: this.state.baseUrl + (!this.state.mainQueryVar ? '' : 'index.php?' + this.state.mainQueryVar + '=/')}, 'Siirry'),
-                ' uudelle sivustolle.'
+                'Sivusto asennettiin kansioon ', $el('span', {style: 'font-weight: bold'}, this.state.sitePath), '. Aloita lukemalla README.md, tai ',
+                $el('a', {href: this.state.baseUrl + (!this.state.mainQueryVar ? '' : 'index.php?' + this.state.mainQueryVar + '=/')}, 'siirry'),
+                ' sivustolle.'
             ), 'success');
             window.scrollTo(0, 0);
         })

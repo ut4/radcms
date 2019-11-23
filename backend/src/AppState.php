@@ -53,7 +53,7 @@ class AppState {
     }
     /**
      * @param \RadCms\ContentType\ContentTypeCollection $newDefsFromFile
-     * @param string $origin 'site.ini' | 'SomePlugin.ini'
+     * @param string $origin 'site.json' | 'SomePlugin.json'
      * @throws \RadCms\Common\RadException
      * @return bool
      */

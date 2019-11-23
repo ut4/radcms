@@ -51,7 +51,7 @@ class FieldCollection extends GenericArray implements \JsonSerializable {
     ////////////////////////////////////////////////////////////////////////////
 
     /**
-     * @param array $compactFields ['name' => ['dataType'], 'another' => ['dataType', 'FriendlyName', 'widgetName'] ...]
+     * @param array|object $compactFields ['name' => ['dataType'], 'another' => 'datatype', 'yetanother' => ['dataType', 'FriendlyName', 'widgetName'] ...]
      * @return \RadCms\ContentType\FieldCollection
      */
     public static function fromCompactForm($compactFields) {

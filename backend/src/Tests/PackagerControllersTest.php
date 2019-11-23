@@ -25,7 +25,7 @@ final class PackagerControllersTest extends DbTestCase {
         ];
         self::$testSiteCfg = new SiteConfig(new FileSystem);
         // @allow \RadCms\Common\RadException
-        self::$testSiteCfg->selfLoad(__DIR__ . '/test-site/site.ini', false, false);
+        self::$testSiteCfg->selfLoad(__DIR__ . '/test-site/site.json', false, false);
         self::$migrator = new ContentTypeMigrator(self::getDb());
         // @allow \RadCms\Common\RadException
         self::$migrator->installMany(self::$testSiteCfg->contentTypes,
@@ -137,7 +137,7 @@ final class PackagerControllersTest extends DbTestCase {
             ], JSON_UNESCAPED_UNICODE);
         }
         if ($virtualFileName == Packager::WEBSITE_CONFIG_VIRTUAL_FILE_NAME) {
-            return file_get_contents(RAD_SITE_PATH . 'site.ini');
+            return file_get_contents(RAD_SITE_PATH . 'site.json');
         }
         throw new \RuntimeException("Unknown package file {$virtualFileName}");
     }

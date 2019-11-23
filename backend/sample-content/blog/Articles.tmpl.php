@@ -1,7 +1,7 @@
 <?php
 use RadCms\Templating\StockFrontendPanelImpls;
 $articles = $this->fetchAll('Articles')
-                 ->createFrontendPanel(StockFrontendPanelImpls::List, $props['frontendPanelTitle'])
+                 ->createFrontendPanel(StockFrontendPanelImpls::List, $props['frontendPanelTitle'] ?? 'Artikkelit')
                  ->exec();
 //
 foreach ($articles as $art): ?>

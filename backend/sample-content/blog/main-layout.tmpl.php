@@ -15,7 +15,7 @@
         <h1>Hello</h1>
     </header>
     <div id="main">
-        <?= $this->Articles(['frontendPanelTitle' => 'Homepage articles']) ?>
+        <?= $this->Articles() ?>
     </div>
     <footer>
         &copy; MySite <?= date('Y') ?>

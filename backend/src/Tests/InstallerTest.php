@@ -157,7 +157,7 @@ final class InstallerTest extends DbTestCase {
                 ->withConsecutive(
                     [$s->input->radPath . 'schema.mariadb.sql'],
                     [$s->sampleContentBasePath . 'sample-data.json'],
-                    [$s->sampleContentBasePath . 'site.ini']
+                    [$s->sampleContentBasePath . 'site.json']
                 )
                 ->willReturnOnConsecutiveCalls(
                     file_get_contents(RAD_BASE_PATH . 'schema.mariadb.sql'),
@@ -166,11 +166,10 @@ final class InstallerTest extends DbTestCase {
                         '["Movies", [{"title": "Foo"}, {"title": "Bar"}]]' .
                     ']',
                     //
-                    '[ContentType:Movies]' . PHP_EOL .
-                    'friendlyName=Elokuvat' . PHP_EOL .
-                    'fields[title]=text' . PHP_EOL .
-                    '[UrlMatcher:Dummy]' . PHP_EOL .
-                    'pattern=/url'
+                    '{' .
+                        '"contentTypes": [["Movies", "Elokuvat", {"title": "text"}]]' .
+                        ',"urlMatchers": [["/url", "file.tmpl.php"]]' .
+                    '}'
                 );
             return;
         }
@@ -195,11 +194,14 @@ final class InstallerTest extends DbTestCase {
             return;
         }
         if ($expectation == 'clonesTemplateFilesAndSiteCfgFile') {
-            $s->mockFs->expects($this->exactly(3))
+            $s->mockFs->expects($this->exactly(4))
                 ->method('copy')
                 ->withConsecutive([
-                    $s->sampleContentBasePath . 'site.ini',
-                    $s->input->sitePath . 'site.ini',
+                    $s->sampleContentBasePath . 'site.json',
+                    $s->input->sitePath . 'site.json',
+                ], [
+                    $s->sampleContentBasePath . 'README.md',
+                    $s->input->sitePath . 'README.md',
                 ], [
                     $s->sampleContentBasePath . 'main.tmpl.php',
                     $s->input->sitePath . 'main.tmpl.php',

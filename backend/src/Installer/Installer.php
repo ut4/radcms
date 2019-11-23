@@ -40,7 +40,7 @@ class Installer {
         return $this->createDb($settings) &&
                $this->createMainSchema($settings) &&
                $this->insertMainSchemaData($settings) &&
-               $this->createContentTypesAndInsertInitialData("{$base}site.ini",
+               $this->createContentTypesAndInsertInitialData("{$base}site.json",
                                                              "{$base}sample-data.json",
                                                              $this->fs) &&
                $this->cloneTemplatesAndCfgFile($settings) &&
@@ -150,7 +150,7 @@ class Installer {
         return true;
     }
     /**
-     * @param string $siteConfigFilePath '/path/to/site/site.ini'
+     * @param string $siteConfigFilePath '/path/to/site/site.json'
      * @param string $dataFilePath '/path/to/site/sample-content.json'
      * @param \RadCms\Framework\FileSystemInterface $fs
      * @return bool
@@ -178,7 +178,7 @@ class Installer {
         $dirPath = "{$s->radPath}sample-content/{$s->sampleContent}/";
         $dirPathLen = mb_strlen($dirPath);
         //
-        $fileNames = ['site.ini'];
+        $fileNames = ['site.json', 'README.md'];
         if (!($filePaths = $this->fs->readDir($dirPath, '*.tmpl.php')))
             throw new RadException("Failed to read {$dirPath}",
                                    RadException::FAILED_FS_OP);

@@ -35,7 +35,7 @@ final class ContentTypeControllersTest extends DbTestCase {
             'friendlyName' => 'Tapahtumat', 'fields' => [
                 ['name' => 'name', 'friendlyName' => 'name', 'dataType' => 'text', 'widget' => null],
                 ['name' => 'pic', 'friendlyName' => 'Kuva', 'dataType' => 'text', 'widget' => 'image'],
-            ], 'origin' => 'site.ini']), $s);
+            ], 'origin' => 'site.json']), $s);
         $this->sendGetContentTypeRequest($s);
     }
     private function setupGETTest() {
@@ -70,10 +70,10 @@ final class ContentTypeControllersTest extends DbTestCase {
             ['name' => 'Events', 'friendlyName' => 'Tapahtumat', 'fields' => [
                 ['name' => 'name', 'friendlyName' => 'name', 'dataType' => 'text', 'widget' => null],
                 ['name' => 'pic', 'friendlyName' => 'Kuva', 'dataType' => 'text', 'widget' => 'image'],
-            ], 'origin' => 'site.ini'],
+            ], 'origin' => 'site.json'],
             ['name' => 'Locations', 'friendlyName' => 'Paikat', 'fields' => [
                 ['name' => 'name', 'friendlyName' => 'Tapahtumapaikka', 'dataType' => 'text', 'widget' => null],
-            ], 'origin' => 'site.ini']
+            ], 'origin' => 'site.json']
         ]), $s);
         $this->sendGetAllContentTypesRequest($s);
     }

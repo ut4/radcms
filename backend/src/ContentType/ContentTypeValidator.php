@@ -6,7 +6,7 @@ use RadCms\Framework\Validator;
 
 abstract class ContentTypeValidator {
     const MAX_NAME_LEN = 64;
-    const FIELD_WIDGETS = ['image'];
+    const FIELD_WIDGETS = ['image', 'richtext'];
     /**
      * @param \RadCms\ContentType\ContentTypeDef $contentType
      * @return string[]

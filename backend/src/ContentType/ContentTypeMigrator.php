@@ -20,7 +20,7 @@ class ContentTypeMigrator {
      */
     public function __construct(Db $db) {
         $this->db = $db;
-        $this->origin = 'site.ini';
+        $this->origin = 'site.json';
     }
     /**
      * @param \RadCms\ContentType\ContentTypeCollection $contentTypes
@@ -59,7 +59,7 @@ class ContentTypeMigrator {
      * @param string $origin
      */
     public function setOrigin(Plugin $plugin) {
-        $this->origin = $plugin->name . '.ini';
+        $this->origin = $plugin->name . '.json';
     }
     /**
      * @param \RadCms\ContentType\ContentTypeCollection $contentTypes

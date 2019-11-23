@@ -1,5 +1,6 @@
 const config = {
     baseUrl: '',
+    assetBaseUrl: '',
 };
 
 function redirect(to, full) {
@@ -26,7 +27,7 @@ function myFetch(url, options = {}) {
                 options.progress(e.target, e.lengthComputable ? e.loaded / e.total * 100 : -1);
             };
         }
-        req.open(options.method || 'GET', config.baseUrl + url.substr(1), true);
+        req.open(options.method || 'GET', myFetch.makeUrl(url), true);
         Object.keys(options.headers || {}).forEach(key => {
             req.setRequestHeader(key, options.headers[key]);
         });
@@ -36,6 +37,7 @@ function myFetch(url, options = {}) {
         throw err;
     });
 }
+myFetch.makeUrl = url => config.baseUrl + url.substr(1);
 
 const signals = {
     _listeners: [],

@@ -35,13 +35,13 @@ class ContentNodeFieldList extends preact.Component {
      */
     makeInput(field) {
         let tagName = 'input';
-        const props = {name: field.friendlyName,
+        const props = {name: field.name,
                        type: 'text',
                        value: this.state.cnode[field.name],
                        onInput: e => this.setCnodeValue(e)};
         if (field.widget == 'image') {
             props.type = 'file';
-        } else if (field.widget == 'wysiwyg') {
+        } else if (field.widget == 'richtext') {
             tagName = 'textarea';
             delete props.type;
         }

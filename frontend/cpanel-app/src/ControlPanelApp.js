@@ -5,6 +5,7 @@ import ContentEditView from './Content/ContentEditView.js';
 import ContentTypesManageView from './ContentType/ContentTypesManageView.js';
 import ContentTypeCreateView from './ContentType/ContentTypeCreateView.js';
 import PluginsManageView from './Plugin/PluginsManageView.js';
+import WebsitePackView from './Website/WebsitePackView.js';
 
 class ControlPanelApp extends preact.Component {
     /**
@@ -67,6 +68,7 @@ class ControlPanelApp extends preact.Component {
                 $el(ContentTypesManageView, {path: '/manage-content-types'}),
                 $el(ContentTypeCreateView, {path: '/create-content-type'}),
                 $el(PluginsManageView, {path: '/manage-plugins'}),
+                $el(WebsitePackView, {path: '/pack-website'}),
                 ...this.userDefinedRoutes
             )
         );
@@ -103,6 +105,9 @@ class ControlPanelApp extends preact.Component {
             ...this.adminUiPanels.map(panelCfg =>
                 $el(ControlPanelApp.AdminTabSection, {panelCfg, siteInfo: this.siteInfo})
             ).concat($el('div', null,
+                $el('h3', null, 'Sivusto'),
+                $el('div', null, $el(MyLink, {to: '/pack-website'}, 'Paketoi')),
+            ), $el('div', null,
                 $el('h3', null, 'Lisäosat'),
                 $el('div', null, $el(MyLink, {to: '/manage-plugins'}, 'Hallitse')),
             ))
