@@ -48,7 +48,7 @@ class FileDialog extends preact.Component {
                         $el('span', null, 'Selected:'),
                         $el('input', {onInput: e => Form.receiveInputValue(e, this),
                                       name: 'selectedPath',
-                                      value: this.state.selectedPath}, null)
+                                      value: this.state.selectedPath})
                     ),
                     $el('button', {onClick: () => this.confirmSelection(),
                                    type: 'button',

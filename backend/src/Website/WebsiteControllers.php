@@ -59,7 +59,8 @@ class WebsiteControllers {
         }
         $cnd = new ContentNodeDAO($db, $contentTypes, $req->user);
         $template = new MagicTemplate(RAD_SITE_PATH . $layoutFileName,
-                                      ['cssFiles' => $this->siteCfg->cssAssets],
+                                      ['_cssFiles' => $this->siteCfg->cssAssets,
+                                       '_jsFiles' => $this->siteCfg->jsAssets],
                                       $cnd,
                                       $fs);
         $html = $template->render(['url' => $req->path ? explode('/', ltrim($req->path, '/')) : [''],

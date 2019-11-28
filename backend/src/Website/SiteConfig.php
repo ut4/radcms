@@ -10,7 +10,7 @@ use RadCms\Common\RadException;
  * Lukee, ja pitää sisällään site.json -tiedostoon conffatut tiedot.
  */
 class SiteConfig {
-    public const ASSET_TYPES = ['local-stylesheet', 'local-javascript'];
+    public const ASSET_TYPES = ['local-stylesheet', 'local-script'];
     public $urlMatchers;
     public $contentTypes;
     public $lastModTime;
@@ -89,8 +89,14 @@ class SiteConfig {
         $out = [];
         foreach ($cfgInput->assetFiles ?? [] as $definition) {
             if (!is_array($definition)) $definition = ['', ''];
+            $attrs = [];
+            if (count($definition) > 2)
+                $attrs = $definition[2] instanceof \stdClass
+                    ? (array)$definition[2]
+                    : 'invalid';
             $out[] = (object)['url' => $definition[0] ?? '',
-                              'type' => $definition[1] ?? ''];
+                              'type' => $definition[1] ?? '',
+                              'attrs' => $attrs];
         }
         return $out;
     }
@@ -104,7 +110,7 @@ class SiteConfig {
         if ($this->urlMatchers->length()) {
             foreach ($this->urlMatchers->toArray() as $i => $matcher) {
                 if (!$matcher->origPattern)
-                    $errors[] = 'Invalid urlMatcher #'.$i.', should be {..."urlMatchers": [["pattern": "layout.tmpl.php"]]...}';
+                    $errors[] = 'Invalid urlMatcher #'.$i.', should be {..."urlMatchers": [["pattern", "layout.tmpl.php"]]...}';
                 elseif (@preg_match($matcher->pattern, null) === false)
                     $errors[] = $matcher->origPattern . ' (' . $matcher->pattern
                                 . ') is not valid regexp';
@@ -123,10 +129,12 @@ class SiteConfig {
         //
         foreach ($this->assets as $i => $asset) {
             if (!$asset->url)
-                $errors[] = 'Invalid assetFile #'.$i.', should be {..."assetFiles": [["file.ext": "asset-type"]]...}';
+                $errors[] = 'Invalid assetFile #'.$i.', should be {..."assetFiles": [["file.ext", "asset-type", {"html-attr": "value"}?]]...}';
             elseif (array_search($asset->type, self::ASSET_TYPES) === false)
                 $errors[] = 'Invalid assetFile type, should be one of ' .
                             implode('|', self::ASSET_TYPES);
+            if ($asset->url && !is_array($asset->attrs))
+                $errors[] = 'assetFile->attrs must be an object';
         }
         if (!$errors) {
             return true;
@@ -139,12 +147,14 @@ class SiteConfig {
      * @return string[]
      */
     public function __get($name) {
-        if ($name == 'cssAssets') {
-            $out = [];
-            foreach ($this->assets as $a)
-                if ($a->type == 'local-stylesheet') $out[] = $a->url;
-            return $out;
-        }
+        if ($name == 'cssAssets')
+            return array_filter($this->assets, function ($f) {
+                return $f->type == 'local-stylesheet';
+            });
+        if ($name == 'jsAssets')
+            return array_filter($this->assets, function ($f) {
+                return $f->type == 'local-script';
+            });
         throw new RadException("What's {$name}?", RadException::BAD_INPUT);
     }
 }

@@ -1,0 +1,14 @@
+{
+  "name": "radcms-devtools",
+  "version": "0.0.0",
+  "description": "...",
+  "private": true,
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "GPLv2",
+  "devDependencies": {
+    "rollup": "^1.27.4"
+  }
+}

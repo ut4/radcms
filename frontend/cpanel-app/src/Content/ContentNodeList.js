@@ -1,4 +1,5 @@
-import {MyLink} from '../../../src/common-components.js';
+import {components} from '../../../rad-commons.js';
+const {MyLink} = components;;
 import CNodeUtils from './Utils.js';
 
 /**

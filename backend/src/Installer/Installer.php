@@ -216,13 +216,14 @@ class Installer {
             $this->indexFilePath . 'config.php',
 "<?php
 if (!defined('RAD_BASE_PATH')) {
-define('RAD_BASE_URL',   '{$s->baseUrl}');
-define('RAD_QUERY_VAR',  '{$s->mainQueryVar}');
-define('RAD_BASE_PATH',  '{$s->radPath}');
-define('RAD_INDEX_PATH', '{$this->indexFilePath}');
-define('RAD_SITE_PATH',  '{$s->sitePath}');
-define('RAD_DEVMODE',    1 << 1);
-define('RAD_FLAGS',      {$flags});
+define('RAD_BASE_URL',       '{$s->baseUrl}');
+define('RAD_QUERY_VAR',      '{$s->mainQueryVar}');
+define('RAD_BASE_PATH',      '{$s->radPath}');
+define('RAD_INDEX_PATH',     '{$this->indexFilePath}');
+define('RAD_SITE_PATH',      '{$s->sitePath}');
+define('RAD_DEVMODE',        1 << 1);
+define('RAD_USE_BUNDLED_JS', 2 << 1);
+define('RAD_FLAGS',          {$flags});
 }
 return [
     'db.host'        => '{$s->dbHost}',

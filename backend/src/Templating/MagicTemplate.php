@@ -81,6 +81,13 @@ class MagicTemplate extends Template {
         return $this->__contentNodeDao->fetchOne($contentTypeName);
     }
     /**
+     * @param string $str
+     * @return string
+     */
+    public function e($str) {
+        return htmlspecialchars($str);
+    }
+    /**
      * @param string $url
      * @param bool $withIndexFile = true
      * @return string
@@ -100,16 +107,41 @@ class MagicTemplate extends Template {
      * @return string
      */
     public function cssFiles() {
-        return implode(' ', array_map(function ($url) {
-            return '<link href="' . $this->assetUrl($this->e($url)) . '" rel="stylesheet">';
-        }, $this->cssFiles));
+        return implode(' ', array_map(function ($f) {
+            $attrsMap = $f->attrs;
+            if (!array_key_exists('rel', $attrsMap)) $attrsMap['rel'] = 'stylesheet';
+            return '<link href="' . $this->assetUrl($this->e($f->url)) . '"' .
+                   self::attrMapToStr($attrsMap) . '>';
+        }, $this->_cssFiles));
     }
     /**
-     * @param string $str
      * @return string
      */
-    public function e($str) {
-        return htmlspecialchars($str);
+    public function jsFiles() {
+        return implode(' ', array_map(function ($f) {
+            return '<script src="' . $this->assetUrl($this->e($f->url)) . '"' .
+                   ($f->attrs ? '' : self::attrMapToStr($f->attrs)) .
+                   '></script>';
+        }, $this->_jsFiles));
+    }
+    /**
+     * @param array $files Array<string>|Array<{fileName:string,attrs?:object}>
+     * @param bool $includeVendor = true
+     * @return string <script src="frontend/file.js">... tai.
+     *                <script src="frontend/file.js" type="module">...
+     */
+    public function jsBundle($files, $includeVendor = true) {
+        $baseAttrs = (RAD_FLAGS & RAD_USE_BUNDLED_JS) ? [] : ['type' => 'module'];
+        return ($includeVendor
+            ? '<script src="'. $this->assetUrl('frontend/vendor/vendor.bundle.min.js') . '"></script>'
+            : '') .
+        implode('', array_map(function ($f) use ($baseAttrs) {
+            [$url, $attrs] = is_string($f)
+                ? [$f, $baseAttrs]
+                : [$f->fileName, array_merge($f->attrs, $baseAttrs)];
+            return '<script src="' . $this->assetUrl($this->e($url)) . '"' .
+                   self::attrMapToStr($attrs) . '></script>' . PHP_EOL;
+        }, $files));
     }
     /**
      * @param string $directiveName
@@ -121,5 +153,16 @@ class MagicTemplate extends Template {
             throw new RadException("Alias {$directiveName} is already registered.",
                                    RadException::BAD_INPUT);
         self::$__aliases[$directiveName] = $fullFilePath;
+    }
+    /**
+     * ['id' => 'foo', 'class' => 'bar'] -> ' id="foo" class="bar"'
+     *
+     * @param array|object $map
+     * @return string
+     */
+    private static function attrMapToStr($map) {
+        $pairs = [];
+        foreach ($map as $key => $val) $pairs[] = " {$key}=\"{$val}\"";
+        return htmlspecialchars(implode('' , $pairs), ENT_NOQUOTES);
     }
 }

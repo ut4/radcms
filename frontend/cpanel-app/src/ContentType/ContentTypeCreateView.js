@@ -1,4 +1,5 @@
-import {View, Form} from '../../../src/common-components.js';
+import {components} from '../../../rad-commons.js';
+const {View, Form} = components;
 
 /**
  * #/create-content-type

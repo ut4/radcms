@@ -230,13 +230,14 @@ final class InstallerTest extends DbTestCase {
                 ->with($s->indexFilePath . '/config.php',
 "<?php
 if (!defined('RAD_BASE_PATH')) {
-define('RAD_BASE_URL',   '{$s->input->baseUrl}/');
-define('RAD_QUERY_VAR',  '{$s->input->mainQueryVar}');
-define('RAD_BASE_PATH',  '{$s->input->radPath}');
-define('RAD_INDEX_PATH', '{$s->indexFilePath}/');
-define('RAD_SITE_PATH',  '{$s->input->sitePath}');
-define('RAD_DEVMODE',    1 << 1);
-define('RAD_FLAGS',      RAD_DEVMODE);
+define('RAD_BASE_URL',       '{$s->input->baseUrl}/');
+define('RAD_QUERY_VAR',      '{$s->input->mainQueryVar}');
+define('RAD_BASE_PATH',      '{$s->input->radPath}');
+define('RAD_INDEX_PATH',     '{$s->indexFilePath}/');
+define('RAD_SITE_PATH',      '{$s->input->sitePath}');
+define('RAD_DEVMODE',        1 << 1);
+define('RAD_USE_BUNDLED_JS', 2 << 1);
+define('RAD_FLAGS',          RAD_DEVMODE);
 }
 return [
     'db.host'        => '{$s->input->dbHost}',

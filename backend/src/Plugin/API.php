@@ -41,11 +41,12 @@ class API {
      * cpanel.php-tiedostoon. Esimerkki: registerJsFile('MyFile.js', ['type' => 'module']);
      *
      * @param string $scriptFileName
+     * @param array $attrs = array
      */
     public function registerJsFile($scriptFileName, array $attrs = []) {
         $this->onJsFileRegistered->__invoke((object)[
             'fileName' => $scriptFileName,
-            'attrs' => $attrs
+            'attrs' => $attrs,
         ]);
     }
     /**

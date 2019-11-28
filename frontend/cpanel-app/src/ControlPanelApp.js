@@ -1,4 +1,4 @@
-import {MyLink, FeatherSvg, Toaster, Tabs} from '../../src/common-components.js';
+import {components} from '../../rad-commons.js';
 import uiPanelRegister from './UiPanelRegister.js';
 import ContentAddView from './Content/ContentAddView.js';
 import ContentEditView from './Content/ContentEditView.js';
@@ -6,6 +6,7 @@ import ContentTypesManageView from './ContentType/ContentTypesManageView.js';
 import ContentTypeCreateView from './ContentType/ContentTypeCreateView.js';
 import PluginsManageView from './Plugin/PluginsManageView.js';
 import WebsitePackView from './Website/WebsitePackView.js';
+const {MyLink, FeatherSvg, Toaster, Tabs} = components;
 
 class ControlPanelApp extends preact.Component {
     /**

@@ -1,6 +1,6 @@
-import services from '../../../src/common-services.js';
-import {View, Form} from '../../../src/common-components.js';
+import {services, components} from '../../../rad-commons.js';
 import ContentNodeFieldList from './ContentNodeFieldList.js';
+const {View, Form} = components;
 
 /**
  * #/add-content[/:initialComponentTypeName?returnto=<url>]

@@ -1,40 +1,29 @@
-import '../src/globals.js';
-import services from '../src/common-services.js';
-import * as components from '../src/common-components.js';
+import '../commons/globals.js';
+import {services} from '../rad-commons.js';
 import ControlPanelApp from './src/ControlPanelApp.js';
-import uiPanelRegister from './src/UiPanelRegister.js';
 
-const cpanelBoot = {
-    /**
-     * @param {ControlPanelAppProps} props
-     */
-    boot(props) {
-        services.config.baseUrl = props.baseUrl;
-        services.config.assetBaseUrl = props.assetBaseUrl;
-        //
-        window.rad.runRegisteredOnLoadFns([uiPanelRegister, services, components]);
-        //
-        preact.render(preact.createElement(ControlPanelApp, props, null),
-                      document.getElementById('cpanel-app'));
-        //
-        var parentUrlPcs = window.parent.location.href.split('#');
-        var tmp = parentUrlPcs[0].split('?rescan=');
-        if (tmp[1]) {
-            window.parent.history.replaceState(null, window.parent.document.title, tmp[0]);
-            document.querySelector('base').href = tmp[0];
-        } else if (parentUrlPcs[1]) {
-            window.location.hash = parentUrlPcs[1];
-            document.querySelector('base').href = parentUrlPcs[0];
-        } else {
-            document.querySelector('base').href = window.parent.location;
-        }
-        //
-        window.parent.addEventListener('hashchange', e => {
-            if (e.newURL !== e.oldURL) window.location.replace(
-                window.location.href.split('#')[0] + (window.parent.location.hash || '#/')
-            );
-        });
-    }
-};
+const props = window.cpanelProps;
+services.config.baseUrl = props.baseUrl;
+services.config.assetBaseUrl = props.assetBaseUrl;
+delete window.cpanelProps;
 
-export default cpanelBoot;
+preact.render(preact.createElement(ControlPanelApp, props),
+              document.getElementById('cpanel-app'));
+//
+var parentUrlPcs = window.parent.location.href.split('#');
+var tmp = parentUrlPcs[0].split('?rescan=');
+if (tmp[1]) {
+    window.parent.history.replaceState(null, window.parent.document.title, tmp[0]);
+    document.querySelector('base').href = tmp[0];
+} else if (parentUrlPcs[1]) {
+    window.location.hash = parentUrlPcs[1];
+    document.querySelector('base').href = parentUrlPcs[0];
+} else {
+    document.querySelector('base').href = window.parent.location;
+}
+//
+window.parent.addEventListener('hashchange', e => {
+    if (e.newURL !== e.oldURL) window.location.replace(
+        window.location.href.split('#')[0] + (window.parent.location.hash || '#/')
+    );
+});

@@ -1,5 +1,5 @@
-import {View, FeatherSvg} from '../../../src/common-components.js';
-import services from '../../../src/common-services.js';
+import {services, components} from '../../../rad-commons.js';
+const {View, FeatherSvg} = components;
 const dataTypes = [
     {name: 'text'},
 ];
@@ -58,7 +58,7 @@ class ContentTypesManageView extends preact.Component {
                 $el('td', null,
                     $el('input', {onInput: e => this.receiveFieldValue(e, i, 'name'),
                                   value: ir.name,
-                                  className}, null)
+                                  className})
                 ),
                 $el('td', null,
                     $el('select', {onChange: e => this.receiveFieldValue(e, i, 'dataType'),
@@ -80,7 +80,7 @@ class ContentTypesManageView extends preact.Component {
             $el('div', null,
                 $el('input', {onInput: e => this.receiveInputValue(e, name),
                               value: this.state.openItem.name,
-                              className: 'h3'}, null),
+                              className: 'h3'}),
                 $el('button', {onClick: () => this.handleSubmit(),
                                className: 'nice-button icon-button small',
                                disabled: this.state.doDisableConfirmButton},

@@ -4,7 +4,7 @@ namespace RadCms\Website;
 
 use RadCms\Framework\Request;
 use RadCms\Framework\Response;
-use RadCms\Framework\Template;
+use RadCms\Templating\MagicTemplate;
 use RadCms\Framework\SessionInterface;
 
 class AdminControllers {
@@ -20,7 +20,7 @@ class AdminControllers {
                                               SessionInterface $sess) {
         if ($data = $sess->get($req->params->dataKey))
             $sess->remove($req->params->dataKey);
-        $res->html((new Template(RAD_BASE_PATH . 'src/Website/cpanel.tmpl.php'))
+        $res->html((new MagicTemplate(RAD_BASE_PATH . 'src/Website/cpanel.tmpl.php'))
             ->render($data));
     }
 }

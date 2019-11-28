@@ -1,6 +1,6 @@
-import services from '../../../src/common-services.js';
-import {View, Form} from '../../../src/common-components.js';
+import {services, components} from '../../../rad-commons.js';
 import ContentNodeFieldList from './ContentNodeFieldList.js';
+const {View, Form} = components;
 
 /**
  * #/edit-content/:id/:contentTypeName
@@ -38,7 +38,7 @@ class ContentEditView extends preact.Component {
             $el('h2', null, 'Muokkaa sisältöä'),
             $el(ContentNodeFieldList, {cnode: this.state.cnode,
                                        ctype: this.state.ctype,
-                                       ref: cmp => { if (cmp) this.fieldListCmp = cmp; }}, null)
+                                       ref: cmp => { if (cmp) this.fieldListCmp = cmp; }})
         ));
     }
     /**

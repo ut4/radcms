@@ -1,5 +1,5 @@
-import services from '../../../src/common-services.js';
-import {View} from '../../../src/common-components.js';
+import {services, components} from '../../../rad-commons.js';
+const {View} = components;
 
 /**
  * #/manage-plugins

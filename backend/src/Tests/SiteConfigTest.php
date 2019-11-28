@@ -45,14 +45,15 @@ final class SiteConfigTest extends TestCase {
     public function testSelfLoadRejectsInvalidAssetFilesValues() {
         $s = $this->setupAssetValidateTest();
         $this->stubFsToReturnThisSiteCfg($s, json_encode(['assetFiles' => [
-                                                 [],                     // no-url, no-type
-                                                 ['foo.css', 'invalid'], // url, invalid-type
+                                                 [],
+                                                 ['foo.css', 'invalid'],
+                                                 ['foo.css', 'local-stylesheet', 'invalid'],
                                              ]]));
         $this->loadInvalidSiteCfg($s);
         $this->verifyTheseErrorsWereReported($s,
+            'Invalid assetFile #0, should be {..."assetFiles": [["file.ext", "asset-type", {"html-attr": "value"}?]]...}',
             'Invalid assetFile type, should be one of ' . $s->assetFileTypesStr,
-            'Invalid assetFile #0, should be {..."assetFiles": [["file.ext": "asset-type"]]...}',
-            'Invalid assetFile type, should be one of ' . $s->assetFileTypesStr);
+            'assetFile->attrs must be an object');
     }
     private function setupAssetValidateTest() {
         $s = $this->setupValidateTest();
