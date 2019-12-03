@@ -32,7 +32,7 @@ class ContentControllers {
                     'lastInsertId' => $dmo->lastInsertId]);
     }
     /**
-     * GET /api/content/:contentTypeName/:id.
+     * GET /api/content/:id/:contentTypeName.
      *
      * @param \RadCms\Framework\Request $req
      * @param \RadCms\Framework\Response $res
@@ -47,7 +47,7 @@ class ContentControllers {
         else $res->status(404)->json(['got' => 'nothing']);
     }
     /**
-     * PUT /api/content/:contentTypeName/:id.
+     * PUT /api/content/:id/:contentTypeName.
      *
      * @param \RadCms\Framework\Request $req
      * @param \RadCms\Framework\Response $res

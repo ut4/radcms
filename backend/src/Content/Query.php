@@ -110,7 +110,7 @@ class Query {
             throw new RadException($errors, RadException::BAD_INPUT);
         }
         //
-        $mainQ = 'SELECT `id`, ' .
+        $mainQ = 'SELECT `id`, `isPublished`, ' .
                  $this->contentType->fields->toSqlCols() .
                  ', \'' . $this->contentType->name . '\' AS `contentType`' .
                  ' FROM ${p}' . $this->contentType->name .
@@ -121,7 +121,7 @@ class Query {
         $joins = [];
         $fields = [];
         if ($this->joinDefs) $this->addContentTypeJoin($this->joinDefs[0], $joins, $fields);
-        if ($this->dao->useRevisions) $this->addRevisionsJoin($joins, $fields);
+        if ($this->dao->includeRevisions) $this->addRevisionsJoin($joins, $fields);
         //
         if (!$joins) {
             return $mainQ;

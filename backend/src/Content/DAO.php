@@ -7,7 +7,7 @@ use RadCms\ContentType\ContentTypeCollection;
 use RadCms\Common\RadException;
 
 class DAO {
-    public $useRevisions;
+    public $includeRevisions;
     protected $db;
     protected $counter;
     protected $frontendPanelInfos;
@@ -15,16 +15,16 @@ class DAO {
     /**
      * @param \RadCms\Framework\Db $db
      * @param \RadCms\ContentType\ContentTypeCollection $contentTypes
-     * @param bool $useRevisions = false
+     * @param bool $includeRevisions = false
      */
     public function __construct(Db $db,
                                 ContentTypeCollection $contentTypes,
-                                $useRevisions = false) {
+                                $includeRevisions = false) {
         $this->db = $db;
         $this->contentTypes = $contentTypes;
         $this->counter = 0;
         $this->frontendPanelInfos = [];
-        $this->useRevisions = $useRevisions;
+        $this->includeRevisions = $includeRevisions;
     }
     /**
      * @param string $contentTypeName
@@ -90,6 +90,7 @@ class DAO {
         if (isset($this->frontendPanelInfos[$queryId])) {
             $this->frontendPanelInfos[$queryId]->contentNodes = $out;
         }
+        //
         return $out;
     }
     /**
@@ -112,30 +113,26 @@ class DAO {
      * @return object
      */
     private function makeContentNode($row, $rows) {
-        $head = (object)$row;
-        unset($head->revisionSnapshot);
-        if (!$this->useRevisions) return $head;
+        $out = (object)$row;
+        unset($out->revisionSnapshot);
+        $out->isPublished = (bool)$out->isPublished;
+        $out->isRevision = false;
+        $out->revisions = [];
+        if (!$this->includeRevisions) return $out;
         //
-        $revs = [];
-        $latest = (object)['time' => 0, 'index' => 0];
         foreach ($rows as $row) {
             if (!$row['revisionSnapshot'] ||
-                $row['id'] != $head->id ||
-                $row['contentType'] != $head->contentType) continue;
-            $l = array_push($revs, json_decode($row['revisionSnapshot']));
-            if ($row['revisionCreatedAt'] > $latest->time) {
-                $latest->time = $row['revisionCreatedAt'];
-                $latest->index = $l - 1;
-            }
+                $row['id'] != $out->id ||
+                $row['contentType'] != $out->contentType) continue;
+            $out->revisions[] = (object)[
+                'createdAt' => $row['revisionCreatedAt'],
+                'snapshot' => json_decode($row['revisionSnapshot'])
+            ];
         }
-        //
-        if ($revs) {
-            $out = array_splice($revs, $latest->index, 1)[0];
-            $out->revisions = $revs; // kaikki paitsi uusin/splicattu
-            $out->id = $head->id;
-            return $out;
-        }
-        return $head;
+        usort($out->revisions, function ($a, $b) {
+            return $b->createdAt - $a->createdAt;
+        });
+        return $out;
     }
     private function provideRowsToUserDefinedJoinCollector($join,
                                                            $rows,

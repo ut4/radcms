@@ -103,6 +103,7 @@ class ContentTypeMigrator {
         foreach ($ctypeDefs as $type) {
             $sql .= 'CREATE TABLE ${p}' . $type->name . '(' .
                 '`id` ' . strtoupper($size) . 'INT UNSIGNED NOT NULL AUTO_INCREMENT' .
+                ', `isPublished` TINYINT(1) UNSIGNED NOT NULL DEFAULT 0' .
                 ', ' . $type->fields->toSqlTableFields() .
                 ', PRIMARY KEY (`id`)' .
             ') DEFAULT CHARSET = utf8mb4;';

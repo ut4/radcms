@@ -71,7 +71,7 @@ class Db {
      * @return bool
      */
     public function commit() {
-        if (--$this->transactionLevel === 0) {
+        if ($this->transactionLevel > 0 && --$this->transactionLevel === 0) {
             return $this->pdo->commit();
         }
         return false;
@@ -80,7 +80,7 @@ class Db {
      * @return bool
      */
     public function rollback() {
-        if (--$this->transactionLevel === 0) {
+        if ($this->transactionLevel > 0 && --$this->transactionLevel === 0) {
             return $this->pdo->rollBack();
         }
         return false;

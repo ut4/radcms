@@ -5,7 +5,7 @@ namespace RadCms\Website;
 use RadCms\Framework\Request;
 use RadCms\Framework\Response;
 use RadCms\Templating\MagicTemplate;
-use RadCms\Content\DAO as ContentNodeDAO;
+use RadCms\Content\MagicTemplateDAO as ContentNodeDAO;
 use RadCms\Framework\SessionInterface;
 use RadCms\AppState;
 use RadCms\Framework\Db;

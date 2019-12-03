@@ -3,7 +3,7 @@
 namespace RadCms\Templating;
 
 use RadCms\Framework\Template;
-use RadCms\Content\DAO;
+use RadCms\Content\MagicTemplateDAO;
 use RadCms\Common\RadException;
 use RadCms\Common\LoggerAccess;
 use RadCms\Framework\FileSystem;
@@ -20,12 +20,12 @@ class MagicTemplate extends Template {
     /**
      * @param string $file
      * @param array $vars = null
-     * @param \RadCms\Content\DAO $dao = null
+     * @param \RadCms\Content\MagicTemplateDAO $dao = null
      * @param \RadCms\Framework\FileSystem $fs = null
      */
     public function __construct($file,
                                 array $vars = null,
-                                DAO $dao = null,
+                                MagicTemplateDAO $dao = null,
                                 FileSystem $fs = null) {
         parent::__construct($file, $vars);
         $this->__contentNodeDao = $dao;
@@ -64,7 +64,7 @@ class MagicTemplate extends Template {
     }
     /**
      * @param string $contentTypeName
-     * @return RadCms\Content\DAO
+     * @return \RadCms\Content\Query
      * @throws \RadCms\Common\RadException
      */
     public function fetchAll($contentTypeName) {
@@ -73,7 +73,7 @@ class MagicTemplate extends Template {
     }
     /**
      * @param string $contentTypeName
-     * @return RadCms\Content\DAO
+     * @return \RadCms\Content\Query
      * @throws \RadCms\Common\RadException
      */
     public function fetchOne($contentTypeName) {
