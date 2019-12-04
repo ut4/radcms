@@ -121,7 +121,7 @@ class Query {
         $joins = [];
         $fields = [];
         if ($this->joinDefs) $this->addContentTypeJoin($this->joinDefs[0], $joins, $fields);
-        if ($this->dao->includeRevisions) $this->addRevisionsJoin($joins, $fields);
+        if ($this->dao->fetchRevisions) $this->addRevisionsJoin($joins, $fields);
         //
         if (!$joins) {
             return $mainQ;

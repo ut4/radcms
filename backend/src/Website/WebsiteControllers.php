@@ -57,7 +57,7 @@ class WebsiteControllers {
             $res->html('404');
             return;
         }
-        $cnd = new ContentNodeDAO($db, $contentTypes, $req->user);
+        $cnd = new ContentNodeDAO($db, $contentTypes, isset($req->user));
         $template = new MagicTemplate(RAD_SITE_PATH . $layoutFileName,
                                       ['_cssFiles' => $this->siteCfg->cssAssets,
                                        '_jsFiles' => $this->siteCfg->jsAssets],

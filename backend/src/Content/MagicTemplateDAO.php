@@ -9,12 +9,12 @@ class MagicTemplateDAO extends DAO {
     /**
      * @param \RadCms\Framework\Db $db
      * @param \RadCms\ContentType\ContentTypeCollection $contentTypes
-     * @param bool $includeRevisions = true
+     * @param bool $fetchRevisions = true
      */
     public function __construct(Db $db,
                                 ContentTypeCollection $contentTypes,
-                                $includeRevisions = true) {
-        parent::__construct($db, $contentTypes, $includeRevisions);
+                                $fetchRevisions = true) {
+        parent::__construct($db, $contentTypes, $fetchRevisions);
     }
     /**
      * @param string $sql
@@ -29,18 +29,24 @@ class MagicTemplateDAO extends DAO {
                            $isFetchOne,
                            $bindVals = null,
                            $join = null) {
-        $nodes = parent::doExec($sql, $queryId, $isFetchOne, $bindVals, $join);
-        if (!$this->includeRevisions) return $nodes;
-        $nodes = $isFetchOne ? [$nodes] : $nodes;
+        $res = parent::doExec($sql, $queryId, $isFetchOne, $bindVals, $join);
+        if (!$res) return $res;
+        //
+        $res = $isFetchOne ? [$res] : $res;
         $out = [];
-        foreach ($nodes as $node) {
-            if (!$node->isPublished) continue;
-            if (!$node->revisions) { $out[] = $node; continue; }
-            $latestDraft = $node->revisions[0]->snapshot;
-            $latestDraft->id = $node->id;
-            $latestDraft->isPublished = true;
-            $latestDraft->isRevision = true;
-            $out[] = $latestDraft;
+        if (!$this->fetchRevisions) {
+            foreach ($res as $node) {
+                if ($node->isPublished) $out[] = $node;
+            }
+        } else {
+            foreach ($res as $node) {
+                if (!$node->revisions) { $out[] = $node; continue; }
+                $latestDraft = $node->revisions[0]->snapshot;
+                $latestDraft->id = $node->id;
+                $latestDraft->isPublished = true;
+                $latestDraft->isRevision = true;
+                $out[] = $latestDraft;
+            }
         }
         return $isFetchOne ? $out[0] ?? null : $out;
     }

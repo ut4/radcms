@@ -4,6 +4,7 @@ namespace RadCms\Tests;
 
 use RadCms\Tests\Self\DbTestCase;
 use RadCms\Tests\Self\HttpTestUtils;
+use RadCms\Tests\Self\ContentTestUtils;
 use RadCms\Framework\Request;
 use RadCms\ContentType\ContentTypeCollection;
 use RadCms\ContentType\ContentTypeMigrator;
@@ -11,6 +12,7 @@ use RadCms\Tests\Self\MutedResponse;
 
 final class ContentControllersTest extends DbTestCase {
     use HttpTestUtils;
+    use ContentTestUtils;
     private $afterTest;
     private static $testContentTypes;
     private static $migrator;
@@ -26,6 +28,7 @@ final class ContentControllersTest extends DbTestCase {
         // @allow \RadCms\Common\RadException
         self::$migrator->uninstallMany(self::$testContentTypes);
         InstallerTest::clearInstalledContentTypesFromDb();
+        self::$db->exec('DELETE FROM ${p}ContentRevisions');
     }
     public function tearDown() {
         $this->afterTest->__invoke();
@@ -50,7 +53,7 @@ final class ContentControllersTest extends DbTestCase {
         $s = (object) [
             'expectedResponseBody' => null,
             'httpReturnBody' => null,
-            'newProduct' => (object)['title' => 'Uuden tuoteen nimi'],
+            'newProduct' => (object)['title' => 'Uuden tuotteen nimi'],
         ];
         return $s;
     }
@@ -61,17 +64,19 @@ final class ContentControllersTest extends DbTestCase {
                 return json_encode($actualData) == $expected;
             }) : $expected;
     }
-    private function sendCreateContentNodeRequest($s) {
+    private function sendCreateContentNodeRequest($s, $urlTail = '') {
         $res = $this->createMock(MutedResponse::class);
         $res->expects($this->once())
             ->method('json')
             ->with($s->expectedResponseBody)
             ->willReturn($res);
-        $req = new Request('/api/content/Products', 'POST', $s->newProduct);
+        $req = new Request('/api/content/Products' . $urlTail,
+                           'POST',
+                           $s->newProduct);
         $this->makeRequest($req, $res);
     }
-    private function verifyPOSTContentReturnedLastInsertId($s) {
-        $this->assertEquals('1', $s->httpReturnBody['numAffectedRows']);
+    private function verifyPOSTContentReturnedLastInsertId($s, $expectedNumAffected = '1') {
+        $this->assertEquals($expectedNumAffected, $s->httpReturnBody['numAffectedRows']);
         $this->assertEquals(true, $s->httpReturnBody['lastInsertId'] > 0);
     }
     private function verifyContentNodeWasInsertedToDb($s) {
@@ -85,11 +90,42 @@ final class ContentControllersTest extends DbTestCase {
     ////////////////////////////////////////////////////////////////////////////
 
 
+    public function testPOSTContentCreatesContentNodeAndRevision() {
+        $s = $this->setupPOSTTest();
+        $s->newProduct->title .= '2';
+        $this->setExpectedResponseBody(
+            $this->callback(function ($actualResponse) use ($s) {
+                $s->httpReturnBody = $actualResponse;
+                return true; // ignore
+            }),
+            $s
+        );
+        $this->sendCreateContentNodeRequest($s, '/with-revision');
+        $this->verifyPOSTContentReturnedLastInsertId($s, '2');
+        $this->verifyContentNodeWasInsertedToDb($s);
+        $this->verifyRevisionWasInsertedToDb($s);
+    }
+    private function verifyRevisionWasInsertedToDb($s) {
+        $this->assertEquals(json_encode($s->newProduct), self::$db->fetchOne(
+            'SELECT `revisionSnapshot` FROM ${p}ContentRevisions WHERE `contentId` = ?' .
+            ' AND `contentType` = ?',
+            [$s->httpReturnBody['lastInsertId'], 'Products']
+        )['revisionSnapshot']);
+    }
+
+
+    ////////////////////////////////////////////////////////////////////////////
+
+
     public function testGETContentReturnsContentNode() {
         $s = $this->setupGETTest();
         $this->insertTestContentNode($s->productId);
-        $this->setExpectedResponseBody('{"id":"10","title":"Tuotteen nimi"' .
-                                        ',"contentType":"Products"}', $s);
+        $this->setExpectedResponseBody('{"id":"10"' .
+                                      ',"isPublished":true' .
+                                       ',"title":"Tuotteen nimi"' .
+                                       ',"contentType":"Products"' .
+                                       ',"isRevision":false' .
+                                       ',"revisions":[]}', $s);
         $this->sendGetContentNodeRequest($s);
     }
     private function setupGETTest() {
@@ -146,11 +182,13 @@ final class ContentControllersTest extends DbTestCase {
         )['title']);
     }
     private function insertTestContentNode($id) {
-        if (self::$db->exec('INSERT INTO ${p}Products VALUES (?,\'Tuotteen nimi\')', [$id]) < 1)
-            throw new \RuntimeException('Failed to insert test data');
+        $this->insertContent('Products', [['Tuotteen nimi'], [$id]]);
+        //if (self::$db->exec('INSERT INTO ${p}Products VALUES (?,1,\'Tuotteen nimi\')', [$id]) < 1)
+        //    throw new \RuntimeException('Failed to insert test data');
     }
     private function deleteAllTestContentNodes() {
-        if (self::$db->exec('DELETE FROM ${p}Products') < 1)
-            throw new \RuntimeException('Failed to clean test data');
+        $this->deleteContent('Products');
+        //if (self::$db->exec('DELETE FROM ${p}Products') < 1)
+        //    throw new \RuntimeException('Failed to clean test data');
     }
 }

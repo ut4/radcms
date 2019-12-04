@@ -7,7 +7,7 @@ use RadCms\ContentType\ContentTypeCollection;
 use RadCms\Common\RadException;
 
 class DAO {
-    public $includeRevisions;
+    public $fetchRevisions;
     protected $db;
     protected $counter;
     protected $frontendPanelInfos;
@@ -15,16 +15,16 @@ class DAO {
     /**
      * @param \RadCms\Framework\Db $db
      * @param \RadCms\ContentType\ContentTypeCollection $contentTypes
-     * @param bool $includeRevisions = false
+     * @param bool $fetchRevisions = false
      */
     public function __construct(Db $db,
                                 ContentTypeCollection $contentTypes,
-                                $includeRevisions = false) {
+                                $fetchRevisions = false) {
         $this->db = $db;
         $this->contentTypes = $contentTypes;
         $this->counter = 0;
         $this->frontendPanelInfos = [];
-        $this->includeRevisions = $includeRevisions;
+        $this->fetchRevisions = $fetchRevisions;
     }
     /**
      * @param string $contentTypeName
@@ -118,7 +118,7 @@ class DAO {
         $out->isPublished = (bool)$out->isPublished;
         $out->isRevision = false;
         $out->revisions = [];
-        if (!$this->includeRevisions) return $out;
+        if (!$this->fetchRevisions) return $out;
         //
         foreach ($rows as $row) {
             if (!$row['revisionSnapshot'] ||

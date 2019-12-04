@@ -8,14 +8,14 @@ use RadCms\Framework\Request;
 use RadCms\Tests\Self\HttpTestUtils;
 use RadCms\Installer\InstallerControllers;
 use RadCms\Framework\FileSystem;
-use RadCms\Tests\Self\ContentTypeDbTestUtils;
+use RadCms\Tests\Self\ContentTestUtils;
 use RadCms\Tests\Self\MockCrypto;
 use RadCms\Packager\Packager;
 use RadCms\Packager\PlainTextPackageStream;
 
 final class InstallerTest extends DbTestCase {
     use HttpTestUtils;
-    use ContentTypeDbTestUtils;
+    use ContentTestUtils;
     const TEST_DB_NAME1 = 'db1';
     const TEST_DB_NAME2 = 'db2';
     public static function tearDownAfterClass($_ = null) {

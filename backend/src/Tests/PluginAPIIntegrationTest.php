@@ -5,7 +5,7 @@ namespace RadCms\Tests;
 use RadCms\Tests\Self\DbTestCase;
 use RadCms\ContentType\ContentTypeMigrator;
 use RadCms\Tests\Self\HttpTestUtils;
-use RadCms\Tests\Self\ContentTypeDbTestUtils;
+use RadCms\Tests\Self\ContentTestUtils;
 use RadCms\Framework\FileSystem;
 use RadCms\Tests\AppTest;
 use RadCms\Framework\Request;
@@ -16,7 +16,7 @@ use RadCms\AppState;
 
 final class PluginAPIIntegrationTest extends DbTestCase {
     use HttpTestUtils;
-    use ContentTypeDbTestUtils;
+    use ContentTestUtils;
     private $testPlugin;
     public function setupTestPlugin($initialData = null) {
         // Tekee suunnilleen saman kuin PUT /api/plugins/MoviesPlugin/install
@@ -75,16 +75,19 @@ final class PluginAPIIntegrationTest extends DbTestCase {
     public function testPluginCanCRUDRead() {
         $s = $this->setupReadTest();
         $this->insertTestMovie();
-        $this->setExpectedResponseBody('[{"id":"1","title":"Fus"' .
-                                         ',"contentType":"Movies"}]', $s);
+        $this->setExpectedResponseBody('[{"id":"1"' .
+                                       ',"isPublished":true' .
+                                       ',"title":"Fus"' .
+                                       ',"contentType":"Movies"' .
+                                       ',"isRevision":false' .
+                                       ',"revisions":[]}]', $s);
         $this->sendListMoviesRequest($s);
     }
     private function setupReadTest() {
         return $this->setupInstallCtypeTest();
     }
     private function insertTestMovie($id = '1') {
-        if (self::$db->exec('INSERT INTO ${p}Movies VALUES (?,\'Fus\')', [$id]) < 1)
-            throw new \RuntimeException('Failed to insert test data');
+        $this->insertContent('Movies', [['Fus'], [$id]]);
     }
     private function setExpectedResponseBody($expectedJson, $s) {
         $s->expectedResponseBody = $this->callback(

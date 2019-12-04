@@ -9,11 +9,11 @@ use RadCms\Framework\FileSystem;
 use RadCms\Framework\SessionInterface;
 use RadCms\Framework\NativeSession;
 use RadCms\Framework\Db;
-use RadCms\Tests\Self\ContentTypeDbTestUtils;
+use RadCms\Tests\Self\ContentTestUtils;
 
 final class WebsiteControllersTest extends DbTestCase {
     use HttpTestUtils;
-    use ContentTypeDbTestUtils;
+    use ContentTestUtils;
     private const TEST_EXISTING_CTYPES = [
         'FromSiteCfg' => ['Existing type', ['name' => 'text'], 'site.json'],
         'FromSomePlugin' => ['FriendlyName', ['field' => 'text'], 'some-plugin.json'],

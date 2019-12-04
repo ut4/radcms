@@ -27,7 +27,9 @@ class ContentControllers {
      */
     public function handleCreateContentNode(Request $req, Response $res, DMO $dmo) {
         // @allow \RadCMS\Common\RadException
-        $numRows = $dmo->insert($req->params->contentTypeName, $req->body);
+        $numRows = $dmo->insert($req->params->contentTypeName,
+                                $req->body,
+                                property_exists($req->params, 'createRevision'));
         $res->json(['numAffectedRows' => $numRows,
                     'lastInsertId' => $dmo->lastInsertId]);
     }

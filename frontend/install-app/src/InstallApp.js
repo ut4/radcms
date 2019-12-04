@@ -1,5 +1,5 @@
-import {Form, Toaster} from '../../src/common-components.js';
-import services from '../../src/common-services.js';
+import {services, components} from '../../rad-commons.js';
+const {Form, Toaster} = components;
 const $el = preact.createElement;
 
 class InstallApp extends preact.Component {

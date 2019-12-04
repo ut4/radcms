@@ -18,7 +18,7 @@ final class DAOQueryBuildingTest extends TestCase {
     }
     public function testFetchOneGeneratesBasicQueries() {
         $query1 = $this->makeDao()->fetchOne('Games')->where('id=\'1\'');
-        $mainQ = 'SELECT `id`, `title`, \'Games\' AS `contentType` FROM ${p}Games';
+        $mainQ = 'SELECT `id`, `isPublished`, `title`, \'Games\' AS `contentType` FROM ${p}Games';
         $this->assertEquals($mainQ . ' WHERE id=\'1\'', $query1->toSql());
         //
         $withRevisions = $this->makeDao(true)->fetchOne('Games')->where('id=2');
@@ -31,7 +31,7 @@ final class DAOQueryBuildingTest extends TestCase {
         );
     }
     public function testFetchOneGeneratesJoinQueries() {
-        $mainQ = 'SELECT `id`, `title`, \'Games\' AS `contentType` FROM ${p}Games' .
+        $mainQ = 'SELECT `id`, `isPublished`, `title`, \'Games\' AS `contentType` FROM ${p}Games' .
                  ' WHERE `title`=\'Commandos II\'';
         $joinQ = ' JOIN ${p}Platforms AS b ON (a.`title` = b.`gameTitle`)';
         $query = $this->makeDao()->fetchOne('Games')
@@ -75,7 +75,7 @@ final class DAOQueryBuildingTest extends TestCase {
     }
     public function testFetchAllGeneratesBasicQuery() {
         $query1 = $this->makeDao()->fetchAll('Platforms');
-        $mainQ = 'SELECT `id`, `name`, `gameTitle`, \'Platforms\' AS `contentType`' .
+        $mainQ = 'SELECT `id`, `isPublished`, `name`, `gameTitle`, \'Platforms\' AS `contentType`' .
                  ' FROM ${p}Platforms';
         $this->assertEquals($mainQ, $query1->toSql());
         //

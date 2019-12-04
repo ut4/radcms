@@ -2,7 +2,7 @@
 
 namespace RadCms\Tests\Self;
 
-trait ContentTypeDbTestUtils {
+trait ContentTestUtils {
     /**
      * @param string $contentTypeName
      * @param bool $isInstalled
@@ -25,5 +25,20 @@ trait ContentTypeDbTestUtils {
             ' ?) as `containsKey` FROM ${p}websiteState',
             ['$."' . $contentTypeName . '"']
         )['containsKey']);
+    }
+    public function insertContent($contentTypeName, $data) {
+        $ownData = $data[0];
+        $defaults = $data[1] ?? [];
+        $ownDataQs = implode('', array_fill(0, count($ownData), ',?'));
+        $id = $defaults[0];
+        $isPublished = $defaults[1] ?? 1;
+        if (self::$db->exec('INSERT INTO ${p}' . $contentTypeName .
+                            ' VALUES (?,?' . $ownDataQs . ')',
+                            array_merge([$id, (int)$isPublished], $ownData)) < 1)
+            throw new \RuntimeException('Failed to insert test data');
+    }
+    public function deleteContent($contentTypeName) {
+        if (self::$db->exec('DELETE FROM ${p}' . $contentTypeName) < 1)
+            throw new \RuntimeException('Failed to clean test data');
     }
 }
