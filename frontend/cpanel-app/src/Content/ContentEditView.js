@@ -3,18 +3,25 @@ import ContentNodeFieldList from './ContentNodeFieldList.js';
 const {View, Form} = components;
 
 /**
- * #/edit-content/:id/:contentTypeName
+ * #/edit-content/:id/:contentTypeName/:publish?
  */
 class ContentEditView extends preact.Component {
     /**
-     * @param {{id: string; contentTypeName: string;}} props
+     * @param {{id: string; contentTypeName: string; publish?: string;}} props
      */
     constructor(props) {
         super(props);
         this.state = {
             cnode: null,
             ctype: null,
+            doPublish: !!props.publish,
         };
+        this.title = 'Muokkaa sisältöä';
+        this.confirmButtonText = 'Tallenna';
+        if (this.state.doPublish) {
+            this.title = 'Julkaise sisältöä';
+            this.confirmButtonText = 'Julkaise';
+        }
         services.myFetch(`/api/content/${props.id}/${props.contentTypeName}`).then(
             res => {
                 this.state.cnode = JSON.parse(res.responseText);
@@ -34,21 +41,35 @@ class ContentEditView extends preact.Component {
      */
     render() {
         if (!this.state.ctype) return null;
-        return $el(View, null, $el(Form, {onConfirm: e => this.handleFormSubmit(e)},
-            $el('h2', null, 'Muokkaa sisältöä'),
+        const showPublishToggle = !this.props.publish && this.state.cnode.isRevision;
+        return $el(View, null, $el(Form, {onConfirm: e => this.handleFormSubmit(e),
+                                          confirmButtonText: this.confirmButtonText},
+            $el('h2', null, this.title, showPublishToggle
+                ? $el('sup', null, ' (Luonnos)')
+                : null),
             $el(ContentNodeFieldList, {cnode: this.state.cnode,
                                        ctype: this.state.ctype,
-                                       ref: cmp => { if (cmp) this.fieldListCmp = cmp; }})
+                                       ref: cmp => { if (cmp) this.fieldListCmp = cmp; }}),
+            showPublishToggle
+                ? $el('div', null,
+                    $el('input', {id: 'i-create-rev', type: 'checkbox',
+                                  onChange: e => this.setState({doPublish: e.target.checked})}),
+                    $el('label', {for: 'i-create-rev', className: 'inline'}, 'Julkaise')
+                )
+                : null
         ));
     }
     /**
      * @access private
      */
     handleFormSubmit() {
-        return services.myFetch(`/api/content/${this.props.id}/${this.props.contentTypeName}`, {
+        const revisionSettings = !this.state.doPublish ? '' : '/publish';
+        return services.myFetch(`/api/content/${this.props.id}/${this.props.contentTypeName}${revisionSettings}`, {
             method: 'PUT',
             headers: {'Content-Type': 'application/json'},
-            data: JSON.stringify(this.fieldListCmp.getResult())
+            data: JSON.stringify(Object.assign({isPublished: this.state.cnode.isPublished,
+                                                isRevision: this.state.cnode.isRevision},
+                                               this.fieldListCmp.getResult()))
         }).then(() => {
             services.redirect(this.props.returnTo || '/', true);
         }, () => {

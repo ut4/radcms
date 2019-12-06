@@ -36,14 +36,11 @@ class GenericUIPanelImpl extends preact.Component {
         return this.node
             ? $el('div', null,
                 $el('div', null,
-                    $el(MyLink, {to: '/edit-content/' + this.node.id + '/' +
-                                     this.node.contentType + '?returnTo=' +
-                                     encodeURIComponent(this.currentPagePath)},
-                        'Muokkaa'),
+                    $el(MyLink, {to: this.makeEditUrl(false)}, 'Muokkaa'),
                 ),
                 this.node.isRevision
                     ? $el('div', null,
-                        $el('a', {onClick: e => this.publishContent(e), href: ''}, 'Julkaise')
+                        $el(MyLink, {to: this.makeEditUrl(true)}, 'Julkaise'),
                     )
                     : null,
             )
@@ -54,9 +51,13 @@ class GenericUIPanelImpl extends preact.Component {
                     'Luo sisältö')
             );
     }
-    publishContent(e) {
-        e.preventDefault();
-        alert('todo');
+    /**
+     * @access private
+     */
+    makeEditUrl(appendPublishSlug) {
+        return '/edit-content/' + this.node.id + '/' +
+                this.node.contentType + (!appendPublishSlug ? '' : '/publish') +
+                '?returnTo=' + encodeURIComponent(this.currentPagePath);
     }
 }
 

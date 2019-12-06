@@ -55,13 +55,19 @@ abstract class ContentTypeValidator {
     /**
      * @param \RadCms\ContentType\ContentTypeDef $contentType
      * @param object $input
+     * @param \Closure $additionalChecks = null
      * @return string[]
      */
-    public static function validateInsertData(ContentTypeDef $contentType, &$input) {
+    public static function validateInsertData(ContentTypeDef $contentType,
+                                              &$input,
+                                              $additionalChecks = null) {
         $v = new Validator($input);
         if ($v->is('id', 'present')) $v->check('id', 'nonEmptyString');
         if ($v->is('isPublished', 'present'))
             $input->isPublished = $input->isPublished === true;
+        else
+            $input->isPublished = false;
+        if ($additionalChecks) $additionalChecks($v);
         foreach ($contentType->fields->toArray() as $f) {
             $validationRules = [
                 'text' => ['string'],
@@ -75,10 +81,13 @@ abstract class ContentTypeValidator {
     }
     /**
      * @param \RadCms\ContentType\ContentTypeDef $contentType
-     * @param object $input
+     * @param object &$input
      * @return string[]
      */
-    public static function validateUpdateData(ContentTypeDef $contentType, &$input) {
-        return self::validateInsertData($contentType, $input);
+    public static function validateUpdateData(ContentTypeDef $contentType,
+                                              &$input) {
+        return self::validateInsertData($contentType, $input, function ($v) {
+            $v->check('isRevision', ['in', [true, false]]);
+        });
     }
 }

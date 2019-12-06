@@ -30,7 +30,7 @@ final class MagicTemplateDAOTest extends DbTestCase {
     }
     public function testFetchOneReturnsLatestDraftWhenFetchRevisionsIsEnabled() {
         $this->insertContent('Products', [['Tuote'], [1, self::NOT_PUBLISHED]]);
-        $this->insertRevision(1);
+        $this->insertRevision(1, 'Products', '{"title":"New title"}');
         $dao = new MagicTemplateDAO(self::$db, self::$testContentTypes, true);
         $node = $dao->fetchOne('Products')->where('id=?', ['1'])->exec();
         $this->assertEquals(true, $node !== null);
@@ -43,14 +43,9 @@ final class MagicTemplateDAOTest extends DbTestCase {
 
     public function testFetchOneDoesNotReturnDraftsWhenFetchRevisionsIsDisabled() {
         $this->insertContent('Products', [['Tuote2'], [2, self::NOT_PUBLISHED]]);
-        $this->insertRevision(2);
+        $this->insertRevision(2, 'Products', '{"title":"New title"}');
         $dao = new MagicTemplateDAO(self::$db, self::$testContentTypes, false);
         $node = $dao->fetchOne('Products')->where('id=?', ['2'])->exec();
         $this->assertEquals(true, $node === null);
-    }
-    private function insertRevision($contentId) {
-        if (self::$db->exec('INSERT INTO ${p}ContentRevisions VALUES (?,?,?,?)',
-                            [$contentId, 'Products', '{"title":"New title"}', '123']) < 1)
-            throw new \Exception('Failed to insert test data');
     }
 }

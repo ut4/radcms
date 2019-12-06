@@ -65,7 +65,7 @@ class ControlPanelApp extends preact.Component {
                     }
                 },
                 $el(ContentAddView, {path: '/add-content/:initialContentTypeName?'}),
-                $el(ContentEditView, {path: '/edit-content/:id/:contentTypeName'}),
+                $el(ContentEditView, {path: '/edit-content/:id/:contentTypeName/:publish?'}),
                 $el(ContentTypesManageView, {path: '/manage-content-types'}),
                 $el(ContentTypeCreateView, {path: '/create-content-type'}),
                 $el(PluginsManageView, {path: '/manage-plugins'}),

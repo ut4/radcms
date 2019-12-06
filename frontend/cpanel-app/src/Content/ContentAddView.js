@@ -59,8 +59,8 @@ class ContentAddView extends preact.Component {
      * @access private
      */
     handleFormSubmit() {
-        const revisionSettings = this.state.createRevision ? 'with-revision' : '';
-        return services.myFetch(`/api/content/${this.state.ctype.name}/${revisionSettings}`, {
+        const revisionSettings = this.state.createRevision ? '/with-revision' : '';
+        return services.myFetch(`/api/content/${this.state.ctype.name}${revisionSettings}`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             data: JSON.stringify(Object.assign({isPublished: revisionSettings === ''},

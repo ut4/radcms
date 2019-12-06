@@ -34,41 +34,29 @@ final class ContentControllersTest extends DbTestCase {
         $this->afterTest->__invoke();
     }
     public function testPOSTContentCreatesContentNode() {
-        $s = $this->setupPOSTTest();
-        $this->setExpectedResponseBody(
-            $this->callback(function ($actualResponse) use ($s) {
-                $s->httpReturnBody = $actualResponse;
-                return true; // ignore
-            }),
-            $s
-        );
+        $s = $this->setupCreateContentTest();
         $this->sendCreateContentNodeRequest($s);
         $this->verifyPOSTContentReturnedLastInsertId($s);
         $this->verifyContentNodeWasInsertedToDb($s);
     }
-    private function setupPOSTTest() {
+    private function setupCreateContentTest() {
         $this->afterTest = function () {
             $this->deleteAllTestContentNodes();
         };
         $s = (object) [
-            'expectedResponseBody' => null,
-            'httpReturnBody' => null,
+            'actualResponseParsed' => null,
             'newProduct' => (object)['title' => 'Uuden tuotteen nimi'],
         ];
         return $s;
-    }
-    private function setExpectedResponseBody($expected, $s, $actualDataFilterFn = null) {
-        $s->expectedResponseBody = is_string($expected) ? $this->callback(
-            function ($actualData) use ($expected) {
-                //if ($actualDataFilterFn) $actualData = $actualDataFilterFn($actualData);
-                return json_encode($actualData) == $expected;
-            }) : $expected;
     }
     private function sendCreateContentNodeRequest($s, $urlTail = '') {
         $res = $this->createMock(MutedResponse::class);
         $res->expects($this->once())
             ->method('json')
-            ->with($s->expectedResponseBody)
+            ->with($this->callback(function ($actualResponse) use ($s) {
+                $s->actualResponseParsed = $actualResponse;
+                return true;
+            }))
             ->willReturn($res);
         $req = new Request('/api/content/Products' . $urlTail,
                            'POST',
@@ -76,13 +64,13 @@ final class ContentControllersTest extends DbTestCase {
         $this->makeRequest($req, $res);
     }
     private function verifyPOSTContentReturnedLastInsertId($s, $expectedNumAffected = '1') {
-        $this->assertEquals($expectedNumAffected, $s->httpReturnBody['numAffectedRows']);
-        $this->assertEquals(true, $s->httpReturnBody['lastInsertId'] > 0);
+        $this->assertEquals($expectedNumAffected, $s->actualResponseParsed['numAffectedRows']);
+        $this->assertEquals(true, $s->actualResponseParsed['lastInsertId'] > 0);
     }
     private function verifyContentNodeWasInsertedToDb($s) {
         $this->assertEquals($s->newProduct->title, self::$db->fetchOne(
             'SELECT `title` FROM ${p}Products WHERE `id` = ?',
-            [$s->httpReturnBody['lastInsertId']]
+            [$s->actualResponseParsed['lastInsertId']]
         )['title']);
     }
 
@@ -91,25 +79,18 @@ final class ContentControllersTest extends DbTestCase {
 
 
     public function testPOSTContentCreatesContentNodeAndRevision() {
-        $s = $this->setupPOSTTest();
+        $s = $this->setupCreateContentTest();
         $s->newProduct->title .= '2';
-        $this->setExpectedResponseBody(
-            $this->callback(function ($actualResponse) use ($s) {
-                $s->httpReturnBody = $actualResponse;
-                return true; // ignore
-            }),
-            $s
-        );
         $this->sendCreateContentNodeRequest($s, '/with-revision');
         $this->verifyPOSTContentReturnedLastInsertId($s, '2');
         $this->verifyContentNodeWasInsertedToDb($s);
         $this->verifyRevisionWasInsertedToDb($s);
     }
     private function verifyRevisionWasInsertedToDb($s) {
-        $this->assertEquals(json_encode($s->newProduct), self::$db->fetchOne(
+        $this->assertEquals(json_encode(['title' => $s->newProduct->title]), self::$db->fetchOne(
             'SELECT `revisionSnapshot` FROM ${p}ContentRevisions WHERE `contentId` = ?' .
             ' AND `contentType` = ?',
-            [$s->httpReturnBody['lastInsertId'], 'Products']
+            [$s->actualResponseParsed['lastInsertId'], 'Products']
         )['revisionSnapshot']);
     }
 
@@ -118,33 +99,29 @@ final class ContentControllersTest extends DbTestCase {
 
 
     public function testGETContentReturnsContentNode() {
-        $s = $this->setupGETTest();
+        $s = $this->setupGetContentTest();
         $this->insertTestContentNode($s->productId);
-        $this->setExpectedResponseBody('{"id":"10"' .
-                                      ',"isPublished":true' .
-                                       ',"title":"Tuotteen nimi"' .
-                                       ',"contentType":"Products"' .
-                                       ',"isRevision":false' .
-                                       ',"revisions":[]}', $s);
         $this->sendGetContentNodeRequest($s);
+        $this->assertEquals('{"id":"10"' .
+                            ',"isPublished":true' .
+                            ',"title":"Tuotteen nimi"' .
+                            ',"contentType":"Products"' .
+                            ',"revisionCreatedAt":null' .
+                            ',"isRevision":false' .
+                            ',"revisions":[]}', $s->actualResponseBody);
     }
-    private function setupGETTest() {
+    private function setupGetContentTest() {
         $this->afterTest = function () {
             $this->deleteAllTestContentNodes();
         };
         return (object) [
             'productId' => 10,
-            'expectedResponseBody' => null,
+            'actualResponseBody' => null
         ];
     }
     private function sendGetContentNodeRequest($s) {
-        $res = $this->createMock(MutedResponse::class);
-        $res->expects($this->once())
-            ->method('json')
-            ->with($s->expectedResponseBody)
-            ->willReturn($res);
         $req = new Request('/api/content/' . $s->productId . '/Products', 'GET');
-        $this->makeRequest($req, $res);
+        $this->makeResponseBodyCapturingRequest($req, $s);
     }
 
 
@@ -152,43 +129,102 @@ final class ContentControllersTest extends DbTestCase {
 
 
     public function testPUTContentUpdatesContentNode() {
-        $s = $this->setupPUTTest();
+        $s = $this->setupUpdateContentTest();
         $this->insertTestContentNode($s->productId);
-        $this->setExpectedResponseBody('{"numAffectedRows":1}', $s);
         $this->sendUpdateContentNodeRequest($s);
         $this->verifyContentNodeWasUpdatedToDb($s);
+        $this->assertEquals('{"numAffectedRows":1}', $s->actualResponseBody);
     }
-    private function setupPUTTest() {
-        $s = $this->setupGETTest();
+    private function setupUpdateContentTest() {
+        $s = $this->setupGetContentTest();
         $s->productId = 20;
-        $s->newData = (object)['title' => 'Päivitetty tuotteen nimi'];
+        $s->newData = (object)['title' => 'Päivitetty tuotteen nimi',
+                               'isRevision' => false];
         return $s;
     }
-    private function sendUpdateContentNodeRequest($s) {
+    private function sendUpdateContentNodeRequest($s, $urlTail = '') {
         $res = $this->createMock(MutedResponse::class);
         $res->expects($this->once())
             ->method('json')
-            ->with($s->expectedResponseBody)
+            ->with($this->callback(function ($actualResponse) use ($s) {
+                $s->actualResponseBody = json_encode($actualResponse);
+                return true;
+            }))
             ->willReturn($res);
-        $req = new Request('/api/content/' . $s->productId . '/Products',
+        $req = new Request('/api/content/' . $s->productId . '/Products' . $urlTail,
                            'PUT',
                            $s->newData);
         $this->makeRequest($req, $res);
     }
-    private function verifyContentNodeWasUpdatedToDb($s) {
-        $this->assertEquals($s->newData->title, self::$db->fetchOne(
-            'SELECT `title` FROM ${p}Products WHERE `id` = ?',
+    private function verifyContentNodeWasUpdatedToDb($s, $isPublished = false) {
+        $row = self::$db->fetchOne(
+            'SELECT `title`, `isPublished` FROM ${p}Products WHERE `id` = ?',
             [$s->productId]
-        )['title']);
+        ) ?? [];
+        $this->assertEquals($s->newData->title, $row['title']);
+        $this->assertEquals((int)$isPublished, $row['isPublished']);
     }
-    private function insertTestContentNode($id) {
-        $this->insertContent('Products', [['Tuotteen nimi'], [$id]]);
-        //if (self::$db->exec('INSERT INTO ${p}Products VALUES (?,1,\'Tuotteen nimi\')', [$id]) < 1)
-        //    throw new \RuntimeException('Failed to insert test data');
+
+
+    ////////////////////////////////////////////////////////////////////////////
+
+
+    public function testPUTContentUpdatesRevision() {
+        $s = $this->setupUpdateRevisionTest();
+        $this->insertTestContentNode($s->productId);
+        $this->insertRevision($s->productId, 'Products');
+        $this->sendUpdateContentNodeRequest($s);
+        $this->assertEquals('{"numAffectedRows":1}', $s->actualResponseBody);
+        $this->verifyRevisionWasUpdatedToDb($s);
+    }
+    private function setupUpdateRevisionTest() {
+        $s = $this->setupUpdateContentTest();
+        $s->productId += 10;
+        $s->newData->title .= 2;
+        $s->newData->isRevision = true;
+        return $s;
+    }
+    private function verifyRevisionWasUpdatedToDb($s) {
+        $expectedSnapshot = json_encode(['title' => $s->newData->title],
+                                        JSON_UNESCAPED_UNICODE);
+        $this->assertEquals($expectedSnapshot, self::$db->fetchOne(
+            'SELECT `revisionSnapshot` FROM ${p}ContentRevisions' .
+            ' WHERE `contentId` = ? AND `contentType` = ?',
+            [$s->productId, 'Products']
+        )['revisionSnapshot']);
+    }
+
+
+    ////////////////////////////////////////////////////////////////////////////
+
+
+    public function testPUTContentPublishesContent() {
+        $s = $this->setupPublishContentTest();
+        $this->insertTestContentNode($s->productId, false);
+        $this->insertRevision($s->productId, 'Products');
+        $this->sendUpdateContentNodeRequest($s, '/publish');
+        $this->assertEquals('{"numAffectedRows":2}', $s->actualResponseBody);
+        $this->verifyRevisionWasDeletedFromDb($s);
+        $this->verifyContentNodeWasUpdatedToDb($s, true);
+    }
+    private function setupPublishContentTest() {
+        $s = $this->setupUpdateContentTest();
+        $s->productId += 20;
+        $s->newData->title .= 3;
+        $s->newData->isRevision = true;
+        return $s;
+    }
+    private function verifyRevisionWasDeletedFromDb($s) {
+        $this->assertEquals(null, self::$db->fetchOne(
+            'SELECT `revisionSnapshot` FROM ${p}ContentRevisions' .
+            ' WHERE `contentId` = ? AND `contentType` = ?',
+            [$s->productId, 'Products']
+        ));
+    }
+    private function insertTestContentNode($id, $isPublished = true) {
+        $this->insertContent('Products', [['Tuotteen nimi'], [$id, $isPublished]]);
     }
     private function deleteAllTestContentNodes() {
         $this->deleteContent('Products');
-        //if (self::$db->exec('DELETE FROM ${p}Products') < 1)
-        //    throw new \RuntimeException('Failed to clean test data');
     }
 }

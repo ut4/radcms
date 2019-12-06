@@ -10,6 +10,7 @@
 .view > div:nth-of-type(1), .view > form:first-of-type { padding: 15px;
     border-radius: 1px; border-top: 1px solid rgba(0,0,0,0.15); }
 .view h2 { font: normal 24px/24px "Fira sans heavy"; margin: -55px 0 27px -2px; }
+.view h2 sup { font: normal 12px/12px "Fira sans light"; }
 
 .in-edit { padding: 12px 10px 10px; margin: 8px 0; }
 
@@ -33,6 +34,7 @@
     display: block; line-height: 11px; }
 #control-panel h4 { margin: 0 0 6px 0; border-radius: 2px; padding: 10px 0 4px;
     position: relative; overflow: hidden; }
+#control-panel h4 sup { font-size: 9px; }
     #control-panel h4 .feather { float: left; margin: 1px 8px 0 0; width: 17px; height: 17px; }
 #control-panel h4 button { background-color: transparent }
 .quick-links a { padding-top: 30px; display: inline-block; width: 50%; text-align: center;

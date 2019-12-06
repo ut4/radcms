@@ -50,9 +50,8 @@ class MoviesControllers {
                                              Response $res,
                                              DMO $dmo) {
         try {
-            $numAffectedRows = $dmo->update($req->params->movieId, 'Movies', (object) [
-                'title' => $req->body->title,
-            ]);
+            $numAffectedRows = $dmo->update($req->params->movieId, 'Movies',
+                                            (object)$req->body);
             $res->json($numAffectedRows > 0
                 ? ['my' => 'response2']
                 : ['my' => 'response2']);

@@ -40,11 +40,6 @@ final class PluginAPIIntegrationTest extends DbTestCase {
         parent::tearDownAfterClass(null);
         InstallerTest::clearInstalledContentTypesFromDb();
     }
-
-
-    ////////////////////////////////////////////////////////////////////////////
-
-
     public function testPluginCanInstallContentType() {
         $initialMovies = [['Movies', [(object)['title' => 'Initial movie']]]];
         $s = $this->setupInstallCtypeTest($initialMovies);
@@ -57,7 +52,7 @@ final class PluginAPIIntegrationTest extends DbTestCase {
         $ctx->fs->method('readDir')->willReturn([RAD_SITE_PATH . 'Plugins/MoviesPlugin']);
         return (object) [
             'ctx' => $ctx,
-            'expectedResponseBody' => null,
+            'actualResponseBody' => null,
             'testMovieId' => null,
         ];
     }
@@ -75,13 +70,13 @@ final class PluginAPIIntegrationTest extends DbTestCase {
     public function testPluginCanCRUDRead() {
         $s = $this->setupReadTest();
         $this->insertTestMovie();
-        $this->setExpectedResponseBody('[{"id":"1"' .
-                                       ',"isPublished":true' .
-                                       ',"title":"Fus"' .
-                                       ',"contentType":"Movies"' .
-                                       ',"isRevision":false' .
-                                       ',"revisions":[]}]', $s);
         $this->sendListMoviesRequest($s);
+        $this->verifyResponseBodyEquals('[{"id":"1"' .
+                                        ',"isPublished":true' .
+                                        ',"title":"Fus"' .
+                                        ',"contentType":"Movies"' .
+                                        ',"isRevision":false' .
+                                        ',"revisions":[]}]', $s);
     }
     private function setupReadTest() {
         return $this->setupInstallCtypeTest();
@@ -89,20 +84,11 @@ final class PluginAPIIntegrationTest extends DbTestCase {
     private function insertTestMovie($id = '1') {
         $this->insertContent('Movies', [['Fus'], [$id]]);
     }
-    private function setExpectedResponseBody($expectedJson, $s) {
-        $s->expectedResponseBody = $this->callback(
-            function ($actualData) use ($expectedJson) {
-                return json_encode($actualData) == $expectedJson;
-            });
-    }
     private function sendListMoviesRequest($s) {
-        $res = $this->createMock(MutedResponse::class);
-        $res->expects($this->once())
-            ->method('json')
-            ->with($s->expectedResponseBody)
-            ->willReturn($res);
-        $req = new Request('/movies', 'GET');
-        $this->makeRequest($req, $res, $s->ctx);
+        $this->makeResponseBodyCapturingRequest(new Request('/movies', 'GET'), $s);
+    }
+    private function verifyResponseBodyEquals($expectedJson, $s) {
+        $this->assertEquals($expectedJson, $s->actualResponseBody);
     }
 
 
@@ -111,21 +97,16 @@ final class PluginAPIIntegrationTest extends DbTestCase {
 
     public function testPluginCanCRUDCreate() {
         $s = $this->setupCreateTest();
-        $this->setExpectedResponseBody('{"my":"response"}', $s);
         $this->sendInsertMovieRequest($s);
+        $this->verifyResponseBodyEquals('{"my":"response"}', $s);
         $this->verifyMovieWasInsertedToDb('A movie');
     }
     private function setupCreateTest() {
         return $this->setupInstallCtypeTest();
     }
     private function sendInsertMovieRequest($s) {
-        $res = $this->createMock(MutedResponse::class);
-        $res->expects($this->once())
-            ->method('json')
-            ->with($s->expectedResponseBody)
-            ->willReturn($res);
         $req = new Request('/movies', 'POST', (object) ['title' => 'A movie']);
-        $this->makeRequest($req, $res, $s->ctx);
+        $this->makeResponseBodyCapturingRequest($req, $s);
     }
     private function verifyMovieWasInsertedToDb($title) {
         $this->assertEquals(1, count(self::$db->fetchAll(
@@ -140,9 +121,9 @@ final class PluginAPIIntegrationTest extends DbTestCase {
 
     public function testPluginCanCRUDUpdate() {
         $s = $this->setupUpdateTest();
-        $this->setExpectedResponseBody('{"my":"response2"}', $s);
         $newTitle = 'Updated';
         $this->sendUpdateMovieRequest($s, $newTitle);
+        $this->verifyResponseBodyEquals('{"my":"response2"}', $s);
         $this->verifyMovieWasUpdatedToDb($newTitle);
     }
     private function setupUpdateTest() {
@@ -153,14 +134,9 @@ final class PluginAPIIntegrationTest extends DbTestCase {
         return $out;
     }
     private function sendUpdateMovieRequest($s, $newTitle) {
-        $res = $this->createMock(MutedResponse::class);
-        $res->expects($this->once())
-            ->method('json')
-            ->with($s->expectedResponseBody)
-            ->willReturn($res);
         $req = new Request('/movies/' . $s->testMovieId, 'PUT',
-                           (object) ['title' => $newTitle]);
-        $this->makeRequest($req, $res, $s->ctx);
+                           (object) ['title' => $newTitle, 'isRevision' => false]);
+        $this->makeResponseBodyCapturingRequest($req, $s);
     }
     private function verifyMovieWasUpdatedToDb($newTitle) {
         $this->assertEquals(1, count(self::$db->fetchAll(

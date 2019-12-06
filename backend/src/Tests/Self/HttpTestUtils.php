@@ -2,7 +2,6 @@
 
 namespace RadCms\Tests\Self;
 
-use RadCms\App;
 use Auryn\Injector;
 use RadCms\Framework\Response;
 use RadCms\Framework\FileSystemInterface;
@@ -63,5 +62,16 @@ trait HttpTestUtils {
         if ($alterInjectorFn) $alterInjectorFn($injector);
         $app->handleRequest($req, $injector);
         return $app;
+    }
+    private function makeResponseBodyCapturingRequest($req, $s) {
+        $res = $this->createMock(MutedResponse::class);
+        $res->expects($this->once())
+            ->method('json')
+            ->with($this->callback(function ($actualResponse) use ($s) {
+                $s->actualResponseBody = json_encode($actualResponse);
+                return true;
+            }))
+            ->willReturn($res);
+        return $this->makeRequest($req, $res, $s->ctx ?? null);
     }
 }

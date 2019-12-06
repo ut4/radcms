@@ -129,6 +129,7 @@ class DAO {
                 'snapshot' => json_decode($row['revisionSnapshot'])
             ];
         }
+        $out->isRevision = !empty($out->revisions);
         usort($out->revisions, function ($a, $b) {
             return $b->createdAt - $a->createdAt;
         });

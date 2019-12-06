@@ -37,6 +37,11 @@ trait ContentTestUtils {
                             array_merge([$id, (int)$isPublished], $ownData)) < 1)
             throw new \RuntimeException('Failed to insert test data');
     }
+    public function insertRevision($contentId, $contentTypeName, $dataSnapShot='{"foo":"bar"}') {
+        if (self::$db->exec('INSERT INTO ${p}ContentRevisions VALUES (?,?,?,?)',
+                            [$contentId, $contentTypeName, $dataSnapShot, strval(time())]) < 1)
+            throw new \Exception('Failed to insert test data');
+    }
     public function deleteContent($contentTypeName) {
         if (self::$db->exec('DELETE FROM ${p}' . $contentTypeName) < 1)
             throw new \RuntimeException('Failed to clean test data');

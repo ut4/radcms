@@ -84,42 +84,98 @@ class DMO extends DAO {
      * @param string $id
      * @param string $contentTypeName
      * @param object $data
+     * @param string $revisionSettings = '' 'publish' | ''
      * @return int $db->rowCount()
      * @throws \RadCms\Common\RadException
      */
-    public function update($id, $contentTypeName, $data, $isRevision = false) {
+    public function update($id, $contentTypeName, $data, $revisionSettings = '') {
         if (!is_string($id) || !ctype_digit($id))
             throw new RadException('id must be a \'[0-9]+\'', RadException::BAD_INPUT);
         // @allow \RadCms\Common\RadException
         $type = $this->getContentType($contentTypeName);
+
         if (($errors = ContentTypeValidator::validateUpdateData($type, $data)))
             throw new RadException(implode(PHP_EOL, $errors),
                                    RadException::BAD_INPUT);
         //
-        $q = ['colQs' => [], 'vals' => []];
         $fields = $type->fields->toArray();
+        $execs = [];
+        if (!$data->isRevision) {
+            $execs = [self::makeUpdateMainExec($id, $contentTypeName, $data, $fields)];
+        } else {
+            if ($revisionSettings === ContentControllers::REV_SETTING_PUBLISH) {
+                $data->isPublished = true;
+                $execs = [self::makeUpdateMainExec($id, $contentTypeName, $data, $fields),
+                          self::makeDeleteRevisionExec($id, $contentTypeName)];
+            } else {
+                $execs = [self::makeUpdateRevisionExec($id, $contentTypeName, $data, $fields)];
+            }
+        }
+        //
+        try {
+            if (count($execs) === 1) {
+                return $this->db->exec(...$execs[0]);
+            }
+            $numRowsAffectedTotal = 0;
+            $this->db->beginTransaction();
+            foreach ($execs as $e) {
+                // @allow \RadCms\Common\RadException
+                if (($numRows = $this->db->exec(...$e)) > 0) {
+                    $numRowsAffectedTotal += $numRows;
+                } else {
+                    $this->db->rollback();
+                    return $numRowsAffectedTotal;
+                }
+            }
+            $this->db->commit();
+            return $numRowsAffectedTotal;
+        } catch (\PDOException $e) {
+            throw new RadException($e->getMessage(), RadException::FAILED_DB_OP);
+        }
+    }
+    /**
+     * @return array [<sql>, <bindVals>]
+     */
+    private static function makeUpdateMainExec($id, $contentTypeName, $data, $fields) {
+        $q = ['colQs' => ['`isPublished` = ?'],
+              'vals' => [(int)$data->isPublished]];
         foreach ($fields as $f) {
             $q['colQs'][] = '`' . $f->name . '` = ?';
             $q['vals'][] = $data->{$f->name};
         }
         $q['vals'][] = $id;
-        try {
-            return !$isRevision
-                ? $this->db->exec('UPDATE ${p}' . $contentTypeName .
-                                  ' SET ' . implode(', ', $q['colQs']) .
-                                  ' WHERE `id` = ?',
-                                  $q['vals'])
-                : $this->db->exec('UPDATE ${p}ContentRevisions' .
-                                  ' SET `revisionSnapshot = ?' .
-                                  ' WHERE `contentId` = ? AND `contentType` = ?',
-                                  [
-                                      self::makeSnapshot($data, $fields),
-                                      $id,
-                                      $contentTypeName
-                                  ]);
-        } catch (\PDOException $e) {
-            throw new RadException($e->getMessage(), RadException::FAILED_DB_OP);
-        }
+        //
+        return [
+            'UPDATE ${p}' . $contentTypeName .
+            ' SET ' . implode(', ', $q['colQs']) .
+            ' WHERE `id` = ?',
+            $q['vals']
+        ];
+    }
+    /**
+     * @return array [<sql>, <bindVals>]
+     */
+    private static function makeUpdateRevisionExec($id, $contentTypeName, $data, $fields) {
+        return [
+            'UPDATE ${p}ContentRevisions' .
+            ' SET `revisionSnapshot` = ?' .
+            ' WHERE `contentId` = ? AND `contentType` = ?',
+            [
+                self::makeSnapshot($data, $fields),
+                $id,
+                $contentTypeName
+            ]
+        ];
+    }
+    /**
+     * @return array [<sql>, <bindVals>]
+     */
+    private static function makeDeleteRevisionExec($id, $contentTypeName) {
+        return [
+            'DELETE FROM ${p}ContentRevisions' .
+            ' WHERE `contentId` = ? AND `contentType` = ?',
+            [$id, $contentTypeName]
+        ];
     }
     /**
      * @return string
