@@ -13,7 +13,7 @@ final class AuthControllersInputValidationTest extends TestCase {
         $res = $this->createMockResponse(
             ['username must be a non-empty string',
             'password must be a non-empty string'], 400);
-        $this->makeRequest($req, $res);
+        $this->sendRequest($req, $res);
     }
     public function testPOSTLoginRejectsEmptyValues() {
         $req = new Request('/login', 'POST', (object)['username'=>'',
@@ -21,6 +21,6 @@ final class AuthControllersInputValidationTest extends TestCase {
         $res = $this->createMockResponse(
             ['username must be a non-empty string',
             'password must be a non-empty string'], 400);
-        $this->makeRequest($req, $res);
+        $this->sendRequest($req, $res);
     }
 }

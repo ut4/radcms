@@ -61,7 +61,7 @@ final class ContentControllersTest extends DbTestCase {
         $req = new Request('/api/content/Products' . $urlTail,
                            'POST',
                            $s->newProduct);
-        $this->makeRequest($req, $res);
+        $this->sendRequest($req, $res);
     }
     private function verifyPOSTContentReturnedLastInsertId($s, $expectedNumAffected = '1') {
         $this->assertEquals($expectedNumAffected, $s->actualResponseParsed['numAffectedRows']);
@@ -121,7 +121,7 @@ final class ContentControllersTest extends DbTestCase {
     }
     private function sendGetContentNodeRequest($s) {
         $req = new Request('/api/content/' . $s->productId . '/Products', 'GET');
-        $this->makeResponseBodyCapturingRequest($req, $s);
+        $this->sendResponseBodyCapturingRequest($req, $s);
     }
 
 
@@ -154,7 +154,7 @@ final class ContentControllersTest extends DbTestCase {
         $req = new Request('/api/content/' . $s->productId . '/Products' . $urlTail,
                            'PUT',
                            $s->newData);
-        $this->makeRequest($req, $res);
+        $this->sendRequest($req, $res);
     }
     private function verifyContentNodeWasUpdatedToDb($s, $isPublished = false) {
         $row = self::$db->fetchOne(

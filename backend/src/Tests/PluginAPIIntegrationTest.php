@@ -85,7 +85,7 @@ final class PluginAPIIntegrationTest extends DbTestCase {
         $this->insertContent('Movies', [['Fus'], [$id]]);
     }
     private function sendListMoviesRequest($s) {
-        $this->makeResponseBodyCapturingRequest(new Request('/movies', 'GET'), $s);
+        $this->sendResponseBodyCapturingRequest(new Request('/movies', 'GET'), $s);
     }
     private function verifyResponseBodyEquals($expectedJson, $s) {
         $this->assertEquals($expectedJson, $s->actualResponseBody);
@@ -106,7 +106,7 @@ final class PluginAPIIntegrationTest extends DbTestCase {
     }
     private function sendInsertMovieRequest($s) {
         $req = new Request('/movies', 'POST', (object) ['title' => 'A movie']);
-        $this->makeResponseBodyCapturingRequest($req, $s);
+        $this->sendResponseBodyCapturingRequest($req, $s);
     }
     private function verifyMovieWasInsertedToDb($title) {
         $this->assertEquals(1, count(self::$db->fetchAll(
@@ -136,7 +136,7 @@ final class PluginAPIIntegrationTest extends DbTestCase {
     private function sendUpdateMovieRequest($s, $newTitle) {
         $req = new Request('/movies/' . $s->testMovieId, 'PUT',
                            (object) ['title' => $newTitle, 'isRevision' => false]);
-        $this->makeResponseBodyCapturingRequest($req, $s);
+        $this->sendResponseBodyCapturingRequest($req, $s);
     }
     private function verifyMovieWasUpdatedToDb($newTitle) {
         $this->assertEquals(1, count(self::$db->fetchAll(
@@ -153,7 +153,7 @@ final class PluginAPIIntegrationTest extends DbTestCase {
         $s = $this->setupFileRegTest();
         $res = $this->createMock(MutedResponse::class);
         $req = new Request('/noop', 'GET');
-        $app = $this->makeRequest($req, $res, $s->ctx);
+        $app = $this->sendRequest($req, $res, $s->ctx);
         $this->verifyJsFilesWereRegistered($app->getCtx()->state);
     }
     private function setupFileRegTest() {

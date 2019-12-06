@@ -132,9 +132,9 @@ class Query {
                ' ' . implode(' ', $joins);
     }
     /**
-     * @param object $joinDef { $contentType: string; $expr: string; $isLeft: bool; }
-     * @param array &$joins
-     * @param array &$fields
+     * @param object $joinDef {contentType: string, expr: string, isLeft: bool}
+     * @param string[] &$joins
+     * @param string[] &$fields
      */
     private function addContentTypeJoin($joinDef, &$joins, &$fields) {
         $ctypeName = $joinDef->contentType;
@@ -148,8 +148,8 @@ class Query {
                               });
     }
     /**
-     * @param array &$joins
-     * @param array &$fields
+     * @param string[] &$joins
+     * @param string[] &$fields
      */
     private function addRevisionsJoin(&$joins, &$fields) {
         $joins[] = 'LEFT JOIN ${p}contentRevisions r ON (r.`contentId` = a.`id`' .

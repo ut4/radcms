@@ -83,7 +83,7 @@ class SiteConfig {
     }
     /**
      * @param object $cfgInput
-     * @return array $errors
+     * @return array Array<{url: string, type: string, attrs: object}>
      */
     private function collectAssets($cfgInput) {
         $out = [];

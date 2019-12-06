@@ -64,7 +64,7 @@ class DAO {
      * @param string $queryId
      * @param bool $isFetchOne
      * @param array $bindVals = null
-     * @param object $join = null { $contentType: string; $collector: [\Closure, string]; }
+     * @param object $join = null {contentType: string, collector: [\Closure, string]}
      * @return array|object|null
      */
     public function doExec($sql,
@@ -94,7 +94,7 @@ class DAO {
         return $out;
     }
     /**
-     * @return array Array<{id: string; impl: string; ...}>
+     * @return array Array<{id: string, impl: string, ...}>
      */
     public function getFrontendPanelInfos() {
         return array_values($this->frontendPanelInfos);

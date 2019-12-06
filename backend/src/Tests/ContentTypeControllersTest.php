@@ -51,7 +51,7 @@ final class ContentTypeControllersTest extends DbTestCase {
     }
     private function sendGetContentTypeRequest($s, $url = null) {
         $req = new Request($url ?? '/api/content-types/' . $s->contentTypeName, 'GET');
-        $this->makeResponseBodyCapturingRequest($req, $s);
+        $this->sendResponseBodyCapturingRequest($req, $s);
     }
     private function verifyResponseBodyEquals($expected, $s) {
         $this->assertEquals(json_encode($expected),

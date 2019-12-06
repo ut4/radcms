@@ -15,7 +15,7 @@ class UserRepository {
     }
     /**
      * @param string $username
-     * @return object|null { $id: string; $username: string; $email: string; $passwordHash: string; }
+     * @return object|null {id: string, username: string, email: string, passwordHash: string}
      */
     public function getUser($username) {
         try {
@@ -29,7 +29,7 @@ class UserRepository {
         }
     }
     /**
-     * @param object { $id: string; $username: string; $email: string; $passwordHash: string; }
+     * @param object {id: string, username: string, email: string, asswordHash: string}
      * @return bool
      */
     public function putUser($user) {

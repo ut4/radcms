@@ -34,7 +34,7 @@ final class WebsiteControllersTest extends DbTestCase {
         //
         $req = new Request('/foo', 'GET');
         $res = $this->createMockResponse('404', 200, 'html');
-        $this->makeRequest($req, $res, $s->ctx, $s->setupInjector);
+        $this->sendRequest($req, $res, $s->ctx, $s->setupInjector);
         //
         $this->verifyInstalledNewContentTypeToDb();
     }
@@ -110,7 +110,7 @@ final class WebsiteControllersTest extends DbTestCase {
         //
         $req = new Request('/foo', 'GET');
         $res = $this->createMockResponse('404', 200, 'html');
-        $this->makeRequest($req, $res, $s->ctx, $s->setupInjector);
+        $this->sendRequest($req, $res, $s->ctx, $s->setupInjector);
         //
         $this->verifyUninstalledDisappearedContentType();
     }

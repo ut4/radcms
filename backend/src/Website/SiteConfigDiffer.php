@@ -8,7 +8,7 @@ class SiteConfigDiffer {
     /**
      * @param \RadCms\ContentType\ContentTypeCollection $fromFile
      * @param \RadCms\ContentType\ContentTypeCollection $fromDb
-     * @return array [(object)['added' => [], 'deleted' => []], (object)['added' => [], 'deleted' => [], 'dataTypeChanged' => []]]
+     * @return array [{added: array, deleted: array}, {added: array, deleted: array, dataTypeChanged: array}]
      */
     public function run(ContentTypeCollection $fromFile,
                         ContentTypeCollection $fromDb) {

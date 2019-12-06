@@ -7,6 +7,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <meta charset="utf-8">
     <title>Hello - <?= $site->name ?></title>
     <meta name="generator" content="RadCMS 0.0.0">
     <?= $this->cssFiles() ?>

@@ -21,7 +21,7 @@ class MagicTemplateDAO extends DAO {
      * @param string $queryId
      * @param bool $isFetchOne
      * @param array $bindVals = null
-     * @param object $join = null { $contentType: string; $collector: [\Closure, string]; }
+     * @param object $join = null {contentType: string, collector: [\Closure, string]}
      * @return array|object|null
      */
     public function doExec($sql,

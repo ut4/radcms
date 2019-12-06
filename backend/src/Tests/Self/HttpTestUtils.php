@@ -41,7 +41,7 @@ trait HttpTestUtils {
      * @param object $ctx = null
      * @param \Callable $alterInjectorFn = null ($injector: \Auryn\Injector): void
      */
-    public function makeRequest($req, $res, $ctx = null, $alterInjectorFn = null) {
+    public function sendRequest($req, $res, $ctx = null, $alterInjectorFn = null) {
         if (!$ctx) {
             $ctx = (object)['db' => null, 'fs' => null];
         }
@@ -63,7 +63,7 @@ trait HttpTestUtils {
         $app->handleRequest($req, $injector);
         return $app;
     }
-    private function makeResponseBodyCapturingRequest($req, $s) {
+    private function sendResponseBodyCapturingRequest($req, $s) {
         $res = $this->createMock(MutedResponse::class);
         $res->expects($this->once())
             ->method('json')
@@ -72,6 +72,6 @@ trait HttpTestUtils {
                 return true;
             }))
             ->willReturn($res);
-        return $this->makeRequest($req, $res, $s->ctx ?? null);
+        return $this->sendRequest($req, $res, $s->ctx ?? null);
     }
 }

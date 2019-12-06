@@ -69,7 +69,7 @@ final class PackagerControllersTest extends DbTestCase {
                                          }),
                                          200,
                                          'attachment');
-        $this->makeRequest($req, $res, null, $s->setupInjector);
+        $this->sendRequest($req, $res, null, $s->setupInjector);
     }
     private function verifyReturnedSignedPackage($s) {
         $this->assertTrue(strlen($s->actualAttachmentBody) > 0);

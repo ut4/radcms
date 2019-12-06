@@ -125,7 +125,7 @@ class MagicTemplate extends Template {
         }, $this->_jsFiles));
     }
     /**
-     * @param array $files Array<string>|Array<{fileName:string,attrs?:object}>
+     * @param array $files Array<string>|Array<{fileName: string, attrs?: object}>
      * @param bool $includeVendor = true
      * @return string <script src="frontend/file.js">... tai.
      *                <script src="frontend/file.js" type="module">...

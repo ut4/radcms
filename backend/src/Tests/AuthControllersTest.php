@@ -23,7 +23,7 @@ final class AuthControllersTest extends DbTestCase {
         $req = new Request('/login', 'POST', (object)['username'=>'doesNotExist',
                                                       'password'=>'irrelevant']);
         $res = $this->createMockResponse(['err' => 'User not found'], 401);
-        $this->makeRequest($req, $res);
+        $this->sendRequest($req, $res);
     }
     public function testPOSTLoginRejectsIfPasswordDidntMatch() {
         $this->createTestUser();
@@ -32,7 +32,7 @@ final class AuthControllersTest extends DbTestCase {
         $req = new Request('/login', 'POST', (object)['username'=>'doesExist',
                                                       'password'=>'wrongPass']);
         $res = $this->createMockResponse(['err' => 'Invalid password'], 401);
-        $this->makeRequest($req, $res);
+        $this->sendRequest($req, $res);
     }
     public function testPOSTLoginPutsUserToSessionOnSuccess() {
         $this->createTestUser();
@@ -51,7 +51,7 @@ final class AuthControllersTest extends DbTestCase {
             ->willReturn('xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx');
         $f->method('makeSession')->willReturn($s);
         $ctx = (object)['auth' => new Authenticator(new Crypto, $f)];
-        $this->makeRequest($req, $res, $ctx);
+        $this->sendRequest($req, $res, $ctx);
         //
         $this->verifyAuthNowReturnsLoggedInUserId($ctx);
     }

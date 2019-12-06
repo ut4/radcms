@@ -19,7 +19,7 @@ final class PluginControllersTest extends DbTestCase {
         $s = $this->setupInstallTest();
         //
         $req = new Request("/api/plugins/{$s->testPluginName}/install", 'PUT');
-        $this->makeRequest($req, $s->res, $s->ctx);
+        $this->sendRequest($req, $s->res, $s->ctx);
         //
         $this->verifyCalledPluginImplsInstallMethod();
         $this->verifyRegisteredPluginToDb($s);
@@ -61,7 +61,7 @@ final class PluginControllersTest extends DbTestCase {
         $s = $this->setupUninstallTest();
         //
         $req = new Request("/api/plugins/{$s->testPluginName}/uninstall", 'PUT');
-        $this->makeRequest($req, $s->res, $s->ctx);
+        $this->sendRequest($req, $s->res, $s->ctx);
         //
         $this->verifyCalledPluginImplsUninstallMethod();
         $this->verifyUnregisteredPluginFromDb($s);

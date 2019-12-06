@@ -15,8 +15,8 @@ class ContentTypeSyncer {
         $this->db = $db;
     }
     /**
-     * @param object ['added' => \RadCms\ContentType\ContentTypeCollection, 'deleted' => \RadCms\ContentType\ContentTypeCollection]
-     * @param object ['added' => [], 'deleted' => [], 'dataTypeChanged' => []]
+     * @param object {added: \RadCms\ContentType\ContentTypeCollection, deleted: \RadCms\ContentType\ContentTypeCollection}
+     * @param object {added: array, deleted: array, dataTypeChanged: array}
      * @return bool
      * @throws \RadCms\Common\RadException
      */
