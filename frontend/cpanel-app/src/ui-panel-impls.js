@@ -1,7 +1,6 @@
 import {components} from '../../rad-commons.js';
 const {MyLink} = components;
 import ContentNodeList from './Content/ContentNodeList.js';
-import CNodeUtils from './Content/Utils.js';
 
 /*
  * Implementoi hallintapaneeliosion <?php $this->fetchOne(...)->createFrontendPanel('Generic', 'My title') ?> kutsuille, jolla loppukäyttäjä voi muokata sisältöä.
@@ -17,14 +16,18 @@ class GenericUIPanelImpl extends preact.Component {
         super(props);
         this.currentPagePath = props.siteInfo.currentPagePath;
         this.newNodeContentType = props.dataFromBackend.contentTypeName;
-        if ((this.node = props.dataFromBackend.contentNodes[0] || null))
-            this.nodeName = CNodeUtils.makeTitle(this.node);
+        this.node = props.dataFromBackend.contentNodes[0] || null;
     }
     getName() {
         return 'Generic';
     }
     getTitle() {
-        return this.props.dataFromBackend.title;
+        return $el('span', null,
+            this.props.dataFromBackend.title,
+            !this.node || !this.node.isRevision
+                ? null
+                : $el('sup', null, ' (Luonnos)')
+        );
     }
     getIcon() {
         return 'file-text';
@@ -32,13 +35,28 @@ class GenericUIPanelImpl extends preact.Component {
     render() {
         return this.node
             ? $el('div', null,
-                $el('span', null, this.nodename),
-                $el(MyLink, {to: `/edit-content/${this.node.id}/${this.node.contentType}?returnTo=${encodeURIComponent(this.currentPagePath)}`}, `${this.nodeName}: Muokkaa`)
+                $el('div', null,
+                    $el(MyLink, {to: '/edit-content/' + this.node.id + '/' +
+                                     this.node.contentType + '?returnTo=' +
+                                     encodeURIComponent(this.currentPagePath)},
+                        'Muokkaa'),
+                ),
+                this.node.isRevision
+                    ? $el('div', null,
+                        $el('a', {onClick: e => this.publishContent(e), href: ''}, 'Julkaise')
+                    )
+                    : null,
             )
             : $el('div', null,
-                $el('span', null, 'No content'),
-                $el(MyLink, {to: `/add-content/${this.newNodeContentType}?returnTo=${encodeURIComponent(this.currentPagePath)}`}, 'Luo')
+                $el('span', null, 'Ei sisältöä'),
+                $el(MyLink, {to: '/add-content/' + this.newNodeContentType +
+                                 '?returnTo=' + encodeURIComponent(this.currentPagePath)},
+                    'Luo sisältö')
             );
+    }
+    publishContent(e) {
+        e.preventDefault();
+        alert('todo');
     }
 }
 
@@ -56,6 +74,7 @@ class GenericListUIPanelImpl extends preact.Component {
         super(props);
         this.cnodes = props.dataFromBackend.contentNodes;
         this.currentPagePath = props.siteInfo.currentPagePath;
+        this.contentTypeName = props.dataFromBackend.contentTypeName;
         this.label = '';
     }
     getName() {
@@ -70,9 +89,9 @@ class GenericListUIPanelImpl extends preact.Component {
     render() {
         return $el(ContentNodeList, {
             cnodes: this.cnodes,
-            createLinkText: 'Add ' + this.label,
+            createLinkText: 'Lisää uusi ' + this.label,
             currentPagePath: this.currentPagePath,
-            contentType: (this.cnodes[0] || {}).contentType
+            contentType: this.contentTypeName || (this.cnodes[0] || {}).contentType
         });
     }
 }

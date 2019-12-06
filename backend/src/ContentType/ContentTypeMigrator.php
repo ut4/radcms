@@ -162,9 +162,12 @@ class ContentTypeMigrator {
                        false // no revisions
                        );
         foreach ($data as [$contentTypeName, $contentNodes]) {
-            foreach ($contentNodes as $data)
+            foreach ($contentNodes as $data) {
+                if (!property_exists($data, 'isPublished'))
+                    $data->isPublished = true;
                 // @allow \RadCms\Common\RadException
                 $dmo->insert($contentTypeName, $data);
+            }
         }
         return true;
     }

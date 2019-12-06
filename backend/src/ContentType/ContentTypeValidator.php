@@ -57,8 +57,11 @@ abstract class ContentTypeValidator {
      * @param object $input
      * @return string[]
      */
-    public static function validateInsertData(ContentTypeDef $contentType, $input) {
+    public static function validateInsertData(ContentTypeDef $contentType, &$input) {
         $v = new Validator($input);
+        if ($v->is('id', 'present')) $v->check('id', 'nonEmptyString');
+        if ($v->is('isPublished', 'present'))
+            $input->isPublished = $input->isPublished === true;
         foreach ($contentType->fields->toArray() as $f) {
             $validationRules = [
                 'text' => ['string'],
@@ -75,7 +78,7 @@ abstract class ContentTypeValidator {
      * @param object $input
      * @return string[]
      */
-    public static function validateUpdateData(ContentTypeDef $contentType, $input) {
+    public static function validateUpdateData(ContentTypeDef $contentType, &$input) {
         return self::validateInsertData($contentType, $input);
     }
 }

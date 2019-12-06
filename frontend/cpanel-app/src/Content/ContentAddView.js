@@ -15,6 +15,7 @@ class ContentAddView extends preact.Component {
             contentTypes: null,
             newCnode: null,
             ctype: null,
+            createRevision: false,
         };
         services.myFetch('/api/content-types').then(
             res => {
@@ -32,10 +33,11 @@ class ContentAddView extends preact.Component {
     render() {
         if (!this.state.contentTypes) return null;
         if (!this.state.ctype) return $el(`Sisältötyyppiä ${this.props.initialContentType} ei löytynyt.`);
-        return $el(View, null, $el(Form, {onConfirm: e => this.handleFormSubmit(e)},
+        return $el(View, null, $el(Form, {onConfirm: e => this.handleFormSubmit(e),
+                                          confirmButtonText: 'Lisää'},
             $el('h2', null, 'Lisää sisältöä'),
             $el('label', null,
-                $el('span', {'data-help-text': 'Dev note: Voit luoda uusia sisältötyyppejä muokkaamalla site.ini-tiedostoa.'}, 'Sisältötyyppi'),
+                $el('span', {'data-help-text': 'Dev note: Voit luoda uusia sisältötyyppejä muokkaamalla site.json-tiedostoa (ks. https://todo).'}, 'Sisältötyyppi'),
                 $el('select', {onChange: e => this.receiveContentTypeSelection(e),
                                value: this.state.ctype.name},
                     this.state.contentTypes.map(type =>
@@ -45,17 +47,24 @@ class ContentAddView extends preact.Component {
             $el(ContentNodeFieldList, {cnode: this.state.newCnode,
                                        ctype: this.state.ctype,
                                        ref: cmp => { if (cmp) this.fieldListCmp = cmp; },
-                                       key: this.state.ctype.name})
+                                       key: this.state.ctype.name}),
+            $el('div', null,
+                $el('input', {id: 'i-create-rev', type: 'checkbox',
+                              onChange: e => this.setState({createRevision: e.target.checked})}),
+                $el('label', {for: 'i-create-rev', className: 'inline'}, 'Lisää luonnoksena')
+            )
         ));
     }
     /**
      * @access private
      */
     handleFormSubmit() {
-        return services.myFetch(`/api/content/${this.state.ctype.name}`, {
+        const revisionSettings = this.state.createRevision ? 'with-revision' : '';
+        return services.myFetch(`/api/content/${this.state.ctype.name}/${revisionSettings}`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            data: JSON.stringify(this.fieldListCmp.getResult())
+            data: JSON.stringify(Object.assign({isPublished: revisionSettings === ''},
+                                               this.fieldListCmp.getResult()))
         }).then(() => {
             services.redirect(this.props.returnTo || '/', true);
         }, () => {
