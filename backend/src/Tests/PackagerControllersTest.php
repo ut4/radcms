@@ -118,14 +118,14 @@ final class PackagerControllersTest extends DbTestCase {
         ];
     }
     public static function makeExpectedPackageFile($virtualFileName, $input=null) {
-        if ($virtualFileName == Packager::DB_CONFIG_VIRTUAL_FILE_NAME) {
+        if ($virtualFileName === Packager::DB_CONFIG_VIRTUAL_FILE_NAME) {
             return json_encode([
                 'dbHost' => $input->dbHost, 'dbDatabase' => $input->dbDatabase,
                 'dbUser' => $input->dbUser, 'dbPass' => $input->dbPass,
                 'dbTablePrefix' => $input->dbTablePrefix, 'dbCharset' => $input->dbCharset,
             ], JSON_UNESCAPED_UNICODE);
         }
-        if ($virtualFileName == Packager::WEBSITE_STATE_VIRTUAL_FILE_NAME) {
+        if ($virtualFileName === Packager::WEBSITE_STATE_VIRTUAL_FILE_NAME) {
             return json_encode([
                 'siteName' => $input->siteName,
                 'siteLang' => $input->siteLang,
@@ -136,7 +136,7 @@ final class PackagerControllersTest extends DbTestCase {
                 'useDevMode' => boolval(RAD_FLAGS & RAD_DEVMODE),
             ], JSON_UNESCAPED_UNICODE);
         }
-        if ($virtualFileName == Packager::WEBSITE_CONFIG_VIRTUAL_FILE_NAME) {
+        if ($virtualFileName === Packager::WEBSITE_CONFIG_VIRTUAL_FILE_NAME) {
             return file_get_contents(RAD_SITE_PATH . 'site.json');
         }
         throw new \RuntimeException("Unknown package file {$virtualFileName}");

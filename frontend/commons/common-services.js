@@ -56,7 +56,7 @@ const signals = {
         const l = this._listeners.length;
         for (let i = 0; i < l; ++i) {
             const listener = this._listeners[i];
-            if (listener.listeningTo == whichSignal &&
+            if (listener.listeningTo === whichSignal &&
                 listener.fn(arg) === false) break;
         }
     }

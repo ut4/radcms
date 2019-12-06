@@ -83,7 +83,7 @@ class ContentTypeMigrator {
             throw new RadException('initialData must be an array', RadException::BAD_INPUT);
         foreach ($data as $item) {
             if (!is_array($item) ||
-                count($item) != 2 ||
+                count($item) !== 2 ||
                 !is_string($item[0]) ||
                 !is_array($item[1]) ||
                 !(($item[1][0] ?? null) instanceof \stdClass))

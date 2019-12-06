@@ -153,12 +153,12 @@ class Toaster extends preact.Component {
         return $el('div', {className: 'toaster'},
             this.state.messages.map(message => {
                 let iconId = 'check';
-                if (message.level == 'error') iconId = 'alert-triangle';
-                if (message.level == 'info') iconId = 'info';
+                if (message.level === 'error') iconId = 'alert-triangle';
+                if (message.level === 'info') iconId = 'info';
                 return $el('div', {className: 'toaster-message ' + message.level,
                                    onClick: () => this.removeMessage(message)},
                     $el(FeatherSvg, {iconId}),
-                    typeof message.message != 'function'
+                    typeof message.message !== 'function'
                         ? $el('span', null, message.message)
                         : $el(message.message)
                 );
@@ -181,7 +181,7 @@ class Tabs extends preact.Component {
     render() {
         return $el('div', {className: 'tab-links'},
             ...this.props.items.map((text, i) =>
-                $el('button', {className: this.state.tabIdx != i ? '' : 'current',
+                $el('button', {className: this.state.tabIdx !== i ? '' : 'current',
                                onClick: () => this.setCurrentTab(i)}, text)
             )
         );
@@ -190,7 +190,7 @@ class Tabs extends preact.Component {
      * @access private
      */
     setCurrentTab(idx) {
-        if (this.state.tabIdx == idx) return;
+        if (this.state.tabIdx === idx) return;
         this.setState({tabIdx: idx});
         this.props.onChange(idx);
     }

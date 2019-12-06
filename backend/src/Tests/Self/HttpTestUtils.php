@@ -18,7 +18,7 @@ trait HttpTestUtils {
                                        $expectedStatus = 200,
                                        $expectedContentType = 'json') {
         $stub = $this->createMock(MutedResponse::class);
-        if ($expectedStatus == 200) {
+        if ($expectedStatus === 200) {
             $stub->method('status')
                 ->willReturn($stub);
         } else {

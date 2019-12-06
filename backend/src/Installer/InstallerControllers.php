@@ -63,7 +63,7 @@ class InstallerControllers {
             $res->json(json_encode(['ok' => 'ok']));
         } catch (RadException $e) {
             LoggerAccess::getLogger()->log('error', $e->getTraceAsString());
-            $res->status($e->getCode() != RadException::BAD_INPUT ? 500 : 400)
+            $res->status($e->getCode() !== RadException::BAD_INPUT ? 500 : 400)
                 ->json(json_encode(['error' => $e->getCode()]));
         }
     }
@@ -84,7 +84,7 @@ class InstallerControllers {
             $res->json(json_encode(['ok' => 'ok']));
         } catch (RadException $e) {
             LoggerAccess::getLogger()->log('error', $e->getTraceAsString());
-            $res->status($e->getCode() != RadException::BAD_INPUT ? 500 : 400)
+            $res->status($e->getCode() !== RadException::BAD_INPUT ? 500 : 400)
                 ->json(json_encode(['error' => $e->getCode()]));
         }
     }

@@ -82,7 +82,7 @@ class ContentAddView extends preact.Component {
      * @access private
      */
     setContentTypeAndCreateEmptyContentNode(ctypeName, newState) {
-        newState.ctype = newState.contentTypes.find(t => t.name == ctypeName);
+        newState.ctype = newState.contentTypes.find(t => t.name === ctypeName);
         newState.newCnode = {};
         newState.ctype.fields.forEach(field => {
             newState.newCnode[field.name] = '';

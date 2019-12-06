@@ -122,8 +122,8 @@ class DAO {
         //
         foreach ($rows as $row) {
             if (!$row['revisionSnapshot'] ||
-                $row['id'] != $out->id ||
-                $row['contentType'] != $out->contentType) continue;
+                $row['id'] !== $out->id ||
+                $row['contentType'] !== $out->contentType) continue;
             $out->revisions[] = (object)[
                 'createdAt' => $row['revisionCreatedAt'],
                 'snapshot' => json_decode($row['revisionSnapshot'])
@@ -145,8 +145,8 @@ class DAO {
             $node->$fieldName = [];
             foreach ($rows as $row) {
                 if (
-                    $row['id'] == $node->id &&
-                    $row['bContentType'] == $joinContentTypeName
+                    $row['id'] === $node->id &&
+                    $row['bContentType'] === $joinContentTypeName
                 ) $fn($node, $row);
             }
         }

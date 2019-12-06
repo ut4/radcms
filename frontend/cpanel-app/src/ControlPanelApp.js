@@ -45,9 +45,9 @@ class ControlPanelApp extends preact.Component {
             $el('div', {id: 'control-panel'},
                 $el(Tabs, {items: ['Sisältö', 'Devaajille'],
                            onChange: tabIdx => this.setState({tabIdx})}),
-                $el('div', {className: this.state.tabIdx != 0 ? 'hidden' : ''},
+                $el('div', {className: this.state.tabIdx !== 0 ? 'hidden' : ''},
                     this.makeMainTabItems()),
-                $el('div', {className: this.state.tabIdx != 1 ? 'hidden' : ''},
+                $el('div', {className: this.state.tabIdx !== 1 ? 'hidden' : ''},
                     this.makeDevTabItems()),
                 $el('h1', null,
                     $el('img', {src: this.props.assetBaseUrl + 'frontend/assets/logo.png'}),
@@ -126,7 +126,7 @@ class ControlPanelApp extends preact.Component {
         return (PanelCls, implName) => {
             if (!uniqueImpls.hasOwnProperty(implName)) {
                 uniqueImpls[implName] = 1;
-                if (typeof PanelCls.getRoutes == 'function')
+                if (typeof PanelCls.getRoutes === 'function')
                     this.userDefinedRoutes.push(...(PanelCls.getRoutes() || []));
             }
         };

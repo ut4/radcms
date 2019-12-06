@@ -41,7 +41,7 @@ class SiteConfigDiffer {
                                          'friendlyName' => $f->friendlyName,
                                          'dataType' => $f->dataType,
                                          'widget' => $f->widget];
-            elseif ($f->dataType != $current->dataType)
+            elseif ($f->dataType !== $current->dataType)
                 $out->dataTypeChanged[] = (object)['name' => $f->name,
                                                    'oldDataType' => $current->dataType,
                                                    'newDataType' => $f->dataType];

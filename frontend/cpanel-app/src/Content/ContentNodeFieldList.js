@@ -6,9 +6,9 @@ class ContentNodeFieldList extends preact.Component {
      */
     constructor(props) {
         super(props);
-        if (typeof props.cnode != 'object')
+        if (typeof props.cnode !== 'object')
             throw new TypeError('props.cnode must be an object');
-        if (typeof props.ctype != 'object')
+        if (typeof props.ctype !== 'object')
             throw new TypeError('props.ctype must be an object');
         this.state = {
             cnode: JSON.parse(JSON.stringify(props.cnode)),
@@ -42,9 +42,9 @@ class ContentNodeFieldList extends preact.Component {
                        type: 'text',
                        value: this.state.cnode[field.name],
                        onInput: e => this.setCnodeValue(e)};
-        if (field.widget == 'image') {
+        if (field.widget === 'image') {
             props.type = 'file';
-        } else if (field.widget == 'richtext') {
+        } else if (field.widget === 'richtext') {
             return $el(QuillEditor, {
                 name: props.name,
                 value: props.value,

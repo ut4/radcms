@@ -9,7 +9,7 @@ class Crypto {
      * @return bool
      */
     public function verifyPass($plainPass, $hashedPass) {
-        return $hashedPass == $plainPass; // todo
+        return $hashedPass === $plainPass; // todo
     }
     /**
      * https://stackoverflow.com/a/15875555

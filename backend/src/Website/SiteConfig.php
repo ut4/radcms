@@ -147,13 +147,13 @@ class SiteConfig {
      * @return string[]
      */
     public function __get($name) {
-        if ($name == 'cssAssets')
+        if ($name === 'cssAssets')
             return array_filter($this->assets, function ($f) {
-                return $f->type == 'local-stylesheet';
+                return $f->type === 'local-stylesheet';
             });
-        if ($name == 'jsAssets')
+        if ($name === 'jsAssets')
             return array_filter($this->assets, function ($f) {
-                return $f->type == 'local-script';
+                return $f->type === 'local-script';
             });
         throw new RadException("What's {$name}?", RadException::BAD_INPUT);
     }

@@ -14,9 +14,9 @@ class FileDialog extends preact.Component {
      */
     constructor(props) {
         super(props);
-        if (typeof props.provideDirListFn != 'function')
+        if (typeof props.provideDirListFn !== 'function')
             throw new TypeError('props.provideDirListFn must be a function');
-        if (typeof props.onConfirm != 'function')
+        if (typeof props.onConfirm !== 'function')
             throw new TypeError('props.onConfirm must be a function');
         this.state = {
             mainPanelTree: null,
@@ -86,7 +86,7 @@ class FileDialog extends preact.Component {
         this.lastClick = performance.now();
     }
     currentRootHasParentDir() {
-        return this.state.mainPanelTree && getParentDir(this.state.mainPanelTree.root) != null;
+        return this.state.mainPanelTree && getParentDir(this.state.mainPanelTree.root) !== null;
     }
     loadParentDir() {
         const parentPath = getParentDir(this.state.mainPanelTree.root);
@@ -94,7 +94,7 @@ class FileDialog extends preact.Component {
         this.loadToMainPanel(parentPath);
     }
     loadToMainPanel(path) {
-        if (path == this.state.mainPanelTree.root) return;
+        if (path === this.state.mainPanelTree.root) return;
         this.props.provideDirListFn(path).then(dir => {
             this.setState({mainPanelTree: dir});
         });
@@ -109,7 +109,7 @@ class FileDialog extends preact.Component {
 }
 
 function getParentDir(path) {
-    const pcs = path.split('/').filter(p => p != '');
+    const pcs = path.split('/').filter(p => p !== '');
     return pcs.length > 1 ? pcs.slice(0, pcs.length - 1).join('/') : null;
 }
 

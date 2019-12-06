@@ -39,7 +39,7 @@ class MoviesControllers {
                 : ['my' => 'response']);
         } catch (RadException $e) {
             LoggerAccess::getLogger()->debug($e->getTraceAsString());
-            $res->status($e->getCode() == RadException::BAD_INPUT ? 400 : 500)
+            $res->status($e->getCode() === RadException::BAD_INPUT ? 400 : 500)
                 ->json(['err' => 'err']);
         }
     }
@@ -57,7 +57,7 @@ class MoviesControllers {
                 : ['my' => 'response2']);
         } catch (RadException $e) {
             LoggerAccess::getLogger()->debug($e->getTraceAsString());
-            $res->status($e->getCode() == RadException::BAD_INPUT ? 400 : 500)
+            $res->status($e->getCode() === RadException::BAD_INPUT ? 400 : 500)
                 ->json(['err' => 'err']);
         }
     }

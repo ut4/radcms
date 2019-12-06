@@ -145,13 +145,13 @@ final class InstallerTest extends DbTestCase {
         ];
     }
     private function addFsExpectation($expectation, $s) {
-        if ($expectation == 'checksRadPathIsValid') {
+        if ($expectation === 'checksRadPathIsValid') {
             $s->mockFs->expects($this->atLeastOnce())
                 ->method('isFile')
                 ->willReturn(true);
             return;
         }
-        if ($expectation == 'readsDataFiles') {
+        if ($expectation === 'readsDataFiles') {
             $s->mockFs->expects($this->exactly(3))
                 ->method('read')
                 ->withConsecutive(
@@ -173,7 +173,7 @@ final class InstallerTest extends DbTestCase {
                 );
             return;
         }
-        if ($expectation == 'readsSampleContentTemplateFilesDir') {
+        if ($expectation === 'readsSampleContentTemplateFilesDir') {
             $s->mockFs->expects($this->exactly(2))
                 ->method('readDir')
                 ->withConsecutive(
@@ -189,7 +189,7 @@ final class InstallerTest extends DbTestCase {
                 ]);
             return;
         }
-        if ($expectation == 'createsSiteTemplatesDir') {
+        if ($expectation === 'createsSiteTemplatesDir') {
             $s->mockFs->expects($this->once())
                 ->method('isDir')
                 ->willReturn(false);
@@ -199,7 +199,7 @@ final class InstallerTest extends DbTestCase {
                 ->willReturn(true);
             return;
         }
-        if ($expectation == 'clonesTemplateFilesAndSiteCfgFile') {
+        if ($expectation === 'clonesTemplateFilesAndSiteCfgFile') {
             $s->mockFs->expects($this->exactly(6))
                 ->method('copy')
                 ->withConsecutive([
@@ -224,7 +224,7 @@ final class InstallerTest extends DbTestCase {
                 ->willReturn(true);
             return;
         }
-        if ($expectation == 'generatesConfigFile') {
+        if ($expectation === 'generatesConfigFile') {
             $s->mockFs->expects($this->once())
                 ->method('write')
                 ->with($s->indexFilePath . '/config.php',
