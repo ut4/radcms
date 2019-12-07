@@ -31,18 +31,20 @@ class DAO {
      * @return \RadCms\Content\Query
      */
     public function fetchOne($contentTypeName) {
+        [$contentTypeName, $alias] = self::parseContentTypeNameAndAlias($contentTypeName);
         // @allow \RadCms\Common\RadException
         $type = $this->getContentType($contentTypeName);
-        return new Query(++$this->counter, $type, true, $this);
+        return new Query(++$this->counter, $type, $alias, true, $this);
     }
     /**
      * @param string $contentTypeName eg. 'Article', 'Product', 'Movie', 'Employee'
      * @return \RadCms\Content\Query
      */
     public function fetchAll($contentTypeName) {
+        [$contentTypeName, $alias] = self::parseContentTypeNameAndAlias($contentTypeName);
         // @allow \RadCms\Common\RadException
         $type = $this->getContentType($contentTypeName);
-        return new Query(++$this->counter, $type, false, $this);
+        return new Query(++$this->counter, $type, $alias, false, $this);
     }
     /**
      * @param string $queryId
@@ -83,9 +85,10 @@ class DAO {
             }, $rows) : [];
         }
         //
-        if ($out && $join)
-            $this->provideRowsToUserDefinedJoinCollector($join,
-                $rows, $isFetchOne, $out);
+        if ($out && $join) {
+            $out = $this->runUserDefinedJoinCollector($join,
+				$rows, $isFetchOne, $out);
+		}
         //
         if (isset($this->frontendPanelInfos[$queryId])) {
             $this->frontendPanelInfos[$queryId]->contentNodes = $out;
@@ -135,20 +138,37 @@ class DAO {
         });
         return $out;
     }
-    private function provideRowsToUserDefinedJoinCollector($join,
-                                                           $rows,
-                                                           $isFetchOne,
-                                                           &$out) {
+    private function runUserDefinedJoinCollector($join, $rows, $isFetchOne, &$out) {
         $joinContentTypeName = $join->contentType;
+        $joinIdKey = $join->alias . 'Id';
+        $joinContentTypeKey = $join->alias . 'ContentType';
         [$fn, $fieldName] = $join->collector;
+        //
+        $processed = [];
         foreach (($isFetchOne ? [$out] : $out) as $node) {
-            $node->$fieldName = [];
-            foreach ($rows as $row) {
-                if (
-                    $row['id'] === $node->id &&
-                    $row['bContentType'] === $joinContentTypeName
-                ) $fn($node, $row);
+            if (!array_key_exists($node->id, $processed)) {
+                $node->$fieldName = [];
+                foreach ($rows as $row) {
+                    if (
+                        $row[$joinIdKey] &&
+                        $row['id'] === $node->id &&
+                        $row[$joinContentTypeKey] === $joinContentTypeName
+                    ) $fn($node, $row);
+                }
+                $processed[$node->id] = $node;
             }
         }
+        //
+        return $isFetchOne ? reset($processed) : array_values($processed);
+    }
+    /**
+     * 'Foo f' -> ['foo', 'f'] tai 'Foo' -> ['Foo', <defaultAlias>]
+     *
+     * @param string $expr
+     * @param string $defaultAlias = 'a'
+     */
+    public static function parseContentTypeNameAndAlias($expr, $defaultAlias = 'a') {
+        $pcs = explode(' ', $expr);
+        return [$pcs[0], $pcs[1] ?? $defaultAlias];
     }
 }

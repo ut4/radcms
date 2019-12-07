@@ -26,16 +26,23 @@ trait ContentTestUtils {
             ['$."' . $contentTypeName . '"']
         )['containsKey']);
     }
-    public function insertContent($contentTypeName, $data) {
-        $ownData = $data[0];
-        $defaults = $data[1] ?? [];
-        $ownDataQs = implode('', array_fill(0, count($ownData), ',?'));
-        $id = $defaults[0];
-        $isPublished = $defaults[1] ?? 1;
+    public function insertContent($contentTypeName, ...$data) {
+        $qGroups = [];
+        $vals = [];
+        foreach ($data as $item) {
+            $ownData = $item[0];
+            $defaults = $item[1] ?? [1];
+            $qGroups[] = '(?,?' . implode('', array_fill(0, count($ownData), ',?')) . ')';
+            //
+            $id = $defaults[0];
+            $isPublished = $defaults[1] ?? 1;
+            array_push($vals, $id, $isPublished, ...$ownData);
+        }
         if (self::$db->exec('INSERT INTO ${p}' . $contentTypeName .
-                            ' VALUES (?,?' . $ownDataQs . ')',
-                            array_merge([$id, (int)$isPublished], $ownData)) < 1)
+                            ' VALUES ' . implode(',', $qGroups),
+                            $vals) < 1)
             throw new \RuntimeException('Failed to insert test data');
+
     }
     public function insertRevision($contentId, $contentTypeName, $dataSnapShot='{"foo":"bar"}') {
         if (self::$db->exec('INSERT INTO ${p}ContentRevisions VALUES (?,?,?,?)',

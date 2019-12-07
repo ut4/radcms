@@ -13,6 +13,7 @@ use RadCms\Common\RadException;
 class Query {
     private $id;
     private $contentType;
+    private $contentTypeAlias;
     private $isFetchOne;
     private $dao;
     private $whereDef;
@@ -22,12 +23,18 @@ class Query {
     /**
      * $param integer $id
      * $param \RadCms\ContentType\ContentTypeDef $contentType
+     * $param string $contentTypeAlias
      * $param bool $isFetchOne
      * $param \RadCms\Content\DAO $dao
      */
-    public function __construct($id, ContentTypeDef $contentType, $isFetchOne, DAO $dao) {
+    public function __construct($id,
+                                ContentTypeDef $contentType,
+                                $contentTypeAlias,
+                                $isFetchOne,
+                                DAO $dao) {
         $this->id = strval($id);
         $this->contentType = $contentType;
+        $this->contentTypeAlias = $contentTypeAlias;
         $this->isFetchOne = $isFetchOne;
         $this->dao = $dao;
         $this->joinDefs = [];
@@ -42,7 +49,7 @@ class Query {
         return $this;
     }
     /**
-     * @param string $contentType
+     * @param string $contentType 'Products', 'Products p'
      * @param string $expr
      * @param array $bindVals = null
      * @param bool $isLeft = false
@@ -52,7 +59,9 @@ class Query {
                          $expr,
                          array $bindVals = null,
                          $isLeft = false) {
-        $this->joinDefs[] = (object)['contentType' => $contentType,
+        [$contentTypeName, $alias] = DAO::parseContentTypeNameAndAlias($contentType, 'b');
+        $this->joinDefs[] = (object)['contentType' => $contentTypeName,
+                                     'alias' => $alias,
                                      'expr' => $expr,
                                      'bindVals' => $bindVals,
                                      'isLeft' => $isLeft,
@@ -60,7 +69,7 @@ class Query {
         return $this;
     }
     /**
-     * @param string $contentType
+     * @param string $contentType 'Products', 'Products p'
      * @param string $expr
      * @param array $bindVals = null
      * @return $this
@@ -126,9 +135,9 @@ class Query {
         if (!$joins) {
             return $mainQ;
         }
-        return 'SELECT a.*' .
+        return 'SELECT ' . $this->contentTypeAlias . '.*' .
                ', ' . implode(', ', $fields) .
-               ' FROM (' . $mainQ . ') AS a' .
+               ' FROM (' . $mainQ . ') AS ' . $this->contentTypeAlias .
                ' ' . implode(' ', $joins);
     }
     /**
@@ -138,13 +147,14 @@ class Query {
      */
     private function addContentTypeJoin($joinDef, &$joins, &$fields) {
         $ctypeName = $joinDef->contentType;
+        $a = $joinDef->alias;
         $joins[] = (!$joinDef->isLeft ? '' : 'LEFT ') . 'JOIN' .
-                    ' ${p}' . $ctypeName . ' AS b' .
+                    ' ${p}' . $ctypeName . ' AS ' . $joinDef->alias .
                     ' ON (' . $joinDef->expr . ')';
-        $fields[] = 'b.`id` AS `bId`, \'' . $ctypeName . '\' AS `bContentType`, ' .
+        $fields[] = "{$a}.`id` AS `{$a}Id`, '{$ctypeName}' AS `{$a}ContentType`, " .
                     $this->dao->getContentType($ctypeName)->fields
-                              ->toSqlCols(function ($f) {
-                                  return 'b.`'.$f->name.'` AS `b'.ucfirst($f->name).'`';
+                              ->toSqlCols(function ($f) use ($a) {
+                                  return $a.'.`'.$f->name.'` AS `'.$a.ucfirst($f->name).'`';
                               });
     }
     /**
@@ -152,25 +162,30 @@ class Query {
      * @param string[] &$fields
      */
     private function addRevisionsJoin(&$joins, &$fields) {
-        $joins[] = 'LEFT JOIN ${p}contentRevisions r ON (r.`contentId` = a.`id`' .
-                   ' AND r.`contentType` = \'' . $this->contentType->name . '\')';
-        $fields[] = 'r.`revisionSnapshot`, r.`createdAt` AS `revisionCreatedAt`';
+        $joins[] = 'LEFT JOIN ${p}contentRevisions _r' .
+                   ' ON (_r.`contentId` = ' . $this->contentTypeAlias . '.`id`' .
+                   ' AND _r.`contentType` = \'' . $this->contentType->name . '\')';
+        $fields[] = '_r.`revisionSnapshot`, _r.`createdAt` AS `revisionCreatedAt`';
     }
     /**
      * @return string
      */
     private function selfValidate() {
         $errors = ContentTypeValidator::validate($this->contentType);
+        if (!ctype_alnum(str_replace(['_'], '', $this->contentTypeAlias)))
+            $errors[] = 'fetch alias is not valid';
         foreach ($this->joinDefs as $d) {
             $errors = array_merge($errors,
                 ContentTypeValidator::validateName($d->contentType));
+            if (!ctype_alnum(str_replace(['_'], '', $d->alias)))
+                $errors[] = 'join alias is not valid.';
             if (!$d->collector)
                 $errors[] = 'join() was used, but no collectJoin(\'field\',' .
                             ' function () {}) was provided';
         }
         if ($this->isFetchOne) {
             if (!$this->whereDef) {
-                $errors[] = 'fetchOne(...)->where() is required.';
+                $errors[] = 'fetchOne(...)->where() is required';
             }
         }
         return $errors ? implode('\n', $errors) : '';
