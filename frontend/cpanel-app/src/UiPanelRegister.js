@@ -1,27 +1,24 @@
-import {GenericUIPanelImpl, GenericListUIPanelImpl} from './ui-panel-impls.js';
-
-const uiPanelRegister = {
-    _uiPanelImpls: {
-        'Generic': GenericUIPanelImpl,
-        'List': GenericListUIPanelImpl,
-    },
+class UiPanelRegister {
+    constructor() {
+        this._impls = {};
+    }
     /**
      * @param {string} name
      * @param {Object} impl
      * @throws {TypeError}
      */
-    registerUiPanelImpl: function(name, impl) {
-        if (this._uiPanelImpls.hasOwnProperty(name))
+    registerUiPanelImpl(name, impl) {
+        if (this._impls.hasOwnProperty(name))
             throw new TypeError('Impl \''+name+'\' already exists.');
-        this._uiPanelImpls[name] = impl;
-    },
+        this._impls[name] = impl;
+    }
     /**
      * @param {string} name
      * @returns {Object|undefined}
      */
-    getUiPanelImpl: function(name) {
-        return this._uiPanelImpls[name];
+    getUiPanelImpl(name) {
+        return this._impls[name];
     }
-};
+}
 
-export default uiPanelRegister;
+export default UiPanelRegister;

@@ -1,5 +1,4 @@
 import {components} from '../../rad-commons.js';
-import uiPanelRegister from './UiPanelRegister.js';
 import ContentAddView from './Content/ContentAddView.js';
 import ContentEditView from './Content/ContentEditView.js';
 import ContentTypesManageView from './ContentType/ContentTypesManageView.js';
@@ -21,7 +20,7 @@ class ControlPanelApp extends preact.Component {
                          currentPagePath: props.currentPagePath};
         const collectRoutes = this.makeRouteCollector();
         const makePanel = (dataFromBackend, to) => {
-            const Cls = uiPanelRegister.getUiPanelImpl(dataFromBackend.impl);
+            const Cls = props.uiPanelRegister.getUiPanelImpl(dataFromBackend.impl);
             if (!Cls) return console.error(`UI panel ${dataFromBackend.impl} not implemented.`);
             to.push({UiImplClass: Cls, dataFromBackend});
             collectRoutes(Cls, dataFromBackend.impl);
