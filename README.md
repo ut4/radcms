@@ -1,4 +1,4 @@
-# RadCMC
+# RadCMS
 
 RadCMS is simply the most radical CMS ever created.
 

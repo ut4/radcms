@@ -1,6 +1,6 @@
 {
-    "name": "radcms/radcms",
-    "description": "RadCMS is simply the most radical cms ever created.",
+    "name": "ut4/radcms",
+    "description": "RadCMS is simply the most radical CMS ever created.",
     "type": "project",
     "require": {
         "php": "~7.1",
