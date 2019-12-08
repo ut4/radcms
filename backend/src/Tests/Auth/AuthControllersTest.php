@@ -9,7 +9,7 @@ use RadCms\Auth\CachingServicesFactory;
 use RadCms\Framework\SessionInterface;
 use RadCms\Auth\UserRepository;
 use RadCms\Auth\Authenticator;
-use RadCms\Auth\Crypto;
+use RadCms\Tests\_Internal\MockCrypto;
 
 final class AuthControllersTest extends DbTestCase {
     use HttpTestUtils;
@@ -50,7 +50,7 @@ final class AuthControllersTest extends DbTestCase {
         $s->method('get')
             ->willReturn('xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx');
         $f->method('makeSession')->willReturn($s);
-        $ctx = (object)['auth' => new Authenticator(new Crypto, $f)];
+        $ctx = (object)['auth' => new Authenticator(new MockCrypto, $f)];
         $this->sendRequest($req, $res, $ctx);
         //
         $this->verifyAuthNowReturnsLoggedInUserId($ctx);
