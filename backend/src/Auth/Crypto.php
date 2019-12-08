@@ -9,7 +9,14 @@ class Crypto {
      * @return bool
      */
     public function verifyPass($plainPass, $hashedPass) {
-        return $hashedPass === $plainPass; // todo
+        return password_verify($plainPass, $hashedPass);
+    }
+    /**
+     * @param string $plainPass
+     * @return string
+     */
+    public function hashPass($plainPass) {
+        return password_hash($plainPass, PASSWORD_DEFAULT);
     }
     /**
      * https://stackoverflow.com/a/15875555

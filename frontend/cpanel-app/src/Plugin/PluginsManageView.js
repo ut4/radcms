@@ -10,10 +10,14 @@ class PluginsManageView extends preact.Component {
      */
     constructor(props) {
         super(props);
-        this.state = {plugins: []};
+        this.state = {plugins: [], message: null};
         services.myFetch('/api/plugins')
             .then(res => {
-                this.setState({plugins: JSON.parse(res.responseText)});
+                const plugins = JSON.parse(res.responseText);
+                this.setState({plugins, message: plugins.length ? null : 'Ei lisäosia.'});
+            })
+            .catch(() => {
+                this.setState({message: 'Jokin meni pieleen.'});
             });
     }
     /**
@@ -22,7 +26,7 @@ class PluginsManageView extends preact.Component {
     render() {
         return $el(View, null, $el('div', null,
             $el('h2', null, 'Lisäosat'),
-            this.state.plugins && $el('table', {className: 'striped'},
+            !this.state.message ? $el('table', {className: 'striped'},
                 $el('thead', null, $el('tr', null,
                     $el('th', null, 'Nimi'),
                     $el('th', null, '')
@@ -41,13 +45,13 @@ class PluginsManageView extends preact.Component {
                         )
                     )
                 ))
-            )
+            ) : $el('p', null, this.state.message)
         ));
     }
     /**
      * @access private
      */
-    installPlugin(plugin, i) {
+    installPlugin(plugin) {
         if (plugin.isInstalled) return;
         services.myFetch(`/api/plugins/${plugin.name}/install`, {
             method: 'PUT',
@@ -64,7 +68,7 @@ class PluginsManageView extends preact.Component {
     /**
      * @access private
      */
-    uninstallPlugin(plugin, i) {
+    uninstallPlugin(plugin) {
         if (!plugin.isInstalled) return;
         services.myFetch(`/api/plugins/${plugin.name}/uninstall`, {
             method: 'PUT',

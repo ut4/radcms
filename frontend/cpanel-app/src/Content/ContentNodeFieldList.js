@@ -1,4 +1,5 @@
 import QuillEditor from '../Widgets/QuillEditor.js';
+import ImagePicker from '../Widgets/ImagePicker.js';
 
 class ContentNodeFieldList extends preact.Component {
     /**
@@ -40,10 +41,10 @@ class ContentNodeFieldList extends preact.Component {
         const props = {id: 'field-' + field.name,
                        name: field.name,
                        type: 'text',
-                       value: this.state.cnode[field.name],
-                       onInput: e => this.setCnodeValue(e)};
+                       value: this.state.cnode[field.name]};
         if (field.widget === 'image') {
-            props.type = 'file';
+            props.onChange = val => this.setCnodeValue(val, field.name);
+            return $el(ImagePicker, props);
         } else if (field.widget === 'richtext') {
             return $el(QuillEditor, {
                 name: props.name,
@@ -53,6 +54,7 @@ class ContentNodeFieldList extends preact.Component {
                 }
             });
         }
+        props.onInput = e => this.setCnodeValue(e);
         return $el(tagName, props);
     }
     /**

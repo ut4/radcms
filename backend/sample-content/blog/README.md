@@ -57,7 +57,7 @@ Esimerkki:
 
 ## Sisältötyypit
 
-Sisältötyypit, jotka tämä paketti rekisteröi. Sisältötyypin sisältöä voidaan hakea tietokannasta php-tiedostoista.
+Sisältötyypit, jotka tämä paketti rekisteröi. Sisältötyypin sisältöä voidaan hakea tietokannasta php-tiedostoista. Uusia sisältötyyppejä voi luoda muokkaamalla `site.json` -tiedostoa (RAD_DEVMODE tulee olla päällä).
 
 ### Articles
 

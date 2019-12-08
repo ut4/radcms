@@ -39,6 +39,7 @@
 #control-panel h4 button { background-color: transparent }
 .quick-links a { padding-top: 30px; display: inline-block; width: 50%; text-align: center;
     box-sizing: border-box; position: relative; margin-bottom: 5px; }
+.quick-links a:only-of-type { width: 100%; }
 .quick-links a .feather { position: absolute; stroke: #496362; width: 20px;
     height: 20px; top: 7px; left: 50%; margin-left: -12px; }
 [data-num-waiting-uploads]::after { position: absolute; width: 18px; height: 18px;
@@ -46,7 +47,7 @@
     font-size: 10px; font-weight: bold; color: #fff; border-radius: 50%;
     background-color: #ff8b8b; box-shadow: 0px 1px 1px rgba(0,0,0,0.3);
     text-indent: -2px; }
-.quick-links + section h3 { margin: 8px 0; }
+.quick-links + section h3 { margin: 4px 0 8px; }
 #control-panel h1 { letter-spacing: -1px; font-size: 13px; font-weight: normal;
     background-color: #fff; margin: 0; text-align: right; padding: 0 15px 8px;
     color: rgba(0,0,0,0.6); }
@@ -55,6 +56,64 @@
 .content-types-list > div { transition: padding 0.15s linear; }
 .content-types-list > div > *:first-child button { margin-left: 6px; }
 .content-types-list > div > table { max-width: 390px; }
+
+.image-picker-dialog {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    left: 0;
+    top: 0;
+    min-width: 200px;
+    min-height: 200px;
+    z-index: 1;
+    padding: 0 15px;
+    box-sizing: border-box;
+}
+.image-picker-dialog > div {
+    margin: 20px auto;
+    max-width: 600px;
+    width: 100%;
+    border-radius: 2px;
+}
+.image-picker-dialog h2 {
+    margin: 0 0 15px;
+}
+.file-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5px;
+}
+.file-list > button {
+    border: none;
+    padding: 5px;
+    border-radius: 2px;
+    cursor: pointer;
+    margin-bottom: 21px;
+    position: relative;
+}
+.file-list > button:after {
+    content: attr(data-caption);
+    position: absolute;
+    left: 0;
+    bottom: -24px;
+}
+.file-list img {
+    width: 100%;
+}
+
+/**/
+.light .image-picker-dialog {
+    background-color: rgba(0,0,0,0.4);
+}
+.light .file-list > button {
+    background-color: rgba(0,0,0,0.05);
+}
+.light .file-list > button.selected {
+    border: 2px solid #37c1ff;
+}
+.light .file-list > button:hover {
+    background-color: rgba(0,0,0,0.08);
+}
 
 /**/
 .light { background-color: transparent }

@@ -19,7 +19,9 @@ function myFetch(url, options = {}) {
             if (req.status >= 200 && req.status < 300) {
                 resolve(req);
             } else {
-                reject(req);
+                const e = new Error();
+                e.request = req;
+                reject(e);
             }
         };
         if (options.progress) {
@@ -32,9 +34,6 @@ function myFetch(url, options = {}) {
             req.setRequestHeader(key, options.headers[key]);
         });
         req.send(options.data);
-    }).catch(err => {
-        console.error(err);
-        throw err;
     });
 }
 myFetch.makeUrl = url => config.baseUrl + url.substr(1);

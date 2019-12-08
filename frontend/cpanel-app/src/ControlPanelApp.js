@@ -1,8 +1,6 @@
 import {components} from '../../rad-commons.js';
 import ContentAddView from './Content/ContentAddView.js';
 import ContentEditView from './Content/ContentEditView.js';
-import ContentTypesManageView from './ContentType/ContentTypesManageView.js';
-import ContentTypeCreateView from './ContentType/ContentTypeCreateView.js';
 import PluginsManageView from './Plugin/PluginsManageView.js';
 import WebsitePackView from './Website/WebsitePackView.js';
 const {MyLink, FeatherSvg, Toaster, Tabs} = components;
@@ -65,8 +63,6 @@ class ControlPanelApp extends preact.Component {
                 },
                 $el(ContentAddView, {path: '/add-content/:initialContentTypeName?'}),
                 $el(ContentEditView, {path: '/edit-content/:id/:contentTypeName/:publish?'}),
-                $el(ContentTypesManageView, {path: '/manage-content-types'}),
-                $el(ContentTypeCreateView, {path: '/create-content-type'}),
                 $el(PluginsManageView, {path: '/manage-plugins'}),
                 $el(WebsitePackView, {path: '/pack-website'}),
                 ...this.userDefinedRoutes
@@ -83,9 +79,6 @@ class ControlPanelApp extends preact.Component {
                 $el('div', null,
                     $el(MyLink, {to: '/add-content'},
                         $el(FeatherSvg, {iconId: 'plus-circle'}), 'Luo sisältöä'
-                    ),
-                    $el(MyLink, {to: '/todo'},
-                        $el(FeatherSvg, {iconId: 'save'}), 'Link2'
                     )
                 )
             ),

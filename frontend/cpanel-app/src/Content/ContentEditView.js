@@ -22,19 +22,17 @@ class ContentEditView extends preact.Component {
             this.title = 'Julkaise sisältöä';
             this.confirmButtonText = 'Julkaise';
         }
-        services.myFetch(`/api/content/${props.id}/${props.contentTypeName}`).then(
-            res => {
-                this.state.cnode = JSON.parse(res.responseText);
-                return services.myFetch('/api/content-types/' + props.contentTypeName);
-            },
-            res => { toast(res.responseText, 'error'); }
-        ).then(
-            res => {
-                this.state.ctype = JSON.parse(res.responseText);
-                this.setState({cnode: this.state.cnode, ctype: this.state.ctype});
-            },
-            res => { toast(res.responseText, 'error'); }
-        );
+        services.myFetch(`/api/content/${props.id}/${props.contentTypeName}`).then(res => {
+            this.state.cnode = JSON.parse(res.responseText);
+            return services.myFetch('/api/content-types/' + props.contentTypeName);
+        })
+        .then(res => {
+            this.state.ctype = JSON.parse(res.responseText);
+            this.setState({cnode: this.state.cnode, ctype: this.state.ctype});
+        })
+        .catch(() => {
+            toast('Jokin meni pieleen', 'error');
+        });
     }
     /**
      * @access private
