@@ -1,3 +1,7 @@
 # RadCMC
 
-RadCMS is simply the most radical static site cms ever created.
+RadCMS is simply the most radical CMS ever created.
+
+# License
+
+GPLv2

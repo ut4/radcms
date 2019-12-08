@@ -2,9 +2,11 @@ frontend/*.bundle.*
 out/
 internal/
 target/
-Cargo.lock
+backend/vendor
+config.php
+*.lock
 duktape.c
 duk_source_meta.json
 node_modules
 package-lock.json
-todo.txt
+installer.phar

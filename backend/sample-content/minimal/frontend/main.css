@@ -1,0 +1,7 @@
+body {
+    background-color: #FAFAFA;
+    color: #444444;
+}
+header, #main, footer {
+    margin: 10px;
+}

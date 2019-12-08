@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <title>Insane frontend tests</title>
+        <title>RadCMS frontend tests</title>
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <link rel="stylesheet" href="./vendor/test-vendor.bundle.css">
@@ -9,32 +9,8 @@
     <body>
         <div id="qunit"></div>
         <div id="qunit-fixture"></div>
-        <!-- Inferno, Inferno.createElement -->
-        <script src="./vendor/vendor-inferno.bundle.min.js"></script>
-        <script>
-            window.$el = Inferno.createElement;
-            window.myRedirect = () => {};
-            window.toast = () => {};
-            //
-            window.preact = Inferno;
-            window.History = {createHashHistory: () => {}};
-            window.preactRouter = function() {};
-            window.preactRouter.route = function(){};
-        </script>
-        <!-- QUnit, Inferno.TestUtils, sinon -->
+        <div id="render-container-el"></div>
         <script src="./vendor/test-vendor.bundle.js"></script>
-        <script>(function() {
-            Inferno.TestUtils.renderIntoDocument = el => {
-                const tree = Inferno.TestUtils.renderIntoContainer(el);
-                document.body.appendChild(findFirstDomEl(tree));
-                return tree;
-            };
-            function findFirstDomEl(tree) {
-                let li = tree.$LI;
-                while (li && !li.dom) li = li.children.$LI;
-                return li ? li.dom : undefined;
-            }
-        }());</script>
         <script src="tests/main.js" type="module"></script>
     </body>
 </html>

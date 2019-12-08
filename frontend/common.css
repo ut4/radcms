@@ -33,6 +33,11 @@ h3, .h3 {
     stroke-linejoin: round;
     fill: none;
 }
+.box {
+    padding: 20px;
+    margin: 0 25px 20px 0;
+    border-radius: 2px;
+}
 
 /* == Lists ================================================================= */
 .list > * {
@@ -135,56 +140,32 @@ input:hover {
 input[type="date"] {
     text-indent: 3px;
 }
-input[type="checkbox"] {
-    display:none;
-}
-input[type="checkbox"] + label {
-    cursor: pointer;
-}
-input[type="checkbox"] + label:after {
-    content: "";
-    display: block;
-    width: 14px;
-    height: 14px;
-    background-repeat: no-repeat;
-    background-size: 13px auto;
-    background-position: 4px 4px;
-    cursor: pointer;
-    border-radius: 2px;
-    padding: 1px;
-    float: left;
-    border: 2px solid #899598;
-}
-input[type="checkbox"]:checked + label:after {
-    background-color: #449eec;
-    border: none;
-    padding: 3px;
-}
-input[type="checkbox"]:checked:disabled + label:after {
-    background-color: #ddd;
-}
-label:not(.inline), .input-set {
+label:not(.inline), .label {
     display: inline-block;
     margin-bottom: 4px;
     width: 100%;
     text-align: left;
 }
 label > span:first-of-type,
-.input-set > span:first-of-type {
+.label > span:first-of-type {
     box-sizing: border-box;
     display: inline-block;
 }
 label input,
-.input-set input,
+.label input,
 label textarea,
-.input-set textarea,
-.input-set select,
+.label textarea,
+.label select,
 label select {
     box-sizing: border-box;
     width: 100%;
 }
+input[type="checkbox"] {
+    width: initial;
+    margin-top: 4px;
+}
 label .text-error,
-.input-set .text-error {
+.label .text-error {
     display: inline-block;
     width: 100%;
 }
@@ -197,7 +178,7 @@ label .text-error,
 }
 table input, table select:not(.no-style) {
     padding: 2px 0;
-    margin: 0 0 0 6px;
+    margin: 0;
 }
 
 /* == Tables ================================================================ */
@@ -225,7 +206,7 @@ table.striped tr:nth-of-type(2n) td {
     background-color: transparent;
 }
 table td {
-    padding: 6px 10px 6px 0;
+    padding: 6px 10px 6px 6px;
     text-align: left;
     vertical-align: middle;
 }
@@ -239,18 +220,54 @@ table.striped tbody td:first-child {
 .striped tbody tr:only-child td:first-child {
     padding-left: 0;
 }
-table .input-set {
+table .label {
     max-width: 48%;
     margin: 0 2% 0 0;
 }
-table .input-set > span:first-of-type {
+table .label > span:first-of-type {
     display: none;
 }
-table .input-set input {
+table .label input {
     margin: 0;
 }
 
+/* == Messages ============================================================== */
+.toaster {
+    color: #fff;
+    font-size: 13px;
+    line-height: 13px;
+}
+.toaster-message {
+    cursor: pointer;
+    padding: 12px 10px 12px 47px;
+    position: relative;
+    border-radius: 2px;
+}
+.toaster-message:not(:only-of-type):not(:last-of-type) {
+    margin-bottom: 6px;
+}
+.toaster-message.success {
+    background-color: rgba(12, 191, 120, 0.85);
+}
+.toaster-message.info {
+    background-color: rgba(48, 174, 253, 0.85);
+}
+.toaster-message.error {
+    background-color: rgba(255, 62, 97, 0.85);
+}
+.toaster-message .feather {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    width: 22px;
+    height: 22px;
+    margin-top: -11px;
+}
+
 /* == Theme =============================================================== */
+.light { background-color: #f5f5f5; color: #4d4d4d; }
+.light .box { background-color: #fff; box-shadow: 1px 1px 2px rgba(0,0,0,0.1); }
+.light .box:not(.no-highlight-stripe) { border-top: 3px solid #40e3cb; }
 .light h3 { color: rgba(0,0,0,0.65); }
 .light a { color: #4d817f; }
 .light a:hover { color: #366361 }

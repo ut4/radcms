@@ -1,0 +1,1 @@
+window.$el = preact.createElement;

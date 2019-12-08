@@ -1,37 +1,21 @@
 const utils = {
     /**
-     * @param {string} type
-     * @param {Element} el
+     * @param {React.Component} reactCmp
+     * @param {Object} props
      */
-    triggerEvent(type, el) {
-        const event = document.createEvent('HTMLEvents');
-        event.initEvent(type, false, true);
-        el.dispatchEvent(event);
+    renderIntoDocument(reactCmp, props) {
+        return preact.render(preact.createElement(reactCmp, props),
+                             document.getElementById('render-container-el'));
     },
     /**
      * @param {any} value
-     * @param {Element} el
-     * @param {string?} eventType = 'change'
+     * @param {Element} inputEl
      */
-    setInputValue(value, el, eventType = 'change') {
-        el.value = value;
-        utils.triggerEvent(eventType, el);
-    },
-    /**
-     * @param {boolean} checked
-     * @param {HTMLInputElement} el
-     */
-    setChecked(checked, el) {
-        el.checked = checked;
-        utils.triggerEvent('change', el);
-    },
-    /**
-     * @param {number} index
-     * @param {HTMLSelectElement} el
-     */
-    setDropdownIndex(index, el) {
-        el.selectedIndex = index;
-        utils.triggerEvent('change', el);
+    fillInput(value, inputEl) {
+        inputEl.value = value;
+        const event = document.createEvent('HTMLEvents');
+        event.initEvent('input', false, true);
+        inputEl.dispatchEvent(event);
     },
 };
 
