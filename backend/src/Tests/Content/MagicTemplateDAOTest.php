@@ -1,9 +1,10 @@
 <?php
 
-namespace RadCms\Tests;
+namespace RadCms\Tests\Content;
 
-use RadCms\Tests\Self\DbTestCase;
-use RadCms\Tests\Self\ContentTestUtils;
+use RadCms\Tests\_Internal\DbTestCase;
+use RadCms\Tests\_Internal\ContentTestUtils;
+use RadCms\Tests\Installer\InstallerTest;
 use RadCms\Content\MagicTemplateDAO;
 use RadCms\ContentType\ContentTypeCollection;
 use RadCms\ContentType\ContentTypeMigrator;

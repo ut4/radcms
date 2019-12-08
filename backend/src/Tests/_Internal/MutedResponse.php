@@ -1,6 +1,6 @@
 <?php
 
-namespace RadCms\Tests\Self;
+namespace RadCms\Tests\_Internal;
 
 use RadCms\Framework\Response;
 

@@ -1,9 +1,9 @@
 <?php
 
-namespace RadCms\Tests;
+namespace RadCms\Tests\Auth;
 
 use PHPUnit\Framework\TestCase;
-use RadCms\Tests\Self\HttpTestUtils;
+use RadCms\Tests\_Internal\HttpTestUtils;
 use RadCms\Framework\Request;
 
 final class AuthControllersInputValidationTest extends TestCase {

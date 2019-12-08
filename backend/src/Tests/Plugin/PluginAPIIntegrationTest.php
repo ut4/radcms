@@ -1,15 +1,16 @@
 <?php
 
-namespace RadCms\Tests;
+namespace RadCms\Tests\Plugin;
 
-use RadCms\Tests\Self\DbTestCase;
+use RadCms\Tests\_Internal\DbTestCase;
+use RadCms\Tests\_Internal\HttpTestUtils;
+use RadCms\Tests\_Internal\ContentTestUtils;
+use RadCms\Tests\Installer\InstallerTest;
 use RadCms\ContentType\ContentTypeMigrator;
-use RadCms\Tests\Self\HttpTestUtils;
-use RadCms\Tests\Self\ContentTestUtils;
 use RadCms\Framework\FileSystem;
 use RadCms\Tests\AppTest;
 use RadCms\Framework\Request;
-use RadCms\Tests\Self\MutedResponse;
+use RadCms\Tests\_Internal\MutedResponse;
 use MySite\Plugins\MoviesPlugin\MoviesPlugin;
 use RadCms\Plugin\Plugin;
 use RadCms\AppState;

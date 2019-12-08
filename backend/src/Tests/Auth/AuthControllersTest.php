@@ -1,9 +1,9 @@
 <?php
 
-namespace RadCms\Tests;
+namespace RadCms\Tests\Auth;
 
-use RadCms\Tests\Self\DbTestCase;
-use RadCms\Tests\Self\HttpTestUtils;
+use RadCms\Tests\_Internal\DbTestCase;
+use RadCms\Tests\_Internal\HttpTestUtils;
 use RadCms\Framework\Request;
 use RadCms\Auth\CachingServicesFactory;
 use RadCms\Framework\SessionInterface;

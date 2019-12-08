@@ -4,10 +4,10 @@ namespace RadCms\Tests;
 
 use RadCms\App;
 use RadCms\Framework\FileSystem;
-use RadCms\Tests\Self\DbTestCase;
+use RadCms\Tests\_Internal\DbTestCase;
 use MySite\Plugins\ValidAndInstalledPlugin\ValidAndInstalledPlugin;
 use MySite\Plugins\ValidPlugin\ValidPlugin;
-use RadCms\Tests\Self\CtxExposingApp;
+use RadCms\Tests\_Internal\CtxExposingApp;
 
 final class AppTest extends DbTestCase {
     public static function setUpBeforeClass() {

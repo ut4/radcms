@@ -4,7 +4,9 @@ use Monolog\Logger;
 use Monolog\Handler\NullHandler;
 use RadCms\Common\LoggerAccess;
 
-require __DIR__ . '/test-site/config.php';
+define('TEST_SITE_PATH', str_replace('\\', '/', __DIR__) . '/_test-site/');
+
+require TEST_SITE_PATH . 'config.php';
 $loader = require RAD_BASE_PATH . 'vendor/autoload.php';
 $loader->addPsr4('MySite\\', RAD_SITE_PATH);
 

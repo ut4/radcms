@@ -1,6 +1,6 @@
 <?php
 
-namespace RadCms\Tests\Self;
+namespace RadCms\Tests\_Internal;
 
 use RadCms\Framework\Db;
 use PHPUnit\Framework\TestCase;
@@ -9,7 +9,7 @@ class DbTestCase extends TestCase {
     protected static $db = null;
     public static function getDb(array $config = null) {
         if (!$config) {
-            $config = include dirname(__DIR__) . '/test-site/config.php';
+            $config = require TEST_SITE_PATH . 'config.php';
         }
         if (!self::$db) {
             self::$db = new Db($config);

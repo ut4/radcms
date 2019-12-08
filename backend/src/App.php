@@ -11,6 +11,7 @@ use RadCms\Auth\AuthModule;
 use RadCms\Website\WebsiteModule;
 use RadCms\Plugin\PluginModule;
 use RadCms\Packager\PackagerModule;
+use RadCms\Upload\UploadModule;
 use RadCms\Framework\SessionInterface;
 use RadCms\Framework\NativeSession;
 use RadCms\Framework\FileSystemInterface;
@@ -31,12 +32,12 @@ class App {
      * @param \Auryn\Injector $injector = new Auryn\Injector
      */
     public function handleRequest($request, $injector = null) {
-        $request->user = $this->ctx->auth->getIdentity();
         if (($match = $this->ctx->router->match($request->path, $request->method))) {
             $request->params = (object)$match['params'];
             // @allow \RadCms\Common\RadException
             [$ctrlClassPath, $ctrlMethodName, $requireAuth] =
                 $this->validateRouteMatch($match);
+            $request->user = $this->ctx->auth->getIdentity();
             if ($requireAuth && !$request->user) {
                 (new Response(403))->json(['err' => 'Login required']);
             } else {
@@ -94,7 +95,7 @@ class App {
         //
         $app = new static();
         $app->ctx = self::makeCtx($configOrCtx);
-        $app->ctx->router->addMatchTypes(['w' => '[0-9A-Za-z_]++']);
+        $app->ctx->router->addMatchTypes(['w' => '[0-9A-Za-z_-]++']);
         $app->ctx->state = new AppState($app->ctx->db, $app->ctx->fs ?? new FileSystem());
         $app->ctx->state->selfLoad($app->ctx->router);
         ContentModule::init($app->ctx);
@@ -102,6 +103,7 @@ class App {
         AuthModule::init($app->ctx);
         PluginModule::init($app->ctx);
         PackagerModule::init($app->ctx);
+        UploadModule::init($app->ctx);
         WebsiteModule::init($app->ctx);
         //
         return $app;

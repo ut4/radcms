@@ -1,6 +1,6 @@
 <?php
 
-namespace RadCms\Tests;
+namespace RadCms\Tests\Website;
 
 use RadCms\Website\UrlMatcherCollection;
 use PHPUnit\Framework\TestCase;

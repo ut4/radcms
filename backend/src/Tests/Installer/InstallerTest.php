@@ -1,17 +1,18 @@
 <?php
 
-namespace RadCms\Tests;
+namespace RadCms\Tests\Installer;
 
 use RadCms\Installer\InstallerApp;
-use RadCms\Tests\Self\DbTestCase;
+use RadCms\Tests\_Internal\DbTestCase;
 use RadCms\Framework\Request;
-use RadCms\Tests\Self\HttpTestUtils;
+use RadCms\Tests\_Internal\HttpTestUtils;
 use RadCms\Installer\InstallerControllers;
 use RadCms\Framework\FileSystem;
-use RadCms\Tests\Self\ContentTestUtils;
-use RadCms\Tests\Self\MockCrypto;
+use RadCms\Tests\_Internal\ContentTestUtils;
+use RadCms\Tests\_Internal\MockCrypto;
 use RadCms\Packager\Packager;
 use RadCms\Packager\PlainTextPackageStream;
+use RadCms\Tests\Packager\PackagerControllersTest;
 
 final class InstallerTest extends DbTestCase {
     use HttpTestUtils;
@@ -82,7 +83,7 @@ final class InstallerTest extends DbTestCase {
             'siteName' => '',
             'siteLang' => 'fi_FI',
             'baseUrl' => 'foo',
-            'radPath' => dirname(dirname(__DIR__)),
+            'radPath' => dirname(__DIR__, 3),
             'sitePath' => 'c:/my-site',
             'sampleContent' => 'test-content',
             'mainQueryVar' => '',
@@ -121,7 +122,7 @@ final class InstallerTest extends DbTestCase {
         $this->verifyInsertedSampleContent($s);
     }
     private function setupInstallerTest1() {
-        $config = include __DIR__ . '/test-site/config.php';
+        $config = require TEST_SITE_PATH . 'config.php';
         return (object) [
             'input' => (object) [
                 'siteName' => '',
@@ -195,7 +196,7 @@ final class InstallerTest extends DbTestCase {
                 ->willReturn(false);
             $s->mockFs->expects($this->once())
                 ->method('mkDir')
-                ->with($s->input->sitePath)
+                ->with($s->input->sitePath . 'uploads')
                 ->willReturn(true);
             return;
         }

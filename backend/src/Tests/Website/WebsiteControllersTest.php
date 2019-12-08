@@ -1,15 +1,16 @@
 <?php
 
-namespace RadCms\Tests;
+namespace RadCms\Tests\Website;
 
-use RadCms\Tests\Self\DbTestCase;
-use RadCms\Tests\Self\HttpTestUtils;
+use RadCms\Tests\_Internal\DbTestCase;
+use RadCms\Tests\_Internal\HttpTestUtils;
+use RadCms\Tests\Installer\InstallerTest;
 use RadCms\Framework\Request;
 use RadCms\Framework\FileSystem;
 use RadCms\Framework\SessionInterface;
 use RadCms\Framework\NativeSession;
 use RadCms\Framework\Db;
-use RadCms\Tests\Self\ContentTestUtils;
+use RadCms\Tests\_Internal\ContentTestUtils;
 
 final class WebsiteControllersTest extends DbTestCase {
     use HttpTestUtils;

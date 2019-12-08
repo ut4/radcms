@@ -1,6 +1,6 @@
 <?php
 
-namespace RadCms\Tests;
+namespace RadCms\Tests\Content;
 
 use PHPUnit\Framework\TestCase;
 use RadCms\Content\DAO;

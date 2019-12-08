@@ -176,8 +176,9 @@ class Installer {
      */
     private function cloneTemplatesAndCfgFile($s) {
         //
-        if (!$this->fs->isDir($s->sitePath) && !$this->fs->mkDir($s->sitePath))
-            throw new RadException('Failed to create ' . $s->sitePath,
+        $path = $s->sitePath . 'uploads';
+        if (!$this->fs->isDir($path) && !$this->fs->mkDir($path))
+            throw new RadException('Failed to create ' . $path,
                                    RadException::FAILED_FS_OP);
         //
         $base = "{$s->radPath}sample-content/{$s->sampleContent}/";

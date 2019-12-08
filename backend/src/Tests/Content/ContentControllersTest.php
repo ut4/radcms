@@ -1,14 +1,15 @@
 <?php
 
-namespace RadCms\Tests;
+namespace RadCms\Tests\Content;
 
-use RadCms\Tests\Self\DbTestCase;
-use RadCms\Tests\Self\HttpTestUtils;
-use RadCms\Tests\Self\ContentTestUtils;
+use RadCms\Tests\_Internal\DbTestCase;
+use RadCms\Tests\_Internal\HttpTestUtils;
+use RadCms\Tests\_Internal\ContentTestUtils;
+use RadCms\Tests\Installer\InstallerTest;
 use RadCms\Framework\Request;
 use RadCms\ContentType\ContentTypeCollection;
 use RadCms\ContentType\ContentTypeMigrator;
-use RadCms\Tests\Self\MutedResponse;
+use RadCms\Tests\_Internal\MutedResponse;
 
 final class ContentControllersTest extends DbTestCase {
     use HttpTestUtils;

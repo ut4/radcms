@@ -1,6 +1,6 @@
 <?php
 
-namespace RadCms\Tests;
+namespace RadCms\Tests\Website;
 
 use RadCms\Website\SiteConfig;
 use PHPUnit\Framework\TestCase;

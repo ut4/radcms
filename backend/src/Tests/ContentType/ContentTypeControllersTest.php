@@ -1,9 +1,10 @@
 <?php
 
-namespace RadCms\Tests;
+namespace RadCms\Tests\ContentType;
 
-use RadCms\Tests\Self\DbTestCase;
-use RadCms\Tests\Self\HttpTestUtils;
+use RadCms\Tests\_Internal\DbTestCase;
+use RadCms\Tests\_Internal\HttpTestUtils;
+use RadCms\Tests\Installer\InstallerTest;
 use RadCms\Framework\Request;
 use RadCms\ContentType\ContentTypeCollection;
 use RadCms\ContentType\ContentTypeMigrator;

@@ -7,6 +7,7 @@
         "ext-pdo_mysql": "*",
         "ext-mbstring": "*",
         "ext-ctype": "*",
+        "ext-fileinfo": "*",
         "psr/log": "^1.1",
         "monolog/monolog": "^1.25",
         "altorouter/altorouter": "^1.2",

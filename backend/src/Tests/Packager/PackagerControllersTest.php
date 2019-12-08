@@ -1,13 +1,14 @@
 <?php
 
-namespace RadCms\Tests;
+namespace RadCms\Tests\Packager;
 
-use RadCms\Tests\Self\DbTestCase;
-use RadCms\Tests\Self\HttpTestUtils;
+use RadCms\Tests\_Internal\DbTestCase;
+use RadCms\Tests\_Internal\HttpTestUtils;
+use RadCms\Tests\Installer\InstallerTest;
 use RadCms\Packager\PlainTextPackageStream;
 use RadCms\Framework\Request;
 use RadCms\Auth\Crypto;
-use RadCms\Tests\Self\MockCrypto;
+use RadCms\Tests\_Internal\MockCrypto;
 use RadCms\Packager\Packager;
 use RadCms\Website\SiteConfig;
 use RadCms\Framework\FileSystem;
@@ -25,7 +26,7 @@ final class PackagerControllersTest extends DbTestCase {
         ];
         self::$testSiteCfg = new SiteConfig(new FileSystem);
         // @allow \RadCms\Common\RadException
-        self::$testSiteCfg->selfLoad(__DIR__ . '/test-site/site.json', false, false);
+        self::$testSiteCfg->selfLoad(TEST_SITE_PATH . 'site.json', false, false);
         self::$migrator = new ContentTypeMigrator(self::getDb());
         // @allow \RadCms\Common\RadException
         self::$migrator->installMany(self::$testSiteCfg->contentTypes,
@@ -104,7 +105,7 @@ final class PackagerControllersTest extends DbTestCase {
                             $actualData[1]->name);
     }
     public static function makeTestWebsiteState() {
-        $c = include __DIR__ . '/test-site/config.php';
+        $c = require TEST_SITE_PATH . 'config.php';
         $row = self::getDb()->fetchOne('SELECT * FROM ${p}websiteState');
         return (object)[
             'siteName' => $row['name'],
