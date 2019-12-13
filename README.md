@@ -1,6 +1,6 @@
 # RadCMS
 
-RadCMS is simply the most radical CMS ever created.
+Simply the most radical CMS ever created.
 
 # License
 

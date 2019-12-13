@@ -78,7 +78,10 @@ class WebsiteControllers {
                 'pluginJsFiles' => $this->appState->pluginJsFiles,
             ]);
             $this->session->commit();
-            $html = substr($html, 0, $bodyEnd) . '<iframe src="' . $template->url('/cpanel/' . $frontendDataKey) . '" id="insn-cpanel-iframe" style="position:fixed;border:none;height:100%;width:275px;right:0;top:0"></iframe><script>function setIframeVisible(setVisible){document.getElementById(\'insn-cpanel-iframe\').style.width=setVisible?\'100%\':\'275px\';}</script>' . substr($html, $bodyEnd);
+            $html = substr($html, 0, $bodyEnd) .
+                '<iframe src="' . $template->url('/cpanel/' . $frontendDataKey) .
+                    '" id="rad-cpanel-iframe"></iframe>' .
+                substr($html, $bodyEnd);
         }
         $res->html($html);
     }

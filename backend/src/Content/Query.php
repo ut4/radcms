@@ -90,11 +90,12 @@ class Query {
     /**
      * @param string $panelType
      * @param string $title = ''
+     * @param string $highlightSelector = ''
      * @return $this
      */
-    public function createFrontendPanel($panelType, $title = '') {
+    public function createFrontendPanel($panelType, $title = '', $highlightSelector = '') {
         $this->dao->addFrontendPanelInfo($this->id, $this->contentType->name, $panelType,
-            $title ? $title : $this->contentType->name);
+            $title ? $title : $this->contentType->name, $highlightSelector);
         return $this;
     }
     /**

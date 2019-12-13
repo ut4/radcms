@@ -25,6 +25,9 @@ interface SiteInfo {
 interface ControlPanelAppProps extends SiteInfo {
     contentPanels: Array<FrontendPanelConfig>;
     adminPanels: Array<FrontendPanelConfig>;
+    uiPanelRegister: UiPanelRegister;
+    mainWindowDoc: HTMLDocument;
+    mainWindowIframeEl: HTMLIFrameElement;
 }
 
 interface ContentNode {

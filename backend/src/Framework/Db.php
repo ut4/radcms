@@ -49,13 +49,15 @@ class Db {
         return $prep->fetch(\PDO::FETCH_ASSOC);
     }
     /**
-     * @param string $sql
+     * @param string $query
      * @param array $params = null
      * @return int
      */
-    public function exec($sql, array $params = null) {
-        $prep = $this->pdo->prepare(str_replace('${p}', $this->tablePrefix, $sql));
-        $prep->execute($params);
+    public function exec($query, array $params = null) {
+        $prep = $this->pdo->prepare($this->q($query));
+        $prep->execute($params ? array_map(function ($val) {
+            return !is_bool($val) ? $val : (int)$val;
+        }, $params) : $params);
         return $prep->rowCount();
     }
     /**

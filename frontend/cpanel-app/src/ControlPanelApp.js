@@ -16,20 +16,20 @@ class ControlPanelApp extends preact.Component {
         this.userDefinedRoutes = [];
         this.siteInfo = {baseUrl: props.baseUrl, assetBaseUrl: props.assetBaseUrl,
                          currentPagePath: props.currentPagePath};
-        const collectRoutes = this.makeRouteCollector();
-        const makePanel = (dataFromBackend, to) => {
+        const onEachMakePanel = this.makeContentPanelCreateVisitor();
+        const makePanel = (dataFromBackend, to, isAdminPanel) => {
             const Cls = props.uiPanelRegister.getUiPanelImpl(dataFromBackend.impl);
             if (!Cls) return console.error(`UI panel ${dataFromBackend.impl} not implemented.`);
             to.push({UiImplClass: Cls, dataFromBackend});
-            collectRoutes(Cls, dataFromBackend.impl);
+            onEachMakePanel(Cls, dataFromBackend, isAdminPanel);
         };
         props.contentPanels.forEach(p => {
             if (!Array.isArray(p.contentNodes)) p.contentNodes = [p.contentNodes];
             if (!p.contentNodes[0]) p.contentNodes = [];
-            makePanel(p, this.currentPageUiPanels);
+            makePanel(p, this.currentPageUiPanels, false);
         });
         props.adminPanels.forEach(c => {
-            makePanel(c, this.adminUiPanels);
+            makePanel(c, this.adminUiPanels, true);
         });
         this.state = {className: '', tabIdx: 0};
     }
@@ -57,8 +57,13 @@ class ControlPanelApp extends preact.Component {
                     onChange: e => {
                         const isIndex = e.url === '/';
                         if (!e.current && !isIndex) return;
-                        window.parent.setIframeVisible(!isIndex);
-                        this.setState({className: !isIndex ? 'open' : ''});
+                        if (!isIndex) {
+                            this.setState({className: 'open'});
+                            this.props.mainWindowIframeEl.classList.add('expanded');
+                        } else {
+                            this.setState({className: ''});
+                            this.props.mainWindowIframeEl.classList.remove('expanded');
+                        }
                     }
                 },
                 $el(ContentAddView, {path: '/add-content/:initialContentTypeName?'}),
@@ -86,7 +91,9 @@ class ControlPanelApp extends preact.Component {
                 $el('h3', null, 'Tällä sivulla:'),
                 this.currentPageUiPanels.length
                     ? this.currentPageUiPanels.map(panelCfg =>
-                        $el(ControlPanelApp.ContentTabSection, {panelCfg, siteInfo: this.siteInfo})
+                        $el(ControlPanelApp.ContentTabSection,
+                            {panelCfg, siteInfo: this.siteInfo,
+                             mainWindowDoc: this.props.mainWindowDoc})
                     )
                     : [
                         $el('div', {className: 'empty'}, 'Ei muokattavaa sisältöä.')
@@ -113,13 +120,21 @@ class ControlPanelApp extends preact.Component {
     /**
      * @access private
      */
-    makeRouteCollector() {
+    makeContentPanelCreateVisitor() {
         const uniqueImpls = {};
-        return (PanelCls, implName) => {
+        const uniqueHighlighSelectors = {};
+        return (PanelCls, panelCfg, isAdminPanel) => {
+            const implName = panelCfg.implName;
             if (!uniqueImpls.hasOwnProperty(implName)) {
                 uniqueImpls[implName] = 1;
                 if (typeof PanelCls.getRoutes === 'function')
                     this.userDefinedRoutes.push(...(PanelCls.getRoutes() || []));
+            }
+            if (!isAdminPanel && panelCfg.highlightSelector) {
+                const s = panelCfg.highlightSelector;
+                if (!uniqueHighlighSelectors.hasOwnProperty(s))
+                    uniqueHighlighSelectors[s] = -1;
+                panelCfg.selectorIndex = ++uniqueHighlighSelectors[s];
             }
         };
     }
@@ -127,7 +142,7 @@ class ControlPanelApp extends preact.Component {
 
 ControlPanelApp.ContentTabSection = class extends preact.Component {
     /**
-     * @param {{panelCfg: FrontendPanelConfig; siteInfo: SiteInfo;}} props
+     * @param {{panelCfg: FrontendPanelConfig; siteInfo: SiteInfo; mainWindowDoc: HTMLDocument;}} props
      */
     constructor(props) {
         super(props);
@@ -135,14 +150,20 @@ ControlPanelApp.ContentTabSection = class extends preact.Component {
         this.dataFromBackend = props.panelCfg.dataFromBackend;
         this.className = `ui-panel ui-panel-${this.dataFromBackend.impl}`;
         this.state = {title: '', icon: '', collapsed: false};
+        this.toggleHighlight = makeHighlightToggler(this.dataFromBackend.highlightSelector,
+                                                    this.dataFromBackend.selectorIndex,
+                                                    props.mainWindowDoc);
     }
     /**
      * @access protected
      */
     render() {
+        const isMobile = false;
         return $el('div', {className: this.className},
             $el('h4', null,
-                $el('span', null,
+                $el('span', !isMobile ? {onMouseOver: this.toggleHighlight,
+                                         onMouseOut: this.toggleHighlight}
+                                      : {onClick: this.toggleHighlight},
                     this.state.icon && $el(FeatherSvg, {iconId: this.state.icon || 'feather'}),
                     this.state.title
                 ),
@@ -191,5 +212,42 @@ ControlPanelApp.AdminTabSection = class extends preact.Component {
         );
     }
 };
+
+/**
+ * @param {string} selector
+ * @param {number} selectorIndex
+ * @param {HTMLDocument} mainWindowDoc
+ * @return {Function} togglerFn
+ */
+function makeHighlightToggler(selector, selectorIndex, mainWindowDoc) {
+    const makeOverlay = el => {
+        const out = mainWindowDoc.createElement('div');
+        out.id = 'rad-highlight-overlay';
+        const r = el.getBoundingClientRect();
+        out.style = 'width:' + r.width + 'px' +
+                  ';height:' + r.height + 'px' +
+                  ';top:' + (r.top + window.top.scrollY) + 'px' +
+                  ';left:' + (r.left + window.top.scrollX) + 'px';
+        return out;
+    };
+    const cache = {};
+    //
+    return () => {
+        if (!selector) return;
+        let node = cache[selector];
+        if (!node) {
+            node = mainWindowDoc.querySelectorAll(selector)[selectorIndex];
+            if (!node) return;
+            cache[selector] = node;
+        }
+        let over = mainWindowDoc.getElementById('rad-highlight-overlay');
+        if (!over) {
+            over = makeOverlay(node);
+            mainWindowDoc.body.appendChild(over);
+        } else {
+            over.parentElement.removeChild(over);
+        }
+    };
+}
 
 export default ControlPanelApp;

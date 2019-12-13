@@ -35,7 +35,7 @@
 #control-panel h4 { margin: 0 0 6px 0; border-radius: 2px; padding: 10px 0 4px;
     position: relative; overflow: hidden; }
 #control-panel h4 sup { font-size: 9px; }
-    #control-panel h4 .feather { float: left; margin: 1px 8px 0 0; width: 17px; height: 17px; }
+    #control-panel h4 .feather { float: left; padding: 1px 8px 0 0; width: 17px; height: 17px; }
 #control-panel h4 button { background-color: transparent }
 .quick-links a { padding-top: 30px; display: inline-block; width: 50%; text-align: center;
     box-sizing: border-box; position: relative; margin-bottom: 5px; }
