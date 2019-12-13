@@ -11,7 +11,8 @@ class MoviesPlugin implements PluginInterface {
     private $initialDataToInstall;
     public function __construct() {
         $this->myContentTypes = new ContentTypeCollection();
-        $this->myContentTypes->add('Movies', 'Elokuvat', ['title' => 'text']);
+        $this->myContentTypes->add('Movies', 'Elokuvat', ['title' => 'text',
+                                                          'releaseYear' => 'int']);
     }
     public function init(API $api) {
         $api->registerJsFile('file1.js');

@@ -42,101 +42,68 @@ class SiteConfig {
         if (!(($parsed = json_decode($str)) instanceof \stdClass))
             throw new RadException('Failed to parse ' . $filePath,
                                    RadException::BAD_INPUT);
-        return $this->collectAll($parsed) &&
-               (!$autoSelfValidate || $this->selfValidate(dirname($filePath) . '/'));
+        //
+        return (!$autoSelfValidate ||
+                $this->selfValidate($parsed, dirname($filePath) . '/')) &&
+                $this->collectAll($parsed);
     }
     /**
-     * @param object $cfgInput
+     * @param object $input
      * @return bool
      * @throws \RadCms\Common\RadException
      */
-    private function collectAll($cfgInput) {
-        $this->urlMatchers = $this->collectUrlMatchers($cfgInput);
-        $this->contentTypes = $this->collectContentTypes($cfgInput);
-        $this->assets = $this->collectAssets($cfgInput);
+    private function collectAll($input) {
+        $this->urlMatchers = $this->collectUrlMatchers($input->urlMatchers);
+        $this->contentTypes = $this->collectContentTypes($input->contentTypes);
+        $this->assets = $this->collectAssets($input->assetFiles ?? []);
         return true;
     }
     /**
-     * @param object $cfgInput
+     * @param array $inputUrlMatchers
      * @return \RadCms\Website\UrlMatcherCollection
      */
-    private function collectUrlMatchers($cfgInput) {
+    private function collectUrlMatchers($inputUrlMatchers) {
         $out = new UrlMatcherCollection();
-        foreach ($cfgInput->urlMatchers ?? [] as $definition) {
-            if (!is_array($definition)) continue;
-            $out->add($definition[0] ?? '', $definition[1] ?? '');
-        }
+        foreach ($inputUrlMatchers as $definition)
+            $out->add(...$definition);
         return $out;
     }
     /**
-     * @param object $cfgInput
+     * @param array $ctypeInput
      * @return \RadCms\ContentType\ContentTypeCollection
      */
-    private function collectContentTypes($cfgInput) {
+    private function collectContentTypes($ctypeInput) {
         $out = new ContentTypeCollection();
-        foreach ($cfgInput->contentTypes ?? [] as $definition) {
-            if (!is_array($definition)) continue;
-            $name = $definition[0];
-            $out->add($name, $definition[1] ?? '', $definition[2] ?? []);
-        }
+        foreach ($ctypeInput as $definition)
+            $out->add(...$definition);
         return $out;
     }
     /**
-     * @param object $cfgInput
-     * @return array Array<{url: string, type: string, attrs: object}>
+     * @param array $inputAssetFiles
+     * @return array Array<{url: string, type: string, attrs: array}>
      */
-    private function collectAssets($cfgInput) {
+    private function collectAssets($inputAssetFiles) {
         $out = [];
-        foreach ($cfgInput->assetFiles ?? [] as $definition) {
-            if (!is_array($definition)) $definition = ['', ''];
-            $attrs = [];
-            if (count($definition) > 2)
-                $attrs = $definition[2] instanceof \stdClass
-                    ? (array)$definition[2]
-                    : 'invalid';
+        foreach ($inputAssetFiles as $definition) {
             $out[] = (object)['url' => $definition[0] ?? '',
                               'type' => $definition[1] ?? '',
-                              'attrs' => $attrs];
+                              'attrs' => count($definition) < 3
+                                  ? []
+                                  : (array)$definition[2]];
         }
         return $out;
     }
     /**
+     * @param object $input
      * @param string $sitePath i.e. RAD_SITE_PATH
      * @return bool
      * @throws \RadCms\Common\RadException
      */
-    private function selfValidate($sitePath) {
-        $errors = [];
-        if ($this->urlMatchers->length()) {
-            foreach ($this->urlMatchers->toArray() as $i => $matcher) {
-                if (!$matcher->origPattern)
-                    $errors[] = 'Invalid urlMatcher #'.$i.', should be {..."urlMatchers": [["pattern", "layout.tmpl.php"]]...}';
-                elseif (@preg_match($matcher->pattern, null) === false)
-                    $errors[] = $matcher->origPattern . ' (' . $matcher->pattern
-                                . ') is not valid regexp';
-                if ($matcher->origPattern &&
-                    !$this->fs->isFile($sitePath . $matcher->layoutFileName))
-                    $errors[] = 'Failed to locate UrlMatcher layout file `' .
-                                $sitePath . $matcher->layoutFileName . '`';
-            }
-        } else {
-            $errors[] = '`{..."urlMatchers": ["pattern", "layout-file.tmpl.php"]...}` is required';
-        }
-        //
-        if (!$this->contentTypes->length()) {
-            $errors[] = '`{..."contentTypes": ["MyType", "Friendly name", {"name": "datatype"}]...}` is required';
-        }
-        //
-        foreach ($this->assets as $i => $asset) {
-            if (!$asset->url)
-                $errors[] = 'Invalid assetFile #'.$i.', should be {..."assetFiles": [["file.ext", "asset-type", {"html-attr": "value"}?]]...}';
-            elseif (array_search($asset->type, self::ASSET_TYPES) === false)
-                $errors[] = 'Invalid assetFile type, should be one of ' .
-                            implode('|', self::ASSET_TYPES);
-            if ($asset->url && !is_array($asset->attrs))
-                $errors[] = 'assetFile->attrs must be an object';
-        }
-        if (!$errors) {
+    private function selfValidate($input, $sitePath) {
+        if (!($errors = array_merge($this->validateUrlMatchers($input->urlMatchers ?? [],
+                                                               $sitePath),
+                                    $this->validateContentTypes($input->contentTypes ?? []),
+                                    $this->validateAssets($input->assetFiles ?? [])))) {
             return true;
         }
         throw new RadException('site.json was invalid:' . PHP_EOL .
@@ -156,5 +123,74 @@ class SiteConfig {
                 return $f->type === 'local-script';
             });
         throw new RadException("What's {$name}?", RadException::BAD_INPUT);
+    }
+    /**
+     * @return string[]
+     */
+    private function validateUrlMatchers($inputUrlMatchers, $sitePath) {
+        if (!$inputUrlMatchers || !is_array($inputUrlMatchers))
+            return ['{..."urlMatchers": ["pattern", "layout.php"]} is required'];
+        $errors = [];
+        foreach ($inputUrlMatchers as $i => $definition) {
+            if (!is_array($definition) || count($definition) !== 2) {
+                $errors[] = 'urlMatcher must be an array {..."urlMatchers": [["pattern", "layout.tmpl.php"]]...}';
+                continue;
+            }
+            [$pattern, $layout] = $definition;
+            if (!is_string($pattern) || !strlen($pattern))
+                $errors[] = 'urlMatcher['.$i.'].pattern must be a string';
+            elseif (@preg_match(UrlMatcher::completeRegexp($pattern), null) === false)
+                $errors[] = "{$pattern} is not valid regexp";
+            if (!$this->fs->isFile($sitePath . $layout))
+                $errors[] = 'Failed to locate UrlMatcher layout file `' .
+                            $sitePath . $layout . '`';
+        }
+        return $errors;
+    }
+    /**
+     * @return string[]
+     */
+    private function validateContentTypes($inputContentTypes) {
+        if (!$inputContentTypes || !is_array($inputContentTypes))
+            return ['{..."contentTypes": [["Name", "FriendlyName", <fields>]...]} is required'];
+        $errors = [];
+        foreach ($inputContentTypes as $i => $definition) {
+            if (!is_array($definition) || count($definition) !== 3) {
+                $errors[] = 'contentType must be an array ["Name", "FriendlyName", <fields>]';
+                continue;
+            }
+            [$name, $friendlyName, $fields] = $definition;
+            if (!is_string($name) || !strlen($name))
+                $errors[] = "contentType[{$i}][0] (name) must be a string";
+            if (!is_string($friendlyName) || !strlen($friendlyName))
+                $errors[] = "contentType[{$i}][1] (friendlyName) must be a string";
+            if (!($fields instanceof \stdClass))
+                $errors[] = "contentType[{$i}][2] (fields) must be an object";
+        }
+        return $errors;
+    }
+    /**
+     * @return string[]
+     */
+    private function validateAssets($inputAssetFiles) {
+        if ($inputAssetFiles && !is_array($inputAssetFiles))
+            return ['{..."assetFiles": [["file.ext", "asset-type", {"html-attr": "value"}?]]...} must be an array'];
+        $errors = [];
+        foreach ($inputAssetFiles as $i => $definition) {
+            if (!is_array($definition) || count($definition) < 2) {
+                $errors[] = 'assetFile must be an array';
+                continue;
+            }
+            [$url, $type] = $definition;
+            if (!is_string($url) || !strlen($url))
+                $errors[] = "assetFile[{$i}][0] (url) must be a string";
+            if (array_search($type, self::ASSET_TYPES) === false)
+                $errors[] = 'assetFile[' . $i . '][1] (file type) must be ' .
+                            implode('|', self::ASSET_TYPES);
+            $attrs = $definition[2] ?? null;
+            if ($attrs && !($attrs instanceof \stdClass))
+                $errors[] = "assetFile[{$i}][2] (attrs) must be an object";
+        }
+        return $errors;
     }
 }

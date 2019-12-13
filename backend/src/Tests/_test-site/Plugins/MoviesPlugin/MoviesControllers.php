@@ -33,6 +33,7 @@ class MoviesControllers {
         try {
             $numAffectedRows = $dmo->insert('Movies', (object) [
                 'title' => $req->body->title,
+                'releaseYear' => $req->body->releaseYear,
             ]);
             $res->json($numAffectedRows > 0
                 ? ['my' => 'response']

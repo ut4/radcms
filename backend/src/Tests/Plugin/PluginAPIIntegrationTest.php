@@ -42,7 +42,8 @@ final class PluginAPIIntegrationTest extends DbTestCase {
         InstallerTest::clearInstalledContentTypesFromDb();
     }
     public function testPluginCanInstallContentType() {
-        $initialMovies = [['Movies', [(object)['title' => 'Initial movie']]]];
+        $initialMovies = [['Movies', [(object)['title' => 'Initial movie',
+                                               'releaseYear' => 2019]]]];
         $s = $this->setupInstallCtypeTest($initialMovies);
         $this->verifyContentTypeWasInstalledToDb();
         $this->verifyInitialDataWasInsertedToDb();
@@ -75,6 +76,7 @@ final class PluginAPIIntegrationTest extends DbTestCase {
         $this->verifyResponseBodyEquals('[{"id":"1"' .
                                         ',"isPublished":true' .
                                         ',"title":"Fus"' .
+                                        ',"releaseYear":"2020"' .
                                         ',"contentType":"Movies"' .
                                         ',"isRevision":false' .
                                         ',"revisions":[]}]', $s);
@@ -83,7 +85,7 @@ final class PluginAPIIntegrationTest extends DbTestCase {
         return $this->setupInstallCtypeTest();
     }
     private function insertTestMovie($id = '1') {
-        $this->insertContent('Movies', [['Fus'], [$id]]);
+        $this->insertContent('Movies', [['Fus', 2020], [$id]]);
     }
     private function sendListMoviesRequest($s) {
         $this->sendResponseBodyCapturingRequest(new Request('/movies', 'GET'), $s);
@@ -106,7 +108,8 @@ final class PluginAPIIntegrationTest extends DbTestCase {
         return $this->setupInstallCtypeTest();
     }
     private function sendInsertMovieRequest($s) {
-        $req = new Request('/movies', 'POST', (object) ['title' => 'A movie']);
+        $req = new Request('/movies', 'POST', (object) ['title' => 'A movie',
+                                                        'releaseYear' => 2021]);
         $this->sendResponseBodyCapturingRequest($req, $s);
     }
     private function verifyMovieWasInsertedToDb($title) {
@@ -122,10 +125,10 @@ final class PluginAPIIntegrationTest extends DbTestCase {
 
     public function testPluginCanCRUDUpdate() {
         $s = $this->setupUpdateTest();
-        $newTitle = 'Updated';
-        $this->sendUpdateMovieRequest($s, $newTitle);
+        $newData = (object)['title' => 'Updated', 'releaseYear' => 2022];
+        $this->sendUpdateMovieRequest($s, $newData);
         $this->verifyResponseBodyEquals('{"my":"response2"}', $s);
-        $this->verifyMovieWasUpdatedToDb($newTitle);
+        $this->verifyMovieWasUpdatedToDb($newData);
     }
     private function setupUpdateTest() {
         $out = $this->setupInstallCtypeTest();
@@ -134,15 +137,17 @@ final class PluginAPIIntegrationTest extends DbTestCase {
         $this->insertTestMovie($out->testMovieId);
         return $out;
     }
-    private function sendUpdateMovieRequest($s, $newTitle) {
+    private function sendUpdateMovieRequest($s, $newData) {
         $req = new Request('/movies/' . $s->testMovieId, 'PUT',
-                           (object) ['title' => $newTitle, 'isRevision' => false]);
+                            (object)['title' => $newData->title,
+                                     'releaseYear' => $newData->releaseYear,
+                                     'isRevision' => false]);
         $this->sendResponseBodyCapturingRequest($req, $s);
     }
-    private function verifyMovieWasUpdatedToDb($newTitle) {
+    private function verifyMovieWasUpdatedToDb($newData) {
         $this->assertEquals(1, count(self::$db->fetchAll(
-            'SELECT `id` FROM ${p}Movies WHERE `title` = ?',
-            [$newTitle]
+            'SELECT `id` FROM ${p}Movies WHERE `title` = ? AND `releaseYear` = ?',
+            [$newData->title, $newData->releaseYear]
         )));
     }
 

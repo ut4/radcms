@@ -77,6 +77,15 @@ class Validator {
     /**
      * @return array [($input: string, $key: string): bool, string]
      */
+    public function integer() {
+        return [function ($input, $key) {
+            return $this->present()[0]($input, $key) &&
+                   (is_int($input->$key) || ctype_digit((string)$input->key));
+        }, '%s must be an integer'];
+    }
+    /**
+     * @return array [($input: string, $key: string): bool, string]
+     */
     public function nonEmptyString() {
         return [function ($input, $key) {
             return $this->string()[0]($input, $key) && strlen($input->$key) > 0;

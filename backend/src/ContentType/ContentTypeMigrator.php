@@ -11,7 +11,7 @@ use RadCms\Common\RadException;
  * Luokka joka asentaa/päivittää/poistaa sisältötyyppejä tietokantaan.
  */
 class ContentTypeMigrator {
-    public const FIELD_DATA_TYPES = ['text', 'json'];
+    public const FIELD_DATA_TYPES = ['text', 'int', 'json'];
     private const COLLECTION_SIZES = ['tiny', 'small', 'medium', '', 'big'];
     private $db;
     private $origin;

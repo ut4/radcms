@@ -25,7 +25,8 @@ class FieldCollection extends GenericArray implements \JsonSerializable {
         return implode(',', array_map(function ($f) {
             return "`{$f->name}` " . [
                 'text' => 'TEXT',
-                'json' => 'TEXT'
+                'json' => 'TEXT',
+                'int' => 'INT',
             ][$f->dataType];
         }, $this->vals));
     }
@@ -55,7 +56,7 @@ class FieldCollection extends GenericArray implements \JsonSerializable {
      * @return \RadCms\ContentType\FieldCollection
      */
     public static function fromCompactForm($compactFields) {
-        $out = new FieldCollection(\stdClass::class);
+        $out = new FieldCollection('stdClass');
         foreach ($compactFields as $name => $def) {
             $remainingArgs = !is_string($def) ? $def : explode(':', $def);
             $out->add((object)['name' => $name,

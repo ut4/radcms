@@ -21,8 +21,7 @@ abstract class ContentTypeValidator {
         foreach ($contentType->fields->toArray() as $f) {
             if (!is_string($f->name) || !preg_match('/^[a-zA-Z_]+$/', $f->name))
                 $errors[] = "`{$f->name}` must contain only [a-zA-Z_]";
-            if (!is_string($f->dataType) ||
-                !in_array($f->dataType, ContentTypeMigrator::FIELD_DATA_TYPES))
+            if (!in_array($f->dataType, ContentTypeMigrator::FIELD_DATA_TYPES))
                 $errors[] = "`{$f->dataType}` is not valid data type";
             if (is_string($f->widget) &&
                 !in_array($f->widget, self::FIELD_WIDGETS))
@@ -72,6 +71,7 @@ abstract class ContentTypeValidator {
             $validationRules = [
                 'text' => ['string'],
                 'json' => ['string'],
+                'int' => ['integer'],
             ][$f->dataType] ?? null;
             if (!$validationRules)
                 throw new \RuntimeException('Shouldn\'t happen');
