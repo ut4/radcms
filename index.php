@@ -27,4 +27,4 @@ if (!(RAD_FLAGS & RAD_DEVMODE)) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-\RadCms\App::run($config, RAD_BASE_URL, $_GET[RAD_QUERY_VAR] ?? null);
+\RadCms\App::create($config)->handleRequest(RAD_BASE_URL, $_GET[RAD_QUERY_VAR] ?? null);

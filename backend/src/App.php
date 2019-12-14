@@ -3,7 +3,6 @@
 namespace RadCms;
 
 use Auryn\Injector;
-use Pike\Request;
 use Pike\Translator;
 use Pike\FileSystem;
 use Pike\App as PikeApp;
@@ -20,12 +19,12 @@ class App {
     private static $fs;
     /**
      * @param array $config
-     * @param string $baseUrl
-     * @param string $q = null
+     * @param object $ctx = null
+     * @return \Pike\App
      * @throws \Pike\PikeException
      */
-    public static function run($config, $baseUrl, $q = null) {
-        PikeApp::create([
+    public static function create($config, $ctx = null) {
+        return PikeApp::create([
             self::class,
             AuthModule::class,
             ContentModule::class,
@@ -34,7 +33,7 @@ class App {
             PluginModule::class,
             UploadModule::class,
             WebsiteModule::class,
-        ], $config)->handleRequest(Request::createFromGlobals($baseUrl, $q));
+        ], $config, $ctx);
     }
     /**
      * @param \stdClass $ctx

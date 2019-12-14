@@ -7,7 +7,7 @@ use RadCms\Tests\_Internal\HttpTestUtils;
 use Pike\Request;
 use Pike\Auth\CachingServicesFactory;
 use Pike\SessionInterface;
-use RadCms\Auth\UserRepository;
+use Pike\Auth\UserRepository;
 use Pike\Auth\Authenticator;
 use RadCms\Tests\_Internal\MockCrypto;
 

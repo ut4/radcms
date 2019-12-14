@@ -6,6 +6,8 @@ use Auryn\Injector;
 use Pike\Response;
 use Pike\FileSystemInterface;
 use Pike\Auth\Authenticator;
+use RadCms\App;
+use Pike\Db;
 
 trait HttpTestUtils {
     /**
@@ -56,12 +58,12 @@ trait HttpTestUtils {
             $ctx->auth = $this->createMock(Authenticator::class);
             $ctx->auth->method('getIdentity')->willReturn('1');
         }
-        $app = CtxExposingApp::create($ctx);
+        $app = App::create(require TEST_SITE_PATH . 'config.php', $ctx);
         $injector = new Injector();
         $injector->delegate(Response::class, function() use ($res) { return $res; });
+        $injector->alias(Db::class, SingleConnectionDb::class);
         if ($alterInjectorFn) $alterInjectorFn($injector);
         $app->handleRequest($req, $injector);
-        return $app;
     }
     private function sendResponseBodyCapturingRequest($req, $s) {
         $res = $this->createMock(MutedResponse::class);

@@ -268,7 +268,7 @@ return [
             ' WHERE `table_schema` = ? AND `table_name` = ?',
             [$s->input->dbDatabase, $s->input->dbTablePrefix . 'websiteState']
         )));
-        self::$db->database = $s->input->dbDatabase;
+        self::$db->setDatabase($s->input->dbDatabase);
     }
     private function verifyInsertedMainSchemaData($s) {
         $row = self::$db->fetchOne('SELECT * FROM ${p}websiteState');

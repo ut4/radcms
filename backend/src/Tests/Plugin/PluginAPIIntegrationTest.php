@@ -159,8 +159,8 @@ final class PluginAPIIntegrationTest extends DbTestCase {
         $s = $this->setupFileRegTest();
         $res = $this->createMock(MutedResponse::class);
         $req = new Request('/noop', 'GET');
-        $app = $this->sendRequest($req, $res, $s->ctx);
-        $this->verifyJsFilesWereRegistered($app->getCtx()->state);
+        $this->sendRequest($req, $res, $s->ctx);
+        $this->verifyJsFilesWereRegistered($s->ctx->state);
     }
     private function setupFileRegTest() {
         return $this->setupReadTest();

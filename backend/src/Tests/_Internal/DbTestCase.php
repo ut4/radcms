@@ -2,7 +2,6 @@
 
 namespace RadCms\Tests\_Internal;
 
-use Pike\Db;
 use PHPUnit\Framework\TestCase;
 
 class DbTestCase extends TestCase {
@@ -12,10 +11,11 @@ class DbTestCase extends TestCase {
             $config = require TEST_SITE_PATH . 'config.php';
         }
         if (!self::$db) {
-            self::$db = new Db($config);
+            self::$db = new SingleConnectionDb($config);
+            self::$db->open();
         } else {
-            self::$db->database = $config['db.database'];
-            self::$db->tablePrefix = $config['db.tablePrefix'];
+            self::$db->setDatabase($config['db.database']);
+            self::$db->setTablePrefix($config['db.tablePrefix']);
             if ($config['db.database']) {
                 self::$db->exec('USE ' . $config['db.database'] . ';');
             }
