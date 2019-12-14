@@ -2,7 +2,7 @@
 
 namespace RadCms\Packager;
 
-use RadCms\Common\RadException;
+use Pike\PikeException;
 
 class PlainTextPackageStream implements PackageStreamInterface {
     private $virtualFiles;
@@ -18,7 +18,7 @@ class PlainTextPackageStream implements PackageStreamInterface {
      */
     public function open($json, $create = false) {
         if ($json && ($this->virtualFiles = json_decode($json, true)) === null)
-            throw new RadException('Invalid package', RadException::BAD_INPUT);
+            throw new PikeException('Invalid package', PikeException::BAD_INPUT);
     }
     /**
      * @param string $virtualFilePath
@@ -44,27 +44,27 @@ class PlainTextPackageStream implements PackageStreamInterface {
     ////////////////////////////////////////////////////////////////////////////
 
     public function unlink($path) {
-        throw new RadException('Not supported.');
+        throw new PikeException('Not supported.');
     }
     public function copy($path, $destPath) {
-        throw new RadException('Not supported.');
+        throw new PikeException('Not supported.');
     }
     public function mkDir($path) {
-        throw new RadException('Not supported.');
+        throw new PikeException('Not supported.');
     }
     public function rmDir($path) {
-        throw new RadException('Not supported.');
+        throw new PikeException('Not supported.');
     }
     public function isFile($path) {
         return true; // array_key_exists($path, $this->virtualFiles);
     }
     public function isDir($path) {
-        throw new RadException('Not supported.');
+        throw new PikeException('Not supported.');
     }
     public function readDir($path) {
-        throw new RadException('Not supported.');
+        throw new PikeException('Not supported.');
     }
     public function lastModTime($path) {
-        throw new RadException('Not supported.');
+        throw new PikeException('Not supported.');
     }
 }

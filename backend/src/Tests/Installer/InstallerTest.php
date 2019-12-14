@@ -4,10 +4,10 @@ namespace RadCms\Tests\Installer;
 
 use RadCms\Installer\InstallerApp;
 use RadCms\Tests\_Internal\DbTestCase;
-use RadCms\Framework\Request;
+use Pike\Request;
 use RadCms\Tests\_Internal\HttpTestUtils;
 use RadCms\Installer\InstallerControllers;
-use RadCms\Framework\FileSystem;
+use Pike\FileSystem;
 use RadCms\Tests\_Internal\ContentTestUtils;
 use RadCms\Tests\_Internal\MockCrypto;
 use RadCms\Packager\Packager;

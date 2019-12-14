@@ -2,9 +2,9 @@
 
 namespace RadCms\ContentType;
 
-use RadCms\Framework\Request;
-use RadCms\Framework\Response;
-use RadCms\Framework\Db;
+use Pike\Request;
+use Pike\Response;
+use Pike\Db;
 
 /**
  * Handlaa /api/content-types -alkuiset pyynnöt.
@@ -19,8 +19,8 @@ class ContentTypeControllers {
     /**
      * GET /api/content-type/:name.
      *
-     * @param \RadCms\Framework\Request $req
-     * @param \RadCms\Framework\Response $res
+     * @param \Pike\Request $req
+     * @param \Pike\Response $res
      * @param \RadCms\ContentType\ContentTypeCollection $ctypes
      */
     public function handleGetContentType(Request $req,
@@ -33,7 +33,7 @@ class ContentTypeControllers {
     /**
      * GET /api/content-type.
      *
-     * @param \RadCms\Framework\Response $res
+     * @param \Pike\Response $res
      * @param \RadCms\ContentType\ContentTypeCollection $ctypes
      */
     public function handleGetAllContentTypes(Response $res,

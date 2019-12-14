@@ -4,8 +4,8 @@ namespace RadCms\Tests\Website;
 
 use RadCms\Website\SiteConfig;
 use PHPUnit\Framework\TestCase;
-use RadCms\Framework\FileSystem;
-use RadCms\Common\RadException;
+use Pike\FileSystem;
+use Pike\PikeException;
 
 final class SiteConfigTest extends TestCase {
     public function testSelfLoadRejectsMissingValues() {
@@ -28,7 +28,7 @@ final class SiteConfigTest extends TestCase {
     private function loadInvalidSiteCfg($s) {
         try {
             (new SiteConfig($s->mockFs))->selfLoad('', false);
-        } catch (RadException $e) {
+        } catch (PikeException $e) {
             $s->errors = $e->getMessage();
         }
     }

@@ -6,12 +6,12 @@ use RadCms\Tests\_Internal\DbTestCase;
 use RadCms\Tests\_Internal\HttpTestUtils;
 use RadCms\Tests\Installer\InstallerTest;
 use RadCms\Packager\PlainTextPackageStream;
-use RadCms\Framework\Request;
-use RadCms\Auth\Crypto;
+use Pike\Request;
+use Pike\Auth\Crypto;
 use RadCms\Tests\_Internal\MockCrypto;
 use RadCms\Packager\Packager;
 use RadCms\Website\SiteConfig;
-use RadCms\Framework\FileSystem;
+use Pike\FileSystem;
 use RadCms\ContentType\ContentTypeMigrator;
 
 final class PackagerControllersTest extends DbTestCase {
@@ -25,16 +25,16 @@ final class PackagerControllersTest extends DbTestCase {
             // AnotherTypellä ei sisältöä
         ];
         self::$testSiteCfg = new SiteConfig(new FileSystem);
-        // @allow \RadCms\Common\RadException
+        // @allow \Pike\PikeException
         self::$testSiteCfg->selfLoad(TEST_SITE_PATH . 'site.json', false, false);
         self::$migrator = new ContentTypeMigrator(self::getDb());
-        // @allow \RadCms\Common\RadException
+        // @allow \Pike\PikeException
         self::$migrator->installMany(self::$testSiteCfg->contentTypes,
                                      self::$testSiteContentTypesData);
     }
     public static function tearDownAfterClass($_ = null) {
         parent::tearDownAfterClass($_);
-        // @allow \RadCms\Common\RadException
+        // @allow \Pike\PikeException
         self::$migrator->uninstallMany(self::$testSiteCfg->contentTypes);
         InstallerTest::clearInstalledContentTypesFromDb();
     }
@@ -75,7 +75,7 @@ final class PackagerControllersTest extends DbTestCase {
     private function verifyReturnedSignedPackage($s) {
         $this->assertTrue(strlen($s->actualAttachmentBody) > 0);
         $s->actualPackage = new PlainTextPackageStream();
-        // @allow \RadCms\Common\RadException
+        // @allow \Pike\PikeException
         $s->actualPackage->open(MockCrypto::mockDecrypt($s->actualAttachmentBody));
     }
     private function verifyIncludedDbConfig($s) {

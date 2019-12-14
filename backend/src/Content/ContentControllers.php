@@ -2,9 +2,9 @@
 
 namespace RadCms\Content;
 
-use RadCms\Framework\Request;
-use RadCms\Framework\Response;
-use RadCms\Framework\Db;
+use Pike\Request;
+use Pike\Response;
+use Pike\Db;
 
 /**
  * Handlaa /api/content -alkuiset pyynnöt.
@@ -20,12 +20,12 @@ class ContentControllers {
     /**
      * POST /api/content/:contentTypeName.
      *
-     * @param \RadCms\Framework\Request $req
-     * @param \RadCms\Framework\Response $res
+     * @param \Pike\Request $req
+     * @param \Pike\Response $res
      * @param \RadCms\Content\DMO $dmo
      */
     public function handleCreateContentNode(Request $req, Response $res, DMO $dmo) {
-        // @allow \RadCMS\Common\RadException
+        // @allow \Pike\PikeException
         $numRows = $dmo->insert($req->params->contentTypeName,
                                 $req->body,
                                 property_exists($req->params, 'revisionSettings'));
@@ -35,12 +35,12 @@ class ContentControllers {
     /**
      * GET /api/content/:id/:contentTypeName.
      *
-     * @param \RadCms\Framework\Request $req
-     * @param \RadCms\Framework\Response $res
+     * @param \Pike\Request $req
+     * @param \Pike\Response $res
      * @param \RadCms\Content\DAO $dao
      */
     public function handleGetContentNode(Request $req, Response $res, MagicTemplateDAO $dao) {
-        // @allow \RadCMS\Common\RadException
+        // @allow \Pike\PikeException
         $node = $dao->fetchOne($req->params->contentTypeName)
                     ->where('`id` = ?', [$req->params->id]) // aina validi (läpäissyt routerin regexpin)
                     ->exec();
@@ -50,12 +50,12 @@ class ContentControllers {
     /**
      * PUT /api/content/:id/:contentTypeName.
      *
-     * @param \RadCms\Framework\Request $req
-     * @param \RadCms\Framework\Response $res
+     * @param \Pike\Request $req
+     * @param \Pike\Response $res
      * @param \RadCms\Content\DMO $dmo
      */
     public function handleUpdateContentNode(Request $req, Response $res, DMO $dmo) {
-        // @allow \RadCMS\Common\RadException
+        // @allow \Pike\PikeException
         $numRows = $dmo->update($req->params->id,
                                 $req->params->contentTypeName,
                                 $req->body,

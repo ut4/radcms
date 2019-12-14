@@ -2,7 +2,7 @@
 
 namespace RadCms\Tests\_Internal;
 
-use RadCms\Framework\Db;
+use Pike\Db;
 use PHPUnit\Framework\TestCase;
 
 class DbTestCase extends TestCase {

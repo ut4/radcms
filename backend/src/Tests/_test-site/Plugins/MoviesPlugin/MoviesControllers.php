@@ -2,12 +2,12 @@
 
 namespace MySite\Plugins\MoviesPlugin;
 
-use RadCms\Framework\Response;
+use Pike\Response;
 use RadCms\Content\DAO;
 use RadCms\Content\DMO;
-use RadCms\Framework\Request;
+use Pike\Request;
 use RadCms\ContentType\ContentTypeCollection;
-use RadCms\Common\RadException;
+use Pike\PikeException;
 use RadCms\Common\LoggerAccess;
 
 class MoviesControllers {
@@ -38,9 +38,9 @@ class MoviesControllers {
             $res->json($numAffectedRows > 0
                 ? ['my' => 'response']
                 : ['my' => 'response']);
-        } catch (RadException $e) {
+        } catch (PikeException $e) {
             LoggerAccess::getLogger()->debug($e->getTraceAsString());
-            $res->status($e->getCode() === RadException::BAD_INPUT ? 400 : 500)
+            $res->status($e->getCode() === PikeException::BAD_INPUT ? 400 : 500)
                 ->json(['err' => 'err']);
         }
     }
@@ -56,9 +56,9 @@ class MoviesControllers {
             $res->json($numAffectedRows > 0
                 ? ['my' => 'response2']
                 : ['my' => 'response2']);
-        } catch (RadException $e) {
+        } catch (PikeException $e) {
             LoggerAccess::getLogger()->debug($e->getTraceAsString());
-            $res->status($e->getCode() === RadException::BAD_INPUT ? 400 : 500)
+            $res->status($e->getCode() === PikeException::BAD_INPUT ? 400 : 500)
                 ->json(['err' => 'err']);
         }
     }

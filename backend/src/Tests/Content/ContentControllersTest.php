@@ -6,7 +6,7 @@ use RadCms\Tests\_Internal\DbTestCase;
 use RadCms\Tests\_Internal\HttpTestUtils;
 use RadCms\Tests\_Internal\ContentTestUtils;
 use RadCms\Tests\Installer\InstallerTest;
-use RadCms\Framework\Request;
+use Pike\Request;
 use RadCms\ContentType\ContentTypeCollection;
 use RadCms\ContentType\ContentTypeMigrator;
 use RadCms\Tests\_Internal\MutedResponse;
@@ -21,12 +21,12 @@ final class ContentControllersTest extends DbTestCase {
         self::$testContentTypes = new ContentTypeCollection();
         self::$testContentTypes->add('Products', 'Tuotteet', ['title' => 'text']);
         self::$migrator = new ContentTypeMigrator(self::getDb());
-        // @allow \RadCms\Common\RadException
+        // @allow \Pike\PikeException
         self::$migrator->installMany(self::$testContentTypes);
     }
     public static function tearDownAfterClass($_ = null) {
         parent::tearDownAfterClass($_);
-        // @allow \RadCms\Common\RadException
+        // @allow \Pike\PikeException
         self::$migrator->uninstallMany(self::$testContentTypes);
         InstallerTest::clearInstalledContentTypesFromDb();
         self::$db->exec('DELETE FROM ${p}ContentRevisions');

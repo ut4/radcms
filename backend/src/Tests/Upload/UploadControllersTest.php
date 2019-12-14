@@ -4,7 +4,7 @@ namespace RadCms\Tests\Upload;
 
 use RadCms\Tests\_Internal\DbTestCase;
 use RadCms\Tests\_Internal\HttpTestUtils;
-use RadCms\Framework\Request;
+use Pike\Request;
 
 final class UploadControllersTest extends DbTestCase {
     use HttpTestUtils;

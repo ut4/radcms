@@ -6,7 +6,7 @@ trait ContentTestUtils {
     /**
      * @param string $contentTypeName
      * @param bool $isInstalled
-     * @param \RadCms\Framework\Db $db
+     * @param \Pike\Db $db
      * @param bool $verifyTableExists = true
      */
     public function verifyContentTypeIsInstalled($contentTypeName,

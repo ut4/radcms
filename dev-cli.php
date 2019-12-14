@@ -21,7 +21,8 @@ function createInstaller() {
     $buildAssetsPath = $backendPath . 'build-files/';
     $phar = new Phar(__DIR__ . '/installer.phar');
     $getClassMap = include $buildAssetsPath . 'classmap.php';
-    $classMap = $getClassMap($backendSrcPath, $buildAssetsPath, $backendPath);
+    $pikeSrcPath = $backendPath . 'vendor/ut4/pike/src/';
+    $classMap = $getClassMap($backendSrcPath, $pikeSrcPath, $buildAssetsPath, $backendPath);
     foreach ($classMap as $filePath) $phar->addFile($filePath);
     $phar->setStub(
 "<?php
@@ -32,6 +33,7 @@ include 'phar://' . __FILE__ . '/{$backendPath}vendor/altorouter/altorouter/Alto
 \$loader = new Psr\Psr4Autoloader();
 \$loader->register();
 \$loader->addNamespace('RadCms', 'phar://' . __FILE__ . '/{$backendSrcPath}');
+\$loader->addNamespace('Pike', 'phar://' . __FILE__ . '/{$pikeSrcPath}');
 \RadCms\Common\LoggerAccess::setLogger(new \RadCms\Common\ErrorLogLogger());
 //
 return function (\$url, \$DIR) {

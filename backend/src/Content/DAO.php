@@ -2,9 +2,9 @@
 
 namespace RadCms\Content;
 
-use RadCms\Framework\Db;
+use Pike\Db;
 use RadCms\ContentType\ContentTypeCollection;
-use RadCms\Common\RadException;
+use Pike\PikeException;
 
 class DAO {
     public $fetchRevisions;
@@ -13,7 +13,7 @@ class DAO {
     protected $frontendPanelInfos;
     protected $contentTypes;
     /**
-     * @param \RadCms\Framework\Db $db
+     * @param \Pike\Db $db
      * @param \RadCms\ContentType\ContentTypeCollection $contentTypes
      * @param bool $fetchRevisions = false
      */
@@ -32,7 +32,7 @@ class DAO {
      */
     public function fetchOne($contentTypeName) {
         [$contentTypeName, $alias] = self::parseContentTypeNameAndAlias($contentTypeName);
-        // @allow \RadCms\Common\RadException
+        // @allow \Pike\PikeException
         $type = $this->getContentType($contentTypeName);
         return new Query(++$this->counter, $type, $alias, true, $this);
     }
@@ -42,7 +42,7 @@ class DAO {
      */
     public function fetchAll($contentTypeName) {
         [$contentTypeName, $alias] = self::parseContentTypeNameAndAlias($contentTypeName);
-        // @allow \RadCms\Common\RadException
+        // @allow \Pike\PikeException
         $type = $this->getContentType($contentTypeName);
         return new Query(++$this->counter, $type, $alias, false, $this);
     }
@@ -110,12 +110,12 @@ class DAO {
     }
     /**
      * @return \RadCms\ContentType\ContentTypeDef
-     * @throws \RadCms\Common\RadException
+     * @throws \Pike\PikeException
      */
     public function getContentType($name) {
         if (!($type = $this->contentTypes->find($name)))
-            throw new RadException("Content type `{$name}` not registered",
-                                   RadException::BAD_INPUT);
+            throw new PikeException("Content type `{$name}` not registered",
+                                    PikeException::BAD_INPUT);
         return $type;
     }
     /**

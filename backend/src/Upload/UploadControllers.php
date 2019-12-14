@@ -2,7 +2,7 @@
 
 namespace RadCms\Upload;
 
-use RadCms\Framework\Response;
+use Pike\Response;
 
 /**
  * Handlaa /api/uploads -alkuiset pyynnöt.
@@ -11,10 +11,10 @@ class UploadControllers {
     /**
      * GET /api/uploads.
      *
-     * @param \RadCms\Framework\Response $res
+     * @param \Pike\Response $res
      */
     public function handleGetAllUploads(Response $res, UploadFileScanner $scanner) {
-        // @allow \RadCms\Common\RadException
+        // @allow \Pike\PikeException
         $files = $scanner->scanAll(RAD_SITE_PATH . 'uploads');
         $res->json($files);
     }

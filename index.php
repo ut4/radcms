@@ -13,8 +13,8 @@ $logger->pushHandler(!(RAD_FLAGS & RAD_DEVMODE)
 
 ////////////////////////////////////////////////////////////////////////////////
 set_error_handler(function ($_errno, $errstr, $errfile, $errline) {
-    throw new \RadCms\Common\RadException(sprintf('%s in %s on line %d', $errstr, $errfile, $errline),
-                                          \RadCms\Common\RadException::ERROR_EXCEPTION);
+    throw new \Pike\PikeException(sprintf('%s in %s on line %d', $errstr, $errfile, $errline),
+                                  \Pike\PikeException::ERROR_EXCEPTION);
 });
 if (!(RAD_FLAGS & RAD_DEVMODE)) {
     error_reporting(E_RECOVERABLE_ERROR);
@@ -27,7 +27,4 @@ if (!(RAD_FLAGS & RAD_DEVMODE)) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-\RadCms\App::create($config)->handleRequest(
-    \RadCms\Framework\Request::createFromGlobals(RAD_BASE_URL,
-        $_GET[RAD_QUERY_VAR] ?? null)
-);
+\RadCms\App::run($config, RAD_BASE_URL, $_GET[RAD_QUERY_VAR] ?? null);

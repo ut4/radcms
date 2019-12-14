@@ -20,12 +20,12 @@ final class MagicTemplateDAOTest extends DbTestCase {
         self::$testContentTypes->add('Reviews', 'Arvostelut', ['content' => 'text',
                                                                'productTitle' => 'text']);
         self::$migrator = new ContentTypeMigrator(self::getDb());
-        // @allow \RadCms\Common\RadException
+        // @allow \Pike\PikeException
         self::$migrator->installMany(self::$testContentTypes);
     }
     public static function tearDownAfterClass($_ = null) {
         parent::tearDownAfterClass($_);
-        // @allow \RadCms\Common\RadException
+        // @allow \Pike\PikeException
         self::$migrator->uninstallMany(self::$testContentTypes);
         InstallerTest::clearInstalledContentTypesFromDb();
         self::$db->exec('DELETE FROM ${p}ContentRevisions');

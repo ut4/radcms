@@ -5,7 +5,7 @@ namespace RadCms\Tests\ContentType;
 use RadCms\Tests\_Internal\DbTestCase;
 use RadCms\Tests\_Internal\HttpTestUtils;
 use RadCms\Tests\Installer\InstallerTest;
-use RadCms\Framework\Request;
+use Pike\Request;
 use RadCms\ContentType\ContentTypeCollection;
 use RadCms\ContentType\ContentTypeMigrator;
 
@@ -21,12 +21,12 @@ final class ContentTypeControllersTest extends DbTestCase {
         self::$testContentTypes->add('Locations', 'Paikat',
                                      ['name' => ['text', 'Tapahtumapaikka']]);
         self::$migrator = new ContentTypeMigrator(self::getDb());
-        // @allow \RadCms\Common\RadException
+        // @allow \Pike\PikeException
         self::$migrator->installMany(self::$testContentTypes);
     }
     public static function tearDownAfterClass($_ = null) {
         parent::tearDownAfterClass($_);
-        // @allow \RadCms\Common\RadException
+        // @allow \Pike\PikeException
         self::$migrator->uninstallMany(self::$testContentTypes);
         InstallerTest::clearInstalledContentTypesFromDb();
     }

@@ -4,7 +4,7 @@ namespace RadCms\Content;
 
 use RadCms\ContentType\ContentTypeDef;
 use RadCms\ContentType\ContentTypeValidator;
-use RadCms\Common\RadException;
+use Pike\PikeException;
 
 /**
  * Luokka jonka templaattien <?php $this->fetchOne|All() ?> instansoi ja
@@ -113,11 +113,11 @@ class Query {
     }
     /**
      * @return string
-     * @throws \RadCms\Common\RadException
+     * @throws \Pike\PikeException
      */
     public function toSql() {
         if (($errors = $this->selfValidate())) {
-            throw new RadException($errors, RadException::BAD_INPUT);
+            throw new PikeException($errors, PikeException::BAD_INPUT);
         }
         //
         $mainQ = 'SELECT `id`, `isPublished`, ' .

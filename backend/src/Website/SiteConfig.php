@@ -2,9 +2,9 @@
 
 namespace RadCms\Website;
 
-use RadCms\Framework\FileSystemInterface;
+use Pike\FileSystemInterface;
 use RadCms\ContentType\ContentTypeCollection;
-use RadCms\Common\RadException;
+use Pike\PikeException;
 
 /**
  * Lukee, ja pitää sisällään site.json -tiedostoon conffatut tiedot.
@@ -17,7 +17,7 @@ class SiteConfig {
     private $assets;
     private $fs;
     /**
-     * @param \RadCms\Framework\FileSystemInterface $fs
+     * @param \Pike\FileSystemInterface $fs
      */
     public function __construct(FileSystemInterface $fs) {
         $this->lastModTime = 0;
@@ -28,20 +28,20 @@ class SiteConfig {
      * @param bool $checkLastModTime = true
      * @param bool $autoSelfValidate = true
      * @return bool
-     * @throws \RadCms\Common\RadException
+     * @throws \Pike\PikeException
      */
     public function selfLoad($filePath,
                              $checkLastModTime = true,
                              $autoSelfValidate = true) {
         if ($checkLastModTime && !($this->lastModTime = $this->fs->lastModTime($filePath)))
-            throw new RadException('Failed to read mtime of ' . $filePath,
-                                   RadException::FAILED_FS_OP);
+            throw new PikeException('Failed to read mtime of ' . $filePath,
+                                    PikeException::FAILED_FS_OP);
         if (!($str = $this->fs->read($filePath)))
-            throw new RadException('Failed to read ' . $filePath,
-                                   RadException::FAILED_FS_OP);
+            throw new PikeException('Failed to read ' . $filePath,
+                                    PikeException::FAILED_FS_OP);
         if (!(($parsed = json_decode($str)) instanceof \stdClass))
-            throw new RadException('Failed to parse ' . $filePath,
-                                   RadException::BAD_INPUT);
+            throw new PikeException('Failed to parse ' . $filePath,
+                                    PikeException::BAD_INPUT);
         //
         return (!$autoSelfValidate ||
                 $this->selfValidate($parsed, dirname($filePath) . '/')) &&
@@ -50,7 +50,7 @@ class SiteConfig {
     /**
      * @param object $input
      * @return bool
-     * @throws \RadCms\Common\RadException
+     * @throws \Pike\PikeException
      */
     private function collectAll($input) {
         $this->urlMatchers = $this->collectUrlMatchers($input->urlMatchers);
@@ -97,7 +97,7 @@ class SiteConfig {
      * @param object $input
      * @param string $sitePath i.e. RAD_SITE_PATH
      * @return bool
-     * @throws \RadCms\Common\RadException
+     * @throws \Pike\PikeException
      */
     private function selfValidate($input, $sitePath) {
         if (!($errors = array_merge($this->validateUrlMatchers($input->urlMatchers ?? [],
@@ -106,9 +106,9 @@ class SiteConfig {
                                     $this->validateAssets($input->assetFiles ?? [])))) {
             return true;
         }
-        throw new RadException('site.json was invalid:' . PHP_EOL .
-                               implode(PHP_EOL, $errors),
-                               RadException::BAD_INPUT);
+        throw new PikeException('site.json was invalid:' . PHP_EOL .
+                                implode(PHP_EOL, $errors),
+                                PikeException::BAD_INPUT);
     }
     /**
      * @return string[]
@@ -122,7 +122,7 @@ class SiteConfig {
             return array_filter($this->assets, function ($f) {
                 return $f->type === 'local-script';
             });
-        throw new RadException("What's {$name}?", RadException::BAD_INPUT);
+        throw new PikeException("What's {$name}?", PikeException::BAD_INPUT);
     }
     /**
      * @return string[]

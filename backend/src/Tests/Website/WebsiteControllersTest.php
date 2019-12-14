@@ -5,11 +5,11 @@ namespace RadCms\Tests\Website;
 use RadCms\Tests\_Internal\DbTestCase;
 use RadCms\Tests\_Internal\HttpTestUtils;
 use RadCms\Tests\Installer\InstallerTest;
-use RadCms\Framework\Request;
-use RadCms\Framework\FileSystem;
-use RadCms\Framework\SessionInterface;
-use RadCms\Framework\NativeSession;
-use RadCms\Framework\Db;
+use Pike\Request;
+use Pike\FileSystem;
+use Pike\SessionInterface;
+use Pike\NativeSession;
+use Pike\Db;
 use RadCms\Tests\_Internal\ContentTestUtils;
 
 final class WebsiteControllersTest extends DbTestCase {

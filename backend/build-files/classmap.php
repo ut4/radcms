@@ -1,19 +1,20 @@
 <?php
 // tässä tiedostossa filut, jotka installer.phar tarvitsee toimiakseen
-return function ($backendSrcPath, $buildAssetsPath, $backendPath) { return [
-    $backendSrcPath . 'Auth/Crypto.php',
-    $backendSrcPath . 'Framework/Db.php',
-    $backendSrcPath . 'Framework/FileSystem.php',
-    $backendSrcPath . 'Framework/FileSystemInterface.php',
-    $backendSrcPath . 'Framework/GenericArray.php',
-    $backendSrcPath . 'Framework/Request.php',
-    $backendSrcPath . 'Framework/Response.php',
-    $backendSrcPath . 'Framework/Template.php',
-    $backendSrcPath . 'Framework/Translator.php',
-    $backendSrcPath . 'Framework/Validator.php',
+return function ($backendSrcPath, $pikeSrcPath, $buildAssetsPath, $backendPath) { return [
+    $pikeSrcPath . 'Auth/Crypto.php',
+    $pikeSrcPath . 'Db.php',
+    $pikeSrcPath . 'FileSystem.php',
+    $pikeSrcPath . 'FileSystemInterface.php',
+    $pikeSrcPath . 'GenericArray.php',
+    $pikeSrcPath . 'PikeException.php',
+    $pikeSrcPath . 'Request.php',
+    $pikeSrcPath . 'Response.php',
+    $pikeSrcPath . 'Template.php',
+    $pikeSrcPath . 'Translator.php',
+    $pikeSrcPath . 'Validator.php',
+    $backendPath . 'vendor/altorouter/altorouter/AltoRouter.php',
     $backendSrcPath . 'Common/LoggerAccess.php',
     $backendSrcPath . 'Common/ErrorLogLogger.php',
-    $backendSrcPath . 'Common/RadException.php',
     $backendSrcPath . 'Content/DAO.php',
     $backendSrcPath . 'Content/DMO.php',
     $backendSrcPath . 'ContentType/ContentTypeCollection.php',
@@ -33,5 +34,4 @@ return function ($backendSrcPath, $buildAssetsPath, $backendPath) { return [
     $backendSrcPath . 'Website/UrlMatcher.php',
     $buildAssetsPath . 'Psr4Autoloader.php',
     $buildAssetsPath . 'LoggerInterface.php',
-    $backendPath . 'vendor/altorouter/altorouter/AltoRouter.php',
 ]; };

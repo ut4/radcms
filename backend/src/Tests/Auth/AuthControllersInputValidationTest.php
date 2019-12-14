@@ -4,7 +4,7 @@ namespace RadCms\Tests\Auth;
 
 use PHPUnit\Framework\TestCase;
 use RadCms\Tests\_Internal\HttpTestUtils;
-use RadCms\Framework\Request;
+use Pike\Request;
 
 final class AuthControllersInputValidationTest extends TestCase {
     use HttpTestUtils;

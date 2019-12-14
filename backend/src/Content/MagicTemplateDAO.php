@@ -2,12 +2,12 @@
 
 namespace RadCms\Content;
 
-use RadCms\Framework\Db;
+use Pike\Db;
 use RadCms\ContentType\ContentTypeCollection;
 
 class MagicTemplateDAO extends DAO {
     /**
-     * @param \RadCms\Framework\Db $db
+     * @param \Pike\Db $db
      * @param \RadCms\ContentType\ContentTypeCollection $contentTypes
      * @param bool $fetchRevisions = true
      */

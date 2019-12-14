@@ -4,11 +4,11 @@ namespace RadCms\Tests\Auth;
 
 use RadCms\Tests\_Internal\DbTestCase;
 use RadCms\Tests\_Internal\HttpTestUtils;
-use RadCms\Framework\Request;
-use RadCms\Auth\CachingServicesFactory;
-use RadCms\Framework\SessionInterface;
+use Pike\Request;
+use Pike\Auth\CachingServicesFactory;
+use Pike\SessionInterface;
 use RadCms\Auth\UserRepository;
-use RadCms\Auth\Authenticator;
+use Pike\Auth\Authenticator;
 use RadCms\Tests\_Internal\MockCrypto;
 
 final class AuthControllersTest extends DbTestCase {

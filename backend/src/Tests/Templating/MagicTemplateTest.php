@@ -5,7 +5,7 @@ namespace RadCms\Tests;
 use RadCms\Content\MagicTemplateDAO;
 use PHPUnit\Framework\TestCase;
 use RadCms\ContentType\ContentTypeCollection;
-use RadCms\Framework\Db;
+use Pike\Db;
 use RadCms\Templating\MagicTemplate;
 
 final class MagicTemplateTest extends TestCase {

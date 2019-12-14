@@ -4,9 +4,9 @@ namespace RadCms\Tests\Content;
 
 use PHPUnit\Framework\TestCase;
 use RadCms\Content\DAO;
-use RadCms\Framework\Db;
+use Pike\Db;
 use RadCms\ContentType\ContentTypeCollection;
-use RadCms\Common\RadException;
+use Pike\PikeException;
 
 final class DAOQueryBuildingTest extends TestCase {
     private function makeDao($useRevisions = false, $alterContentTypesFn = null) {
@@ -106,7 +106,7 @@ final class DAOQueryBuildingTest extends TestCase {
     }
     public function testToSqlValidatesItself() {
         $runInvalid = function ($fn) {
-            try { $fn()->toSql(); } catch (RadException $e) { return $e->getMessage(); }
+            try { $fn()->toSql(); } catch (PikeException $e) { return $e->getMessage(); }
         };
         $this->assertEquals('Content type `` not registered', $runInvalid(function () {
             return $this->makeDao()->fetchAll('');

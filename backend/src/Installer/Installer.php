@@ -2,14 +2,14 @@
 
 namespace RadCms\Installer;
 
-use RadCms\Framework\Db;
-use RadCms\Framework\FileSystemInterface;
+use Pike\Db;
+use Pike\FileSystemInterface;
 use RadCms\ContentType\ContentTypeMigrator;
 use RadCms\Website\SiteConfig;
-use RadCms\Common\RadException;
+use Pike\PikeException;
 use RadCms\Packager\Packager;
 use RadCms\Packager\PackageStreamInterface;
-use RadCms\Auth\Crypto;
+use Pike\Auth\Crypto;
 
 class Installer {
     private $indexFilePath;
@@ -18,8 +18,8 @@ class Installer {
     private $makeDb;
     /**
      * @param string $indexFilePath ks. InstallerApp::__construct
-     * @param \RadCms\Framework\FileSystemInterface $fs
-     * @param callable $makeDb = function ($c) { return new \RadCms\Framework\Db($c); }
+     * @param \Pike\FileSystemInterface $fs
+     * @param callable $makeDb = function ($c) { return new \Pike\Db($c); }
      */
     public function __construct($indexFilePath,
                                 FileSystemInterface $fs,
@@ -32,11 +32,11 @@ class Installer {
     /**
      * @param object $settings Validoitu ja normalisoitu $req->body.
      * @return bool
-     * @throws \RadCms\Common\RadException
+     * @throws \Pike\PikeException
      */
     public function doInstall($settings) {
         $base = "{$settings->radPath}sample-content/{$settings->sampleContent}/";
-        // @allow \RadCms\Common\RadException
+        // @allow \Pike\PikeException
         return $this->createDb($settings) &&
                $this->createMainSchema($settings) &&
                $this->insertMainSchemaData($settings) &&
@@ -50,9 +50,9 @@ class Installer {
      * @param \RadCms\Packager\PackageStreamInterface $package
      * @param string $packageFilePath '/path/to/tmp/uploaded-package-file.zip'
      * @param string $unlockKey
-     * @param \RadCms\Auth\Crypto $crypto
+     * @param \Pike\Auth\Crypto $crypto
      * @return bool
-     * @throws \RadCms\Common\RadException
+     * @throws \Pike\PikeException
      */
     public function doInstallFromPackage(PackageStreamInterface $package,
                                          $packageFilePath,
@@ -60,19 +60,19 @@ class Installer {
                                          Crypto $crypto) {
         // <packagereader>
         if (!($signed = $this->fs->read($packageFilePath)))
-            throw new RadException('Failed to read package file contents',
-                                   RadException::BAD_INPUT);
+            throw new PikeException('Failed to read package file contents',
+                                    PikeException::BAD_INPUT);
         $unlocked = $crypto->decrypt($signed, $unlockKey);
-        // @allow \RadCms\Common\RadException
+        // @allow \Pike\PikeException
         $package->open($unlocked);
         if (!($json1 = $package->read(Packager::DB_CONFIG_VIRTUAL_FILE_NAME)) ||
             ($dbSettings = json_decode($json1, true)) === null)
-                throw new RadException('Failed to parse data',
-                                       RadException::BAD_INPUT);
+                throw new PikeException('Failed to parse data',
+                                        PikeException::BAD_INPUT);
         if (!($json2 = $package->read(Packager::WEBSITE_STATE_VIRTUAL_FILE_NAME)) ||
             ($siteSettings = json_decode($json2, true)) === null)
-                throw new RadException('Failed to parse data',
-                                       RadException::BAD_INPUT);
+                throw new PikeException('Failed to parse data',
+                                        PikeException::BAD_INPUT);
         // </packagereader>
         //
         $settings = (object)array_merge($dbSettings, $siteSettings);
@@ -86,7 +86,7 @@ class Installer {
     /**
      * @param object $s settings
      * @return bool
-     * @throws \RadCms\Common\RadException
+     * @throws \Pike\PikeException
      */
     private function createDb($s) {
         try {
@@ -98,39 +98,40 @@ class Installer {
                 'db.tablePrefix' => $s->dbTablePrefix,
                 'db.charset'     => $s->dbCharset,
             ]);
+            $this->db->open();
         } catch (\PDOException $e) {
-            throw new RadException($e->getMessage(), RadException::FAILED_DB_OP);
+            throw new PikeException($e->getMessage(), PikeException::FAILED_DB_OP);
         }
         try {
             $this->db->attr(\PDO::ATTR_EMULATE_PREPARES, 1);
             $this->db->exec('CREATE DATABASE ' . $s->dbDatabase);
         } catch (\PDOException $e) {
-            throw new RadException($e->getMessage(), RadException::FAILED_DB_OP);
+            throw new PikeException($e->getMessage(), PikeException::FAILED_DB_OP);
         }
         return true;
     }
     /**
      * @param object $s settings
      * @return bool
-     * @throws \RadCms\Common\RadException
+     * @throws \Pike\PikeException
      */
     private function createMainSchema($s) {
         try {
             $sql = $this->fs->read("{$s->radPath}schema.mariadb.sql");
             if (!$sql)
-                throw new RadException("Failed to read {$s->radPath}schema.mariadb.sql}",
-                                       RadException::FAILED_FS_OP);
+                throw new PikeException("Failed to read {$s->radPath}schema.mariadb.sql}",
+                                        PikeException::FAILED_FS_OP);
             $this->db->exec(str_replace('${database}', $s->dbDatabase, $sql));
             $this->db->attr(\PDO::ATTR_EMULATE_PREPARES, 0);
         } catch (\PDOException $e) {
-            throw new RadException($e->getMessage(), RadException::FAILED_DB_OP);
+            throw new PikeException($e->getMessage(), PikeException::FAILED_DB_OP);
         }
         return true;
     }
     /**
      * @param object $s settings
      * @return bool
-     * @throws \RadCms\Common\RadException
+     * @throws \Pike\PikeException
      */
     private function insertMainSchemaData($s) {
         try {
@@ -142,29 +143,29 @@ class Installer {
                                     $s->installedContentTypesLastUpdated ?? null,
                                     $s->installedPlugins ?? '{}',
                                 ]) < 1)
-                throw new RadException('Failed to insert main schema data',
-                                       RadException::INEFFECTUAL_DB_OP);
+                throw new PikeException('Failed to insert main schema data',
+                                        PikeException::INEFFECTUAL_DB_OP);
         } catch (\PDOException $e) {
-            throw new RadException($e->getMessage(), RadException::FAILED_DB_OP);
+            throw new PikeException($e->getMessage(), PikeException::FAILED_DB_OP);
         }
         return true;
     }
     /**
      * @param string $siteConfigFilePath '/path/to/site/site.json'
      * @param string $dataFilePath '/path/to/site/sample-content.json'
-     * @param \RadCms\Framework\FileSystemInterface $fs
+     * @param \Pike\FileSystemInterface $fs
      * @return bool
-     * @throws \RadCms\Common\RadException
+     * @throws \Pike\PikeException
      */
     private function createContentTypesAndInsertInitialData($siteCfgFilePath, $dataFilePath, $fs) {
         $json = $fs->read($dataFilePath);
         if (!$json)
-            throw new RadException("Failed to read {$dataFilePath}", RadException::FAILED_FS_OP);
+            throw new PikeException("Failed to read {$dataFilePath}", PikeException::FAILED_FS_OP);
         if (($initialData = json_decode($json)) === null)
-            throw new RadException("Failed to parse {$dataFilePath}", RadException::FAILED_FS_OP);
+            throw new PikeException("Failed to parse {$dataFilePath}", PikeException::FAILED_FS_OP);
         //
         $cfg = new SiteConfig($fs);
-        // @allow \RadCms\Common\RadException
+        // @allow \Pike\PikeException
         return $cfg->selfLoad($siteCfgFilePath, false, true) &&
                (new ContentTypeMigrator($this->db))->installMany($cfg->contentTypes,
                                                                  $initialData);
@@ -172,21 +173,21 @@ class Installer {
     /**
      * @param object $s settings
      * @return bool
-     * @throws \RadCms\Common\RadException
+     * @throws \Pike\PikeException
      */
     private function cloneTemplatesAndCfgFile($s) {
         //
         $path = $s->sitePath . 'uploads';
         if (!$this->fs->isDir($path) && !$this->fs->mkDir($path))
-            throw new RadException('Failed to create ' . $path,
-                                   RadException::FAILED_FS_OP);
+            throw new PikeException('Failed to create ' . $path,
+                                    PikeException::FAILED_FS_OP);
         //
         $base = "{$s->radPath}sample-content/{$s->sampleContent}/";
         $base2 = "{$base}frontend/";
         if (!($tmplFilePaths = $this->fs->readDir($base, '*.tmpl.php')))
-            throw new RadException("Failed to read {$base}", RadException::FAILED_FS_OP);
+            throw new PikeException("Failed to read {$base}", PikeException::FAILED_FS_OP);
         if (!($assetFilePaths = $this->fs->readDir($base2, '*.{css,js}', GLOB_ERR|GLOB_BRACE)))
-            throw new RadException("Failed to read {$base2}", RadException::FAILED_FS_OP);
+            throw new PikeException("Failed to read {$base2}", PikeException::FAILED_FS_OP);
         //
         $toBeCopied = [
             [$base . 'site.json', $base, $s->sitePath],
@@ -200,8 +201,8 @@ class Installer {
         foreach ($toBeCopied as [$fullFilePath, $base, $target]) {
             $fileName = substr($fullFilePath, mb_strlen($base));
             if (!$this->fs->copy($fullFilePath, $target . $fileName)) {
-                throw new RadException('Failed to copy ' . $fullFilePath,
-                                       RadException::FAILED_FS_OP);
+                throw new PikeException('Failed to copy ' . $fullFilePath,
+                                        PikeException::FAILED_FS_OP);
             }
         }
         return true;
@@ -209,7 +210,7 @@ class Installer {
     /**
      * @param object $s settings
      * @return bool
-     * @throws \RadCms\Common\RadException
+     * @throws \Pike\PikeException
      */
     private function generateConfigFile($s) {
         $flags = $s->useDevMode ? 'RAD_DEVMODE' : '0';
@@ -236,7 +237,7 @@ return [
 ];
 "
         )) return true;
-        throw new RadException('Failed to generate config.php',
-                               RadException::FAILED_FS_OP);
+        throw new PikeException('Failed to generate config.php',
+                                PikeException::FAILED_FS_OP);
     }
 }

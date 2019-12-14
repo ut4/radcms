@@ -2,11 +2,11 @@
 
 namespace RadCms\Templating;
 
-use RadCms\Framework\Template;
+use Pike\Template;
 use RadCms\Content\MagicTemplateDAO;
-use RadCms\Common\RadException;
+use Pike\PikeException;
 use RadCms\Common\LoggerAccess;
-use RadCms\Framework\FileSystem;
+use Pike\FileSystem;
 
 /**
  * Sisältää magikaalisen <?= $this->TemplateName(..) ?>-kutsujen mahdollistavan
@@ -21,7 +21,7 @@ class MagicTemplate extends Template {
      * @param string $file
      * @param array $vars = null
      * @param \RadCms\Content\MagicTemplateDAO $dao = null
-     * @param \RadCms\Framework\FileSystem $fs = null
+     * @param \Pike\FileSystem $fs = null
      */
     public function __construct($file,
                                 array $vars = null,
@@ -47,13 +47,13 @@ class MagicTemplate extends Template {
                 ? RAD_SITE_PATH . $name . '.tmpl.php'
                 : self::$__aliases[$name];
             if (!$this->__fileExists->__invoke($directiveFilePath)) {
-                throw new RadException('Did you forget to $api->registerDire' .
-                                       'ctive(\''.$name.'\', \'/file.php\')?',
-                                       RadException::BAD_INPUT);
+                throw new PikeException('Did you forget to $api->registerDire' .
+                                        'ctive(\''.$name.'\', \'/file.php\')?',
+                                        PikeException::BAD_INPUT);
             }
             return $this->doRender($directiveFilePath,
                 $this->__locals + ['props' => $args ? $args[0] : []]);
-        } catch (RadException $e) {
+        } catch (PikeException $e) {
             if (!(RAD_FLAGS & RAD_DEVMODE)) {
                 LoggerAccess::getLogger()->error($e->getTraceAsString());
                 return "Hmm, {$name}() teki jotain odottamatonta.";
@@ -65,19 +65,19 @@ class MagicTemplate extends Template {
     /**
      * @param string $contentTypeName
      * @return \RadCms\Content\Query
-     * @throws \RadCms\Common\RadException
+     * @throws \Pike\PikeException
      */
     public function fetchAll($contentTypeName) {
-        // @allow \RadCms\Common\RadException
+        // @allow \Pike\PikeException
         return $this->__contentNodeDao->fetchAll($contentTypeName);
     }
     /**
      * @param string $contentTypeName
      * @return \RadCms\Content\Query
-     * @throws \RadCms\Common\RadException
+     * @throws \Pike\PikeException
      */
     public function fetchOne($contentTypeName) {
-        // @allow \RadCms\Common\RadException
+        // @allow \Pike\PikeException
         return $this->__contentNodeDao->fetchOne($contentTypeName);
     }
     /**
@@ -146,12 +146,12 @@ class MagicTemplate extends Template {
     /**
      * @param string $directiveName
      * @param string $fullFilePath
-     * @throws \RadCms\Common\RadException
+     * @throws \Pike\PikeException
      */
     public static function addAlias($directiveName, $fullFilePath) {
         if (array_key_exists($directiveName, self::$__aliases))
-            throw new RadException("Alias {$directiveName} is already registered.",
-                                   RadException::BAD_INPUT);
+            throw new PikeException("Alias {$directiveName} is already registered.",
+                                    PikeException::BAD_INPUT);
         self::$__aliases[$directiveName] = $fullFilePath;
     }
     /**

@@ -2,7 +2,7 @@
 
 namespace RadCms\Tests\_Internal;
 
-use RadCms\Auth\Crypto;
+use Pike\Auth\Crypto;
 
 class MockCrypto extends Crypto {
     public function verifyPass($plainPass, $hashedPass) {

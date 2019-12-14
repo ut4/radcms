@@ -2,8 +2,8 @@
 
 namespace RadCms\ContentType;
 
-use RadCms\Framework\GenericArray;
-use RadCms\Framework\Translator;
+use Pike\GenericArray;
+use Pike\Translator;
 
 class ContentTypeCollection extends GenericArray {
     /**
@@ -14,7 +14,7 @@ class ContentTypeCollection extends GenericArray {
     }
     /**
      * @param string $origin
-     * @param \RadCms\Framework\Translator $translator = null
+     * @param \Pike\Translator $translator = null
      * @return array see self::fromCompactForm()
      */
     public function toCompactForm($origin, Translator $translator = null) {

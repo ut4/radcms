@@ -2,16 +2,16 @@
 
 namespace RadCms\Installer;
 
-use RadCms\Framework\Request;
-use RadCms\Framework\Response;
-use RadCms\Framework\FileSystemInterface;
-use RadCms\Framework\FileSystem;
-use RadCms\Framework\Validator;
-use RadCms\Framework\Template;
-use RadCms\Common\RadException;
+use Pike\Request;
+use Pike\Response;
+use Pike\FileSystemInterface;
+use Pike\FileSystem;
+use Pike\Validator;
+use Pike\Template;
+use Pike\PikeException;
 use RadCms\Common\LoggerAccess;
 use RadCms\Packager\PlainTextPackageStream;
-use RadCms\Auth\Crypto;
+use Pike\Auth\Crypto;
 
 class InstallerControllers {
     private $indexFilePath;
@@ -21,8 +21,8 @@ class InstallerControllers {
     private $makeStream;
     /**
      * @param string $indexFilePath ks. InstallerApp::__construct
-     * @param \RadCms\Framework\FileSystemInterface $fs = null
-     * @param \RadCms\Auth\Crypto $crypto = null
+     * @param \Pike\FileSystemInterface $fs = null
+     * @param \Pike\Auth\Crypto $crypto = null
      * @param callable $makeDb = null
      * @param \Closure $makePackageStream = null
      */
@@ -42,8 +42,8 @@ class InstallerControllers {
     /**
      * GET /.
      *
-     * @param \RadCms\Framework\Request $_
-     * @param \RadCms\Framework\Response $res
+     * @param \Pike\Request $_
+     * @param \Pike\Response $res
      */
     public function renderHomeView(Request $_, Response $res) {
         $template = new Template(__DIR__ . '/main-view.tmpl.php');
@@ -61,9 +61,9 @@ class InstallerControllers {
             (new Installer($this->indexFilePath, $this->fs, $this->makeDb))
                 ->doInstall($req->body);
             $res->json(json_encode(['ok' => 'ok']));
-        } catch (RadException $e) {
+        } catch (PikeException $e) {
             LoggerAccess::getLogger()->log('error', $e->getTraceAsString());
-            $res->status($e->getCode() !== RadException::BAD_INPUT ? 500 : 400)
+            $res->status($e->getCode() !== PikeException::BAD_INPUT ? 500 : 400)
                 ->json(json_encode(['error' => $e->getCode()]));
         }
     }
@@ -82,9 +82,9 @@ class InstallerControllers {
                                        $req->body->unlockKey,
                                        $this->crypto);
             $res->json(json_encode(['ok' => 'ok']));
-        } catch (RadException $e) {
+        } catch (PikeException $e) {
             LoggerAccess::getLogger()->log('error', $e->getTraceAsString());
-            $res->status($e->getCode() !== RadException::BAD_INPUT ? 500 : 400)
+            $res->status($e->getCode() !== PikeException::BAD_INPUT ? 500 : 400)
                 ->json(json_encode(['error' => $e->getCode()]));
         }
     }
@@ -102,7 +102,7 @@ class InstallerControllers {
         $v->check('radPath', 'nonEmptyString', [
             function ($input, $_key) {
                 $input->radPath = rtrim($input->radPath, '/') . '/';
-                return $this->fs->isFile($input->radPath . 'src/Framework/Db.php');
+                return $this->fs->isFile($input->radPath . 'src/Content/DAO.php');
             }, '%s is not valid sourcedir'
         ]);
         if ($v->check('sitePath', 'nonEmptyString'))

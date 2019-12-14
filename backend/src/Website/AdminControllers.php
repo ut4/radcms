@@ -2,18 +2,18 @@
 
 namespace RadCms\Website;
 
-use RadCms\Framework\Request;
-use RadCms\Framework\Response;
+use Pike\Request;
+use Pike\Response;
 use RadCms\Templating\MagicTemplate;
-use RadCms\Framework\SessionInterface;
+use Pike\SessionInterface;
 
 class AdminControllers {
     /**
      * GET /cpanel/:dataKey.
      *
-     * @param \RadCms\Framework\Request $req
-     * @param \RadCms\Framework\Response $res
-     * @param \RadCms\Framework\SessionInterface $sess
+     * @param \Pike\Request $req
+     * @param \Pike\Response $res
+     * @param \Pike\SessionInterface $sess
      */
     public function handleRenderCpanelRequest(Request $req,
                                               Response $res,

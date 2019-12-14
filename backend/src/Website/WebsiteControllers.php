@@ -2,15 +2,15 @@
 
 namespace RadCms\Website;
 
-use RadCms\Framework\Request;
-use RadCms\Framework\Response;
+use Pike\Request;
+use Pike\Response;
 use RadCms\Templating\MagicTemplate;
 use RadCms\Content\MagicTemplateDAO as ContentNodeDAO;
-use RadCms\Framework\SessionInterface;
+use Pike\SessionInterface;
 use RadCms\AppState;
-use RadCms\Framework\Db;
+use Pike\Db;
 use RadCms\ContentType\ContentTypeCollection;
-use RadCms\Framework\FileSystem;
+use Pike\FileSystem;
 
 /**
  * Handlaa sivupyynnöt, (GET '/' tai GET '/sivunnimi').
@@ -22,16 +22,16 @@ class WebsiteControllers {
     /**
      * @param \RadCms\Website\SiteConfig $siteConfig
      * @param \RadCms\AppState $appState
-     * @param \RadCms\Framework\SessionInterface $session
+     * @param \Pike\SessionInterface $session
      */
     public function __construct(SiteConfig $siteConfig,
                                 AppState $appState,
                                 SessionInterface $session) {
-        // @allow \RadCms\Common\RadException
+        // @allow \Pike\PikeException
         if ($siteConfig->selfLoad(RAD_SITE_PATH . 'site.json') &&
             ((RAD_FLAGS & RAD_DEVMODE) &&
              $siteConfig->lastModTime > $appState->contentTypesLastUpdated)) {
-            // @allow \RadCms\Common\RadException
+            // @allow \Pike\PikeException
             $appState->diffAndSaveChangesToDb($siteConfig->contentTypes, 'site.json');
         }
         $this->siteCfg = $siteConfig;
@@ -41,11 +41,11 @@ class WebsiteControllers {
     /**
      * GET *: handlaa sivupyynnön.
      *
-     * @param \RadCms\Framework\Request $request
-     * @param \RadCms\Framework\Response $response
-     * @param \RadCms\Framework\Db $db
+     * @param \Pike\Request $request
+     * @param \Pike\Response $response
+     * @param \Pike\Db $db
      * @param \RadCms\ContentType\ContentTypeCollection $contentTypes
-     * @throw \Radcms\Common\RadException
+     * @throw \Pike\PikeException
      */
     public function handlePageRequest(Request $req,
                                       Response $res,

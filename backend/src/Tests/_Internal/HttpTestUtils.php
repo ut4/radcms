@@ -3,9 +3,9 @@
 namespace RadCms\Tests\_Internal;
 
 use Auryn\Injector;
-use RadCms\Framework\Response;
-use RadCms\Framework\FileSystemInterface;
-use RadCms\Auth\Authenticator;
+use Pike\Response;
+use Pike\FileSystemInterface;
+use Pike\Auth\Authenticator;
 
 trait HttpTestUtils {
     /**
@@ -36,8 +36,8 @@ trait HttpTestUtils {
         return $stub;
     }
     /**
-     * @param \RadCms\Framework\Request $req
-     * @param \RadCms\Framework\Response $res
+     * @param \Pike\Request $req
+     * @param \Pike\Response $res
      * @param object $ctx = null
      * @param \Callable $alterInjectorFn = null ($injector: \Auryn\Injector): void
      */

@@ -2,8 +2,8 @@
 
 namespace RadCms\ContentType;
 
-use RadCms\Framework\GenericArray;
-use RadCms\Framework\Translator;
+use Pike\GenericArray;
+use Pike\Translator;
 
 /**
  * ContentTypeDef->fields.
@@ -31,7 +31,7 @@ class FieldCollection extends GenericArray implements \JsonSerializable {
         }, $this->vals));
     }
     /**
-     * @param \RadCms\Framework\Translator $translator = null
+     * @param \Pike\Translator $translator = null
      * @return array see self::fromCompactForm()
      */
     public function toCompactForm(Translator $translator = null) {

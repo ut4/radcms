@@ -2,7 +2,7 @@
 
 namespace RadCms\ContentType;
 
-use RadCms\Framework\Validator;
+use Pike\Validator;
 
 abstract class ContentTypeValidator {
     const MAX_NAME_LEN = 64;
