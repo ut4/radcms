@@ -10,7 +10,7 @@ abstract class WebsiteModule {
         $ctx->router->map('GET', '/cpanel/[i:dataKey]', function () {
             return [AdminControllers::class, 'handleRenderCpanelRequest', true];
         });
-        $ctx->router->map('GET', '*', function () use ($ctx) {
+        $ctx->router->map('GET', '*', function () {
             return [WebsiteControllers::class, 'handlePageRequest', false];
         });
     }

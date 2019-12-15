@@ -6,7 +6,6 @@
         <link rel="stylesheet" href="<?= RAD_BASE_URL ?>frontend/common.css">
         <link rel="stylesheet" href="<?= RAD_BASE_URL ?>frontend/cpanel-app/cpanel.css">
         <link rel="stylesheet" href="<?= RAD_BASE_URL ?>frontend/vendor/vendor.bundle.css">
-        <base href="">
     </head>
     <body class="light">
         <div id="cpanel-app"></div>

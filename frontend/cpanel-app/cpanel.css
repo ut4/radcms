@@ -115,6 +115,21 @@
     background-color: rgba(0,0,0,0.08);
 }
 
+.datepicker-container { position: absolute; }
+
+.pika-table { table-layout: fixed; }
+.pika-table th:first-of-type { width: 10%; }
+.pika-table .pika-week { vertical-align: middle; }
+.pika-table td .pika-button { text-align: center; }
+.pika-time-container { margin-bottom: 16px; }
+
+table.pika-time { margin: 0 auto; width: auto; }
+.pika-time td { padding: 0 1px 0; font-weight: bold; line-height: 25px; }
+.pika-time select { padding: 2px; margin-bottom: 0; width: 80px; }
+
+.datepicker.large td .pika-button { padding: 10px; }
+.datepicker.large .pika-lendar { width: auto; max-width: 330px; }
+
 /**/
 .light { background-color: transparent }
 .light .view > button { color: #444; }

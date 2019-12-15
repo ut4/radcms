@@ -1,5 +1,6 @@
 import QuillEditor from '../Widgets/QuillEditor.js';
 import ImagePicker from '../Widgets/ImagePicker.js';
+import DateTimePicker from '../Widgets/DateTimePicker.js';
 
 class ContentNodeFieldList extends preact.Component {
     /**
@@ -42,16 +43,31 @@ class ContentNodeFieldList extends preact.Component {
                        name: field.name,
                        type: 'text',
                        value: this.state.cnode[field.name]};
-        if (field.widget === 'image') {
-            props.onChange = val => this.setCnodeValue(val, field.name);
-            return $el(ImagePicker, props);
-        } else if (field.widget === 'richtext') {
+        if (field.widget === 'richtext') {
             return $el(QuillEditor, {
                 name: props.name,
                 value: props.value,
                 onChange: html => {
                     this.setCnodeValue(html, field.name);
                 }
+            });
+        }
+        if (field.widget === 'image') {
+            return $el(ImagePicker, {
+                value: props.value,
+                onChange: val => this.setCnodeValue(val, field.name)
+            });
+        }
+        if ((field.widget || '').startsWith('date')) {
+            return $el(DateTimePicker, {
+                inputName: props.name,
+                defaultDate: props.value ? new Date(props.value * 1000) : null,
+                onSelect: date => {
+                    const unixTime = Math.floor(date.getTime() / 1000);
+                    this.setCnodeValue(field.dataType === 'int' ? unixTime : unixTime.toString(),
+                                       field.name);
+                },
+                showTime: field.widget === 'dateTime'
             });
         }
         props.onInput = e => this.setCnodeValue(e);
