@@ -2,13 +2,13 @@
 
 namespace RadCms\Tests\Packager;
 
-use RadCms\Tests\_Internal\DbTestCase;
-use RadCms\Tests\_Internal\HttpTestUtils;
+use Pike\TestUtils\DbTestCase;
+use Pike\TestUtils\HttpTestUtils;
 use RadCms\Tests\Installer\InstallerTest;
 use RadCms\Packager\PlainTextPackageStream;
 use Pike\Request;
 use Pike\Auth\Crypto;
-use RadCms\Tests\_Internal\MockCrypto;
+use Pike\TestUtils\MockCrypto;
 use RadCms\Packager\Packager;
 use RadCms\Website\SiteConfig;
 use Pike\FileSystem;
@@ -32,8 +32,8 @@ final class PackagerControllersTest extends DbTestCase {
         self::$migrator->installMany(self::$testSiteCfg->contentTypes,
                                      self::$testSiteContentTypesData);
     }
-    public static function tearDownAfterClass($_ = null) {
-        parent::tearDownAfterClass($_);
+    public static function tearDownAfterClass() {
+        parent::tearDownAfterClass();
         // @allow \Pike\PikeException
         self::$migrator->uninstallMany(self::$testSiteCfg->contentTypes);
         InstallerTest::clearInstalledContentTypesFromDb();
@@ -70,7 +70,7 @@ final class PackagerControllersTest extends DbTestCase {
                                          }),
                                          200,
                                          'attachment');
-        $this->sendRequest($req, $res, null, $s->setupInjector);
+        $this->sendRequest($req, $res, '\RadCms\App::create', null, $s->setupInjector);
     }
     private function verifyReturnedSignedPackage($s) {
         $this->assertTrue(strlen($s->actualAttachmentBody) > 0);

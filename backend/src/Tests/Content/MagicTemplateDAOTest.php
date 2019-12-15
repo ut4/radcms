@@ -2,7 +2,7 @@
 
 namespace RadCms\Tests\Content;
 
-use RadCms\Tests\_Internal\DbTestCase;
+use Pike\TestUtils\DbTestCase;
 use RadCms\Tests\_Internal\ContentTestUtils;
 use RadCms\Tests\Installer\InstallerTest;
 use RadCms\Content\MagicTemplateDAO;
@@ -23,8 +23,8 @@ final class MagicTemplateDAOTest extends DbTestCase {
         // @allow \Pike\PikeException
         self::$migrator->installMany(self::$testContentTypes);
     }
-    public static function tearDownAfterClass($_ = null) {
-        parent::tearDownAfterClass($_);
+    public static function tearDownAfterClass() {
+        parent::tearDownAfterClass();
         // @allow \Pike\PikeException
         self::$migrator->uninstallMany(self::$testContentTypes);
         InstallerTest::clearInstalledContentTypesFromDb();

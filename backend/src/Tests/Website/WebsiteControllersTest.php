@@ -2,8 +2,8 @@
 
 namespace RadCms\Tests\Website;
 
-use RadCms\Tests\_Internal\DbTestCase;
-use RadCms\Tests\_Internal\HttpTestUtils;
+use Pike\TestUtils\DbTestCase;
+use Pike\TestUtils\HttpTestUtils;
 use RadCms\Tests\Installer\InstallerTest;
 use Pike\Request;
 use Pike\FileSystem;
@@ -35,7 +35,7 @@ final class WebsiteControllersTest extends DbTestCase {
         //
         $req = new Request('/foo', 'GET');
         $res = $this->createMockResponse('404', 200, 'html');
-        $this->sendRequest($req, $res, $s->ctx, $s->setupInjector);
+        $this->sendRequest($req, $res, '\RadCms\App::create', $s->ctx, $s->setupInjector);
         //
         $this->verifyInstalledNewContentTypeToDb();
     }
@@ -111,7 +111,7 @@ final class WebsiteControllersTest extends DbTestCase {
         //
         $req = new Request('/foo', 'GET');
         $res = $this->createMockResponse('404', 200, 'html');
-        $this->sendRequest($req, $res, $s->ctx, $s->setupInjector);
+        $this->sendRequest($req, $res, '\RadCms\App::create', $s->ctx, $s->setupInjector);
         //
         $this->verifyUninstalledDisappearedContentType();
     }

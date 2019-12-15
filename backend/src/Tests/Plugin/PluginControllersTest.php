@@ -2,8 +2,8 @@
 
 namespace RadCms\Tests\Plugin;
 
-use RadCms\Tests\_Internal\DbTestCase;
-use RadCms\Tests\_Internal\HttpTestUtils;
+use Pike\TestUtils\DbTestCase;
+use Pike\TestUtils\HttpTestUtils;
 use Pike\FileSystem;
 use MySite\Plugins\ValidPlugin\ValidPlugin;
 use MySite\Plugins\ValidAndInstalledPlugin\ValidAndInstalledPlugin;
@@ -19,7 +19,7 @@ final class PluginControllersTest extends DbTestCase {
         $s = $this->setupInstallTest();
         //
         $req = new Request("/api/plugins/{$s->testPluginName}/install", 'PUT');
-        $this->sendRequest($req, $s->res, $s->ctx);
+        $this->sendRequest($req, $s->res, '\RadCms\App::create', $s->ctx);
         //
         $this->verifyCalledPluginImplsInstallMethod();
         $this->verifyRegisteredPluginToDb($s);
@@ -61,7 +61,7 @@ final class PluginControllersTest extends DbTestCase {
         $s = $this->setupUninstallTest();
         //
         $req = new Request("/api/plugins/{$s->testPluginName}/uninstall", 'PUT');
-        $this->sendRequest($req, $s->res, $s->ctx);
+        $this->sendRequest($req, $s->res, '\RadCms\App::create', $s->ctx);
         //
         $this->verifyCalledPluginImplsUninstallMethod();
         $this->verifyUnregisteredPluginFromDb($s);

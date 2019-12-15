@@ -2,14 +2,14 @@
 
 namespace RadCms\Tests\Content;
 
-use RadCms\Tests\_Internal\DbTestCase;
-use RadCms\Tests\_Internal\HttpTestUtils;
+use Pike\TestUtils\DbTestCase;
+use Pike\TestUtils\HttpTestUtils;
 use RadCms\Tests\_Internal\ContentTestUtils;
 use RadCms\Tests\Installer\InstallerTest;
 use Pike\Request;
 use RadCms\ContentType\ContentTypeCollection;
 use RadCms\ContentType\ContentTypeMigrator;
-use RadCms\Tests\_Internal\MutedResponse;
+use Pike\TestUtils\MutedResponse;
 
 final class ContentControllersTest extends DbTestCase {
     use HttpTestUtils;
@@ -24,8 +24,8 @@ final class ContentControllersTest extends DbTestCase {
         // @allow \Pike\PikeException
         self::$migrator->installMany(self::$testContentTypes);
     }
-    public static function tearDownAfterClass($_ = null) {
-        parent::tearDownAfterClass($_);
+    public static function tearDownAfterClass() {
+        parent::tearDownAfterClass();
         // @allow \Pike\PikeException
         self::$migrator->uninstallMany(self::$testContentTypes);
         InstallerTest::clearInstalledContentTypesFromDb();
@@ -62,7 +62,7 @@ final class ContentControllersTest extends DbTestCase {
         $req = new Request('/api/content/Products' . $urlTail,
                            'POST',
                            $s->newProduct);
-        $this->sendRequest($req, $res);
+        $this->sendRequest($req, $res, '\RadCms\App::create');
     }
     private function verifyPOSTContentReturnedLastInsertId($s, $expectedNumAffected = '1') {
         $this->assertEquals($expectedNumAffected, $s->actualResponseParsed['numAffectedRows']);
@@ -122,7 +122,7 @@ final class ContentControllersTest extends DbTestCase {
     }
     private function sendGetContentNodeRequest($s) {
         $req = new Request('/api/content/' . $s->productId . '/Products', 'GET');
-        $this->sendResponseBodyCapturingRequest($req, $s);
+        $this->sendResponseBodyCapturingRequest($req, '\RadCms\App::create', $s);
     }
 
 
@@ -155,7 +155,7 @@ final class ContentControllersTest extends DbTestCase {
         $req = new Request('/api/content/' . $s->productId . '/Products' . $urlTail,
                            'PUT',
                            $s->newData);
-        $this->sendRequest($req, $res);
+        $this->sendRequest($req, $res, '\RadCms\App::create');
     }
     private function verifyContentNodeWasUpdatedToDb($s, $isPublished = false) {
         $row = self::$db->fetchOne(

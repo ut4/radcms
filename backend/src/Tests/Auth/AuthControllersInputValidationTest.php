@@ -3,7 +3,7 @@
 namespace RadCms\Tests\Auth;
 
 use PHPUnit\Framework\TestCase;
-use RadCms\Tests\_Internal\HttpTestUtils;
+use Pike\TestUtils\HttpTestUtils;
 use Pike\Request;
 
 final class AuthControllersInputValidationTest extends TestCase {
@@ -13,7 +13,7 @@ final class AuthControllersInputValidationTest extends TestCase {
         $res = $this->createMockResponse(
             ['username must be a non-empty string',
             'password must be a non-empty string'], 400);
-        $this->sendRequest($req, $res);
+        $this->sendRequest($req, $res, '\RadCms\App::create');
     }
     public function testPOSTLoginRejectsEmptyValues() {
         $req = new Request('/login', 'POST', (object)['username'=>'',
@@ -21,6 +21,6 @@ final class AuthControllersInputValidationTest extends TestCase {
         $res = $this->createMockResponse(
             ['username must be a non-empty string',
             'password must be a non-empty string'], 400);
-        $this->sendRequest($req, $res);
+        $this->sendRequest($req, $res, '\RadCms\App::create');
     }
 }

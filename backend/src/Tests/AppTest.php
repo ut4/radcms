@@ -4,7 +4,7 @@ namespace RadCms\Tests;
 
 use RadCms\App;
 use Pike\FileSystem;
-use RadCms\Tests\_Internal\DbTestCase;
+use Pike\TestUtils\DbTestCase;
 use MySite\Plugins\ValidAndInstalledPlugin\ValidAndInstalledPlugin;
 use MySite\Plugins\ValidPlugin\ValidPlugin;
 

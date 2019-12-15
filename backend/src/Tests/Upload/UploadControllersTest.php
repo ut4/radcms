@@ -2,8 +2,8 @@
 
 namespace RadCms\Tests\Upload;
 
-use RadCms\Tests\_Internal\DbTestCase;
-use RadCms\Tests\_Internal\HttpTestUtils;
+use Pike\TestUtils\DbTestCase;
+use Pike\TestUtils\HttpTestUtils;
 use Pike\Request;
 
 final class UploadControllersTest extends DbTestCase {
@@ -22,7 +22,7 @@ final class UploadControllersTest extends DbTestCase {
     }
     private function sendGetUploadsRequest($s) {
         $req = new Request('/api/uploads', 'GET');
-        $this->sendResponseBodyCapturingRequest($req, $s);
+        $this->sendResponseBodyCapturingRequest($req, '\RadCms\App::create', $s);
     }
     private function verifyResponseBodyEquals($expected, $s) {
         $this->assertEquals(json_encode($expected),

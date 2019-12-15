@@ -3,13 +3,13 @@
 namespace RadCms\Tests\Installer;
 
 use RadCms\Installer\InstallerApp;
-use RadCms\Tests\_Internal\DbTestCase;
+use Pike\TestUtils\DbTestCase;
 use Pike\Request;
-use RadCms\Tests\_Internal\HttpTestUtils;
+use Pike\TestUtils\HttpTestUtils;
 use RadCms\Installer\InstallerControllers;
 use Pike\FileSystem;
 use RadCms\Tests\_Internal\ContentTestUtils;
-use RadCms\Tests\_Internal\MockCrypto;
+use Pike\TestUtils\MockCrypto;
 use RadCms\Packager\Packager;
 use RadCms\Packager\PlainTextPackageStream;
 use RadCms\Tests\Packager\PackagerControllersTest;
@@ -19,9 +19,10 @@ final class InstallerTest extends DbTestCase {
     use ContentTestUtils;
     const TEST_DB_NAME1 = 'db1';
     const TEST_DB_NAME2 = 'db2';
-    public static function tearDownAfterClass($_ = null) {
-        parent::tearDownAfterClass('DROP DATABASE IF EXISTS ' . self::TEST_DB_NAME1.
-                                   ';DROP DATABASE IF EXISTS ' . self::TEST_DB_NAME2);
+    public static function tearDownAfterClass() {
+        parent::tearDownAfterClass();
+        self::$db->exec('DROP DATABASE IF EXISTS ' . self::TEST_DB_NAME1.
+                        ';DROP DATABASE IF EXISTS ' . self::TEST_DB_NAME2);
     }
     public function testInstallerValidatesMissingValues() {
         $input = (object)['sampleContent' => 'test-content'];

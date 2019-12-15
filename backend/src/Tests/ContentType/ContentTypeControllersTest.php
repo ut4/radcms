@@ -2,8 +2,8 @@
 
 namespace RadCms\Tests\ContentType;
 
-use RadCms\Tests\_Internal\DbTestCase;
-use RadCms\Tests\_Internal\HttpTestUtils;
+use Pike\TestUtils\DbTestCase;
+use Pike\TestUtils\HttpTestUtils;
 use RadCms\Tests\Installer\InstallerTest;
 use Pike\Request;
 use RadCms\ContentType\ContentTypeCollection;
@@ -24,8 +24,8 @@ final class ContentTypeControllersTest extends DbTestCase {
         // @allow \Pike\PikeException
         self::$migrator->installMany(self::$testContentTypes);
     }
-    public static function tearDownAfterClass($_ = null) {
-        parent::tearDownAfterClass($_);
+    public static function tearDownAfterClass() {
+        parent::tearDownAfterClass();
         // @allow \Pike\PikeException
         self::$migrator->uninstallMany(self::$testContentTypes);
         InstallerTest::clearInstalledContentTypesFromDb();
@@ -52,7 +52,7 @@ final class ContentTypeControllersTest extends DbTestCase {
     }
     private function sendGetContentTypeRequest($s, $url = null) {
         $req = new Request($url ?? '/api/content-types/' . $s->contentTypeName, 'GET');
-        $this->sendResponseBodyCapturingRequest($req, $s);
+        $this->sendResponseBodyCapturingRequest($req, '\RadCms\App::create', $s);
     }
     private function verifyResponseBodyEquals($expected, $s) {
         $this->assertEquals(json_encode($expected),
