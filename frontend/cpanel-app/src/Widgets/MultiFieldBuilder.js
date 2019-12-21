@@ -34,8 +34,8 @@ class MultiFieldBuilder extends preact.Component {
             !this.state.addFieldDialogIsOpen
                 ? $el('button', {onClick: () => this.setState({addFieldDialogIsOpen: true}),
                                  type: 'button'}, 'Lisää kenttä')
-                : $el('div', {class: 'popup-dialog-dialog'}, $el('div', {class: 'box'},
-                    $el('div', {class: 'main'}, $el('div', {class: 'item-list'},
+                : $el('div', {className: 'popup-dialog-dialog'}, $el('div', {className: 'box'},
+                    $el('div', {className: 'main'}, $el('div', {className: 'item-list'},
                         widgetTypes.map(w =>
                             $el('button', {onClick: () => this.addField(w.name),
                                            type: 'button'}, w.description)

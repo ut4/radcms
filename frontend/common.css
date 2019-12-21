@@ -134,7 +134,7 @@ input[type="submit"] {
 select:not(.no-style) {
     text-indent: 2px;
 }
-input:hover {
+input:enabled:hover {
     border-color: #5794BF #B7D5EA #C7E2F1 #C5DAED;
 }
 input[type="date"] {
@@ -163,6 +163,9 @@ label select {
 input[type="checkbox"] {
     width: initial;
     margin-top: 4px;
+}
+input[disabled] {
+    cursor: not-allowed;
 }
 label .text-error,
 .label .text-error {
@@ -272,3 +275,4 @@ table .label input {
 .light a { color: #4d817f; }
 .light a:hover { color: #366361 }
 .light input, textarea, select:not(.no-style) { background-color: #fff }
+.light input[disabled] { background-color: #eee; }

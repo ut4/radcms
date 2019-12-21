@@ -184,7 +184,7 @@ class SiteConfig {
             [$url, $type] = $definition;
             if (!is_string($url) || !strlen($url))
                 $errors[] = "assetFile[{$i}][0] (url) must be a string";
-            if (array_search($type, self::ASSET_TYPES) === false)
+            if (!in_array($type, self::ASSET_TYPES, true))
                 $errors[] = 'assetFile[' . $i . '][1] (file type) must be ' .
                             implode('|', self::ASSET_TYPES);
             $attrs = $definition[2] ?? null;

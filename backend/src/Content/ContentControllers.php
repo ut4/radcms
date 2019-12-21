@@ -42,7 +42,7 @@ class ContentControllers {
     public function handleGetContentNode(Request $req, Response $res, MagicTemplateDAO $dao) {
         // @allow \Pike\PikeException
         $node = $dao->fetchOne($req->params->contentTypeName)
-                    ->where('`id` = ?', [$req->params->id]) // aina validi (läpäissyt routerin regexpin)
+                    ->where('`id` = ?', $req->params->id) // aina validi (läpäissyt routerin regexpin)
                     ->exec();
         if ($node) $res->json($node);
         else $res->status(404)->json(['got' => 'nothing']);

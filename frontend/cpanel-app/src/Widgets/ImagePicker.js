@@ -52,10 +52,10 @@ ImagePicker.PickerDialog = class extends preact.Component {
      * @access protected
      */
     render() {
-        return $el('div', {class: 'popup-dialog-dialog'}, $el('div', {class: 'box'},
+        return $el('div', {className: 'popup-dialog-dialog'}, $el('div', {className: 'box'},
             $el('h2', null, 'Valitse kuva'),
-            $el('div', {class: 'main'},
-                $el('div', {class: 'item-list'}, !this.state.message
+            $el('div', {className: 'main'},
+                $el('div', {className: 'item-list'}, !this.state.message
                     ? this.state.images.map(i =>
                         $el('button', {onClick: () => this.props.onSelected(i),
                                        className: this.props.selectedImageName !== i.fileName ? '' : 'selected',

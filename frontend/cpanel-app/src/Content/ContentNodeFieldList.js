@@ -28,7 +28,7 @@ class ContentNodeFieldList extends preact.Component {
     render() {
         return $el('div', null, this.state.ctype.fields.map(field =>
             field.type !== 'hidden' && field.type !== 'multiFieldBuilder'
-                ? $el('div', {class: 'label'},
+                ? $el('div', {className: 'label'},
                     $el('label', {for: 'field-' + field.name}, field.friendlyName),
                     this.makeInput(field)
                 )

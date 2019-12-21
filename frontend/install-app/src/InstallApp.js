@@ -69,8 +69,8 @@ class InstallApp extends preact.Component {
                                 $el('option', {value: opt.name}, opt.friendlyName)
                             ))
                     ),
-                    $el('div', {class: 'fieldset'},
-                        $el('div', {class: 'legend'}, 'Lisäasetukset'),
+                    $el('div', {className: 'fieldset'},
+                        $el('div', {className: 'legend'}, 'Lisäasetukset'),
                         $el('label', null,
                             $el('span', {'data-help-text': 'Url-parametri (index.php?parametrinNimi=/) mikäli url-rewrite -säännöt ei ole käytössä.'}, 'Url-parametri'),
                             $el('input', {name: 'mainQueryVar', onChange: e => Form.receiveInputValue(e, this),
@@ -105,8 +105,8 @@ class InstallApp extends preact.Component {
                         $el('input', {name: 'dbDatabase', onChange: e => Form.receiveInputValue(e, this),
                                       value: this.state.dbDatabase})
                     ),
-                    $el('div', {class: 'fieldset'},
-                        $el('div', {class: 'legend'}, 'Lisäasetukset'),
+                    $el('div', {className: 'fieldset'},
+                        $el('div', {className: 'legend'}, 'Lisäasetukset'),
                         $el('label', null,
                             $el('span', {'data-help-text': 'Prefix, jota käytetään RadCMS:n tietokantataulujen etuliitteenä.'}, 'Tietokantataulujen prefix'),
                             $el('input', {name: 'dbTablePrefix', onChange: e => Form.receiveInputValue(e, this),

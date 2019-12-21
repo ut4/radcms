@@ -38,7 +38,7 @@ final class MagicTemplateDAOTest extends DbTestCase {
         $this->insertContent('Products', [['Tuote'], [1, self::NOT_PUBLISHED]]);
         $this->insertRevision(1, 'Products', '{"title":"New title"}');
         $dao = self::makeDao(true);
-        $node = $dao->fetchOne('Products')->where('id=?', ['1'])->exec();
+        $node = $dao->fetchOne('Products')->where('id=?', '1')->exec();
         $this->assertEquals(true, $node !== null);
         $this->assertEquals('New title', $node->title);
     }
@@ -51,7 +51,7 @@ final class MagicTemplateDAOTest extends DbTestCase {
         $this->insertContent('Products', [['Tuote2'], [2, self::NOT_PUBLISHED]]);
         $this->insertRevision(2, 'Products', '{"title":"New title"}');
         $dao = self::makeDao(false);
-        $node = $dao->fetchOne('Products')->where('id=?', ['2'])->exec();
+        $node = $dao->fetchOne('Products')->where('id=?', '2')->exec();
         $this->assertEquals(true, $node === null);
     }
 
@@ -69,7 +69,7 @@ final class MagicTemplateDAOTest extends DbTestCase {
                     ->collectJoin('reviews', function ($product, $row) {
                         $product->reviews[] = (object)['content' => $row['rContent']];
                     })
-                    ->where('id=?', ['3'])
+                    ->where('id=?', '3')
                     ->exec();
         $this->assertEquals(true, $node !== null);
         $this->assertEquals('[{"content":"sucks"},{"content":"agreed"}]',

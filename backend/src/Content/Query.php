@@ -41,41 +41,30 @@ class Query {
     }
     /**
      * @param string $expr
-     * @param array $bindVals = null
+     * @param mixed ...$bindVals
      * @return $this
      */
-    public function where($expr, array $bindVals = null) {
+    public function where($expr, ...$bindVals) {
         $this->whereDef = (object)['expr' => $expr, 'bindVals' => $bindVals];
         return $this;
     }
     /**
      * @param string $contentType 'Products', 'Products p'
      * @param string $expr
-     * @param array $bindVals = null
-     * @param bool $isLeft = false
+     * @param mixed ...$bindVals
      * @return $this
      */
-    public function join($contentType,
-                         $expr,
-                         array $bindVals = null,
-                         $isLeft = false) {
-        [$contentTypeName, $alias] = DAO::parseContentTypeNameAndAlias($contentType, 'b');
-        $this->joinDefs[] = (object)['contentType' => $contentTypeName,
-                                     'alias' => $alias,
-                                     'expr' => $expr,
-                                     'bindVals' => $bindVals,
-                                     'isLeft' => $isLeft,
-                                     'collector' => null];
-        return $this;
+    public function join($contentType, $expr, ...$bindVals) {
+        return $this->doJoin($contentType, $expr, $bindVals, false);
     }
     /**
      * @param string $contentType 'Products', 'Products p'
      * @param string $expr
-     * @param array $bindVals = null
+     * @param mixed ...$bindVals
      * @return $this
      */
-    public function leftJoin($contentType, $expr, array $bindVals = null) {
-        return $this->join($contentType, $expr, $bindVals, true);
+    public function leftJoin($contentType, $expr, ...$bindVals) {
+        return $this->doJoin($contentType, $expr, $bindVals, true);
     }
     /**
      * @param string $toField
@@ -140,6 +129,23 @@ class Query {
                ', ' . implode(', ', $fields) .
                ' FROM (' . $mainQ . ') AS ' . $this->contentTypeAlias .
                ' ' . implode(' ', $joins);
+    }
+    /**
+     * @param string $contentType 'Products', 'Products p'
+     * @param string $expr
+     * @param array $bindVals
+     * @param bool $isLeft
+     * @return $this
+     */
+    private function doJoin($contentType, $expr, $bindVals, $isLeft) {
+        [$contentTypeName, $alias] = DAO::parseContentTypeNameAndAlias($contentType, 'b');
+        $this->joinDefs[] = (object)['contentType' => $contentTypeName,
+                                     'alias' => $alias,
+                                     'expr' => $expr,
+                                     'bindVals' => $bindVals,
+                                     'isLeft' => $isLeft,
+                                     'collector' => null];
+        return $this;
     }
     /**
      * @param object $joinDef {contentType: string, expr: string, isLeft: bool}
