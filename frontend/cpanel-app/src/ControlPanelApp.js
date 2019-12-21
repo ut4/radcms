@@ -124,7 +124,7 @@ class ControlPanelApp extends preact.Component {
         const uniqueImpls = {};
         const uniqueHighlighSelectors = {};
         return (PanelCls, panelCfg, isAdminPanel) => {
-            const implName = panelCfg.implName;
+            const implName = panelCfg.impl;
             if (!uniqueImpls.hasOwnProperty(implName)) {
                 uniqueImpls[implName] = 1;
                 if (typeof PanelCls.getRoutes === 'function')

@@ -8,11 +8,13 @@ use RadCms\Tests\Installer\InstallerTest;
 use Pike\Request;
 use RadCms\ContentType\ContentTypeCollection;
 use RadCms\ContentType\ContentTypeMigrator;
+use RadCms\ContentType\ContentTypeValidator;
 
 final class ContentTypeControllersTest extends DbTestCase {
     use HttpTestUtils;
     private static $testContentTypes;
     private static $migrator;
+    private const DEFAULT_WIDGET = ContentTypeValidator::FIELD_WIDGETS[0];
     public static function setUpBeforeClass() {
         self::$testContentTypes = new ContentTypeCollection();
         self::$testContentTypes->add('Events', 'Tapahtumat',
@@ -37,8 +39,10 @@ final class ContentTypeControllersTest extends DbTestCase {
             ['name' => 'Events',
              'friendlyName' => 'Tapahtumat',
              'fields' => [
-                 ['name' => 'name', 'friendlyName' => 'name', 'dataType' => 'text', 'widget' => null],
-                 ['name' => 'pic', 'friendlyName' => 'Kuva', 'dataType' => 'text', 'widget' => 'image'],
+                 ['name' => 'name', 'friendlyName' => 'name', 'dataType' => 'text',
+                  'widget' => self::DEFAULT_WIDGET],
+                 ['name' => 'pic', 'friendlyName' => 'Kuva', 'dataType' => 'text',
+                  'widget' => 'image'],
              ],
              'origin' => 'site.json'],
             $s
@@ -68,11 +72,14 @@ final class ContentTypeControllersTest extends DbTestCase {
         $this->sendGetAllContentTypesRequest($s);
         $this->verifyResponseBodyEquals(
             [['name' => 'Events', 'friendlyName' => 'Tapahtumat', 'fields' => [
-                ['name' => 'name', 'friendlyName' => 'name', 'dataType' => 'text', 'widget' => null],
-                ['name' => 'pic', 'friendlyName' => 'Kuva', 'dataType' => 'text', 'widget' => 'image'],
+                ['name' => 'name', 'friendlyName' => 'name', 'dataType' => 'text',
+                 'widget' => self::DEFAULT_WIDGET],
+                ['name' => 'pic', 'friendlyName' => 'Kuva', 'dataType' => 'text',
+                 'widget' => 'image'],
             ], 'origin' => 'site.json'],
             ['name' => 'Locations', 'friendlyName' => 'Paikat', 'fields' => [
-                ['name' => 'name', 'friendlyName' => 'Tapahtumapaikka', 'dataType' => 'text', 'widget' => null],
+                ['name' => 'name', 'friendlyName' => 'Tapahtumapaikka', 'dataType' => 'text',
+                 'widget' => self::DEFAULT_WIDGET],
             ], 'origin' => 'site.json']],
             $s
         );

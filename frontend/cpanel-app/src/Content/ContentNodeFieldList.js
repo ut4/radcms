@@ -1,6 +1,5 @@
-import QuillEditor from '../Widgets/QuillEditor.js';
-import ImagePicker from '../Widgets/ImagePicker.js';
-import DateTimePicker from '../Widgets/DateTimePicker.js';
+import makeWidgetComponent from '../Widgets/all.js';
+import MultiFieldBuilder from '../Widgets/MultiFieldBuilder.js';
 
 class ContentNodeFieldList extends preact.Component {
     /**
@@ -28,50 +27,39 @@ class ContentNodeFieldList extends preact.Component {
      */
     render() {
         return $el('div', null, this.state.ctype.fields.map(field =>
-            $el('div', {class: 'label'},
-                $el('label', {for: 'field-' + field.name}, field.friendlyName),
-                this.makeInput(field)
-            )
+            field.type !== 'hidden' && field.type !== 'multiFieldBuilder'
+                ? $el('div', {class: 'label'},
+                    $el('label', {for: 'field-' + field.name}, field.friendlyName),
+                    this.makeInput(field)
+                )
+                : this.makeInput(field)
         ));
     }
     /**
      * @access private
      */
     makeInput(field) {
-        let tagName = 'input';
-        const props = {id: 'field-' + field.name,
-                       name: field.name,
-                       type: 'text',
-                       value: this.state.cnode[field.name]};
-        if (field.widget === 'richtext') {
-            return $el(QuillEditor, {
-                name: props.name,
-                value: props.value,
-                onChange: html => {
-                    this.setCnodeValue(html, field.name);
+        if (field.widget === 'hidden') {
+            return null;
+        }
+        if (field.widget === 'multiFieldBuilder') {
+            const value = this.state.cnode[field.name];
+            return $el(MultiFieldBuilder, {
+                fields: value ? JSON.parse(value) : [],
+                onChange: (structure, rendered) => {
+                    this.setCnodeValue(structure, field.name);
+                    if (this.state.cnode.rendered)
+                        this.setCnodeValue(rendered, 'rendered');
                 }
             });
         }
-        if (field.widget === 'image') {
-            return $el(ImagePicker, {
-                value: props.value,
-                onChange: val => this.setCnodeValue(val, field.name)
-            });
-        }
-        if ((field.widget || '').startsWith('date')) {
-            return $el(DateTimePicker, {
-                inputName: props.name,
-                defaultDate: props.value ? new Date(props.value * 1000) : null,
-                onSelect: date => {
-                    const unixTime = Math.floor(date.getTime() / 1000);
-                    this.setCnodeValue(field.dataType === 'int' ? unixTime : unixTime.toString(),
-                                       field.name);
-                },
-                showTime: field.widget === 'dateTime'
-            });
-        }
-        props.onInput = e => this.setCnodeValue(e);
-        return $el(tagName, props);
+        return $el(makeWidgetComponent(field.widget), {
+            field: {id: field.name, value: this.state.cnode[field.name]},
+            fieldInfo: field,
+            onChange: val => {
+                this.setCnodeValue(val, field.name);
+            }
+        });
     }
     /**
      * @access private

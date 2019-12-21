@@ -38,8 +38,8 @@ Sisältötyypit, jotka tämä paketti rekisteröi. Sisältötyypin sisältöä v
     "name": "GenericBlobs",
     "friendlyName": "Geneerinen",
     "fields": [
-        {"name": "name", "friendlyName": "Nimi", "dataType": "text", "widget": null},
-        {"name": "content", "friendlyName": "Sisältö", "dataType": "text", "widget": "richtext"}
+        {"name": "name", "friendlyName": "Nimi", "dataType": "text", "widget": "textField"},
+        {"name": "content", "friendlyName": "Sisältö", "dataType": "text", "widget": "richText"}
     ]
 }
 ```

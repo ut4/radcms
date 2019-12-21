@@ -6,7 +6,9 @@ use Pike\Validator;
 
 abstract class ContentTypeValidator {
     const MAX_NAME_LEN = 64;
-    const FIELD_WIDGETS = ['richtext', 'image', 'date', 'dateTime'];
+    const FIELD_WIDGETS = ['textField', 'textArea', 'richText', 'image',
+                           'multiFieldBuilder', 'date', 'dateTime',
+                           'hidden'];
     /**
      * @param \RadCms\ContentType\ContentTypeDef $contentType
      * @return string[]

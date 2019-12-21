@@ -29,10 +29,10 @@ class ContentEditView extends preact.Component {
      * @access private
      */
     updateState(props) {
-        const newState = {cnode: null, ctype: null, doPublish: !!props.doPublish};
+        const newState = {cnode: null, ctype: null, doPublish: !!props.publish};
         this.title = 'Muokkaa sisältöä';
         this.confirmButtonText = 'Tallenna';
-        if (this.state.doPublish) {
+        if (newState.doPublish) {
             this.title = 'Julkaise sisältöä';
             this.confirmButtonText = 'Julkaise';
         }

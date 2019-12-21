@@ -53,11 +53,18 @@
     color: rgba(0,0,0,0.6); }
 #control-panel h1 img { width: 16px; margin: 4px 4px -3px 0; }
 
+label[contenteditable] {
+    border-bottom: 1px dashed #999;
+    width: auto;
+    padding-bottom: 3px;
+    margin-bottom: 5px;
+}
+
 .content-types-list > div { transition: padding 0.15s linear; }
 .content-types-list > div > *:first-child button { margin-left: 6px; }
 .content-types-list > div > table { max-width: 390px; }
 
-.image-picker-dialog {
+.popup-dialog-dialog {
     width: 100%;
     height: 100%;
     position: absolute;
@@ -69,21 +76,21 @@
     padding: 0 15px;
     box-sizing: border-box;
 }
-.image-picker-dialog > div {
+.popup-dialog-dialog > div {
     margin: 20px auto;
     max-width: 600px;
     width: 100%;
     border-radius: 2px;
 }
-.image-picker-dialog h2 {
+.popup-dialog-dialog h2 {
     margin: 0 0 15px;
 }
-.file-list {
+.item-list {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 5px;
 }
-.file-list > button {
+.item-list > button {
     border: none;
     padding: 5px;
     border-radius: 2px;
@@ -91,27 +98,27 @@
     margin-bottom: 21px;
     position: relative;
 }
-.file-list > button:after {
+.item-list > button:after {
     content: attr(data-caption);
     position: absolute;
     left: 0;
     bottom: -24px;
 }
-.file-list img {
+.item-list img {
     width: 100%;
 }
 
 /**/
-.light .image-picker-dialog {
+.light .popup-dialog-dialog {
     background-color: rgba(0,0,0,0.4);
 }
-.light .file-list > button {
+.light .item-list > button {
     background-color: rgba(0,0,0,0.05);
 }
-.light .file-list > button.selected {
+.light .item-list > button.selected {
     border: 2px solid #37c1ff;
 }
-.light .file-list > button:hover {
+.light .item-list > button:hover {
     background-color: rgba(0,0,0,0.08);
 }
 

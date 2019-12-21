@@ -1,8 +1,8 @@
 {
     "contentTypes": [
         ["GenericBlobs", "Geneerinen", {
-            "name": "text:Nimi",
-            "content": "text:Sisältö:richtext"
+            "name": "text:Nimi:basicText",
+            "content": "text:Sisältö:richText"
         }]
     ],
     "urlMatchers": [
