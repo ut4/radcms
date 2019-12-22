@@ -10,7 +10,7 @@ abstract class ContentTypeModule {
      */
     public static function init($ctx) {
         $ctx->router->map('GET', '/api/content-types/[no-internals:filter]?', function () {
-            return [ContentTypeControllers::class, 'handleGetAllContentTypes', true];
+            return [ContentTypeControllers::class, 'handleGetContentTypes', true];
         });
         $ctx->router->map('GET', '/api/content-types/[w:name]', function () {
             return [ContentTypeControllers::class, 'handleGetContentType', true];

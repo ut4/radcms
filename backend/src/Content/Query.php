@@ -77,6 +77,15 @@ class Query {
         return $this;
     }
     /**
+     * @param int $limit
+     * @param int $offset = null
+     * @return $this
+     */
+    public function limit($limit, $offset = null) {
+        $this->limitExpr = $offset === null ? (string)$limit : "{$offset}, {$limit}";
+        return $this;
+    }
+    /**
      * @param string $panelType
      * @param string $title = ''
      * @param string $highlightSelector = ''
@@ -180,12 +189,12 @@ class Query {
     private function selfValidate() {
         $errors = ContentTypeValidator::validate($this->contentType);
         if (!ctype_alnum(str_replace(['_'], '', $this->contentTypeAlias)))
-            $errors[] = 'fetch alias is not valid';
+            $errors[] = "fetch alias ({$this->contentTypeAlias}) must contain only a-zA-Z_";
         foreach ($this->joinDefs as $d) {
             $errors = array_merge($errors,
                 ContentTypeValidator::validateName($d->contentType));
             if (!ctype_alnum(str_replace(['_'], '', $d->alias)))
-                $errors[] = 'join alias is not valid.';
+                $errors[] = "join alias ({$d->alias}) must contain only a-zA-Z_";
             if (!$d->collector)
                 $errors[] = 'join() was used, but no collectJoin(\'field\',' .
                             ' function () {}) was provided';
@@ -195,6 +204,9 @@ class Query {
                 $errors[] = 'fetchOne(...)->where() is required';
             }
         }
+        if ($this->limitExpr &&
+            !ctype_digit(str_replace([',', ' '], '', $this->limitExpr)))
+                $errors[] = "limit expression `{$this->limitExpr}` not valid";
         return $errors ? implode('\n', $errors) : '';
     }
 }

@@ -37,9 +37,9 @@ class ContentTypeControllers {
      * @param \Pike\Response $res
      * @param \RadCms\ContentType\ContentTypeCollection $ctypes
      */
-    public function handleGetAllContentTypes(Request $req,
-                                             Response $res,
-                                             ContentTypeCollection $ctypes) {
+    public function handleGetContentTypes(Request $req,
+                                          Response $res,
+                                          ContentTypeCollection $ctypes) {
         $filter = $req->params->filter ?? '';
         $res->json($filter !== 'no-internals'
             ? $ctypes->toArray()

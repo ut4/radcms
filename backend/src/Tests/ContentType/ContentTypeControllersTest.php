@@ -70,7 +70,7 @@ final class ContentTypeControllersTest extends DbTestCase {
 
     public function testGETContentTypesReturnsAllContentTypes() {
         $s = $this->setupGetContentTypesTest();
-        $this->sendGetAllContentTypesRequest($s);
+        $this->sendGetContentTypesRequest($s);
         $this->verifyResponseBodyEquals(
             [['name' => 'Events', 'friendlyName' => 'Tapahtumat', 'fields' => [
                 ['name' => 'name', 'friendlyName' => 'name', 'dataType' => 'text',
@@ -90,7 +90,7 @@ final class ContentTypeControllersTest extends DbTestCase {
             'actualResponseBody' => null,
         ];
     }
-    private function sendGetAllContentTypesRequest($s) {
+    private function sendGetContentTypesRequest($s) {
         $this->sendGetContentTypeRequest($s, '/api/content-types');
     }
 }

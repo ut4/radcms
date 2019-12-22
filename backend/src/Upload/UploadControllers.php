@@ -13,7 +13,7 @@ class UploadControllers {
      *
      * @param \Pike\Response $res
      */
-    public function handleGetAllUploads(Response $res, UploadFileScanner $scanner) {
+    public function handleGetUploads(Response $res, UploadFileScanner $scanner) {
         // @allow \Pike\PikeException
         $files = $scanner->scanAll(RAD_SITE_PATH . 'uploads');
         $res->json($files);
