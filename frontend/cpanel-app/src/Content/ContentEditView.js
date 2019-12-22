@@ -36,19 +36,20 @@ class ContentEditView extends preact.Component {
             this.title = 'Julkaise sisältöä';
             this.confirmButtonText = 'Julkaise';
         }
-        services.myFetch(`/api/content/${props.id}/${props.contentTypeName}`).then(res => {
-            newState.cnode = JSON.parse(res.responseText);
-            return services.myFetch('/api/content-types/' + props.contentTypeName);
-        })
-        .then(res => {
-            newState.ctype = JSON.parse(res.responseText);
-        })
-        .catch(() => {
-            toast('Jokin meni pieleen', 'error');
-        })
-        .finally(() => {
-            this.setState(newState);
-        });
+        services.http.get(`/api/content/${props.id}/${props.contentTypeName}`)
+            .then(cnode => {
+                newState.cnode = cnode;
+                return services.http.get('/api/content-types/' + props.contentTypeName);
+            })
+            .then(ctype => {
+                newState.ctype = ctype;
+            })
+            .catch(() => {
+                toast('Jokin meni pieleen', 'error');
+            })
+            .finally(() => {
+                this.setState(newState);
+            });
     }
     /**
      * @access protected
@@ -79,15 +80,15 @@ class ContentEditView extends preact.Component {
      */
     handleFormSubmit() {
         const revisionSettings = !this.state.doPublish ? '' : '/publish';
-        return services.myFetch(`/api/content/${this.props.id}/${this.props.contentTypeName}${revisionSettings}`, {
-            method: 'PUT',
-            headers: {'Content-Type': 'application/json'},
-            data: JSON.stringify(Object.assign({isPublished: this.state.cnode.isPublished,
-                                                isRevision: this.state.cnode.isRevision},
-                                               this.fieldListCmp.getResult()))
-        }).then(() => {
+        return services.http.put(`/api/content/${this.props.id}/${this.props.contentTypeName}${revisionSettings}`,
+            Object.assign({isPublished: this.state.cnode.isPublished,
+                           isRevision: this.state.cnode.isRevision},
+                          this.fieldListCmp.getResult())
+        )
+        .then(() => {
             services.redirect(this.props.returnTo || '/', true);
-        }, () => {
+        })
+        .catch(() => {
             toast('Sisällön tallennus epäonnistui.', 'error');
         });
     }

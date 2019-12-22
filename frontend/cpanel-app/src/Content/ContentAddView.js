@@ -17,15 +17,16 @@ class ContentAddView extends preact.Component {
             ctype: null,
             createRevision: false,
         };
-        services.myFetch('/api/content-types').then(
-            res => {
-                const newState = {contentTypes: JSON.parse(res.responseText)};
+        services.http.get('/api/content-types')
+            .then(contentTypes => {
+                const newState = {contentTypes};
                 const ctypeName = props.initialContentTypeName || newState.contentTypes[0].name;
                 this.setContentTypeAndCreateEmptyContentNode(ctypeName, newState);
                 this.setState(newState);
-            },
-            () => { toast('Jokin meni pieleen.', 'error'); }
-        );
+            })
+            .catch(() => {
+                toast('Jokin meni pieleen.', 'error');
+            });
     }
     /**
      * @access protected
@@ -60,16 +61,15 @@ class ContentAddView extends preact.Component {
      */
     handleFormSubmit() {
         const revisionSettings = this.state.createRevision ? '/with-revision' : '';
-        return services.myFetch(`/api/content/${this.state.ctype.name}${revisionSettings}`, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            data: JSON.stringify(Object.assign({isPublished: revisionSettings === ''},
-                                               this.fieldListCmp.getResult()))
-        }).then(() => {
-            services.redirect(this.props.returnTo || '/', true);
-        }, () => {
-            toast('Sisällön luonti epäonnistui.', 'error');
-        });
+        return services.http.post(`/api/content/${this.state.ctype.name}${revisionSettings}`,
+            Object.assign({isPublished: revisionSettings === ''},
+                          this.fieldListCmp.getResult()))
+            .then(() => {
+                services.redirect(this.props.returnTo || '/', true);
+            })
+            .catch(() => {
+                toast('Sisällön luonti epäonnistui.', 'error');
+            });
     }
     /**
      * @access private

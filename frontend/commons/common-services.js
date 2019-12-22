@@ -38,6 +38,40 @@ function myFetch(url, options = {}) {
 }
 myFetch.makeUrl = url => config.baseUrl + url.substr(1);
 
+const http = {
+    /**
+     * @param {string} url
+     * @returns Promise<Object>
+     */
+    get(url) {
+        return services
+            .myFetch(url)
+            .then(res => JSON.parse(res.responseText));
+    },
+    /**
+     * @param {string} url
+     * @param {Object|string} data
+     * @returns Promise<Object>
+     */
+    post(url, data, method = 'POST') {
+        return services
+            .myFetch(url, {
+                method,
+                headers: {'Content-Type': 'application/json'},
+                data: typeof data !== 'string' ? JSON.stringify(data) : data
+            })
+            .then(res => JSON.parse(res.responseText));
+    },
+    /**
+     * @param {string} url
+     * @param {Object|string} data
+     * @returns Promise<Object>
+     */
+    put(url, data) {
+        return this.post(url, data, 'PUT');
+    }
+};
+
 const signals = {
     _listeners: [],
     /**
@@ -65,6 +99,7 @@ const signals = {
 const services = {
     redirect,
     myFetch,
+    http,
     signals,
     config,
 };

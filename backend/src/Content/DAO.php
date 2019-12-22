@@ -134,7 +134,7 @@ class DAO {
                 $row['id'] !== $out->id ||
                 $row['contentType'] !== $out->contentType) continue;
             $out->revisions[] = (object)[
-                'createdAt' => $row['revisionCreatedAt'],
+                'createdAt' => (int)$row['revisionCreatedAt'],
                 'snapshot' => json_decode($row['revisionSnapshot'])
             ];
         }

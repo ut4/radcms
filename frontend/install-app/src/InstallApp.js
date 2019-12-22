@@ -132,12 +132,7 @@ class InstallApp extends preact.Component {
     handleSubmit() {
         const data = this.state;
         sessionStorage.lastTyped = JSON.stringify(data);
-        services.myFetch('', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            data: JSON.stringify(data)
-        })
-        .then(res => JSON.parse(res.responseText))
+        services.http.post('', data)
         .then(() => {
             toast($el('p', null,
                 'Sivusto asennettiin kansioon ', $el('span', {style: 'font-weight: bold'}, this.state.sitePath), '. Aloita lukemalla README.md, tai ',

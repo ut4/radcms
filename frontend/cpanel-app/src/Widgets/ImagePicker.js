@@ -38,8 +38,7 @@ ImagePicker.PickerDialog = class extends preact.Component {
     constructor(props) {
         super(props);
         this.state = {images: [], message: null};
-        services.myFetch('/api/uploads')
-            .then(res => JSON.parse(res.responseText))
+        services.http.get('/api/uploads')
             .then(list => {
                 const images = list.filter(f => f.mime === 'image/jpeg');
                 this.setState({images, message: images.length ? null : 'Ei kuvia.'});

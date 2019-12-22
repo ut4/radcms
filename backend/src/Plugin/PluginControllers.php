@@ -40,20 +40,13 @@ class PluginControllers {
                                                Response $res,
                                                PluginInstaller $installer) {
         if (($plugin = $this->plugins->find($req->params->name))) {
-            try {
-                if ($installer->install($plugin)) {
-                    $res->json(['ok' => 'ok']);
-                    return;
-                }
-            } catch (PikeException $e) {
-                LoggerAccess::getLogger()->log('error', $e->getTraceAsString());
-                $errorMessage = 'Failed to install a plugin (see the logger ' .
-                                'output for details).';
-            }
+            // @allow \Pike\PikeException
+            $installer->install($plugin);
+            $res->json(['ok' => 'ok']);
         } else {
-            $errorMessage = "Plugin `{$req->params->name}` not found.";
+            throw new PikeException("Plugin `{$req->params->name}` not found.",
+                                    PikeException::BAD_INPUT);
         }
-        $res->status(500)->json(['error' => $errorMessage]);
     }
     /**
      * PUT /api/plugins/:name/uninstall: poistaa lisäosan $name.
@@ -66,19 +59,12 @@ class PluginControllers {
                                                  Response $res,
                                                  PluginInstaller $installer) {
         if (($plugin = $this->plugins->find($req->params->name))) {
-            try {
-                if ($installer->uninstall($plugin)) {
-                    $res->json(['ok' => 'ok']);
-                    return;
-                }
-            } catch (PikeException $e) {
-                LoggerAccess::getLogger()->log('error', $e->getTraceAsString());
-                $errorMessage = 'Failed to uninstall a plugin (see the logger ' .
-                                'output for details).';
-            }
+            // @allow \Pike\PikeException
+            $installer->uninstall($plugin);
+            $res->json(['ok' => 'ok']);
         } else {
-            $errorMessage = "Plugin `{$req->params->name}` not found.";
+            throw new PikeException("Plugin `{$req->params->name}` not found.",
+                                    PikeException::BAD_INPUT);
         }
-        $res->status(500)->json(['error' => $errorMessage]);
     }
 }

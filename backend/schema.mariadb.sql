@@ -17,7 +17,7 @@ CREATE TABLE ${p}websiteState (
     `name` VARCHAR(127) NOT NULL,
     `lang` VARCHAR(12) NOT NULL,
     `installedContentTypes` JSON, -- {"Name": ["friendlyName", {"key": "datatype" ...}], "Another": [...]}
-    `installedContentTypesLastUpdated` VARCHAR(11) DEFAULT NULL,
+    `installedContentTypesLastUpdated` INT(10) UNSIGNED DEFAULT NULL,
     `installedPlugins` JSON,      -- {"Name": 1, "Another": 1 ...}
     PRIMARY KEY (`id`)
 ) DEFAULT CHARSET = utf8mb4;
@@ -26,6 +26,6 @@ CREATE TABLE ${p}contentRevisions (
     `contentId` INT UNSIGNED NOT NULL,
     `contentType` VARCHAR(64) NOT NULL,
     `revisionSnapshot` JSON,
-    `createdAt` VARCHAR(11),
+    `createdAt` INT(10) UNSIGNED,
     PRIMARY KEY (`contentId`, `contentType`)
 ) DEFAULT CHARSET = utf8mb4;

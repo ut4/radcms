@@ -96,7 +96,7 @@ class AppState {
         //
         $out->websiteName = $row['name'];
         $out->lang = $row['lang'] ?? 'fi_FI';
-        $out->contentTypesLastUpdated = $row['installedContentTypesLastUpdated'] ?? 0;
+        $out->contentTypesLastUpdated = intval($row['installedContentTypesLastUpdated'] ?? 0);
         return $out;
     }
     /**
