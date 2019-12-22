@@ -31,13 +31,18 @@ class ContentTypeControllers {
         else $res->status(404)->json(['got' => 'nothing']);
     }
     /**
-     * GET /api/content-type.
+     * GET /api/content-type/:filter.
      *
+     * @param \Pike\Request $req
      * @param \Pike\Response $res
      * @param \RadCms\ContentType\ContentTypeCollection $ctypes
      */
-    public function handleGetAllContentTypes(Response $res,
+    public function handleGetAllContentTypes(Request $req,
+                                             Response $res,
                                              ContentTypeCollection $ctypes) {
-        $res->json($ctypes->toArray());
+        $filter = $req->params->filter ?? '';
+        $res->json($filter !== 'no-internals'
+            ? $ctypes->toArray()
+            : $ctypes->filter(false, 'isInternal')->toArray());
     }
 }

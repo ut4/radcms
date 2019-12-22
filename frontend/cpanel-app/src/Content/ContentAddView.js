@@ -17,7 +17,7 @@ class ContentAddView extends preact.Component {
             ctype: null,
             createRevision: false,
         };
-        services.http.get('/api/content-types')
+        services.http.get('/api/content-types/no-internals')
             .then(contentTypes => {
                 const newState = {contentTypes};
                 const ctypeName = props.initialContentTypeName || newState.contentTypes[0].name;
@@ -35,7 +35,8 @@ class ContentAddView extends preact.Component {
         if (!this.state.contentTypes) return null;
         if (!this.state.ctype) return $el(`Sisältötyyppiä ${this.props.initialContentType} ei löytynyt.`);
         return $el(View, null, $el(Form, {onConfirm: e => this.handleFormSubmit(e),
-                                          confirmButtonText: 'Lisää'},
+                                          confirmButtonText: 'Lisää',
+                                          autoClose: false},
             $el('h2', null, 'Lisää sisältöä'),
             $el('label', null,
                 $el('span', {'data-help-text': 'Dev note: Voit luoda uusia sisältötyyppejä muokkaamalla site.json-tiedostoa (ks. https://todo).'}, 'Sisältötyyppi'),

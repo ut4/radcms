@@ -42,7 +42,7 @@ const widgetComponents = {
     }),
     image: props => $el(ImagePicker, {
         value: props.field.value,
-        onChange: src => this.props.onChange(src)
+        onChange: src => props.onChange(src)
     }),
     date: makeDateWidget(false),
     dateTime: makeDateWidget(true),

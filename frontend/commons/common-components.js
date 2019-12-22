@@ -48,11 +48,11 @@ class Form extends preact.Component {
     handleSubmit(e) {
         e.preventDefault();
         const res = this.props.onConfirm(e);
-        if (!this.props.noAutoClose && res && res instanceof Promise) {
+        if (res && res instanceof Promise && this.props.autoClose !== false) {
             res.then(() => this.close());
             return;
         }
-        if (!this.props.noAutoClose) {
+        if (this.props.autoClose !== false) {
             this.close();
         }
     }

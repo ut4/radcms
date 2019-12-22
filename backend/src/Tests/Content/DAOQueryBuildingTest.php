@@ -115,7 +115,7 @@ final class DAOQueryBuildingTest extends TestCase {
             return $this->makeDao()->fetchOne('Games');
         }));
         $this->assertEquals(
-            'ContentType.name must be capitalized and contain only [a-ZA-Z]\n'.
+            'ContentType.name must be capitalized and contain only [a-zA-Z_]\n'.
             'ContentType.name must be <= 64 chars long', $runInvalid(function() {
                 $A_LONG_STRING = str_repeat('-', 65);
                 //

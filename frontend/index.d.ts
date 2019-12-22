@@ -3,7 +3,7 @@ interface FormProps {
     onCancel?: (e: Event) => any;
     close?: Function;
     doDisableConfirmButton?: () => boolean;
-    noAutoClose?: bool;
+    autoClose?: bool;
     confirmButtonText?: string;
     cancelButtonText?: string;
 }

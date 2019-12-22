@@ -36,7 +36,7 @@ class InstallApp extends preact.Component {
     render() {
         return $el('div', null,
             $el(Toaster, {autoCloseTimeoutMillis: 60000}),
-            $el(Form, {onConfirm: e => this.handleSubmit(e), confirmButtonText: 'Asenna', noAutoClose: true},
+            $el(Form, {onConfirm: e => this.handleSubmit(e), confirmButtonText: 'Asenna', autoClose: false},
                 $el('h2', null, 'Asenna RadCMS'),
                 $el('div', {className: 'box'},
                     $el('label', null,

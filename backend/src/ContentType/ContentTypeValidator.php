@@ -46,9 +46,9 @@ abstract class ContentTypeValidator {
      */
     public static function validateName($contentTypeName) {
         $errors = [];
-        if (!ctype_alpha($contentTypeName) ||
+        if (!ctype_alpha(str_replace('_', '', $contentTypeName)) ||
             !ctype_upper(mb_substr($contentTypeName, 0, 1)))
-            $errors[] = 'ContentType.name must be capitalized and contain only [a-ZA-Z]';
+            $errors[] = 'ContentType.name must be capitalized and contain only [a-zA-Z_]';
         if (mb_strlen($contentTypeName) > self::MAX_NAME_LEN)
             $errors[] = 'ContentType.name must be <= 64 chars long';
         return $errors;
