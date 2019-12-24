@@ -5,7 +5,7 @@
     "repositories": [
         {
             "type": "vcs",
-            "url": "../../pike"
+            "url": "https://github.com/ut4/pike"
         }
     ],
     "require": {

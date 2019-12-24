@@ -1,45 +1,12 @@
 #!/usr/bin/php
 <?php
 
-$action = $argv[1] ?? '';
-if ($action == 'create-installer') {
-    createInstaller();
-} else {
-    echo "Unknown action `{$action}`.\n";
-    die();
-}
+$config = require 'config.php';
+$loader = require RAD_BASE_PATH . 'vendor/autoload.php';
+$loader->addPsr4('RadCms\\Cli\\', RAD_INDEX_PATH . 'dev-cli-src/');
 
-////////////////////////////////////////////////////////////////////////////////
+if ($argc < 3) die('Usage: dev-cli.php make-release [<targetDirRelativeToCwd>]');
+$path = implode('/', array_map('urlencode', array_slice($argv, 1)));
 
-/**
- * Luo self-hostatun installer.phar-tiedoston (tiedosto joka itsessään sisältää
- * kaikki sen tarvitsemat tiedostot).
- */
-function createInstaller() {
-    $backendPath = __DIR__ . '/backend/';
-    $backendSrcPath = $backendPath . 'src/';
-    $buildAssetsPath = $backendPath . 'build-files/';
-    $phar = new Phar(__DIR__ . '/installer.phar');
-    $getClassMap = include $buildAssetsPath . 'classmap.php';
-    $pikeSrcPath = $backendPath . 'vendor/ut4/pike/src/';
-    $classMap = $getClassMap($backendSrcPath, $pikeSrcPath, $buildAssetsPath, $backendPath);
-    foreach ($classMap as $filePath) $phar->addFile($filePath);
-    $phar->setStub(
-"<?php
-define('RAD_BASE_PATH', '{$backendSrcPath}');
-include 'phar://' . __FILE__ . '/{$buildAssetsPath}Psr4Autoloader.php';
-include 'phar://' . __FILE__ . '/{$buildAssetsPath}LoggerInterface.php';
-include 'phar://' . __FILE__ . '/{$backendPath}vendor/altorouter/altorouter/AltoRouter.php';
-\$loader = new Psr\Psr4Autoloader();
-\$loader->register();
-\$loader->addNamespace('RadCms', 'phar://' . __FILE__ . '/{$backendSrcPath}');
-\$loader->addNamespace('Pike', 'phar://' . __FILE__ . '/{$pikeSrcPath}');
-\RadCms\Common\LoggerAccess::setLogger(new \RadCms\Common\ErrorLogLogger());
-//
-return function (\$url, \$DIR) {
-    \RadCms\Installer\InstallerApp::create(\$DIR)->handleRequest(\$url);
-};
-__HALT_COMPILER();
-?>"
-    );
-}
+\Pike\App::create([\RadCms\Cli\Module::class], [])->handleRequest(
+    new \Pike\Request("/{$path}", 'PSEUDO'));
