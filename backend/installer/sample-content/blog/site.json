@@ -1,12 +1,12 @@
 {
     "contentTypes": [
         ["GenericBlobs", "Geneerinen", {
-            "name": "text:Nimi",
+            "name": "text:Nimi:textField",
             "content": "text:Sisältö:richText"
         }],
         ["Articles", "Artikkelit", {
-            "slug": "text:Slug (url)",
-            "title": "text:Otsikko",
+            "slug": "text:Slug (url):textField",
+            "title": "text:Otsikko:textField",
             "body": "text:Sisältö:richText"
         }]
     ],

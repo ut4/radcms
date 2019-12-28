@@ -5,7 +5,6 @@ namespace RadCms\Tests\Plugin;
 use Pike\TestUtils\DbTestCase;
 use Pike\TestUtils\HttpTestUtils;
 use RadCms\Tests\_Internal\ContentTestUtils;
-use RadCms\Tests\Installer\InstallerTest;
 use RadCms\ContentType\ContentTypeMigrator;
 use Pike\FileSystem;
 use RadCms\Tests\AppTest;
@@ -39,7 +38,7 @@ final class PluginAPIIntegrationTest extends DbTestCase {
     }
     public static function tearDownAfterClass() {
         parent::tearDownAfterClass();
-        InstallerTest::clearInstalledContentTypesFromDb();
+        self::clearInstalledContentTypesFromDb();
     }
     public function testPluginCanInstallContentType() {
         $initialMovies = [['Movies', [(object)['title' => 'Initial movie',
@@ -51,7 +50,7 @@ final class PluginAPIIntegrationTest extends DbTestCase {
     private function setupInstallCtypeTest($initialMovies = null) {
         $this->setupTestPlugin($initialMovies);
         $ctx = (object)['fs' => $this->createMock(FileSystem::class)];
-        $ctx->fs->method('readDir')->willReturn([RAD_SITE_PATH . 'Plugins/MoviesPlugin']);
+        $ctx->fs->method('readDir')->willReturn([dirname(RAD_SITE_PATH) . '/_test-plugins/MoviesPlugin']);
         return (object) [
             'ctx' => $ctx,
             'actualResponseBody' => null,

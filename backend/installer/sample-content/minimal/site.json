@@ -1,7 +1,7 @@
 {
     "contentTypes": [
         ["GenericBlobs", "Geneerinen", {
-            "name": "text:Nimi:basicText",
+            "name": "text:Nimi:textField",
             "content": "text:Sisältö:richText"
         }]
     ],

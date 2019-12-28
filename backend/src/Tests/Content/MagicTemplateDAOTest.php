@@ -4,7 +4,6 @@ namespace RadCms\Tests\Content;
 
 use Pike\TestUtils\DbTestCase;
 use RadCms\Tests\_Internal\ContentTestUtils;
-use RadCms\Tests\Installer\InstallerTest;
 use RadCms\Content\MagicTemplateDAO;
 use RadCms\ContentType\ContentTypeCollection;
 use RadCms\ContentType\ContentTypeMigrator;
@@ -27,7 +26,7 @@ final class MagicTemplateDAOTest extends DbTestCase {
         parent::tearDownAfterClass();
         // @allow \Pike\PikeException
         self::$migrator->uninstallMany(self::$testContentTypes);
-        InstallerTest::clearInstalledContentTypesFromDb();
+        self::clearInstalledContentTypesFromDb();
         self::$db->exec('DELETE FROM ${p}ContentRevisions');
         self::$db->commit();
     }

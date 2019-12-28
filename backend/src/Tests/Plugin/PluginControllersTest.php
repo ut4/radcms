@@ -28,7 +28,7 @@ final class PluginControllersTest extends DbTestCase {
         $testPluginName = 'ValidPlugin';
         $ctx = (object)['fs' => $this->createMock(FileSystem::class)];
         $ctx->fs->expects($this->once())->method('readDir')->willReturn(
-            [RAD_SITE_PATH . 'Plugins/' . $testPluginName]);
+            [dirname(RAD_SITE_PATH) . '/_test-plugins/' . $testPluginName]);
         $this->afterTest = function () {
             ValidPlugin::$instantiated = false;
             ValidPlugin::$initialized = false;
@@ -70,7 +70,7 @@ final class PluginControllersTest extends DbTestCase {
         $testPluginName = 'ValidAndInstalledPlugin';
         $ctx = (object)['fs' => $this->createMock(FileSystem::class)];
         $ctx->fs->expects($this->once())->method('readDir')->willReturn(
-            [RAD_SITE_PATH. 'Plugins/' . $testPluginName]);
+            [dirname(RAD_SITE_PATH) . '/_test-plugins/' . $testPluginName]);
         self::$db->exec('UPDATE ${p}websiteState SET `installedPlugins`=' .
                         ' JSON_SET(`installedPlugins`, ?, ?)',
                         ['$."' . $testPluginName . '"', 1]);

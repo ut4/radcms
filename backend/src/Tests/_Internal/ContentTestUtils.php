@@ -53,4 +53,9 @@ trait ContentTestUtils {
         if (self::$db->exec('DELETE FROM ${p}' . $contentTypeName) < 1)
             throw new \RuntimeException('Failed to clean test data');
     }
+    public static function clearInstalledContentTypesFromDb() {
+        self::$db->exec('UPDATE ${p}websiteState SET' .
+                        ' `installedContentTypes` = \'{}\'' .
+                        ', `installedContentTypesLastUpdated` = NULL');
+    }
 }

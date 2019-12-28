@@ -46,7 +46,7 @@ class Packager {
         $this->fs = $fs;
         $this->themeContentTypes = $state->contentTypes->filter('site.json', 'origin');
         $this->cNodeDAO = new DAO($db, $this->themeContentTypes);
-        $this->config = include RAD_INDEX_PATH . 'config.php';
+        $this->config = include RAD_SITE_PATH . 'config.php';
     }
     /**
      * @param string $sitePath

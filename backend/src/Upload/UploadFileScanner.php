@@ -30,7 +30,7 @@ class UploadFileScanner {
             throw new PikeException("finfo_open Failed", PikeException::FAILED_FS_OP);
         $out = [];
         foreach ($fullPaths as $p) {
-            $basePath = str_replace('\\', '/', dirname($p)) . '/';
+            $basePath = $this->fs->normalizePath(dirname($p));
             $out[] = (object)['fileName' => str_replace($basePath, '', $p),
                               'basePath' => $basePath,
                               'mime' => finfo_file($finfo, $p)];

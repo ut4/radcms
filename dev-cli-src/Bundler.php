@@ -52,7 +52,7 @@ class Bundler {
      */
     private function createTargetDirectories() {
         $targetDirPaths = ["{$this->targetDirPath}backend", "{$this->targetDirPath}frontend"];
-        foreach ($targetDirPaths as $p) { 
+        foreach ($targetDirPaths as $p) {
             if (!$this->fs->isDir($p) && !$this->fs->mkDir($p))
                 throw new PikeException("Failed to create `{$p}`",
                                         PikeException::FAILED_FS_OP);
@@ -62,7 +62,7 @@ class Bundler {
      * @throws \Pike\PikeException
      */
     private function copyBackendFiles() {
-        foreach (['index.php', 'install.php', 'LICENSE.txt', 'backend/composer.json'] as $f) {
+        foreach (['backend/composer.json', 'index.php', 'install.php', 'LICENSE.txt'] as $f) {
             if (!$this->fs->copy($this->radPath . $f, $this->targetDirPath . $f))
                 throw new PikeException('Failed to copy `' . ($this->radPath . $f) .
                                         '` -> `' . ($this->targetDirPath . $f) . '`');

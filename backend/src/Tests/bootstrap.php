@@ -9,7 +9,8 @@ define('TEST_SITE_PATH', TEST_CONFIG_DIR_PATH);
 
 require TEST_CONFIG_DIR_PATH . 'config.php';
 $loader = require RAD_BASE_PATH . 'vendor/autoload.php';
-$loader->addPsr4('MySite\\', RAD_SITE_PATH);
+$loader->addPsr4('RadCms\\Installer\\', RAD_BASE_PATH . 'installer/src');
+$loader->addPsr4('MySite\\Plugins\\', dirname(RAD_SITE_PATH) . '/_test-plugins');
 
 $logger = new Logger('testEnvLogger');
 $logger->pushHandler(new NullHandler());

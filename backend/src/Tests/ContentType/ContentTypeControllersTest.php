@@ -4,7 +4,7 @@ namespace RadCms\Tests\ContentType;
 
 use Pike\TestUtils\DbTestCase;
 use Pike\TestUtils\HttpTestUtils;
-use RadCms\Tests\Installer\InstallerTest;
+use RadCms\Tests\_Internal\ContentTestUtils;
 use Pike\Request;
 use RadCms\ContentType\ContentTypeCollection;
 use RadCms\ContentType\ContentTypeMigrator;
@@ -12,6 +12,7 @@ use RadCms\ContentType\ContentTypeValidator;
 
 final class ContentTypeControllersTest extends DbTestCase {
     use HttpTestUtils;
+    use ContentTestUtils;
     private static $testContentTypes;
     private static $migrator;
     private const DEFAULT_WIDGET = ContentTypeValidator::FIELD_WIDGETS[0];
@@ -30,7 +31,7 @@ final class ContentTypeControllersTest extends DbTestCase {
         parent::tearDownAfterClass();
         // @allow \Pike\PikeException
         self::$migrator->uninstallMany(self::$testContentTypes);
-        InstallerTest::clearInstalledContentTypesFromDb();
+        self::clearInstalledContentTypesFromDb();
     }
     public function testGETContentTypeReturnsContentType() {
         $s = $this->setupGetContentTypeTest();

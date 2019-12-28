@@ -4,7 +4,6 @@ namespace RadCms\Tests\Website;
 
 use Pike\TestUtils\DbTestCase;
 use Pike\TestUtils\HttpTestUtils;
-use RadCms\Tests\Installer\InstallerTest;
 use Pike\Request;
 use Pike\FileSystem;
 use Pike\SessionInterface;
@@ -20,7 +19,7 @@ final class WebsiteControllersTest extends DbTestCase {
         'FromSomePlugin' => ['FriendlyName', ['field' => 'text'], 'some-plugin.json'],
     ];
     public function tearDown() {
-        InstallerTest::clearInstalledContentTypesFromDb();
+        self::clearInstalledContentTypesFromDb();
         self::$db->exec('DROP TABLE IF EXISTS ${p}NewType');
     }
     public function testConstructorScansSiteCfgAndInstallsNewContentTypeToDb() {
@@ -50,12 +49,6 @@ final class WebsiteControllersTest extends DbTestCase {
                    ->with($this->stringEndsWith('.tmpl.php'))
                    ->willReturn(true);
         $s->setupInjector = function ($injector) use ($s) {
-            $injector->delegate(Db::class, function () {
-                return self::$db;
-            });
-            $injector->delegate(FileSystem::class, function () use ($s) {
-                return $s->ctx->fs;
-            });
             $injector->delegate(NativeSession::class, function () use ($s) {
                 return $s->mockSess;
             });
