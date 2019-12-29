@@ -2,7 +2,7 @@
 
 $config = require 'config.php';
 $loader = require RAD_BASE_PATH . 'vendor/autoload.php';
-$loader->addPsr4('MySite\\', RAD_SITE_PATH);
+$loader->addPsr4('RadPlugins\\', RAD_SITE_PATH . 'plugins');
 
 ////////////////////////////////////////////////////////////////////////////////
 $logger = new \Monolog\Logger('mainLogger');

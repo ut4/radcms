@@ -5,8 +5,8 @@ namespace RadCms\Tests\Plugin;
 use Pike\TestUtils\DbTestCase;
 use Pike\TestUtils\HttpTestUtils;
 use Pike\FileSystem;
-use MySite\Plugins\ValidPlugin\ValidPlugin;
-use MySite\Plugins\ValidAndInstalledPlugin\ValidAndInstalledPlugin;
+use RadPlugins\ValidPlugin\ValidPlugin;
+use RadPlugins\ValidAndInstalledPlugin\ValidAndInstalledPlugin;
 use Pike\Request;
 
 final class PluginControllersTest extends DbTestCase {

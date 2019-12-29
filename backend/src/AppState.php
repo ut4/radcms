@@ -122,7 +122,7 @@ class AppState {
         $paths = $this->fs->readDir(RAD_SITE_PATH . 'Plugins', '*', GLOB_ONLYDIR);
         foreach ($paths as $path) {
             $clsName = substr($path, strrpos($path, '/') + 1);
-            $clsPath = "MySite\\Plugins\\{$clsName}\\{$clsName}";
+            $clsPath = "RadPlugins\\{$clsName}\\{$clsName}";
             if (!class_exists($clsPath))
                 throw new PikeException("Main plugin class \"{$clsPath}\" missing",
                                         PikeException::BAD_INPUT);

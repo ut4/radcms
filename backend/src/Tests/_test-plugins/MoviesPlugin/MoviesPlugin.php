@@ -1,6 +1,6 @@
 <?php
 
-namespace MySite\Plugins\MoviesPlugin;
+namespace RadPlugins\MoviesPlugin;
 
 use RadCms\Plugin\PluginInterface;
 use RadCms\Plugin\API;

@@ -1,6 +1,6 @@
 <?php
 
-namespace MySite\Plugins\InvalidPlugin;
+namespace RadPlugins\InvalidPlugin;
 
 class InvalidPlugin /*implements \RadCms\Plugin\PluginInterface missing*/ {
 

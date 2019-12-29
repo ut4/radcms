@@ -1,6 +1,6 @@
 <?php
 
-namespace MySite\Plugins\ValidPlugin;
+namespace RadPlugins\ValidPlugin;
 
 use RadCms\Plugin\PluginInterface;
 use RadCms\Plugin\API;

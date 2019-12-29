@@ -10,7 +10,7 @@ use Pike\FileSystem;
 use RadCms\Tests\AppTest;
 use Pike\Request;
 use Pike\TestUtils\MutedResponse;
-use MySite\Plugins\MoviesPlugin\MoviesPlugin;
+use RadPlugins\MoviesPlugin\MoviesPlugin;
 use RadCms\Plugin\Plugin;
 use RadCms\AppState;
 

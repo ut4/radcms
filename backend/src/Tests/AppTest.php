@@ -5,8 +5,8 @@ namespace RadCms\Tests;
 use RadCms\App;
 use Pike\FileSystem;
 use Pike\TestUtils\DbTestCase;
-use MySite\Plugins\ValidAndInstalledPlugin\ValidAndInstalledPlugin;
-use MySite\Plugins\ValidPlugin\ValidPlugin;
+use RadPlugins\ValidAndInstalledPlugin\ValidAndInstalledPlugin;
+use RadPlugins\ValidPlugin\ValidPlugin;
 
 final class AppTest extends DbTestCase {
     public static function setUpBeforeClass() {
@@ -33,10 +33,10 @@ final class AppTest extends DbTestCase {
             }
         };
         $runInvalid('NoMainFilePlugin',
-            'Main plugin class "MySite\\Plugins\\NoMainFilePlugin\\NoMainFilePlugin" missing'
+            'Main plugin class "RadPlugins\\NoMainFilePlugin\\NoMainFilePlugin" missing'
         );
         $runInvalid('InvalidPlugin',
-            'A plugin ("MySite\\Plugins\\InvalidPlugin\\InvalidPlugin") must implement' .
+            'A plugin ("RadPlugins\\InvalidPlugin\\InvalidPlugin") must implement' .
             ' RadCms\\Plugin\\PluginInterface'
         );
     }

@@ -1,6 +1,6 @@
 <?php
 
-namespace MySite\Plugins\MoviesPlugin;
+namespace RadPlugins\MoviesPlugin;
 
 use Pike\Response;
 use RadCms\Content\DAO;
