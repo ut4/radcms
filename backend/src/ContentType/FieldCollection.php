@@ -25,7 +25,7 @@ class FieldCollection extends GenericArray implements \JsonSerializable {
         return implode(',', array_map(function ($f) {
             return "`{$f->name}` " . [
                 'text' => 'TEXT',
-                'json' => 'TEXT',
+                'json' => 'JSON',
                 'int' => 'INT',
             ][$f->dataType];
         }, $this->vals));

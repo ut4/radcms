@@ -6,11 +6,13 @@ use Pike\Db;
 use RadCms\ContentType\ContentTypeCollection;
 use Pike\PikeException;
 
+/**
+ * Luokka jonka DAO->fetchOne|All() instansoi ja palauttaa. Ei tarkoitettu
+ * käytettäväksi manuaalisesti.
+ */
 class DAO {
     public $fetchRevisions;
     protected $db;
-    protected $counter;
-    protected $frontendPanelInfos;
     protected $contentTypes;
     /**
      * @param \Pike\Db $db
@@ -22,8 +24,6 @@ class DAO {
                                 $fetchRevisions = false) {
         $this->db = $db;
         $this->contentTypes = $contentTypes;
-        $this->counter = 0;
-        $this->frontendPanelInfos = [];
         $this->fetchRevisions = $fetchRevisions;
     }
     /**
@@ -34,7 +34,7 @@ class DAO {
         [$contentTypeName, $alias] = self::parseContentTypeNameAndAlias($contentTypeName);
         // @allow \Pike\PikeException
         $type = $this->getContentType($contentTypeName);
-        return new Query(++$this->counter, $type, $alias, true, $this);
+        return new Query($type, $alias, true, $this);
     }
     /**
      * @param string $contentTypeName eg. 'Article', 'Product', 'Movie', 'Employee'
@@ -44,39 +44,16 @@ class DAO {
         [$contentTypeName, $alias] = self::parseContentTypeNameAndAlias($contentTypeName);
         // @allow \Pike\PikeException
         $type = $this->getContentType($contentTypeName);
-        return new Query(++$this->counter, $type, $alias, false, $this);
-    }
-    /**
-     * @param string $queryId
-     * @param string $contentTypeName
-     * @param string $implName
-     * @param string $title
-     * @param string $highlightSelector
-     */
-    public function addFrontendPanelInfo($queryId,
-                                         $contentTypeName,
-                                         $implName,
-                                         $title,
-                                         $highlightSelector) {
-        $this->frontendPanelInfos[$queryId] = (object)[
-            'id' => $queryId,
-            'impl' => $implName,
-            'title' => $title,
-            'contentTypeName' => $contentTypeName,
-            'contentNodes' => null,
-            'highlightSelector' => $highlightSelector,
-        ];
+        return new Query($type, $alias, false, $this);
     }
     /**
      * @param string $sql
-     * @param string $queryId
      * @param bool $isFetchOne
      * @param array $bindVals = null
      * @param object $join = null {contentType: string, collector: [\Closure, string]}
      * @return array|object|null
      */
     public function doExec($sql,
-                           $queryId,
                            $isFetchOne,
                            $bindVals = null,
                            $join = null) {
@@ -96,17 +73,7 @@ class DAO {
 				$rows, $isFetchOne, $out);
 		}
         //
-        if (isset($this->frontendPanelInfos[$queryId])) {
-            $this->frontendPanelInfos[$queryId]->contentNodes = $out;
-        }
-        //
         return $out;
-    }
-    /**
-     * @return array Array<{id: string, impl: string, ...}>
-     */
-    public function getFrontendPanelInfos() {
-        return array_values($this->frontendPanelInfos);
     }
     /**
      * @return \RadCms\ContentType\ContentTypeDef

@@ -7,32 +7,28 @@ use RadCms\ContentType\ContentTypeValidator;
 use Pike\PikeException;
 
 /**
- * Luokka jonka templaattien <?php $this->fetchOne|All() ?> instansoi ja
- * palauttaa. Ei tarkoitettu käytettäväksi manuaalisesti.
+ * Luokka jonka DAO->fetchOne|All() instansoi ja palauttaa. Ei tarkoitettu
+ * käytettäväksi manuaalisesti.
  */
 class Query {
-    private $id;
-    private $contentType;
-    private $contentTypeAlias;
-    private $isFetchOne;
-    private $dao;
-    private $whereDef;
-    private $orderByExpr;
-    private $limitExpr;
-    private $joinDefs;
+    protected $contentType;
+    protected $contentTypeAlias;
+    protected $isFetchOne;
+    protected $dao;
+    protected $whereDef;
+    protected $orderByExpr;
+    protected $limitExpr;
+    protected $joinDefs;
     /**
-     * $param integer $id
      * $param \RadCms\ContentType\ContentTypeDef $contentType
      * $param string $contentTypeAlias
      * $param bool $isFetchOne
      * $param \RadCms\Content\DAO $dao
      */
-    public function __construct($id,
-                                ContentTypeDef $contentType,
+    public function __construct(ContentTypeDef $contentType,
                                 $contentTypeAlias,
                                 $isFetchOne,
                                 DAO $dao) {
-        $this->id = strval($id);
         $this->contentType = $contentType;
         $this->contentTypeAlias = $contentTypeAlias;
         $this->isFetchOne = $isFetchOne;
@@ -86,17 +82,6 @@ class Query {
         return $this;
     }
     /**
-     * @param string $panelType
-     * @param string $title = ''
-     * @param string $highlightSelector = ''
-     * @return $this
-     */
-    public function createFrontendPanel($panelType, $title = '', $highlightSelector = '') {
-        $this->dao->addFrontendPanelInfo($this->id, $this->contentType->name, $panelType,
-            $title ? $title : $this->contentType->name, $highlightSelector);
-        return $this;
-    }
-    /**
      * @return array|object|null
      */
     public function exec() {
@@ -106,7 +91,7 @@ class Query {
         foreach ($this->joinDefs as $d)
             if ($d->bindVals) $bindVals = array_merge($bindVals, $d->bindVals);
         //
-        return $this->dao->doExec($this->toSql(), $this->id, $this->isFetchOne,
+        return $this->dao->doExec($this->toSql(), $this->isFetchOne,
                                   $bindVals ?? null, $this->joinDefs[0] ?? null);
     }
     /**

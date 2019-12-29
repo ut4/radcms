@@ -14,7 +14,7 @@ use Pike\FileSystem;
  * $nodes = $this->fetchAll(...) ?> ja <?= $this->url('/slug') ?>).
  */
 class MagicTemplate extends Template {
-    private $__contentNodeDao;
+    private $__contentDao;
     private $__fileExists;
     private static $__aliases = [];
     /**
@@ -28,7 +28,7 @@ class MagicTemplate extends Template {
                                 MagicTemplateDAO $dao = null,
                                 FileSystem $fs = null) {
         parent::__construct($file, $vars);
-        $this->__contentNodeDao = $dao;
+        $this->__contentDao = $dao;
         $this->__fileExists = function ($path) use ($fs) { return $fs->isFile($path); };
     }
     /**
@@ -69,7 +69,7 @@ class MagicTemplate extends Template {
      */
     public function fetchAll($contentTypeName) {
         // @allow \Pike\PikeException
-        return $this->__contentNodeDao->fetchAll($contentTypeName);
+        return $this->__contentDao->fetchAll($contentTypeName);
     }
     /**
      * @param string $contentTypeName
@@ -78,7 +78,7 @@ class MagicTemplate extends Template {
      */
     public function fetchOne($contentTypeName) {
         // @allow \Pike\PikeException
-        return $this->__contentNodeDao->fetchOne($contentTypeName);
+        return $this->__contentDao->fetchOne($contentTypeName);
     }
     /**
      * @param string $str
