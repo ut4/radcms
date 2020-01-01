@@ -13,8 +13,8 @@ class ContentAddView extends preact.Component {
         super(props);
         this.state = {
             contentTypes: null,
-            newCnode: null,
-            ctype: null,
+            newContentNode: null,
+            contentType: null,
             createRevision: false,
         };
         services.http.get('/api/content-types/no-internals')
@@ -33,7 +33,6 @@ class ContentAddView extends preact.Component {
      */
     render() {
         if (!this.state.contentTypes) return null;
-        if (!this.state.ctype) return $el(`Sisältötyyppiä ${this.props.initialContentType} ei löytynyt.`);
         return $el(View, null, $el(Form, {onConfirm: e => this.handleFormSubmit(e),
                                           confirmButtonText: 'Lisää',
                                           autoClose: false},
@@ -41,15 +40,15 @@ class ContentAddView extends preact.Component {
             $el('label', null,
                 $el('span', {'data-help-text': 'Dev note: Voit luoda uusia sisältötyyppejä muokkaamalla site.json-tiedostoa (ks. https://todo).'}, 'Sisältötyyppi'),
                 $el('select', {onChange: e => this.receiveContentTypeSelection(e),
-                               value: this.state.ctype.name},
+                               value: this.state.contentType.name},
                     this.state.contentTypes.map(type =>
                         $el('option', {value: type.name}, type.friendlyName)
                     ))
             ),
-            $el(ContentNodeFieldList, {cnode: this.state.newCnode,
-                                       ctype: this.state.ctype,
+            $el(ContentNodeFieldList, {contentNode: this.state.newContentNode,
+                                       contentType: this.state.contentType,
                                        ref: cmp => { if (cmp) this.fieldListCmp = cmp; },
-                                       key: this.state.ctype.name}),
+                                       key: this.state.contentType.name}),
             $el('div', null,
                 $el('input', {id: 'i-create-rev', type: 'checkbox',
                               onChange: e => this.setState({createRevision: e.target.checked})}),
@@ -62,7 +61,7 @@ class ContentAddView extends preact.Component {
      */
     handleFormSubmit() {
         const revisionSettings = this.state.createRevision ? '/with-revision' : '';
-        return services.http.post(`/api/content/${this.state.ctype.name}${revisionSettings}`,
+        return services.http.post(`/api/content/${this.state.contentType.name}${revisionSettings}`,
             Object.assign({isPublished: revisionSettings === ''},
                           this.fieldListCmp.getResult()))
             .then(() => {
@@ -77,16 +76,16 @@ class ContentAddView extends preact.Component {
      */
     receiveContentTypeSelection(e) {
         this.setContentTypeAndCreateEmptyContentNode(e.target.value, this.state);
-        this.setState({ctype: this.state.ctype, newCnode: this.state.newCnode});
+        this.setState({contentType: this.state.contentType, newContentNode: this.state.newContentNode});
     }
     /**
      * @access private
      */
     setContentTypeAndCreateEmptyContentNode(ctypeName, newState) {
-        newState.ctype = newState.contentTypes.find(t => t.name === ctypeName);
-        newState.newCnode = {};
-        newState.ctype.fields.forEach(field => {
-            newState.newCnode[field.name] = '';
+        newState.contentType = newState.contentTypes.find(t => t.name === ctypeName);
+        newState.newContentNode = {};
+        newState.contentType.fields.forEach(field => {
+            newState.newContentNode[field.name] = '';
         });
     }
 }

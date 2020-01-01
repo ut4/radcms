@@ -1,5 +1,6 @@
 import {components} from '../../rad-commons.js';
 import ContentAddView from './Content/ContentAddView.js';
+import ContentManageView from './Content/ContentManageView.js';
 import ContentEditView from './Content/ContentEditView.js';
 import PluginsManageView from './Plugin/PluginsManageView.js';
 import WebsitePackView from './Website/WebsitePackView.js';
@@ -67,6 +68,7 @@ class ControlPanelApp extends preact.Component {
                     }
                 },
                 $el(ContentAddView, {path: '/add-content/:initialContentTypeName?'}),
+                $el(ContentManageView, {path: '/manage-content'}),
                 $el(ContentEditView, {path: '/edit-content/:id/:contentTypeName/:publish?'}),
                 $el(PluginsManageView, {path: '/manage-plugins'}),
                 $el(WebsitePackView, {path: '/pack-website'}),
@@ -109,11 +111,17 @@ class ControlPanelApp extends preact.Component {
             this.adminUiPanels.map(panelCfg =>
                 $el(ControlPanelApp.AdminTabSection, {panelCfg, siteInfo: this.siteInfo})
             ).concat($el('div', null,
-                $el('h3', null, 'Sivusto'),
-                $el('div', null, $el(MyLink, {to: '/pack-website'}, 'Paketoi')),
+                $el('h3', null, 'Sisältö'),
+                $el('div', null,
+                    $el('div', null, $el(MyLink, {to: '/manage-content'}, 'Selaa')),
+                    $el('div', null, $el(MyLink, {to: '/add-content'}, 'Luo'))
+                ),
             ), $el('div', null,
                 $el('h3', null, 'Lisäosat'),
-                $el('div', null, $el(MyLink, {to: '/manage-plugins'}, 'Hallitse')),
+                $el('div', null, $el(MyLink, {to: '/manage-plugins'}, 'Selaa')),
+            ), $el('div', null,
+                $el('h3', null, 'Sivusto'),
+                $el('div', null, $el(MyLink, {to: '/pack-website'}, 'Paketoi')),
             ))
         );
     }

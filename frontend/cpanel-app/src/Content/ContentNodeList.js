@@ -3,11 +3,11 @@ const {MyLink} = components;
 import CNodeUtils from './Utils.js';
 
 /**
- * @param {{cnodes: Array<ContentNode>; createLinkText: string; currentPageUrl: string; contentType?: string;}} props
+ * @param {{contentNodes: Array<ContentNode>; createLinkText: string; currentPageUrl: string; contentType?: string;}} props
  */
 function ContentNodeList(props) {
     return $el('div', null,
-        $el('ul', null, props.cnodes.map(c =>
+        $el('ul', null, props.contentNodes.map(c =>
             $el('li', null,
                 $el('span', null, CNodeUtils.makeTitle(c)),
                 $el(MyLink, {to: '/edit-content/' + c.id + '/' + props.contentType + '?returnTo=' +

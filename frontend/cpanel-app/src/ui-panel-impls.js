@@ -73,7 +73,7 @@ class GenericListUIPanelImpl extends preact.Component {
      */
     constructor(props) {
         super(props);
-        this.cnodes = props.dataFromBackend.contentNodes;
+        this.contentNodes = props.dataFromBackend.contentNodes;
         this.currentPagePath = props.siteInfo.currentPagePath;
         this.contentTypeName = props.dataFromBackend.contentTypeName;
         this.label = '';
@@ -89,10 +89,10 @@ class GenericListUIPanelImpl extends preact.Component {
     }
     render() {
         return $el(ContentNodeList, {
-            cnodes: this.cnodes,
+            contentNodes: this.contentNodes,
             createLinkText: 'Lisää uusi ' + this.label,
             currentPagePath: this.currentPagePath,
-            contentType: this.contentTypeName || (this.cnodes[0] || {}).contentType
+            contentType: this.contentTypeName || (this.contentNodes[0] || {}).contentType
         });
     }
 }

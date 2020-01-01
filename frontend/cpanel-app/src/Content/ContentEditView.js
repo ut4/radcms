@@ -12,8 +12,8 @@ class ContentEditView extends preact.Component {
     constructor(props) {
         super(props);
         this.state = {
-            cnode: null,
-            ctype: null,
+            contentNode: null,
+            contentType: null,
             doPublish: false,
         };
         this.updateState(this.props);
@@ -29,7 +29,7 @@ class ContentEditView extends preact.Component {
      * @access private
      */
     updateState(props) {
-        const newState = {cnode: null, ctype: null, doPublish: !!props.publish};
+        const newState = {contentNode: null, contentType: null, doPublish: !!props.publish};
         this.title = 'Muokkaa sisältöä';
         this.confirmButtonText = 'Tallenna';
         if (newState.doPublish) {
@@ -38,11 +38,11 @@ class ContentEditView extends preact.Component {
         }
         services.http.get(`/api/content/${props.id}/${props.contentTypeName}`)
             .then(cnode => {
-                newState.cnode = cnode;
+                newState.contentNode = cnode;
                 return services.http.get('/api/content-types/' + props.contentTypeName);
             })
             .then(ctype => {
-                newState.ctype = ctype;
+                newState.contentType = ctype;
             })
             .catch(() => {
                 toast('Jokin meni pieleen', 'error');
@@ -55,18 +55,18 @@ class ContentEditView extends preact.Component {
      * @access protected
      */
     render() {
-        if (!this.state.ctype) return null;
-        const showPublishToggle = !this.props.publish && this.state.cnode.isRevision;
+        if (!this.state.contentType) return null;
+        const showPublishToggle = !this.props.publish && this.state.contentNode.isRevision;
         return $el(View, null, $el(Form, {onConfirm: e => this.handleFormSubmit(e),
                                           confirmButtonText: this.confirmButtonText,
                                           autoClose: false},
             $el('h2', null, this.title, showPublishToggle
                 ? $el('sup', null, ' (Luonnos)')
                 : null),
-            $el(ContentNodeFieldList, {key: this.state.cnode.id,
-                                       cnode: this.state.cnode,
-                                       ctype: this.state.ctype,
-                                       ref: cmp => { if (cmp) this.fieldListCmp = cmp; }}),
+            $el(ContentNodeFieldList, {contentNode: this.state.contentNode,
+                                       contentType: this.state.contentType,
+                                       ref: cmp => { if (cmp) this.fieldListCmp = cmp; },
+                                       key: this.state.contentNode.id}),
             showPublishToggle
                 ? $el('div', null,
                     $el('input', {id: 'i-create-rev', type: 'checkbox',
@@ -82,8 +82,8 @@ class ContentEditView extends preact.Component {
     handleFormSubmit() {
         const revisionSettings = !this.state.doPublish ? '' : '/publish';
         return services.http.put(`/api/content/${this.props.id}/${this.props.contentTypeName}${revisionSettings}`,
-            Object.assign({isPublished: this.state.cnode.isPublished,
-                           isRevision: this.state.cnode.isRevision},
+            Object.assign({isPublished: this.state.contentNode.isPublished,
+                           isRevision: this.state.contentNode.isRevision},
                           this.fieldListCmp.getResult())
         )
         .then(() => {
