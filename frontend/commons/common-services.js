@@ -5,9 +5,9 @@ const config = {
 
 function redirect(to, full) {
     if (!full) {
-        window.parent.location.hash = '#' + to;
+        window.location.hash = '#' + to;
     } else {
-        window.parent.location.href = window.parent.location.origin + config.baseUrl + to.substr(1);
+        window.location.href = window.location.origin + config.baseUrl + 'edit' + (to.length > 1 ? to : to.substr(1));
     }
 }
 

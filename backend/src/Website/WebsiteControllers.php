@@ -6,7 +6,6 @@ use Pike\Request;
 use Pike\Response;
 use RadCms\Templating\MagicTemplate;
 use RadCms\Content\MagicTemplateDAO as ContentNodeDAO;
-use Pike\SessionInterface;
 use RadCms\AppState;
 use Pike\Db;
 use RadCms\ContentType\ContentTypeCollection;
@@ -18,25 +17,15 @@ use Pike\PikeException;
  */
 class WebsiteControllers {
     private $siteCfg;
-    private $session;
     private $appState;
     /**
      * @param \RadCms\Website\SiteConfig $siteConfig
      * @param \RadCms\AppState $appState
-     * @param \Pike\SessionInterface $session
      */
-    public function __construct(SiteConfig $siteConfig,
-                                AppState $appState,
-                                SessionInterface $session) {
+    public function __construct(SiteConfig $siteConfig, AppState $appState) {
         // @allow \Pike\PikeException
-        if ($siteConfig->selfLoad(RAD_SITE_PATH . 'site.json') &&
-            ((RAD_FLAGS & RAD_DEVMODE) &&
-             $siteConfig->lastModTime > $appState->contentTypesLastUpdated)) {
-            // @allow \Pike\PikeException
-            $appState->diffAndSaveChangesToDb($siteConfig->contentTypes, 'site.json');
-        }
+        $siteConfig->selfLoad(RAD_SITE_PATH . 'site.json');
         $this->siteCfg = $siteConfig;
-        $this->session = $session;
         $this->appState = $appState;
     }
     /**
@@ -46,7 +35,7 @@ class WebsiteControllers {
      * @param \Pike\Response $response
      * @param \Pike\Db $db
      * @param \RadCms\ContentType\ContentTypeCollection $contentTypes
-     * @throw \Pike\PikeException
+     * @throws \Pike\PikeException
      */
     public function handlePageRequest(Request $req,
                                       Response $res,
@@ -78,27 +67,29 @@ class WebsiteControllers {
         }
         $res->html(!$req->user || ($bodyEnd = strpos($html, '</body>')) === false
             ? $html
-            : $this->injectCpanelIframe($html, $bodyEnd, $cnd, $template, $req));
+            : $this->injectParentWindowCpanelSetupScript($html, $bodyEnd, $cnd, $template, $req));
     }
     /**
-     * '<html>...</body>' -> '<html>...<iframe...></iframe></body>'
+     * '<html>...</body>' -> '<html>...<script>...</script></body>'
      */
-    private function injectCpanelIframe($html, $bodyEnd, $cnd, $template, $req) {
-        $frontendDataKey = strval(time());
-        $this->session->put($frontendDataKey, [
-            'dataToFrontend' => [
-                'contentPanels' => $cnd->getFrontendPanelInfos(),
-                'adminPanels' => $this->appState->pluginFrontendAdminPanelInfos,
-                'baseUrl' => $template->url('/'),
-                'assetBaseUrl' => $template->assetUrl('/'),
-                'currentPagePath' => $req->path,
-            ],
-            'pluginJsFiles' => $this->appState->pluginJsFiles,
+    private function injectParentWindowCpanelSetupScript($html, $bodyEnd, $cnd, $template, $req) {
+        $dataToFrontend = json_encode([
+            'contentPanels' => $cnd->getFrontendPanelInfos(),
+            'adminPanels' => $this->appState->pluginFrontendAdminPanelInfos,
+            'baseUrl' => $template->url('/'),
+            'assetBaseUrl' => $template->assetUrl('/'),
+            'currentPagePath' => $req->path,
         ]);
-        $this->session->commit();
         return substr($html, 0, $bodyEnd) .
-            '<iframe src="' . $template->url('/cpanel/' . $frontendDataKey) .
-                '" id="rad-cpanel-iframe"></iframe>' .
-            substr($html, $bodyEnd);
+            "<script>(function (data) {
+                var s = document.createElement('style');
+                s.innerHTML = '#rad-highlight-overlay{position:absolute;background-color:rgba(0,90,255,0.18);z-index:0}';
+                document.head.appendChild(s);
+                //
+                var editWindow = window.parent;
+                if (editWindow.radCpanelApp) editWindow.radCpanelApp.setup(data);
+                else editWindow.radData = data;
+            }({$dataToFrontend}))</script>" .
+        substr($html, $bodyEnd);
     }
 }

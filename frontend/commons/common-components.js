@@ -6,12 +6,13 @@ const $el = preact.createElement;
  * @param {Object} content
  */
 function View(props) {
-    return $el('div', {className: 'view'},
-        $el('button', {onClick: () => services.redirect('/')},
+    return $el('div', {id: 'view'}, $el('div', null,
+        $el('button', {onClick: () => services.redirect('/'),
+                       className: 'icon-button'},
             $el(FeatherSvg, {iconId: 'x'})
         ),
         props.children
-    );
+    ));
 }
 
 class Form extends preact.Component {
@@ -30,15 +31,11 @@ class Form extends preact.Component {
             this.props.children,
             $el('div', {className: 'form-buttons'},
                 $el('button', {
-                    className: 'nice-button nice-button-primary',
+                    className: 'nice-button primary',
                     type: 'submit',
                     disabled: this.doDisableConfirmButton()
                 }, this.props.confirmButtonText || 'Ok'),
-                $el('button', {
-                    className: 'text-button',
-                    type: 'button',
-                    onClick: e => this.cancel(e)
-                }, this.props.cancelButtonText || 'Cancel')
+                $el(MyLink, {to: '/'}, this.props.cancelButtonText || 'Cancel')
             )
         );
     }

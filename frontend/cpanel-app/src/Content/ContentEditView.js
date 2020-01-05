@@ -57,7 +57,7 @@ class ContentEditView extends preact.Component {
     render() {
         if (!this.state.contentType) return null;
         const showPublishToggle = !this.props.publish && this.state.contentNode.isRevision;
-        return $el(View, null, $el(Form, {onConfirm: e => this.handleFormSubmit(e),
+        return $el(View, null, $el(Form, {onConfirm: () => this.handleFormSubmit(),
                                           confirmButtonText: this.confirmButtonText,
                                           autoClose: false},
             $el('h2', null, this.title, showPublishToggle

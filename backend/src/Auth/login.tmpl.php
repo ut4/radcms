@@ -51,7 +51,7 @@
                 return res.json();
             })
             .then(function (info) {
-                if (info.ok) window.location.href = '<?= $this->url('') ?>';
+                if (info.ok) window.location.href = '<?= $this->url('/edit') ?>';
                 else if (info.err) showMainError(info.err);
                 else throw new Error('wut?');
             })

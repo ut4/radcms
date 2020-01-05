@@ -6,9 +6,6 @@ import ContentNodeList from './Content/ContentNodeList.js';
  * Implementoi hallintapaneeliosion <?php $this->fetchOne(...)->createFrontendPanel('Generic', 'My title') ?> kutsuille, jolla loppukäyttäjä voi muokata sisältöä.
  */
 class GenericUIPanelImpl extends preact.Component {
-    static getRoutes() {
-        return [];
-    }
     /**
      * @param {{dataFromBackend: FrontendPanelConfig; siteInfo: SiteInfo;}} props
      */
@@ -65,9 +62,6 @@ class GenericUIPanelImpl extends preact.Component {
  * Implementoi hallintapaneeliosion <?php $this->fetchAll(...)->createFrontendPanel('List', 'My title') ?> kutsuille.
  */
 class GenericListUIPanelImpl extends preact.Component {
-    static getRoutes() {
-        return [];
-    }
     /**
      * @param {{dataFromBackend: FrontendPanelConfig; siteInfo: SiteInfo;}} props
      */
