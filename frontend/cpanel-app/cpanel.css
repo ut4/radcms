@@ -97,12 +97,27 @@ section > div > div:last-of-type {
 section h3 {
     font: normal 14px/14px "Fira sans light";
     margin: 6px 0 15px;
+    padding-right: 22px;
+    position: relative;
 }
-section h3 .feather {
+section h3 span .feather {
     float: left;
     width: 17px;
     height: 17px;
-    margin: -1px 7px 0 0;
+    margin-top: -1px;
+    padding-right: 7px;
+}
+section h3 span > i {
+    font-size: 11px;
+    display: block;
+    color: rgba(255,255,255,0.4);
+}
+section .ui-panel .icon-button {
+    background-color: transparent;
+    color: rgba(255,255,255,0.4);
+    position: absolute;
+    right: -5px;
+    top: -7px;
 }
 section a {
     font-size: 12px;
@@ -158,8 +173,116 @@ section.quick-links .icon-button .feather {
     background-color: transparent;
 }
 
+
+/* == Popup overlay ========================================================= */
+.popup-dialog-dialog {
+    width: 100%;
+    height: 100%;
+    position: fixed;
+    left: 0;
+    top: 0;
+    min-width: 200px;
+    min-height: 200px;
+    z-index: 1;
+    padding: 0 15px;
+    background-color: rgba(0,0,0,0.4);
+}
+.popup-dialog-dialog > div {
+    margin: 20px auto;
+    max-width: 600px;
+    width: 100%;
+    border-radius: 2px;
+    background-color: #fff;
+    padding: 20px;
+}
+.popup-dialog-dialog h2 {
+    margin: 0 0 15px;
+}
+.item-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5px;
+}
+.item-list > button {
+    border: none;
+    padding: 5px;
+    border-radius: 2px;
+    cursor: pointer;
+    margin-bottom: 21px;
+    position: relative;
+    background-color: rgba(0,0,0,0.05);
+}
+.item-list > button:after {
+    content: attr(data-caption);
+    position: absolute;
+    left: 0;
+    bottom: -24px;
+}
+.item-list > button:hover {
+    background-color: rgba(0,0,0,0.08);
+}
+.item-list > button.selected {
+    border: 2px solid #37c1ff;
+}
+.item-list img {
+    width: 100%;
+}
+
+
+/* == PikaDay datepicker ==================================================== */
+.datepicker-container {
+    position: absolute;
+}
+
+.pika-table {
+    table-layout: fixed;
+}
+.pika-table th:first-of-type {
+    width: 10%;
+}
+.pika-table .pika-week {
+    vertical-align: middle;
+}
+.pika-table td .pika-button {
+    text-align: center;
+}
+.pika-time-container {
+    margin-bottom: 16px;
+}
+
+table.pika-time {
+    margin: 0 auto;
+    width: auto;
+}
+.pika-time td {
+    padding: 0 1px 0;
+    font-weight: bold;
+    line-height: 25px;
+}
+.pika-time select {
+    padding: 2px;
+    margin-bottom: 0;
+    width: 80px;
+}
+
+.datepicker.large td .pika-button {
+    padding: 10px;
+}
+.datepicker.large .pika-lendar {
+    width: auto;
+    max-width: 330px;
+}
+
+
+/* == Form extensions ======================================================= */
 .form-buttons a {
     margin-left: 20px;
     text-decoration: none;
     color: inherit;
+}
+label > div[contenteditable] {
+    display: inline-block;
+    border-bottom: 1px dashed #999;
+    width: auto;
+    padding-bottom: 3px;
 }

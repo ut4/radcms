@@ -37,10 +37,14 @@ class PluginsManageView extends preact.Component {
                             !plugin.isInstalled
                                 ? $el('button', {onClick: () => {
                                                      this.installPlugin(plugin, i);
-                                                 }}, 'Asenna')
+                                                 },
+                                                 className: 'nice-button small'},
+                                      'Asenna')
                                 : $el('button', {onClick: () => {
                                                      this.uninstallPlugin(plugin, i);
-                                                 }}, 'Poista asennus')
+                                                 },
+                                                 className: 'nice-button small'},
+                                      'Poista asennus')
                         )
                     )
                 ))

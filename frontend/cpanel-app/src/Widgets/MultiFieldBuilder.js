@@ -1,4 +1,6 @@
 import makeWidgetComponent, {widgetTypes} from '../Widgets/all.js';
+import {components} from '../../../rad-commons.js';
+const {InputGroup} = components;
 
 let idCounter = 0;
 
@@ -25,11 +27,14 @@ class MultiFieldBuilder extends preact.Component {
     render() {
         return $el('div', null,
             this.state.fields.map(field => $el('div', null,
-                $el('label', {onInput: e => { this.updateFieldName(e.target.textContent, field); },
-                              contentEditable: true}, field.name),
-                $el(makeWidgetComponent(field.type), {field, key: field.id, onChange: val => {
-                    this.emitChange(val, field);
-                }})
+                $el(InputGroup,
+                    {label: _props =>
+                        $el('div', {onInput: e => { this.updateFieldName(e.target.textContent, field); },
+                                    contentEditable: true}, field.name)},
+                    $el(makeWidgetComponent(field.type), {field, key: field.id, onChange: val => {
+                        this.emitChange(val, field);
+                    }})
+                )
             )),
             !this.state.addFieldDialogIsOpen
                 ? $el('button', {onClick: () => this.setState({addFieldDialogIsOpen: true}),

@@ -15,6 +15,20 @@ function View(props) {
     ));
 }
 
+/**
+ * @param {{label: string|function; id?: string; className?: string; inline?: boolean;}} props
+ */
+function InputGroup(props) {
+    const id = props.id || (props.children && props.children.props && props.children.props.id);
+    return $el('div', {className: (!props.inline ? 'input-group' : 'input-group-inline') +
+                                  (!props.className ? '' : ` ${props.className}`)},
+        props.children,
+        $el('label', id ? {for: id} : null,
+            typeof props.label === 'string' ? props.label : $el(props.label)
+        )
+    );
+}
+
 class Form extends preact.Component {
     /**
      * @param {FormProps} props
@@ -193,4 +207,4 @@ class Tabs extends preact.Component {
     }
 }
 
-export {View, Form, MyLink, FeatherSvg, Toaster, Tabs};
+export {View, InputGroup, Form, MyLink, FeatherSvg, Toaster, Tabs};

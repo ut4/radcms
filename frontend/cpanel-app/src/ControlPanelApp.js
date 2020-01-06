@@ -14,7 +14,7 @@ class ControlPanelApp extends preact.Component {
     constructor(props) {
         super(props);
         this.siteInfo = null;
-        this.siteIframeDoc = null;
+        this.siteIframe = null;
         this.state = this.makeState(props.dataFromBackend);
     }
     /**
@@ -38,26 +38,25 @@ class ControlPanelApp extends preact.Component {
                 onEachMakePanel(Cls, dataFromBackend, isAdminPanel);
             };
             //
-            if (!this.siteIframeDoc) {
+            if (!this.siteInfo) {
                 services.config.baseUrl = dataFromBackend.baseUrl;
                 services.config.assetBaseUrl = dataFromBackend.assetBaseUrl;
                 this.siteInfo = {baseUrl: dataFromBackend.baseUrl,
-                                assetBaseUrl: dataFromBackend.assetBaseUrl,
-                                currentPagePath: dataFromBackend.currentPagePath};
-                const siteIframe = document.getElementById('rad-site-iframe');
-                this.siteIframeDoc = siteIframe.contentDocument;
+                                 assetBaseUrl: dataFromBackend.assetBaseUrl,
+                                 currentPagePath: dataFromBackend.currentPagePath};
+                this.siteIframe = document.getElementById('rad-site-iframe');
                 //
                 newState.adminPanels = [];
                 newState.userDefinedRoutes = [];
-                dataFromBackend.adminPanels.forEach(c => {
-                    makePanel(c, newState.adminPanels, true);
-                });
-                newState.routesUpdated = true;
-            } else {
-                this.siteIframeDoc = document.getElementById('rad-site-iframe').contentDocument;
+                if (dataFromBackend.adminPanels) {
+                    dataFromBackend.adminPanels.forEach(c => {
+                        makePanel(c, newState.adminPanels, true);
+                    });
+                    newState.routesUpdated = true;
+                }
             }
             //
-            dataFromBackend.contentPanels.forEach(p => {
+            if (dataFromBackend.contentPanels) dataFromBackend.contentPanels.forEach(p => {
                 if (!Array.isArray(p.contentNodes)) p.contentNodes = [p.contentNodes];
                 if (!p.contentNodes[0]) p.contentNodes = [];
                 makePanel(p, newState.contentPanels, false);
@@ -86,24 +85,37 @@ class ControlPanelApp extends preact.Component {
                     )
                 )),
                 $el('section', null, $el('div', null,
-                    this.state.contentPanels.map(panelCfg =>
-                        $el(ControlPanelApp.ContentTabSection,
-                            {panelCfg, siteInfo: this.siteInfo,
-                            siteIframeDoc: this.siteIframeDoc, key: panelCfg.dataFromBackend.title})
-                    )
+                    this.state.contentPanels.length
+                        ? this.state.contentPanels.map((panelCfg, i) =>
+                            $el(ControlPanelApp.ContentPanel,
+                                {Renderer: panelCfg.UiImplClass,
+                                 rendererProps: {dataFromBackend: panelCfg.dataFromBackend,
+                                                 siteInfo: this.siteInfo},
+                                 siteIframeDoc: this.siteIframe.contentDocument,
+                                 key: `${panelCfg.dataFromBackend.title}-${i}`})
+                        )
+                        : this.state.routesUpdated ? 'Ei muokattavaa sisältöä tällä sivulla' : null
                 )),
                 $el('section', null, $el('div', null,
                     this.state.adminPanels.map(panelCfg =>
-                        $el(ControlPanelApp.PluginAdminTabSection, {panelCfg, siteInfo: this.siteInfo})
+                        $el(ControlPanelApp.AdminPanel,
+                            {Renderer: panelCfg.UiImplClass,
+                             rendererProps: {dataFromBackend: panelCfg.dataFromBackend,
+                                             siteInfo: this.siteInfo},
+                             isPlugin: true},
+                        )
                     ).concat(
-                        $el(ControlPanelApp.AdminTabSection, {title: 'Kaikki sisältö', icon: 'database'},
+                        $el(ControlPanelApp.AdminPanel,
+                            {Renderer: null, title: 'Kaikki sisältö', icon: 'database'},
                             $el(MyLink, {to: '/manage-content'}, 'Selaa'),
                             $el(MyLink, {to: '/add-content'}, 'Luo')
                         ),
-                        $el(ControlPanelApp.AdminTabSection, {title: 'Lisäosat', icon: 'package'},
+                        $el(ControlPanelApp.AdminPanel,
+                            {Renderer: null, title: 'Lisäosat', icon: 'box'},
                             $el(MyLink, {to: '/manage-plugins'}, 'Selaa')
                         ),
-                        $el(ControlPanelApp.AdminTabSection, {title: 'Sivusto', icon: 'tool'},
+                        $el(ControlPanelApp.AdminPanel,
+                            {Renderer: null, title: 'Sivusto', icon: 'tool'},
                             $el(MyLink, {to: '/pack-website'}, 'Paketoi')
                         )
                     )
@@ -145,86 +157,81 @@ class ControlPanelApp extends preact.Component {
     }
 }
 
-ControlPanelApp.ContentTabSection = class extends preact.Component {
+ControlPanelApp.AdminPanel = class extends preact.Component {
     /**
-     * @param {{panelCfg: FrontendPanelConfig; siteInfo: SiteInfo; siteIframeDoc: HTMLDocument;}} props
+     * @param {{Renderer: any; rendererProps?: any;}} props
      */
     constructor(props) {
         super(props);
-        this.Renderer = props.panelCfg.UiImplClass;
-        this.dataFromBackend = props.panelCfg.dataFromBackend;
-        this.className = `ui-panel ui-panel-${this.dataFromBackend.impl}`;
-        this.state = {title: '', icon: '', collapsed: false};
-        this.toggleHighlight = makeHighlightToggler(this.dataFromBackend.highlightSelector,
-                                                    this.dataFromBackend.selectorIndex,
-                                                    props.siteIframeDoc);
+        this.Renderer = null;
+        this.rendererProps = null;
+        if (props.Renderer) {
+            this.Renderer = props.Renderer;
+            this.rendererProps = Object.assign({}, props.rendererProps || {},
+                {ref: cmp => {
+                    if (cmp && !this.state.title) this.setState({
+                        title: cmp.getTitle() || '-',
+                        icon: cmp.getIcon() || 'feather',
+                    });
+                }});
+        }
+        this.state = {title: props.title || '',
+                      icon: props.icon || '',
+                      collapsed: false};
     }
     /**
      * @access protected
      */
     render() {
-        const isMobile = false;
-        return $el('div', {className: this.className},
+        return $el('div', {className: 'ui-panel'},
             $el('h3', null,
-                $el('span', !isMobile ? {onMouseOver: this.toggleHighlight,
-                                         onMouseOut: this.toggleHighlight}
-                                      : {onClick: this.toggleHighlight},
-                    this.state.icon && $el(FeatherSvg, {iconId: this.state.icon || 'feather'}),
-                    this.state.title
+                $el('span', this.makeTitleProps(),
+                    this.state.icon ? $el(FeatherSvg, {iconId: this.state.icon}) : null,
+                    this.state.title,
+                    !this.props.isPlugin !== false ? null : $el('i', null, 'Lisäosa')
                 ),
-                // $el('button', {onClick: () => this.setState({collapsed: !this.state.collapsed})},
-                //     '[' + (!this.state.collapsed ? '-' : '+') + ']'
-                // )
+                $el('button', {onClick: () => this.setState({collapsed: !this.state.collapsed}),
+                               className: 'icon-button'},
+                    $el(FeatherSvg, {iconId: `chevron-${!this.state.collapsed ? 'up' : 'down'}`})
+                )
             ),
             $el('div', {className: !this.state.collapsed ? '' : 'hidden'},
-                $el(this.Renderer, {dataFromBackend: this.dataFromBackend,
-                                    siteInfo: this.props.siteInfo,
-                                    ref: cmp => {
-                                        if (cmp && !this.state.title) this.setState({
-                                            title: cmp.getTitle() || '-',
-                                            icon: cmp.getIcon() || 'feather',
-                                        });
-                                    }}))
+                this.Renderer
+                    ? $el(this.Renderer, this.rendererProps)
+                    : this.props.children
+            )
         );
+    }
+    /**
+     * @access procted
+     * @override
+     */
+    makeTitleProps() {
+        return null;
     }
 };
 
-ControlPanelApp.AdminTabSection = props => $el('div', null,
-    $el('h3', null,
-        $el(FeatherSvg, {iconId: props.icon}),
-        $el('span', null, props.title)
-    ),
-    $el('div', null,
-        props.children
-    ),
-);
-
-ControlPanelApp.PluginAdminTabSection = class extends preact.Component {
-    /**
-     * @param {{panelCfg: FrontendPanelConfig; siteInfo: SiteInfo;}} props
-     */
-    constructor(props) {
-        super(props);
-        this.state = {title: ''};
-        this.Renderer = props.panelCfg.UiImplClass;
-        this.dataFromBackend = props.panelCfg.dataFromBackend;
-    }
+ControlPanelApp.ContentPanel = class extends ControlPanelApp.AdminPanel {
     /**
      * @access protected
+     * @override
      */
-    render() {
-        return $el('div', null,
-            $el('h3', null,
-                this.state.title,
-                $el('span', null, 'Lisäosa')
-            ),
-            $el(this.Renderer, {dataFromBackend: this.dataFromBackend,
-                                siteInfo: this.props.siteInfo,
-                                ref: cmp => {
-                                    if (cmp && !this.state.title)
-                                        this.setState({title: cmp.getTitle() || '-'});
-                                }})
-        );
+    componentWillMount() {
+        const {dataFromBackend} = this.props.rendererProps;
+        this.toggleHighlight = makeHighlightToggler(dataFromBackend.highlightSelector,
+                                                    dataFromBackend.selectorIndex,
+                                                    this.props.siteIframeDoc);
+    }
+    /**
+     * @access procted
+     * @override
+     */
+    makeTitleProps() {
+        const isMobile = false;
+        return !isMobile
+            ? {onMouseOver: this.toggleHighlight,
+               onMouseOut: this.toggleHighlight}
+            : {onClick: this.toggleHighlight};
     }
 };
 
@@ -264,6 +271,5 @@ function makeHighlightToggler(selector, selectorIndex, siteIframeDoc) {
         }
     };
 }
-
 
 export default ControlPanelApp;

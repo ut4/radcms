@@ -6,29 +6,28 @@
     <meta name="robots" content="noindex,nofollow,noarchive,nosnippet">
     <link rel="stylesheet" href="<?= $this->assetUrl('frontend/common.css') ?>">
     <style>
-        form { text-align: center; max-width: 300px; margin: 0 auto; }
+        form { text-align: center; max-width: 200px; margin: 0 auto; }
         img { width: 100px; margin: 20px 0; }
-        .box { padding: 30px; }
     </style>
 </head>
 <body class="light">
     <form onSubmit="handleFormSubmit(event)">
         <img src="<?= $this->assetUrl('frontend/assets/logo.png') ?>">
-        <div class="hidden box no-highlight-stripe" id="main-err"></div>
-        <div class="box no-highlight-stripe">
-            <label>
-                <span>Username</span>
+        <div class="hidden" id="main-err"></div>
+        <div>
+            <div class="input-group">
                 <input id="username">
+                <label for="username">Username</label>
                 <span id="username-err"></span>
-            </label>
-            <label>
-                <span>Password</span>
+            </div>
+            <div class="input-group">
                 <input type="password" id="password">
+                <label for="password">Password</label>
                 <span id="password-err"></span>
-            </label>
+            </div>
         </div>
         <div class="form-buttons">
-            <button class="nice-button nice-button-primary" type="submit">Log in</button>
+            <button class="nice-button" type="submit">Log in</button>
         </div>
     </form>
     <script>(function () {
@@ -67,11 +66,11 @@
         }
         function showMainError(message) {
             mainErrEl.textContent = message;
-            mainErrEl.classList.remove('hidden');
+            mainErrEl.className = 'container';
         }
         function hideMainError() {
             mainErrEl.textContent = '';
-            mainErrEl.classList.add('hidden');
+            mainErrEl.className = 'hidden';
         }
     }())</script>
 </body>

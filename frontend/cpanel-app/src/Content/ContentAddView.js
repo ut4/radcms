@@ -1,6 +1,6 @@
 import {services, components} from '../../../rad-commons.js';
 import ContentNodeFieldList from './ContentNodeFieldList.js';
-const {View, Form} = components;
+const {View, InputGroup, Form} = components;
 
 /**
  * #/add-content[/:initialComponentTypeName?returnto=<url>]
@@ -37,8 +37,7 @@ class ContentAddView extends preact.Component {
                                           confirmButtonText: 'Lisää',
                                           autoClose: false},
             $el('h2', null, 'Lisää sisältöä'),
-            $el('label', null,
-                $el('span', {'data-help-text': 'Dev note: Voit luoda uusia sisältötyyppejä muokkaamalla site.json-tiedostoa (ks. https://todo).'}, 'Sisältötyyppi'),
+            $el(InputGroup, {label: _props => $el('span', {'data-help-text': 'Dev note: Voit luoda uusia sisältötyyppejä muokkaamalla site.json-tiedostoa (ks. https://todo).'}, 'Sisältötyyppi')},
                 $el('select', {onChange: e => this.receiveContentTypeSelection(e),
                                value: this.state.contentType.name},
                     this.state.contentTypes.map(type =>
@@ -49,10 +48,9 @@ class ContentAddView extends preact.Component {
                                        contentType: this.state.contentType,
                                        ref: cmp => { if (cmp) this.fieldListCmp = cmp; },
                                        key: this.state.contentType.name}),
-            $el('div', null,
+            $el(InputGroup, {label: 'Lisää luonnoksena', inline: true},
                 $el('input', {id: 'i-create-rev', type: 'checkbox',
-                              onChange: e => this.setState({createRevision: e.target.checked})}),
-                $el('label', {for: 'i-create-rev', className: 'inline'}, 'Lisää luonnoksena')
+                              onChange: e => this.setState({createRevision: e.target.checked})})
             )
         ));
     }

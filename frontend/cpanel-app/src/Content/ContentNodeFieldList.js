@@ -1,5 +1,7 @@
 import makeWidgetComponent from '../Widgets/all.js';
 import MultiFieldBuilder from '../Widgets/MultiFieldBuilder.js';
+import {components} from '../../../rad-commons.js';
+const {InputGroup} = components;
 
 class ContentNodeFieldList extends preact.Component {
     /**
@@ -28,8 +30,7 @@ class ContentNodeFieldList extends preact.Component {
     render() {
         return $el('div', null, this.state.contentType.fields.map(field =>
             field.type !== 'hidden' && field.type !== 'multiFieldBuilder'
-                ? $el('div', {className: 'label'},
-                    $el('label', {for: 'field-' + field.name}, field.friendlyName),
+                ? $el(InputGroup, {label: field.friendlyName},
                     this.makeInput(field)
                 )
                 : this.makeInput(field)
