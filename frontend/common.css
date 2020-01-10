@@ -17,6 +17,12 @@ body {
 h2 {
     font: normal 18px/18px "Fira sans light";
 }
+a {
+    color: #5c5a75;
+}
+a:hover {
+    color: #5c5a75d5;
+}
 .hidden {
     display: none;
 }
@@ -29,11 +35,29 @@ h2 {
     stroke-linejoin: round;
     fill: none;
 }
-
+.feather.small,
+.icon-button .feather {
+    width: 18px;
+    height: 18px;
+    vertical-align: top;
+}
 
 /* == Layout ================================================================ */
 .container:not(:last-of-type) {
     margin-bottom: 24px;
+}
+
+
+/* == Components ============================================================ */
+.box {
+    padding: 15px 18px;
+    background-color: #fff;
+    border-radius: 2px;
+    box-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+    border-top: 2px solid #34e6de;
+}
+.box h2 {
+    margin: 0 15px 24px 0;
 }
 
 
@@ -55,25 +79,21 @@ h2 {
     box-sizing: border-box;
 }
 .input-group input:enabled:focus,
-.input-group select:enabled:focus,
-.input-group textarea:enabled:focus {
+.input-group textarea:enabled:focus ,
+.input-group select:enabled:focus{
     outline: none;
+    border-color: #2dccc4;
 }
 .input-group input:enabled:hover,
 .input-group textarea:enabled:hover,
 .input-group select:enabled:hover {
     border-color: #aaa;
 }
-.input-group input:enabled:focus,
-.input-group textarea:enabled:focus,
-.input-group select:enabled:focus {
-    border-color: #2dccc4;
-}
 .input-group input:disabled,
 .input-group textarea:disabled,
 .input-group select:disabled {
-    background-color: #ddd;
-    border-color: transparent;
+    background-color: #fff;
+    border-color: #d8d8d8;
     cursor: not-allowed;
 }
 
@@ -94,8 +114,7 @@ h2 {
 .input-group input:disabled + label,
 .input-group textarea:disabled + label,
 .input-group select:disabled + label {
-    color: #afafaf;
-    background-color: transparent;
+    color: #d0d0d0;
 }
 .input-group input:enabled:focus + label,
 .input-group textarea:enabled:focus + label,
@@ -108,10 +127,10 @@ h2 {
 
 
 /* == Buttons =============================================================== */
-.nice-button:enabled:focus,
-.icon-button:enabled:focus {
+.nice-button,
+.icon-button {
     cursor: pointer;
-    outline: none;
+    color: inherit;
 }
 .nice-button {
     background-color: #f5f5f5;
@@ -120,7 +139,6 @@ h2 {
     padding: 12px 24px;
     font: normal 14px/14px "Fira sans light";
     transition: background-color 0.1s ease-out 0s;
-    color: inherit;
 }
 .nice-button.small {
     padding: 6px 12px;
@@ -131,33 +149,30 @@ h2 {
     color: #aaa;
     cursor: not-allowed;
 }
-.nice-button.primary:enabled {
-    background-color: #2dccc4;
-    color: #fff;
-}
 .nice-button:enabled:hover {
     background-color: #f2f2f2;
     box-shadow: 0 1px 1px rgba(0,0,0,0.2);
 }
+.nice-button:enabled:active,
+.nice-button.primary:enabled:active,
+.icon-button:enabled:active {
+    box-shadow: none;
+    outline: none;
+}
+.nice-button.primary:enabled {
+    background-color: #2dccc4;
+    color: #fff;
+}
 .nice-button.primary:enabled:hover {
     background-color: #33d6ce;
-}
-.nice-button:enabled:active {
-    box-shadow: none;
 }
 
 .icon-button {
     background-color: #f5f5f5;
-    border: none;
-    color: inherit;
+    border: 1px solid transparent;
     padding: 6px;
     font: normal 12px/12px "Fira sans light";
     text-align: center;
-}
-.icon-button .feather {
-    width: 18px;
-    height: 18px;
-    vertical-align: top;
 }
 .icon-button span {
     margin: 0 3px 0 7px;

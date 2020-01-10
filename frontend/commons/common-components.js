@@ -6,7 +6,7 @@ const $el = preact.createElement;
  * @param {Object} content
  */
 function View(props) {
-    return $el('div', {id: 'view'}, $el('div', null,
+    return $el('div', {id: 'view'}, $el('div', {className: 'box'},
         $el('button', {onClick: () => services.redirect('/'),
                        className: 'icon-button'},
             $el(FeatherSvg, {iconId: 'x'})
@@ -16,15 +16,16 @@ function View(props) {
 }
 
 /**
- * @param {{label: string|function; id?: string; className?: string; inline?: boolean;}} props
+ * @param {{label: string|function?; id?: string; className?: string; inline?: boolean;}} props
  */
 function InputGroup(props) {
     const id = props.id || (props.children && props.children.props && props.children.props.id);
+    const label = props.label !== undefined && props.label !== null ? props.label : '';
     return $el('div', {className: (!props.inline ? 'input-group' : 'input-group-inline') +
                                   (!props.className ? '' : ` ${props.className}`)},
         props.children,
         $el('label', id ? {for: id} : null,
-            typeof props.label === 'string' ? props.label : $el(props.label)
+            typeof label === 'string' ? label : $el(label)
         )
     );
 }
@@ -117,10 +118,10 @@ function MyLink(props) {
 }
 
 /**
- * @param {{iconId: string;}} eg. 'activity' (see: feathericons.com)
+ * @param {{iconId: string; className?: string}} eg. 'activity' (see: feathericons.com)
  */
 function FeatherSvg(props) {
-    return $el('svg', {className: 'feather'},
+    return $el('svg', {className: 'feather' + (!props.className ? '' : ` ${props.className}`)},
         $el('use', {'xlink:href': services.config.assetBaseUrl + 'frontend/assets/feather-sprite.svg#' + props.iconId},
             null)
     );

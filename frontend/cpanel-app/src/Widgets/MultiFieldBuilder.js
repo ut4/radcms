@@ -2,8 +2,6 @@ import makeWidgetComponent, {widgetTypes} from '../Widgets/all.js';
 import {components} from '../../../rad-commons.js';
 const {InputGroup} = components;
 
-let idCounter = 0;
-
 /**
  * Widgetti, jolla voi rakentaa yhteen sisältötyypin kenttään jsonin, jossa on
  * useita erityyppisiä kenttiä. Muistuttaa konseptiltaan Wordpressin Gutenberg-
@@ -15,17 +13,20 @@ class MultiFieldBuilder extends preact.Component {
      */
     constructor(props) {
         super(props);
-        this.state = {
-            addFieldDialogIsOpen: false,
-            fields: props.fields.length ? props.fields : [makeField(widgetTypes[0].name)]
-        };
+        this.idCounter = 0;
+        if (props.fields.length) {
+            this.state = {fields: props.fields};
+            this.idCounter = props.fields.reduce((max, p) => p.id > max ? p.id : max, 0);
+        } else {
+            this.state = {fields: [this.makeField(widgetTypes[0].name)]};
+        }
         this.emitChange();
     }
     /**
      * @access protected
      */
     render() {
-        return $el('div', null,
+        return $el('div', {className: 'multi-field-builder'},
             this.state.fields.map(field => $el('div', null,
                 $el(InputGroup,
                     {label: _props =>
@@ -36,25 +37,28 @@ class MultiFieldBuilder extends preact.Component {
                     }})
                 )
             )),
-            !this.state.addFieldDialogIsOpen
-                ? $el('button', {onClick: () => this.setState({addFieldDialogIsOpen: true}),
-                                 type: 'button'}, 'Lisää kenttä')
-                : $el('div', {className: 'popup-dialog-dialog'}, $el('div', {className: 'box'},
-                    $el('div', {className: 'main'}, $el('div', {className: 'item-list'},
-                        widgetTypes.map(w =>
-                            $el('button', {onClick: () => this.addField(w.name),
-                                           type: 'button'}, w.description)
-                        )
-                    ))
-                ))
+            $el('button', {onClick: () => popupDialog.open(() =>
+                                $el('div', {className: 'popup-dialog'}, $el('div', {className: 'box'},
+                                    $el('div', {className: 'main'},
+                                        $el('h2', null, 'Valitse tyyppi'),
+                                        $el('div', {className: 'item-grid'}, widgetTypes.map(w =>
+                                            $el('button', {onClick: () => this.addField(w.name),
+                                                           type: 'button'}, w.description)
+                                        ))
+                                    )
+                                ))),
+                           className: 'nice-button small',
+                           type: 'button'},
+                'Lisää kenttä')
         );
     }
     /**
      * @access private
      */
     addField(type) {
-        this.state.fields.push(makeField(type));
-        this.setState({fields: this.state.fields, addFieldDialogIsOpen: false});
+        this.state.fields.push(this.makeField(type));
+        this.setState({fields: this.state.fields});
+        popupDialog.close();
         this.emitChange();
     }
     /**
@@ -75,10 +79,12 @@ class MultiFieldBuilder extends preact.Component {
         field.name = val;
         this.setState({fields: this.state.fields});
     }
-}
-
-function makeField(type) {
-    return {id: (++idCounter).toString(), type, name: 'Uusi kenttä', value: '...'};
+    /**
+     * @access private
+     */
+    makeField(type) {
+        return {id: (++this.idCounter).toString(), type, name: 'Uusi kenttä', value: '...'};
+    }
 }
 
 export default MultiFieldBuilder;

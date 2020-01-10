@@ -29,7 +29,7 @@ class ControlPanelApp extends preact.Component {
      */
     makeState(dataFromBackend) {
         const newState = {contentPanels: []};
-        if (dataFromBackend) {
+        if (dataFromBackend.baseUrl) {
             const onEachMakePanel = this.makeContentPanelCreateVisitor(newState);
             const makePanel = (dataFromBackend, to, isAdminPanel) => {
                 const Cls = uiPanelRegister.getUiPanelImpl(dataFromBackend.impl);
@@ -48,15 +48,13 @@ class ControlPanelApp extends preact.Component {
                 //
                 newState.adminPanels = [];
                 newState.userDefinedRoutes = [];
-                if (dataFromBackend.adminPanels) {
-                    dataFromBackend.adminPanels.forEach(c => {
-                        makePanel(c, newState.adminPanels, true);
-                    });
-                    newState.routesUpdated = true;
-                }
+                dataFromBackend.adminPanels.forEach(c => {
+                    makePanel(c, newState.adminPanels, true);
+                });
+                newState.routesUpdated = true;
             }
             //
-            if (dataFromBackend.contentPanels) dataFromBackend.contentPanels.forEach(p => {
+            dataFromBackend.contentPanels.forEach(p => {
                 if (!Array.isArray(p.contentNodes)) p.contentNodes = [p.contentNodes];
                 if (!p.contentNodes[0]) p.contentNodes = [];
                 makePanel(p, newState.contentPanels, false);
@@ -68,6 +66,8 @@ class ControlPanelApp extends preact.Component {
      * @access protected
      */
     render() {
+        if (!this.state.routesUpdated)
+            return;
         return $el('div', null,
             $el(Toaster),
             $el('div', {id: 'cpanel'},
@@ -129,7 +129,8 @@ class ControlPanelApp extends preact.Component {
                 $el(PluginsManageView, {path: '/manage-plugins'}),
                 $el(WebsitePackView, {path: '/pack-website'}),
                 ...this.state.userDefinedRoutes
-            ) : null
+            ) : null,
+            $el(ControlPanelApp.PopupDialog)
         );
     }
     /**
@@ -156,6 +157,41 @@ class ControlPanelApp extends preact.Component {
         };
     }
 }
+
+ControlPanelApp.PopupDialog = class extends preact.Component {
+    /**
+     * @param {{publishApiTo?: any;}} props
+     */
+    constructor(props) {
+        super(props);
+        this.rendererProps = null;
+        this.state = {Renderer: null};
+        (props.publishApiTo || window).popupDialog = this;
+    }
+    /**
+     * @param {any} Renderer
+     * @param {any} rendererProps
+     * @access public
+     */
+    open(Renderer, rendererProps) {
+        this.rendererProps = rendererProps;
+        this.setState({Renderer});
+    }
+    /**
+     * @access public
+     */
+    close() {
+        this.setState({Renderer: null});
+    }
+    /**
+     * @access protected
+     */
+    render() {
+        return this.state.Renderer
+            ? $el(this.state.Renderer, this.rendererProps)
+            : null;
+    }
+};
 
 ControlPanelApp.AdminPanel = class extends preact.Component {
     /**

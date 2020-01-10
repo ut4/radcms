@@ -1,5 +1,5 @@
 import {services, components} from '../../../rad-commons.js';
-const {View, FeatherSvg, MyLink} = components;
+const {View, FeatherSvg, MyLink, InputGroup} = components;
 
 /**
  * #/manage-content.
@@ -41,14 +41,18 @@ class ContentManageView extends preact.Component {
         return $el(View, null, $el('div', null,
             $el('h2', null, 'Sisältö'),
             $el('div', null,
-                $el('select', {onChange: e => { this.updateContent(e); }},
-                    this.state.contentTypes.map(t =>
-                        $el('option', {value: t.name}, t.friendlyName))
+                $el(InputGroup, {inline: true,
+                                 label: this.state.selectedContentTypeName
+                                    ? () => $el(MyLink, {to: '/add-content/' + this.state.selectedContentTypeName,
+                                                         attrs: {className: 'icon-only'}},
+                                                $el(FeatherSvg, {iconId: 'plus-circle', className: 'small'})
+                                            )
+                                    : ''},
+                    $el('select', {onChange: e => { this.updateContent(e); }},
+                        this.state.contentTypes.map(t =>
+                            $el('option', {value: t.name}, t.friendlyName)
+                        ))
                 ),
-                this.state.selectedContentTypeName &&
-                    $el(MyLink, {to: '/add-content/' + this.state.selectedContentTypeName,
-                                 attrs: {className: 'icon-only'}},
-                        $el(FeatherSvg, {iconId: 'plus-circle'}))
             ),
             !this.state.message ? $el('table', {className: 'striped'},
                 $el('thead', null, $el('tr', null,
@@ -65,7 +69,7 @@ class ContentManageView extends preact.Component {
                             : ['Ei ', $el(MyLink, {to: `${u}/publish`}, 'Julkaise')]),
                         $el('td', null,
                             $el(MyLink, {to: u, attrs: {className: 'icon-only'}},
-                                $el(FeatherSvg, {iconId: 'edit-2'})
+                                $el(FeatherSvg, {iconId: 'edit-2', className: 'small'})
                             )
                         )
                     );
