@@ -26,15 +26,25 @@ class UploadFileScanner {
     public function scanAll($dirPath) {
         if (($fullPaths = $this->fs->readDir($dirPath)) === false)
             throw new PikeException("Failed to read {$dirPath}", PikeException::FAILED_FS_OP);
-        if (($finfo = finfo_open(FILEINFO_MIME_TYPE)) === false)
-            throw new PikeException("finfo_open Failed", PikeException::FAILED_FS_OP);
         $out = [];
         foreach ($fullPaths as $p) {
             $basePath = $this->fs->normalizePath(dirname($p));
-            $out[] = (object)['fileName' => str_replace($basePath, '', $p),
+            $out[] = (object)['fileName' => mb_substr($p, mb_strlen($basePath)),
                               'basePath' => $basePath,
-                              'mime' => finfo_file($finfo, $p)];
+                              'mime' => self::getMime($p)];
         }
         return $out;
+    }
+    /**
+     * @param string $filePath Tiedoston absoluuttinen polku
+     * @param string $fallback = '?'
+     * @return string
+     * @throws \Pike\PikeException
+     */
+    public static function getMime($filePath, $fallback = '?') {
+        static $finfo;
+        if (!$finfo && ($finfo = finfo_open(FILEINFO_MIME_TYPE)) === false)
+            throw new PikeException('finfo_open() failed', PikeException::FAILED_FS_OP);
+        return finfo_file($finfo, $filePath) ?? $fallback;
     }
 }
