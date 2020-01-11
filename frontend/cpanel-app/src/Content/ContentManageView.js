@@ -1,5 +1,5 @@
 import {services, components} from '../../../rad-commons.js';
-const {View, FeatherSvg, MyLink, InputGroup} = components;
+const {View, FeatherSvg, InputGroup} = components;
 
 /**
  * #/manage-content.
@@ -43,8 +43,8 @@ class ContentManageView extends preact.Component {
             $el('div', null,
                 $el(InputGroup, {inline: true,
                                  label: this.state.selectedContentTypeName
-                                    ? () => $el(MyLink, {to: '/add-content/' + this.state.selectedContentTypeName,
-                                                         attrs: {className: 'icon-only'}},
+                                    ? () => $el('a', {href: '#/add-content/' + this.state.selectedContentTypeName,
+                                                      className: 'icon-only'},
                                                 $el(FeatherSvg, {iconId: 'plus-circle', className: 'small'})
                                             )
                                     : ''},
@@ -61,14 +61,14 @@ class ContentManageView extends preact.Component {
                     $el('th', null, '')
                 )),
                 $el('tbody', null, this.state.content.map(cnode => {
-                    const u = `/edit-content/${cnode.id}/${cnode.contentType}`;
+                    const href = `/edit-content/${cnode.id}/${cnode.contentType}`;
                     return $el('tr', null,
                         $el('td', null, cnode.name),
                         $el('td', null, cnode.isPublished
                             ? 'Kyllä'
-                            : ['Ei ', $el(MyLink, {to: `${u}/publish`}, 'Julkaise')]),
+                            : ['Ei ', $el('a', {href: `#${href}/publish`}, 'Julkaise')]),
                         $el('td', null,
-                            $el(MyLink, {to: u, attrs: {className: 'icon-only'}},
+                            $el('a', {href, className: 'icon-only'},
                                 $el(FeatherSvg, {iconId: 'edit-2', className: 'small'})
                             )
                         )

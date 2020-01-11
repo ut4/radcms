@@ -1,5 +1,3 @@
-import {components} from '../../rad-commons.js';
-const {MyLink} = components;
 import ContentNodeList from './Content/ContentNodeList.js';
 
 /*
@@ -33,18 +31,18 @@ class GenericUIPanelImpl extends preact.Component {
         return this.node
             ? $el('div', null,
                 $el('div', null,
-                    $el(MyLink, {to: this.makeEditUrl(false)}, 'Muokkaa'),
+                    $el('a', {href: this.makeEditUrl(false)}, 'Muokkaa'),
                 ),
                 this.node.isRevision
                     ? $el('div', null,
-                        $el(MyLink, {to: this.makeEditUrl(true)}, 'Julkaise'),
+                        $el('a', {href: this.makeEditUrl(true)}, 'Julkaise'),
                     )
                     : null,
             )
             : $el('div', null,
                 $el('span', null, 'Ei sisältöä'),
-                $el(MyLink, {to: '/add-content/' + this.newNodeContentType +
-                                 '?returnTo=' + encodeURIComponent(this.currentPagePath)},
+                $el('a', {href: '#/add-content/' + this.newNodeContentType +
+                                '?returnTo=' + encodeURIComponent(this.currentPagePath)},
                     'Luo sisältö')
             );
     }
@@ -52,9 +50,9 @@ class GenericUIPanelImpl extends preact.Component {
      * @access private
      */
     makeEditUrl(appendPublishSlug) {
-        return '/edit-content/' + this.node.id + '/' +
-                this.node.contentType + (!appendPublishSlug ? '' : '/publish') +
-                '?returnTo=' + encodeURIComponent(this.currentPagePath);
+        return '#/edit-content/' + this.node.id + '/' +
+               this.node.contentType + (!appendPublishSlug ? '' : '/publish') +
+               '?returnTo=' + encodeURIComponent(this.currentPagePath);
     }
 }
 

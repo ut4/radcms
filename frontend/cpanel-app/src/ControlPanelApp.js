@@ -5,7 +5,7 @@ import ContentManageView from './Content/ContentManageView.js';
 import ContentEditView from './Content/ContentEditView.js';
 import PluginsManageView from './Plugin/PluginsManageView.js';
 import WebsitePackView from './Website/WebsitePackView.js';
-const {MyLink, FeatherSvg, Toaster} = components;
+const {FeatherSvg, Toaster} = components;
 
 class ControlPanelApp extends preact.Component {
     /**
@@ -79,7 +79,7 @@ class ControlPanelApp extends preact.Component {
                 ),
                 $el('section', {className: 'quick-links'}, $el('div', null,
                     $el('button', {onClick: () => { services.redirect('/add-content'); },
-                                  className: 'icon-button'},
+                                   className: 'icon-button'},
                         $el(FeatherSvg, {iconId: 'edit-2'}),
                         $el('span', null, 'Luo sisältöä')
                     )
@@ -91,7 +91,7 @@ class ControlPanelApp extends preact.Component {
                                 {Renderer: panelCfg.UiImplClass,
                                  rendererProps: {dataFromBackend: panelCfg.dataFromBackend,
                                                  siteInfo: this.siteInfo},
-                                 siteIframeDoc: this.siteIframe.contentDocument,
+                                 siteIframe: this.siteIframe,
                                  key: `${panelCfg.dataFromBackend.title}-${i}`})
                         )
                         : this.state.routesUpdated ? 'Ei muokattavaa sisältöä tällä sivulla' : null
@@ -107,16 +107,16 @@ class ControlPanelApp extends preact.Component {
                     ).concat(
                         $el(ControlPanelApp.AdminPanel,
                             {Renderer: null, title: 'Kaikki sisältö', icon: 'database'},
-                            $el(MyLink, {to: '/manage-content'}, 'Selaa'),
-                            $el(MyLink, {to: '/add-content'}, 'Luo')
+                            $el('a', {href: '#/manage-content'}, 'Selaa'),
+                            $el('a', {href: '#/add-content'}, 'Luo')
                         ),
                         $el(ControlPanelApp.AdminPanel,
                             {Renderer: null, title: 'Lisäosat', icon: 'box'},
-                            $el(MyLink, {to: '/manage-plugins'}, 'Selaa')
+                            $el('a', {href: '#/manage-plugins'}, 'Selaa')
                         ),
                         $el(ControlPanelApp.AdminPanel,
                             {Renderer: null, title: 'Sivusto', icon: 'tool'},
-                            $el(MyLink, {to: '/pack-website'}, 'Paketoi')
+                            $el('a', {href: '#/pack-website'}, 'Paketoi')
                         )
                     )
                 ))
@@ -256,7 +256,7 @@ ControlPanelApp.ContentPanel = class extends ControlPanelApp.AdminPanel {
         const {dataFromBackend} = this.props.rendererProps;
         this.toggleHighlight = makeHighlightToggler(dataFromBackend.highlightSelector,
                                                     dataFromBackend.selectorIndex,
-                                                    this.props.siteIframeDoc);
+                                                    this.props.siteIframe);
     }
     /**
      * @access procted
@@ -274,18 +274,20 @@ ControlPanelApp.ContentPanel = class extends ControlPanelApp.AdminPanel {
 /**
  * @param {string} selector
  * @param {number} selectorIndex
- * @param {HTMLDocument} siteIframeDoc
+ * @param {HTMLIFrameElement} siteIframe
  * @return {Function} togglerFn
  */
-function makeHighlightToggler(selector, selectorIndex, siteIframeDoc) {
+function makeHighlightToggler(selector, selectorIndex, siteIframe) {
+    const siteIframeWin = siteIframe.contentWindow;
+    const siteIframeDoc = siteIframe.contentDocument;
     const makeOverlay = el => {
-        const out = siteIframeDoc.createElement('div');
+        const out = siteIframe.contentDocument.createElement('div');
         out.id = 'rad-highlight-overlay';
         const r = el.getBoundingClientRect();
         out.style = 'width:' + r.width + 'px' +
                   ';height:' + r.height + 'px' +
-                  ';top:' + (r.top + window.top.scrollY) + 'px' +
-                  ';left:' + (r.left + window.top.scrollX) + 'px';
+                  ';top:' + (r.top + siteIframeWin.scrollY) + 'px' +
+                  ';left:' + (r.left + siteIframeWin.scrollX) + 'px';
         return out;
     };
     const cache = {};
@@ -298,10 +300,9 @@ function makeHighlightToggler(selector, selectorIndex, siteIframeDoc) {
             if (!node) return;
             cache[selector] = node;
         }
-        let over = siteIframeDoc.getElementById('rad-highlight-overlay');
+        const over = siteIframeDoc.getElementById('rad-highlight-overlay');
         if (!over) {
-            over = makeOverlay(node);
-            siteIframeDoc.body.appendChild(over);
+            siteIframeDoc.body.appendChild(makeOverlay(node));
         } else {
             over.parentElement.removeChild(over);
         }

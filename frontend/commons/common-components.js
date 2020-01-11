@@ -50,7 +50,7 @@ class Form extends preact.Component {
                     type: 'submit',
                     disabled: this.doDisableConfirmButton()
                 }, this.props.confirmButtonText || 'Ok'),
-                $el(MyLink, {to: '/'}, this.props.cancelButtonText || 'Cancel')
+                $el('a', {href: '#/'}, this.props.cancelButtonText || 'Cancel')
             )
         );
     }
@@ -99,22 +99,6 @@ class Form extends preact.Component {
         }
         services.redirect('/');
     }
-}
-
-/**
- * Sets window.parent.location.hash = '#' + $to (or window.parent.location.href = $to
- * if $full = true).
- *
- * @param {{to: string; full?: bool; attrs?: Object;}} props
- */
-function MyLink(props) {
-    return $el('a', Object.assign({
-        href: (!props.full ? '#' : '') + props.to.split('?')[0],
-        onClick: e => {
-            e.preventDefault();
-            services.redirect(props.to, props.full);
-        },
-    }, props.attrs), props.children);
 }
 
 /**
@@ -208,4 +192,4 @@ class Tabs extends preact.Component {
     }
 }
 
-export {View, InputGroup, Form, MyLink, FeatherSvg, Toaster, Tabs};
+export {View, InputGroup, Form, FeatherSvg, Toaster, Tabs};
