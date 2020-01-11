@@ -23,7 +23,7 @@ class AdminControllers {
         // @allow \Pike\PikeException
         if ($siteConfig->selfLoad(RAD_SITE_PATH . 'site.json') &&
             ((RAD_FLAGS & RAD_DEVMODE) &&
-             $siteConfig->lastModTime > $appState->contentTypesLastUpdated)) {
+            $siteConfig->lastModTime > $appState->contentTypesLastUpdated)) {
             // @allow \Pike\PikeException
             $appState->diffAndSaveChangesToDb($siteConfig->contentTypes, 'site.json');
         }

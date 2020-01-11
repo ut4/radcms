@@ -41,8 +41,8 @@ class ContentTypeCollection extends GenericArray {
             $out->add(new ContentTypeDef($pcs[0],
                                          $remainingArgs[0],
                                          $remainingArgs[1],
-                                         $remainingArgs[2] ?? 'site.json',
-                                         ($pcs[1] ?? '') === 'internal'));
+                                         ($pcs[1] ?? '') === 'internal',
+                                         $remainingArgs[2] ?? 'site.json'));
         }
         return $out;
     }

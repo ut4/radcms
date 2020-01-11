@@ -93,7 +93,6 @@ class DMO extends DAO {
             throw new PikeException('id must be a \'[0-9]+\'', PikeException::BAD_INPUT);
         // @allow \Pike\PikeException
         $type = $this->getContentType($contentTypeName);
-
         if (($errors = ContentTypeValidator::validateUpdateData($type, $data)))
             throw new PikeException(implode(PHP_EOL, $errors),
                                     PikeException::BAD_INPUT);

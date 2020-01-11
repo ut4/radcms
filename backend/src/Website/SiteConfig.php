@@ -73,10 +73,12 @@ class SiteConfig {
      * @return \RadCms\ContentType\ContentTypeCollection
      */
     private function collectContentTypes($ctypeInput) {
-        $out = new ContentTypeCollection();
-        foreach ($ctypeInput as $definition)
-            $out->add(...$definition);
-        return $out;
+        $asMap = [];
+        foreach ($ctypeInput as $definition) {
+            $nameParts = array_shift($definition);
+            $asMap[$nameParts] = $definition;
+        }
+        return ContentTypeCollection::fromCompactForm($asMap);
     }
     /**
      * @param array $inputAssetFiles

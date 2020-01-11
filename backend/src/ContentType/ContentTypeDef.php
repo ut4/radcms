@@ -6,24 +6,24 @@ class ContentTypeDef {
     public $name;
     public $friendlyName;
     public $fields;
-    public $origin;
     public $isInternal;
+    public $origin;
     /**
      * @param string $name
      * @param string $friendlyName
      * @param array|object $compactFields ['fieldName' => 'dataType:widget', 'another' => 'dataType'...]
-     * @param string $origin = 'site.json' 'site.json' | 'SomePlugin.json'
      * @param bool $isInternal = false
+     * @param string $origin = 'site.json' 'site.json' | 'SomePlugin.json'
      */
     public function __construct($name,
                                 $friendlyName,
                                 $compactFields,
-                                $origin = 'site.json',
-                                $isInternal = false) {
+                                $isInternal = false,
+                                $origin = 'site.json') {
         $this->name = $name;
         $this->friendlyName = $friendlyName;
         $this->fields = FieldCollection::fromCompactForm($compactFields);
-        $this->origin = $origin;
         $this->isInternal = $isInternal;
+        $this->origin = $origin;
     }
 }

@@ -6,12 +6,9 @@ use Pike\TestUtils\DbTestCase;
 use Pike\TestUtils\HttpTestUtils;
 use Pike\Request;
 use Pike\FileSystem;
-use Pike\SessionInterface;
-use Pike\NativeSession;
-use Pike\Db;
 use RadCms\Tests\_Internal\ContentTestUtils;
 
-final class WebsiteControllersTest extends DbTestCase {
+final class AdminControllersTest extends DbTestCase {
     use HttpTestUtils;
     use ContentTestUtils;
     private const TEST_EXISTING_CTYPES = [
@@ -32,27 +29,20 @@ final class WebsiteControllersTest extends DbTestCase {
                                             ['NewType', 'My type', ['name' => 'text']]
                                         ]]));
         //
-        $req = new Request('/foo', 'GET');
-        $res = $this->createMockResponse('404', 200, 'html');
-        $this->sendRequest($req, $res, '\RadCms\App::create', $s->ctx, $s->setupInjector);
+        $req = new Request('/edit/foo', 'GET');
+        $res = $this->createMockResponse($this->anything(), 200, 'html');
+        $this->sendRequest($req, $res, '\RadCms\App::create', $s->ctx);
         //
         $this->verifyInstalledNewContentTypeToDb();
     }
     private function setupDiscoverTest() {
         $s = (object)[
             'ctx' => (object)['fs' => $this->createMock(FileSystem::class)],
-            'mockSess' => $this->createMock(SessionInterface::class),
-            'setupInjector' => null,
             'mockLastContentTypesUpdatedAt' => 10,
         ];
         $s->ctx->fs->method('isFile')
                    ->with($this->stringEndsWith('.tmpl.php'))
                    ->willReturn(true);
-        $s->setupInjector = function ($injector) use ($s) {
-            $injector->delegate(NativeSession::class, function () use ($s) {
-                return $s->mockSess;
-            });
-        };
         return $s;
     }
     private function setTheseContentTypesAsInstalled($compactContentTypes, $s) {
@@ -102,9 +92,9 @@ final class WebsiteControllersTest extends DbTestCase {
         $this->stubFsToReturnThisLastModTimeForSiteCfg($s, $newerThanLastUpdatedAt);
         $this->stubFsToReturnThisSiteCfg($s, '{"contentTypes":['./*NewType disappears*/']}');
         //
-        $req = new Request('/foo', 'GET');
-        $res = $this->createMockResponse('404', 200, 'html');
-        $this->sendRequest($req, $res, '\RadCms\App::create', $s->ctx, $s->setupInjector);
+        $req = new Request('/edit/foo', 'GET');
+        $res = $this->createMockResponse($this->anything(), 200, 'html');
+        $this->sendRequest($req, $res, '\RadCms\App::create', $s->ctx);
         //
         $this->verifyUninstalledDisappearedContentType();
     }
