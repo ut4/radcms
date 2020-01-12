@@ -1,6 +1,6 @@
 import {services, components} from '../../../rad-commons.js';
 import ContentNodeFieldList from './ContentNodeFieldList.js';
-const {View, Form} = components;
+const {View, Form, InputGroup} = components;
 
 /**
  * #/edit-content/:id/:contentTypeName/:publish?
@@ -68,10 +68,10 @@ class ContentEditView extends preact.Component {
                                        ref: cmp => { if (cmp) this.fieldListCmp = cmp; },
                                        key: this.state.contentNode.id}),
             showPublishToggle
-                ? $el('div', null,
-                    $el('input', {id: 'i-create-rev', type: 'checkbox',
-                                  onChange: e => this.setState({doPublish: e.target.checked})}),
-                    $el('label', {for: 'i-create-rev', className: 'inline'}, 'Julkaise')
+                ? $el(InputGroup, {label: 'Julkaise', inline: true},
+                    $el('input', {id: 'i-publish', type: 'checkbox',
+                                  defaultChecked: true,
+                                  onChange: e => this.setState({doPublish: e.target.checked})})
                 )
                 : null
         ));

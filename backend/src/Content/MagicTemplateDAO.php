@@ -79,6 +79,7 @@ class MagicTemplateDAO extends DAO {
                 if (!$node->revisions) { $out[] = $node; continue; }
                 $latestDraft = $node->revisions[0]->snapshot;
                 $latestDraft->id = $node->id;
+                $latestDraft->contentType = $node->contentType;
                 $latestDraft->isPublished = true;
                 $latestDraft->isRevision = true;
                 $out[] = $latestDraft;

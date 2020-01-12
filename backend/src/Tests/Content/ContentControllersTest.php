@@ -96,6 +96,7 @@ final class ContentControllersTest extends DbTestCase {
                             ',"isPublished":true' .
                             ',"title":"Tuotteen nimi"' .
                             ',"contentType":"Products"' .
+                            ',"revisionCreatedAt":null' .
                             ',"isRevision":false' .
                             ',"revisions":[]}', $s->actualResponseBody);
     }
@@ -122,6 +123,7 @@ final class ContentControllersTest extends DbTestCase {
                             ',"isPublished":true' .
                             ',"name":"Tuotemerkin nimi"' .
                             ',"contentType":"Brands"' .
+                            ',"revisionCreatedAt":null' .
                             ',"isRevision":false' .
                             ',"revisions":[]}]', $s->actualResponseBody);
     }

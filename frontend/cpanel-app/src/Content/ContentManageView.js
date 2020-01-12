@@ -65,7 +65,7 @@ class ContentManageView extends preact.Component {
                     const href = `/edit-content/${cnode.id}/${cnode.contentType}`;
                     return $el('tr', null,
                         $el('td', null, CNodeUtils.makeTitle(cnode)),
-                        $el('td', null, cnode.isPublished
+                        $el('td', null, !cnode.isRevision
                             ? 'Kyllä'
                             : ['Ei ', $el('a', {href: `#${href}/publish`}, 'Julkaise')]),
                         $el('td', null,

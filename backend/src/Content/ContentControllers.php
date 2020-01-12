@@ -37,9 +37,9 @@ class ContentControllers {
      *
      * @param \Pike\Request $req
      * @param \Pike\Response $res
-     * @param \RadCms\Content\DAO $dao
+     * @param \RadCms\Content\MagicTemplateDAO $dao
      */
-    public function handleGetContentNode(Request $req, Response $res, DAO $dao) {
+    public function handleGetContentNode(Request $req, Response $res, MagicTemplateDAO $dao) {
         // @allow \Pike\PikeException
         $node = $dao->fetchOne($req->params->contentTypeName)
                     ->where('`id` = ?', $req->params->id) // aina validi (läpäissyt routerin regexpin)
@@ -52,9 +52,9 @@ class ContentControllers {
      *
      * @param \Pike\Request $req
      * @param \Pike\Response $res
-     * @param \RadCms\Content\DAO $dao
+     * @param \RadCms\Content\MagicTemplateDAO $dao
      */
-    public function handleGetContentNodesByType(Request $req, Response $res, DAO $dao) {
+    public function handleGetContentNodesByType(Request $req, Response $res, MagicTemplateDAO $dao) {
         // @allow \Pike\PikeException
         $nodes = $dao->fetchAll($req->params->contentTypeName)->limit('50')->exec();
         $res->json($nodes);
