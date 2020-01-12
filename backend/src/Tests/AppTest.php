@@ -3,11 +3,10 @@
 namespace RadCms\Tests;
 
 use RadCms\App;
-use RadCms\Framework\FileSystem;
-use RadCms\Tests\_Internal\DbTestCase;
-use MySite\Plugins\ValidAndInstalledPlugin\ValidAndInstalledPlugin;
-use MySite\Plugins\ValidPlugin\ValidPlugin;
-use RadCms\Tests\_Internal\CtxExposingApp;
+use Pike\FileSystem;
+use Pike\TestUtils\DbTestCase;
+use RadPlugins\ValidAndInstalledPlugin\ValidAndInstalledPlugin;
+use RadPlugins\ValidPlugin\ValidPlugin;
 
 final class AppTest extends DbTestCase {
     public static function setUpBeforeClass() {
@@ -19,7 +18,7 @@ final class AppTest extends DbTestCase {
             ->method('readDir')
             ->with(RAD_SITE_PATH . 'Plugins')
             ->willReturn([]);
-        App::create($ctx);
+        App::create([], $ctx);
     }
     public function testCreateAppValidatesFoundPlugins() {
         $runInvalid = function ($invalidClsPath, $expectedError) {
@@ -28,16 +27,16 @@ final class AppTest extends DbTestCase {
                 $ctx->fs->expects($this->once())
                     ->method('readDir')
                     ->willReturn(['foo/bar/baz/Plugins/' . $invalidClsPath]);
-                App::create($ctx);
+                App::create([], $ctx);
             } catch (\RuntimeException $e) {
                 $this->assertEquals($expectedError, $e->getMessage());
             }
         };
         $runInvalid('NoMainFilePlugin',
-            'Main plugin class "MySite\\Plugins\\NoMainFilePlugin\\NoMainFilePlugin" missing'
+            'Main plugin class "RadPlugins\\NoMainFilePlugin\\NoMainFilePlugin" missing'
         );
         $runInvalid('InvalidPlugin',
-            'A plugin ("MySite\\Plugins\\InvalidPlugin\\InvalidPlugin") must implement' .
+            'A plugin ("RadPlugins\\InvalidPlugin\\InvalidPlugin") must implement' .
             ' RadCms\\Plugin\\PluginInterface'
         );
     }
@@ -50,8 +49,8 @@ final class AppTest extends DbTestCase {
             ->willReturn(["{$pluginDirPath}/ValidAndInstalledPlugin",
                           "{$pluginDirPath}/ValidPlugin"]);
         self::markPluginAsInstalled('ValidAndInstalledPlugin', self::$db);
-        $app = CtxExposingApp::create($ctx);
-        $actuallyRegisteredPlugins = $app->getPlugins()->toArray();
+        App::create([], $ctx);
+        $actuallyRegisteredPlugins = $ctx->state->plugins->toArray();
         $this->assertEquals(2, count($actuallyRegisteredPlugins));
         $this->assertEquals('ValidAndInstalledPlugin', $actuallyRegisteredPlugins[0]->name);
         $this->assertEquals('ValidPlugin', $actuallyRegisteredPlugins[1]->name);

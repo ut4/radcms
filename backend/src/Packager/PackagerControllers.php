@@ -2,8 +2,8 @@
 
 namespace RadCms\Packager;
 
-use RadCms\Framework\Request;
-use RadCms\Framework\Response;
+use Pike\Request;
+use Pike\Response;
 
 /**
  * Handlaa /api/packager -alkuiset pyynnöt.
@@ -20,15 +20,15 @@ class PackagerControllers {
     /**
      * POST /api/packager.
      *
-     * @param \RadCms\Framework\Request $req
-     * @param \RadCms\Framework\Response $res
+     * @param \Pike\Request $req
+     * @param \Pike\Response $res
      */
     public function handleCreatePackage(Request $req, Response $res) {
         if (strlen($req->body->signingKey) < 12) {
             $res->status(400)->json(['signingKey must be >= 12 characters long']);
             return;
         }
-        // @allow \RadCMS\Common\RadException
+        // @allow \RadCMS\Common\PikeException
         $data = $this->packager->packSite(RAD_SITE_PATH, $req->body->signingKey);
         $res->attachment($data, 'site.rpkg', 'application/octet-stream');
     }

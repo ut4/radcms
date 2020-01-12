@@ -4,8 +4,8 @@ namespace RadCms\Tests\Website;
 
 use RadCms\Website\SiteConfig;
 use PHPUnit\Framework\TestCase;
-use RadCms\Framework\FileSystem;
-use RadCms\Common\RadException;
+use Pike\FileSystem;
+use Pike\PikeException;
 
 final class SiteConfigTest extends TestCase {
     public function testSelfLoadRejectsMissingValues() {
@@ -13,8 +13,8 @@ final class SiteConfigTest extends TestCase {
         $this->stubFsToReturnThisSiteCfg($s, '{}');
         $this->loadInvalidSiteCfg($s);
         $this->verifyTheseErrorsWereReported($s,
-            '`{..."urlMatchers": ["pattern", "layout-file.tmpl.php"]...}` is required',
-            '`{..."contentTypes": ["MyType", "Friendly name", {"name": "datatype"}]...}` is required');
+            '{..."urlMatchers": ["pattern", "layout.php"]} is required',
+            '{..."contentTypes": [["Name", "FriendlyName", <fields>]...]} is required');
     }
     private function setupValidateTest() {
         return (object)[
@@ -28,7 +28,7 @@ final class SiteConfigTest extends TestCase {
     private function loadInvalidSiteCfg($s) {
         try {
             (new SiteConfig($s->mockFs))->selfLoad('', false);
-        } catch (RadException $e) {
+        } catch (PikeException $e) {
             $s->errors = $e->getMessage();
         }
     }
@@ -51,9 +51,9 @@ final class SiteConfigTest extends TestCase {
                                              ]]));
         $this->loadInvalidSiteCfg($s);
         $this->verifyTheseErrorsWereReported($s,
-            'Invalid assetFile #0, should be {..."assetFiles": [["file.ext", "asset-type", {"html-attr": "value"}?]]...}',
-            'Invalid assetFile type, should be one of ' . $s->assetFileTypesStr,
-            'assetFile->attrs must be an object');
+            'assetFile must be an array',
+            'assetFile[1][1] (file type) must be ' . $s->assetFileTypesStr,
+            'assetFile[2][2] (attrs) must be an object');
     }
     private function setupAssetValidateTest() {
         $s = $this->setupValidateTest();

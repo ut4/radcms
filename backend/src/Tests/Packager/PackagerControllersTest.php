@@ -2,20 +2,21 @@
 
 namespace RadCms\Tests\Packager;
 
-use RadCms\Tests\_Internal\DbTestCase;
-use RadCms\Tests\_Internal\HttpTestUtils;
-use RadCms\Tests\Installer\InstallerTest;
+use Pike\TestUtils\DbTestCase;
+use Pike\TestUtils\HttpTestUtils;
+use RadCms\Tests\_Internal\ContentTestUtils;
 use RadCms\Packager\PlainTextPackageStream;
-use RadCms\Framework\Request;
-use RadCms\Auth\Crypto;
-use RadCms\Tests\_Internal\MockCrypto;
+use Pike\Request;
+use Pike\Auth\Crypto;
+use Pike\TestUtils\MockCrypto;
 use RadCms\Packager\Packager;
 use RadCms\Website\SiteConfig;
-use RadCms\Framework\FileSystem;
+use Pike\FileSystem;
 use RadCms\ContentType\ContentTypeMigrator;
 
 final class PackagerControllersTest extends DbTestCase {
     use HttpTestUtils;
+    use ContentTestUtils;
     private static $testSiteCfg;
     private static $migrator;
     private static $testSiteContentTypesData;
@@ -25,18 +26,18 @@ final class PackagerControllersTest extends DbTestCase {
             // AnotherTypellä ei sisältöä
         ];
         self::$testSiteCfg = new SiteConfig(new FileSystem);
-        // @allow \RadCms\Common\RadException
+        // @allow \Pike\PikeException
         self::$testSiteCfg->selfLoad(TEST_SITE_PATH . 'site.json', false, false);
         self::$migrator = new ContentTypeMigrator(self::getDb());
-        // @allow \RadCms\Common\RadException
+        // @allow \Pike\PikeException
         self::$migrator->installMany(self::$testSiteCfg->contentTypes,
                                      self::$testSiteContentTypesData);
     }
-    public static function tearDownAfterClass($_ = null) {
-        parent::tearDownAfterClass($_);
-        // @allow \RadCms\Common\RadException
+    public static function tearDownAfterClass() {
+        parent::tearDownAfterClass();
+        // @allow \Pike\PikeException
         self::$migrator->uninstallMany(self::$testSiteCfg->contentTypes);
-        InstallerTest::clearInstalledContentTypesFromDb();
+        self::clearInstalledContentTypesFromDb();
     }
     public function testPOSTPackagerPacksWebsiteAndReturnsItAsAttachment() {
         $s = $this->setupCreatePackageTest();
@@ -49,16 +50,11 @@ final class PackagerControllersTest extends DbTestCase {
     }
     private function setupCreatePackageTest() {
         $s = (object)[
-            'setupInjector' => null,
+            'ctx' => (object)['crypto' => new MockCrypto()],
             'actualAttachmentBody' => '',
             'actualPackage' => null,
             'testWebsiteState' => null,
         ];
-        $s->setupInjector = function ($injector) use ($s) {
-            $injector->delegate(Crypto::class, function () {
-                return new MockCrypto();
-            });
-        };
         return $s;
     }
     private function sendCreatePackageRequest($s) {
@@ -70,12 +66,12 @@ final class PackagerControllersTest extends DbTestCase {
                                          }),
                                          200,
                                          'attachment');
-        $this->sendRequest($req, $res, null, $s->setupInjector);
+        $this->sendRequest($req, $res, '\RadCms\App::create', $s->ctx);
     }
     private function verifyReturnedSignedPackage($s) {
         $this->assertTrue(strlen($s->actualAttachmentBody) > 0);
         $s->actualPackage = new PlainTextPackageStream();
-        // @allow \RadCms\Common\RadException
+        // @allow \Pike\PikeException
         $s->actualPackage->open(MockCrypto::mockDecrypt($s->actualAttachmentBody));
     }
     private function verifyIncludedDbConfig($s) {

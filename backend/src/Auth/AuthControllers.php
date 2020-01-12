@@ -2,16 +2,17 @@
 
 namespace RadCms\Auth;
 
-use RadCms\Framework\Request;
-use RadCms\Framework\Response;
-use RadCms\Framework\Validator;
+use Pike\Request;
+use Pike\Response;
+use Pike\Validator;
+use Pike\Auth\Authenticator;
 use RadCms\Templating\MagicTemplate;
-use RadCms\Common\RadException;
+use Pike\PikeException;
 
 class AuthControllers {
     private $auth;
     /**
-     * @param \RadCms\Auth\Authenticator $auth
+     * @param \Pike\Auth\Authenticator $auth
      */
     public function __construct(Authenticator $auth) {
         $this->auth = $auth;
@@ -19,7 +20,7 @@ class AuthControllers {
     /**
      * GET /login.
      *
-     * @param \RadCms\Framework\Response $res
+     * @param \Pike\Response $res
      */
     public function renderLoginView(Response $res) {
         $res->html((new MagicTemplate(__DIR__ . '/login.tmpl.php'))->render());
@@ -27,8 +28,8 @@ class AuthControllers {
     /**
      * POST /login.
      *
-     * @param \RadCms\Framework\Request $req
-     * @param \RadCms\Framework\Response $res
+     * @param \Pike\Request $req
+     * @param \Pike\Response $res
      */
     public function handleLoginFormSubmit(Request $req, Response $res) {
         if (($errors = $this->validateLoginFormInput($req->body))) {
@@ -39,7 +40,7 @@ class AuthControllers {
             $this->auth->login($req->body->username,
                                $req->body->password);
             $res->json(['ok' => 'ok']);
-        } catch (RadException $e) {
+        } catch (PikeException $e) {
             $res->status(401)->json(['err' => $e->getMessage()]);
         }
     }

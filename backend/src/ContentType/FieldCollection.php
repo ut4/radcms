@@ -2,8 +2,8 @@
 
 namespace RadCms\ContentType;
 
-use RadCms\Framework\GenericArray;
-use RadCms\Framework\Translator;
+use Pike\GenericArray;
+use Pike\Translator;
 
 /**
  * ContentTypeDef->fields.
@@ -25,12 +25,13 @@ class FieldCollection extends GenericArray implements \JsonSerializable {
         return implode(',', array_map(function ($f) {
             return "`{$f->name}` " . [
                 'text' => 'TEXT',
-                'json' => 'TEXT'
+                'json' => 'JSON',
+                'int' => 'INT',
             ][$f->dataType];
         }, $this->vals));
     }
     /**
-     * @param \RadCms\Framework\Translator $translator = null
+     * @param \Pike\Translator $translator = null
      * @return array see self::fromCompactForm()
      */
     public function toCompactForm(Translator $translator = null) {
@@ -38,7 +39,7 @@ class FieldCollection extends GenericArray implements \JsonSerializable {
         foreach ($this->toArray() as $f)
             $out[$f->name] = [$f->dataType,
                               !$translator ? $f->friendlyName : $translator->t($f->name),
-                              $f->widget];
+                              $f->widget->toCompactForm()];
         return $out;
     }
     /**
@@ -51,17 +52,20 @@ class FieldCollection extends GenericArray implements \JsonSerializable {
     ////////////////////////////////////////////////////////////////////////////
 
     /**
-     * @param array|object $compactFields ['name' => ['dataType'], 'another' => 'datatype', 'yetanother' => ['dataType', 'FriendlyName', 'widgetName'] ...]
+     * @param array|object $compactFields ['name' => ['dataType'], 'another' => 'datatype', 'yetanother' => ['dataType', 'FriendlyName', 'widgetName'], 'withArgs' => ['dataType', 'FriendlyName', 'widgetName(arg1, arg2=foo)'] ...]
      * @return \RadCms\ContentType\FieldCollection
      */
     public static function fromCompactForm($compactFields) {
-        $out = new FieldCollection(\stdClass::class);
+        $out = new FieldCollection('stdClass');
+        $DEFAULT_WIDGET = new FieldSetting(ContentTypeValidator::FIELD_WIDGETS[0]);
         foreach ($compactFields as $name => $def) {
             $remainingArgs = !is_string($def) ? $def : explode(':', $def);
             $out->add((object)['name' => $name,
                                'friendlyName' => $remainingArgs[1] ?? $name,
                                'dataType' => $remainingArgs[0],
-                               'widget' => $remainingArgs[2] ?? null]);
+                               'widget' => count($remainingArgs) < 3
+                                   ? $DEFAULT_WIDGET
+                                   : FieldSetting::fromCompactForm($remainingArgs[2])]);
         }
         return $out;
     }

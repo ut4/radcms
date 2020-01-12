@@ -2,17 +2,21 @@
 
 namespace RadCms\Tests\ContentType;
 
-use RadCms\Tests\_Internal\DbTestCase;
-use RadCms\Tests\_Internal\HttpTestUtils;
-use RadCms\Tests\Installer\InstallerTest;
-use RadCms\Framework\Request;
+use Pike\TestUtils\DbTestCase;
+use Pike\TestUtils\HttpTestUtils;
+use RadCms\Tests\_Internal\ContentTestUtils;
+use Pike\Request;
 use RadCms\ContentType\ContentTypeCollection;
 use RadCms\ContentType\ContentTypeMigrator;
+use RadCms\ContentType\ContentTypeValidator;
+use RadCms\ContentType\FieldSetting;
 
 final class ContentTypeControllersTest extends DbTestCase {
     use HttpTestUtils;
+    use ContentTestUtils;
     private static $testContentTypes;
     private static $migrator;
+    private const DEFAULT_WIDGET = ContentTypeValidator::FIELD_WIDGETS[0];
     public static function setUpBeforeClass() {
         self::$testContentTypes = new ContentTypeCollection();
         self::$testContentTypes->add('Events', 'Tapahtumat',
@@ -21,14 +25,14 @@ final class ContentTypeControllersTest extends DbTestCase {
         self::$testContentTypes->add('Locations', 'Paikat',
                                      ['name' => ['text', 'Tapahtumapaikka']]);
         self::$migrator = new ContentTypeMigrator(self::getDb());
-        // @allow \RadCms\Common\RadException
+        // @allow \Pike\PikeException
         self::$migrator->installMany(self::$testContentTypes);
     }
-    public static function tearDownAfterClass($_ = null) {
-        parent::tearDownAfterClass($_);
-        // @allow \RadCms\Common\RadException
+    public static function tearDownAfterClass() {
+        parent::tearDownAfterClass();
+        // @allow \Pike\PikeException
         self::$migrator->uninstallMany(self::$testContentTypes);
-        InstallerTest::clearInstalledContentTypesFromDb();
+        self::clearInstalledContentTypesFromDb();
     }
     public function testGETContentTypeReturnsContentType() {
         $s = $this->setupGetContentTypeTest();
@@ -37,9 +41,12 @@ final class ContentTypeControllersTest extends DbTestCase {
             ['name' => 'Events',
              'friendlyName' => 'Tapahtumat',
              'fields' => [
-                 ['name' => 'name', 'friendlyName' => 'name', 'dataType' => 'text', 'widget' => null],
-                 ['name' => 'pic', 'friendlyName' => 'Kuva', 'dataType' => 'text', 'widget' => 'image'],
+                 ['name' => 'name', 'friendlyName' => 'name', 'dataType' => 'text',
+                  'widget' => new FieldSetting(self::DEFAULT_WIDGET)],
+                 ['name' => 'pic', 'friendlyName' => 'Kuva', 'dataType' => 'text',
+                  'widget' => new FieldSetting('image')],
              ],
+             'isInternal' => false,
              'origin' => 'site.json'],
             $s
         );
@@ -52,7 +59,7 @@ final class ContentTypeControllersTest extends DbTestCase {
     }
     private function sendGetContentTypeRequest($s, $url = null) {
         $req = new Request($url ?? '/api/content-types/' . $s->contentTypeName, 'GET');
-        $this->sendResponseBodyCapturingRequest($req, $s);
+        $this->sendResponseBodyCapturingRequest($req, '\RadCms\App::create', $s);
     }
     private function verifyResponseBodyEquals($expected, $s) {
         $this->assertEquals(json_encode($expected),
@@ -65,15 +72,18 @@ final class ContentTypeControllersTest extends DbTestCase {
 
     public function testGETContentTypesReturnsAllContentTypes() {
         $s = $this->setupGetContentTypesTest();
-        $this->sendGetAllContentTypesRequest($s);
+        $this->sendGetContentTypesRequest($s);
         $this->verifyResponseBodyEquals(
             [['name' => 'Events', 'friendlyName' => 'Tapahtumat', 'fields' => [
-                ['name' => 'name', 'friendlyName' => 'name', 'dataType' => 'text', 'widget' => null],
-                ['name' => 'pic', 'friendlyName' => 'Kuva', 'dataType' => 'text', 'widget' => 'image'],
-            ], 'origin' => 'site.json'],
+                ['name' => 'name', 'friendlyName' => 'name', 'dataType' => 'text',
+                 'widget' => new FieldSetting(self::DEFAULT_WIDGET)],
+                ['name' => 'pic', 'friendlyName' => 'Kuva', 'dataType' => 'text',
+                 'widget' => new FieldSetting('image')],
+            ], 'isInternal' => false, 'origin' => 'site.json'],
             ['name' => 'Locations', 'friendlyName' => 'Paikat', 'fields' => [
-                ['name' => 'name', 'friendlyName' => 'Tapahtumapaikka', 'dataType' => 'text', 'widget' => null],
-            ], 'origin' => 'site.json']],
+                ['name' => 'name', 'friendlyName' => 'Tapahtumapaikka', 'dataType' => 'text',
+                 'widget' => new FieldSetting(self::DEFAULT_WIDGET)],
+            ], 'isInternal' => false, 'origin' => 'site.json']],
             $s
         );
     }
@@ -82,7 +92,7 @@ final class ContentTypeControllersTest extends DbTestCase {
             'actualResponseBody' => null,
         ];
     }
-    private function sendGetAllContentTypesRequest($s) {
+    private function sendGetContentTypesRequest($s) {
         $this->sendGetContentTypeRequest($s, '/api/content-types');
     }
 }

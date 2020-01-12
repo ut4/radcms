@@ -1,5 +1,5 @@
 import {services, components} from '../../../rad-commons.js';
-const {View} = components;
+const {View, InputGroup} = components;
 
 /**
  * #/pack-website
@@ -12,14 +12,13 @@ class WebsitePackView extends preact.Component {
         return $el(View, null, $el('form', {action: services.myFetch.makeUrl('/api/packager'),
                                             method: 'POST'},
             $el('h2', null, 'Paketoi sivusto'),
-            $el('label', null,
-                $el('span', null, 'Salausavain'),
+            $el(InputGroup, {label: 'Salausavain'},
                 $el('input', {name: 'signingKey', value: 'my-encrypt-key'})
             ),
-            $el('button', {className: 'nice-button nice-button-primary'}, 'Paketoi'),
-            $el('button', {onClick: () => services.redirect('/'),
-                           className: 'text-button',
-                           type: 'button'},'Peruuta')
+            $el('div', {className: 'form-buttons'},
+                $el('button', {className: 'nice-button primary'}, 'Paketoi'),
+                $el('a', {href: '#/'}, 'Peruuta')
+            )
         ));
     }
 }

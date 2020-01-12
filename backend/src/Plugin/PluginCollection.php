@@ -2,7 +2,7 @@
 
 namespace RadCms\Plugin;
 
-use RadCms\Framework\GenericArray;
+use Pike\GenericArray;
 
 class PluginCollection extends GenericArray {
     /**

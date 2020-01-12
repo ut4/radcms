@@ -5,9 +5,9 @@ const config = {
 
 function redirect(to, full) {
     if (!full) {
-        window.parent.location.hash = '#' + to;
+        window.location.hash = '#' + to;
     } else {
-        window.parent.location.href = window.parent.location.origin + config.baseUrl + to.substr(1);
+        window.location.href = window.location.origin + config.baseUrl + 'edit' + (to.length > 1 ? to : to.substr(1));
     }
 }
 
@@ -38,6 +38,40 @@ function myFetch(url, options = {}) {
 }
 myFetch.makeUrl = url => config.baseUrl + url.substr(1);
 
+const http = {
+    /**
+     * @param {string} url
+     * @returns Promise<Object>
+     */
+    get(url) {
+        return services
+            .myFetch(url)
+            .then(res => JSON.parse(res.responseText));
+    },
+    /**
+     * @param {string} url
+     * @param {Object|string} data
+     * @returns Promise<Object>
+     */
+    post(url, data, method = 'POST') {
+        return services
+            .myFetch(url, {
+                method,
+                headers: {'Content-Type': 'application/json'},
+                data: typeof data !== 'string' ? JSON.stringify(data) : data
+            })
+            .then(res => JSON.parse(res.responseText));
+    },
+    /**
+     * @param {string} url
+     * @param {Object|string} data
+     * @returns Promise<Object>
+     */
+    put(url, data) {
+        return this.post(url, data, 'PUT');
+    }
+};
+
 const signals = {
     _listeners: [],
     /**
@@ -65,6 +99,7 @@ const signals = {
 const services = {
     redirect,
     myFetch,
+    http,
     signals,
     config,
 };

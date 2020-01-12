@@ -1,8 +1,10 @@
 <?php
 
+define('RAD_VERSION', 'preview-0.0.0');
+
 $config = require 'config.php';
 $loader = require RAD_BASE_PATH . 'vendor/autoload.php';
-$loader->addPsr4('MySite\\', RAD_SITE_PATH);
+$loader->addPsr4('RadPlugins\\', RAD_SITE_PATH . 'plugins');
 
 ////////////////////////////////////////////////////////////////////////////////
 $logger = new \Monolog\Logger('mainLogger');
@@ -13,8 +15,8 @@ $logger->pushHandler(!(RAD_FLAGS & RAD_DEVMODE)
 
 ////////////////////////////////////////////////////////////////////////////////
 set_error_handler(function ($_errno, $errstr, $errfile, $errline) {
-    throw new \RadCms\Common\RadException(sprintf('%s in %s on line %d', $errstr, $errfile, $errline),
-                                          \RadCms\Common\RadException::ERROR_EXCEPTION);
+    throw new \Pike\PikeException(sprintf('%s in %s on line %d', $errstr, $errfile, $errline),
+                                  \Pike\PikeException::ERROR_EXCEPTION);
 });
 if (!(RAD_FLAGS & RAD_DEVMODE)) {
     error_reporting(E_RECOVERABLE_ERROR);
@@ -27,7 +29,4 @@ if (!(RAD_FLAGS & RAD_DEVMODE)) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-\RadCms\App::create($config)->handleRequest(
-    \RadCms\Framework\Request::createFromGlobals(RAD_BASE_URL,
-        $_GET[RAD_QUERY_VAR] ?? null)
-);
+\RadCms\App::create($config)->handleRequest(RAD_BASE_URL, $_GET[RAD_QUERY_VAR] ?? null);

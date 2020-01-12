@@ -1,6 +1,6 @@
 import {services, components} from '../../../rad-commons.js';
 import ContentNodeFieldList from './ContentNodeFieldList.js';
-const {View, Form} = components;
+const {View, Form, InputGroup} = components;
 
 /**
  * #/edit-content/:id/:contentTypeName/:publish?
@@ -12,47 +12,66 @@ class ContentEditView extends preact.Component {
     constructor(props) {
         super(props);
         this.state = {
-            cnode: null,
-            ctype: null,
-            doPublish: !!props.publish,
+            contentNode: null,
+            contentType: null,
+            doPublish: false,
         };
-        this.title = 'Muokkaa sisältöä';
-        this.confirmButtonText = 'Tallenna';
-        if (this.state.doPublish) {
-            this.title = 'Julkaise sisältöä';
-            this.confirmButtonText = 'Julkaise';
-        }
-        services.myFetch(`/api/content/${props.id}/${props.contentTypeName}`).then(res => {
-            this.state.cnode = JSON.parse(res.responseText);
-            return services.myFetch('/api/content-types/' + props.contentTypeName);
-        })
-        .then(res => {
-            this.state.ctype = JSON.parse(res.responseText);
-            this.setState({cnode: this.state.cnode, ctype: this.state.ctype});
-        })
-        .catch(() => {
-            toast('Jokin meni pieleen', 'error');
-        });
+        this.updateState(this.props);
+    }
+    /**
+     * @access protected
+     */
+    componentWillReceiveProps(props) {
+        if (props.id !== this.props.id)
+            this.updateState(props);
     }
     /**
      * @access private
      */
+    updateState(props) {
+        const newState = {contentNode: null, contentType: null, doPublish: !!props.publish};
+        this.title = 'Muokkaa sisältöä';
+        this.confirmButtonText = 'Tallenna';
+        if (newState.doPublish) {
+            this.title = 'Julkaise sisältöä';
+            this.confirmButtonText = 'Julkaise';
+        }
+        services.http.get(`/api/content/${props.id}/${props.contentTypeName}`)
+            .then(cnode => {
+                newState.contentNode = cnode;
+                return services.http.get('/api/content-types/' + props.contentTypeName);
+            })
+            .then(ctype => {
+                newState.contentType = ctype;
+            })
+            .catch(() => {
+                toast('Jokin meni pieleen', 'error');
+            })
+            .finally(() => {
+                this.setState(newState);
+            });
+    }
+    /**
+     * @access protected
+     */
     render() {
-        if (!this.state.ctype) return null;
-        const showPublishToggle = !this.props.publish && this.state.cnode.isRevision;
-        return $el(View, null, $el(Form, {onConfirm: e => this.handleFormSubmit(e),
-                                          confirmButtonText: this.confirmButtonText},
+        if (!this.state.contentType) return null;
+        const showPublishToggle = !this.props.publish && this.state.contentNode.isRevision;
+        return $el(View, null, $el(Form, {onConfirm: () => this.handleFormSubmit(),
+                                          confirmButtonText: this.confirmButtonText,
+                                          autoClose: false},
             $el('h2', null, this.title, showPublishToggle
                 ? $el('sup', null, ' (Luonnos)')
                 : null),
-            $el(ContentNodeFieldList, {cnode: this.state.cnode,
-                                       ctype: this.state.ctype,
-                                       ref: cmp => { if (cmp) this.fieldListCmp = cmp; }}),
+            $el(ContentNodeFieldList, {contentNode: this.state.contentNode,
+                                       contentType: this.state.contentType,
+                                       ref: cmp => { if (cmp) this.fieldListCmp = cmp; },
+                                       key: this.state.contentNode.id}),
             showPublishToggle
-                ? $el('div', null,
-                    $el('input', {id: 'i-create-rev', type: 'checkbox',
-                                  onChange: e => this.setState({doPublish: e.target.checked})}),
-                    $el('label', {for: 'i-create-rev', className: 'inline'}, 'Julkaise')
+                ? $el(InputGroup, {label: 'Julkaise', inline: true},
+                    $el('input', {id: 'i-publish', type: 'checkbox',
+                                  defaultChecked: true,
+                                  onChange: e => this.setState({doPublish: e.target.checked})})
                 )
                 : null
         ));
@@ -62,15 +81,15 @@ class ContentEditView extends preact.Component {
      */
     handleFormSubmit() {
         const revisionSettings = !this.state.doPublish ? '' : '/publish';
-        return services.myFetch(`/api/content/${this.props.id}/${this.props.contentTypeName}${revisionSettings}`, {
-            method: 'PUT',
-            headers: {'Content-Type': 'application/json'},
-            data: JSON.stringify(Object.assign({isPublished: this.state.cnode.isPublished,
-                                                isRevision: this.state.cnode.isRevision},
-                                               this.fieldListCmp.getResult()))
-        }).then(() => {
+        return services.http.put(`/api/content/${this.props.id}/${this.props.contentTypeName}${revisionSettings}`,
+            Object.assign({isPublished: this.state.contentNode.isPublished,
+                           isRevision: this.state.contentNode.isRevision},
+                          this.fieldListCmp.getResult())
+        )
+        .then(() => {
             services.redirect(this.props.returnTo || '/', true);
-        }, () => {
+        })
+        .catch(() => {
             toast('Sisällön tallennus epäonnistui.', 'error');
         });
     }

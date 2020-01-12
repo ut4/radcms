@@ -2,11 +2,11 @@
 
 namespace RadCms\Packager;
 
-use RadCms\Framework\FileSystemInterface;
+use Pike\FileSystemInterface;
 use RadCms\AppState;
 use RadCms\Content\DAO;
-use RadCms\Framework\Db;
-use RadCms\Auth\Crypto;
+use Pike\Db;
+use Pike\Auth\Crypto;
 
 class Packager {
     public const DB_CONFIG_VIRTUAL_FILE_NAME = 'db-config.json';
@@ -16,11 +16,11 @@ class Packager {
     public const WEBSITE_CONFIG_VIRTUAL_FILE_NAME = 'site.json';
     /** @var \RadCms\Packager\PackageStreamInterface */
     private $writer;
-    /** @var \RadCms\Auth\Crypto */
+    /** @var \Pike\Auth\Crypto */
     private $crypto;
     /** @var \RadCms\AppState */
     private $appState;
-    /** @var \RadCms\Framework\FileSystemInterface */
+    /** @var \Pike\FileSystemInterface */
     private $fs;
     /** @var \RadCms\ContentType\ContentTypeCollection */
     private $themeContentTypes;
@@ -30,10 +30,10 @@ class Packager {
     private $config;
     /**
      * @param \RadCms\Packager\PackageStreamInterface $writer
-     * @param \RadCms\Auth\Crypto $crypto
+     * @param \Pike\Auth\Crypto $crypto
      * @param \RadCms\AppState $appState
-     * @param \RadCms\Framework\Db $db
-     * @param \RadCms\Framework\FileSystemInterface $fs
+     * @param \Pike\Db $db
+     * @param \Pike\FileSystemInterface $fs
      */
     public function __construct(PackageStreamInterface $writer,
                                 Crypto $crypto,
@@ -46,15 +46,15 @@ class Packager {
         $this->fs = $fs;
         $this->themeContentTypes = $state->contentTypes->filter('site.json', 'origin');
         $this->cNodeDAO = new DAO($db, $this->themeContentTypes);
-        $this->config = include RAD_INDEX_PATH . 'config.php';
+        $this->config = include RAD_SITE_PATH . 'config.php';
     }
     /**
      * @param string $sitePath
      * @param string $signingKey
-     * @throws \RadCms\Common\RadException
+     * @throws \Pike\PikeException
      */
     public function packSite($sitePath, $signingKey) {
-        // @allow \RadCms\Common\RadException
+        // @allow \Pike\PikeException
         $this->writer->open('', true);
         //
         foreach ([
@@ -74,7 +74,7 @@ class Packager {
             $this->writer->write($virtualFilePath,
                                  $provideContents());
         }
-        // @allow \RadCms\Common\RadException
+        // @allow \Pike\PikeException
         $data = $this->writer->getResult();
         return $this->crypto->encrypt($data, $signingKey);
     }
@@ -111,7 +111,7 @@ class Packager {
     private function generateThemeContentDataJson() {
         $out = [];
         foreach ($this->themeContentTypes->toArray() as $ctype) {
-            // @allow \RadCms\Common\RadException
+            // @allow \Pike\PikeException
             if (!($nodes = $this->cNodeDAO->fetchAll($ctype->name)->exec()))
                 continue;
             $out[] = [$ctype->name, $nodes];

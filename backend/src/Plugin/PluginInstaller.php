@@ -2,15 +2,15 @@
 
 namespace RadCms\Plugin;
 
-use RadCms\Framework\Db;
+use Pike\Db;
 use RadCms\ContentType\ContentTypeMigrator;
-use RadCms\Common\RadException;
+use Pike\PikeException;
 
 class PluginInstaller {
     private $db;
     private $contentTypeMigrator;
     /**
-     * @param \RadCms\Framework\Db $db
+     * @param \Pike\Db $db
      * @param \RadCms\ContentType\ContentTypeMigrator $contentTypeMigrator
      */
     public function __construct(Db $db, ContentTypeMigrator $contentTypeMigrator) {
@@ -20,7 +20,7 @@ class PluginInstaller {
     /**
      * @param \RadCms\Plugin\Plugin $plugin
      * @return bool
-     * @throws \RadCms\Common\RadException
+     * @throws \Pike\PikeException
      */
     public function install(Plugin $plugin) {
         if ($plugin->isInstalled) {
@@ -30,9 +30,9 @@ class PluginInstaller {
             $plugin->instantiate();
         }
         $this->contentTypeMigrator->setOrigin($plugin);
-        // @allow \RadCms\Common\RadException
+        // @allow \Pike\PikeException
         $plugin->impl->install($this->contentTypeMigrator);
-        // @allow \RadCms\Common\RadException
+        // @allow \Pike\PikeException
         return $this->updateInstalledPlugins('UPDATE ${p}websiteState SET `installedPlugins`' .
                                              ' = JSON_SET(`installedPlugins`, ?, 1)',
                                              $plugin->name);
@@ -40,7 +40,7 @@ class PluginInstaller {
     /**
      * @param \RadCms\Plugin\Plugin $plugin
      * @return bool
-     * @throws \RadCms\Common\RadException
+     * @throws \Pike\PikeException
      */
     public function uninstall(Plugin $plugin) {
         if (!$plugin->isInstalled) {
@@ -49,9 +49,9 @@ class PluginInstaller {
         if (!$plugin->impl) {
             $plugin->instantiate();
         }
-        // @allow \RadCms\Common\RadException
+        // @allow \Pike\PikeException
         $plugin->impl->uninstall($this->contentTypeMigrator);
-        // @allow \RadCms\Common\RadException
+        // @allow \Pike\PikeException
         return $this->updateInstalledPlugins('UPDATE ${p}websiteState SET `installedPlugins`' .
                                              ' = JSON_REMOVE(`installedPlugins`, ?)',
                                              $plugin->name);
@@ -60,17 +60,17 @@ class PluginInstaller {
      * @param string $sql
      * @param string $pluginName
      * @return bool
-     * @throws \RadCms\Common\RadException
+     * @throws \Pike\PikeException
      */
     private function updateInstalledPlugins($sql, $pluginName) {
         try {
             if ($this->db->exec($sql, ['$."' . $pluginName . '"']) === 1) {
                 return true;
             }
-            throw new RadException('Failed to update websiteState.`installedPlugins`',
-                                   RadException::INEFFECTUAL_DB_OP);
+            throw new PikeException('Failed to update websiteState.`installedPlugins`',
+                                    PikeException::INEFFECTUAL_DB_OP);
         } catch (\PDOException $e) {
-            throw new RadException($e->getMessage(), RadException::FAILED_DB_OP);
+            throw new PikeException($e->getMessage(), PikeException::FAILED_DB_OP);
         }
     }
 }

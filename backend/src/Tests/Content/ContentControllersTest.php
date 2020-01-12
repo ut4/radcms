@@ -2,37 +2,35 @@
 
 namespace RadCms\Tests\Content;
 
-use RadCms\Tests\_Internal\DbTestCase;
-use RadCms\Tests\_Internal\HttpTestUtils;
+use Pike\TestUtils\DbTestCase;
+use Pike\TestUtils\HttpTestUtils;
 use RadCms\Tests\_Internal\ContentTestUtils;
-use RadCms\Tests\Installer\InstallerTest;
-use RadCms\Framework\Request;
+use Pike\Request;
 use RadCms\ContentType\ContentTypeCollection;
 use RadCms\ContentType\ContentTypeMigrator;
-use RadCms\Tests\_Internal\MutedResponse;
 
 final class ContentControllersTest extends DbTestCase {
     use HttpTestUtils;
     use ContentTestUtils;
-    private $afterTest;
     private static $testContentTypes;
     private static $migrator;
     public static function setUpBeforeClass() {
         self::$testContentTypes = new ContentTypeCollection();
         self::$testContentTypes->add('Products', 'Tuotteet', ['title' => 'text']);
+        self::$testContentTypes->add('Brands', 'Tuotemerkit', ['name' => 'text']);
         self::$migrator = new ContentTypeMigrator(self::getDb());
-        // @allow \RadCms\Common\RadException
+        // @allow \Pike\PikeException
         self::$migrator->installMany(self::$testContentTypes);
     }
-    public static function tearDownAfterClass($_ = null) {
-        parent::tearDownAfterClass($_);
-        // @allow \RadCms\Common\RadException
+    public static function tearDownAfterClass() {
+        parent::tearDownAfterClass();
+        // @allow \Pike\PikeException
         self::$migrator->uninstallMany(self::$testContentTypes);
-        InstallerTest::clearInstalledContentTypesFromDb();
+        self::clearInstalledContentTypesFromDb();
         self::$db->exec('DELETE FROM ${p}ContentRevisions');
     }
     public function tearDown() {
-        $this->afterTest->__invoke();
+        $this->deleteAllTestProducts();
     }
     public function testPOSTContentCreatesContentNode() {
         $s = $this->setupCreateContentTest();
@@ -41,37 +39,28 @@ final class ContentControllersTest extends DbTestCase {
         $this->verifyContentNodeWasInsertedToDb($s);
     }
     private function setupCreateContentTest() {
-        $this->afterTest = function () {
-            $this->deleteAllTestContentNodes();
-        };
         $s = (object) [
+            'actualResponseBody' => null,
             'actualResponseParsed' => null,
             'newProduct' => (object)['title' => 'Uuden tuotteen nimi'],
         ];
         return $s;
     }
     private function sendCreateContentNodeRequest($s, $urlTail = '') {
-        $res = $this->createMock(MutedResponse::class);
-        $res->expects($this->once())
-            ->method('json')
-            ->with($this->callback(function ($actualResponse) use ($s) {
-                $s->actualResponseParsed = $actualResponse;
-                return true;
-            }))
-            ->willReturn($res);
         $req = new Request('/api/content/Products' . $urlTail,
                            'POST',
                            $s->newProduct);
-        $this->sendRequest($req, $res);
+        $this->sendResponseBodyCapturingRequest($req, '\RadCms\App::create', $s);
+        $s->actualResponseParsed = json_decode($s->actualResponseBody);
     }
     private function verifyPOSTContentReturnedLastInsertId($s, $expectedNumAffected = '1') {
-        $this->assertEquals($expectedNumAffected, $s->actualResponseParsed['numAffectedRows']);
-        $this->assertEquals(true, $s->actualResponseParsed['lastInsertId'] > 0);
+        $this->assertEquals($expectedNumAffected, $s->actualResponseParsed->numAffectedRows);
+        $this->assertEquals(true, $s->actualResponseParsed->lastInsertId > 0);
     }
     private function verifyContentNodeWasInsertedToDb($s) {
         $this->assertEquals($s->newProduct->title, self::$db->fetchOne(
             'SELECT `title` FROM ${p}Products WHERE `id` = ?',
-            [$s->actualResponseParsed['lastInsertId']]
+            [$s->actualResponseParsed->lastInsertId]
         )['title']);
     }
 
@@ -91,7 +80,7 @@ final class ContentControllersTest extends DbTestCase {
         $this->assertEquals(json_encode(['title' => $s->newProduct->title]), self::$db->fetchOne(
             'SELECT `revisionSnapshot` FROM ${p}ContentRevisions WHERE `contentId` = ?' .
             ' AND `contentType` = ?',
-            [$s->actualResponseParsed['lastInsertId'], 'Products']
+            [$s->actualResponseParsed->lastInsertId, 'Products']
         )['revisionSnapshot']);
     }
 
@@ -101,9 +90,9 @@ final class ContentControllersTest extends DbTestCase {
 
     public function testGETContentReturnsContentNode() {
         $s = $this->setupGetContentTest();
-        $this->insertTestContentNode($s->productId);
+        $this->insertTestProduct();
         $this->sendGetContentNodeRequest($s);
-        $this->assertEquals('{"id":"10"' .
+        $this->assertEquals('{"id":"1"' .
                             ',"isPublished":true' .
                             ',"title":"Tuotteen nimi"' .
                             ',"contentType":"Products"' .
@@ -112,17 +101,35 @@ final class ContentControllersTest extends DbTestCase {
                             ',"revisions":[]}', $s->actualResponseBody);
     }
     private function setupGetContentTest() {
-        $this->afterTest = function () {
-            $this->deleteAllTestContentNodes();
-        };
         return (object) [
-            'productId' => 10,
             'actualResponseBody' => null
         ];
     }
     private function sendGetContentNodeRequest($s) {
-        $req = new Request('/api/content/' . $s->productId . '/Products', 'GET');
-        $this->sendResponseBodyCapturingRequest($req, $s);
+        $req = new Request('/api/content/1/Products', 'GET');
+        $this->sendResponseBodyCapturingRequest($req, '\RadCms\App::create', $s);
+    }
+
+
+    ////////////////////////////////////////////////////////////////////////////
+
+
+    public function testGETContentReturnsContentNodesByContentType() {
+        $s = $this->setupGetContentTest();
+        $this->insertTestProduct();
+        $this->insertTestBrand();
+        $this->sendGetContentNodesByTypeRequest($s);
+        $this->assertEquals('[{"id":"1"' .
+                            ',"isPublished":true' .
+                            ',"name":"Tuotemerkin nimi"' .
+                            ',"contentType":"Brands"' .
+                            ',"revisionCreatedAt":null' .
+                            ',"isRevision":false' .
+                            ',"revisions":[]}]', $s->actualResponseBody);
+    }
+    private function sendGetContentNodesByTypeRequest($s) {
+        $req = new Request('/api/content/Brands', 'GET');
+        $this->sendResponseBodyCapturingRequest($req, '\RadCms\App::create', $s);
     }
 
 
@@ -131,36 +138,26 @@ final class ContentControllersTest extends DbTestCase {
 
     public function testPUTContentUpdatesContentNode() {
         $s = $this->setupUpdateContentTest();
-        $this->insertTestContentNode($s->productId);
+        $this->insertTestProduct();
         $this->sendUpdateContentNodeRequest($s);
         $this->verifyContentNodeWasUpdatedToDb($s);
         $this->assertEquals('{"numAffectedRows":1}', $s->actualResponseBody);
     }
     private function setupUpdateContentTest() {
         $s = $this->setupGetContentTest();
-        $s->productId = 20;
         $s->newData = (object)['title' => 'Päivitetty tuotteen nimi',
                                'isRevision' => false];
         return $s;
     }
     private function sendUpdateContentNodeRequest($s, $urlTail = '') {
-        $res = $this->createMock(MutedResponse::class);
-        $res->expects($this->once())
-            ->method('json')
-            ->with($this->callback(function ($actualResponse) use ($s) {
-                $s->actualResponseBody = json_encode($actualResponse);
-                return true;
-            }))
-            ->willReturn($res);
-        $req = new Request('/api/content/' . $s->productId . '/Products' . $urlTail,
+        $req = new Request('/api/content/1/Products' . $urlTail,
                            'PUT',
                            $s->newData);
-        $this->sendRequest($req, $res);
+        $this->sendResponseBodyCapturingRequest($req, '\RadCms\App::create', $s);
     }
     private function verifyContentNodeWasUpdatedToDb($s, $isPublished = false) {
         $row = self::$db->fetchOne(
-            'SELECT `title`, `isPublished` FROM ${p}Products WHERE `id` = ?',
-            [$s->productId]
+            'SELECT `title`, `isPublished` FROM ${p}Products WHERE `id` = 1'
         ) ?? [];
         $this->assertEquals($s->newData->title, $row['title']);
         $this->assertEquals((int)$isPublished, $row['isPublished']);
@@ -172,15 +169,15 @@ final class ContentControllersTest extends DbTestCase {
 
     public function testPUTContentUpdatesRevision() {
         $s = $this->setupUpdateRevisionTest();
-        $this->insertTestContentNode($s->productId);
-        $this->insertRevision($s->productId, 'Products');
+        $this->insertTestProduct();
+        $this->insertRevision(1, 'Products');
         $this->sendUpdateContentNodeRequest($s);
         $this->assertEquals('{"numAffectedRows":1}', $s->actualResponseBody);
         $this->verifyRevisionWasUpdatedToDb($s);
+        $this->deleteAllRevisions();
     }
     private function setupUpdateRevisionTest() {
         $s = $this->setupUpdateContentTest();
-        $s->productId += 10;
         $s->newData->title .= 2;
         $s->newData->isRevision = true;
         return $s;
@@ -190,8 +187,8 @@ final class ContentControllersTest extends DbTestCase {
                                         JSON_UNESCAPED_UNICODE);
         $this->assertEquals($expectedSnapshot, self::$db->fetchOne(
             'SELECT `revisionSnapshot` FROM ${p}ContentRevisions' .
-            ' WHERE `contentId` = ? AND `contentType` = ?',
-            [$s->productId, 'Products']
+            ' WHERE `contentId` = 1 AND `contentType` = ?',
+            ['Products']
         )['revisionSnapshot']);
     }
 
@@ -201,16 +198,16 @@ final class ContentControllersTest extends DbTestCase {
 
     public function testPUTContentPublishesContent() {
         $s = $this->setupPublishContentTest();
-        $this->insertTestContentNode($s->productId, false);
-        $this->insertRevision($s->productId, 'Products');
+        $this->insertTestProduct(false);
+        $this->insertRevision(1, 'Products');
         $this->sendUpdateContentNodeRequest($s, '/publish');
         $this->assertEquals('{"numAffectedRows":2}', $s->actualResponseBody);
         $this->verifyRevisionWasDeletedFromDb($s);
         $this->verifyContentNodeWasUpdatedToDb($s, true);
+        $this->deleteAllRevisions();
     }
     private function setupPublishContentTest() {
         $s = $this->setupUpdateContentTest();
-        $s->productId += 20;
         $s->newData->title .= 3;
         $s->newData->isRevision = true;
         return $s;
@@ -218,14 +215,20 @@ final class ContentControllersTest extends DbTestCase {
     private function verifyRevisionWasDeletedFromDb($s) {
         $this->assertEquals(null, self::$db->fetchOne(
             'SELECT `revisionSnapshot` FROM ${p}ContentRevisions' .
-            ' WHERE `contentId` = ? AND `contentType` = ?',
-            [$s->productId, 'Products']
+            ' WHERE `contentId` = 1 AND `contentType` = ?',
+            ['Products']
         ));
     }
-    private function insertTestContentNode($id, $isPublished = true) {
-        $this->insertContent('Products', [['Tuotteen nimi'], [$id, $isPublished]]);
+    private function insertTestProduct($isPublished = true) {
+        $this->insertContent('Products', [['Tuotteen nimi'], [1, $isPublished]]);
     }
-    private function deleteAllTestContentNodes() {
+    private function insertTestBrand() {
+        $this->insertContent('Brands', [['Tuotemerkin nimi'], [1]]);
+    }
+    private function deleteAllTestProducts() {
         $this->deleteContent('Products');
+    }
+    private function deleteAllRevisions() {
+        self::$db->exec('DELETE FROM ${p}ContentRevisions');
     }
 }

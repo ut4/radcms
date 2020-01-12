@@ -2,7 +2,7 @@
 
 namespace RadCms\Website;
 
-use RadCms\Framework\GenericArray;
+use Pike\GenericArray;
 
 class UrlMatcherCollection extends GenericArray {
     /**

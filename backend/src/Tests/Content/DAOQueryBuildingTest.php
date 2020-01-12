@@ -4,9 +4,9 @@ namespace RadCms\Tests\Content;
 
 use PHPUnit\Framework\TestCase;
 use RadCms\Content\DAO;
-use RadCms\Framework\Db;
+use Pike\Db;
 use RadCms\ContentType\ContentTypeCollection;
-use RadCms\Common\RadException;
+use Pike\PikeException;
 
 final class DAOQueryBuildingTest extends TestCase {
     private function makeDao($useRevisions = false, $alterContentTypesFn = null) {
@@ -21,10 +21,10 @@ final class DAOQueryBuildingTest extends TestCase {
         $mainQ = 'SELECT `id`, `isPublished`, `title`, \'Games\' AS `contentType` FROM ${p}Games';
         $this->assertEquals($mainQ . ' WHERE id=\'1\'', $query1->toSql());
         //
-        $withRevisions = $this->makeDao(true)->fetchOne('Games')->where('id=2');
+        $withRevisions = $this->makeDao(true)->fetchOne('Games')->where('id=2')->limit(10, 2);
         $this->assertEquals(
             'SELECT a.*, _r.`revisionSnapshot`, _r.`createdAt` AS `revisionCreatedAt`' .
-            ' FROM (' . $mainQ . ' WHERE id=2) AS a' .
+            ' FROM (' . $mainQ . ' WHERE id=2 LIMIT 2, 10) AS a' .
             ' LEFT JOIN ${p}contentRevisions _r ON (_r.`contentId` = a.`id`' .
                                             ' AND _r.`contentType` = \'Games\')',
             $withRevisions->toSql()
@@ -32,11 +32,12 @@ final class DAOQueryBuildingTest extends TestCase {
     }
     public function testFetchOneGeneratesJoinQueries() {
         $mainQ = 'SELECT `id`, `isPublished`, `title`, \'Games\' AS `contentType` FROM ${p}Games' .
-                 ' WHERE `title`=\'Commandos II\'';
+                 ' WHERE `title`=\'Commandos II\' LIMIT 10';
         $joinQ = ' JOIN ${p}Platforms AS b ON (b.`gameTitle` = a.`title`)';
         $query = $this->makeDao()->fetchOne('Games')
             ->join('Platforms', 'b.`gameTitle` = a.`title`')
             ->where("`title`='Commandos II'")
+            ->limit(10)
             ->collectJoin('platforms',function(){});
         $this->assertEquals(
             'SELECT a.*, b.`id` AS `bId`, \'Platforms\' AS `bContentType`' .
@@ -49,6 +50,7 @@ final class DAOQueryBuildingTest extends TestCase {
         $asLeft = $this->makeDao()->fetchOne('Games')
             ->leftJoin('Platforms', 'b.`gameTitle` = a.`title`')
             ->where("`title`='Commandos II'")
+            ->limit(10)
             ->collectJoin('platforms',function(){});
         $this->assertEquals(
             'SELECT a.*, b.`id` AS `bId`, \'Platforms\' AS `bContentType`' .
@@ -61,6 +63,7 @@ final class DAOQueryBuildingTest extends TestCase {
         $withRevisions = $this->makeDao(true)->fetchOne('Games')
             ->join('Platforms', 'b.`gameTitle` = a.`title`')
             ->where("`title`='Commandos II'")
+            ->limit(10)
             ->collectJoin('platforms',function(){});
         $this->assertEquals(
             'SELECT a.*, b.`id` AS `bId`, \'Platforms\' AS `bContentType`'.
@@ -106,7 +109,7 @@ final class DAOQueryBuildingTest extends TestCase {
     }
     public function testToSqlValidatesItself() {
         $runInvalid = function ($fn) {
-            try { $fn()->toSql(); } catch (RadException $e) { return $e->getMessage(); }
+            try { $fn()->toSql(); } catch (PikeException $e) { return $e->getMessage(); }
         };
         $this->assertEquals('Content type `` not registered', $runInvalid(function () {
             return $this->makeDao()->fetchAll('');
@@ -115,7 +118,7 @@ final class DAOQueryBuildingTest extends TestCase {
             return $this->makeDao()->fetchOne('Games');
         }));
         $this->assertEquals(
-            'ContentType.name must be capitalized and contain only [a-ZA-Z]\n'.
+            'ContentType.name must be capitalized and contain only [a-zA-Z_]\n'.
             'ContentType.name must be <= 64 chars long', $runInvalid(function() {
                 $A_LONG_STRING = str_repeat('-', 65);
                 //
@@ -123,8 +126,8 @@ final class DAOQueryBuildingTest extends TestCase {
                     $ctypes->add($A_LONG_STRING, '', ['field' => 'text']);
                 })->fetchOne($A_LONG_STRING)->where('1=1');
             }));
-        $this->assertEquals('fetch alias is not valid\n' .
-                            'join alias is not valid.', $runInvalid(function () {
+        $this->assertEquals('fetch alias (&&) must contain only a-zA-Z_\n' .
+                            'join alias (p-bas) must contain only a-zA-Z_', $runInvalid(function () {
             return $this->makeDao()
                 ->fetchAll('Games &&')
                 ->join('Platforms p-bas', '1=1')

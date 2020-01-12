@@ -2,21 +2,21 @@
 
 namespace RadCms\ContentType;
 
-use RadCms\Framework\Db;
+use Pike\Db;
 use RadCms\Plugin\Plugin;
 use RadCms\Content\DMO;
-use RadCms\Common\RadException;
+use Pike\PikeException;
 
 /**
  * Luokka joka asentaa/päivittää/poistaa sisältötyyppejä tietokantaan.
  */
 class ContentTypeMigrator {
-    public const FIELD_DATA_TYPES = ['text', 'json'];
+    public const FIELD_DATA_TYPES = ['text', 'int', 'json'];
     private const COLLECTION_SIZES = ['tiny', 'small', 'medium', '', 'big'];
     private $db;
     private $origin;
     /**
-     * @param \RadCms\Framework\Db $db
+     * @param \Pike\Db $db
      */
     public function __construct(Db $db) {
         $this->db = $db;
@@ -27,17 +27,17 @@ class ContentTypeMigrator {
      * @param string $size = 'medium' 'tiny' | 'small' | 'medium' | '' | 'big'
      * @param array $initialData = null [['ContentTypeName', [(object)['key' => 'value']]]]
      * @return bool
-     * @throws \RadCms\Common\RadException
+     * @throws \Pike\PikeException
      */
     public function installMany(ContentTypeCollection $contentTypes,
                                 $initialData = null,
                                 $size = 'medium') {
         if (!in_array($size, self::COLLECTION_SIZES)) {
-            throw new RadException('Not valid content type collection size ' .
+            throw new PikeException('Not valid content type collection size ' .
                                     implode(' | ', self::COLLECTION_SIZES),
-                                    RadException::BAD_INPUT);
+                                    PikeException::BAD_INPUT);
         }
-        // @allow \RadCms\Common\RadException
+        // @allow \Pike\PikeException
         return $this->validateContentTypes($contentTypes) &&
                $this->validateInitialData($initialData) &&
                $this->createContentTypes($contentTypes->toArray(), $size) &&
@@ -47,10 +47,10 @@ class ContentTypeMigrator {
     /**
      * @param \RadCms\ContentType\ContentTypeCollection $contentTypes
      * @return bool
-     * @throws \RadCms\Common\RadException
+     * @throws \Pike\PikeException
      */
     public function uninstallMany(ContentTypeCollection $contentTypes) {
-        // @allow \RadCms\Common\RadException
+        // @allow \Pike\PikeException
         return $this->validateContentTypes($contentTypes) &&
                $this->removeContentTypes($contentTypes->toArray()) &&
                $this->removeFromInstalledContentTypes($contentTypes->toArray());
@@ -64,39 +64,39 @@ class ContentTypeMigrator {
     /**
      * @param \RadCms\ContentType\ContentTypeCollection $contentTypes
      * @return bool
-     * @throws \RadCms\Common\RadException
+     * @throws \Pike\PikeException
      */
     private function validateContentTypes($contentTypes) {
         if (!($errors = ContentTypeValidator::validateAll($contentTypes)))
             return true;
-        throw new RadException(implode(',', $errors), RadException::BAD_INPUT);
+        throw new PikeException(implode(',', $errors), PikeException::BAD_INPUT);
     }
     /**
      * @param array|null $data
      * @return bool
-     * @throws \RadCms\Common\RadException
+     * @throws \Pike\PikeException
      */
     private function validateInitialData($data) {
         if (!$data)
             return true;
         if (!is_array($data))
-            throw new RadException('initialData must be an array', RadException::BAD_INPUT);
+            throw new PikeException('initialData must be an array', PikeException::BAD_INPUT);
         foreach ($data as $item) {
             if (!is_array($item) ||
                 count($item) !== 2 ||
                 !is_string($item[0]) ||
                 !is_array($item[1]) ||
                 !(($item[1][0] ?? null) instanceof \stdClass))
-                    throw new RadException(
+                    throw new PikeException(
                         'initialData entry must be [["ContentTypeName", [{"key":"value"}]]]',
-                        RadException::BAD_INPUT);
+                        PikeException::BAD_INPUT);
         }
         return true;
     }
     /**
      * @param ContentTypeDef[] $ctypeDefs
      * @return bool
-     * @throws \RadCms\Common\RadException
+     * @throws \Pike\PikeException
      */
     private function createContentTypes($ctypeDefs, $size) {
         $sql = '';
@@ -112,13 +112,13 @@ class ContentTypeMigrator {
             $this->db->exec($sql);
             return true;
         } catch (\PDOException $e) {
-            throw new RadException($e->getMessage(), RadException::FAILED_DB_OP);
+            throw new PikeException($e->getMessage(), PikeException::FAILED_DB_OP);
         }
     }
     /**
      * @param ContentTypeDef[] $ctypeDefs
      * @return bool
-     * @throws \RadCms\Common\RadException
+     * @throws \Pike\PikeException
      */
     private function removeContentTypes($ctypeDefs) {
         try {
@@ -127,13 +127,13 @@ class ContentTypeMigrator {
             }, $ctypeDefs)));
             return true;
         } catch (\PDOException $e) {
-            throw new RadException($e->getMessage(), RadException::FAILED_DB_OP);
+            throw new PikeException($e->getMessage(), PikeException::FAILED_DB_OP);
         }
     }
     /**
      * @param array $compactCtypes see ContentTypeCollection->toCompactForm()
      * @return bool
-     * @throws \RadCms\Common\RadException
+     * @throws \Pike\PikeException
      */
     private function addToInstalledContentTypes($compactCtypes) {
         try {
@@ -144,17 +144,17 @@ class ContentTypeMigrator {
                 [json_encode($compactCtypes)]) > 0) {
                 return true;
             }
-            throw new RadException('Failed to update websiteState.`installedContentTypes`',
-                                   RadException::INEFFECTUAL_DB_OP);
+            throw new PikeException('Failed to update websiteState.`installedContentTypes`',
+                                    PikeException::INEFFECTUAL_DB_OP);
         } catch (\PDOException $e) {
-            throw new RadException($e->getMessage(), RadException::FAILED_DB_OP);
+            throw new PikeException($e->getMessage(), PikeException::FAILED_DB_OP);
         }
     }
     /**
      * @param array|null $data Array<[string, object]>
      * @param \RadCms\ContentType\ContentTypeCollection $contentTypes
      * @return bool
-     * @throws \RadCms\Common\RadException
+     * @throws \Pike\PikeException
      */
     private function insertInitialData($data, $contentTypes) {
         if (!$data) return true;
@@ -165,7 +165,7 @@ class ContentTypeMigrator {
             foreach ($contentNodes as $data) {
                 if (!property_exists($data, 'isPublished'))
                     $data->isPublished = true;
-                // @allow \RadCms\Common\RadException
+                // @allow \Pike\PikeException
                 $dmo->insert($contentTypeName, $data);
             }
         }
@@ -174,7 +174,7 @@ class ContentTypeMigrator {
     /**
      * @param ContentTypeDef[] $ctypeDefs
      * @return bool
-     * @throws \RadCms\Common\RadException
+     * @throws \Pike\PikeException
      */
     private function removeFromInstalledContentTypes($ctypeDefs) {
         $placeholders = [];
@@ -191,10 +191,10 @@ class ContentTypeMigrator {
                                 $values) > 0) {
                 return true;
             }
-            throw new RadException('Failed to update websiteState.`installedContentTypes`',
-                                   RadException::INEFFECTUAL_DB_OP);
+            throw new PikeException('Failed to update websiteState.`installedContentTypes`',
+                                    PikeException::INEFFECTUAL_DB_OP);
         } catch (\PDOException $e) {
-            throw new RadException($e->getMessage(), RadException::FAILED_DB_OP);
+            throw new PikeException($e->getMessage(), PikeException::FAILED_DB_OP);
         }
     }
 }

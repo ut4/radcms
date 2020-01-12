@@ -1,11 +1,11 @@
 class Utils {
     /**
-     * @param {ContentNode} cnode
+     * @param {ContentNode} contentNode
      */
-    static makeTitle(cnode) {
-        if (cnode.name) return cnode.name;
-        if (cnode.title) return cnode.title;
-        return '#' + cnode.id;
+    static makeTitle(contentNode) {
+        if (contentNode.name) return contentNode.name;
+        if (contentNode.title) return contentNode.title;
+        return '#' + contentNode.id;
     }
 }
 

@@ -5,12 +5,12 @@ namespace RadCms\Tests;
 use RadCms\Content\MagicTemplateDAO;
 use PHPUnit\Framework\TestCase;
 use RadCms\ContentType\ContentTypeCollection;
-use RadCms\Framework\Db;
+use Pike\Db;
 use RadCms\Templating\MagicTemplate;
 
 final class MagicTemplateTest extends TestCase {
     private $template;
-    public function setup() {
+    public function setUp() {
         $this->A_LONG_STRING = str_repeat('-', 65);
         $ctypes = new ContentTypeCollection();
         $ctypes->add('Generics', '', ['content' => 'text']);

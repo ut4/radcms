@@ -2,18 +2,20 @@
 
 namespace RadCms\Content;
 
-use RadCms\Framework\Db;
+use Pike\Db;
 use RadCms\ContentType\ContentTypeCollection;
-use RadCms\Common\RadException;
+use Pike\PikeException;
 
+/**
+ * Luokka jonka DAO->fetchOne|All() instansoi ja palauttaa. Ei tarkoitettu
+ * käytettäväksi manuaalisesti.
+ */
 class DAO {
     public $fetchRevisions;
     protected $db;
-    protected $counter;
-    protected $frontendPanelInfos;
     protected $contentTypes;
     /**
-     * @param \RadCms\Framework\Db $db
+     * @param \Pike\Db $db
      * @param \RadCms\ContentType\ContentTypeCollection $contentTypes
      * @param bool $fetchRevisions = false
      */
@@ -22,8 +24,6 @@ class DAO {
                                 $fetchRevisions = false) {
         $this->db = $db;
         $this->contentTypes = $contentTypes;
-        $this->counter = 0;
-        $this->frontendPanelInfos = [];
         $this->fetchRevisions = $fetchRevisions;
     }
     /**
@@ -32,9 +32,9 @@ class DAO {
      */
     public function fetchOne($contentTypeName) {
         [$contentTypeName, $alias] = self::parseContentTypeNameAndAlias($contentTypeName);
-        // @allow \RadCms\Common\RadException
+        // @allow \Pike\PikeException
         $type = $this->getContentType($contentTypeName);
-        return new Query(++$this->counter, $type, $alias, true, $this);
+        return new Query($type, $alias, true, $this);
     }
     /**
      * @param string $contentTypeName eg. 'Article', 'Product', 'Movie', 'Employee'
@@ -42,35 +42,18 @@ class DAO {
      */
     public function fetchAll($contentTypeName) {
         [$contentTypeName, $alias] = self::parseContentTypeNameAndAlias($contentTypeName);
-        // @allow \RadCms\Common\RadException
+        // @allow \Pike\PikeException
         $type = $this->getContentType($contentTypeName);
-        return new Query(++$this->counter, $type, $alias, false, $this);
-    }
-    /**
-     * @param string $queryId
-     * @param string $contentTypeName
-     * @param string $implName
-     * @param string $title = ''
-     */
-    public function addFrontendPanelInfo($queryId, $contentTypeName, $implName, $title) {
-        $this->frontendPanelInfos[$queryId] = (object)[
-            'id' => $queryId,
-            'impl' => $implName,
-            'title' => $title,
-            'contentTypeName' => $contentTypeName,
-            'contentNodes' => null,
-        ];
+        return new Query($type, $alias, false, $this);
     }
     /**
      * @param string $sql
-     * @param string $queryId
      * @param bool $isFetchOne
      * @param array $bindVals = null
      * @param object $join = null {contentType: string, collector: [\Closure, string]}
      * @return array|object|null
      */
     public function doExec($sql,
-                           $queryId,
                            $isFetchOne,
                            $bindVals = null,
                            $join = null) {
@@ -90,26 +73,16 @@ class DAO {
 				$rows, $isFetchOne, $out);
 		}
         //
-        if (isset($this->frontendPanelInfos[$queryId])) {
-            $this->frontendPanelInfos[$queryId]->contentNodes = $out;
-        }
-        //
         return $out;
     }
     /**
-     * @return array Array<{id: string, impl: string, ...}>
-     */
-    public function getFrontendPanelInfos() {
-        return array_values($this->frontendPanelInfos);
-    }
-    /**
      * @return \RadCms\ContentType\ContentTypeDef
-     * @throws \RadCms\Common\RadException
+     * @throws \Pike\PikeException
      */
     public function getContentType($name) {
         if (!($type = $this->contentTypes->find($name)))
-            throw new RadException("Content type `{$name}` not registered",
-                                   RadException::BAD_INPUT);
+            throw new PikeException("Content type `{$name}` not registered",
+                                    PikeException::BAD_INPUT);
         return $type;
     }
     /**
@@ -128,7 +101,7 @@ class DAO {
                 $row['id'] !== $out->id ||
                 $row['contentType'] !== $out->contentType) continue;
             $out->revisions[] = (object)[
-                'createdAt' => $row['revisionCreatedAt'],
+                'createdAt' => (int)$row['revisionCreatedAt'],
                 'snapshot' => json_decode($row['revisionSnapshot'])
             ];
         }

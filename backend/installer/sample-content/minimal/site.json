@@ -1,0 +1,14 @@
+{
+    "contentTypes": [
+        ["GenericBlobs", "Geneerinen", {
+            "name": "text:Nimi:textField",
+            "content": "text:Sisältö:richText"
+        }]
+    ],
+    "urlMatchers": [
+        [".*", "main-layout.tmpl.php"]
+    ],
+    "assetFiles": [
+        ["main.css", "local-stylesheet"]
+    ]
+}

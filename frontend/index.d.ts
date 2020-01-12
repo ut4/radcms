@@ -3,7 +3,7 @@ interface FormProps {
     onCancel?: (e: Event) => any;
     close?: Function;
     doDisableConfirmButton?: () => boolean;
-    noAutoClose?: bool;
+    autoClose?: bool;
     confirmButtonText?: string;
     cancelButtonText?: string;
 }
@@ -29,11 +29,13 @@ interface ControlPanelAppProps extends SiteInfo {
 
 interface ContentNode {
     id: string;
+    isPublished?: boolean;
+    isRevision?: boolean;
     [key: string]: any;
 }
 
 interface ContentType {
     name: string;
     friendlyName: string;
-    fields: Array<{name: string; dataType: string; widget?: string;}>;
+    fields: Array<{name: string; dataType: string; widget?: {name: string; args: {[key: string]: any;}|{}};}>;
 }

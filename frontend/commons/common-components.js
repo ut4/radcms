@@ -6,11 +6,27 @@ const $el = preact.createElement;
  * @param {Object} content
  */
 function View(props) {
-    return $el('div', {className: 'view'},
-        $el('button', {onClick: () => services.redirect('/')},
+    return $el('div', {id: 'view'}, $el('div', {className: 'box'},
+        $el('button', {onClick: () => services.redirect('/'),
+                       className: 'icon-button'},
             $el(FeatherSvg, {iconId: 'x'})
         ),
         props.children
+    ));
+}
+
+/**
+ * @param {{label: string|function?; id?: string; className?: string; inline?: boolean;}} props
+ */
+function InputGroup(props) {
+    const id = props.id || (props.children && props.children.props && props.children.props.id);
+    const label = props.label !== undefined && props.label !== null ? props.label : '';
+    return $el('div', {className: (!props.inline ? 'input-group' : 'input-group-inline') +
+                                  (!props.className ? '' : ` ${props.className}`)},
+        props.children,
+        $el('label', id ? {for: id} : null,
+            typeof label === 'string' ? label : $el(label)
+        )
     );
 }
 
@@ -30,15 +46,11 @@ class Form extends preact.Component {
             this.props.children,
             $el('div', {className: 'form-buttons'},
                 $el('button', {
-                    className: 'nice-button nice-button-primary',
+                    className: 'nice-button primary',
                     type: 'submit',
                     disabled: this.doDisableConfirmButton()
                 }, this.props.confirmButtonText || 'Ok'),
-                $el('button', {
-                    className: 'text-button',
-                    type: 'button',
-                    onClick: e => this.cancel(e)
-                }, this.props.cancelButtonText || 'Cancel')
+                $el('a', {href: '#/'}, this.props.cancelButtonText || 'Cancel')
             )
         );
     }
@@ -48,11 +60,11 @@ class Form extends preact.Component {
     handleSubmit(e) {
         e.preventDefault();
         const res = this.props.onConfirm(e);
-        if (!this.props.noAutoClose && res && res instanceof Promise) {
+        if (res && res instanceof Promise && this.props.autoClose !== false) {
             res.then(() => this.close());
             return;
         }
-        if (!this.props.noAutoClose) {
+        if (this.props.autoClose !== false) {
             this.close();
         }
     }
@@ -90,26 +102,10 @@ class Form extends preact.Component {
 }
 
 /**
- * Sets window.parent.location.hash = '#' + $to (or window.parent.location.href = $to
- * if $full = true).
- *
- * @param {{to: string; full?: bool; attrs?: Object;}} props
- */
-function MyLink(props) {
-    return $el('a', Object.assign({
-        href: (!props.full ? '#' : '') + props.to.split('?')[0],
-        onClick: e => {
-            e.preventDefault();
-            services.redirect(props.to, props.full);
-        },
-    }, props.attrs), props.children);
-}
-
-/**
- * @param {{iconId: string;}} eg. 'activity' (see: feathericons.com)
+ * @param {{iconId: string; className?: string}} eg. 'activity' (see: feathericons.com)
  */
 function FeatherSvg(props) {
-    return $el('svg', {className: 'feather'},
+    return $el('svg', {className: 'feather' + (!props.className ? '' : ` ${props.className}`)},
         $el('use', {'xlink:href': services.config.assetBaseUrl + 'frontend/assets/feather-sprite.svg#' + props.iconId},
             null)
     );
@@ -196,4 +192,4 @@ class Tabs extends preact.Component {
     }
 }
 
-export {View, Form, MyLink, FeatherSvg, Toaster, Tabs};
+export {View, InputGroup, Form, FeatherSvg, Toaster, Tabs};

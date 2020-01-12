@@ -11,9 +11,8 @@ class PluginsManageView extends preact.Component {
     constructor(props) {
         super(props);
         this.state = {plugins: [], message: null};
-        services.myFetch('/api/plugins')
-            .then(res => {
-                const plugins = JSON.parse(res.responseText);
+        services.http.get('/api/plugins')
+            .then(plugins => {
                 this.setState({plugins, message: plugins.length ? null : 'Ei lisäosia.'});
             })
             .catch(() => {
@@ -38,10 +37,14 @@ class PluginsManageView extends preact.Component {
                             !plugin.isInstalled
                                 ? $el('button', {onClick: () => {
                                                      this.installPlugin(plugin, i);
-                                                 }}, 'Asenna')
+                                                 },
+                                                 className: 'nice-button small'},
+                                      'Asenna')
                                 : $el('button', {onClick: () => {
                                                      this.uninstallPlugin(plugin, i);
-                                                 }}, 'Poista asennus')
+                                                 },
+                                                 className: 'nice-button small'},
+                                      'Poista asennus')
                         )
                     )
                 ))
@@ -53,35 +56,25 @@ class PluginsManageView extends preact.Component {
      */
     installPlugin(plugin) {
         if (plugin.isInstalled) return;
-        services.myFetch(`/api/plugins/${plugin.name}/install`, {
-            method: 'PUT',
-            headers: {'content-type': 'application/json'}
-        }).then(res => {
-            const data = JSON.parse(res.responseText);
-            if (data.ok) {
-                services.redirect('/', true);
-            } else {
-                toast(data.error, 'error');
-            }
-        });
+        sendInstallOrUninstallRequest(plugin, 'install');
     }
     /**
      * @access private
      */
     uninstallPlugin(plugin) {
         if (!plugin.isInstalled) return;
-        services.myFetch(`/api/plugins/${plugin.name}/uninstall`, {
-            method: 'PUT',
-            headers: {'content-type': 'application/json'}
-        }).then(res => {
-            const data = JSON.parse(res.responseText);
-            if (data.ok) {
-                services.redirect('/', true);
-            } else {
-                toast(data.error, 'error');
-            }
-        });
+        sendInstallOrUninstallRequest(plugin, 'uninstall');
     }
+}
+
+function sendInstallOrUninstallRequest(plugin, url) {
+    services.http.put(`/api/plugins/${plugin.name}/${url}`, {dum: 'my'})
+        .then(() => {
+            services.redirect('/', true);
+        })
+        .catch(() => {
+            toast(`Lisäosan ${url === 'install' ? 'asennus' : 'poisto'} epäonnistui`, 'error');
+        });
 }
 
 export default PluginsManageView;

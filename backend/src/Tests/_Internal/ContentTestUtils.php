@@ -6,7 +6,7 @@ trait ContentTestUtils {
     /**
      * @param string $contentTypeName
      * @param bool $isInstalled
-     * @param \RadCms\Framework\Db $db
+     * @param \Pike\Db $db
      * @param bool $verifyTableExists = true
      */
     public function verifyContentTypeIsInstalled($contentTypeName,
@@ -17,7 +17,7 @@ trait ContentTestUtils {
             $this->assertEquals(intval($isInstalled), count($db->fetchAll(
                 'SELECT `table_name` FROM information_schema.tables' .
                 ' WHERE `table_schema` = ? AND `table_name` = ?',
-                [$db->database, $db->tablePrefix . $contentTypeName]
+                [$db->getDatabase(), $db->getTablePrefix() . $contentTypeName]
             )));
         }
         $this->assertEquals(intval($isInstalled), self::$db->fetchOne(
@@ -52,5 +52,10 @@ trait ContentTestUtils {
     public function deleteContent($contentTypeName) {
         if (self::$db->exec('DELETE FROM ${p}' . $contentTypeName) < 1)
             throw new \RuntimeException('Failed to clean test data');
+    }
+    public static function clearInstalledContentTypesFromDb() {
+        self::$db->exec('UPDATE ${p}websiteState SET' .
+                        ' `installedContentTypes` = \'{}\'' .
+                        ', `installedContentTypesLastUpdated` = NULL');
     }
 }

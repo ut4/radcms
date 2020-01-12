@@ -3,7 +3,6 @@
 namespace RadCms\Website;
 
 class UrlMatcher {
-    public $origPattern;
     public $pattern;
     public $layoutFileName;
     /**
@@ -11,8 +10,14 @@ class UrlMatcher {
      * @param string $layoutFileName 'my-file.tmpl.php'
      */
     public function __construct($pattern, $layoutFileName) {
-        $this->origPattern = $pattern;
-        $this->pattern = '/^' . str_replace('/', '\\/', $pattern) . '$/i';
+        $this->pattern = self::completeRegexp($pattern);
         $this->layoutFileName = $layoutFileName;
+    }
+    /**
+     * @param string $pattern
+     * @return string
+     */
+    public static function completeRegexp($pattern) {
+        return '/^' . str_replace('/', '\\/', $pattern) . '$/i';
     }
 }

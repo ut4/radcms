@@ -2,9 +2,9 @@
 
 namespace RadCms\ContentType;
 
-use RadCms\Framework\Request;
-use RadCms\Framework\Response;
-use RadCms\Framework\Db;
+use Pike\Request;
+use Pike\Response;
+use Pike\Db;
 
 /**
  * Handlaa /api/content-types -alkuiset pyynnöt.
@@ -19,8 +19,8 @@ class ContentTypeControllers {
     /**
      * GET /api/content-type/:name.
      *
-     * @param \RadCms\Framework\Request $req
-     * @param \RadCms\Framework\Response $res
+     * @param \Pike\Request $req
+     * @param \Pike\Response $res
      * @param \RadCms\ContentType\ContentTypeCollection $ctypes
      */
     public function handleGetContentType(Request $req,
@@ -31,13 +31,18 @@ class ContentTypeControllers {
         else $res->status(404)->json(['got' => 'nothing']);
     }
     /**
-     * GET /api/content-type.
+     * GET /api/content-type/:filter.
      *
-     * @param \RadCms\Framework\Response $res
+     * @param \Pike\Request $req
+     * @param \Pike\Response $res
      * @param \RadCms\ContentType\ContentTypeCollection $ctypes
      */
-    public function handleGetAllContentTypes(Response $res,
-                                             ContentTypeCollection $ctypes) {
-        $res->json($ctypes->toArray());
+    public function handleGetContentTypes(Request $req,
+                                          Response $res,
+                                          ContentTypeCollection $ctypes) {
+        $filter = $req->params->filter ?? '';
+        $res->json($filter !== 'no-internals'
+            ? $ctypes->toArray()
+            : $ctypes->filter(false, 'isInternal')->toArray());
     }
 }

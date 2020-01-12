@@ -2,9 +2,9 @@
 
 namespace RadCms\ContentType;
 
-use RadCms\Framework\Db;
+use Pike\Db;
 use RadCms\Common\LoggerAccess;
-use RadCms\Common\RadException;
+use Pike\PikeException;
 
 /**
  * .
@@ -18,7 +18,7 @@ class ContentTypeSyncer {
      * @param object {added: \RadCms\ContentType\ContentTypeCollection, deleted: \RadCms\ContentType\ContentTypeCollection}
      * @param object {added: array, deleted: array, dataTypeChanged: array}
      * @return bool
-     * @throws \RadCms\Common\RadException
+     * @throws \Pike\PikeException
      */
     public function sync($ctypesDiff, $fieldsDiff) {
         if (($ctypesDiff->deleted->length() + $ctypesDiff->added->length() +
@@ -42,7 +42,7 @@ class ContentTypeSyncer {
             }
             $this->db->commit();
             return true;
-        } catch (RadException $e) {
+        } catch (PikeException $e) {
             $this->db->rollback();
             throw $e;
         }

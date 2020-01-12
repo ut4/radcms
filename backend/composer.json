@@ -2,6 +2,12 @@
     "name": "ut4/radcms",
     "description": "RadCMS is simply the most radical CMS ever created.",
     "type": "project",
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "https://github.com/ut4/pike"
+        }
+    ],
     "require": {
         "php": "~7.1",
         "ext-pdo_mysql": "*",
@@ -10,9 +16,10 @@
         "ext-fileinfo": "*",
         "psr/log": "^1.1",
         "monolog/monolog": "^1.25",
-        "altorouter/altorouter": "^1.2",
-        "rdlowrey/auryn": "^1.4"
+        "ut4/pike": "*"
     },
+    "minimum-stability": "dev",
+    "prefer-stable": true,
     "autoload": {
         "psr-4": {"RadCms\\": "src/"}
     },

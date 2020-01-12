@@ -2,14 +2,14 @@
 
 namespace RadCms\Tests\Auth;
 
-use RadCms\Tests\_Internal\DbTestCase;
-use RadCms\Tests\_Internal\HttpTestUtils;
-use RadCms\Framework\Request;
-use RadCms\Auth\CachingServicesFactory;
-use RadCms\Framework\SessionInterface;
-use RadCms\Auth\UserRepository;
-use RadCms\Auth\Authenticator;
-use RadCms\Tests\_Internal\MockCrypto;
+use Pike\TestUtils\DbTestCase;
+use Pike\TestUtils\HttpTestUtils;
+use Pike\Request;
+use Pike\Auth\CachingServicesFactory;
+use Pike\SessionInterface;
+use Pike\Auth\UserRepository;
+use Pike\Auth\Authenticator;
+use Pike\TestUtils\MockCrypto;
 
 final class AuthControllersTest extends DbTestCase {
     use HttpTestUtils;
@@ -23,7 +23,7 @@ final class AuthControllersTest extends DbTestCase {
         $req = new Request('/login', 'POST', (object)['username'=>'doesNotExist',
                                                       'password'=>'irrelevant']);
         $res = $this->createMockResponse(['err' => 'User not found'], 401);
-        $this->sendRequest($req, $res);
+        $this->sendRequest($req, $res, '\RadCms\App::create');
     }
     public function testPOSTLoginRejectsIfPasswordDidntMatch() {
         $this->createTestUser();
@@ -32,7 +32,7 @@ final class AuthControllersTest extends DbTestCase {
         $req = new Request('/login', 'POST', (object)['username'=>'doesExist',
                                                       'password'=>'wrongPass']);
         $res = $this->createMockResponse(['err' => 'Invalid password'], 401);
-        $this->sendRequest($req, $res);
+        $this->sendRequest($req, $res, '\RadCms\App::create');
     }
     public function testPOSTLoginPutsUserToSessionOnSuccess() {
         $this->createTestUser();
@@ -51,7 +51,7 @@ final class AuthControllersTest extends DbTestCase {
             ->willReturn('xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx');
         $f->method('makeSession')->willReturn($s);
         $ctx = (object)['auth' => new Authenticator(new MockCrypto, $f)];
-        $this->sendRequest($req, $res, $ctx);
+        $this->sendRequest($req, $res, '\RadCms\App::create', $ctx);
         //
         $this->verifyAuthNowReturnsLoggedInUserId($ctx);
     }

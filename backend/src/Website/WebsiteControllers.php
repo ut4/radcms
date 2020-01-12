@@ -2,50 +2,40 @@
 
 namespace RadCms\Website;
 
-use RadCms\Framework\Request;
-use RadCms\Framework\Response;
+use Pike\Request;
+use Pike\Response;
 use RadCms\Templating\MagicTemplate;
 use RadCms\Content\MagicTemplateDAO as ContentNodeDAO;
-use RadCms\Framework\SessionInterface;
 use RadCms\AppState;
-use RadCms\Framework\Db;
+use Pike\Db;
 use RadCms\ContentType\ContentTypeCollection;
-use RadCms\Framework\FileSystem;
+use Pike\FileSystem;
+use Pike\PikeException;
 
 /**
  * Handlaa sivupyynnöt, (GET '/' tai GET '/sivunnimi').
  */
 class WebsiteControllers {
     private $siteCfg;
-    private $session;
     private $appState;
     /**
      * @param \RadCms\Website\SiteConfig $siteConfig
      * @param \RadCms\AppState $appState
-     * @param \RadCms\Framework\SessionInterface $session
      */
-    public function __construct(SiteConfig $siteConfig,
-                                AppState $appState,
-                                SessionInterface $session) {
-        // @allow \RadCms\Common\RadException
-        if ($siteConfig->selfLoad(RAD_SITE_PATH . 'site.json') &&
-            ((RAD_FLAGS & RAD_DEVMODE) &&
-             $siteConfig->lastModTime > $appState->contentTypesLastUpdated)) {
-            // @allow \RadCms\Common\RadException
-            $appState->diffAndSaveChangesToDb($siteConfig->contentTypes, 'site.json');
-        }
+    public function __construct(SiteConfig $siteConfig, AppState $appState) {
+        // @allow \Pike\PikeException
+        $siteConfig->selfLoad(RAD_SITE_PATH . 'site.json');
         $this->siteCfg = $siteConfig;
-        $this->session = $session;
         $this->appState = $appState;
     }
     /**
      * GET *: handlaa sivupyynnön.
      *
-     * @param \RadCms\Framework\Request $request
-     * @param \RadCms\Framework\Response $response
-     * @param \RadCms\Framework\Db $db
+     * @param \Pike\Request $request
+     * @param \Pike\Response $response
+     * @param \Pike\Db $db
      * @param \RadCms\ContentType\ContentTypeCollection $contentTypes
-     * @throw \Radcms\Common\RadException
+     * @throws \Pike\PikeException
      */
     public function handlePageRequest(Request $req,
                                       Response $res,
@@ -63,23 +53,43 @@ class WebsiteControllers {
                                        '_jsFiles' => $this->siteCfg->jsAssets],
                                       $cnd,
                                       $fs);
-        $html = $template->render(['url' => $req->path ? explode('/', ltrim($req->path, '/')) : [''],
-                                   'site' => $this->appState->websiteState]);
-        if ($req->user && ($bodyEnd = strpos($html, '</body>')) > 1) {
-            $frontendDataKey = strval(time());
-            $this->session->put($frontendDataKey, [
-                'dataToFrontend' => [
-                    'contentPanels' => $cnd->getFrontendPanelInfos(),
-                    'adminPanels' => $this->appState->pluginFrontendAdminPanelInfos,
-                    'baseUrl' => $template->url('/'),
-                    'assetBaseUrl' => $template->assetUrl('/'),
-                    'currentPagePath' => $req->path,
-                ],
-                'pluginJsFiles' => $this->appState->pluginJsFiles,
-            ]);
-            $this->session->commit();
-            $html = substr($html, 0, $bodyEnd) . '<iframe src="' . $template->url('/cpanel/' . $frontendDataKey) . '" id="insn-cpanel-iframe" style="position:fixed;border:none;height:100%;width:275px;right:0;top:0"></iframe><script>function setIframeVisible(setVisible){document.getElementById(\'insn-cpanel-iframe\').style.width=setVisible?\'100%\':\'275px\';}</script>' . substr($html, $bodyEnd);
+        try {
+            $url = $req->path ? explode('/', ltrim($req->path, '/')) : [''];
+            $html = $template->render(['url' => $url,
+                                       'site' => $this->appState->websiteState]);
+        } catch (PikeException $e) {
+            if (!(RAD_FLAGS & RAD_DEVMODE)) {
+                $res->html("Hmm, {$layoutFileName} teki jotain odottamatonta.");
+                return;
+            } else {
+                throw $e;
+            }
         }
-        $res->html($html);
+        $res->html(!$req->user || ($bodyEnd = strpos($html, '</body>')) === false
+            ? $html
+            : $this->injectParentWindowCpanelSetupScript($html, $bodyEnd, $cnd, $template, $req));
+    }
+    /**
+     * '<html>...</body>' -> '<html>...<script>...</script></body>'
+     */
+    private function injectParentWindowCpanelSetupScript($html, $bodyEnd, $cnd, $template, $req) {
+        $dataToFrontend = json_encode([
+            'contentPanels' => $cnd->getFrontendPanelInfos(),
+            'adminPanels' => $this->appState->pluginFrontendAdminPanelInfos,
+            'baseUrl' => $template->url('/'),
+            'assetBaseUrl' => $template->assetUrl('/'),
+            'currentPagePath' => $req->path,
+        ]);
+        return substr($html, 0, $bodyEnd) .
+            "<script>(function (data) {
+                var s = document.createElement('style');
+                s.innerHTML = '#rad-highlight-overlay{position:absolute;background-color:rgba(0,90,255,0.18);z-index:0}';
+                document.head.appendChild(s);
+                //
+                var editWindow = window.parent;
+                if (editWindow.radCpanelApp) editWindow.radCpanelApp.setup(data);
+                else editWindow.radData = data;
+            }({$dataToFrontend}))</script>" .
+        substr($html, $bodyEnd);
     }
 }

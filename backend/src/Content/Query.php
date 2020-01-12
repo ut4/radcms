@@ -4,35 +4,31 @@ namespace RadCms\Content;
 
 use RadCms\ContentType\ContentTypeDef;
 use RadCms\ContentType\ContentTypeValidator;
-use RadCms\Common\RadException;
+use Pike\PikeException;
 
 /**
- * Luokka jonka templaattien <?php $this->fetchOne|All() ?> instansoi ja
- * palauttaa. Ei tarkoitettu käytettäväksi manuaalisesti.
+ * Luokka jonka DAO->fetchOne|All() instansoi ja palauttaa. Ei tarkoitettu
+ * käytettäväksi manuaalisesti.
  */
 class Query {
-    private $id;
-    private $contentType;
-    private $contentTypeAlias;
-    private $isFetchOne;
-    private $dao;
-    private $whereDef;
-    private $orderByExpr;
-    private $limitExpr;
-    private $joinDefs;
+    protected $contentType;
+    protected $contentTypeAlias;
+    protected $isFetchOne;
+    protected $dao;
+    protected $whereDef;
+    protected $orderByExpr;
+    protected $limitExpr;
+    protected $joinDefs;
     /**
-     * $param integer $id
      * $param \RadCms\ContentType\ContentTypeDef $contentType
      * $param string $contentTypeAlias
      * $param bool $isFetchOne
      * $param \RadCms\Content\DAO $dao
      */
-    public function __construct($id,
-                                ContentTypeDef $contentType,
+    public function __construct(ContentTypeDef $contentType,
                                 $contentTypeAlias,
                                 $isFetchOne,
                                 DAO $dao) {
-        $this->id = strval($id);
         $this->contentType = $contentType;
         $this->contentTypeAlias = $contentTypeAlias;
         $this->isFetchOne = $isFetchOne;
@@ -41,41 +37,30 @@ class Query {
     }
     /**
      * @param string $expr
-     * @param array $bindVals = null
+     * @param mixed ...$bindVals
      * @return $this
      */
-    public function where($expr, array $bindVals = null) {
+    public function where($expr, ...$bindVals) {
         $this->whereDef = (object)['expr' => $expr, 'bindVals' => $bindVals];
         return $this;
     }
     /**
      * @param string $contentType 'Products', 'Products p'
      * @param string $expr
-     * @param array $bindVals = null
-     * @param bool $isLeft = false
+     * @param mixed ...$bindVals
      * @return $this
      */
-    public function join($contentType,
-                         $expr,
-                         array $bindVals = null,
-                         $isLeft = false) {
-        [$contentTypeName, $alias] = DAO::parseContentTypeNameAndAlias($contentType, 'b');
-        $this->joinDefs[] = (object)['contentType' => $contentTypeName,
-                                     'alias' => $alias,
-                                     'expr' => $expr,
-                                     'bindVals' => $bindVals,
-                                     'isLeft' => $isLeft,
-                                     'collector' => null];
-        return $this;
+    public function join($contentType, $expr, ...$bindVals) {
+        return $this->doJoin($contentType, $expr, $bindVals, false);
     }
     /**
      * @param string $contentType 'Products', 'Products p'
      * @param string $expr
-     * @param array $bindVals = null
+     * @param mixed ...$bindVals
      * @return $this
      */
-    public function leftJoin($contentType, $expr, array $bindVals = null) {
-        return $this->join($contentType, $expr, $bindVals, true);
+    public function leftJoin($contentType, $expr, ...$bindVals) {
+        return $this->doJoin($contentType, $expr, $bindVals, true);
     }
     /**
      * @param string $toField
@@ -88,13 +73,12 @@ class Query {
         return $this;
     }
     /**
-     * @param string $panelType
-     * @param string $title = ''
+     * @param int $limit
+     * @param int $offset = null
      * @return $this
      */
-    public function createFrontendPanel($panelType, $title = '') {
-        $this->dao->addFrontendPanelInfo($this->id, $this->contentType->name, $panelType,
-            $title ? $title : $this->contentType->name);
+    public function limit($limit, $offset = null) {
+        $this->limitExpr = $offset === null ? (string)$limit : "{$offset}, {$limit}";
         return $this;
     }
     /**
@@ -107,16 +91,16 @@ class Query {
         foreach ($this->joinDefs as $d)
             if ($d->bindVals) $bindVals = array_merge($bindVals, $d->bindVals);
         //
-        return $this->dao->doExec($this->toSql(), $this->id, $this->isFetchOne,
+        return $this->dao->doExec($this->toSql(), $this->isFetchOne,
                                   $bindVals ?? null, $this->joinDefs[0] ?? null);
     }
     /**
      * @return string
-     * @throws \RadCms\Common\RadException
+     * @throws \Pike\PikeException
      */
     public function toSql() {
         if (($errors = $this->selfValidate())) {
-            throw new RadException($errors, RadException::BAD_INPUT);
+            throw new PikeException($errors, PikeException::BAD_INPUT);
         }
         //
         $mainQ = 'SELECT `id`, `isPublished`, ' .
@@ -139,6 +123,23 @@ class Query {
                ', ' . implode(', ', $fields) .
                ' FROM (' . $mainQ . ') AS ' . $this->contentTypeAlias .
                ' ' . implode(' ', $joins);
+    }
+    /**
+     * @param string $contentType 'Products', 'Products p'
+     * @param string $expr
+     * @param array $bindVals
+     * @param bool $isLeft
+     * @return $this
+     */
+    private function doJoin($contentType, $expr, $bindVals, $isLeft) {
+        [$contentTypeName, $alias] = DAO::parseContentTypeNameAndAlias($contentType, 'b');
+        $this->joinDefs[] = (object)['contentType' => $contentTypeName,
+                                     'alias' => $alias,
+                                     'expr' => $expr,
+                                     'bindVals' => $bindVals,
+                                     'isLeft' => $isLeft,
+                                     'collector' => null];
+        return $this;
     }
     /**
      * @param object $joinDef {contentType: string, expr: string, isLeft: bool}
@@ -173,12 +174,12 @@ class Query {
     private function selfValidate() {
         $errors = ContentTypeValidator::validate($this->contentType);
         if (!ctype_alnum(str_replace(['_'], '', $this->contentTypeAlias)))
-            $errors[] = 'fetch alias is not valid';
+            $errors[] = "fetch alias ({$this->contentTypeAlias}) must contain only a-zA-Z_";
         foreach ($this->joinDefs as $d) {
             $errors = array_merge($errors,
                 ContentTypeValidator::validateName($d->contentType));
             if (!ctype_alnum(str_replace(['_'], '', $d->alias)))
-                $errors[] = 'join alias is not valid.';
+                $errors[] = "join alias ({$d->alias}) must contain only a-zA-Z_";
             if (!$d->collector)
                 $errors[] = 'join() was used, but no collectJoin(\'field\',' .
                             ' function () {}) was provided';
@@ -188,6 +189,9 @@ class Query {
                 $errors[] = 'fetchOne(...)->where() is required';
             }
         }
+        if ($this->limitExpr &&
+            !ctype_digit(str_replace([',', ' '], '', $this->limitExpr)))
+                $errors[] = "limit expression `{$this->limitExpr}` not valid";
         return $errors ? implode('\n', $errors) : '';
     }
 }

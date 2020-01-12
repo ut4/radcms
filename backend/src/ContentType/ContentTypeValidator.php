@@ -2,11 +2,13 @@
 
 namespace RadCms\ContentType;
 
-use RadCms\Framework\Validator;
+use Pike\Validator;
 
 abstract class ContentTypeValidator {
     const MAX_NAME_LEN = 64;
-    const FIELD_WIDGETS = ['image', 'richtext'];
+    const FIELD_WIDGETS = ['textField', 'textArea', 'richText', 'image',
+                           'multiFieldBuilder', 'date', 'dateTime',
+                           'color', 'contentRef', 'hidden'];
     /**
      * @param \RadCms\ContentType\ContentTypeDef $contentType
      * @return string[]
@@ -21,12 +23,11 @@ abstract class ContentTypeValidator {
         foreach ($contentType->fields->toArray() as $f) {
             if (!is_string($f->name) || !preg_match('/^[a-zA-Z_]+$/', $f->name))
                 $errors[] = "`{$f->name}` must contain only [a-zA-Z_]";
-            if (!is_string($f->dataType) ||
-                !in_array($f->dataType, ContentTypeMigrator::FIELD_DATA_TYPES))
+            if (!in_array($f->dataType, ContentTypeMigrator::FIELD_DATA_TYPES))
                 $errors[] = "`{$f->dataType}` is not valid data type";
-            if (is_string($f->widget) &&
-                !in_array($f->widget, self::FIELD_WIDGETS))
-                $errors[] = "`{$f->widget}` is not valid widget";
+            if (is_string($f->widget->name) &&
+                !in_array($f->widget->name, self::FIELD_WIDGETS))
+                $errors[] = "`{$f->widget->name}` is not valid widget";
         }
         return $errors;
     }
@@ -45,9 +46,9 @@ abstract class ContentTypeValidator {
      */
     public static function validateName($contentTypeName) {
         $errors = [];
-        if (!ctype_alpha($contentTypeName) ||
+        if (!ctype_alpha(str_replace('_', '', $contentTypeName)) ||
             !ctype_upper(mb_substr($contentTypeName, 0, 1)))
-            $errors[] = 'ContentType.name must be capitalized and contain only [a-ZA-Z]';
+            $errors[] = 'ContentType.name must be capitalized and contain only [a-zA-Z_]';
         if (mb_strlen($contentTypeName) > self::MAX_NAME_LEN)
             $errors[] = 'ContentType.name must be <= 64 chars long';
         return $errors;
@@ -72,6 +73,7 @@ abstract class ContentTypeValidator {
             $validationRules = [
                 'text' => ['string'],
                 'json' => ['string'],
+                'int' => ['integer'],
             ][$f->dataType] ?? null;
             if (!$validationRules)
                 throw new \RuntimeException('Shouldn\'t happen');

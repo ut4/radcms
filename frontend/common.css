@@ -14,172 +14,171 @@ body {
     margin: 0;
     font: normal 14px/14px "Fira sans light";
 }
+h2 {
+    font: normal 18px/18px "Fira sans light";
+}
+a {
+    color: #5c5a75;
+}
+a:hover {
+    color: #5c5a75d5;
+}
 .hidden {
     display: none;
 }
-.line-through {
-    text-decoration: line-through;
-}
-h3, .h3 {
-    margin: 0 0 20px;
-    font: normal 18px/18px "Fira sans heavy";
-}
 .feather {
-    width: 26px;
-    height: 26px;
+    width: 24px;
+    height: 24px;
     stroke: currentColor;
     stroke-width: 2;
     stroke-linecap: round;
     stroke-linejoin: round;
     fill: none;
 }
-.box {
-    padding: 20px;
-    margin: 0 25px 20px 0;
-    border-radius: 2px;
-}
-
-/* == Lists ================================================================= */
-.list > * {
-    margin: 25px 0;
-}
-.list > :first-child {
-    margin-top: 0;
-}
-.list > :last-child {
-    margin-bottom: 0;
-}
-.list-small > * {
-    margin: 12px auto;
-}
-
-/* == Buttons =============================================================== */
-button {
-    font-family: "Fira sans light";
-    border: medium none;
-    cursor: pointer;
-    background-color: #f0f0f0;
-}
-button:disabled {
-    cursor: not-allowed;
-}
-button:hover:enabled {
-    background-color: #ececec;
-}
-.nice-button {
-    padding: 6px 16px;
-    border-radius: 16px;
-    background-color: #40e3cb;
-    color: rgba(255,255,255,0.9);
-    text-shadow: 1px 1px 0 #15c2bb;
-}
-.nice-button:disabled {
-    background-color: #E5E5E5;
-    color: #AAAAAA;
-    text-shadow: none;
-}
-.nice-button:active:enabled,
-.text-button:active:enabled {
-    transform: scale(1.02, 1.02);
-}
-.nice-button:hover:enabled {
-    background-color: #3bddc5;
-}
-.nice-button.small {
-    padding: 3px 13px;
-}
+.feather.small,
 .icon-button .feather {
     width: 18px;
     height: 18px;
-    float: left;
-    margin-right: 8px;
-}
-.icon-button.small .feather {
-    width: 15px;
-    height: 15px;
-    margin-top: 1px;
-}
-.text-button {
-    padding: 5px 16px;
-    background-color: transparent;
-}
-.text-button:disabled {
-    color: #AAAAAA;
-    cursor: not-allowed;
-}
-.text-button:hover:enabled {
-    color: #366361;
-    background-color: initial;
+    vertical-align: top;
 }
 
+/* == Layout ================================================================ */
+.container:not(:last-of-type) {
+    margin-bottom: 24px;
+}
+
+
+/* == Components ============================================================ */
+.box {
+    padding: 15px 18px;
+    background-color: #fff;
+    border-radius: 2px;
+    box-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+    border-top: 2px solid #34e6de;
+}
+.box h2 {
+    margin: 0 15px 24px 0;
+}
+
+
 /* == Forms ================================================================= */
-input, textarea, select:not(.no-style) {
-    background-color: transparent;
-    border-color: #ABADB3 #DBDFE6 #E3E9EF #E2E3EA;
-    border-radius: 1px;
-    border-style: solid;
-    border-width: 1px;
-    color: #444;
-    font: 14px "Fira sans light";
-    margin-bottom: 5px;
-    padding: 5px 0;
-    text-indent: 8px;
-    -webkit-transition: border-color 0.1s ease-out 0s;
-            transition: border-color 0.1s ease-out 0s;
+.input-group, .input-group-inline {
+    position: relative;
+    margin-bottom: 18px;
 }
-input.inline { padding: 0; }
-input[type="submit"] {
-    text-indent: 0;
-}
-select:not(.no-style) {
-    text-indent: 2px;
-}
-input:hover {
-    border-color: #5794BF #B7D5EA #C7E2F1 #C5DAED;
-}
-input[type="date"] {
-    text-indent: 3px;
-}
-label:not(.inline), .label {
-    display: inline-block;
-    margin-bottom: 4px;
+.input-group input,
+.input-group textarea,
+.input-group select {
+    font: 14px/14px "Fira sans light";
+    border-radius: 2px;
+    padding: 8px;
+    border: 1px solid #bbb;
+    transition: background-color 0.1s ease-out 0s, border-color 0.4s ease-out 0s;
     width: 100%;
-    text-align: left;
-}
-label > span:first-of-type,
-.label > span:first-of-type {
+    max-width: 300px;
     box-sizing: border-box;
-    display: inline-block;
 }
-label input,
-.label input,
-label textarea,
-.label textarea,
-.label select,
-label select {
-    box-sizing: border-box;
-    width: 100%;
+.input-group input:enabled:focus,
+.input-group textarea:enabled:focus ,
+.input-group select:enabled:focus{
+    outline: none;
+    border-color: #2dccc4;
 }
-input[type="checkbox"] {
-    width: initial;
-    margin-top: 4px;
+.input-group input:enabled:hover,
+.input-group textarea:enabled:hover,
+.input-group select:enabled:hover {
+    border-color: #aaa;
 }
-label .text-error,
-.label .text-error {
-    display: inline-block;
-    width: 100%;
+.input-group input:disabled,
+.input-group textarea:disabled,
+.input-group select:disabled {
+    background-color: #fff;
+    border-color: #d8d8d8;
+    cursor: not-allowed;
 }
-.form-buttons {
-    text-align: left;
-    margin-top: 15px;
+
+.input-group textarea {
+    max-width: initial;
 }
-.form-buttons .nice-button {
-    min-width: 85px;
+
+.input-group:not(.inline) label {
+    position: absolute;
+    color: #525252;
+    font-size: 12px;
+    padding: 0 3px;
+    transition: color 0.1s ease-out 0s;
+    left: 4px;
+    top: -6px;
+    background-color: #ffffff;
 }
-table input, table select:not(.no-style) {
-    padding: 2px 0;
-    margin: 0;
+.input-group input:disabled + label,
+.input-group textarea:disabled + label,
+.input-group select:disabled + label {
+    color: #d0d0d0;
 }
+.input-group input:enabled:focus + label,
+.input-group textarea:enabled:focus + label,
+.input-group select:enabled:focus + label {
+    color: #24a29c;
+}
+.input-group-inline input {
+    vertical-align: middle;
+}
+
+
+/* == Buttons =============================================================== */
+.nice-button,
+.icon-button {
+    cursor: pointer;
+    color: inherit;
+}
+.nice-button {
+    background-color: #f5f5f5;
+    border: none;
+    border-radius: 3px;
+    padding: 12px 24px;
+    font: normal 14px/14px "Fira sans light";
+    transition: background-color 0.1s ease-out 0s;
+}
+.nice-button.small {
+    padding: 6px 12px;
+    font-size: .9em;
+}
+.nice-button:disabled {
+    background-color: #eee;
+    color: #aaa;
+    cursor: not-allowed;
+}
+.nice-button:enabled:hover {
+    background-color: #f2f2f2;
+    box-shadow: 0 1px 1px rgba(0,0,0,0.2);
+}
+.nice-button:enabled:active,
+.nice-button.primary:enabled:active,
+.icon-button:enabled:active {
+    box-shadow: none;
+    outline: none;
+}
+.nice-button.primary:enabled {
+    background-color: #2dccc4;
+    color: #fff;
+}
+.nice-button.primary:enabled:hover {
+    background-color: #33d6ce;
+}
+
+.icon-button {
+    background-color: #f5f5f5;
+    border: 1px solid transparent;
+    padding: 6px;
+    font: normal 12px/12px "Fira sans light";
+    text-align: center;
+}
+.icon-button span {
+    margin: 0 3px 0 7px;
+    vertical-align: sub;
+}
+
 
 /* == Tables ================================================================ */
 table {
@@ -231,6 +230,7 @@ table .label input {
     margin: 0;
 }
 
+
 /* == Messages ============================================================== */
 .toaster {
     color: #fff;
@@ -264,11 +264,6 @@ table .label input {
     margin-top: -11px;
 }
 
-/* == Theme =============================================================== */
-.light { background-color: #f5f5f5; color: #4d4d4d; }
-.light .box { background-color: #fff; box-shadow: 1px 1px 2px rgba(0,0,0,0.1); }
-.light .box:not(.no-highlight-stripe) { border-top: 3px solid #40e3cb; }
-.light h3 { color: rgba(0,0,0,0.65); }
-.light a { color: #4d817f; }
-.light a:hover { color: #366361 }
-.light input, textarea, select:not(.no-style) { background-color: #fff }
+
+/* == Theme ================================================================= */
+.light { }

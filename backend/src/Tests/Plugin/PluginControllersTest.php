@@ -2,12 +2,12 @@
 
 namespace RadCms\Tests\Plugin;
 
-use RadCms\Tests\_Internal\DbTestCase;
-use RadCms\Tests\_Internal\HttpTestUtils;
-use RadCms\Framework\FileSystem;
-use MySite\Plugins\ValidPlugin\ValidPlugin;
-use MySite\Plugins\ValidAndInstalledPlugin\ValidAndInstalledPlugin;
-use RadCms\Framework\Request;
+use Pike\TestUtils\DbTestCase;
+use Pike\TestUtils\HttpTestUtils;
+use Pike\FileSystem;
+use RadPlugins\ValidPlugin\ValidPlugin;
+use RadPlugins\ValidAndInstalledPlugin\ValidAndInstalledPlugin;
+use Pike\Request;
 
 final class PluginControllersTest extends DbTestCase {
     use HttpTestUtils;
@@ -19,7 +19,7 @@ final class PluginControllersTest extends DbTestCase {
         $s = $this->setupInstallTest();
         //
         $req = new Request("/api/plugins/{$s->testPluginName}/install", 'PUT');
-        $this->sendRequest($req, $s->res, $s->ctx);
+        $this->sendRequest($req, $s->res, '\RadCms\App::create', $s->ctx);
         //
         $this->verifyCalledPluginImplsInstallMethod();
         $this->verifyRegisteredPluginToDb($s);
@@ -28,7 +28,7 @@ final class PluginControllersTest extends DbTestCase {
         $testPluginName = 'ValidPlugin';
         $ctx = (object)['fs' => $this->createMock(FileSystem::class)];
         $ctx->fs->expects($this->once())->method('readDir')->willReturn(
-            [RAD_SITE_PATH . 'Plugins/' . $testPluginName]);
+            [dirname(RAD_SITE_PATH) . '/_test-plugins/' . $testPluginName]);
         $this->afterTest = function () {
             ValidPlugin::$instantiated = false;
             ValidPlugin::$initialized = false;
@@ -61,7 +61,7 @@ final class PluginControllersTest extends DbTestCase {
         $s = $this->setupUninstallTest();
         //
         $req = new Request("/api/plugins/{$s->testPluginName}/uninstall", 'PUT');
-        $this->sendRequest($req, $s->res, $s->ctx);
+        $this->sendRequest($req, $s->res, '\RadCms\App::create', $s->ctx);
         //
         $this->verifyCalledPluginImplsUninstallMethod();
         $this->verifyUnregisteredPluginFromDb($s);
@@ -70,7 +70,7 @@ final class PluginControllersTest extends DbTestCase {
         $testPluginName = 'ValidAndInstalledPlugin';
         $ctx = (object)['fs' => $this->createMock(FileSystem::class)];
         $ctx->fs->expects($this->once())->method('readDir')->willReturn(
-            [RAD_SITE_PATH. 'Plugins/' . $testPluginName]);
+            [dirname(RAD_SITE_PATH) . '/_test-plugins/' . $testPluginName]);
         self::$db->exec('UPDATE ${p}websiteState SET `installedPlugins`=' .
                         ' JSON_SET(`installedPlugins`, ?, ?)',
                         ['$."' . $testPluginName . '"', 1]);

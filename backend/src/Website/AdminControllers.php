@@ -2,25 +2,33 @@
 
 namespace RadCms\Website;
 
-use RadCms\Framework\Request;
-use RadCms\Framework\Response;
+use Pike\Request;
+use Pike\Response;
+use RadCms\AppState;
 use RadCms\Templating\MagicTemplate;
-use RadCms\Framework\SessionInterface;
 
 class AdminControllers {
     /**
-     * GET /cpanel/:dataKey.
+     * GET /edit/<any>: renderöi sivuston hallintapaneeliversion.
      *
-     * @param \RadCms\Framework\Request $req
-     * @param \RadCms\Framework\Response $res
-     * @param \RadCms\Framework\SessionInterface $sess
+     * @param \Pike\Request $req
+     * @param \Pike\Response $res
+     * @param \RadCms\Website\SiteConfig $siteConfig
+     * @param \RadCms\AppState $appState
      */
-    public function handleRenderCpanelRequest(Request $req,
-                                              Response $res,
-                                              SessionInterface $sess) {
-        if ($data = $sess->get($req->params->dataKey))
-            $sess->remove($req->params->dataKey);
+    public function handleEditViewRequest(Request $req,
+                                          Response $res,
+                                          SiteConfig $siteConfig,
+                                          AppState $appState) {
+        // @allow \Pike\PikeException
+        if ($siteConfig->selfLoad(RAD_SITE_PATH . 'site.json') &&
+            ((RAD_FLAGS & RAD_DEVMODE) &&
+            $siteConfig->lastModTime > $appState->contentTypesLastUpdated)) {
+            // @allow \Pike\PikeException
+            $appState->diffAndSaveChangesToDb($siteConfig->contentTypes, 'site.json');
+        }
         $res->html((new MagicTemplate(RAD_BASE_PATH . 'src/Website/cpanel.tmpl.php'))
-            ->render($data));
+            ->render(['q' => $req->params->q ?? '/',
+                      'pluginJsFiles' => $appState->pluginJsFiles]));
     }
 }

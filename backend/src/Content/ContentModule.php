@@ -15,6 +15,9 @@ abstract class ContentModule {
         $ctx->router->map('GET', '/api/content/[i:id]/[w:contentTypeName]', function () {
             return [ContentControllers::class, 'handleGetContentNode', true];
         });
+        $ctx->router->map('GET', '/api/content/[w:contentTypeName]', function () {
+            return [ContentControllers::class, 'handleGetContentNodesByType', true];
+        });
         $ctx->router->map('PUT', '/api/content/[i:id]/[w:contentTypeName]/[publish:revisionSettings]?', function () {
             return [ContentControllers::class, 'handleUpdateContentNode', true];
         });

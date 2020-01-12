@@ -3,7 +3,7 @@
 namespace RadCms\Content;
 
 use RadCms\ContentType\ContentTypeValidator;
-use RadCms\Common\RadException;
+use Pike\PikeException;
 
 /**
  * DataManipulationObject: implementoi sisältötyyppidatan insert-, update-, ja
@@ -16,15 +16,15 @@ class DMO extends DAO {
      * @param object $data
      * @param bool $withRevision = false
      * @return int $db->rowCount()
-     * @throws \RadCms\Common\RadException
+     * @throws \Pike\PikeException
      */
     public function insert($contentTypeName, $data, $withRevision = false) {
         $this->lastInsertId = 0;
-        // @allow \RadCms\Common\RadException
+        // @allow \Pike\PikeException
         $type = $this->getContentType($contentTypeName);
         if (($errors = ContentTypeValidator::validateInsertData($type, $data)))
-            throw new RadException(implode(PHP_EOL, $errors),
-                                   RadException::BAD_INPUT);
+            throw new PikeException(implode(PHP_EOL, $errors),
+                                    PikeException::BAD_INPUT);
         $q = ['cols' => [], 'qs' => [], 'vals' => []];
         $appendVal = function ($name) use (&$q, $data) {
             $q['cols'][] = '`' . $name . '`';
@@ -45,7 +45,7 @@ class DMO extends DAO {
                 : $this->insertWithRevision($contentTypeName, $q, $data, $fields);
         } catch (\PDOException $e) {
             $this->db->rollback();
-            throw new RadException($e->getMessage(), RadException::FAILED_DB_OP);
+            throw new PikeException($e->getMessage(), PikeException::FAILED_DB_OP);
         }
     }
     /**
@@ -86,17 +86,16 @@ class DMO extends DAO {
      * @param object $data
      * @param string $revisionSettings = '' 'publish' | ''
      * @return int $db->rowCount()
-     * @throws \RadCms\Common\RadException
+     * @throws \Pike\PikeException
      */
     public function update($id, $contentTypeName, $data, $revisionSettings = '') {
         if (!is_string($id) || !ctype_digit($id))
-            throw new RadException('id must be a \'[0-9]+\'', RadException::BAD_INPUT);
-        // @allow \RadCms\Common\RadException
+            throw new PikeException('id must be a \'[0-9]+\'', PikeException::BAD_INPUT);
+        // @allow \Pike\PikeException
         $type = $this->getContentType($contentTypeName);
-
         if (($errors = ContentTypeValidator::validateUpdateData($type, $data)))
-            throw new RadException(implode(PHP_EOL, $errors),
-                                   RadException::BAD_INPUT);
+            throw new PikeException(implode(PHP_EOL, $errors),
+                                    PikeException::BAD_INPUT);
         //
         $fields = $type->fields->toArray();
         $execs = [];
@@ -119,7 +118,7 @@ class DMO extends DAO {
             $numRowsAffectedTotal = 0;
             $this->db->beginTransaction();
             foreach ($execs as $e) {
-                // @allow \RadCms\Common\RadException
+                // @allow \Pike\PikeException
                 if (($numRows = $this->db->exec(...$e)) > 0) {
                     $numRowsAffectedTotal += $numRows;
                 } else {
@@ -130,7 +129,7 @@ class DMO extends DAO {
             $this->db->commit();
             return $numRowsAffectedTotal;
         } catch (\PDOException $e) {
-            throw new RadException($e->getMessage(), RadException::FAILED_DB_OP);
+            throw new PikeException($e->getMessage(), PikeException::FAILED_DB_OP);
         }
     }
     /**
