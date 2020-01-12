@@ -9,13 +9,16 @@ const widgetTypes = [
     {name: 'image', description: 'Kuva'},
     {name: 'date', description: 'Päivämäärä'},
     {name: 'dateTime', description: 'Päivämäärä ja aika'},
+    {name: 'color', description: 'Väri'},
 ];
 
-const makeTextWidget = tagName =>
-    props => $el(tagName, {value: props.field.value,
+const makeTextWidget = (tagName, attrs = {}) =>
+    props => $el(tagName,
+        Object.assign({}, {value: props.field.value,
                            onInput: e => {
                                props.onChange(e.target.value);
-                           }});
+                           }}, attrs)
+    );
 
 const makeDateWidget = showTime =>
     props => $el(DateTimePicker, {
@@ -46,10 +49,11 @@ const widgetComponents = {
     }),
     date: makeDateWidget(false),
     dateTime: makeDateWidget(true),
+    color: makeTextWidget('input', {type: 'color'}),
 };
 
 /**
- * @param {'textField'|'textArea'|'richText'|'image'|'date'|'dateTime'} type
+ * @param {'textField'|'textArea'|'richText'|'image'|'date'|'dateTime'|'color'} type
  */
 export default type => {
     const component = widgetComponents[type];

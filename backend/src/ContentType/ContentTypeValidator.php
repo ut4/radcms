@@ -8,7 +8,7 @@ abstract class ContentTypeValidator {
     const MAX_NAME_LEN = 64;
     const FIELD_WIDGETS = ['textField', 'textArea', 'richText', 'image',
                            'multiFieldBuilder', 'date', 'dateTime',
-                           'hidden'];
+                           'color', 'contentRef', 'hidden'];
     /**
      * @param \RadCms\ContentType\ContentTypeDef $contentType
      * @return string[]
@@ -25,9 +25,9 @@ abstract class ContentTypeValidator {
                 $errors[] = "`{$f->name}` must contain only [a-zA-Z_]";
             if (!in_array($f->dataType, ContentTypeMigrator::FIELD_DATA_TYPES))
                 $errors[] = "`{$f->dataType}` is not valid data type";
-            if (is_string($f->widget) &&
-                !in_array($f->widget, self::FIELD_WIDGETS))
-                $errors[] = "`{$f->widget}` is not valid widget";
+            if (is_string($f->widget->name) &&
+                !in_array($f->widget->name, self::FIELD_WIDGETS))
+                $errors[] = "`{$f->widget->name}` is not valid widget";
         }
         return $errors;
     }

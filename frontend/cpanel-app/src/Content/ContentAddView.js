@@ -2,6 +2,10 @@ import {services, components} from '../../../rad-commons.js';
 import ContentNodeFieldList from './ContentNodeFieldList.js';
 const {View, InputGroup, Form} = components;
 
+const DefaultInitialValsByWidgetType = {
+    color: '#33393e'
+};
+
 /**
  * #/add-content[/:initialComponentTypeName?returnto=<url>]
  */
@@ -83,7 +87,8 @@ class ContentAddView extends preact.Component {
         newState.contentType = newState.contentTypes.find(t => t.name === ctypeName);
         newState.newContentNode = {};
         newState.contentType.fields.forEach(field => {
-            newState.newContentNode[field.name] = '';
+            const val = field.widget ? DefaultInitialValsByWidgetType[field.widget.name] : '';
+            newState.newContentNode[field.name] = val !== undefined ? val : '';
         });
     }
 }

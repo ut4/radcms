@@ -37,5 +37,5 @@ interface ContentNode {
 interface ContentType {
     name: string;
     friendlyName: string;
-    fields: Array<{name: string; dataType: string; widget?: string;}>;
+    fields: Array<{name: string; dataType: string; widget?: {name: string; args: {[key: string]: any;}|{}};}>;
 }

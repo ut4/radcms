@@ -1,5 +1,6 @@
 import makeWidgetComponent from '../Widgets/all.js';
 import MultiFieldBuilder from '../Widgets/MultiFieldBuilder.js';
+import ContentRefPicker from '../Widgets/ContentRefPicker.js';
 import {components} from '../../../rad-commons.js';
 const {InputGroup} = components;
 
@@ -29,7 +30,7 @@ class ContentNodeFieldList extends preact.Component {
      */
     render() {
         return $el('div', null, this.state.contentType.fields.map(field =>
-            field.widget !== 'hidden' && field.widget !== 'multiFieldBuilder'
+            field.widget.name !== 'hidden' && field.widget.name !== 'multiFieldBuilder'
                 ? $el(InputGroup, {label: field.friendlyName},
                     this.makeInput(field)
                 )
@@ -40,26 +41,35 @@ class ContentNodeFieldList extends preact.Component {
      * @access private
      */
     makeInput(field) {
-        if (field.widget === 'hidden') {
+        const widgetName = field.widget.name;
+        if (widgetName === 'hidden') {
             return null;
         }
-        if (field.widget === 'multiFieldBuilder') {
-            const value = this.state.contentNode[field.name];
+        const value = this.state.contentNode[field.name];
+        const applyWidgetValue = val => {
+            this.setCnodeValue(val, field.name);
+        };
+        if (widgetName === 'multiFieldBuilder') {
             return $el(MultiFieldBuilder, {
                 fields: value ? JSON.parse(value) : [],
                 onChange: (structure, rendered) => {
-                    this.setCnodeValue(structure, field.name);
+                    applyWidgetValue(structure);
                     if (this.state.contentNode.rendered)
                         this.setCnodeValue(rendered, 'rendered');
                 }
             });
         }
-        return $el(makeWidgetComponent(field.widget), {
-            field: {id: field.name, value: this.state.contentNode[field.name]},
+        if (widgetName === 'contentRef') {
+            return $el(ContentRefPicker, Object.assign({
+                value,
+                onRefChange: applyWidgetValue
+            }, field.widget.args));
+        }
+        return $el(makeWidgetComponent(widgetName), {
+            args: field.widget.args,
+            field: {id: field.name, value},
             fieldInfo: field,
-            onChange: val => {
-                this.setCnodeValue(val, field.name);
-            }
+            onChange: applyWidgetValue
         });
     }
     /**

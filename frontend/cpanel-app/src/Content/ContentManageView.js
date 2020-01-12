@@ -1,4 +1,5 @@
 import {services, components} from '../../../rad-commons.js';
+import CNodeUtils from './Utils.js';
 const {View, FeatherSvg, InputGroup} = components;
 
 /**
@@ -63,7 +64,7 @@ class ContentManageView extends preact.Component {
                 $el('tbody', null, this.state.content.map(cnode => {
                     const href = `/edit-content/${cnode.id}/${cnode.contentType}`;
                     return $el('tr', null,
-                        $el('td', null, cnode.name),
+                        $el('td', null, CNodeUtils.makeTitle(cnode)),
                         $el('td', null, cnode.isPublished
                             ? 'Kyllä'
                             : ['Ei ', $el('a', {href: `#${href}/publish`}, 'Julkaise')]),

@@ -9,6 +9,7 @@ use Pike\Request;
 use RadCms\ContentType\ContentTypeCollection;
 use RadCms\ContentType\ContentTypeMigrator;
 use RadCms\ContentType\ContentTypeValidator;
+use RadCms\ContentType\FieldSetting;
 
 final class ContentTypeControllersTest extends DbTestCase {
     use HttpTestUtils;
@@ -41,9 +42,9 @@ final class ContentTypeControllersTest extends DbTestCase {
              'friendlyName' => 'Tapahtumat',
              'fields' => [
                  ['name' => 'name', 'friendlyName' => 'name', 'dataType' => 'text',
-                  'widget' => self::DEFAULT_WIDGET],
+                  'widget' => new FieldSetting(self::DEFAULT_WIDGET)],
                  ['name' => 'pic', 'friendlyName' => 'Kuva', 'dataType' => 'text',
-                  'widget' => 'image'],
+                  'widget' => new FieldSetting('image')],
              ],
              'isInternal' => false,
              'origin' => 'site.json'],
@@ -75,13 +76,13 @@ final class ContentTypeControllersTest extends DbTestCase {
         $this->verifyResponseBodyEquals(
             [['name' => 'Events', 'friendlyName' => 'Tapahtumat', 'fields' => [
                 ['name' => 'name', 'friendlyName' => 'name', 'dataType' => 'text',
-                 'widget' => self::DEFAULT_WIDGET],
+                 'widget' => new FieldSetting(self::DEFAULT_WIDGET)],
                 ['name' => 'pic', 'friendlyName' => 'Kuva', 'dataType' => 'text',
-                 'widget' => 'image'],
+                 'widget' => new FieldSetting('image')],
             ], 'isInternal' => false, 'origin' => 'site.json'],
             ['name' => 'Locations', 'friendlyName' => 'Paikat', 'fields' => [
                 ['name' => 'name', 'friendlyName' => 'Tapahtumapaikka', 'dataType' => 'text',
-                 'widget' => self::DEFAULT_WIDGET],
+                 'widget' => new FieldSetting(self::DEFAULT_WIDGET)],
             ], 'isInternal' => false, 'origin' => 'site.json']],
             $s
         );
