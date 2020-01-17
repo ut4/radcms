@@ -11,9 +11,6 @@
   "license": "GPLv2",
   "devDependencies": {
     "@rollup/plugin-sucrase": "^3.0.0",
-    "eslint": "^6.8.0",
-    "eslint-plugin-react": "^7.18.0",
-    "preact": "^10.2.1",
     "rollup": "^1.27.4"
   },
   "typings": "lib.d.ts"

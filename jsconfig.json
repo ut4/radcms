@@ -1,0 +1,11 @@
+{
+    "compilerOptions": {
+        "moduleResolution": "node",
+        "target": "es2017",
+        "baseUrl": "./",
+        "paths": {
+            "@rad-commons": ["frontend-src/commons/main.js"],
+            "@rad-cpanel-commons": ["frontend-src/cpanel-commons/main.js"],
+        }
+    }
+}
