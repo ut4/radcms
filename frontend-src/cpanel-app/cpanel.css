@@ -1,0 +1,281 @@
+html, body {
+    height: 100%;
+    margin: 0;
+}
+iframe {
+    position: absolute;
+    width: calc(100% - 180px);
+    height: 100%;
+    top: 0;
+    left: 180px;
+    border: none;
+    box-sizing: border-box;
+}
+
+
+/* == Cpanel ================================================================ */
+#cpanel, #view {
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    position: absolute;
+}
+#cpanel {
+    background-color: #33393e/* #373644*/;
+    width: 180px;
+    left: 0;
+    color: #ffffff;
+}
+#cpanel.collapsed {
+    width: 41px;
+    overflow: hidden;
+}
+
+.top-row {
+    position: relative;
+}
+.top-row button {
+    float: left;
+    background-color: transparent;
+    padding: 8px;
+}
+.top-row .feather {
+    width: 16px;
+    height: 16px;
+}
+#cpanel.collapsed .top-row button {
+    padding: 8px 11px;
+    float: none;
+}
+#logo {
+    font: normal 14px/15px "Fira sans heavy";
+    color: #f5f5f5;
+    padding: 8px 11px 7px;
+    text-align: right;
+}
+#cpanel.collapsed #logo {
+    display: none;
+}
+#logo > span {
+    font-family: "Fira sans light";
+    text-transform: uppercase;
+}
+
+section {
+    margin: 0 3px 4px 0px;
+    font-size: 12px;
+    line-height: 14px;
+}
+section h2 {
+    display: none;
+}
+section > div {
+    padding: 10px;
+    color: rgba(255,255,255,0.8);
+    border-radius: 2px;
+    border-left: 3px solid #e8fbe2;
+}
+section:nth-of-type(2) > div {
+    border-color: #7197b3;
+}
+section:nth-of-type(3) > div {
+    border-color: #e69393;
+}
+section > div > div {
+    margin: 12px 0 24px;
+}
+section > div > div:first-of-type {
+    margin-top: 0;
+}
+section > div > div:last-of-type {
+    margin-bottom: 6px;
+}
+#cpanel.collapsed section h3 {
+    color: transparent;
+}
+section h3 {
+    font: normal 14px/14px "Fira sans light";
+    margin: 6px 0 15px;
+    padding-right: 22px;
+    position: relative;
+}
+section h3 span .feather {
+    float: left;
+    width: 17px;
+    height: 17px;
+    margin-top: -1px;
+    padding-right: 7px;
+}
+section h3 span > i {
+    font-size: 11px;
+    display: block;
+    color: rgba(255,255,255,0.4);
+}
+section .ui-panel .icon-button {
+    background-color: transparent;
+    color: rgba(255,255,255,0.4);
+    position: absolute;
+    right: -5px;
+    top: -7px;
+}
+section a {
+    font-size: 12px;
+    display: block;
+    color: rgba(255,255,255,0.4);
+    margin: 6px 0;
+    text-decoration: none;
+}
+section a:hover {
+    color: rgba(255,255,255,0.5);
+}
+section.quick-links .icon-button {
+    background-color: rgba(255,255,255,0.1);
+    color: rgba(255,255,255,0.8);
+    width: 100%;
+    margin-bottom: 6px;
+    padding: 8px;
+}
+section.quick-links .icon-button:last-of-type {
+    margin-bottom: 0;
+}
+section.quick-links .icon-button .feather {
+    width: 14px;
+    height: 14px;
+}
+
+
+/* == View ================================================================== */
+#view {
+    left: 180px;
+    width: calc(100% - 180px);
+    background-color: rgba(0,0,0,0.5);
+    color: #282828;
+}
+#cpanel.collapsed + #view {
+    left: 41px;
+    width: calc(100% - 41px);
+}
+#view > div {
+    margin: 15px;
+    max-width: 800px;
+}
+#view > div > button {
+    float: right;
+    background-color: transparent;
+}
+
+
+/* == Popup overlay ========================================================= */
+.popup-dialog {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    left: 0;
+    top: 0;
+    min-width: 200px;
+    min-height: 200px;
+    z-index: 1;
+    padding: 0 15px;
+    background-color: rgba(0,0,0,0.4);
+}
+.popup-dialog > div {
+    margin: 20px auto;
+    max-width: 600px;
+    width: 100%;
+}
+
+
+/* == Selectable item grid ================================================== */
+.item-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5px;
+}
+.item-grid > button {
+    border: none;
+    padding: 5px;
+    border-radius: 2px;
+    cursor: pointer;
+    margin-bottom: 21px;
+    position: relative;
+    background-color: rgba(0,0,0,0.05);
+}
+.item-grid > button:hover {
+    background-color: rgba(0,0,0,0.08);
+}
+
+.image-grid > button:after {
+    content: attr(data-caption);
+    position: absolute;
+    left: 0;
+    bottom: -24px;
+}
+.image-grid > button.selected {
+    border: 2px solid #37c1ff;
+}
+.image-grid img {
+    width: 100%;
+}
+
+
+/* == PikaDay datepicker ==================================================== */
+.datepicker-container {
+    position: absolute;
+    z-index: 1;
+}
+
+.pika-table {
+    table-layout: fixed;
+}
+.pika-table th:first-of-type {
+    width: 10%;
+}
+.pika-table .pika-week {
+    vertical-align: middle;
+}
+.pika-table td .pika-button {
+    text-align: center;
+}
+.pika-time-container {
+    margin-bottom: 16px;
+}
+
+table.pika-time {
+    margin: 0 auto;
+    width: auto;
+}
+.pika-time td {
+    padding: 0 1px 0;
+    font-weight: bold;
+    line-height: 25px;
+}
+.pika-time select {
+    padding: 2px;
+    margin-bottom: 0;
+    width: 80px;
+}
+
+.datepicker.large td .pika-button {
+    padding: 10px;
+}
+.datepicker.large .pika-lendar {
+    width: auto;
+    max-width: 330px;
+}
+
+
+/* == Form extensions ======================================================= */
+.form-buttons a {
+    margin-left: 20px;
+    text-decoration: none;
+    color: inherit;
+}
+label > div[contenteditable] {
+    display: inline-block;
+    border-bottom: 1px dashed #999;
+    width: auto;
+    padding-bottom: 3px;
+}
+.multi-field-builder {
+    margin-bottom: 10px;
+}

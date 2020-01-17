@@ -1,5 +1,4 @@
-import {services, components} from '../../rad-commons.js';
-const {Form, Toaster} = components;
+const {http, Form, Toaster} = window.radCommons;
 const $el = preact.createElement;
 
 class InstallApp extends preact.Component {
@@ -128,7 +127,7 @@ class InstallApp extends preact.Component {
         const data = this.state;
         sessionStorage.lastTyped = JSON.stringify(data);
         data.baseUrl = location.pathname.replace('install.php', '');
-        services.http.post('', data)
+        http.post('', data)
         .then(() => {
             toast($el('p', null,
                 'Sivusto asennettiin kansioon ', $el('span', {style: 'font-weight: bold'}, this.props.siteDirPath), '. Aloita lukemalla README.md, tai ',

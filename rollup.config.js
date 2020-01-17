@@ -1,67 +1,90 @@
-// Command: node node_modules/rollup/dist/bin/rollup -c rollup.config.js --configBundle commons|cpanel|cpanel-boot|my-plugin-main [--configVersion 0.0.1]
 const path = require('path');
+const sucrase = require('@rollup/plugin-sucrase');
+const isWatch = process.env.hasOwnProperty('ROLLUP_WATCH');
 
-module.exports = args => {
-    const commonsPath = path.resolve(__dirname, 'frontend/rad-commons.js');
-    const cpanelPath = path.resolve(__dirname, 'frontend/rad-cpanel.js');
-    const inputBundleName = args.configBundle;
-    if (!inputBundleName) {
-        throw new Error('--configBundle must be commons,cpanel,cpanel-boot or my-plugin-main.');
-    }
-    let isUserBundle = false, cfg;
-    if (inputBundleName === 'commons') {
-        cfg = {
-            input: 'frontend/commons/main.js',
-            version: '0.0.0',
-        };
-    } else if (inputBundleName === 'cpanel') {
-        cfg = {
-            input: 'frontend/cpanel-app/main.js',
-            external: [commonsPath],
-            globals: {[commonsPath]: 'radCommons'},
-            version: '0.0.0',
-        };
-    } else {
-        isUserBundle = inputBundleName !== 'cpanel-boot';
-        cfg = {
-            input: !isUserBundle
-                ? 'frontend/cpanel-app/boot.js'
-                : inputBundleName + '.js',
-            external: [commonsPath, cpanelPath],
-            globals: {[commonsPath]: 'radCommons',
-                      [cpanelPath]: 'radCpanel'},
-            version: args.configVersion || '0.0.0',
-        };
-    }
-    const bundleName = inputBundleName.split('-').map(cap).join('');
-    const resultGlobalVarName = !isUserBundle ? 'rad' + cap(bundleName) : bundleName;
-    const resultFileName = (!isUserBundle ? 'rad-' : '') + inputBundleName;
-    const out = {
-        input: cfg.input,
-        output: {
-            name: resultGlobalVarName,
-            file: `${!isUserBundle ? 'frontend/' : ''}${resultFileName}.bundle.js`,
-            format: 'iife',
-            banner: !isUserBundle
-                ?
+////////////////////////////////////////////////////////////////////////////////
+const makeOutputCfg = (...myCfg) => {
+    const out = Object.assign({format: 'iife'}, ...myCfg);
+    if (!out.banner) out.banner =
 `/*!
- * ${resultFileName} ${cfg.version}
+ * ${out.file.split('/').pop().split('.')[0]} 0.0.0
  * https://github.com/ut4/radcms
  * @license GPLv2
- */`
-                :
-`/*!
- * ${resultFileName} ${cfg.version}
- */`
-        }
-    };
-    if (cfg.external)
-        out.external = cfg.external;
-    if (cfg.globals)
-        out.output.globals = cfg.globals;
+ */`;
     return out;
 };
 
-function cap(str) {
-    return str.charAt(0).toUpperCase() + str.substr(1);
-}
+const makeJsxPlugin = include =>
+    sucrase({
+        production: !isWatch,
+        include: include || ['frontend-src/commons/components/**'],
+        transforms: ['jsx'],
+        jsxPragma: 'preact.createElement'
+    });
+
+////////////////////////////////////////////////////////////////////////////////
+module.exports = args => {
+    //
+    const [commonsPath, cpanelCommonsPath] = !args.configUseAbsoluteRadImports
+        ? ['@rad-commons', '@rad-cpanel-commons']
+        : [path.resolve(__dirname, 'frontend-src/commons/main.js'),
+           path.resolve(__dirname, 'frontend-src/cpanel-commons/main.js')];
+    const allGlobals = {[commonsPath]: 'radCommons', [cpanelCommonsPath]: 'radCpanelCommons'};
+    const allExternals = [commonsPath, cpanelCommonsPath];
+    //
+    if (!args.configPlugin) {
+        return [{
+            input: 'frontend-src/commons/main.js',
+            output: makeOutputCfg({
+                name: 'radCommons',
+                file: 'frontend/rad-commons.js'
+            }),
+            plugins: [makeJsxPlugin()],
+            watch: {clearScreen: false}
+        }, {
+            input: 'frontend-src/cpanel-commons/main.js',
+            output: makeOutputCfg({
+                name: 'radCpanelCommons',
+                file: 'frontend/rad-cpanel-commons.js',
+            }),
+            plugins: [makeJsxPlugin([
+                'frontend-src/cpanel-commons/src/**',
+            ])],
+            watch: {clearScreen: false}
+        }, {
+            input: 'frontend-src/cpanel-app/main.js',
+            output: makeOutputCfg({
+                name: 'radCpanelApp',
+                file: 'frontend/rad-cpanel-app.js',
+                globals: allGlobals,
+            }),
+            external: allExternals,
+            plugins: [
+                makeJsxPlugin(
+                    ['frontend-src/cpanel-commons/src/**',
+                     'frontend-src/cpanel-app/src/**']),
+            ],
+            watch: {clearScreen: false}
+        }];
+    }
+    const cfg = require(path.resolve(__dirname, args.configPlugin));
+    const out = {
+        input: cfg.input,
+        output: makeOutputCfg({globals: allGlobals}, cfg.output),
+        external: allExternals,
+        plugins: [
+            makeJsxPlugin([
+                'frontend-src/cpanel-commons/src/**',
+                'frontend-src/cpanel-app/src/**'].concat(cfg.jsxTranspile
+                    ? cfg.jsxTranspile.include || []
+                    : [])),
+        ],
+        watch: {
+            clearScreen: false
+        },
+    };
+    ['banner'].forEach(optionalKey => {
+        if (cfg[optionalKey]) out[optionalKey] = cfg[optionalKey];
+    });
+    return out;
+};

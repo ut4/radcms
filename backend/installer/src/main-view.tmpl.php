@@ -9,6 +9,7 @@
     <body class="light">
         <div id="install-app"></div>
         <script src="frontend/vendor/vendor.bundle.min.js"></script>
+        <script src="frontend/rad-commons.js"></script>
         <script type="module">
             import InstallApp from './frontend/install-app/src/InstallApp.js';
             preact.render(preact.createElement(InstallApp, {siteDirPath: '<?= $siteDirPath ?>'}),
