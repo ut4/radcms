@@ -28,16 +28,24 @@ const urlUtils = {
      */
     redirect(to, full) {
         if (!full) {
-            window.location.hash = '#' + to;
+            window.location.hash = `#/${this.normalizeUrl(to)}`;
         } else {
-            window.location.href = window.location.origin + config.baseUrl + 'edit' + (to.length > 1 ? to : to.substr(1));
+            window.location.href = window.location.origin + config.baseUrl +
+                                   'edit' +
+                                   (to !== '/' ? `/${this.normalizeUrl(to)}` : '');
         }
     },
     /**
      * @param {string} url
      */
     makeUrl(url) {
-        return config.baseUrl + url.substr(1);
+        return config.baseUrl + this.normalizeUrl(url);
+    },
+    /**
+     * @param {string} url '/foo' -> 'foo', 'bar' -> 'bar'
+     */
+    normalizeUrl(url) {
+        return url[0] !== '/' ? url : url.substr(1);
     }
 };
 

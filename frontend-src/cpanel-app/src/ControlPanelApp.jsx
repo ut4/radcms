@@ -17,6 +17,7 @@ class ControlPanelApp extends preact.Component {
         this.siteIframe = null;
         this.navBarScroller = null;
         this.state = this.makeState(props.dataFromBackend);
+        if (this.state.collapsed) props.onIsCollapsedToggled();
     }
     /**
      * @param {ControlPanelAppProps} dataFromBackend
@@ -29,7 +30,8 @@ class ControlPanelApp extends preact.Component {
      * @access private
      */
     makeState(dataFromBackend) {
-        const newState = {contentPanels: []};
+        const newState = {contentPanels: [],
+                          collapsed: !this.state ? this.getIsCollapsed() : this.state.collapsed};
         if (dataFromBackend.baseUrl) {
             const onEachMakePanel = this.makeContentPanelCreateVisitor(newState);
             const makePanel = (dataFromBackend, to, isAdminPanel) => {
@@ -75,8 +77,8 @@ class ControlPanelApp extends preact.Component {
                                     this.navBarScroller = 1;
                                 } } }>
                 <div class="top-row">
-                    <button class="icon-button">
-                        <FeatherSvg iconId="arrow-left"/>
+                    <button onClick={ () => this.toggleIsCollapsed() } class="icon-button">
+                        <FeatherSvg iconId={ `chevron-${!this.state.collapsed?'left':'right'}` }/>
                     </button>
                     <div id="logo">RAD<span>Cms</span></div>
                 </div>
@@ -110,14 +112,14 @@ class ControlPanelApp extends preact.Component {
                                              siteInfo: this.siteInfo} }
                             isPlugin={ true }/>
                     ).concat(
-                        <ControlPanelApp.AdminPanel Renderer={ null } title="Kaikki sisältö" icon="database">
+                        <ControlPanelApp.AdminPanel Renderer={ null } title="Kaikki sisältö" icon="database" mainUrl="/manage-content">
                             <a href="#/manage-content">Selaa</a>
                             <a href="#/add-content">Luo</a>
                         </ControlPanelApp.AdminPanel>,
-                        <ControlPanelApp.AdminPanel Renderer={ null } title="Lisäosat" icon="box">
+                        <ControlPanelApp.AdminPanel Renderer={ null } title="Lisäosat" icon="box" mainUrl="/manage-plugins">
                             <a href="#/manage-plugins">Selaa</a>
                         </ControlPanelApp.AdminPanel>,
-                        <ControlPanelApp.AdminPanel Renderer={ null } title="Sivusto" icon="tool">
+                        <ControlPanelApp.AdminPanel Renderer={ null } title="Sivusto" icon="tool" mainUrl="/pack-website">
                             <a href="#/pack-website">Paketoi</a>
                         </ControlPanelApp.AdminPanel>
                     )
@@ -156,6 +158,22 @@ class ControlPanelApp extends preact.Component {
                 panelCfg.selectorIndex = ++uniqueHighlighSelectors[s];
             }
         };
+    }
+    /**
+     * @access private
+     */
+    toggleIsCollapsed() {
+        const collapsed = !this.state.collapsed;
+        this.setState({collapsed});
+        localStorage.radNavIsCollapsed = collapsed;
+        this.props.onIsCollapsedToggled();
+    }
+    /**
+     * @access private
+     */
+    getIsCollapsed() {
+        const val = localStorage.radNavIsCollapsed || 'false';
+        return val === 'true';
     }
 }
 
@@ -196,7 +214,7 @@ ControlPanelApp.PopupDialog = class extends preact.Component {
 
 ControlPanelApp.AdminPanel = class extends preact.Component {
     /**
-     * @param {{Renderer: any; rendererProps?: any;}} props
+     * @param {{Renderer: any; rendererProps?: any; title?: string; icon?: string; mainUrl?: string;}} props
      */
     constructor(props) {
         super(props);
@@ -209,34 +227,39 @@ ControlPanelApp.AdminPanel = class extends preact.Component {
                     if (cmp && !this.state.title) this.setState({
                         title: cmp.getTitle() || '-',
                         icon: cmp.getIcon() || 'feather',
+                        mainUrl: cmp.getMainUrl ? urlUtils.normalizeUrl(cmp.getMainUrl()) : null
                     });
                 }});
         }
         this.state = {title: props.title || '',
                       icon: props.icon || '',
-                      highlighter: false};
+                      mainUrl: !props.mainUrl ? '' : urlUtils.normalizeUrl(props.mainUrl),
+                      highlight: false};
     }
     /**
      * @access protected
      */
     render() {
-        return <div class="ui-panel">
-            <h3>
-                <span>{ [
+        return <div class="section-row">
+            <div>
+                <a href={ `#/${this.state.mainUrl}` }>{ [
                     this.state.icon ? <FeatherSvg iconId={ this.state.icon }/> : null,
                     this.state.title,
-                    !this.props.isPlugin !== false ? null : <i>Lisäosa</i>
-                ] }</span>
-                { this.state.highlighter
-                    ? <button onClick={ () => this.state.highlighter() } class="icon-button">
-                        <FeatherSvg iconId="target"/></button>
-                    : null }
-            </h3>
-            <div class="sub-nav"><div>{
-                this.Renderer
-                    ? preact.createElement(this.Renderer, this.rendererProps)
-                    : this.props.children
-            }</div></div>
+                    !this.props.isPlugin !== false ? null : <i>Lisäosa</i>,
+                ] }</a>
+            { this.state.highlight
+                ? <button onClick={ () => this.state.highlight() } class="icon-button">
+                    <FeatherSvg iconId="target"/></button>
+                : null }
+            </div>
+            <div class="sub-nav"><div>
+                <h3>{ this.state.title }</h3>
+                {
+                    this.Renderer
+                        ? preact.createElement(this.Renderer, this.rendererProps)
+                        : this.props.children
+                }
+            </div></div>
         </div>;
     }
 };
@@ -248,9 +271,9 @@ ControlPanelApp.ContentPanel = class extends ControlPanelApp.AdminPanel {
      */
     componentWillMount() {
         const {dataFromBackend} = this.props.rendererProps;
-        this.setState({highlighter: makeHighlightToggler(dataFromBackend.highlightSelector,
-                                                         dataFromBackend.selectorIndex,
-                                                         this.props.siteIframe)});
+        this.setState({highlight: makeHighlightToggler(dataFromBackend.highlightSelector,
+                                                       dataFromBackend.selectorIndex,
+                                                       this.props.siteIframe)});
     }
 };
 

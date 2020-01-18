@@ -16,6 +16,17 @@ class GenericUIPanelImpl extends preact.Component {
     getName() {
         return 'Generic';
     }
+    /**
+     * @access public
+     */
+    getMainUrl() {
+        return this.node
+            ? '/edit-content/' + this.node.id + '/' +
+              this.node.contentType + (!this.node.isRevision ? '' : '/publish') +
+              '?returnTo=' + encodeURIComponent(this.currentPagePath)
+            : '/add-content/' + this.newNodeContentType +
+              '?returnTo=' + encodeURIComponent(this.currentPagePath);
+    }
     getTitle() {
         return <span>{ [
             this.props.dataFromBackend.title,
@@ -26,27 +37,18 @@ class GenericUIPanelImpl extends preact.Component {
         return 'file-text';
     }
     render() {
+        const url = `#${this.getMainUrl()}`;
         return this.node
             ? <div>
-                <div><a href={ this.makeEditUrl(false) }>Muokkaa</a></div>
+                <div><a href={ url }>Muokkaa</a></div>
                 { this.node.isRevision
-                    ? <div><a href={ this.makeEditUrl(true) }>Julkaise</a></div>
+                    ? <div><a href={ url }>Julkaise</a></div>
                     : null }
             </div>
             : <div>
                 <span>Ei sisältöä</span>
-                <a href={ '#/add-content/' + this.newNodeContentType +
-                          '?returnTo=' + encodeURIComponent(this.currentPagePath) }>
-                    Luo sisältö</a>
+                <a href={ url }>Luo sisältö</a>
             </div>;
-    }
-    /**
-     * @access private
-     */
-    makeEditUrl(appendPublishSlug) {
-        return '#/edit-content/' + this.node.id + '/' +
-               this.node.contentType + (!appendPublishSlug ? '' : '/publish') +
-               '?returnTo=' + encodeURIComponent(this.currentPagePath);
     }
 }
 
@@ -66,6 +68,9 @@ class GenericListUIPanelImpl extends preact.Component {
     }
     getName() {
         return 'List';
+    }
+    getMainUrl() {
+        return '/manage-content';
     }
     getTitle() {
         return this.props.dataFromBackend.title;

@@ -27,35 +27,25 @@ html, body {
     color: #ffffff;
     height: 100%;
 }
-#cpanel.collapsed {
-    width: 41px;
-    overflow: hidden;
-}
 
 .top-row {
     position: relative;
+    min-height: 34px;
 }
 .top-row button {
     float: left;
     background-color: transparent;
-    padding: 8px;
+    padding: 8px 11px;
 }
 .top-row .feather {
     width: 16px;
     height: 16px;
-}
-#cpanel.collapsed .top-row button {
-    padding: 8px 11px;
-    float: none;
 }
 #logo {
     font: normal 14px/15px "Fira sans heavy";
     color: #f5f5f5;
     padding: 8px 11px 7px;
     text-align: right;
-}
-#cpanel.collapsed #logo {
-    display: none;
 }
 #logo > span {
     font-family: "Fira sans light";
@@ -72,12 +62,8 @@ section h2 {
 }
 section > div {
     padding-left: 10px;
-    color: rgba(255,255,255,0.8);
     border-radius: 2px;
     border-left: 3px solid #e8fbe2;
-}
-section.quick-links > div {
-    padding: 10px;
 }
 section:nth-of-type(2) > div {
     border-color: #7197b3;
@@ -86,87 +72,8 @@ section:nth-of-type(3) > div {
     border-color: #e69393;
 }
 
-section .ui-panel {
-    position: relative;
-}
-#cpanel.collapsed section h3 {
-    color: transparent;
-}
-
-.ui-panel .sub-nav {
-    position: absolute;
-    top: 0;
-    left: 147px;
-    z-index: 1;
-    display: none;
-}
-.ui-panel .sub-nav:after {
-    content: "";
-    border-right: 8px solid #444b50;
-    border-top: 8px solid transparent;
-    border-bottom: 8px solid transparent;
-    position: absolute;
-    left: -8px;
-    top: 10px;
-}
-.ui-panel .sub-nav:hover,
-h3:hover + .sub-nav {
-    display: block;
-}
-.ui-panel .sub-nav > div {
-    background-color: #444b50;
-    border-top-right-radius: 2px;
-    border-bottom-right-radius: 2px;
-    min-width: 120px;
-    padding: 4px 10px 4px 14px;
-}
-
-.ui-panel h3 {
-    font: normal 14px/14px "Fira sans light";
-    margin: 0 0 0 -10px;
-    position: relative;
-    padding: 12px 10px;
-}
-.ui-panel h3:hover {
-    background-color: rgba(0,0,0,0.15);
-}
-.ui-panel h3 span .feather {
-    float: left;
-    width: 17px;
-    height: 17px;
-    margin-top: -1px;
-    padding-right: 10px;
-    stroke: rgba(255,255,255,0.5);
-}
-.ui-panel h3 span > i {
-    font-size: 11px;
-    display: block;
-    color: rgba(255,255,255,0.4);
-}
-.ui-panel h3 button {
-    position: absolute;
-    right: 10px;
-    top: 10px;
-    color: rgba(255,255,255,0.2);
-    width: 20px;
-    height: 20px;
-    background: none;
-    border: none;
-    padding: 3px;
-}
-.ui-panel h3 button .feather {
-    width: 100%;
-    height: 100%;
-}
-.ui-panel a {
-    font-size: 12px;
-    display: block;
-    color: rgba(255,255,255,0.8);
-    margin: 8px 0;
-    text-decoration: none;
-}
-.ui-panel a:hover {
-    color: rgba(255,255,255,0.5);
+section.quick-links > div {
+    padding: 10px;
 }
 section.quick-links .icon-button {
     background-color: rgba(255,255,255,0.1);
@@ -178,11 +85,146 @@ section.quick-links .icon-button {
 section.quick-links .icon-button:last-of-type {
     margin-bottom: 0;
 }
+section.quick-links .icon-button:hover {
+    background-color: rgba(255,255,255,0.12);
+}
 section.quick-links .icon-button .feather {
     width: 14px;
     height: 14px;
 }
 
+.section-row {
+    position: relative;
+}
+.section-row a {
+    display: block;
+    margin: 9px 0;
+    color: rgba(255,255,255,0.4);
+    text-decoration: none;
+    font-size: 12px;
+    line-height: 12px;
+}
+.section-row a:first-of-type {
+    margin-top: 0;
+}
+.section-row a:last-child {
+    margin-bottom: 0;
+}
+
+.section-row > div {
+    font-size: inherit;
+    line-height: inherit;
+    color: rgba(255,255,255,0.8);
+    margin-left: -10px;
+    display: flex;
+    align-items: center;
+}
+.section-row > div:hover {
+    background-color: rgba(0,0,0,0.18);
+}
+.section-row > div > a {
+    padding: 12px 10px;
+    margin: 0;
+    flex: 1;
+    color: inherit;
+    font-size: 14px;
+    line-height: 14px;
+}
+.section-row > div .feather {
+    float: left;
+    width: 17px;
+    height: 17px;
+    margin-top: -1px;
+    padding-right: 10px;
+    stroke: rgba(255,255,255,0.5);
+}
+.section-row > div i {
+    font-size: 11px;
+    display: block;
+    color: rgba(255,255,255,0.4);
+}
+.section-row > div button {
+    width: 28px;
+    height: 28px;
+    background: none;
+    border: none;
+    padding: 2px 12px 2px 2px;
+    flex: initial;
+}
+.section-row > div button .feather {
+    stroke: rgba(255,255,255,0.2);
+    width: 100%;
+}
+.section-row > div button:hover .feather {
+    stroke: rgba(255,255,255,0.3);
+}
+
+.section-row .sub-nav {
+    position: absolute;
+    top: 0;
+    left: 157px;
+    z-index: 1;
+    display: none;
+}
+.section-row .sub-nav:after {
+    content: "";
+    border-right: 8px solid #444b50;
+    border-top: 8px solid transparent;
+    border-bottom: 8px solid transparent;
+    position: absolute;
+    left: -8px;
+    top: 11px;
+}
+.section-row > div:hover + .sub-nav,
+.section-row .sub-nav:hover {
+    display: block;
+}
+.section-row .sub-nav > div {
+    background-color: #444b50;
+    border-top-right-radius: 2px;
+    border-bottom-right-radius: 2px;
+    min-width: 120px;
+    padding: 14px;
+}
+.section-row .sub-nav h3 {
+    font-weight: normal;
+    margin-top: 0;
+    display: none;
+}
+.section-row .sub-nav .content {
+    margin-bottom: 8px;
+}
+.section-row .sub-nav a:hover {
+    color: rgba(255,255,255,0.5);
+}
+
+#root #cpanel-app.collapsed,
+.collapsed #cpanel {
+    width: 42px;
+}
+.collapsed #logo,
+.collapsed section.quick-links .icon-button span,
+.collapsed .section-row button,
+.collapsed a i {
+    display: none;
+}
+.collapsed section.quick-links .icon-button .feather {
+    margin-left: -6px;
+}
+.collapsed .section-row .sub-nav {
+    left: 39px;
+}
+.collapsed .section-row .sub-nav h3 {
+    display: block;
+}
+.collapsed .section-row > div > a {
+    text-indent: -1000px;
+    white-space: nowrap;
+}
+.collapsed #view {
+    left: 42px;
+    width: calc(100% - 42px);
+}
 
 /* == View ================================================================== */
 #view {
@@ -195,10 +237,6 @@ section.quick-links .icon-button .feather {
     overflow-x: hidden;
     position: fixed;
     top: 0;
-}
-#cpanel.collapsed + #view {
-    left: 41px;
-    width: calc(100% - 41px);
 }
 #view > div {
     margin: 15px;
