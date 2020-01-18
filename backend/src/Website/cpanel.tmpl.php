@@ -7,8 +7,10 @@
         <link rel="stylesheet" href="<?= RAD_BASE_URL ?>frontend/cpanel-app.css">
     </head>
     <body>
-        <iframe src="<?= $this->url($q) ?>" id="rad-site-iframe"></iframe>
-        <div id="cpanel-app"></div>
+        <div id="root">
+            <div id="cpanel-app"></div>
+            <iframe src="<?= $this->url($q) ?>" id="rad-site-iframe"></iframe>
+        </div>
         <script>(function() {
             document.getElementById('rad-site-iframe').addEventListener('load', e => {
                 const baseUrlWithTrailingSlash = '<?= $this->url('/') ?>';

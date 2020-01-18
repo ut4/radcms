@@ -2,29 +2,30 @@ html, body {
     height: 100%;
     margin: 0;
 }
-iframe {
-    position: absolute;
-    width: calc(100% - 180px);
+#root {
+    display: flex;
     height: 100%;
-    top: 0;
-    left: 180px;
+}
+#root #cpanel-app {
+    flex: initial;
+    width: 160px;
+}
+#root iframe {
+    flex: 1;
     border: none;
-    box-sizing: border-box;
 }
 
 
 /* == Cpanel ================================================================ */
-#cpanel, #view {
-    height: 100%;
-    overflow-y: auto;
-    overflow-x: hidden;
-    position: absolute;
+#cpanel-app > div {
+    height: 1100%;
+    position: fixed;
 }
 #cpanel {
     background-color: #33393e/* #373644*/;
-    width: 180px;
-    left: 0;
+    width: 160px;
     color: #ffffff;
+    height: 100%;
 }
 #cpanel.collapsed {
     width: 41px;
@@ -62,7 +63,7 @@ iframe {
 }
 
 section {
-    margin: 0 3px 4px 0px;
+    margin-bottom: 6px;
     font-size: 12px;
     line-height: 14px;
 }
@@ -70,10 +71,13 @@ section h2 {
     display: none;
 }
 section > div {
-    padding: 10px;
+    padding-left: 10px;
     color: rgba(255,255,255,0.8);
     border-radius: 2px;
     border-left: 3px solid #e8fbe2;
+}
+section.quick-links > div {
+    padding: 10px;
 }
 section:nth-of-type(2) > div {
     border-color: #7197b3;
@@ -81,51 +85,87 @@ section:nth-of-type(2) > div {
 section:nth-of-type(3) > div {
     border-color: #e69393;
 }
-section > div > div {
-    margin: 12px 0 24px;
-}
-section > div > div:first-of-type {
-    margin-top: 0;
-}
-section > div > div:last-of-type {
-    margin-bottom: 6px;
+
+section .ui-panel {
+    position: relative;
 }
 #cpanel.collapsed section h3 {
     color: transparent;
 }
-section h3 {
-    font: normal 14px/14px "Fira sans light";
-    margin: 6px 0 15px;
-    padding-right: 22px;
-    position: relative;
+
+.ui-panel .sub-nav {
+    position: absolute;
+    top: 0;
+    left: 147px;
+    z-index: 1;
+    display: none;
 }
-section h3 span .feather {
+.ui-panel .sub-nav:after {
+    content: "";
+    border-right: 8px solid #444b50;
+    border-top: 8px solid transparent;
+    border-bottom: 8px solid transparent;
+    position: absolute;
+    left: -8px;
+    top: 10px;
+}
+.ui-panel .sub-nav:hover,
+h3:hover + .sub-nav {
+    display: block;
+}
+.ui-panel .sub-nav > div {
+    background-color: #444b50;
+    border-top-right-radius: 2px;
+    border-bottom-right-radius: 2px;
+    min-width: 120px;
+    padding: 4px 10px 4px 14px;
+}
+
+.ui-panel h3 {
+    font: normal 14px/14px "Fira sans light";
+    margin: 0 0 0 -10px;
+    position: relative;
+    padding: 12px 10px;
+}
+.ui-panel h3:hover {
+    background-color: rgba(0,0,0,0.15);
+}
+.ui-panel h3 span .feather {
     float: left;
     width: 17px;
     height: 17px;
     margin-top: -1px;
-    padding-right: 7px;
+    padding-right: 10px;
+    stroke: rgba(255,255,255,0.5);
 }
-section h3 span > i {
+.ui-panel h3 span > i {
     font-size: 11px;
     display: block;
     color: rgba(255,255,255,0.4);
 }
-section .ui-panel .icon-button {
-    background-color: transparent;
-    color: rgba(255,255,255,0.4);
+.ui-panel h3 button {
     position: absolute;
-    right: -5px;
-    top: -7px;
+    right: 10px;
+    top: 10px;
+    color: rgba(255,255,255,0.2);
+    width: 20px;
+    height: 20px;
+    background: none;
+    border: none;
+    padding: 3px;
 }
-section a {
+.ui-panel h3 button .feather {
+    width: 100%;
+    height: 100%;
+}
+.ui-panel a {
     font-size: 12px;
     display: block;
-    color: rgba(255,255,255,0.4);
-    margin: 6px 0;
+    color: rgba(255,255,255,0.8);
+    margin: 8px 0;
     text-decoration: none;
 }
-section a:hover {
+.ui-panel a:hover {
     color: rgba(255,255,255,0.5);
 }
 section.quick-links .icon-button {
@@ -146,10 +186,15 @@ section.quick-links .icon-button .feather {
 
 /* == View ================================================================== */
 #view {
-    left: 180px;
-    width: calc(100% - 180px);
+    left: 160px;
+    width: calc(100% - 160px);
     background-color: rgba(0,0,0,0.5);
     color: #282828;
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    position: fixed;
+    top: 0;
 }
 #cpanel.collapsed + #view {
     left: 41px;

@@ -15,6 +15,7 @@ class ControlPanelApp extends preact.Component {
         super(props);
         this.siteInfo = null;
         this.siteIframe = null;
+        this.navBarScroller = null;
         this.state = this.makeState(props.dataFromBackend);
     }
     /**
@@ -45,7 +46,6 @@ class ControlPanelApp extends preact.Component {
                                  assetBaseUrl: dataFromBackend.assetBaseUrl,
                                  currentPagePath: dataFromBackend.currentPagePath};
                 this.siteIframe = document.getElementById('rad-site-iframe');
-                //
                 newState.adminPanels = [];
                 newState.userDefinedRoutes = [];
                 dataFromBackend.adminPanels.forEach(c => {
@@ -70,7 +70,10 @@ class ControlPanelApp extends preact.Component {
             return;
         return <div>
             <Toaster/>
-            <div id="cpanel">
+            <div id="cpanel" ref={ el => { if (el && !this.navBarScroller) {
+                                    makeNavBarScroller(el, this.siteIframe);
+                                    this.navBarScroller = 1;
+                                } } }>
                 <div class="top-row">
                     <button class="icon-button">
                         <FeatherSvg iconId="arrow-left"/>
@@ -78,13 +81,15 @@ class ControlPanelApp extends preact.Component {
                     <div id="logo">RAD<span>Cms</span></div>
                 </div>
                 <section class="quick-links"><div>
+                    <h2>Pikalinkit</h2>
                     <button onClick={ () => { urlUtils.redirect('/add-content'); } }
                             class="icon-button">
                         <FeatherSvg iconId="edit-2"/>
                         <span>Luo sisältöä</span>
                     </button>
                 </div></section>
-                <section><div>{
+                <section><div>
+                    <h2>Tällä sivulla</h2>{
                     this.state.contentPanels.length
                         ? this.state.contentPanels.map((panelCfg, i) =>
                             <ControlPanelApp.ContentPanel
@@ -96,7 +101,8 @@ class ControlPanelApp extends preact.Component {
                         )
                         : this.state.routesUpdated ? 'Ei muokattavaa sisältöä tällä sivulla' : null
                 }</div></section>
-                <section><div>{
+                <section><div>
+                    <h2>Devaajalle</h2>{
                     this.state.adminPanels.map(panelCfg =>
                         <ControlPanelApp.AdminPanel
                             Renderer={ panelCfg.UiImplClass }
@@ -208,7 +214,7 @@ ControlPanelApp.AdminPanel = class extends preact.Component {
         }
         this.state = {title: props.title || '',
                       icon: props.icon || '',
-                      collapsed: true};
+                      highlighter: false};
     }
     /**
      * @access protected
@@ -216,29 +222,22 @@ ControlPanelApp.AdminPanel = class extends preact.Component {
     render() {
         return <div class="ui-panel">
             <h3>
-                { preact.createElement('span', this.makeTitleProps(),
+                <span>{ [
                     this.state.icon ? <FeatherSvg iconId={ this.state.icon }/> : null,
                     this.state.title,
                     !this.props.isPlugin !== false ? null : <i>Lisäosa</i>
-                ) }
-                <button onClick={ () => this.setState({collapsed: !this.state.collapsed}) }
-                        class="icon-button">
-                    <FeatherSvg iconId={ `chevron-${!this.state.collapsed ? 'up' : 'down'}`}/>
-                </button>
+                ] }</span>
+                { this.state.highlighter
+                    ? <button onClick={ () => this.state.highlighter() } class="icon-button">
+                        <FeatherSvg iconId="target"/></button>
+                    : null }
             </h3>
-            <div class={ !this.state.collapsed ? '' : 'hidden' }>{
+            <div class="sub-nav"><div>{
                 this.Renderer
                     ? preact.createElement(this.Renderer, this.rendererProps)
                     : this.props.children
-            }</div>
+            }</div></div>
         </div>;
-    }
-    /**
-     * @access procted
-     * @override
-     */
-    makeTitleProps() {
-        return null;
     }
 };
 
@@ -249,20 +248,9 @@ ControlPanelApp.ContentPanel = class extends ControlPanelApp.AdminPanel {
      */
     componentWillMount() {
         const {dataFromBackend} = this.props.rendererProps;
-        this.toggleHighlight = makeHighlightToggler(dataFromBackend.highlightSelector,
-                                                    dataFromBackend.selectorIndex,
-                                                    this.props.siteIframe);
-    }
-    /**
-     * @access procted
-     * @override
-     */
-    makeTitleProps() {
-        const isMobile = false;
-        return !isMobile
-            ? {onMouseOver: this.toggleHighlight,
-               onMouseOut: this.toggleHighlight}
-            : {onClick: this.toggleHighlight};
+        this.setState({highlighter: makeHighlightToggler(dataFromBackend.highlightSelector,
+                                                         dataFromBackend.selectorIndex,
+                                                         this.props.siteIframe)});
     }
 };
 
@@ -270,7 +258,7 @@ ControlPanelApp.ContentPanel = class extends ControlPanelApp.AdminPanel {
  * @param {string} selector
  * @param {number} selectorIndex
  * @param {HTMLIFrameElement} siteIframe
- * @return {Function} togglerFn
+ * @return {Function|null} togglerFn tail null jos $selector ei mätchännyt
  */
 function makeHighlightToggler(selector, selectorIndex, siteIframe) {
     const siteIframeWin = siteIframe.contentWindow;
@@ -285,23 +273,59 @@ function makeHighlightToggler(selector, selectorIndex, siteIframe) {
                   ';left:' + (r.left + siteIframeWin.scrollX) + 'px';
         return out;
     };
-    const cache = {};
+    const el = selector
+        ? siteIframeDoc.querySelectorAll(selector)[selectorIndex]
+        : null;
+    if (el) {
+        let timeout = null;
+        const elTop = el.getBoundingClientRect().top - 20;
+        const top = elTop >= 0 ? elTop : 0;
+        return () => {
+            clearTimeout(timeout);
+            let overlay = siteIframeDoc.getElementById('rad-highlight-overlay');
+            if (!overlay) {
+                overlay = makeOverlay(el);
+                siteIframeDoc.body.appendChild(overlay);
+                siteIframeWin.scroll({top});
+            }
+            timeout = setTimeout(() => {
+                overlay.parentElement.removeChild(overlay);
+            }, 1000);
+        };
+    }
+    return null;
+}
+
+/**
+ * @param {HTMLElement} cpanelNavEl
+ * @param {HTMLIFrameElement} siteIframe
+ */
+function makeNavBarScroller(cpanelNavEl, siteIframe) {
+    let navHeight = 0;
+    let windowIsSmallEnough = false;
     //
-    return () => {
-        if (!selector) return;
-        let node = cache[selector];
-        if (!node) {
-            node = siteIframeDoc.querySelectorAll(selector)[selectorIndex];
-            if (!node) return;
-            cache[selector] = node;
-        }
-        const over = siteIframeDoc.getElementById('rad-highlight-overlay');
-        if (!over) {
-            siteIframeDoc.body.appendChild(makeOverlay(node));
-        } else {
-            over.parentElement.removeChild(over);
-        }
+    const handleWinResize = () => {
+        const newVal = window.innerHeight < navHeight;
+        if (!newVal && windowIsSmallEnough)
+            cpanelNavEl.style.transform = '';
+        windowIsSmallEnough = newVal;
     };
+    const handleScroll = () => {
+        if (windowIsSmallEnough)
+            cpanelNavEl.style.transform = `translateY(-${siteIframe.contentWindow.scrollY}px)`;
+    };
+    window.addEventListener('resize', handleWinResize, true);
+    siteIframe.contentDocument.addEventListener('scroll', handleScroll, true);
+    //
+    setTimeout(() => {
+        navHeight = Array.from(cpanelNavEl.children).reduce((c, el) =>
+            c + el.getBoundingClientRect().height
+        , 0);
+        if (navHeight) {
+            handleWinResize();
+            handleScroll();
+        }
+    }, 20);
 }
 
 export default ControlPanelApp;

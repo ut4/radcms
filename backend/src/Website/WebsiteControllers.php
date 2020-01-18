@@ -83,7 +83,7 @@ class WebsiteControllers {
         return substr($html, 0, $bodyEnd) .
             "<script>(function (data) {
                 var s = document.createElement('style');
-                s.innerHTML = '#rad-highlight-overlay{position:absolute;background-color:rgba(0,90,255,0.18);z-index:0}';
+                s.innerHTML = '@keyframes radblink{from{background-color:rgba(0,90,255,0.18);}to{background-color:rgba(0,90,255,0.08);}}#rad-highlight-overlay{position:absolute;background-color:rgba(0,90,255,0.18);z-index:0;animation: .18s infinite alternate radblink;}';
                 document.head.appendChild(s);
                 //
                 var editWindow = window.parent;
