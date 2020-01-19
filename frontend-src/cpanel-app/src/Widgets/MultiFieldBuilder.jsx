@@ -17,7 +17,7 @@ class MultiFieldBuilder extends preact.Component {
             this.state = {fields: props.fields};
             this.idCounter = props.fields.reduce((max, p) => p.id > max ? p.id : max, 0);
         } else {
-            this.state = {fields: [this.makeField(widgetTypes[0].name)]};
+            this.state = {fields: [this.makeField(widgetTypes[0])]};
         }
         this.emitChange();
     }
@@ -27,12 +27,13 @@ class MultiFieldBuilder extends preact.Component {
     render() {
         return <div class="multi-field-builder">
             { this.state.fields.map(field => <div>
-                <InputGroup label={ _props =>
-                        <div onInput={ e => { this.updateFieldName(e.target.textContent, field); } }
-                             contentEditable={ true }>{ field.name }</div> }>
-                    { preact.createElement(makeWidgetComponent(field.type), {field, key: field.id, onChange: val => {
+                <InputGroup key={ field.id }>
+                    { preact.createElement(makeWidgetComponent(field.type), {field, onChange: val => {
                         this.emitChange(val, field);
                     }}) }
+                    <label onInput={ e => { this.updateFieldName(e.target.textContent, field); } }
+                           contentEditable={ true }
+                           htmlFor={ field.id }>{ field.name }</label>
                 </InputGroup>
             </div>) }
             <button onClick={ () => popupDialog.open(() =>
@@ -40,7 +41,7 @@ class MultiFieldBuilder extends preact.Component {
                             <div class="main">
                                 <h2>Valitse tyyppi</h2>
                                 <div class="item-grid">{ widgetTypes.map(w =>
-                                    <button onClick={ () => this.addField(w.name) }
+                                    <button onClick={ () => this.addField(w) }
                                             type="button">{ w.description }</button>
                                 ) }</div>
                             </div>
@@ -75,13 +76,15 @@ class MultiFieldBuilder extends preact.Component {
      */
     updateFieldName(val, field) {
         field.name = val;
-        this.setState({fields: this.state.fields});
     }
     /**
      * @access private
      */
     makeField(type) {
-        return {id: (++this.idCounter).toString(), type, name: 'Uusi kenttä', value: '...'};
+        return {id: (++this.idCounter).toString(),
+                type: type.name,
+                name: 'Uusi kenttä',
+                value: type.defaultInitialValue};
     }
 }
 

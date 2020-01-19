@@ -3,13 +3,13 @@ import DateTimePicker from './DateTimePicker.jsx';
 import QuillEditor from './QuillEditor.jsx';
 
 const widgetTypes = [
-    {name: 'textField', description: 'Lyhyt tekstikenttä'},
-    {name: 'textArea', description: 'Pitkä tekstikenttä'},
-    {name: 'richText', description: 'Wysiwyg tekstikenttä'},
-    {name: 'image', description: 'Kuva'},
-    {name: 'date', description: 'Päivämäärä'},
-    {name: 'dateTime', description: 'Päivämäärä ja aika'},
-    {name: 'color', description: 'Väri'},
+    {name: 'textField', description: 'Lyhyt tekstikenttä', defaultInitialValue: '...'},
+    {name: 'textArea', description: 'Pitkä tekstikenttä', defaultInitialValue: '...'},
+    {name: 'richText', description: 'Wysiwyg tekstikenttä', defaultInitialValue: '...'},
+    {name: 'image', description: 'Kuva', defaultInitialValue: ''},
+    {name: 'date', description: 'Päivämäärä', defaultInitialValue: ''},
+    {name: 'dateTime', description: 'Päivämäärä ja aika', defaultInitialValue: ''},
+    {name: 'color', description: 'Väri', defaultInitialValue: '#33393e'},
 ];
 
 const makeTextWidget = (tagName, attrs = {}) =>

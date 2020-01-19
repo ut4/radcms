@@ -1,8 +1,5 @@
 import {urlUtils} from '../utils.js';
 
-/**
- * @param {{label: string|function?; id?: string; className?: string; inline?: boolean;}} props
- */
 class Form extends preact.Component {
     /**
      * @param {FormProps} props
@@ -74,4 +71,31 @@ class Form extends preact.Component {
     }
 }
 
+/**
+ * @param {{label?: string|Function; inline?: boolean; className?: string; id?: string;}} props
+ */
+function InputGroup(props) {
+    const children = Array.isArray(props.children) ? props.children : [props.children];
+    const label = props.label;
+    return <div class={ (!props.inline ? 'input-group' : 'input-group-inline') +
+                        (!props.className ? '' : ` ${props.className}`) }>
+        { children.concat(
+            label !== undefined && label !== null
+                ? preact.createElement('label', makeLabelAttrs(children, props),
+                    typeof label === 'string' ? label : preact.createElement(label)
+                )
+                : null
+        ) }
+    </div>;
+}
+
+function makeLabelAttrs(children, props) {
+    const input = children.find(el => el.type === 'input' ||
+                                      el.type === 'textarea' ||
+                                      el.type === 'select');
+    const id = props.id || (input && input.props.id);
+    return id ? {htmlFor: id} : null;
+}
+
 export default Form;
+export {InputGroup};

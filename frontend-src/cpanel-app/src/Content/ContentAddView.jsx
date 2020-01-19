@@ -1,9 +1,6 @@
 import {http, urlUtils, View, InputGroup, Form} from '@rad-commons';
+import {widgetTypes} from '../Widgets/all.jsx';
 import ContentNodeFieldList from './ContentNodeFieldList.jsx';
-
-const DefaultInitialValsByWidgetType = {
-    color: '#33393e'
-};
 
 /**
  * #/add-content[/:initialComponentTypeName?returnto=<url>]
@@ -40,7 +37,7 @@ class ContentAddView extends preact.Component {
                            confirmButtonText="Lisää"
                            autoClose={ false }>
             <h2>Lisää sisältöä</h2>
-            <InputGroup label={ _props => <span data-help-text="Dev note: Voit luoda uusia sisältötyyppejä muokkaamalla site.json-tiedostoa (ks. https://todo).">Sisältötyyppi</span> }>
+            <InputGroup label={ () => <span data-help-text="Dev note: Voit luoda uusia sisältötyyppejä muokkaamalla site.json-tiedostoa (ks. https://todo).">Sisältötyyppi</span> }>
                 <select onChange={ e => this.receiveContentTypeSelection(e) }
                         value={ this.state.contentType.name }>
                     { this.state.contentTypes.map(type =>
@@ -87,8 +84,12 @@ class ContentAddView extends preact.Component {
         newState.contentType = newState.contentTypes.find(t => t.name === ctypeName);
         newState.newContentNode = {};
         newState.contentType.fields.forEach(field => {
-            const val = field.widget ? DefaultInitialValsByWidgetType[field.widget.name] : '';
-            newState.newContentNode[field.name] = val !== undefined ? val : '';
+            const widgetInfo = field.widget
+                ? widgetTypes.find(w => w.name === field.widget.name)
+                : null;
+            newState.newContentNode[field.name] = widgetInfo
+                ? widgetInfo.defaultInitialValue
+                : '';
         });
     }
 }

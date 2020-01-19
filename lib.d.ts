@@ -29,7 +29,7 @@ declare module "@rad-commons" {
             static receiveInputValue(e:Event, dhis: preact.VNode, name?: string): void;
             close(): void;
         }
-        export function InputGroup(props: {label?: preact.ComponentChild; inline?: boolean; className?: string;}): preact.VNode;
+        export function InputGroup(props: {label?: string|Function; inline?: boolean; className?: string; id?: string;}): preact.VNode;
         export class Toaster extends preact.Component<
             {autoCloseTimeoutMillis?: number; publishFactoryTo?: Object;},
             {}>
