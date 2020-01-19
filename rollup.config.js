@@ -1,6 +1,6 @@
 const path = require('path');
 const sucrase = require('@rollup/plugin-sucrase');
-const isWatch = process.env.hasOwnProperty('ROLLUP_WATCH');
+const isWatch = process.env.ROLLUP_WATCH !== undefined;
 
 ////////////////////////////////////////////////////////////////////////////////
 const makeOutputCfg = (...myCfg) => {
@@ -31,8 +31,9 @@ module.exports = args => {
            path.resolve(__dirname, 'frontend-src/cpanel-commons/main.js')];
     const allGlobals = {[commonsPath]: 'radCommons', [cpanelCommonsPath]: 'radCpanelCommons'};
     const allExternals = [commonsPath, cpanelCommonsPath];
-    //
-    if (!args.configPlugin) {
+    const bundle = !args.configPlugin ? !args.configInstaller ? 'main' : 'installer' : 'plugin';
+    // == rad-commons.js & rad-cpanel-commons.js & rad-cpanel-app.js ===========
+    if (bundle === 'main') {
         return [{
             input: 'frontend-src/commons/main.js',
             output: makeOutputCfg({
@@ -67,6 +68,21 @@ module.exports = args => {
             watch: {clearScreen: false}
         }];
     }
+    // == rad-install-app.js ===================================================
+    if (bundle === 'installer') {
+        return [{
+            input: 'frontend-src/install-app/main.js',
+            output: makeOutputCfg({
+                file: 'frontend/rad-install-app.js',
+                globals: {[commonsPath]: 'radCommons'},
+            }),
+            external: [commonsPath],
+            plugins: [makeJsxPlugin(['frontend-src/commons/components/**',
+                                     'frontend-src/install-app/src/**'])],
+            watch: {clearScreen: false}
+        }];
+    }
+    // == some-plugin.js =======================================================
     const cfg = require(path.resolve(__dirname, args.configPlugin));
     const out = {
         input: cfg.input,

@@ -257,9 +257,14 @@ return [
      * @throws \Pike\PikeException
      */
     private function selfDestruct() {
-        $installFilePath = "{$this->siteDirPath}install.php";
-        if (!$this->fs->unlink($installFilePath))
-            $this->warnings[] = "Failed to remove `{$installFilePath}`";
+        foreach ([
+            'install.php',
+            'frontend/install-app.css',
+            'frontend/rad-install-app.js'
+        ] as $p) {
+            if (!$this->fs->unlink("{$this->siteDirPath}${p}"))
+                $this->warnings[] = "Failed to remove `{$this->siteDirPath}${p}`";
+        }
         //
         $installerDirPath = "{$this->backendPath}installer";
         if (($failedEntry = $this->deleteFilesRecursive($installerDirPath)) ||

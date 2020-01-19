@@ -262,9 +262,13 @@ return [
             return;
         }
         if ($expectation === 'deletesInstallerFiles') {
-            $s->mockFs->expects($this->atLeast(1))
+            $s->mockFs->expects($this->atLeast(3))
                 ->method('unlink')
-                ->with("{$s->siteDirPath}install.php")
+                ->withConsecutive(
+                    ["{$s->siteDirPath}install.php"],
+                    ["{$s->siteDirPath}frontend/install-app.css"],
+                    ["{$s->siteDirPath}frontend/rad-install-app.js"]
+                )
                 ->willReturn(true);
             $s->mockFs->expects($this->atLeast(1))
                 ->method('rmDir')
