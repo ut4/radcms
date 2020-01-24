@@ -9,8 +9,8 @@ if (version_compare(phpversion(), '7.1.0', '<'))
 if (!function_exists('random_bytes'))
     die('!function_exists(\'random_bytes\') for some reason.');
 foreach (['pdo_mysql', 'mbstring', 'fileinfo'] as $ext)
-if (!extension_loaded($ext))
-    die("{$ext} extension is required by RadCMS.");
+    if (!extension_loaded($ext))
+        die("{$ext} extension is required by RadCMS.");
 
 define('INDEX_DIR_PATH', __DIR__);
 $loader = require RAD_BACKEND_PATH . 'vendor/autoload.php';

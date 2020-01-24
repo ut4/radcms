@@ -17,6 +17,7 @@ class MagicTemplate extends Template {
     private $__contentDao;
     private $__fileExists;
     private static $__aliases = [];
+    private static $__funcs = [];
     /**
      * @param string $file
      * @param array $vars = null
@@ -43,13 +44,13 @@ class MagicTemplate extends Template {
      */
     public function __call($name, $args) {
         try {
+            if (array_key_exists($name, self::$__funcs))
+                return self::$__funcs[$name](...$args);
             $directiveFilePath = !array_key_exists($name, self::$__aliases)
-                ? RAD_SITE_PATH . $name . '.tmpl.php'
+                ? "{$this->__dir}{$name}.tmpl.php"
                 : self::$__aliases[$name];
             if (!$this->__fileExists->__invoke($directiveFilePath)) {
-                throw new PikeException('Did you forget to $api->registerDire' .
-                                        'ctive(\''.$name.'\', \'/file.php\')?',
-                                        PikeException::BAD_INPUT);
+                return "Did you forget to \$api->registerDirective('{$name}', '/file.php')?";
             }
             return $this->doRender($directiveFilePath,
                 $this->__locals + ['props' => $args ? $args[0] : []]);
@@ -148,11 +149,22 @@ class MagicTemplate extends Template {
      * @param string $fullFilePath
      * @throws \Pike\PikeException
      */
-    public static function addAlias($directiveName, $fullFilePath) {
+    public static function registerAlias($directiveName, $fullFilePath) {
         if (array_key_exists($directiveName, self::$__aliases))
-            throw new PikeException("Alias {$directiveName} is already registered.",
+            throw new PikeException("Alias `{$directiveName}` is already registered.",
                                     PikeException::BAD_INPUT);
         self::$__aliases[$directiveName] = $fullFilePath;
+    }
+    /**
+     * @param string $name
+     * @param \Closure $fn
+     * @param bool $bind = true
+     */
+    public static function registerMethod($name, $fn, $bind = true) {
+        if (array_key_exists($name, self::$__funcs))
+            throw new PikeException("Method `{$name}` already exists",
+                                    PikeException::BAD_INPUT);
+        self::$__funcs[$name] = $bind ? \Closure::bind($fn, $this) : $fn;
     }
     /**
      * ['id' => 'foo', 'class' => 'bar'] -> ' id="foo" class="bar"'

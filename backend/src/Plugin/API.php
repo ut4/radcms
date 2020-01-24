@@ -25,8 +25,8 @@ class API {
         $this->onAdminPanelRegistered = $onAdminPanelRegistered;
     }
     /**
-     * Rekisteröi <?= $this->DirectiveName(...) ?> käytettäväksi templaatteihin.
-     * Esimerkki: registerDirective('MPMovies', RAD_SITE_PATH . 'Plugins/MyPlugin/movies.inc');
+     * Rekisteröi <?= $this->DirectiveName(...) ?> käytettäväksi templaatteista.
+     * Esimerkki: registerDirective('MPMovies', RAD_SITE_PATH . 'plugins/MyPlugin/movies.inc');
      *
      * @param string $directiveName
      * @param string $fullFilePath
@@ -34,7 +34,19 @@ class API {
      */
     public function registerDirective($directiveName, $fullFilePath) {
         // @allow \Pike\PikeException
-        MagicTemplate::addAlias($directiveName, $fullFilePath);
+        MagicTemplate::registerAlias($directiveName, $fullFilePath);
+    }
+    /**
+     * Rekisteröi <?php $this->methodName(...) ?> käytettäväksi templaatteista.
+
+     * @param string $methodName
+     * @param \Closure $fn
+     * @param bool $bindToDirectiveScope = true
+     * @throws \Pike\PikeException
+     */
+    public function registerDirectiveMethod($methodName, $fn, $bindToDirectiveScope = true) {
+        // @allow \Pike\PikeException
+        MagicTemplate::registerMethod($methodName, $fn, $bindToDirectiveScope);
     }
     /**
      * Rekisteröi <script src="<?= $scriptFileName ?>"> sisällytettäväksi

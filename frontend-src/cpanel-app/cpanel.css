@@ -358,11 +358,9 @@ table.pika-time {
     text-decoration: none;
     color: inherit;
 }
-label > div[contenteditable] {
-    display: inline-block;
+.input-group label[contenteditable] {
     border-bottom: 1px dashed #999;
-    width: auto;
-    padding-bottom: 3px;
+    padding: 1px 2px;
 }
 .multi-field-builder {
     margin-bottom: 10px;

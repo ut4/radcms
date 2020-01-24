@@ -9,7 +9,7 @@ class Plugin {
     public $isInstalled;
     /**
      * @param string $name // Same as "PluginName.php" minus ".php"
-     * @param string $classPath <base>/Plugins/<PluginName>/<PluginName>.php
+     * @param string $classPath <base>/plugins/<PluginName>/<PluginName>.php
      */
     public function __construct($name, $classPath) {
         $this->impl = null;

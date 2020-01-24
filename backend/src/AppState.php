@@ -119,7 +119,7 @@ class AppState {
      * @throws \Pike\PikeException
      */
     private function scanPluginsFromDisk() {
-        $paths = $this->fs->readDir(RAD_SITE_PATH . 'Plugins', '*', GLOB_ONLYDIR);
+        $paths = $this->fs->readDir(RAD_SITE_PATH . 'plugins', '*', GLOB_ONLYDIR);
         foreach ($paths as $path) {
             $clsName = substr($path, strrpos($path, '/') + 1);
             $clsPath = "RadPlugins\\{$clsName}\\{$clsName}";

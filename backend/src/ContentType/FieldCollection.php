@@ -63,7 +63,7 @@ class FieldCollection extends GenericArray implements \JsonSerializable {
             $out->add((object)['name' => $name,
                                'friendlyName' => $remainingArgs[1] ?? $name,
                                'dataType' => $remainingArgs[0],
-                               'widget' => count($remainingArgs) < 3
+                               'widget' => !isset($remainingArgs[2])
                                    ? $DEFAULT_WIDGET
                                    : FieldSetting::fromCompactForm($remainingArgs[2])]);
         }

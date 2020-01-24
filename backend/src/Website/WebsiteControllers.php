@@ -56,6 +56,7 @@ class WebsiteControllers {
         try {
             $url = $req->path ? explode('/', ltrim($req->path, '/')) : [''];
             $html = $template->render(['url' => $url,
+                                       'urlStr' => $req->path,
                                        'site' => $this->appState->websiteState]);
         } catch (PikeException $e) {
             if (!(RAD_FLAGS & RAD_DEVMODE)) {

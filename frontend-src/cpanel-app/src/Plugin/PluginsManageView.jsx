@@ -36,7 +36,7 @@ class PluginsManageView extends preact.Component {
                             ? <button onClick={ () => {
                                           this.installPlugin(plugin, i);
                                       } }
-                                      class="ice-button small">Asenna</button>
+                                      class="nice-button small">Asenna</button>
                             : <button onClick={ () => {
                                           this.uninstallPlugin(plugin, i);
                                       } }

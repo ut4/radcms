@@ -16,7 +16,7 @@ final class AppTest extends DbTestCase {
         $ctx = (object)['db' => self::$db, 'fs' => $this->createMock(FileSystem::class)];
         $ctx->fs->expects($this->once())
             ->method('readDir')
-            ->with(RAD_SITE_PATH . 'Plugins')
+            ->with(RAD_SITE_PATH . 'plugins')
             ->willReturn([]);
         App::create([], $ctx);
     }
@@ -26,7 +26,7 @@ final class AppTest extends DbTestCase {
                 $ctx = (object)['db' => self::$db, 'fs' => $this->createMock(FileSystem::class)];
                 $ctx->fs->expects($this->once())
                     ->method('readDir')
-                    ->willReturn(['foo/bar/baz/Plugins/' . $invalidClsPath]);
+                    ->willReturn(['foo/bar/baz/plugins/' . $invalidClsPath]);
                 App::create([], $ctx);
             } catch (\RuntimeException $e) {
                 $this->assertEquals($expectedError, $e->getMessage());
@@ -41,7 +41,7 @@ final class AppTest extends DbTestCase {
         );
     }
     public function testCreateAppInitializesValidAndInstalledPlugins() {
-        $pluginDirPath = RAD_SITE_PATH . 'Plugins';
+        $pluginDirPath = RAD_SITE_PATH . 'plugins';
         $ctx = (object)['db' => self::$db, 'fs' => $this->createMock(FileSystem::class)];
         $ctx->fs->expects($this->once())
             ->method('readDir')

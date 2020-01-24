@@ -46,7 +46,7 @@ class GenericUIPanelImpl extends preact.Component {
                     : null }
             </div>
             : <div>
-                <span>Ei sisältöä</span>
+                <div class="content">Ei sisältöä</div>
                 <a href={ url }>Luo sisältö</a>
             </div>;
     }
