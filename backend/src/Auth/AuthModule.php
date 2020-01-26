@@ -11,11 +11,11 @@ abstract class AuthModule {
      * @param object $ctx
      */
     public static function init($ctx) {
-        $ctx->router->map('GET', '/login', function () {
-            return [AuthControllers::class, 'renderLoginView', false];
-        });
-        $ctx->router->map('POST', '/login', function () {
-            return [AuthControllers::class, 'handleLoginFormSubmit', false];
-        });
+        $ctx->router->map('GET', '/login',
+            [AuthControllers::class, 'renderLoginView', false]
+        );
+        $ctx->router->map('POST', '/login',
+            [AuthControllers::class, 'handleLoginFormSubmit', false]
+        );
     }
 }

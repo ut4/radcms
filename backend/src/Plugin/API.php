@@ -90,11 +90,9 @@ class API {
                                   $ctrlCassPath,
                                   $ctrlMethodName,
                                   $requireAuthenticated = true) {
-        $this->router->map($method, $url, function () use ($ctrlCassPath,
-                                                           $ctrlMethodName,
-                                                           $requireAuthenticated) {
-            return [$ctrlCassPath, $ctrlMethodName, $requireAuthenticated];
-        });
+        $this->router->map($method, $url,
+            [$ctrlCassPath, $ctrlMethodName, $requireAuthenticated]
+        );
     }
     /**
      * Rekisteröi osion hallintapaneelin Devaajille-välilehteen. $panelImplName sama

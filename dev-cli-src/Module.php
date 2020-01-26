@@ -9,8 +9,8 @@ abstract class Module {
      * @param object $ctx
      */
     public static function init(\stdClass $ctx) {
-        $ctx->router->map('PSEUDO', '/make-release/[**:dirPath]', function () {
-            return [MainController::class, 'makeRelease', false];
-        });
+        $ctx->router->map('PSEUDO', '/make-release/[**:dirPath]',
+            [MainController::class, 'makeRelease', false]
+        );
     }
 }
