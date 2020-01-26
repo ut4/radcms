@@ -21,7 +21,7 @@ final class ContentTypeControllersTest extends DbTestCase {
         self::$testContentTypes = new ContentTypeCollection();
         self::$testContentTypes->add('Events', 'Tapahtumat',
                                      ['name' => ['text'],
-                                      'pic' => ['text', 'Kuva', 'image']]);
+                                      'pic' => ['text', 'Kuva', 'image', 'default.jpg']]);
         self::$testContentTypes->add('Locations', 'Paikat',
                                      ['name' => ['text', 'Tapahtumapaikka']]);
         self::$migrator = new ContentTypeMigrator(self::getDb());
@@ -42,9 +42,11 @@ final class ContentTypeControllersTest extends DbTestCase {
              'friendlyName' => 'Tapahtumat',
              'fields' => [
                  ['name' => 'name', 'friendlyName' => 'name', 'dataType' => 'text',
-                  'widget' => new FieldSetting(self::DEFAULT_WIDGET)],
+                  'widget' => new FieldSetting(self::DEFAULT_WIDGET),
+                  'defaultValue' => ''],
                  ['name' => 'pic', 'friendlyName' => 'Kuva', 'dataType' => 'text',
-                  'widget' => new FieldSetting('image')],
+                  'widget' => new FieldSetting('image'),
+                  'defaultValue' => 'default.jpg'],
              ],
              'isInternal' => false,
              'origin' => 'site.json'],
@@ -76,13 +78,16 @@ final class ContentTypeControllersTest extends DbTestCase {
         $this->verifyResponseBodyEquals(
             [['name' => 'Events', 'friendlyName' => 'Tapahtumat', 'fields' => [
                 ['name' => 'name', 'friendlyName' => 'name', 'dataType' => 'text',
-                 'widget' => new FieldSetting(self::DEFAULT_WIDGET)],
+                 'widget' => new FieldSetting(self::DEFAULT_WIDGET),
+                 'defaultValue' => ''],
                 ['name' => 'pic', 'friendlyName' => 'Kuva', 'dataType' => 'text',
-                 'widget' => new FieldSetting('image')],
+                 'widget' => new FieldSetting('image'),
+                 'defaultValue' => 'default.jpg'],
             ], 'isInternal' => false, 'origin' => 'site.json'],
             ['name' => 'Locations', 'friendlyName' => 'Paikat', 'fields' => [
                 ['name' => 'name', 'friendlyName' => 'Tapahtumapaikka', 'dataType' => 'text',
-                 'widget' => new FieldSetting(self::DEFAULT_WIDGET)],
+                 'widget' => new FieldSetting(self::DEFAULT_WIDGET),
+                 'defaultValue' => ''],
             ], 'isInternal' => false, 'origin' => 'site.json']],
             $s
         );

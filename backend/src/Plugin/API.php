@@ -4,12 +4,15 @@ namespace RadCms\Plugin;
 
 use AltoRouter;
 use RadCms\Templating\MagicTemplate;
+use Pike\FileSystem;
+use Pike\PikeException;
 
 /**
  * Lisäosien oma API. Passataan lisäosien (PluginInterface) init-metodiin.
  */
 class API {
     private $router;
+    private $fs;
     private $onJsFileRegistered;
     private $onAdminPanelRegistered;
     /**
@@ -18,9 +21,11 @@ class API {
      * @param \Closure $onAdminPanelRegistered
      */
     public function __construct(AltoRouter $router,
+                                FileSystem $fs,
                                 $onJsFileRegistered,
                                 $onAdminPanelRegistered) {
         $this->router = $router;
+        $this->fs = $fs;
         $this->onJsFileRegistered = $onJsFileRegistered;
         $this->onAdminPanelRegistered = $onAdminPanelRegistered;
     }
@@ -33,6 +38,9 @@ class API {
      * @throws \Pike\PikeException
      */
     public function registerDirective($directiveName, $fullFilePath) {
+        if (!$this->fs->isFile($fullFilePath))
+            throw new PikeException("Failed to locate `{$fullFilePath}`",
+                                    PikeException::FAILED_FS_OP);
         // @allow \Pike\PikeException
         MagicTemplate::registerAlias($directiveName, $fullFilePath);
     }

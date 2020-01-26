@@ -68,11 +68,9 @@ class ControlPanelApp extends preact.Component {
      * @access protected
      */
     render() {
-        if (!this.state.routesUpdated)
-            return;
         return <div>
             <Toaster/>
-            <div id="cpanel" ref={ el => { if (el && !this.navBarScroller) {
+            <div id="cpanel" ref={ el => { if (el && !this.navBarScroller && this.siteIframe) {
                                     makeNavBarScroller(el, this.siteIframe);
                                     this.navBarScroller = 1;
                                 } } }>
@@ -90,7 +88,7 @@ class ControlPanelApp extends preact.Component {
                         <span>Luo sisältöä</span>
                     </button>
                 </div></section>
-                <section><div>
+                { this.state.routesUpdated && <section><div>
                     <h2>Tällä sivulla</h2>{
                     this.state.contentPanels.length
                         ? this.state.contentPanels.map((panelCfg, i) =>
@@ -102,8 +100,8 @@ class ControlPanelApp extends preact.Component {
                                 key={ `${panelCfg.dataFromBackend.title}-${i}` }/>
                         )
                         : this.state.routesUpdated ? 'Ei muokattavaa sisältöä tällä sivulla' : null
-                }</div></section>
-                <section><div>
+                }</div></section> }
+                { this.state.routesUpdated && <section><div>
                     <h2>Devaajalle</h2>{
                     this.state.adminPanels.map(panelCfg =>
                         <ControlPanelApp.AdminPanel
@@ -123,7 +121,7 @@ class ControlPanelApp extends preact.Component {
                             <a href="#/pack-website">Paketoi</a>
                         </ControlPanelApp.AdminPanel>
                     )
-                }</div></section>
+                }</div></section> }
             </div>
             { this.state.routesUpdated ? <PreactRouter history={ History.createHashHistory() }>
                 <ContentAddView path="/add-content/:initialContentTypeName?"/>

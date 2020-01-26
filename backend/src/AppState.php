@@ -5,6 +5,7 @@ namespace RadCms;
 use AltoRouter;
 use RadCms\Plugin\API;
 use Pike\Db;
+use Pike\FileSystem;
 use Pike\FileSystemInterface;
 use RadCms\Plugin\PluginCollection;
 use RadCms\ContentType\ContentTypeCollection;
@@ -46,6 +47,7 @@ class AppState {
         $this->websiteState->name = $state->websiteName;
         $this->websiteState->lang = $state->lang;
         $pluginAPI = new API($router,
+                             new FileSystem(),
                              function ($f) { $this->pluginJsFiles[] = $f; },
                              function ($p) { $this->pluginFrontendAdminPanelInfos[] = $p; });
         // @allow \Pike\PikeException

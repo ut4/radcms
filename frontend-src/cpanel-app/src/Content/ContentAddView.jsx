@@ -87,9 +87,8 @@ class ContentAddView extends preact.Component {
             const widgetInfo = field.widget
                 ? widgetTypes.find(w => w.name === field.widget.name)
                 : null;
-            newState.newContentNode[field.name] = widgetInfo
-                ? widgetInfo.defaultInitialValue
-                : '';
+            newState.newContentNode[field.name] = field.defaultValue ||
+                (widgetInfo ? widgetInfo.defaultInitialValue : '');
         });
     }
 }
