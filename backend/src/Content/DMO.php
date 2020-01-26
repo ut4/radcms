@@ -156,7 +156,7 @@ class DMO extends DAO {
      */
     private static function makeUpdateRevisionExec($id, $contentTypeName, $data, $fields) {
         return [
-            'UPDATE ${p}ContentRevisions' .
+            'UPDATE ${p}contentRevisions' .
             ' SET `revisionSnapshot` = ?' .
             ' WHERE `contentId` = ? AND `contentType` = ?',
             [
@@ -171,7 +171,7 @@ class DMO extends DAO {
      */
     private static function makeDeleteRevisionExec($id, $contentTypeName) {
         return [
-            'DELETE FROM ${p}ContentRevisions' .
+            'DELETE FROM ${p}contentRevisions' .
             ' WHERE `contentId` = ? AND `contentType` = ?',
             [$id, $contentTypeName]
         ];

@@ -97,5 +97,57 @@ function makeLabelAttrs(children, props) {
     return id ? {htmlFor: id} : null;
 }
 
+/**
+ * @param {{patternError?: string; maxError?: string; minError?: string; stepError?: string; maxLengthError?: string; minLengthError?: string; typeError?: string; requiredError?: string; [key: string]: any;}} props
+ */
+function Input(props) {
+    return makeInput(props, 'input');
+}
+
+/**
+ * @param {{patternError?: string; maxError?: string; minError?: string; stepError?: string; maxLengthError?: string; minLengthError?: string; typeError?: string; requiredError?: string; [key: string]: any;}} props
+ */
+function Select(props) {
+    return makeInput(props, 'select');
+}
+
+/**
+ * @param {{patternError?: string; maxError?: string; minError?: string; stepError?: string; maxLengthError?: string; minLengthError?: string; typeError?: string; requiredError?: string; [key: string]: any;}} props
+ */
+function Textarea(props) {
+    return makeInput(props, 'textarea');
+}
+
+function makeInput(props, tag) {
+    if (props.pattern || props.min || props.max || props.required ||
+        props.step || props.minLength || props.maxLength) {
+        const origOnInvalid = props.onInvalid;
+        props.onInvalid = e => {
+            const v = e.target.validity;
+            if (!v.valid) {
+                let message = [];
+                if (v.patternMismatch && props.patternError) message.push(props.patternError);
+                if (v.rangeOverflow && props.maxError) message.push(props.maxError);
+                if (v.rangeUnderflow && props.minError) message.push(props.minError);
+                if (v.stepMismatch && props.stepError) message.push(props.stepError);
+                if (v.tooLong && props.maxLengthError) message.push(props.maxLengthError);
+                if (v.tooShort && props.minLengthError) message.push(props.minLengthError);
+                if (v.typeMismatch && props.typeError) message.push(props.typeError);
+                if (v.valueMissing && props.requiredError) message.push(props.requiredError);
+                //
+                if (message.length)
+                    e.target.setCustomValidity(message.join('\n'));
+            }
+            if (origOnInvalid) origOnInvalid(e);
+        };
+        const origOnInput = props.onInput;
+        props.onInput = e => {
+            e.target.checkValidity();
+            if (origOnInput) origOnInput(e);
+        };
+    }
+    return preact.createElement(tag, props, props.children);
+}
+
 export default Form;
-export {InputGroup};
+export {InputGroup, Input, Select, Textarea};

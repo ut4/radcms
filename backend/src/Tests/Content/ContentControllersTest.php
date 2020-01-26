@@ -27,7 +27,7 @@ final class ContentControllersTest extends DbTestCase {
         // @allow \Pike\PikeException
         self::$migrator->uninstallMany(self::$testContentTypes);
         self::clearInstalledContentTypesFromDb();
-        self::$db->exec('DELETE FROM ${p}ContentRevisions');
+        self::$db->exec('DELETE FROM ${p}contentRevisions');
     }
     public function tearDown() {
         $this->deleteAllTestProducts();
@@ -78,7 +78,7 @@ final class ContentControllersTest extends DbTestCase {
     }
     private function verifyRevisionWasInsertedToDb($s) {
         $this->assertEquals(json_encode(['title' => $s->newProduct->title]), self::$db->fetchOne(
-            'SELECT `revisionSnapshot` FROM ${p}ContentRevisions WHERE `contentId` = ?' .
+            'SELECT `revisionSnapshot` FROM ${p}contentRevisions WHERE `contentId` = ?' .
             ' AND `contentType` = ?',
             [$s->actualResponseParsed->lastInsertId, 'Products']
         )['revisionSnapshot']);
@@ -186,7 +186,7 @@ final class ContentControllersTest extends DbTestCase {
         $expectedSnapshot = json_encode(['title' => $s->newData->title],
                                         JSON_UNESCAPED_UNICODE);
         $this->assertEquals($expectedSnapshot, self::$db->fetchOne(
-            'SELECT `revisionSnapshot` FROM ${p}ContentRevisions' .
+            'SELECT `revisionSnapshot` FROM ${p}contentRevisions' .
             ' WHERE `contentId` = 1 AND `contentType` = ?',
             ['Products']
         )['revisionSnapshot']);
@@ -214,7 +214,7 @@ final class ContentControllersTest extends DbTestCase {
     }
     private function verifyRevisionWasDeletedFromDb($s) {
         $this->assertEquals(null, self::$db->fetchOne(
-            'SELECT `revisionSnapshot` FROM ${p}ContentRevisions' .
+            'SELECT `revisionSnapshot` FROM ${p}contentRevisions' .
             ' WHERE `contentId` = 1 AND `contentType` = ?',
             ['Products']
         ));
@@ -229,6 +229,6 @@ final class ContentControllersTest extends DbTestCase {
         $this->deleteContent('Products');
     }
     private function deleteAllRevisions() {
-        self::$db->exec('DELETE FROM ${p}ContentRevisions');
+        self::$db->exec('DELETE FROM ${p}contentRevisions');
     }
 }
