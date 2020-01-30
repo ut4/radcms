@@ -11,6 +11,7 @@ use Pike\Db;
 use RadCms\ContentType\ContentTypeCollection;
 use Pike\FileSystem;
 use Pike\PikeException;
+use RadCms\Theme\Theme;
 
 /**
  * Handlaa sivupyynnöt, (GET '/' tai GET '/sivunnimi').
@@ -21,10 +22,15 @@ class WebsiteControllers {
     /**
      * @param \RadCms\Website\SiteConfig $siteConfig
      * @param \RadCms\AppState $appState
+     * @param \RadCms\Website\SiteConfig $siteConfig
      */
-    public function __construct(SiteConfig $siteConfig, AppState $appState) {
+    public function __construct(SiteConfig $siteConfig,
+                                AppState $appState,
+                                Theme $theme) {
         // @allow \Pike\PikeException
         $siteConfig->selfLoad(RAD_SITE_PATH . 'site.json');
+        // @allow \Pike\PikeException
+        $theme->load();
         $this->siteCfg = $siteConfig;
         $this->appState = $appState;
     }
@@ -48,7 +54,7 @@ class WebsiteControllers {
             return;
         }
         $cnd = new ContentNodeDAO($db, $contentTypes, isset($req->user));
-        $template = new MagicTemplate(RAD_SITE_PATH . $layoutFileName,
+        $template = new MagicTemplate(RAD_SITE_PATH . "theme/{$layoutFileName}",
                                       ['_cssFiles' => $this->siteCfg->cssAssets,
                                        '_jsFiles' => $this->siteCfg->jsAssets],
                                       $cnd,

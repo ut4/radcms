@@ -46,7 +46,7 @@ class Installer {
                $this->createContentTypesAndInsertInitialData("{$base}site.json",
                                                              "{$base}sample-data.json",
                                                              $this->fs) &&
-               $this->cloneTemplatesAndCfgFile($settings) &&
+               $this->copyFiles($settings) &&
                $this->generateConfigFile($settings) &&
                $this->selfDestruct();
     }
@@ -83,9 +83,10 @@ class Installer {
         return $this->createDb($settings) &&
                $this->createMainSchema($settings) &&
                $this->insertMainSchemaData($settings) &&
-               $this->createContentTypesAndInsertInitialData(Packager::WEBSITE_CONFIG_VIRTUAL_FILE_NAME,
-                                                             Packager::THEME_CONTENT_DATA_VIRTUAL_FILE_NAME,
-                                                             $package);
+               $this->createContentTypesAndInsertInitialData(
+                   Packager::WEBSITE_CONFIG_VIRTUAL_FILE_NAME,
+                   Packager::THEME_CONTENT_DATA_VIRTUAL_FILE_NAME,
+                   $package);
     }
     /**
      * @return array
@@ -167,7 +168,9 @@ class Installer {
      * @return bool
      * @throws \Pike\PikeException
      */
-    private function createContentTypesAndInsertInitialData($siteCfgFilePath, $dataFilePath, $fs) {
+    private function createContentTypesAndInsertInitialData($siteCfgFilePath,
+                                                            $dataFilePath,
+                                                            $fs) {
         $json = $fs->read($dataFilePath);
         if (!$json)
             throw new PikeException("Failed to read `{$dataFilePath}`", PikeException::FAILED_FS_OP);
@@ -185,38 +188,36 @@ class Installer {
      * @return bool
      * @throws \Pike\PikeException
      */
-    private function cloneTemplatesAndCfgFile($s) {
+    private function copyFiles($s) {
         //
-        $path = $this->siteDirPath . 'uploads';
-        if (!$this->fs->isDir($path) && !$this->fs->mkDir($path))
-            throw new PikeException("Failed to create `{$path}`",
-                                    PikeException::FAILED_FS_OP);
+        foreach ([$this->siteDirPath . 'uploads',
+                  $this->siteDirPath . 'theme'] as $path) {
+            if (!$this->fs->isDir($path) && !$this->fs->mkDir($path))
+                throw new PikeException("Failed to create `{$path}`",
+                                        PikeException::FAILED_FS_OP);
+        }
         //
         $base = "{$this->backendPath}installer/sample-content/{$s->sampleContent}/";
-        $base2 = "{$base}frontend/";
-        if (!($tmplFilePaths = $this->fs->readDir($base, '*.tmpl.php')))
-            throw new PikeException("Failed to read `{$base}*.tmpl.php`",
-                                    PikeException::FAILED_FS_OP);
-        if (!($assetFilePaths = $this->fs->readDir($base2, '*.{css,js}', GLOB_ERR|GLOB_BRACE)))
-            throw new PikeException("Failed to read `{$base2}*.{css,js}`",
-                                    PikeException::FAILED_FS_OP);
+        // @allow \Pike\PikeException
+        $tmplFileNames = $this->readDirFileNames("{$base}theme/", '*.tmpl.php');
+        $assetFileNames = $this->readDirFileNames("{$base}theme/frontend/", '*.{css,js}',
+                                                  GLOB_ERR | GLOB_BRACE);
         //
-        $toBeCopied = [
-            [$base . 'site.json', $base],
-            [$base . 'README.md', $base],
-        ];
-        foreach ($tmplFilePaths as $fullFilePath)
-            $toBeCopied[] = [$fullFilePath, $base];
-        foreach ($assetFilePaths as $fullFilePath)
-            $toBeCopied[] = [$fullFilePath, $base2];
+        $toBeCopied = [];
+        foreach (['site.json', 'README.md'] as $fileName)
+            $toBeCopied[] = ["{$base}{$fileName}",
+                             "{$this->siteDirPath}{$fileName}"];
+        foreach ($tmplFileNames as $fileName)
+            $toBeCopied[] = ["{$base}theme/{$fileName}",
+                             "{$this->siteDirPath}theme/{$fileName}"];
+        foreach ($assetFileNames as $fileName)
+            $toBeCopied[] = ["{$base}theme/frontend/{$fileName}",
+                             "{$this->siteDirPath}theme/{$fileName}"];
         //
-        foreach ($toBeCopied as [$fullFilePath, $base]) {
-            $fileName = substr($fullFilePath, mb_strlen($base));
-            if (!$this->fs->copy($fullFilePath, $this->siteDirPath . $fileName)) {
-                throw new PikeException('Failed to copy `' . $fullFilePath . '`' . 
-                                        ' -> `' . $this->siteDirPath . $fileName . '`',
+        foreach ($toBeCopied as [$from, $to]) {
+            if (!$this->fs->copy($from, $to))
+                throw new PikeException("Failed to copy `{$from}` -> `{$to}`",
                                         PikeException::FAILED_FS_OP);
-            }
         }
         return true;
     }
@@ -253,6 +254,19 @@ return [
                                 PikeException::FAILED_FS_OP);
     }
     /**
+     * @return string[] ['file.php', 'another.php']
+     * @throws \Pike\PikeException
+     */
+    private function readDirFileNames($dirPath, $globPattern, $globFlags = GLOB_ERR) {
+        if (($paths = $this->fs->readDir($dirPath, $globPattern, $globFlags))) {
+            return array_map(function ($fullFilePath) use ($dirPath) {
+                return substr($fullFilePath, mb_strlen($dirPath));
+            }, $paths);
+        }
+        throw new PikeException("Failed to read `{$dirPath}${$globPattern}`",
+                                PikeException::FAILED_FS_OP);
+    }
+    /**
      * @return bool
      * @throws \Pike\PikeException
      */
@@ -276,7 +290,7 @@ return [
         return true;
     }
     /**
-     * @return null|string null = ok, string = dirOrFilePath
+     * @return null|string null = ok, string = failedDirOrFilePath
      */
     private function deleteFilesRecursive($dirPath) {
         foreach ($this->fs->readDir($dirPath) as $path) {

@@ -9,6 +9,6 @@
         [".*", "main-layout.tmpl.php"]
     ],
     "assetFiles": [
-        ["main.css", "local-stylesheet"]
+        ["theme/main.css", "local-stylesheet"]
     ]
 }

@@ -11,10 +11,10 @@
         }]
     ],
     "urlMatchers": [
-        ["/art.+", "article-layout.tmpl.php"],
+        ["/artikkeli/.+", "article-layout.tmpl.php"],
         [".*", "main-layout.tmpl.php"]
     ],
     "assetFiles": [
-        ["main.css", "local-stylesheet"]
+        ["theme/main.css", "local-stylesheet"]
     ]
 }

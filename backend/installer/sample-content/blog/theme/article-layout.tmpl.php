@@ -5,7 +5,7 @@
 // }.
 // Lue lisää: https://todo/sivutemplaattien-käyttö.
 $article = null;
-$rendered = $this->Article(['slug' => $url[0], 'bindTo' => &$article]); ?>
+$rendered = $this->Article(['slug' => $url[1], 'bindTo' => &$article]); ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>

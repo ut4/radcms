@@ -33,10 +33,11 @@ class MagicTemplate extends Template {
         $this->__fileExists = function ($path) use ($fs) { return $fs->isFile($path); };
     }
     /**
-     * Renderöi templaatin `${RAD_SITE_PATH}${$this->aliases[$name] || $name}.tmpl.php`.
+     * Renderöi templaatin `${$this->dir}${$this->aliases[$name] || $name}.tmpl.php`.
      * Esim. kutsu $this->Foo() renderöi templaatin "/foo/Foo.tmpl.php" (jos
-     * RAD_SITE_PATH on "/foo/"), ja "c:/baz/dir/my-foo.tmpl.php" (jos
-     * RAD_SITE_PATH on "c:/baz/", ja $this->aliases['Foo'] on "dir/my-foo").
+     * ${$this->dir} on "/foo/"), ja "c:/baz/my-foo.inc" (jos $this->aliases['Foo']
+     * on "c:/baz/my-foo.inc"). $this->dir viittaa aina kansioon, jossa renderöitävä
+     * templatti sijaitsee.
      *
      * @param string $name
      * @param array $args
@@ -45,7 +46,8 @@ class MagicTemplate extends Template {
     public function __call($name, $args) {
         try {
             if (array_key_exists($name, self::$__funcs))
-                return self::$__funcs[$name](...$args);
+                return call_user_func_array(self::$__funcs[$name],
+                                            array_merge($args, [$this]));
             $directiveFilePath = !array_key_exists($name, self::$__aliases)
                 ? "{$this->__dir}{$name}.tmpl.php"
                 : self::$__aliases[$name];
@@ -157,14 +159,17 @@ class MagicTemplate extends Template {
     }
     /**
      * @param string $name
-     * @param \Closure $fn
-     * @param bool $bind = true
+     * @param \Closure|callable $fn
+     * @param bool $bindThis = true
      */
-    public static function registerMethod($name, $fn, $bind = true) {
+    public static function registerMethod($name, $fn, $bindThis = true) {
         if (array_key_exists($name, self::$__funcs))
             throw new PikeException("Method `{$name}` already exists",
                                     PikeException::BAD_INPUT);
-        self::$__funcs[$name] = $bind ? \Closure::bind($fn, $this) : $fn;
+        if ($bindThis && !($fn instanceof \Closure))
+            throw new PikeException('$fn must be instaceof \Closure if $bind = true',
+                                    PikeException::BAD_INPUT);
+        self::$__funcs[$name] = $bindThis ? \Closure::bind($fn, $this) : $fn;
     }
     /**
      * ['id' => 'foo', 'class' => 'bar'] -> ' id="foo" class="bar"'

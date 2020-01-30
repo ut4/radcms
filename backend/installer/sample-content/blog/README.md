@@ -8,11 +8,11 @@ Layout-templaatit, jotka tämä paketti sisältää. Layout valitaan urlin perus
 
 ### main-layout.tmpl.php
 
-Listaa kaikki artikkelit. Renderöi kaikki, paitsi /art-alkuiset urlit.
+Listaa kaikki artikkelit. Renderöi kaikki, paitsi /artikkelit/-alkuiset urlit.
 
 ### article-layout.tmpl.php
 
-Näyttää yhden artikkelin. Renderöi kaikki /art-alkuiset urlit.
+Näyttää yhden artikkelin. Renderöi kaikki /artikkelit/-alkuiset urlit.
 
 ## Php-tagit
 

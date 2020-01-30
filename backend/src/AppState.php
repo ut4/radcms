@@ -13,6 +13,7 @@ use RadCms\Plugin\PluginInterface;
 use RadCms\Website\SiteConfigDiffer;
 use RadCms\ContentType\ContentTypeSyncer;
 use Pike\PikeException;
+use RadCms\Theme\API as ThemeAPI;
 
 class AppState {
     public $plugins;
@@ -46,8 +47,8 @@ class AppState {
         $this->contentTypesLastUpdated = $state->contentTypesLastUpdated;
         $this->websiteState->name = $state->websiteName;
         $this->websiteState->lang = $state->lang;
-        $pluginAPI = new API($router,
-                             new FileSystem(),
+        $pluginAPI = new API(new ThemeAPI($this->fs),
+                             $router,
                              function ($f) { $this->pluginJsFiles[] = $f; },
                              function ($p) { $this->pluginFrontendAdminPanelInfos[] = $p; });
         // @allow \Pike\PikeException

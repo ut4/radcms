@@ -3,29 +3,28 @@
 namespace RadCms\Plugin;
 
 use AltoRouter;
-use RadCms\Templating\MagicTemplate;
-use Pike\FileSystem;
-use Pike\PikeException;
+use RadCms\Theme\API as ThemeAPI;
 
 /**
  * Lisäosien oma API. Passataan lisäosien (PluginInterface) init-metodiin.
  */
 class API {
     private $router;
-    private $fs;
+    private $themeApi;
     private $onJsFileRegistered;
     private $onAdminPanelRegistered;
     /**
      * @param \AltoRouter $ctx
+     * @param \AltoRouter $ctx
      * @param \Closure $onJsFileRegistered
      * @param \Closure $onAdminPanelRegistered
      */
-    public function __construct(AltoRouter $router,
-                                FileSystem $fs,
+    public function __construct(ThemeAPI $themeApi,
+                                AltoRouter $router,
                                 $onJsFileRegistered,
                                 $onAdminPanelRegistered) {
         $this->router = $router;
-        $this->fs = $fs;
+        $this->themeApi = $themeApi;
         $this->onJsFileRegistered = $onJsFileRegistered;
         $this->onAdminPanelRegistered = $onAdminPanelRegistered;
     }
@@ -38,23 +37,22 @@ class API {
      * @throws \Pike\PikeException
      */
     public function registerDirective($directiveName, $fullFilePath) {
-        if (!$this->fs->isFile($fullFilePath))
-            throw new PikeException("Failed to locate `{$fullFilePath}`",
-                                    PikeException::FAILED_FS_OP);
         // @allow \Pike\PikeException
-        MagicTemplate::registerAlias($directiveName, $fullFilePath);
+        $this->themeApi->registerDirective($directiveName, $fullFilePath);
     }
     /**
      * Rekisteröi <?php $this->methodName(...) ?> käytettäväksi templaatteista.
 
      * @param string $methodName
-     * @param \Closure $fn
-     * @param bool $bindToDirectiveScope = true
+     * @param \Closure|callable $fn
+     * @param bool $bindToDirectiveScope = false
      * @throws \Pike\PikeException
      */
-    public function registerDirectiveMethod($methodName, $fn, $bindToDirectiveScope = true) {
+    public function registerDirectiveMethod($methodName,
+                                            callable $fn,
+                                            $bindToDirectiveScope = false) {
         // @allow \Pike\PikeException
-        MagicTemplate::registerMethod($methodName, $fn, $bindToDirectiveScope);
+        $this->themeApi->registerDirectiveMethod($methodName, $fn, $bindToDirectiveScope);
     }
     /**
      * Rekisteröi <script src="<?= $scriptFileName ?>"> sisällytettäväksi
