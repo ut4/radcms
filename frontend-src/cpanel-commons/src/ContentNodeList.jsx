@@ -12,7 +12,7 @@ function ContentNodeList(props) {
                 Muokkaa
             </a>
         ).concat(
-            <a ref={ '#/add-content' + (!props.contentType ? '' : '/' + props.contentType) +
+            <a href={ '#/add-content' + (!props.contentType ? '' : '/' + props.contentType) +
                      '?returnTo=' + encodeURIComponent(props.currentPagePath) }>
                 { props.createLinkText || 'Luo uusi' }
             </a>

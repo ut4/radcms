@@ -24,10 +24,10 @@ const dateUtils = {
 const urlUtils = {
     /**
      * @param {string} to
-     * @param {boolean?} full
+     * @param {string?} type "hard"
      */
-    redirect(to, full) {
-        if (!full) {
+    redirect(to, type) {
+        if (type !== 'hard') {
             window.location.hash = `#/${this.normalizeUrl(to)}`;
         } else {
             window.location.href = window.location.origin + config.baseUrl +

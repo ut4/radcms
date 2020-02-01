@@ -6,6 +6,7 @@ interface FormProps {
     autoClose?: bool;
     confirmButtonText?: string;
     cancelButtonText?: string;
+    usePseudoFormTag?: bool;
 }
 
 interface FrontendPanelConfig {

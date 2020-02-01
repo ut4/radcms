@@ -226,6 +226,7 @@ section.quick-links .icon-button .feather {
     width: calc(100% - 42px);
 }
 
+
 /* == View ================================================================== */
 #view, .popup-dialog {
     left: 160px;
@@ -247,6 +248,7 @@ section.quick-links .icon-button .feather {
     background-color: transparent;
 }
 
+
 /* == Toaster =============================================================== */
 .toaster {
     position: fixed;
@@ -257,6 +259,7 @@ section.quick-links .icon-button .feather {
 .toaster-message:not(:only-of-type):not(:last-of-type) {
     margin-bottom: 4px;
 }
+
 
 /* == Popup overlay ========================================================= */
 .popup-dialog {
@@ -349,6 +352,13 @@ table.pika-time {
 .datepicker.large .pika-lendar {
     width: auto;
     max-width: 330px;
+}
+
+
+/* == Tree-builder ========================================================== */
+.tree-builder textarea {
+    font: normal 13px/13px Consolas, monospace;
+    color: #333;
 }
 
 

@@ -64,7 +64,7 @@ class ContentAddView extends preact.Component {
             Object.assign({isPublished: revisionSettings === ''},
                           this.fieldListCmp.getResult()))
             .then(() => {
-                urlUtils.redirect(this.props.returnTo || '/', true);
+                urlUtils.redirect(this.props.returnTo || '/', 'hard');
             })
             .catch(() => {
                 toast('Sisällön luonti epäonnistui.', 'error');

@@ -83,7 +83,7 @@ class ContentEditView extends preact.Component {
                           this.fieldListCmp.getResult())
         )
         .then(() => {
-            urlUtils.redirect(this.props.returnTo || '/', true);
+            urlUtils.redirect(this.props.returnTo || '/', 'hard');
         })
         .catch(() => {
             toast('Sisällön tallennus epäonnistui.', 'error');

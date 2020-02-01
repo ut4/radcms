@@ -12,17 +12,34 @@ class Form extends preact.Component {
      * @access protected
      */
     render() {
-        return <form onSubmit={ e => this.handleSubmit(e) }>
-            { this.props.children }
-            <div class="form-buttons">
-                <button class="nice-button primary"
-                        disabled={ this.doDisableConfirmButton() }
-                        type="submit">
-                    { this.props.confirmButtonText || 'Ok' }
-                </button>
-                <a href="#/">{ this.props.cancelButtonText || 'Cancel' }</a>
-            </div>
-        </form>;
+        return !this.props.usePseudoFormTag
+            ? <form onSubmit={ e => this.handleSubmit(e) }>
+                { this.props.children }
+                <div class="form-buttons">
+                    <button class="nice-button primary"
+                            disabled={ this.doDisableConfirmButton() }
+                            type="submit">
+                        { this.props.confirmButtonText || 'Ok' }
+                    </button>
+                    <a href="#/" onClick={ e => this.cancel(e) } >
+                        { this.props.cancelButtonText || 'Peruuta' }
+                    </a>
+                </div>
+            </form>
+            : <div>
+                { this.props.children }
+                <div class="form-buttons">
+                    <button class="nice-button primary"
+                            onClick={ e => this.handleSubmit(e) }
+                            disabled={ this.doDisableConfirmButton() }
+                            type="button">
+                        { this.props.confirmButtonText || 'Ok' }
+                    </button>
+                    <a href="#/" onClick={ e => this.cancel(e) } >
+                        { this.props.cancelButtonText || 'Peruuta' }
+                    </a>
+                </div>
+            </div>;
     }
     /**
      * @access private
@@ -49,7 +66,6 @@ class Form extends preact.Component {
      */
     cancel(e) {
         if (this.props.onCancel) this.props.onCancel(e);
-        this.close();
     }
     /**
      * @access private
@@ -90,9 +106,10 @@ function InputGroup(props) {
 }
 
 function makeLabelAttrs(children, props) {
-    const input = children.find(el => el.type === 'input' ||
-                                      el.type === 'textarea' ||
-                                      el.type === 'select');
+    const input = children.find(el => el &&
+                                      (el.type === 'input' ||
+                                       el.type === 'textarea' ||
+                                       el.type === 'select'));
     const id = props.id || (input && input.props.id);
     return id ? {htmlFor: id} : null;
 }

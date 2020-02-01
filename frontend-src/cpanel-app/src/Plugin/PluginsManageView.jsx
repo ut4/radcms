@@ -66,7 +66,7 @@ class PluginsManageView extends preact.Component {
 function sendInstallOrUninstallRequest(plugin, url) {
     http.put(`/api/plugins/${plugin.name}/${url}`, {dum: 'my'})
         .then(() => {
-            urlUtils.redirect('/', true);
+            urlUtils.redirect('/', 'hard');
         })
         .catch(() => {
             toast(`Lisäosan ${url === 'install' ? 'asennus' : 'poisto'} epäonnistui`, 'error');
