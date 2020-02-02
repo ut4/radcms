@@ -29,6 +29,6 @@ class AdminControllers {
         }
         $res->html((new MagicTemplate(RAD_BASE_PATH . 'src/Website/cpanel.tmpl.php'))
             ->render(['q' => $req->params->q ?? '/',
-                      'pluginJsFiles' => $appState->pluginJsFiles]));
+                      'pluginJsFiles' => $appState->apiConfigs->getRegisteredPluginJsFiles()]));
     }
 }

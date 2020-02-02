@@ -3,56 +3,44 @@
 namespace RadCms\Plugin;
 
 use AltoRouter;
-use RadCms\Theme\API as ThemeAPI;
+use RadCms\BaseAPI;
+use RadCms\APIConfigsStorage;
 
 /**
  * Lisäosien oma API. Passataan lisäosien (PluginInterface) init-metodiin.
  */
 class API {
     private $router;
-    private $themeApi;
-    private $onJsFileRegistered;
-    private $onAdminPanelRegistered;
+    private $baseApi;
+    private $apiConfigs;
     /**
      * @param \AltoRouter $ctx
      * @param \AltoRouter $ctx
-     * @param \Closure $onJsFileRegistered
-     * @param \Closure $onAdminPanelRegistered
+     * @param \RadCms\APIConfigsStorage $configs
      */
-    public function __construct(ThemeAPI $themeApi,
+    public function __construct(BaseAPI $baseApi,
                                 AltoRouter $router,
-                                $onJsFileRegistered,
-                                $onAdminPanelRegistered) {
+                                APIConfigsStorage $configs) {
         $this->router = $router;
-        $this->themeApi = $themeApi;
-        $this->onJsFileRegistered = $onJsFileRegistered;
-        $this->onAdminPanelRegistered = $onAdminPanelRegistered;
+        $this->baseApi = $baseApi;
+        $this->apiConfigs = $configs;
     }
     /**
-     * Rekisteröi <?= $this->DirectiveName(...) ?> käytettäväksi templaatteista.
-     * Esimerkki: registerDirective('MPMovies', RAD_SITE_PATH . 'plugins/MyPlugin/movies.inc');
-     *
-     * @param string $directiveName
-     * @param string $fullFilePath
-     * @throws \Pike\PikeException
+     * @see \RadCms\BaseAPI->registerDirective().
      */
-    public function registerDirective($directiveName, $fullFilePath) {
+    public function registerDirective($directiveName, $fullFilePath, $for = '*') {
         // @allow \Pike\PikeException
-        $this->themeApi->registerDirective($directiveName, $fullFilePath);
+        $this->baseApi->registerDirective($directiveName, $fullFilePath, $for);
     }
     /**
-     * Rekisteröi <?php $this->methodName(...) ?> käytettäväksi templaatteista.
-
-     * @param string $methodName
-     * @param \Closure|callable $fn
-     * @param bool $bindToDirectiveScope = false
-     * @throws \Pike\PikeException
+     * @see \RadCms\BaseAPI->registerDirectiveMethod().
      */
     public function registerDirectiveMethod($methodName,
                                             callable $fn,
+                                            $for = '*',
                                             $bindToDirectiveScope = false) {
         // @allow \Pike\PikeException
-        $this->themeApi->registerDirectiveMethod($methodName, $fn, $bindToDirectiveScope);
+        $this->baseApi->registerDirectiveMethod($methodName, $fn, $for, $bindToDirectiveScope);
     }
     /**
      * Rekisteröi <script src="<?= $scriptFileName ?>"> sisällytettäväksi
@@ -62,7 +50,7 @@ class API {
      * @param array $attrs = array
      */
     public function registerJsFile($scriptFileName, array $attrs = []) {
-        $this->onJsFileRegistered->__invoke((object)[
+        $this->apiConfigs->putPluginJsFile((object)[
             'fileName' => $scriptFileName,
             'attrs' => $attrs,
         ]);
@@ -101,7 +89,7 @@ class API {
      * @param string $title
      */
     public function registerFrontendAdminPanel($panelImplName, $title) {
-        $this->onAdminPanelRegistered->__invoke((object)[
+        $this->apiConfigs->putAdminPanel((object)[
             'impl' => $panelImplName,
             'title' => $title,
         ]);

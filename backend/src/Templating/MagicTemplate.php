@@ -16,8 +16,8 @@ use Pike\FileSystem;
 class MagicTemplate extends Template {
     private $__contentDao;
     private $__fileExists;
-    private static $__aliases = [];
-    private static $__funcs = [];
+    private $__aliases;
+    private $__funcs;
     /**
      * @param string $file
      * @param array $vars = null
@@ -31,6 +31,8 @@ class MagicTemplate extends Template {
         parent::__construct($file, $vars);
         $this->__contentDao = $dao;
         $this->__fileExists = function ($path) use ($fs) { return $fs->isFile($path); };
+        $this->__aliases = [];
+        $this->__funcs = [];
     }
     /**
      * Renderöi templaatin `${$this->dir}${$this->aliases[$name] || $name}.tmpl.php`.
@@ -45,12 +47,12 @@ class MagicTemplate extends Template {
      */
     public function __call($name, $args) {
         try {
-            if (array_key_exists($name, self::$__funcs))
-                return call_user_func_array(self::$__funcs[$name],
+            if (array_key_exists($name, $this->__funcs))
+                return call_user_func_array($this->__funcs[$name],
                                             array_merge($args, [$this]));
-            $directiveFilePath = !array_key_exists($name, self::$__aliases)
+            $directiveFilePath = !array_key_exists($name, $this->__aliases)
                 ? "{$this->__dir}{$name}.tmpl.php"
-                : self::$__aliases[$name];
+                : $this->__aliases[$name];
             if (!$this->__fileExists->__invoke($directiveFilePath)) {
                 return "Did you forget to \$api->registerDirective('{$name}', '/file.php')?";
             }
@@ -151,25 +153,16 @@ class MagicTemplate extends Template {
      * @param string $fullFilePath
      * @throws \Pike\PikeException
      */
-    public static function registerAlias($directiveName, $fullFilePath) {
-        if (array_key_exists($directiveName, self::$__aliases))
-            throw new PikeException("Alias `{$directiveName}` is already registered.",
-                                    PikeException::BAD_INPUT);
-        self::$__aliases[$directiveName] = $fullFilePath;
+    public function registerAlias($directiveName, $fullFilePath) {
+        $this->__aliases[$directiveName] = $fullFilePath;
     }
     /**
      * @param string $name
      * @param \Closure|callable $fn
-     * @param bool $bindThis = true
+     * @param bool $bindThis
      */
-    public static function registerMethod($name, $fn, $bindThis = true) {
-        if (array_key_exists($name, self::$__funcs))
-            throw new PikeException("Method `{$name}` already exists",
-                                    PikeException::BAD_INPUT);
-        if ($bindThis && !($fn instanceof \Closure))
-            throw new PikeException('$fn must be instaceof \Closure if $bind = true',
-                                    PikeException::BAD_INPUT);
-        self::$__funcs[$name] = $bindThis ? \Closure::bind($fn, $this) : $fn;
+    public function registerMethod($name, $fn, $bindThis) {
+        $this->__funcs[$name] = $bindThis ? \Closure::bind($fn, $this) : $fn;
     }
     /**
      * ['id' => 'foo', 'class' => 'bar'] -> ' id="foo" class="bar"'
@@ -181,12 +174,5 @@ class MagicTemplate extends Template {
         $pairs = [];
         foreach ($map as $key => $val) $pairs[] = " {$key}=\"{$val}\"";
         return htmlspecialchars(implode('' , $pairs), ENT_NOQUOTES);
-    }
-    /**
-     * Temp hack
-     */
-    public static function __reset() {
-        self::$__aliases = [];
-        self::$__funcs = [];
     }
 }

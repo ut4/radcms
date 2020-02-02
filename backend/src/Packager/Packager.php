@@ -96,8 +96,8 @@ class Packager {
      */
     private function generateWebsiteStateJson($sitePath) {
         return json_encode([
-            'siteName' => $this->appState->websiteState->name,
-            'siteLang' => $this->appState->websiteState->lang,
+            'siteName' => $this->appState->siteInfo->name,
+            'siteLang' => $this->appState->siteInfo->lang,
             'baseUrl' => RAD_BASE_URL,
             'radPath' => RAD_BASE_PATH,
             'sitePath' => $sitePath,

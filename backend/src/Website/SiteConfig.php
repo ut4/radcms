@@ -75,7 +75,7 @@ class SiteConfig {
      */
     private function collectContentTypes($ctypeInput) {
         $asMap = [];
-        foreach ($ctypeInput as $i=> $definition) {
+        foreach ($ctypeInput as $i => $definition) {
             if (!is_string($definition)) continue;
             $ctypeInput[$i] = MultiFieldBlobs::DEFINITION;
             $ctypeInput[$i][2] = (object)$ctypeInput[$i][2];

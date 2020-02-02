@@ -2,7 +2,7 @@
 
 namespace RadCms\StockContentTypes\MultiFieldBlobs;
 
-use RadCms\Theme\API;
+use RadCms\BaseAPI;
 use RadCms\Templating\StockFrontendPanelImpls;
 
 class MultiFieldBlobs {
@@ -11,10 +11,11 @@ class MultiFieldBlobs {
         'fields' => 'json:Kentät:multiFieldBuilder'
     ]];
     /**
-     * @param \RadCms\Theme\API $api
+     * @param \RadCms\BaseAPI $api
      */
-    public function init(API $api) {
-        $api->registerDirectiveMethod('fetchMultiField', [$this, 'fetchMultiField']);
+    public function init(BaseAPI $api) {
+        $api->registerDirectiveMethod('fetchMultiField', [$this, 'fetchMultiField'],
+            'WebsiteLayout');
     }
     /**
      * @param string $name

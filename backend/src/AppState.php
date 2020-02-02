@@ -12,51 +12,40 @@ use RadCms\Plugin\PluginInterface;
 use RadCms\Website\SiteConfigDiffer;
 use RadCms\ContentType\ContentTypeSyncer;
 use Pike\PikeException;
-use RadCms\Theme\API as ThemeAPI;
-use RadCms\StockContentTypes\MultiFieldBlobs\MultiFieldBlobs;
-use RadCms\Templating\MagicTemplate;
 
 class AppState {
     public $plugins;
     public $contentTypes;
-    public $websiteState;
-    public $pluginJsFiles;
-    public $pluginFrontendAdminPanelInfos;
     public $contentTypesLastUpdated;
+    public $siteInfo;
+    public $apiConfigs;
     private $db;
     private $fs;
-    private $stockContentTypes;
     /**
      * @param \Pike\Db $db
      * @param \Pike\FileSystemInterface $db
      */
     public function __construct(Db $db, FileSystemInterface $fs) {
         $this->plugins = new PluginCollection();
-        $this->websiteState = (object)['name' => null, 'lang' => null];
-        $this->pluginJsFiles = [];
-        $this->pluginFrontendAdminPanelInfos = [];
-        $this->db = $db;
+        $this->siteInfo = (object)['name' => null, 'lang' => null];
         $this->fs = $fs;
+        $this->apiConfigs = new APIConfigsStorage($this->fs);
+        $this->db = $db;
     }
     /**
      * @param AltoRouter $router
      * @throws \Pike\PikeException
      */
     public function selfLoad(AltoRouter $router) {
-        // Temp hack
-        MagicTemplate::__reset();
         // @allow \Pike\PikeException
         $state = $this->fetchNormalizedState();
         $this->contentTypes = ContentTypeCollection::fromCompactForm($state->compactContentTypes);
         $this->contentTypesLastUpdated = $state->contentTypesLastUpdated;
-        $this->websiteState->name = $state->websiteName;
-        $this->websiteState->lang = $state->lang;
-        $themeApi = new ThemeAPI($this->fs);
-        $this->initStockContentTypes($themeApi);
-        $pluginAPI = new API($themeApi,
+        $this->siteInfo->name = $state->websiteName;
+        $this->siteInfo->lang = $state->lang;
+        $pluginAPI = new API(new BaseAPI($this->apiConfigs),
                              $router,
-                             function ($f) { $this->pluginJsFiles[] = $f; },
-                             function ($p) { $this->pluginFrontendAdminPanelInfos[] = $p; });
+                             $this->apiConfigs);
         // @allow \Pike\PikeException
         $this->scanAndInitPlugins($pluginAPI, $state->installedPluginNames);
     }
@@ -73,13 +62,6 @@ class AppState {
             ->run($newDefsFromFile, $currentDefsFromDb);
         // @allow \Pike\PikeException
         return (new ContentTypeSyncer($this->db))->sync($ctypesDiff, $fieldsDiff);
-    }
-    /**
-     * ...
-     */
-    private function initStockContentTypes(ThemeAPI $api) {
-        $this->stockContentTypes[] = new MultiFieldBlobs();
-        $this->stockContentTypes[0]->init($api);
     }
     /**
      * @throws \Pike\PikeException
