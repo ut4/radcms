@@ -1,9 +1,6 @@
 {
     "contentTypes": [
-        ["GenericBlobs", "Geneerinen", {
-            "name": "text:Nimi:textField",
-            "content": "text:Sisältö:richText"
-        }],
+        "extend:stockContentTypes",
         ["Articles", "Artikkelit", {
             "slug": "text:Slug (url):textField",
             "title": "text:Otsikko:textField",
@@ -15,6 +12,6 @@
         [".*", "main-layout.tmpl.php"]
     ],
     "assetFiles": [
-        ["theme/main.css", "local-stylesheet"]
+        ["main.css", "local-stylesheet"]
     ]
 }

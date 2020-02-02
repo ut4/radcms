@@ -5,6 +5,7 @@ namespace RadCms\Website;
 use Pike\FileSystemInterface;
 use RadCms\ContentType\ContentTypeCollection;
 use Pike\PikeException;
+use RadCms\StockContentTypes\MultiFieldBlobs\MultiFieldBlobs;
 
 /**
  * Lukee, ja pitää sisällään site.json -tiedostoon conffatut tiedot.
@@ -74,6 +75,11 @@ class SiteConfig {
      */
     private function collectContentTypes($ctypeInput) {
         $asMap = [];
+        foreach ($ctypeInput as $i=> $definition) {
+            if (!is_string($definition)) continue;
+            $ctypeInput[$i] = MultiFieldBlobs::DEFINITION;
+            $ctypeInput[$i][2] = (object)$ctypeInput[$i][2];
+        }
         foreach ($ctypeInput as $definition) {
             $nameParts = array_shift($definition);
             $asMap[$nameParts] = $definition;
@@ -157,6 +163,11 @@ class SiteConfig {
             return ['{..."contentTypes": [["Name", "FriendlyName", <fields>]...]} is required'];
         $errors = [];
         foreach ($inputContentTypes as $i => $definition) {
+            if (is_string($definition)) {
+                if ($definition !== 'extend:stockContentTypes')
+                    $errors[] = 'Expected "extend:stockContentTypes"';
+                continue;
+            }
             if (!is_array($definition) || count($definition) !== 3) {
                 $errors[] = 'contentType must be an array ["Name", "FriendlyName", <fields>]';
                 continue;

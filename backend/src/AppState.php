@@ -5,7 +5,6 @@ namespace RadCms;
 use AltoRouter;
 use RadCms\Plugin\API;
 use Pike\Db;
-use Pike\FileSystem;
 use Pike\FileSystemInterface;
 use RadCms\Plugin\PluginCollection;
 use RadCms\ContentType\ContentTypeCollection;
@@ -14,6 +13,8 @@ use RadCms\Website\SiteConfigDiffer;
 use RadCms\ContentType\ContentTypeSyncer;
 use Pike\PikeException;
 use RadCms\Theme\API as ThemeAPI;
+use RadCms\StockContentTypes\MultiFieldBlobs\MultiFieldBlobs;
+use RadCms\Templating\MagicTemplate;
 
 class AppState {
     public $plugins;
@@ -24,6 +25,7 @@ class AppState {
     public $contentTypesLastUpdated;
     private $db;
     private $fs;
+    private $stockContentTypes;
     /**
      * @param \Pike\Db $db
      * @param \Pike\FileSystemInterface $db
@@ -41,13 +43,17 @@ class AppState {
      * @throws \Pike\PikeException
      */
     public function selfLoad(AltoRouter $router) {
+        // Temp hack
+        MagicTemplate::__reset();
         // @allow \Pike\PikeException
         $state = $this->fetchNormalizedState();
         $this->contentTypes = ContentTypeCollection::fromCompactForm($state->compactContentTypes);
         $this->contentTypesLastUpdated = $state->contentTypesLastUpdated;
         $this->websiteState->name = $state->websiteName;
         $this->websiteState->lang = $state->lang;
-        $pluginAPI = new API(new ThemeAPI($this->fs),
+        $themeApi = new ThemeAPI($this->fs);
+        $this->initStockContentTypes($themeApi);
+        $pluginAPI = new API($themeApi,
                              $router,
                              function ($f) { $this->pluginJsFiles[] = $f; },
                              function ($p) { $this->pluginFrontendAdminPanelInfos[] = $p; });
@@ -67,6 +73,13 @@ class AppState {
             ->run($newDefsFromFile, $currentDefsFromDb);
         // @allow \Pike\PikeException
         return (new ContentTypeSyncer($this->db))->sync($ctypesDiff, $fieldsDiff);
+    }
+    /**
+     * ...
+     */
+    private function initStockContentTypes(ThemeAPI $api) {
+        $this->stockContentTypes[] = new MultiFieldBlobs();
+        $this->stockContentTypes[0]->init($api);
     }
     /**
      * @throws \Pike\PikeException

@@ -1,3 +1,6 @@
 [
-    ["GenericBlobs", [{"name":"home-content","content":"Hello World!"}]]
+    ["MultiFieldBlobs", [
+        {"name":"Etusivusisältö","fields":"[{\"id\":1,\"type\":\"textField\",\"name\":\"Otsikko\",\"value\":\"Hello World!\"},{\"id\":2,\"type\":\"textArea\",\"name\":\"Teksti\",\"value\":\"Hello from Etusivusisältö.\"}]"},
+        {"name":"GlobalFooter","fields":"[{\"id\":1,\"type\":\"textArea\",\"name\":\"Teksti\",\"value\":\"Hello from footer.\"},{\"id\":2,\"type\":\"textArea\",\"name\":\"Tagline\",\"value\":\"Tagline, here.\"}]"}
+    ]]
 ]

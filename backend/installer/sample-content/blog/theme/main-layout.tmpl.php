@@ -9,7 +9,7 @@
 <head>
     <meta charset="utf-8">
     <title>Hello - <?= $site->name ?></title>
-    <meta name="generator" content="RadCMS 0.0.0">
+    <meta name="generator" content="RadCMS <?= RAD_VERSION ?>">
     <?= $this->cssFiles() ?>
 </head>
 <body>
@@ -19,8 +19,6 @@
     <div id="main">
         <?= $this->Articles() ?>
     </div>
-    <footer>
-        &copy; MySite <?= date('Y') ?>
-    </footer>
+    <?= $this->Footer() ?>
 </body>
 </html>

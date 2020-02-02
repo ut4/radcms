@@ -1,6 +1,11 @@
 [
-    ["GenericBlobs", [{"name":"home-content","content":"(c) 2034 MySite"}]],
-    ["Articles", [{"slug":"art1","title":"Article 1","body":"Hello from article 1"},
-                  {"slug":"art2","title":"Article 2","body":"Hello from article 2"},
-                  {"slug":"art3","title":"Article 3","body":"Hello from article 3"}]]
+    ["MultiFieldBlobs", [
+        {"name":"Etusivusisältö","fields":"[{\"id\":1,\"type\":\"textField\",\"name\":\"Otsikko\",\"value\":\"Hello World!\"},{\"id\":2,\"type\":\"textArea\",\"name\":\"Teksti\",\"value\":\"Hello from Etusivusisältö.\"}]"},
+        {"name":"GlobalFooter","fields":"[{\"id\":1,\"type\":\"textArea\",\"name\":\"Teksti\",\"value\":\"Hello from footer.\"},{\"id\":2,\"type\":\"textArea\",\"name\":\"Tagline\",\"value\":\"Tagline, here.\"}]"}
+    ]],
+    ["Articles", [
+        {"slug":"art1","title":"Article 1","body":"Hello from article 1"},
+        {"slug":"art2","title":"Article 2","body":"Hello from article 2"},
+        {"slug":"art3","title":"Article 3","body":"Hello from article 3"}
+    ]]
 ]

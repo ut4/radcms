@@ -22,7 +22,7 @@ class WebsiteControllers {
     /**
      * @param \RadCms\Website\SiteConfig $siteConfig
      * @param \RadCms\AppState $appState
-     * @param \RadCms\Website\SiteConfig $siteConfig
+     * @param \RadCms\Theme\Theme $theme
      */
     public function __construct(SiteConfig $siteConfig,
                                 AppState $appState,

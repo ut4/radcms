@@ -11,7 +11,7 @@ $rendered = $this->Article(['slug' => $url[1], 'bindTo' => &$article]); ?>
 <head>
     <meta charset="utf-8">
     <title><?= "{$article->title} - {$site->name}" ?></title>
-    <meta name="generator" content="RadCMS 0.0.0">
+    <meta name="generator" content="RadCMS <?= RAD_VERSION ?>">
     <?= $this->cssFiles() ?>
 </head>
 <body>
@@ -22,8 +22,6 @@ $rendered = $this->Article(['slug' => $url[1], 'bindTo' => &$article]); ?>
         <a href="<?= $this->url('/') ?>">Back</a>
         <?= $rendered ?>
     </div>
-    <footer>
-        &copy; MySite <?= date('Y') ?>
-    </footer>
+    <?= $this->Footer() ?>
 </body>
 </html>

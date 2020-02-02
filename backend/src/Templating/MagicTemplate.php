@@ -113,8 +113,8 @@ class MagicTemplate extends Template {
         return implode(' ', array_map(function ($f) {
             $attrsMap = $f->attrs;
             if (!array_key_exists('rel', $attrsMap)) $attrsMap['rel'] = 'stylesheet';
-            return '<link href="' . $this->assetUrl($this->e($f->url)) . '"' .
-                   self::attrMapToStr($attrsMap) . '>';
+            return '<link href="' . $this->assetUrl('theme/' . $this->e($f->url)) .
+                   '"' . self::attrMapToStr($attrsMap) . '>';
         }, $this->_cssFiles));
     }
     /**
@@ -122,8 +122,8 @@ class MagicTemplate extends Template {
      */
     public function jsFiles() {
         return implode(' ', array_map(function ($f) {
-            return '<script src="' . $this->assetUrl($this->e($f->url)) . '"' .
-                   ($f->attrs ? '' : self::attrMapToStr($f->attrs)) .
+            return '<script src="' . $this->assetUrl('theme/' . $this->e($f->url)) .
+                   '"' . ($f->attrs ? '' : self::attrMapToStr($f->attrs)) .
                    '></script>';
         }, $this->_jsFiles));
     }
@@ -181,5 +181,12 @@ class MagicTemplate extends Template {
         $pairs = [];
         foreach ($map as $key => $val) $pairs[] = " {$key}=\"{$val}\"";
         return htmlspecialchars(implode('' , $pairs), ENT_NOQUOTES);
+    }
+    /**
+     * Temp hack
+     */
+    public static function __reset() {
+        self::$__aliases = [];
+        self::$__funcs = [];
     }
 }

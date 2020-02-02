@@ -84,9 +84,9 @@ class Installer {
                $this->createMainSchema($settings) &&
                $this->insertMainSchemaData($settings) &&
                $this->createContentTypesAndInsertInitialData(
-                   Packager::WEBSITE_CONFIG_VIRTUAL_FILE_NAME,
-                   Packager::THEME_CONTENT_DATA_VIRTUAL_FILE_NAME,
-                   $package);
+                    Packager::WEBSITE_CONFIG_VIRTUAL_FILE_NAME,
+                    Packager::THEME_CONTENT_DATA_VIRTUAL_FILE_NAME,
+                    $package);
     }
     /**
      * @return array
