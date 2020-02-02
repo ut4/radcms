@@ -25,7 +25,7 @@ class SiteConfig {
         $this->fs = $fs;
     }
     /**
-     * @param string $filePath Absoluuttinen polku parsattavaan tiedostoon Esim. '/home/me/foo/site.json'.
+     * @param string $filePath Absoluuttinen polku configurointitiedostoon Esim. '/home/me/foo/site.json'.
      * @param bool $checkLastModTime = true
      * @param bool $autoSelfValidate = true
      * @return bool
@@ -35,13 +35,13 @@ class SiteConfig {
                              $checkLastModTime = true,
                              $autoSelfValidate = true) {
         if ($checkLastModTime && !($this->lastModTime = $this->fs->lastModTime($filePath)))
-            throw new PikeException('Failed to read mtime of ' . $filePath,
+            throw new PikeException("Failed to read mtime of `{$filePath}`",
                                     PikeException::FAILED_FS_OP);
         if (!($str = $this->fs->read($filePath)))
-            throw new PikeException('Failed to read ' . $filePath,
+            throw new PikeException("Failed to read `{$filePath}`",
                                     PikeException::FAILED_FS_OP);
         if (!(($parsed = json_decode($str)) instanceof \stdClass))
-            throw new PikeException('Failed to parse ' . $filePath,
+            throw new PikeException("Failed to parse `{$filePath}`",
                                     PikeException::BAD_INPUT);
         //
         return (!$autoSelfValidate ||
