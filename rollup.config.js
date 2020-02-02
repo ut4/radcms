@@ -9,7 +9,7 @@ const makeOutputCfg = (...myCfg) => {
 `/*!
  * ${out.file.split('/').pop().split('.')[0]} 0.0.0
  * https://github.com/ut4/radcms
- * @license GPLv2
+ * @license GPLv3
  */`;
     return out;
 };
