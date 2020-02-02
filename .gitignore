@@ -1,7 +1,10 @@
-frontend/*.bundle.*
+frontend/*.js
 out/
 internal/
 target/
+theme/
+translations/
+uploads/
 backend/vendor
 config.php
 *.lock

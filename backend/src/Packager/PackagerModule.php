@@ -9,9 +9,9 @@ abstract class PackagerModule {
      * @param object $ctx
      */
     public static function init($ctx) {
-        $ctx->router->map('POST', '/api/packager', function () {
-            return [PackagerControllers::class, 'handleCreatePackage', true];
-        });
+        $ctx->router->map('POST', '/api/packager',
+            [PackagerControllers::class, 'handleCreatePackage', true]
+        );
     }
     /**
      * @param \Auryn\Injector $container

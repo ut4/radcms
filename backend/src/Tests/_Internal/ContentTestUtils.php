@@ -45,7 +45,7 @@ trait ContentTestUtils {
 
     }
     public function insertRevision($contentId, $contentTypeName, $dataSnapShot='{"foo":"bar"}') {
-        if (self::$db->exec('INSERT INTO ${p}ContentRevisions VALUES (?,?,?,?)',
+        if (self::$db->exec('INSERT INTO ${p}contentRevisions VALUES (?,?,?,?)',
                             [$contentId, $contentTypeName, $dataSnapShot, strval(time())]) < 1)
             throw new \Exception('Failed to insert test data');
     }

@@ -1,9 +1,6 @@
 {
     "contentTypes": [
-        ["GenericBlobs", "Geneerinen", {
-            "name": "text:Nimi:textField",
-            "content": "text:Sisältö:richText"
-        }]
+        "extend:stockContentTypes"
     ],
     "urlMatchers": [
         [".*", "main-layout.tmpl.php"]

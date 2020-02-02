@@ -5,6 +5,7 @@ namespace RadCms\Website;
 use Pike\FileSystemInterface;
 use RadCms\ContentType\ContentTypeCollection;
 use Pike\PikeException;
+use RadCms\StockContentTypes\MultiFieldBlobs\MultiFieldBlobs;
 
 /**
  * Lukee, ja pitää sisällään site.json -tiedostoon conffatut tiedot.
@@ -24,7 +25,7 @@ class SiteConfig {
         $this->fs = $fs;
     }
     /**
-     * @param string $filePath Absoluuttinen polku parsattavaan tiedostoon Esim. '/home/me/foo/site.json'.
+     * @param string $filePath Absoluuttinen polku configurointitiedostoon Esim. '/home/me/foo/site.json'.
      * @param bool $checkLastModTime = true
      * @param bool $autoSelfValidate = true
      * @return bool
@@ -34,17 +35,17 @@ class SiteConfig {
                              $checkLastModTime = true,
                              $autoSelfValidate = true) {
         if ($checkLastModTime && !($this->lastModTime = $this->fs->lastModTime($filePath)))
-            throw new PikeException('Failed to read mtime of ' . $filePath,
+            throw new PikeException("Failed to read mtime of `{$filePath}`",
                                     PikeException::FAILED_FS_OP);
         if (!($str = $this->fs->read($filePath)))
-            throw new PikeException('Failed to read ' . $filePath,
+            throw new PikeException("Failed to read `{$filePath}`",
                                     PikeException::FAILED_FS_OP);
         if (!(($parsed = json_decode($str)) instanceof \stdClass))
-            throw new PikeException('Failed to parse ' . $filePath,
+            throw new PikeException("Failed to parse `{$filePath}`",
                                     PikeException::BAD_INPUT);
         //
         return (!$autoSelfValidate ||
-                $this->selfValidate($parsed, dirname($filePath) . '/')) &&
+                $this->selfValidate($parsed, dirname($filePath) . '/theme/')) &&
                 $this->collectAll($parsed);
     }
     /**
@@ -74,6 +75,11 @@ class SiteConfig {
      */
     private function collectContentTypes($ctypeInput) {
         $asMap = [];
+        foreach ($ctypeInput as $i => $definition) {
+            if (!is_string($definition)) continue;
+            $ctypeInput[$i] = MultiFieldBlobs::DEFINITION;
+            $ctypeInput[$i][2] = (object)$ctypeInput[$i][2];
+        }
         foreach ($ctypeInput as $definition) {
             $nameParts = array_shift($definition);
             $asMap[$nameParts] = $definition;
@@ -157,6 +163,11 @@ class SiteConfig {
             return ['{..."contentTypes": [["Name", "FriendlyName", <fields>]...]} is required'];
         $errors = [];
         foreach ($inputContentTypes as $i => $definition) {
+            if (is_string($definition)) {
+                if ($definition !== 'extend:stockContentTypes')
+                    $errors[] = 'Expected "extend:stockContentTypes"';
+                continue;
+            }
             if (!is_array($definition) || count($definition) !== 3) {
                 $errors[] = 'contentType must be an array ["Name", "FriendlyName", <fields>]';
                 continue;

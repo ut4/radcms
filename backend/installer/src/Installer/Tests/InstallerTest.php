@@ -114,8 +114,8 @@ final class InstallerTest extends DbTestCase {
         $s = $this->setupInstallerTest1();
         $this->addFsExpectation('checksTemplatesExist', $s);
         $this->addFsExpectation('readsDataFiles', $s);
-        $this->addFsExpectation('readsSampleContentTemplateFilesDir', $s);
-        $this->addFsExpectation('createsSiteTemplatesDir', $s);
+        $this->addFsExpectation('readsSampleContentFiles', $s);
+        $this->addFsExpectation('createsSiteDirs', $s);
         $this->addFsExpectation('clonesTemplateFilesAndSiteCfgFile', $s);
         $this->addFsExpectation('generatesConfigFile', $s);
         $this->addFsExpectation('deletesInstallerFiles', $s);
@@ -179,58 +179,51 @@ final class InstallerTest extends DbTestCase {
                 );
             return;
         }
-        if ($expectation === 'readsSampleContentTemplateFilesDir') {
+        if ($expectation === 'readsSampleContentFiles') {
             $s->mockFs->expects($this->exactly(3))
                 ->method('readDir')
                 ->withConsecutive(
-                    [$s->sampleContentDirPath, '*.tmpl.php'],
-                    ["{$s->sampleContentDirPath}frontend/", '*.{css,js}', $this->anything()],
+                    ["{$s->sampleContentDirPath}theme/", '*.tmpl.php'],
+                    ["{$s->sampleContentDirPath}theme/frontend/", '*.{css,js}', $this->anything()],
                     ["{$s->backendPath}installer"] // @selfDestruct
                 )
                 ->willReturnOnConsecutiveCalls([
-                    "{$s->sampleContentDirPath}main.tmpl.php",
-                    "{$s->sampleContentDirPath}Another.tmpl.php"
+                    "{$s->sampleContentDirPath}theme/main.tmpl.php",
+                    "{$s->sampleContentDirPath}theme/Another.tmpl.php"
                 ], [
-                    "{$s->sampleContentDirPath}frontend/foo.css",
-                    "{$s->sampleContentDirPath}frontend/bar.js"
+                    "{$s->sampleContentDirPath}theme/frontend/foo.css",
+                    "{$s->sampleContentDirPath}theme/frontend/bar.js"
                 ], [
                     //
                 ]);
             return;
         }
-        if ($expectation === 'createsSiteTemplatesDir') {
+        if ($expectation === 'createsSiteDirs') {
             $s->mockFs->expects($this->atLeastOnce())
                 ->method('isDir')
-                ->willReturn(false); // #1 = uploadsDirExists (@cloneTemplatesAndCfgFile()),
-                                     // #2 = installDirExists (@selfDestruct())
-            $s->mockFs->expects($this->once())
+                ->willReturn(false); // #1,#2 = theme|uploadsDirExists (@copyFiles()),
+                                     // #3 = installDirExists (@selfDestruct())
+            $s->mockFs->expects($this->atLeastOnce())
                 ->method('mkDir')
-                ->with($s->siteDirPath . 'uploads')
+                ->withConsecutive(
+                    ["{$s->siteDirPath}uploads"],
+                    ["{$s->siteDirPath}theme"]
+                )
                 ->willReturn(true);
             return;
         }
         if ($expectation === 'clonesTemplateFilesAndSiteCfgFile') {
+            $from = $s->sampleContentDirPath;
+            $to = $s->siteDirPath;
             $s->mockFs->expects($this->exactly(6))
                 ->method('copy')
-                ->withConsecutive([
-                    "{$s->sampleContentDirPath}site.json",
-                    "{$s->siteDirPath}site.json",
-                ], [
-                    "{$s->sampleContentDirPath}README.md",
-                    "{$s->siteDirPath}README.md",
-                ], [
-                    "{$s->sampleContentDirPath}main.tmpl.php",
-                    "{$s->siteDirPath}main.tmpl.php",
-                ], [
-                    "{$s->sampleContentDirPath}Another.tmpl.php",
-                    "{$s->siteDirPath}Another.tmpl.php",
-                ], [
-                    "{$s->sampleContentDirPath}frontend/foo.css",
-                    "{$s->siteDirPath}foo.css",
-                ], [
-                    "{$s->sampleContentDirPath}frontend/bar.js",
-                    "{$s->siteDirPath}bar.js",
-                ])
+                ->withConsecutive(
+                    ["{$from}site.json", "{$to}site.json"],
+                    ["{$from}README.md", "{$to}README.md"],
+                    ["{$from}theme/main.tmpl.php", "{$to}theme/main.tmpl.php"],
+                    ["{$from}theme/Another.tmpl.php", "{$to}theme/Another.tmpl.php"],
+                    ["{$from}theme/frontend/foo.css", "{$to}theme/foo.css"],
+                    ["{$from}theme/frontend/bar.js", "{$to}theme/bar.js"])
                 ->willReturn(true);
             return;
         }
@@ -262,9 +255,13 @@ return [
             return;
         }
         if ($expectation === 'deletesInstallerFiles') {
-            $s->mockFs->expects($this->atLeast(1))
+            $s->mockFs->expects($this->atLeast(3))
                 ->method('unlink')
-                ->with("{$s->siteDirPath}install.php")
+                ->withConsecutive(
+                    ["{$s->siteDirPath}install.php"],
+                    ["{$s->siteDirPath}frontend/install-app.css"],
+                    ["{$s->siteDirPath}frontend/rad-install-app.js"]
+                )
                 ->willReturn(true);
             $s->mockFs->expects($this->atLeast(1))
                 ->method('rmDir')

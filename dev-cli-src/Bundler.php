@@ -38,14 +38,14 @@ class Bundler {
      * rad/<kansio*>/<kaikkiRelevantitTiedostot>.
      */
     private function copySourceFiles() {
-        $this->doPrint->__invoke("Kopioidaan tiedostoja...");
+        $this->doPrint->__invoke('Copying files...');
         // @allow \Pike\PikeException
         $this->createTargetDirectories();
         // @allow \Pike\PikeException
         $this->copyBackendFiles();
         // @allow \Pike\PikeException
         $this->copyFrontendFiles();
-        $this->doPrint->__invoke("Done.");
+        $this->doPrint->__invoke('Done.');
     }
     /**
      * @throws \Pike\PikeException
@@ -53,7 +53,13 @@ class Bundler {
     private function createTargetDirectories() {
         $targetDirPaths = ["{$this->targetDirPath}backend", "{$this->targetDirPath}frontend"];
         foreach ($targetDirPaths as $p) {
-            if (!$this->fs->isDir($p) && !$this->fs->mkDir($p))
+            if ($this->fs->isDir($p)) {
+                $alradyContainsEntries = (new \FilesystemIterator($p))->valid();
+                if (!$alradyContainsEntries) continue;
+                throw new PikeException("`{$p}` already exists and is not empty",
+                                        PikeException::BAD_INPUT);
+            }
+            if (!$this->fs->mkDir($p))
                 throw new PikeException("Failed to create `{$p}`",
                                         PikeException::FAILED_FS_OP);
         }
@@ -91,39 +97,47 @@ class Bundler {
      * @throws \Pike\PikeException
      */
     private function copyFrontendFiles() {
-        call_user_func($this->shellExecFn, self::makeCpCmd(
-            "{$this->radPath}frontend/",
-            "{$this->targetDirPath}frontend/",
-            'cpanel-app/tests',
-            'install-app/tests',
-            'tests',
-            'tests-vendor',
-            'index.d.ts',
-            'rad-commons.bundle.js',
-            'rad-cpanel-boot.bundle.js',
-            'rad-cpanel.bundle.js',
-            'tests.html'
-        ));
-        if (!$this->fs->isFile("{$this->targetDirPath}frontend/rad-commons.js"))
-            throw new PikeException("Failed to copy `{$this->radPath}frontend/*`" .
-                                    " -> `{$this->targetDirPath}frontend/`",
-                                    PikeException::FAILED_FS_OP);
+        foreach ([
+            ['frontend/common.css', null],
+            ['frontend-src/cpanel-app/cpanel.css', 'frontend/cpanel-app.css'],
+            ['frontend-src/install-app/install-app.css', 'frontend/install-app.css'],
+            ['frontend/rad-commons.js', null],
+            ['frontend/rad-cpanel-app.js', null],
+            ['frontend/rad-cpanel-commons.js', null],
+            ['frontend/rad-install-app.js', null],
+        ] as [$from, $to]) {
+            if (!$to) $to = $from;
+            if (!$this->fs->copy($this->radPath . $from, $this->targetDirPath . $to))
+                throw new PikeException('Failed to copy `' . ($this->radPath . $from) .
+                                        '` -> `' . ($this->targetDirPath . $to) . '`');
+        }
+        //
+        foreach(['assets', 'vendor'] as $p) {
+            call_user_func($this->shellExecFn, self::makeCpCmd(
+                "{$this->radPath}frontend/{$p}/",
+                "{$this->targetDirPath}frontend/{$p}/"
+            ));
+            if (!$this->fs->isFile("{$this->targetDirPath}frontend/{$p}/LICENSES.txt"))
+                throw new PikeException("Failed to copy `{$this->radPath}frontend/{$p}/*`" .
+                                        " -> `{$this->targetDirPath}frontend/{$p}/`",
+                                        PikeException::FAILED_FS_OP);
+        }
     }
     /**
      * @throws \Pike\PikeException
      */
     private function installBackendVendorDeps() {
-        $this->doPrint->__invoke("cd <targetDir>/backend...");
+        $this->doPrint->__invoke('cd <targetDir>/backend...');
         $originalCwd = getcwd();
         chdir("{$this->targetDirPath}backend");
-        $this->doPrint->__invoke("Ajetaan `composer install`...");
+        $this->doPrint->__invoke('Executing `composer install`...');
         call_user_func($this->shellExecFn, 'composer install --no-dev --optimize-autoloader');
         if (!$this->fs->isFile("{$this->targetDirPath}backend/vendor/autoload.php"))
-            throw new PikeException("Failed to `composer install`",
+            throw new PikeException('Failed to `composer install`',
                                     PikeException::FAILED_FS_OP);
-        $this->doPrint->__invoke("cd <currentWorkingDir>...");
+        $this->doPrint->__invoke('cd <currentWorkingDir>...');
         chdir($originalCwd);
-        $this->doPrint->__invoke("Done.");
+        $this->doPrint->__invoke('Done.');
     }
     /**
      * @return string esim. `rsync -r --exclude 'kansio' /mistä/ /mihin/`

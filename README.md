@@ -4,4 +4,4 @@ Simply the most radical CMS ever created.
 
 # License
 
-GPLv2
+GPLv3

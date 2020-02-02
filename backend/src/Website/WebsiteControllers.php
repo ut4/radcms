@@ -5,12 +5,13 @@ namespace RadCms\Website;
 use Pike\Request;
 use Pike\Response;
 use RadCms\Templating\MagicTemplate;
-use RadCms\Content\MagicTemplateDAO as ContentNodeDAO;
+use RadCms\Content\MagicTemplateDAO as MagicTemplateContentDAO;
 use RadCms\AppState;
-use Pike\Db;
-use RadCms\ContentType\ContentTypeCollection;
 use Pike\FileSystem;
 use Pike\PikeException;
+use RadCms\Theme\Theme;
+use RadCms\StockContentTypes\MultiFieldBlobs\MultiFieldBlobs;
+use RadCms\BaseAPI;
 
 /**
  * Handlaa sivupyynnöt, (GET '/' tai GET '/sivunnimi').
@@ -18,45 +19,56 @@ use Pike\PikeException;
 class WebsiteControllers {
     private $siteCfg;
     private $appState;
+    private $stockContentTypes;
     /**
      * @param \RadCms\Website\SiteConfig $siteConfig
      * @param \RadCms\AppState $appState
+     * @param \RadCms\Theme\Theme $theme
      */
-    public function __construct(SiteConfig $siteConfig, AppState $appState) {
+    public function __construct(SiteConfig $siteConfig,
+                                AppState $appState,
+                                Theme $theme) {
         // @allow \Pike\PikeException
-        $siteConfig->selfLoad(RAD_SITE_PATH . 'site.json');
+        $siteConfig->selfLoad(RAD_SITE_PATH . 'site.json', false);
+        $api = new BaseAPI($appState->apiConfigs);
+        // @allow \Pike\PikeException
+        $theme->load($api);
+        // @allow \Pike\PikeException
+        $this->initStockContentTypes($api);
         $this->siteCfg = $siteConfig;
         $this->appState = $appState;
     }
     /**
      * GET *: handlaa sivupyynnön.
      *
-     * @param \Pike\Request $request
-     * @param \Pike\Response $response
+     * @param \Pike\Request $req
+     * @param \Pike\Response $res
      * @param \Pike\Db $db
      * @param \RadCms\ContentType\ContentTypeCollection $contentTypes
      * @throws \Pike\PikeException
      */
     public function handlePageRequest(Request $req,
                                       Response $res,
-                                      Db $db,
-                                      ContentTypeCollection $contentTypes,
+                                      MagicTemplateContentDAO $dao,
                                       FileSystem $fs) {
         $layoutFileName = $this->siteCfg->urlMatchers->findLayoutFor($req->path);
         if (!$layoutFileName) {
             $res->html('404');
             return;
         }
-        $cnd = new ContentNodeDAO($db, $contentTypes, isset($req->user));
-        $template = new MagicTemplate(RAD_SITE_PATH . $layoutFileName,
+        $dao->fetchRevisions = isset($req->user);
+        $template = new MagicTemplate(RAD_SITE_PATH . "theme/{$layoutFileName}",
                                       ['_cssFiles' => $this->siteCfg->cssAssets,
                                        '_jsFiles' => $this->siteCfg->jsAssets],
-                                      $cnd,
+                                      $dao,
                                       $fs);
+        $this->appState->apiConfigs->applyRegisteredTemplateStuff($template,
+            'WebsiteLayout');
         try {
             $url = $req->path ? explode('/', ltrim($req->path, '/')) : [''];
             $html = $template->render(['url' => $url,
-                                       'site' => $this->appState->websiteState]);
+                                       'urlStr' => $req->path,
+                                       'site' => $this->appState->siteInfo]);
         } catch (PikeException $e) {
             if (!(RAD_FLAGS & RAD_DEVMODE)) {
                 $res->html("Hmm, {$layoutFileName} teki jotain odottamatonta.");
@@ -67,15 +79,22 @@ class WebsiteControllers {
         }
         $res->html(!$req->user || ($bodyEnd = strpos($html, '</body>')) === false
             ? $html
-            : $this->injectParentWindowCpanelSetupScript($html, $bodyEnd, $cnd, $template, $req));
+            : $this->injectParentWindowCpanelSetupScript($html, $bodyEnd, $dao, $template, $req));
+    }
+    /**
+     * ...
+     */
+    private function initStockContentTypes($api) {
+        $this->stockContentTypes[] = new MultiFieldBlobs();
+        $this->stockContentTypes[0]->init($api);
     }
     /**
      * '<html>...</body>' -> '<html>...<script>...</script></body>'
      */
-    private function injectParentWindowCpanelSetupScript($html, $bodyEnd, $cnd, $template, $req) {
+    private function injectParentWindowCpanelSetupScript($html, $bodyEnd, $dao, $template, $req) {
         $dataToFrontend = json_encode([
-            'contentPanels' => $cnd->getFrontendPanelInfos(),
-            'adminPanels' => $this->appState->pluginFrontendAdminPanelInfos,
+            'contentPanels' => $dao->getFrontendPanelInfos(),
+            'adminPanels' => $this->appState->apiConfigs->getRegisteredAdminPanels(),
             'baseUrl' => $template->url('/'),
             'assetBaseUrl' => $template->assetUrl('/'),
             'currentPagePath' => $req->path,
@@ -83,7 +102,7 @@ class WebsiteControllers {
         return substr($html, 0, $bodyEnd) .
             "<script>(function (data) {
                 var s = document.createElement('style');
-                s.innerHTML = '#rad-highlight-overlay{position:absolute;background-color:rgba(0,90,255,0.18);z-index:0}';
+                s.innerHTML = '@keyframes radblink{from{background-color:rgba(0,90,255,0.18);}to{background-color:rgba(0,90,255,0.08);}}#rad-highlight-overlay{position:absolute;background-color:rgba(0,90,255,0.18);z-index:0;animation: .18s infinite alternate radblink;}';
                 document.head.appendChild(s);
                 //
                 var editWindow = window.parent;

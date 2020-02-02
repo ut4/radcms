@@ -1,0 +1,17 @@
+{
+  "name": "radcms-devtools",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "rollup -c -w",
+    "build": "rollup -c",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "ut4",
+  "license": "GPLv3",
+  "devDependencies": {
+    "@rollup/plugin-sucrase": "^3.0.0",
+    "rollup": "^1.27.4"
+  },
+  "typings": "lib.d.ts"
+}

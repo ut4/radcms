@@ -3,38 +3,44 @@
 namespace RadCms\Plugin;
 
 use AltoRouter;
-use RadCms\Templating\MagicTemplate;
+use RadCms\BaseAPI;
+use RadCms\APIConfigsStorage;
 
 /**
  * Lisäosien oma API. Passataan lisäosien (PluginInterface) init-metodiin.
  */
 class API {
     private $router;
-    private $onJsFileRegistered;
-    private $onAdminPanelRegistered;
+    private $baseApi;
+    private $apiConfigs;
     /**
      * @param \AltoRouter $ctx
-     * @param \Closure $onJsFileRegistered
-     * @param \Closure $onAdminPanelRegistered
+     * @param \AltoRouter $ctx
+     * @param \RadCms\APIConfigsStorage $configs
      */
-    public function __construct(AltoRouter $router,
-                                $onJsFileRegistered,
-                                $onAdminPanelRegistered) {
+    public function __construct(BaseAPI $baseApi,
+                                AltoRouter $router,
+                                APIConfigsStorage $configs) {
         $this->router = $router;
-        $this->onJsFileRegistered = $onJsFileRegistered;
-        $this->onAdminPanelRegistered = $onAdminPanelRegistered;
+        $this->baseApi = $baseApi;
+        $this->apiConfigs = $configs;
     }
     /**
-     * Rekisteröi <?= $this->DirectiveName(...) ?> käytettäväksi templaatteihin.
-     * Esimerkki: registerDirective('MPMovies', RAD_SITE_PATH . 'Plugins/MyPlugin/movies.inc');
-     *
-     * @param string $directiveName
-     * @param string $fullFilePath
-     * @throws \Pike\PikeException
+     * @see \RadCms\BaseAPI->registerDirective().
      */
-    public function registerDirective($directiveName, $fullFilePath) {
+    public function registerDirective($directiveName, $fullFilePath, $for = '*') {
         // @allow \Pike\PikeException
-        MagicTemplate::addAlias($directiveName, $fullFilePath);
+        $this->baseApi->registerDirective($directiveName, $fullFilePath, $for);
+    }
+    /**
+     * @see \RadCms\BaseAPI->registerDirectiveMethod().
+     */
+    public function registerDirectiveMethod($methodName,
+                                            callable $fn,
+                                            $for = '*',
+                                            $bindToDirectiveScope = false) {
+        // @allow \Pike\PikeException
+        $this->baseApi->registerDirectiveMethod($methodName, $fn, $for, $bindToDirectiveScope);
     }
     /**
      * Rekisteröi <script src="<?= $scriptFileName ?>"> sisällytettäväksi
@@ -44,7 +50,7 @@ class API {
      * @param array $attrs = array
      */
     public function registerJsFile($scriptFileName, array $attrs = []) {
-        $this->onJsFileRegistered->__invoke((object)[
+        $this->apiConfigs->putPluginJsFile((object)[
             'fileName' => $scriptFileName,
             'attrs' => $attrs,
         ]);
@@ -70,11 +76,9 @@ class API {
                                   $ctrlCassPath,
                                   $ctrlMethodName,
                                   $requireAuthenticated = true) {
-        $this->router->map($method, $url, function () use ($ctrlCassPath,
-                                                           $ctrlMethodName,
-                                                           $requireAuthenticated) {
-            return [$ctrlCassPath, $ctrlMethodName, $requireAuthenticated];
-        });
+        $this->router->map($method, $url,
+            [$ctrlCassPath, $ctrlMethodName, $requireAuthenticated]
+        );
     }
     /**
      * Rekisteröi osion hallintapaneelin Devaajille-välilehteen. $panelImplName sama
@@ -85,7 +89,7 @@ class API {
      * @param string $title
      */
     public function registerFrontendAdminPanel($panelImplName, $title) {
-        $this->onAdminPanelRegistered->__invoke((object)[
+        $this->apiConfigs->putAdminPanel((object)[
             'impl' => $panelImplName,
             'title' => $title,
         ]);

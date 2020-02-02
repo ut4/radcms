@@ -14,7 +14,9 @@ class SiteConfigDiffer {
                         ContentTypeCollection $fromDb) {
         $ctypesDiff = (object)['added' => new ContentTypeCollection(),
                                'deleted' => new ContentTypeCollection()];
-        $fieldsDiff = (object)['added' => [], 'deleted' => [], 'dataTypeChanged' => []];
+        $fieldsDiff = (object)['added' => [],
+                               'deleted' => [],
+                               'dataTypeChanged' => []];
         foreach ($fromFile->toArray() as $new) {
             $current = $fromDb->find($new->name);
             if (!$current)
@@ -40,7 +42,8 @@ class SiteConfigDiffer {
                 $out->added[] = (object)['name' => $f->name,
                                          'friendlyName' => $f->friendlyName,
                                          'dataType' => $f->dataType,
-                                         'widget' => $f->widget];
+                                         'widget' => $f->widget,
+                                         'defaultValue' => $f->defaultValue];
             elseif ($f->dataType !== $current->dataType)
                 $out->dataTypeChanged[] = (object)['name' => $f->name,
                                                    'oldDataType' => $current->dataType,
@@ -48,7 +51,7 @@ class SiteConfigDiffer {
         }
         foreach ($fromDb->toArray() as $f) {
             if (!$fromFile->find($f->name))
-                $out->deleted[] = (object) ['name' => $f->name];
+                $out->deleted[] = (object)['name' => $f->name];
         }
     }
 }

@@ -16,7 +16,8 @@ use Pike\FileSystem;
 class MagicTemplate extends Template {
     private $__contentDao;
     private $__fileExists;
-    private static $__aliases = [];
+    private $__aliases;
+    private $__funcs;
     /**
      * @param string $file
      * @param array $vars = null
@@ -30,12 +31,15 @@ class MagicTemplate extends Template {
         parent::__construct($file, $vars);
         $this->__contentDao = $dao;
         $this->__fileExists = function ($path) use ($fs) { return $fs->isFile($path); };
+        $this->__aliases = [];
+        $this->__funcs = [];
     }
     /**
-     * Renderöi templaatin `${RAD_SITE_PATH}${$this->aliases[$name] || $name}.tmpl.php`.
+     * Renderöi templaatin `${$this->dir}${$this->aliases[$name] || $name}.tmpl.php`.
      * Esim. kutsu $this->Foo() renderöi templaatin "/foo/Foo.tmpl.php" (jos
-     * RAD_SITE_PATH on "/foo/"), ja "c:/baz/dir/my-foo.tmpl.php" (jos
-     * RAD_SITE_PATH on "c:/baz/", ja $this->aliases['Foo'] on "dir/my-foo").
+     * ${$this->dir} on "/foo/"), ja "c:/baz/my-foo.inc" (jos $this->aliases['Foo']
+     * on "c:/baz/my-foo.inc"). $this->dir viittaa aina kansioon, jossa renderöitävä
+     * templatti sijaitsee.
      *
      * @param string $name
      * @param array $args
@@ -43,13 +47,14 @@ class MagicTemplate extends Template {
      */
     public function __call($name, $args) {
         try {
-            $directiveFilePath = !array_key_exists($name, self::$__aliases)
-                ? RAD_SITE_PATH . $name . '.tmpl.php'
-                : self::$__aliases[$name];
+            if (array_key_exists($name, $this->__funcs))
+                return call_user_func_array($this->__funcs[$name],
+                                            array_merge($args, [$this]));
+            $directiveFilePath = !array_key_exists($name, $this->__aliases)
+                ? "{$this->__dir}{$name}.tmpl.php"
+                : $this->__aliases[$name];
             if (!$this->__fileExists->__invoke($directiveFilePath)) {
-                throw new PikeException('Did you forget to $api->registerDire' .
-                                        'ctive(\''.$name.'\', \'/file.php\')?',
-                                        PikeException::BAD_INPUT);
+                return "Did you forget to \$api->registerDirective('{$name}', '/file.php')?";
             }
             return $this->doRender($directiveFilePath,
                 $this->__locals + ['props' => $args ? $args[0] : []]);
@@ -110,8 +115,8 @@ class MagicTemplate extends Template {
         return implode(' ', array_map(function ($f) {
             $attrsMap = $f->attrs;
             if (!array_key_exists('rel', $attrsMap)) $attrsMap['rel'] = 'stylesheet';
-            return '<link href="' . $this->assetUrl($this->e($f->url)) . '"' .
-                   self::attrMapToStr($attrsMap) . '>';
+            return '<link href="' . $this->assetUrl('theme/' . $this->e($f->url)) .
+                   '"' . self::attrMapToStr($attrsMap) . '>';
         }, $this->_cssFiles));
     }
     /**
@@ -119,8 +124,8 @@ class MagicTemplate extends Template {
      */
     public function jsFiles() {
         return implode(' ', array_map(function ($f) {
-            return '<script src="' . $this->assetUrl($this->e($f->url)) . '"' .
-                   ($f->attrs ? '' : self::attrMapToStr($f->attrs)) .
+            return '<script src="' . $this->assetUrl('theme/' . $this->e($f->url)) .
+                   '"' . ($f->attrs ? '' : self::attrMapToStr($f->attrs)) .
                    '></script>';
         }, $this->_jsFiles));
     }
@@ -148,11 +153,16 @@ class MagicTemplate extends Template {
      * @param string $fullFilePath
      * @throws \Pike\PikeException
      */
-    public static function addAlias($directiveName, $fullFilePath) {
-        if (array_key_exists($directiveName, self::$__aliases))
-            throw new PikeException("Alias {$directiveName} is already registered.",
-                                    PikeException::BAD_INPUT);
-        self::$__aliases[$directiveName] = $fullFilePath;
+    public function registerAlias($directiveName, $fullFilePath) {
+        $this->__aliases[$directiveName] = $fullFilePath;
+    }
+    /**
+     * @param string $name
+     * @param \Closure|callable $fn
+     * @param bool $bindThis
+     */
+    public function registerMethod($name, $fn, $bindThis) {
+        $this->__funcs[$name] = $bindThis ? \Closure::bind($fn, $this) : $fn;
     }
     /**
      * ['id' => 'foo', 'class' => 'bar'] -> ' id="foo" class="bar"'

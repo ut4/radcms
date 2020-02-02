@@ -16,10 +16,9 @@ use Pike\PikeException;
 class AppState {
     public $plugins;
     public $contentTypes;
-    public $websiteState;
-    public $pluginJsFiles;
-    public $pluginFrontendAdminPanelInfos;
     public $contentTypesLastUpdated;
+    public $siteInfo;
+    public $apiConfigs;
     private $db;
     private $fs;
     /**
@@ -28,11 +27,10 @@ class AppState {
      */
     public function __construct(Db $db, FileSystemInterface $fs) {
         $this->plugins = new PluginCollection();
-        $this->websiteState = (object)['name' => null, 'lang' => null];
-        $this->pluginJsFiles = [];
-        $this->pluginFrontendAdminPanelInfos = [];
-        $this->db = $db;
+        $this->siteInfo = (object)['name' => null, 'lang' => null];
         $this->fs = $fs;
+        $this->apiConfigs = new APIConfigsStorage($this->fs);
+        $this->db = $db;
     }
     /**
      * @param AltoRouter $router
@@ -43,11 +41,11 @@ class AppState {
         $state = $this->fetchNormalizedState();
         $this->contentTypes = ContentTypeCollection::fromCompactForm($state->compactContentTypes);
         $this->contentTypesLastUpdated = $state->contentTypesLastUpdated;
-        $this->websiteState->name = $state->websiteName;
-        $this->websiteState->lang = $state->lang;
-        $pluginAPI = new API($router,
-                             function ($f) { $this->pluginJsFiles[] = $f; },
-                             function ($p) { $this->pluginFrontendAdminPanelInfos[] = $p; });
+        $this->siteInfo->name = $state->websiteName;
+        $this->siteInfo->lang = $state->lang;
+        $pluginAPI = new API(new BaseAPI($this->apiConfigs),
+                             $router,
+                             $this->apiConfigs);
         // @allow \Pike\PikeException
         $this->scanAndInitPlugins($pluginAPI, $state->installedPluginNames);
     }
@@ -119,7 +117,7 @@ class AppState {
      * @throws \Pike\PikeException
      */
     private function scanPluginsFromDisk() {
-        $paths = $this->fs->readDir(RAD_SITE_PATH . 'Plugins', '*', GLOB_ONLYDIR);
+        $paths = $this->fs->readDir(RAD_SITE_PATH . 'plugins', '*', GLOB_ONLYDIR);
         foreach ($paths as $path) {
             $clsName = substr($path, strrpos($path, '/') + 1);
             $clsPath = "RadPlugins\\{$clsName}\\{$clsName}";

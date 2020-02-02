@@ -39,7 +39,8 @@ class FieldCollection extends GenericArray implements \JsonSerializable {
         foreach ($this->toArray() as $f)
             $out[$f->name] = [$f->dataType,
                               !$translator ? $f->friendlyName : $translator->t($f->name),
-                              $f->widget->toCompactForm()];
+                              $f->widget->toCompactForm(),
+                              $f->defaultValue];
         return $out;
     }
     /**
@@ -63,9 +64,10 @@ class FieldCollection extends GenericArray implements \JsonSerializable {
             $out->add((object)['name' => $name,
                                'friendlyName' => $remainingArgs[1] ?? $name,
                                'dataType' => $remainingArgs[0],
-                               'widget' => count($remainingArgs) < 3
+                               'widget' => !isset($remainingArgs[2])
                                    ? $DEFAULT_WIDGET
-                                   : FieldSetting::fromCompactForm($remainingArgs[2])]);
+                                   : FieldSetting::fromCompactForm($remainingArgs[2]),
+                               'defaultValue' => $remainingArgs[3] ?? '']);
         }
         return $out;
     }

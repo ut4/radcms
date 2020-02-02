@@ -8,15 +8,17 @@ Layout-templaatit, jotka tämä paketti sisältää. Layout valitaan urlin perus
 
 ### main-layout.tmpl.php
 
-Listaa kaikki artikkelit. Renderöi kaikki, paitsi /art-alkuiset urlit.
+Listaa kaikki artikkelit. Renderöi kaikki, paitsi /artikkelit/-alkuiset urlit.
 
 ### article-layout.tmpl.php
 
-Näyttää yhden artikkelin. Renderöi kaikki /art-alkuiset urlit.
+Näyttää yhden artikkelin. Renderöi kaikki /artikkelit/-alkuiset urlit.
 
 ## Php-tagit
 
 Tagit, jotka tämä paketti sisältää. Tageja voi kutsua layout-templaateista (kuten main-layout.tmpl.php).
+
+ks. https://todo/stock-content-types.
 
 ### Articles(['frontendPanelTitle?' => string])
 
@@ -42,22 +44,11 @@ Esimerkki:
 </html>
 ```
 
-### Generic(['name' => string, 'frontendPanelTitle?' => string])
-
-Esimerkki:
-```php
-<html>
-...
-<body>
-<footer><?= $this->Generic(['name' => 'footer-text',
-                            'frontendPanelTitle' => 'Footer']); ?></footer>
-</body>
-</html>
-```
-
 ## Sisältötyypit
 
 Sisältötyypit, jotka tämä paketti rekisteröi. Sisältötyypin sisältöä voidaan hakea tietokannasta php-tiedostoista. Uusia sisältötyyppejä voi luoda muokkaamalla `site.json` -tiedostoa (RAD_DEVMODE tulee olla päällä).
+
+ks. https://todo/stock-content-types.
 
 ### Articles
 
@@ -69,19 +60,6 @@ Sisältötyypit, jotka tämä paketti rekisteröi. Sisältötyypin sisältöä v
         {"name": "title", "friendlyName": "Otsikko", "dataType": "text", "widget": "textField"},
         {"name": "slug", "friendlyName": "Slug (url)", "dataType": "text", "widget": "textField"},
         {"name": "body", "friendlyName": "Sisältö", "dataType": "text", "widget": "richText"}
-    ]
-}
-```
-
-### GenericBlobs
-
-```json
-{
-    "name": "GenericBlobs",
-    "friendlyName": "Geneerinen",
-    "fields": [
-        {"name": "name", "friendlyName": "Nimi", "dataType": "text", "widget": "textField"},
-        {"name": "content", "friendlyName": "Sisältö", "dataType": "text", "widget": "richText"}
     ]
 }
 ```

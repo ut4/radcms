@@ -49,7 +49,7 @@ class App {
         if (!isset($ctx->translator))
             $ctx->translator = new Translator(function () use ($ctx) {
                 $mainLangFilePath = RAD_SITE_PATH . 'translations/' .
-                    $ctx->state->websiteState->lang . '.php';
+                    $ctx->state->siteInfo->lang . '.php';
                 return self::$fs->isFile($mainLangFilePath) ? include $mainLangFilePath : [];
             });
         self::$ctx = $ctx;

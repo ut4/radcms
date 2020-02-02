@@ -4,11 +4,13 @@
         <meta charset="utf-8">
         <link rel="stylesheet" href="<?= RAD_BASE_URL ?>frontend/common.css">
         <link rel="stylesheet" href="<?= RAD_BASE_URL ?>frontend/vendor/vendor.bundle.css">
-        <link rel="stylesheet" href="<?= RAD_BASE_URL ?>frontend/cpanel-app/cpanel.css">
+        <link rel="stylesheet" href="<?= RAD_BASE_URL ?>frontend/cpanel-app.css">
     </head>
     <body>
-        <iframe src="<?= $this->url($q) ?>" id="rad-site-iframe"></iframe>
-        <div id="cpanel-app"></div>
+        <div id="root">
+            <div id="cpanel-app"></div>
+            <iframe src="<?= $this->url($q) ?>" id="rad-site-iframe"></iframe>
+        </div>
         <script>(function() {
             document.getElementById('rad-site-iframe').addEventListener('load', e => {
                 const baseUrlWithTrailingSlash = '<?= $this->url('/') ?>';
@@ -19,11 +21,10 @@
                     history.replaceState(null, null, p.replace(window.location.origin, ''));
             });
         }());</script>
-        <?= $this->jsBundle(array_merge([
-            'frontend/rad-commons.js',
-            'frontend/rad-cpanel.js',
-        ], $pluginJsFiles, [
-            'frontend/rad-cpanel-boot.js'
-        ]), true); ?>
+        <script src="<?= $this->assetUrl('frontend/vendor/vendor.bundle.min.js') ?>"></script>
+        <script src="<?= $this->assetUrl('frontend/rad-commons.js') ?>"></script>
+        <script src="<?= $this->assetUrl('frontend/rad-cpanel-commons.js') ?>"></script>
+        <?= $this->jsBundle($pluginJsFiles) ?>
+        <script src="<?= $this->assetUrl('frontend/rad-cpanel-app.js') ?>"></script>
     </body>
 </html>
