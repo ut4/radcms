@@ -42,6 +42,12 @@ const urlUtils = {
         return config.baseUrl + this.normalizeUrl(url);
     },
     /**
+     * @param {string} url
+     */
+    makeAssetUrl(url) {
+        return config.assetBaseUrl + this.normalizeUrl(url);
+    },
+    /**
      * @param {string} url '/foo' -> 'foo', 'bar' -> 'bar'
      */
     normalizeUrl(url) {

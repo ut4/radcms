@@ -56,6 +56,14 @@ a:hover {
     box-shadow: 2px 2px 4px rgba(0,0,0,0.1);
     border-top: 2px solid #34e6de;
 }
+.box.info {
+    border-top: none;
+    border-left: 3px solid #78c5dc;
+}
+.box.error {
+    border-top: none;
+    border-left: 3px solid #e75656;
+}
 .box h2 {
     margin: 0 15px 24px 0;
 }
@@ -96,18 +104,18 @@ a:hover {
     border-color: #d8d8d8;
     cursor: not-allowed;
 }
-.input-group input:invalid,
-.input-group textarea:invalid,
-.input-group select:invalid,
-.input-group input:invalid:focus,
-.input-group textarea:invalid:focus,
-.input-group select:invalid:focus {
+.input-group input:not(.pristine):invalid,
+.input-group textarea:not(.pristine):invalid,
+.input-group select:not(.pristine):invalid,
+.input-group input:not(.pristine):invalid:focus,
+.input-group textarea:not(.pristine):invalid:focus,
+.input-group select:not(.pristine):invalid:focus {
     outline: none;
     border-color: #f06464;
 }
-.input-group input:invalid:hover,
-.input-group textarea:invalid:hover,
-.input-group select:invalid:hover {
+.input-group input:not(.pristine):invalid:hover,
+.input-group textarea:not(.pristine):invalid:hover,
+.input-group select:not(.pristine):invalid:hover {
     border-color: #fc7f7f;
 }
 
@@ -135,12 +143,12 @@ a:hover {
 .input-group select:enabled:focus + label {
     color: #24a29c;
 }
-.input-group input:invalid + label,
-.input-group textarea:invalid + label,
-.input-group select:invalid + label,
-.input-group input:invalid:focus + label,
-.input-group textarea:invalid:focus + label,
-.input-group select:invalid:focus + label {
+.input-group input:not(.pristine):invalid + label,
+.input-group textarea:not(.pristine):invalid + label,
+.input-group select:not(.pristine):invalid + label,
+.input-group input:not(.pristine):invalid:focus + label,
+.input-group textarea:not(.pristine):invalid:focus + label,
+.input-group select:not(.pristine):invalid:focus + label {
     color: #a22424;
 }
 .input-group-inline input {

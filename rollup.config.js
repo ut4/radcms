@@ -31,7 +31,7 @@ module.exports = args => {
            path.resolve(__dirname, 'frontend-src/cpanel-commons/main.js')];
     const allGlobals = {[commonsPath]: 'radCommons', [cpanelCommonsPath]: 'radCpanelCommons'};
     const allExternals = [commonsPath, cpanelCommonsPath];
-    const bundle = !args.configPlugin ? !args.configInstaller ? 'main' : 'installer' : 'plugin';
+    const bundle = !args.configPlugin ? args.configBundle || 'main' : 'plugin';
     // == rad-commons.js & rad-cpanel-commons.js & rad-cpanel-app.js ===========
     if (bundle === 'main') {
         return [{
@@ -79,6 +79,21 @@ module.exports = args => {
             external: [commonsPath],
             plugins: [makeJsxPlugin(['frontend-src/commons/components/**',
                                      'frontend-src/install-app/src/**'])],
+            watch: {clearScreen: false}
+        }];
+    }
+    // == rad-auth-apps.js =====================================================
+    if (bundle === 'auth') {
+        return [{
+            input: 'frontend-src/auth-apps/main.js',
+            output: makeOutputCfg({
+                name: 'radAuthApps',
+                file: 'frontend/rad-auth-apps.js',
+                globals: {[commonsPath]: 'radCommons'},
+            }),
+            external: [commonsPath],
+            plugins: [makeJsxPlugin(['frontend-src/commons/components/**',
+                                     'frontend-src/auth-apps/**'])],
             watch: {clearScreen: false}
         }];
     }
