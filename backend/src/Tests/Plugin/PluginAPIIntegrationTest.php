@@ -30,6 +30,7 @@ final class PluginAPIIntegrationTest extends DbTestCase {
         AppTest::markPluginAsInstalled('MoviesPlugin', $db);
     }
     public function tearDown() {
+        parent::tearDown();
         if ($this->testPlugin) {
             // Tekee suunnilleen saman kuin PUT /api/plugins/MoviesPlugin/uninstall
             $this->testPlugin->impl->uninstall(new ContentTypeMigrator(self::$db));

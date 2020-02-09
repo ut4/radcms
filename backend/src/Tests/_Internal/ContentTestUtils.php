@@ -17,7 +17,7 @@ trait ContentTestUtils {
             $this->assertEquals(intval($isInstalled), count($db->fetchAll(
                 'SELECT `table_name` FROM information_schema.tables' .
                 ' WHERE `table_schema` = ? AND `table_name` = ?',
-                [$db->getDatabase(), $db->getTablePrefix() . $contentTypeName]
+                [$db->getCurrentDatabaseName(), $db->getTablePrefix() . $contentTypeName]
             )));
         }
         $this->assertEquals(intval($isInstalled), self::$db->fetchOne(

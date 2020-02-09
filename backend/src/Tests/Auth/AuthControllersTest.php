@@ -13,22 +13,14 @@ use Pike\TestUtils\MockCrypto;
 
 final class AuthControllersTest extends DbTestCase {
     use HttpTestUtils;
-    private $afterTest;
-    public function tearDown() {
-        $this->afterTest->__invoke();
-    }
     public function testPOSTLoginRejectsIfUserWasNotFound() {
-        $this->afterTest = function () {};
-        //
         $req = new Request('/login', 'POST', (object)['username'=>'doesNotExist',
                                                       'password'=>'irrelevant']);
         $res = $this->createMockResponse(['err' => 'User not found'], 401);
         $this->sendRequest($req, $res, '\RadCms\App::create');
     }
-    public function testPOSTLoginRejectsIfPasswordDidntMatch() {
+    public function testPOSTLoginRejectsIfPasswordDidNotMatch() {
         $this->createTestUser();
-        $this->afterTest = function () { $this->removeTestUser(); };
-        //
         $req = new Request('/login', 'POST', (object)['username'=>'doesExist',
                                                       'password'=>'wrongPass']);
         $res = $this->createMockResponse(['err' => 'Invalid password'], 401);
@@ -36,13 +28,11 @@ final class AuthControllersTest extends DbTestCase {
     }
     public function testPOSTLoginPutsUserToSessionOnSuccess() {
         $this->createTestUser();
-        $this->afterTest = function () { $this->removeTestUser(); };
-        //
         $req = new Request('/login', 'POST', (object)['username'=>'doesExist',
                                                       'password'=>'mockPass']);
         $res = $this->createMockResponse(['ok' => 'ok'], 200);
         $f = $this->createMock(CachingServicesFactory::class);
-        $f->method('makeUserRepo')->willReturn(new UserRepository(self::$db));
+        $f->method('makeUserRepository')->willReturn(new UserRepository(self::$db));
         $s = $this->createMock(SessionInterface::class);
         $s->expects($this->once())->method('put')
             ->with($this->equalTo('user'),
@@ -60,13 +50,11 @@ final class AuthControllersTest extends DbTestCase {
         $this->assertEquals('xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx', $storedUserId);
     }
     private function createTestUser() {
-        if ($this->getDb()->exec('INSERT INTO ${p}users VALUES (?,?,?,?)',
-                                 ['xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx',
-                                  'doesExist', 'e@mail.com','mockPass']) < 1)
+        if (self::$db->exec('INSERT INTO ${p}users' .
+                            ' (`id`,`username`,`email`,`passwordHash`)' .
+                            ' VALUES (?,?,?,?)',
+                            ['xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx',
+                            'doesExist', 'e@mail.com','mockPass']) < 1)
             throw new \Exception('Failed to create test user');
-    }
-    private function removeTestUser() {
-        if ($this->getDb()->exec('DELETE FROM ${p}users') < 1)
-            throw new \Exception('Failed to remove test user');
     }
 }

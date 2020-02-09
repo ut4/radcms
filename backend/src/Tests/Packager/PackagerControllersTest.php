@@ -7,7 +7,6 @@ use Pike\TestUtils\HttpTestUtils;
 use RadCms\Tests\_Internal\ContentTestUtils;
 use RadCms\Packager\PlainTextPackageStream;
 use Pike\Request;
-use Pike\Auth\Crypto;
 use Pike\TestUtils\MockCrypto;
 use RadCms\Packager\Packager;
 use RadCms\Website\SiteConfig;

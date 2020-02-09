@@ -20,14 +20,15 @@ final class InstallerTest extends DbTestCase {
     const TEST_DB_NAME1 = 'db1';
     const TEST_DB_NAME2 = 'db2';
     public function setUp() {
+        parent::setUp();
         if (!defined('INDEX_DIR_PATH')) {
             define('INDEX_DIR_PATH', RAD_SITE_PATH);
         }
     }
     public static function tearDownAfterClass() {
         parent::tearDownAfterClass();
-        self::getDb()->exec('DROP DATABASE IF EXISTS ' . self::TEST_DB_NAME1 .
-                            ';DROP DATABASE IF EXISTS ' . self::TEST_DB_NAME2);
+        self::$db->exec('DROP DATABASE IF EXISTS ' . self::TEST_DB_NAME1 .
+                        ';DROP DATABASE IF EXISTS ' . self::TEST_DB_NAME2);
     }
     public function testInstallerValidatesMissingValues() {
         $input = (object)['sampleContent' => 'test-content'];
@@ -279,12 +280,14 @@ return [
                            (object)['fs' => $s->mockFs]);
     }
     private function verifyCreatedNewDatabaseAndMainSchema($s) {
+        self::$db->exec("USE {$s->input->dbDatabase}");
+        self::$db->setCurrentDatabaseName($s->input->dbDatabase);
+        self::$db->setTablePrefix($s->input->dbTablePrefix);
         $this->assertEquals(1, count(self::$db->fetchAll(
             'SELECT `table_name` FROM information_schema.tables' .
             ' WHERE `table_schema` = ? AND `table_name` = ?',
             [$s->input->dbDatabase, $s->input->dbTablePrefix . 'websiteState']
         )));
-        self::$db->setDatabase($s->input->dbDatabase);
     }
     private function verifyInsertedMainSchemaData($s) {
         $row = self::$db->fetchOne('SELECT * FROM ${p}websiteState');
