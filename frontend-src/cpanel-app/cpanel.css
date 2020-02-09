@@ -53,27 +53,33 @@ html, body {
 }
 
 section {
-    margin-bottom: 6px;
+    margin-bottom: 8px;
     font-size: 12px;
     line-height: 14px;
 }
 section h2 {
-    display: none;
+    font-size: 13px;
+    line-height: 13px;
+    color: rgba(255,255,255,0.22);
+    margin: 8px 0;
 }
 section > div {
-    padding-left: 10px;
+    padding: 1px 0 0 10px;
     border-radius: 2px;
     border-left: 3px solid #e8fbe2;
 }
-section:nth-of-type(2) > div {
-    border-color: #7197b3;
+section.on-this-page > div {
+    border-color: #a2d0bf;
 }
-section:nth-of-type(3) > div {
+section.site-admin > div {
+    border-color: #cab99b;
+}
+section.for-devs > div {
     border-color: #e69393;
 }
 
-section.quick-links > div {
-    padding: 10px;
+.quick-links > div {
+    padding: 1px 10px 10px 10px;
 }
 section.quick-links .icon-button {
     background-color: rgba(255,255,255,0.1);

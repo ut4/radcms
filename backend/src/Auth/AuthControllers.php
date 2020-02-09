@@ -48,6 +48,15 @@ class AuthControllers {
         }
     }
     /**
+     * POST /api/logout.
+     *
+     * @param \Pike\Response $res
+     */
+    public function handleLogoutRequest(Response $res) {
+        $this->auth->logout();
+        $res->json(['ok' => 'ok']);
+    }
+    /**
      * GET /request-password-reset.
      *
      * @param \Pike\Response $res
