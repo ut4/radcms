@@ -2,16 +2,10 @@ import {urlUtils} from '../utils.js';
 
 function myFetch(url, options = {}) {
     const req = new XMLHttpRequest();
-    return new Promise((resolve, reject) => {
+    return new Promise(resolve => {
         req.onreadystatechange = () => {
-            if (req.readyState !== 4) return;
-            if (req.status >= 200 && req.status < 300) {
+            if (req.readyState === 4)
                 resolve(req);
-            } else {
-                const e = new Error();
-                e.request = req;
-                reject(e);
-            }
         };
         if (options.progress) {
             req.onprogress = e => {

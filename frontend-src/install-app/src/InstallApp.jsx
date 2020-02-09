@@ -116,15 +116,15 @@ class InstallApp extends preact.Component {
         sessionStorage.lastTyped = JSON.stringify(data);
         data.baseUrl = location.pathname.replace('install.php', '');
         http.post('', data)
-        .then(() => {
-            toast(() => <p>Sivusto asennettiin kansioon <span style="font-weight: bold">{ this.props.siteDirPath }</span>. Aloita lukemalla README.md, tai <a href={ data.baseUrl + (!this.state.mainQueryVar ? '' : 'index.php?' + this.state.mainQueryVar + '=/') }>siirry</a> sivustolle.</p>, 'success');
-            window.scrollTo(0, 0);
-        })
-        .catch(err => {
-            console.error(err);
-            toast('Asennus epäonnistui', 'error');
-            window.scrollTo(0, 0);
-        });
+            .then(() => {
+                toast(() => <p>Sivusto asennettiin kansioon <span style="font-weight: bold">{ this.props.siteDirPath }</span>. Aloita lukemalla README.md, tai <a href={ data.baseUrl + (!this.state.mainQueryVar ? '' : 'index.php?' + this.state.mainQueryVar + '=/') }>siirry</a> sivustolle.</p>, 'success');
+                window.scrollTo(0, 0);
+            })
+            .catch(err => {
+                console.error(err);
+                toast('Asennus epäonnistui', 'error');
+                window.scrollTo(0, 0);
+            });
     }
 }
 
