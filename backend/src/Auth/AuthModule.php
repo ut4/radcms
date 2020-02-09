@@ -17,6 +17,9 @@ abstract class AuthModule {
         $ctx->router->map('POST', '/api/login',
             [AuthControllers::class, 'handleLoginFormSubmit', false]
         );
+        $ctx->router->map('POST', '/api/logout',
+            [AuthControllers::class, 'handleLogoutRequest', true]
+        );
         $ctx->router->map('GET', '/request-password-reset',
             [AuthControllers::class, 'renderRequestPassResetView', false]
         );

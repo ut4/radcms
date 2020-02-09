@@ -7,10 +7,5 @@ preact.render(preact.createElement(ControlPanelApp, {
     dataFromBackend,
     onIsCollapsedToggled: () => {
         appContainerEl.classList.toggle('collapsed');
-    },
-    ref: cmp => {
-        if (cmp && !window.radCpanelApp) {
-            window.radCpanelApp = {setup(data) { cmp.setup(data); }};
-        }
     }
 }), appContainerEl);

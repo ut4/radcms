@@ -7,7 +7,13 @@ class LoginApp extends preact.Component {
      */
     constructor(props) {
         super(props);
-        this.state = {username: '', password: '', message: ''};
+        this.state = {
+            username: '',
+            password: '',
+            message: location.search !== '?from-logout'
+                ? null
+                : {text: 'Olet nyt kirjautunut ulos.', level: 'info'}
+        };
     }
     /**
      * @access protected
@@ -17,7 +23,7 @@ class LoginApp extends preact.Component {
             <img src={ urlUtils.makeAssetUrl('frontend/assets/logo.png') }/>
             { !this.state.message
                 ? null
-                : <div class="container box error">{ this.state.message }</div>
+                : <div class={ `container box ${this.state.message.level}` }>{ this.state.message.text }</div>
             }
             <InputGroup label="Käyttäjänimi">
                 <Input onInput={ e => this.setState({username: e.target.value}) }
@@ -49,11 +55,13 @@ class LoginApp extends preact.Component {
                                  password: this.state.password})
             .then(info => {
                 if (info.ok) window.location.href = urlUtils.makeUrl('/edit');
-                else if (info.err) this.setState({message: translateError(info.err)});
+                else if (info.err) this.setState({message: {text: translateError(info.err),
+                                                  level: 'error'}});
                 else throw new Error('wut?');
             })
             .catch(() => {
-                this.setState({message: 'Jokin meni pieleen.'});
+                this.setState({message: {text: 'Jokin meni pieleen.',
+                                         level: 'error'}});
             });
     }
 }

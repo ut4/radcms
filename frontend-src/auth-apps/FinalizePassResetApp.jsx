@@ -57,7 +57,7 @@ class FinalizePassResetApp extends preact.Component {
                 }});
                 else throw new Error('wut?');
             })
-            .catch(e => {
+            .catch(() => {
                 this.setState({message: {text: 'Jokin meni pieleen.',
                                          level: 'error'}});
             });
