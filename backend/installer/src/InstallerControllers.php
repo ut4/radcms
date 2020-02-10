@@ -86,6 +86,8 @@ class InstallerControllers {
         $v->check('dbCharset', ['in', ['utf8']]);
         //
         $v->check('firstUserName', 'nonEmptyString');
+        if ($v->is('firstUserEmail', 'present'))
+            $v->check('firstUserEmail', 'string');
         $v->check('firstUserPass', 'nonEmptyString');
         //
         $v->check('baseUrl', 'nonEmptyString');

@@ -11,23 +11,28 @@ use Pike\PikeException;
 use RadCms\Packager\Packager;
 use RadCms\Packager\PackageStreamInterface;
 use Pike\Auth\Crypto;
+use RadCms\Auth\AuthModule;
 
 class Installer {
     private $db;
     private $fs;
+    private $crypto;
     private $backendPath;
     private $siteDirPath;
     private $warnings;
     /**
      * @param \Pike\Db $db
      * @param \Pike\FileSystemInterface $fs
+     * @param \Pike\Auth\Crypto $crypto
      * @param string $siteDirPath = INDEX_DIR_PATH Absoluuttinen polku kansioon, jossa sijaitsee index|install.php.
      */
     public function __construct(Db $db,
                                 FileSystemInterface $fs,
+                                Crypto $crypto,
                                 $siteDirPath = INDEX_DIR_PATH) {
         $this->db = $db;
         $this->fs = $fs;
+        $this->crypto = $crypto;
         $this->backendPath = FileSystem::normalizePath(dirname(__DIR__, 2));
         $this->siteDirPath = FileSystem::normalizePath($siteDirPath);
         $this->warnings = [];
@@ -43,6 +48,7 @@ class Installer {
         return $this->createDb($settings) &&
                $this->createMainSchema($settings) &&
                $this->insertMainSchemaData($settings) &&
+               $this->createUserZero($settings) &&
                $this->createContentTypesAndInsertInitialData("{$base}site.json",
                                                              "{$base}sample-data.json",
                                                              $this->fs) &&
@@ -54,19 +60,17 @@ class Installer {
      * @param \RadCms\Packager\PackageStreamInterface $package
      * @param string $packageFilePath '/path/to/tmp/uploaded-package-file.zip'
      * @param string $unlockKey
-     * @param \Pike\Auth\Crypto $crypto
      * @return bool
      * @throws \Pike\PikeException
      */
     public function doInstallFromPackage(PackageStreamInterface $package,
                                          $packageFilePath,
-                                         $unlockKey,
-                                         Crypto $crypto) {
+                                         $unlockKey) {
         // <packagereader>
         if (!($signed = $this->fs->read($packageFilePath)))
             throw new PikeException('Failed to read package file contents',
                                     PikeException::BAD_INPUT);
-        $unlocked = $crypto->decrypt($signed, $unlockKey);
+        $unlocked = $this->crypto->decrypt($signed, $unlockKey);
         // @allow \Pike\PikeException
         $package->open($unlocked);
         if (!($json1 = $package->read(Packager::DB_CONFIG_VIRTUAL_FILE_NAME)) ||
@@ -153,8 +157,32 @@ class Installer {
                                     $s->installedContentTypes ?? '{}',
                                     $s->installedContentTypesLastUpdated ?? null,
                                     $s->installedPlugins ?? '{}',
-                                ]) < 1)
+                                ]) !== 1)
                 throw new PikeException('Failed to insert main schema data',
+                                        PikeException::INEFFECTUAL_DB_OP);
+        } catch (\PDOException $e) {
+            throw new PikeException($e->getMessage(), PikeException::FAILED_DB_OP);
+        }
+        return true;
+    }
+    /**
+     * @param object $s settings
+     * @return bool
+     * @throws \Pike\PikeException
+     */
+    private function createUserZero($s) {
+        try {
+            if ($this->db->exec('INSERT INTO ${p}users'.
+                                ' (`id`,`username`,`email`,`passwordHash`,`role`)' .
+                                ' VALUES (?,?,?,?,?)',
+                                [
+                                    $this->crypto->guidv4(),
+                                    $s->firstUserName,
+                                    $s->firstUserEmail ?? '',
+                                    $this->crypto->hashPass($s->firstUserPass),
+                                    AuthModule::ROLE_SUPER_ADMIN
+                                ]) !== 1)
+                throw new PikeException('Failed to insert user zero',
                                         PikeException::INEFFECTUAL_DB_OP);
         } catch (\PDOException $e) {
             throw new PikeException($e->getMessage(), PikeException::FAILED_DB_OP);
@@ -237,7 +265,7 @@ if (!defined('RAD_BASE_PATH')) {
     define('RAD_BASE_PATH',      '{$this->backendPath}');
     define('RAD_SITE_PATH',      '{$this->siteDirPath}');
     define('RAD_DEVMODE',        1 << 1);
-    define('RAD_USE_BUNDLED_JS', 2 << 1);
+    define('RAD_USE_JS_MODULES', 2 << 1);
     define('RAD_FLAGS',          {$flags});
 }
 return [

@@ -13,6 +13,7 @@ use Pike\TestUtils\MockCrypto;
 use RadCms\Packager\Packager;
 use RadCms\Packager\PlainTextPackageStream;
 use RadCms\Tests\Packager\PackagerControllersTest;
+use RadCms\Auth\AuthModule;
 
 final class InstallerTest extends DbTestCase {
     use HttpTestUtils;
@@ -123,6 +124,7 @@ final class InstallerTest extends DbTestCase {
         $this->sendInstallRequest($s);
         $this->verifyCreatedNewDatabaseAndMainSchema($s);
         $this->verifyInsertedMainSchemaData($s);
+        $this->verifyCreatedUserZero($s);
         $this->verifyContentTypeIsInstalled('Movies', true, self::$db);
         $this->verifyInsertedSampleContent($s);
     }
@@ -142,6 +144,7 @@ final class InstallerTest extends DbTestCase {
                 'dbTablePrefix' => 'p_',
                 'dbCharset' => 'utf8',
                 'firstUserName' => 'user',
+                'firstUserEmail' => 'user@mail.com',
                 'firstUserPass' => 'pass',
                 'baseUrl' => '/foo/',
             ],
@@ -239,7 +242,7 @@ if (!defined('RAD_BASE_PATH')) {
     define('RAD_BASE_PATH',      '{$s->backendPath}');
     define('RAD_SITE_PATH',      '{$s->siteDirPath}');
     define('RAD_DEVMODE',        1 << 1);
-    define('RAD_USE_BUNDLED_JS', 2 << 1);
+    define('RAD_USE_JS_MODULES', 2 << 1);
     define('RAD_FLAGS',          RAD_DEVMODE);
 }
 return [
@@ -294,6 +297,17 @@ return [
         $this->assertArrayHasKey('name', $row);
         $this->assertEquals($s->input->siteName, $row['name']);
         $this->assertEquals($s->input->siteLang, $row['lang']);
+    }
+    private function verifyCreatedUserZero($s) {
+        $row = self::$db->fetchOne('SELECT * FROM ${p}users');
+        $this->assertNotNull($row, 'Pitäisi luoda käyttäjä');
+        $expectedLen = strlen('xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx');
+        $this->assertEquals($expectedLen, strlen($row['id']));
+        $this->assertEquals($s->input->firstUserName, $row['username']);
+        $this->assertEquals($s->input->firstUserEmail, $row['email']);
+        $this->assertEquals(AuthModule::ROLE_SUPER_ADMIN, $row['role']);
+        $this->assertEquals(null, $row['resetKey']);
+        $this->assertEquals(null, $row['resetRequestedAt']);
     }
     private function verifyInsertedSampleContent($s) {
         $this->assertEquals(2, count(self::$db->fetchAll(

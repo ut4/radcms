@@ -144,7 +144,7 @@ class MagicTemplate extends Template {
      *                <script src="frontend/file.js" type="module">...
      */
     public function jsBundle($files, $includeVendor = true) {
-        $baseAttrs = (RAD_FLAGS & RAD_USE_BUNDLED_JS) ? [] : ['type' => 'module'];
+        $baseAttrs = !(RAD_FLAGS & RAD_USE_JS_MODULES) ? [] : ['type' => 'module'];
         return ($includeVendor
             ? '<script src="'. $this->assetUrl('frontend/vendor/vendor.bundle.min.js') . '"></script>'
             : '') .

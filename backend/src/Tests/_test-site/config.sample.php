@@ -5,6 +5,7 @@ define('RAD_QUERY_VAR',  '');
 define('RAD_BASE_PATH',  '/path/to/backend/');
 define('RAD_SITE_PATH',  '/path/to/backend/src/Tests/_test-site/');
 define('RAD_DEVMODE',    1 << 1);
+define('RAD_USE_JS_MODULES', 2 << 1);
 define('RAD_FLAGS',      RAD_DEVMODE);
 }
 return [

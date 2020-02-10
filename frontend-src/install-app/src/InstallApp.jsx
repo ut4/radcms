@@ -1,4 +1,4 @@
-import {http, Form, Toaster, InputGroup} from '@rad-commons';
+import {http, urlUtils, Form, Toaster, InputGroup} from '@rad-commons';
 
 class InstallApp extends preact.Component {
     /**
@@ -22,6 +22,7 @@ class InstallApp extends preact.Component {
             dbCharset: 'utf8',
             //
             firstUserName: 'my-name',
+            firstUserEmail: 'my@mail.com',
             firstUserPass: '',
         } : JSON.parse(l);
     }
@@ -96,8 +97,14 @@ class InstallApp extends preact.Component {
                 </div>
                 <div class="view-content box">
                     <InputGroup label="Käyttäjä">
-                        <input name="firstUserName" id="firstUserName" onChange={ e => Form.receiveInputValue(e, this) }
+                        <input name="firstUserName" id="firstUserName"
+                               onChange={ e => Form.receiveInputValue(e, this) }
                                value={ this.state.firstUserName }/>
+                    </InputGroup>
+                    <InputGroup label="E-mail">
+                        <input name="firstUserEmail" id="firstUserEmail"
+                               onChange={ e => Form.receiveInputValue(e, this) }
+                               value={ this.state.firstUserEmail }/>
                     </InputGroup>
                     <InputGroup label="Salasana">
                         <input name="firstUserPass" id="firstUserPass" type="password"
@@ -115,9 +122,12 @@ class InstallApp extends preact.Component {
         const data = this.state;
         sessionStorage.lastTyped = JSON.stringify(data);
         data.baseUrl = location.pathname.replace('install.php', '');
+        const makeUrl = url => data.baseUrl + (!this.state.mainQueryVar
+            ? url
+            : `index.php?${this.state.mainQueryVar}=/${url}`);
         http.post('', data)
             .then(() => {
-                toast(() => <p>Sivusto asennettiin kansioon <span style="font-weight: bold">{ this.props.siteDirPath }</span>. Aloita lukemalla README.md, tai <a href={ data.baseUrl + (!this.state.mainQueryVar ? '' : 'index.php?' + this.state.mainQueryVar + '=/') }>siirry</a> sivustolle.</p>, 'success');
+                toast(() => <p>Sivusto asennettiin kansioon <span style="font-weight: bold">{ this.props.siteDirPath }</span>. Aloita lukemalla README.md, siirry <a href={ makeUrl('') }>sivustolle</a>, tai hallintanäkymän <a href={ makeUrl('login') }>kirjautumissivulle</a>.</p>, 'success');
                 window.scrollTo(0, 0);
             })
             .catch(err => {

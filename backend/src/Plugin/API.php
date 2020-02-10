@@ -2,7 +2,7 @@
 
 namespace RadCms\Plugin;
 
-use AltoRouter;
+use Pike\Router;
 use RadCms\BaseAPI;
 use RadCms\APIConfigsStorage;
 
@@ -14,12 +14,12 @@ class API {
     private $baseApi;
     private $apiConfigs;
     /**
-     * @param \AltoRouter $ctx
-     * @param \AltoRouter $ctx
+     * @param \RadCms\BaseAPI $baseApi
+     * @param \Pike\Router $ctx
      * @param \RadCms\APIConfigsStorage $configs
      */
     public function __construct(BaseAPI $baseApi,
-                                AltoRouter $router,
+                                Router $router,
                                 APIConfigsStorage $configs) {
         $this->router = $router;
         $this->baseApi = $baseApi;

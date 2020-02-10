@@ -211,10 +211,14 @@ section.quick-links .icon-button .feather {
 .collapsed #logo,
 .collapsed section.quick-links .icon-button span,
 .collapsed .section-row button,
+.collapsed section h2,
 .collapsed a i {
     display: none;
 }
-.collapsed section.quick-links .icon-button .feather {
+.collapsed .quick-links > div {
+    padding: 10px;
+}
+.collapsed .quick-links .icon-button .feather {
     margin-left: -6px;
 }
 .collapsed .section-row .sub-nav {

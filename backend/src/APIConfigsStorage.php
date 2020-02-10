@@ -96,8 +96,8 @@ class APIConfigsStorage {
      * @return array[]
      */
     private function getRegisteredTemplateAliases($for) {
-        return array_merge($this->directives['*'] ?? [],
-                           $this->directives[$for] ?? []);
+        return array_merge($this->templateAliases['*'] ?? [],
+                           $this->templateAliases[$for] ?? []);
     }
     /**
      * @return array[]
