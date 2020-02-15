@@ -5,6 +5,7 @@ namespace RadCms\Tests\Upload;
 use Pike\TestUtils\DbTestCase;
 use Pike\TestUtils\HttpTestUtils;
 use Pike\Request;
+use Pike\Response;
 use RadCms\Upload\Uploader;
 
 final class UploadControllersTest extends DbTestCase {
@@ -19,11 +20,13 @@ final class UploadControllersTest extends DbTestCase {
     private function setupListUploadsTest() {
         return (object)[
             'actualResponseBody' => null,
+            'app' => $this->makeApp('\RadCms\App::create', $this->getAppConfig())
         ];
     }
     private function sendGetUploadsRequest($s) {
         $req = new Request('/api/uploads', 'GET');
-        $this->sendResponseBodyCapturingRequest($req, '\RadCms\App::create', $s);
+        $res = $this->createMock(Response::class);
+        $this->sendResponseBodyCapturingRequest($req, $res, $s->app, $s);
     }
     private function verifyResponseBodyEquals($expected, $s) {
         $this->assertEquals(json_encode($expected),
@@ -49,6 +52,12 @@ final class UploadControllersTest extends DbTestCase {
             $s->actuallyMovedFileTo = $targetFilePath;
             return true;
         };
+        $s->app = $this->makeApp('\RadCms\App::create', $this->getAppConfig(), null,
+            function ($injector) use ($s) {
+                $injector->delegate(Uploader::class, function () use ($s) {
+                    return new Uploader($s->mockMoveUploadedFileFn);
+                });
+            });
         return $s;
     }
     private function sendUploadFileRequest($s) {
@@ -62,11 +71,7 @@ final class UploadControllersTest extends DbTestCase {
                                'size' => 1
                            ]]);
         $res = $this->createMockResponse($reqBody->returnTo, 200, 'redirect');
-        $this->sendRequest($req, $res, '\RadCms\App::create', null, function ($injector) use ($s) {
-            $injector->delegate(Uploader::class, function () use ($s) {
-                return new Uploader($s->mockMoveUploadedFileFn);
-            });
-        });
+        $this->sendRequest($req, $res, $s->app);
     }
     private function verifyMovedUploadedFileTo($expectedDir, $s) {
         $this->assertEquals("{$expectedDir}{$s->uploadFileName}",

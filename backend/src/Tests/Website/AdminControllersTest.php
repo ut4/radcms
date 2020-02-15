@@ -28,11 +28,7 @@ final class AdminControllersTest extends DbTestCase {
         $this->stubFsToReturnThisSiteCfg($s, json_encode(['contentTypes' => [
                                             ['NewType', 'My type', ['name' => 'text']]
                                         ]]));
-        //
-        $req = new Request('/edit/foo', 'GET');
-        $res = $this->createMockResponse($this->anything(), 200, 'html');
-        $this->sendRequest($req, $res, '\RadCms\App::create', $s->ctx);
-        //
+        $this->sendRequestThatShouldTriggerSiteCfgScan($s);
         $this->verifyInstalledNewContentTypeToDb();
     }
     private function setupDiscoverTest() {
@@ -74,6 +70,13 @@ final class AdminControllersTest extends DbTestCase {
             ->with($this->stringEndsWith('site.json'))
             ->willReturn(json_encode($parsed));
     }
+    private function sendRequestThatShouldTriggerSiteCfgScan($s) {
+        $req = new Request('/edit/foo', 'GET');
+        $res = $this->createMockResponse($this->anything(), 200, 'html');
+        $app = $this->makeApp('\RadCms\App::create', $this->getAppConfig(),
+            $s->ctx);
+        $this->sendRequest($req, $res, $app);
+    }
     private function verifyInstalledNewContentTypeToDb() {
         $this->verifyContentTypeIsInstalled('NewType', true, self::$db);
     }
@@ -91,11 +94,7 @@ final class AdminControllersTest extends DbTestCase {
         $this->stubFsToReturnNoPlugins($s);
         $this->stubFsToReturnThisLastModTimeForSiteCfg($s, $newerThanLastUpdatedAt);
         $this->stubFsToReturnThisSiteCfg($s, '{"contentTypes":['./*NewType disappears*/']}');
-        //
-        $req = new Request('/edit/foo', 'GET');
-        $res = $this->createMockResponse($this->anything(), 200, 'html');
-        $this->sendRequest($req, $res, '\RadCms\App::create', $s->ctx);
-        //
+        $this->sendRequestThatShouldTriggerSiteCfgScan($s);
         $this->verifyUninstalledDisappearedContentType();
     }
     private function setupRemoveTest() {

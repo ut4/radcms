@@ -30,4 +30,6 @@ if (!(RAD_FLAGS & RAD_DEVMODE)) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-\RadCms\App::create($config)->handleRequest(RAD_BASE_URL, $_GET[RAD_QUERY_VAR] ?? null);
+\RadCms\App::create($config, [\Pike\App::SERVICE_DB => \Pike\App::MAKE_AUTOMATICALLY,
+                              \Pike\App::SERVICE_AUTH => \Pike\App::MAKE_AUTOMATICALLY])
+    ->handleRequest(RAD_BASE_URL, $_GET[RAD_QUERY_VAR] ?? null);

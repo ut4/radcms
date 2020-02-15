@@ -9,6 +9,7 @@ use RadCms\ContentType\ContentTypeMigrator;
 use Pike\FileSystem;
 use RadCms\Tests\AppTest;
 use Pike\Request;
+use Pike\Response;
 use Pike\TestUtils\MutedResponse;
 use RadPlugins\MoviesPlugin\MoviesPlugin;
 use RadCms\Plugin\Plugin;
@@ -18,6 +19,7 @@ final class PluginAPIIntegrationTest extends DbTestCase {
     use HttpTestUtils;
     use ContentTestUtils;
     private $testPlugin;
+    private $app;
     public function setupTestPlugin($initialData = null) {
         // Tekee suunnilleen saman kuin PUT /api/plugins/MoviesPlugin/install
         $db = self::getDb();
@@ -28,6 +30,16 @@ final class PluginAPIIntegrationTest extends DbTestCase {
         if ($initialData) $moviesPluginImpl->setTestInitalData($initialData);
         $moviesPluginImpl->install($m);
         AppTest::markPluginAsInstalled('MoviesPlugin', $db);
+        //
+        $ctx = new \stdClass;
+        $ctx->fs = $this->getMockBuilder(FileSystem::class)
+            ->setMethods(['readDir'])
+            ->getMock();
+        $ctx->fs->method('readDir')
+            ->with($this->stringEndsWith('plugins'))
+            ->willReturn([dirname(RAD_SITE_PATH) . '/_test-plugins/MoviesPlugin']);
+        $this->app = $this->makeApp('\RadCms\App::create', $this->getAppConfig(),
+            $ctx);
     }
     public function tearDown() {
         parent::tearDown();
@@ -44,16 +56,13 @@ final class PluginAPIIntegrationTest extends DbTestCase {
     public function testPluginCanInstallContentType() {
         $initialMovies = [['Movies', [(object)['title' => 'Initial movie',
                                                'releaseYear' => 2019]]]];
-        $s = $this->setupInstallCtypeTest($initialMovies);
+        $this->setupInstallCtypeTest($initialMovies);
         $this->verifyContentTypeWasInstalledToDb();
         $this->verifyInitialDataWasInsertedToDb();
     }
     private function setupInstallCtypeTest($initialMovies = null) {
         $this->setupTestPlugin($initialMovies);
-        $ctx = (object)['fs' => $this->createMock(FileSystem::class)];
-        $ctx->fs->method('readDir')->willReturn([dirname(RAD_SITE_PATH) . '/_test-plugins/MoviesPlugin']);
         return (object) [
-            'ctx' => $ctx,
             'actualResponseBody' => null,
             'testMovieId' => null,
         ];
@@ -88,9 +97,9 @@ final class PluginAPIIntegrationTest extends DbTestCase {
         $this->insertContent('Movies', [['Fus', 2020], [$id]]);
     }
     private function sendListMoviesRequest($s) {
+        $res = $this->createMock(Response::class);
         $this->sendResponseBodyCapturingRequest(new Request('/movies', 'GET'),
-                                                '\RadCms\App::create',
-                                                $s);
+                                                $res, $this->app, $s);
     }
     private function verifyResponseBodyEquals($expectedJson, $s) {
         $this->assertEquals($expectedJson, $s->actualResponseBody);
@@ -112,7 +121,8 @@ final class PluginAPIIntegrationTest extends DbTestCase {
     private function sendInsertMovieRequest($s) {
         $req = new Request('/movies', 'POST', (object) ['title' => 'A movie',
                                                         'releaseYear' => 2021]);
-        $this->sendResponseBodyCapturingRequest($req, '\RadCms\App::create', $s);
+        $res = $this->createMock(Response::class);
+        $this->sendResponseBodyCapturingRequest($req, $res, $this->app, $s);
     }
     private function verifyMovieWasInsertedToDb($title) {
         $this->assertEquals(1, count(self::$db->fetchAll(
@@ -144,7 +154,8 @@ final class PluginAPIIntegrationTest extends DbTestCase {
                             (object)['title' => $newData->title,
                                      'releaseYear' => $newData->releaseYear,
                                      'isRevision' => false]);
-        $this->sendResponseBodyCapturingRequest($req, '\RadCms\App::create', $s);
+        $res = $this->createMock(Response::class);
+        $this->sendResponseBodyCapturingRequest($req, $res, $this->app, $s);
     }
     private function verifyMovieWasUpdatedToDb($newData) {
         $this->assertEquals(1, count(self::$db->fetchAll(
@@ -158,12 +169,13 @@ final class PluginAPIIntegrationTest extends DbTestCase {
 
 
     public function testPluginCanRegisterJsFilesAndAdminPanels() {
-        $s = $this->setupFileRegTest();
+        $this->setupFileRegTest();
         $res = $this->createMock(MutedResponse::class);
         $req = new Request('/noop', 'GET');
-        $this->sendRequest($req, $res, '\RadCms\App::create', $s->ctx);
-        $this->verifyJsFilesWereRegistered($s->ctx->state->apiConfigs);
-        $this->verifyAdminPanelsWereRegistered($s->ctx->state->apiConfigs);
+        $this->sendRequest($req, $res, $this->app);
+        $appState = $this->app->getAppCtx()->state;
+        $this->verifyJsFilesWereRegistered($appState->apiConfigs);
+        $this->verifyAdminPanelsWereRegistered($appState->apiConfigs);
     }
     private function setupFileRegTest() {
         return $this->setupReadTest();

@@ -9,9 +9,6 @@ use RadPlugins\ValidAndInstalledPlugin\ValidAndInstalledPlugin;
 use RadPlugins\ValidPlugin\ValidPlugin;
 
 final class AppTest extends DbTestCase {
-    public static function setUpBeforeClass() {
-        self::$db = self::getDb();
-    }
     public function testCreateAppScansPluginsFromDisk() {
         $ctx = (object)['db' => self::$db, 'fs' => $this->createMock(FileSystem::class)];
         $ctx->fs->expects($this->once())

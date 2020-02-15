@@ -6,6 +6,7 @@ use Pike\TestUtils\DbTestCase;
 use Pike\TestUtils\HttpTestUtils;
 use RadCms\Tests\_Internal\ContentTestUtils;
 use Pike\Request;
+use Pike\Response;
 use RadCms\ContentType\ContentTypeCollection;
 use RadCms\ContentType\ContentTypeMigrator;
 use RadCms\ContentType\ContentTypeValidator;
@@ -17,6 +18,7 @@ final class ContentTypeControllersTest extends DbTestCase {
     private static $testContentTypes;
     private static $migrator;
     private const DEFAULT_WIDGET = ContentTypeValidator::FIELD_WIDGETS[0];
+    private $app;
     public static function setUpBeforeClass() {
         self::$testContentTypes = new ContentTypeCollection();
         self::$testContentTypes->add('Events', 'Tapahtumat',
@@ -33,6 +35,10 @@ final class ContentTypeControllersTest extends DbTestCase {
         // @allow \Pike\PikeException
         self::$migrator->uninstallMany(self::$testContentTypes);
         self::clearInstalledContentTypesFromDb();
+    }
+    protected function setUp() {
+        parent::setUp();
+        $this->app = $this->makeApp('\RadCms\App::create', $this->getAppConfig());
     }
     public function testGETContentTypeReturnsContentType() {
         $s = $this->setupGetContentTypeTest();
@@ -61,7 +67,8 @@ final class ContentTypeControllersTest extends DbTestCase {
     }
     private function sendGetContentTypeRequest($s, $url = null) {
         $req = new Request($url ?? '/api/content-types/' . $s->contentTypeName, 'GET');
-        $this->sendResponseBodyCapturingRequest($req, '\RadCms\App::create', $s);
+        $res = $this->createMock(Response::class);
+        $this->sendResponseBodyCapturingRequest($req, $res, $this->app, $s);
     }
     private function verifyResponseBodyEquals($expected, $s) {
         $this->assertEquals(json_encode($expected),

@@ -33,8 +33,8 @@ class Installer {
         $this->db = $db;
         $this->fs = $fs;
         $this->crypto = $crypto;
-        $this->backendPath = FileSystem::normalizePath(dirname(__DIR__, 2));
-        $this->siteDirPath = FileSystem::normalizePath($siteDirPath);
+        $this->backendPath = FileSystem::normalizePath(dirname(__DIR__, 2)) . '/';
+        $this->siteDirPath = FileSystem::normalizePath($siteDirPath) . '/';
         $this->warnings = [];
     }
     /**

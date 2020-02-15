@@ -19,6 +19,7 @@ final class PackagerControllersTest extends DbTestCase {
     private static $testSiteCfg;
     private static $migrator;
     private static $testSiteContentTypesData;
+    private $app;
     public static function setUpBeforeClass() {
         self::$testSiteContentTypesData = [
             ['SomeType', [(object)['name' => 'val1'], (object)['name' => 'val2']]],
@@ -38,6 +39,10 @@ final class PackagerControllersTest extends DbTestCase {
         self::$migrator->uninstallMany(self::$testSiteCfg->contentTypes);
         self::clearInstalledContentTypesFromDb();
     }
+    protected function setUp() {
+        parent::setUp();
+        $this->app = $this->makeApp('\RadCms\App::create', $this->getAppConfig());
+    }
     public function testPOSTPackagerPacksWebsiteAndReturnsItAsAttachment() {
         $s = $this->setupCreatePackageTest();
         $this->sendCreatePackageRequest($s);
@@ -49,7 +54,7 @@ final class PackagerControllersTest extends DbTestCase {
     }
     private function setupCreatePackageTest() {
         $s = (object)[
-            'ctx' => (object)['crypto' => new MockCrypto()],
+            'mockCrypto' => new MockCrypto(),
             'actualAttachmentBody' => '',
             'actualPackage' => null,
             'testWebsiteState' => null,
@@ -65,7 +70,8 @@ final class PackagerControllersTest extends DbTestCase {
                                          }),
                                          200,
                                          'attachment');
-        $this->sendRequest($req, $res, '\RadCms\App::create', $s->ctx);
+        $this->app->getAppCtx()->crypto = $s->mockCrypto;
+        $this->sendRequest($req, $res, $this->app);
     }
     private function verifyReturnedSignedPackage($s) {
         $this->assertTrue(strlen($s->actualAttachmentBody) > 0);

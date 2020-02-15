@@ -42,7 +42,7 @@ class Uploader {
         //
         if (!call_user_func($this->moveUploadedFileFn,
                             $file['tmp_name'],
-                            FileSystem::normalizePath($toDir) . $file['name']))
+                            FileSystem::normalizePath($toDir) . '/' . $file['name']))
             throw new PikeException('Failed to move_uploaded_file()',
                                     PikeException::FAILED_FS_OP);
     }

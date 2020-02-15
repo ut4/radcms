@@ -12,18 +12,22 @@ use Pike\TestUtils\MockCrypto;
 
 final class AuthControllersTest extends DbTestCase {
     use HttpTestUtils;
+    protected function setUp() {
+        parent::setUp();
+        $this->app = $this->makeApp('\RadCms\App::create', $this->getAppConfig());
+    }
     public function testPOSTLoginRejectsIfUserWasNotFound() {
         $req = new Request('/api/login', 'POST', (object)['username'=>'doesNotExist',
                                                           'password'=>'irrelevant']);
         $res = $this->createMockResponse(['err' => 'User not found'], 401);
-        $this->sendRequest($req, $res, '\RadCms\App::create');
+        $this->sendRequest($req, $res, $this->app);
     }
     public function testPOSTLoginRejectsIfPasswordDidNotMatch() {
         $this->createTestUser();
         $req = new Request('/api/login', 'POST', (object)['username'=>'doesExist',
                                                           'password'=>'wrongPass']);
         $res = $this->createMockResponse(['err' => 'Invalid password'], 401);
-        $this->sendRequest($req, $res, '\RadCms\App::create');
+        $this->sendRequest($req, $res, $this->app);
     }
     public function testPOSTLoginPutsUserToSessionOnSuccess() {
         $this->createTestUser();
@@ -37,12 +41,16 @@ final class AuthControllersTest extends DbTestCase {
         $s = $this->createMock(SessionInterface::class);
         $s->expects($this->once())->method('put')
             ->with($this->equalTo('user'),
-                    $this->equalTo('xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'));
+                    $this->equalTo((object)[
+                        'id' => 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx',
+                        'role' => 255
+                    ]));
         $s->method('get')
             ->willReturn('xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx');
         $f->method('makeSession')->willReturn($s);
-        $ctx = (object)['auth' => new Authenticator($f)];
-        $this->sendRequest($req, $res, '\RadCms\App::create', $ctx);
+        $ctx = $this->app->getAppCtx();
+        $ctx->auth = new Authenticator($f);
+        $this->sendRequest($req, $res, $this->app);
         //
         $this->verifyAuthNowReturnsLoggedInUserId($ctx);
     }

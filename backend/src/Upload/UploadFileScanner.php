@@ -28,7 +28,7 @@ class UploadFileScanner {
             throw new PikeException("Failed to read {$dirPath}", PikeException::FAILED_FS_OP);
         $out = [];
         foreach ($fullPaths as $p) {
-            $basePath = $this->fs->normalizePath(dirname($p));
+            $basePath = $this->fs->normalizePath(dirname($p)) . '/';
             $out[] = (object)['fileName' => mb_substr($p, mb_strlen($basePath)),
                               'basePath' => $basePath,
                               'mime' => self::getMime($p)];

@@ -29,7 +29,8 @@ class InstallerControllers {
             return;
         }
         $template = new Template(__DIR__ . '/main-view.tmpl.php');
-        $res->html($template->render(['siteDirPath' => FileSystem::normalizePath(INDEX_DIR_PATH)]));
+        $res->html($template->render(['siteDirPath' =>
+            FileSystem::normalizePath(INDEX_DIR_PATH) . '/']));
     }
     /**
      * POST /.

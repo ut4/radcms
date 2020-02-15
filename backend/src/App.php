@@ -20,10 +20,11 @@ class App {
     /**
      * @param array $config
      * @param object $ctx = null
+     * @param fn(): \Auryn\Injector $makeInjector = null
      * @return \Pike\App
      * @throws \Pike\PikeException
      */
-    public static function create($config, $ctx = null) {
+    public static function create($config, $ctx = null, $makeInjector = null) {
         return PikeApp::create([
             self::class,
             AuthModule::class,
@@ -33,7 +34,7 @@ class App {
             PluginModule::class,
             UploadModule::class,
             WebsiteModule::class,
-        ], $config, $ctx);
+        ], $config, $ctx, $makeInjector);
     }
     /**
      * @param \stdClass $ctx
@@ -52,6 +53,14 @@ class App {
                     $ctx->state->siteInfo->lang . '.php';
                 return self::$fs->isFile($mainLangFilePath) ? include $mainLangFilePath : [];
             });
+        $ctx->router->on('*', function ($req, $res, $next) use ($ctx) {
+            $req->user = $ctx->auth->getIdentity();
+            $requireAuth = $req->routeCtx;
+            if ($requireAuth && !$req->user)
+                $res->status(403)->json(['err' => 'Login required']);
+            else
+                $next();
+        });
         self::$ctx = $ctx;
     }
     /**

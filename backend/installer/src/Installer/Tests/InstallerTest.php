@@ -13,7 +13,7 @@ use Pike\TestUtils\MockCrypto;
 use RadCms\Packager\Packager;
 use RadCms\Packager\PlainTextPackageStream;
 use RadCms\Tests\Packager\PackagerControllersTest;
-use RadCms\Auth\AuthModule;
+use RadCms\Auth\ACL;
 
 final class InstallerTest extends DbTestCase {
     use HttpTestUtils;
@@ -48,9 +48,8 @@ final class InstallerTest extends DbTestCase {
             'firstUserPass must be a non-empty string',
             'baseUrl must be a non-empty string',
         ]), 400);
-        $this->sendRequest(new Request('/', 'POST', $input),
-                           $res,
-                           [$this,'createInstallerApp']);
+        $app = $this->makeApp([$this,'createInstallerApp'], $this->getAppConfig());
+        $this->sendRequest(new Request('/', 'POST', $input), $res, $app);
     }
     public function testInstallerValidatesInvalidValues() {
         $input = (object)[
@@ -84,9 +83,8 @@ final class InstallerTest extends DbTestCase {
             'firstUserPass must be a non-empty string',
             'baseUrl must be a non-empty string',
         ]), 400);
-        $this->sendRequest(new Request('/', 'POST', $input),
-                           $res,
-                           [$this, 'createInstallerApp']);
+        $app = $this->makeApp([$this,'createInstallerApp'], $this->getAppConfig());
+        $this->sendRequest(new Request('/', 'POST', $input), $res, $app);
     }
     public function testInstallerFillsDefaultValues() {
         $input = (object)[
@@ -106,9 +104,8 @@ final class InstallerTest extends DbTestCase {
             'baseUrl' => [],
         ];
         $res = $this->createMockResponse($this->anything(), 400);
-        $this->sendRequest(new Request('/', 'POST', $input),
-                           $res,
-                           [$this, 'createInstallerApp']);
+        $app = $this->makeApp([$this,'createInstallerApp'], $this->getAppConfig());
+        $this->sendRequest(new Request('/', 'POST', $input), $res, $app);
         $this->assertEquals('My Site', $input->siteName);
         $this->assertEquals('', $input->mainQueryVar);
     }
@@ -277,10 +274,9 @@ return [
     }
     private function sendInstallRequest($s) {
         $res = $this->createMockResponse('{"ok":"ok","warnings":[]}', 200);
-        $this->sendRequest(new Request('/', 'POST', $s->input),
-                           $res,
-                           [$this, 'createInstallerApp'],
-                           (object)['fs' => $s->mockFs]);
+        $app = $this->makeApp([$this,'createInstallerApp'], $this->getAppConfig(),
+            (object)['fs' => $s->mockFs]);
+        $this->sendRequest(new Request('/', 'POST', $s->input), $res, $app);
     }
     private function verifyCreatedNewDatabaseAndMainSchema($s) {
         self::$db->exec("USE {$s->input->dbDatabase}");
@@ -305,7 +301,7 @@ return [
         $this->assertEquals($expectedLen, strlen($row['id']));
         $this->assertEquals($s->input->firstUserName, $row['username']);
         $this->assertEquals($s->input->firstUserEmail, $row['email']);
-        $this->assertEquals(AuthModule::ROLE_SUPER_ADMIN, $row['role']);
+        $this->assertEquals(ACL::ROLE_SUPER_ADMIN, $row['role']);
         $this->assertEquals(null, $row['resetKey']);
         $this->assertEquals(null, $row['resetRequestedAt']);
     }
@@ -357,10 +353,9 @@ return [
     private function sendInstallFromPackageRequest($s) {
         $req = new Request('/from-package', 'POST', $s->input, $s->files);
         $res = $this->createMockResponse('{"ok":"ok"}', 200);
-        $this->sendRequest($req,
-                           $res,
-                           [$this, 'createInstallerApp'],
-                           (object)['fs' => $s->mockFs, 'crypto' => $s->mockCrypto]);
+        $app = $this->makeApp([$this,'createInstallerApp'], $this->getAppConfig(),
+            (object)['fs' => $s->mockFs, 'crypto' => $s->mockCrypto]);
+        $this->sendRequest($req, $res, $app);
     }
     private function verifyInstalledThemeContentTypes($s) {
         [$name] = $s->testSiteContentTypesData[0];
@@ -386,7 +381,7 @@ return [
                 json_encode($s->testSiteContentTypesData, JSON_UNESCAPED_UNICODE),
         ]);
     }
-    public function createInstallerApp($config, $ctx) {
-        return App::create([Module::class], $config, $ctx);
+    public function createInstallerApp($config, $ctx, $makeInjector) {
+        return App::create([Module::class], $config, $ctx, $makeInjector);
     }
 }

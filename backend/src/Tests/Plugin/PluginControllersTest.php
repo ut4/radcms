@@ -8,40 +8,44 @@ use Pike\FileSystem;
 use RadPlugins\ValidPlugin\ValidPlugin;
 use RadPlugins\ValidAndInstalledPlugin\ValidAndInstalledPlugin;
 use Pike\Request;
+use RadCms\Tests\AppTest;
 
 final class PluginControllersTest extends DbTestCase {
     use HttpTestUtils;
     private $afterTest;
-    public function tearDown() {
+    protected function setUp() {
+        parent::setUp();
+    }
+    protected function tearDown() {
+        parent::tearDown();
         $this->afterTest->__invoke();
     }
     public function testPUTInstallInstallsPluginAndRegistersItToDatabase() {
         $s = $this->setupInstallTest();
-        //
-        $req = new Request("/api/plugins/{$s->testPluginName}/install", 'PUT');
-        $this->sendRequest($req, $s->res, '\RadCms\App::create', $s->ctx);
-        //
+        $this->sendInstallPluginRequest($s);
         $this->verifyCalledPluginImplsInstallMethod();
         $this->verifyRegisteredPluginToDb($s);
     }
-    private function setupInstallTest() {
-        $testPluginName = 'ValidPlugin';
-        $ctx = (object)['fs' => $this->createMock(FileSystem::class)];
-        $ctx->fs->expects($this->once())->method('readDir')->willReturn(
-            [dirname(RAD_SITE_PATH) . '/_test-plugins/' . $testPluginName]);
+    private function setupInstallTest($testPluginName = 'ValidPlugin') {
+        $s = new \stdClass;
+        $s->testPluginName = $testPluginName;
+        $s->ctx = (object)['fs' => $this->createMock(FileSystem::class)];
+        $s->ctx->fs->expects($this->once())->method('readDir')->willReturn(
+            [dirname(RAD_SITE_PATH) . '/_test-plugins/' . $s->testPluginName]);
         $this->afterTest = function () {
             ValidPlugin::$instantiated = false;
             ValidPlugin::$initialized = false;
             ValidPlugin::$installed = false;
-            if (self::$db->exec('UPDATE ${p}websiteState SET' .
-                                ' `installedPlugins` = \'{}\'') < 1)
-                throw new \RuntimeException('Failed to clean test data.');
+            self::$db->exec('UPDATE ${p}websiteState SET `installedPlugins` = \'{}\'');
         };
-        return (object)[
-            'testPluginName' => $testPluginName,
-            'res' => $this->createMockResponse(['ok' => 'ok'], 200),
-            'ctx' => $ctx,
-        ];
+        $s->app = $this->makeApp('\RadCms\App::create', $this->getAppConfig(),
+            $s->ctx);
+        return $s;
+    }
+    private function sendInstallPluginRequest($s) {
+        $req = new Request("/api/plugins/{$s->testPluginName}/install", 'PUT');
+        $res = $this->createMockResponse(['ok' => 'ok'], 200);
+        $this->sendRequest($req, $res, $s->app);
     }
     private function verifyCalledPluginImplsInstallMethod() {
         $this->assertEquals(true, ValidPlugin::$installed);
@@ -59,33 +63,26 @@ final class PluginControllersTest extends DbTestCase {
 
     public function testPUTUninstallUninstallsPluginAndUnregistersItFromDatabase() {
         $s = $this->setupUninstallTest();
-        //
-        $req = new Request("/api/plugins/{$s->testPluginName}/uninstall", 'PUT');
-        $this->sendRequest($req, $s->res, '\RadCms\App::create', $s->ctx);
-        //
+        $this->sendUninstallPluginRequest($s);
         $this->verifyCalledPluginImplsUninstallMethod();
         $this->verifyUnregisteredPluginFromDb($s);
     }
     private function setupUninstallTest() {
-        $testPluginName = 'ValidAndInstalledPlugin';
-        $ctx = (object)['fs' => $this->createMock(FileSystem::class)];
-        $ctx->fs->expects($this->once())->method('readDir')->willReturn(
-            [dirname(RAD_SITE_PATH) . '/_test-plugins/' . $testPluginName]);
-        self::$db->exec('UPDATE ${p}websiteState SET `installedPlugins`=' .
-                        ' JSON_SET(`installedPlugins`, ?, ?)',
-                        ['$."' . $testPluginName . '"', 1]);
+        AppTest::markPluginAsInstalled('ValidAndInstalledPlugin', self::$db);
         ValidAndInstalledPlugin::$installed = true;
+        //
+        $s = $this->setupInstallTest('ValidAndInstalledPlugin');
         $this->afterTest = function () {
             ValidAndInstalledPlugin::$instantiated = false;
             ValidAndInstalledPlugin::$initialized = false;
             ValidAndInstalledPlugin::$installed = false;
         };
-        return (object)[
-            'testPluginName' => $testPluginName,
-            'originalInstallState' => ValidAndInstalledPlugin::$installed,
-            'res' => $this->createMockResponse(['ok' => 'ok'], 200),
-            'ctx' => $ctx,
-        ];
+        return $s;
+    }
+    private function sendUninstallPluginRequest($s) {
+        $req = new Request("/api/plugins/{$s->testPluginName}/uninstall", 'PUT');
+        $res = $this->createMockResponse(['ok' => 'ok'], 200);
+        $this->sendRequest($req, $res, $s->app);
     }
     private function verifyCalledPluginImplsUninstallMethod() {
         $this->assertEquals(false, ValidAndInstalledPlugin::$installed);
