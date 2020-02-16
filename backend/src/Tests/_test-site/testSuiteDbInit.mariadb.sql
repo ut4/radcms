@@ -3,6 +3,7 @@ CREATE TABLE ${p}users (
     `username` VARCHAR(42) NOT NULL UNIQUE,
     `email` VARCHAR(191) NOT NULL UNIQUE, -- 191 * 4 = 767 bytes = max key length
     `passwordHash` VARCHAR(255) NOT NULL,
+    `role` TINYINT(1) UNSIGNED NOT NULL DEFAULT 255,
     `resetKey` VARCHAR(512) DEFAULT NULL,
     `resetRequestedAt` INT(10) UNSIGNED DEFAULT NULL,
     PRIMARY KEY (`id`)
@@ -15,6 +16,7 @@ CREATE TABLE ${p}websiteState (
     `installedContentTypes` JSON, -- {"Name": ["friendlyName", {"key": "datatype" ...}], "Another": [...]}
     `installedContentTypesLastUpdated` INT(10) UNSIGNED DEFAULT NULL,
     `installedPlugins` JSON,      -- {"Name": 1, "Another": 1 ...}
+    `aclRules` JSON,              -- {"resources": {}, "userPermissions": {}}
     PRIMARY KEY (`id`)
 ) DEFAULT CHARSET = utf8mb4;
 
@@ -27,4 +29,4 @@ CREATE TABLE ${p}contentRevisions (
 ) DEFAULT CHARSET = utf8mb4;
 
 INSERT INTO ${p}websiteState VALUES
-(1,'Test site','fi_FI','{}',NULL,'{}');
+(1,'Test site','fi_FI','{}',NULL,'{}','{}');

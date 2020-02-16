@@ -5,6 +5,7 @@ namespace RadCms;
 use Auryn\Injector;
 use Pike\Translator;
 use Pike\FileSystem;
+use Pike\PikeException;
 use Pike\App as PikeApp;
 use RadCms\Auth\AuthModule;
 use RadCms\Content\ContentModule;
@@ -13,6 +14,7 @@ use RadCms\Packager\PackagerModule;
 use RadCms\Plugin\PluginModule;
 use RadCms\Upload\UploadModule;
 use RadCms\Website\WebsiteModule;
+use RadCms\Auth\ACL;
 
 class App {
     private static $ctx; // Lainattu \Pike\App:lta
@@ -42,7 +44,8 @@ class App {
      */
     public static function init(\stdClass $ctx) {
         self::$fs = $ctx->fs ?? new FileSystem(); // translaattorille
-        $ctx->state = new AppState($ctx->db, self::$fs);
+        $ctx->acl = new ACL;
+        $ctx->state = new AppState($ctx->db, self::$fs, $ctx->acl);
         // @allow \Pike\PikeException
         $ctx->db->open();
         // @allow \Pike\PikeException
@@ -68,8 +71,9 @@ class App {
      * @throws \Pike\PikeException
      */
     public static function alterIoc(Injector $container) {
-        $container->share(self::$ctx->translator);
+        $container->share(self::$ctx->acl);
         $container->share(self::$ctx->state);
+        $container->share(self::$ctx->translator);
         $container->share(self::$ctx->state->plugins);
         $container->share(self::$ctx->state->contentTypes);
     }

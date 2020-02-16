@@ -12,6 +12,7 @@ use Pike\PikeException;
 use RadCms\Theme\Theme;
 use RadCms\StockContentTypes\MultiFieldBlobs\MultiFieldBlobs;
 use RadCms\BaseAPI;
+use RadCms\Auth\ACL;
 
 /**
  * Handlaa sivupyynnöt, (GET '/' tai GET '/sivunnimi').
@@ -43,14 +44,16 @@ class WebsiteControllers {
      *
      * @param \Pike\Request $req
      * @param \Pike\Response $res
-     * @param \Pike\Db $db
-     * @param \RadCms\ContentType\ContentTypeCollection $contentTypes
+     * @param \RadCms\Templating\MagicTemplateDAO $dao
+     * @param \Pike\FileSystem $fs
+     * @param \RadCms\Auth\ACL $acl
      * @throws \Pike\PikeException
      */
     public function handlePageRequest(Request $req,
                                       Response $res,
                                       MagicTemplateContentDAO $dao,
-                                      FileSystem $fs) {
+                                      FileSystem $fs,
+                                      ACL $acl) {
         $layoutFileName = $this->siteCfg->urlMatchers->findLayoutFor($req->path);
         if (!$layoutFileName) {
             $res->html('404');
@@ -79,7 +82,9 @@ class WebsiteControllers {
         }
         $res->html(!$req->user || ($bodyEnd = strpos($html, '</body>')) === false
             ? $html
-            : $this->injectParentWindowCpanelSetupScript($html, $bodyEnd, $dao, $template, $req));
+            : $this->injectParentWindowCpanelSetupScript($html, $bodyEnd,
+                $this->makeFrontendData($req, $dao, $template, $acl))
+        );
     }
     /**
      * ...
@@ -91,14 +96,9 @@ class WebsiteControllers {
     /**
      * '<html>...</body>' -> '<html>...<script>...</script></body>'
      */
-    private function injectParentWindowCpanelSetupScript($html, $bodyEnd, $dao, $template, $req) {
-        $dataToFrontend = json_encode([
-            'contentPanels' => $dao->getFrontendPanelInfos(),
-            'adminPanels' => $this->appState->apiConfigs->getRegisteredAdminPanels(),
-            'baseUrl' => $template->url('/'),
-            'assetBaseUrl' => $template->assetUrl('/'),
-            'currentPagePath' => $req->path,
-        ]);
+    private function injectParentWindowCpanelSetupScript($html,
+                                                         $bodyEnd,
+                                                         $dataToFrontend) {
         return substr($html, 0, $bodyEnd) .
             "<script>(function (data) {
                 var s = document.createElement('style');
@@ -110,5 +110,26 @@ class WebsiteControllers {
                 else editWindow.radData = data;
             }({$dataToFrontend}))</script>" .
         substr($html, $bodyEnd);
+    }
+    /**
+     * '{"contentPanels":[...}'
+     */
+    private function makeFrontendData($req, $dao, $template, $acl) {
+        $role = $req->user->role;
+        return json_encode([
+            'contentPanels' => $dao->getFrontendPanelInfos(),
+            'adminPanels' => $role === ACL::ROLE_SUPER_ADMIN
+                ? $this->appState->apiConfigs->getRegisteredAdminPanels()
+                : [],
+            'baseUrl' => $template->url('/'),
+            'assetBaseUrl' => $template->assetUrl('/'),
+            'currentPagePath' => $req->path,
+            'user' => ['role' => $role],
+            'userPermissions' => [
+                'canCreateContent' => $acl->can($role, 'create', 'content'),
+                'canManageFieldsOfMultiFieldContent' => $acl->can($role,
+                    'manageFieldsOf', 'multiFieldContent')
+            ],
+        ]);
     }
 }

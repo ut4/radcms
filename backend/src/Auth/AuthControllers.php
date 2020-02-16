@@ -41,7 +41,11 @@ class AuthControllers {
         }
         try {
             $this->auth->login($req->body->username,
-                               $req->body->password);
+                               $req->body->password,
+                               function ($user) {
+                                   return (object)['id' => $user->id,
+                                                   'role' => $user->role];
+                               });
             $res->json(['ok' => 'ok']);
         } catch (PikeException $e) {
             $res->status(401)->json(['err' => $e->getMessage()]);

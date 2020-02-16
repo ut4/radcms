@@ -22,6 +22,7 @@ CREATE TABLE ${p}websiteState (
     `installedContentTypes` JSON, -- {"Name": ["friendlyName", {"key": "datatype" ...}], "Another": [...]}
     `installedContentTypesLastUpdated` INT(10) UNSIGNED DEFAULT NULL,
     `installedPlugins` JSON,      -- {"Name": 1, "Another": 1 ...}
+    `aclRules` JSON,              -- {"resources": {}, "userPermissions": {}}
     PRIMARY KEY (`id`)
 ) DEFAULT CHARSET = utf8mb4;
 

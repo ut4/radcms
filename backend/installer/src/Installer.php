@@ -11,7 +11,7 @@ use Pike\PikeException;
 use RadCms\Packager\Packager;
 use RadCms\Packager\PackageStreamInterface;
 use Pike\Auth\Crypto;
-use RadCms\Auth\AuthModule;
+use RadCms\Auth\ACL;
 
 class Installer {
     private $db;
@@ -150,13 +150,14 @@ class Installer {
      */
     private function insertMainSchemaData($s) {
         try {
-            if ($this->db->exec('INSERT INTO ${p}websiteState VALUES (1,?,?,?,?,?)',
+            if ($this->db->exec('INSERT INTO ${p}websiteState VALUES (1,?,?,?,?,?,?)',
                                 [
                                     $s->siteName,
                                     $s->siteLang,
                                     $s->installedContentTypes ?? '{}',
                                     $s->installedContentTypesLastUpdated ?? null,
                                     $s->installedPlugins ?? '{}',
+                                    $s->aclRules ?? '{}',
                                 ]) !== 1)
                 throw new PikeException('Failed to insert main schema data',
                                         PikeException::INEFFECTUAL_DB_OP);
@@ -180,7 +181,7 @@ class Installer {
                                     $s->firstUserName,
                                     $s->firstUserEmail ?? '',
                                     $this->crypto->hashPass($s->firstUserPass),
-                                    AuthModule::ROLE_SUPER_ADMIN
+                                    ACL::ROLE_SUPER_ADMIN
                                 ]) !== 1)
                 throw new PikeException('Failed to insert user zero',
                                         PikeException::INEFFECTUAL_DB_OP);
@@ -265,7 +266,7 @@ if (!defined('RAD_BASE_PATH')) {
     define('RAD_BASE_PATH',      '{$this->backendPath}');
     define('RAD_SITE_PATH',      '{$this->siteDirPath}');
     define('RAD_DEVMODE',        1 << 1);
-    define('RAD_USE_JS_MODULES', 2 << 1);
+    define('RAD_USE_JS_MODULES', 1 << 2);
     define('RAD_FLAGS',          {$flags});
 }
 return [
@@ -324,7 +325,7 @@ return [
         foreach ($this->fs->readDir($dirPath) as $path) {
             if ($this->fs->isFile($path)) {
                 if (!$this->fs->unlink($path)) return $path;
-            } else if (($failedItem = $this->deleteFilesRecursive($path))) {
+            } elseif (($failedItem = $this->deleteFilesRecursive($path))) {
                 return $failedItem;
             }
         }

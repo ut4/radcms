@@ -239,7 +239,7 @@ if (!defined('RAD_BASE_PATH')) {
     define('RAD_BASE_PATH',      '{$s->backendPath}');
     define('RAD_SITE_PATH',      '{$s->siteDirPath}');
     define('RAD_DEVMODE',        1 << 1);
-    define('RAD_USE_JS_MODULES', 2 << 1);
+    define('RAD_USE_JS_MODULES', 1 << 2);
     define('RAD_FLAGS',          RAD_DEVMODE);
 }
 return [

@@ -5,8 +5,6 @@ namespace RadCms\Auth;
 use RadCms\Auth\AuthControllers;
 
 abstract class AuthModule {
-    public const ROLE_SUPER_ADMIN = 0;
-    public const ROLE_VIEWER = 255;
     /**
      * Rekisteröi /auth-alkuiset http-reitit.
      *
