@@ -6,6 +6,7 @@ use RadCms\Plugin\PluginInterface;
 use RadCms\Plugin\API;
 use RadCms\ContentType\ContentTypeCollection;
 use RadCms\ContentType\ContentTypeMigrator;
+use RadCms\Auth\ACL;
 
 class MoviesPlugin implements PluginInterface {
     private $initialDataToInstall;
@@ -20,13 +21,13 @@ class MoviesPlugin implements PluginInterface {
         $api->registerFrontendAdminPanel('MoviesAdmin', 'Elokuvat-app');
         //
         $api->registerRoute('GET', '/movies', MoviesControllers::class,
-                            'handleGetMoviesRequest', false);
+                            'handleGetMoviesRequest', ACL::NO_NAME);
         $api->registerRoute('POST', '/movies', MoviesControllers::class,
-                            'handleCreateMovieRequest', false);
+                            'handleCreateMovieRequest', ACL::NO_NAME);
         $api->registerRoute('PUT', '/movies/[i:movieId]', MoviesControllers::class,
-                            'handleUpdateMovieRequest', false);
+                            'handleUpdateMovieRequest', ACL::NO_NAME);
         $api->registerRoute('GET', '/noop', MoviesControllers::class,
-                            'handleNoopRequest', false);
+                            'handleNoopRequest', ACL::NO_NAME);
     }
     public function install(ContentTypeMigrator $contentTypeMigrator) {
         $contentTypeMigrator->installMany($this->myContentTypes,

@@ -10,7 +10,7 @@ abstract class PackagerModule {
      */
     public static function init($ctx) {
         $ctx->router->map('POST', '/api/packager',
-            [PackagerControllers::class, 'handleCreatePackage', true]
+            [PackagerControllers::class, 'handleCreatePackage', 'pack:websites']
         );
     }
     /**

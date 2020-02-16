@@ -1,4 +1,4 @@
-import {InputGroup} from '@rad-commons';
+import {InputGroup, config} from '@rad-commons';
 import makeWidgetComponent from '../Widgets/all.jsx';
 import MultiFieldBuilder from '../Widgets/MultiFieldBuilder.jsx';
 import ContentRefPicker from '../Widgets/ContentRefPicker.jsx';
@@ -51,6 +51,7 @@ class ContentNodeFieldList extends preact.Component {
         if (widgetName === 'multiFieldBuilder') {
             return <MultiFieldBuilder
                     fields={ value ? JSON.parse(value) : [] }
+                    enableFieldEditing={ config.userPermissions.canManageFieldsOfMultiFieldContent }
                     onChange={ (structure, rendered) => {
                         applyWidgetValue(structure);
                         if (this.state.contentNode.rendered)

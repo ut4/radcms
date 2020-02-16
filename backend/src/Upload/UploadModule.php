@@ -10,10 +10,10 @@ abstract class UploadModule {
      */
     public static function init($ctx) {
         $ctx->router->map('GET', '/api/uploads',
-            [UploadControllers::class, 'handleGetUploads', true]
+            [UploadControllers::class, 'handleGetUploads', 'view:uploads']
         );
         $ctx->router->map('POST', '/api/uploads',
-            [UploadControllers::class, 'handleUploadFile', true]
+            [UploadControllers::class, 'handleUploadFile', 'upload:uploads']
         );
     }
 }

@@ -6,31 +6,31 @@ use RadCms\Auth\AuthControllers;
 
 abstract class AuthModule {
     /**
-     * Rekisteröi /auth-alkuiset http-reitit.
+     * Rekisteröi autentikointiin liittyvät http-reitit.
      *
      * @param object $ctx
      */
     public static function init($ctx) {
         $ctx->router->map('GET', '/login',
-            [AuthControllers::class, 'renderLoginView', false]
+            [AuthControllers::class, 'renderLoginView', ACL::NO_NAME]
         );
         $ctx->router->map('POST', '/api/login',
-            [AuthControllers::class, 'handleLoginFormSubmit', false]
+            [AuthControllers::class, 'handleLoginFormSubmit', ACL::NO_NAME]
         );
         $ctx->router->map('POST', '/api/logout',
-            [AuthControllers::class, 'handleLogoutRequest', true]
+            [AuthControllers::class, 'handleLogoutRequest', 'logout:auth']
         );
         $ctx->router->map('GET', '/request-password-reset',
-            [AuthControllers::class, 'renderRequestPassResetView', false]
+            [AuthControllers::class, 'renderRequestPassResetView', ACL::NO_NAME]
         );
         $ctx->router->map('POST', '/api/request-password-reset',
-            [AuthControllers::class, 'handleRequestPassResetFormSubmit', false]
+            [AuthControllers::class, 'handleRequestPassResetFormSubmit', ACL::NO_NAME]
         );
         $ctx->router->map('GET', '/finalize-password-reset/[**:key]',
-            [AuthControllers::class, 'renderFinalizePassResetView', false]
+            [AuthControllers::class, 'renderFinalizePassResetView', ACL::NO_NAME]
         );
         $ctx->router->map('POST', '/api/finalize-password-reset',
-            [AuthControllers::class, 'handleFinalizePassResetFormSubmit', false]
+            [AuthControllers::class, 'handleFinalizePassResetFormSubmit', ACL::NO_NAME]
         );
     }
 }

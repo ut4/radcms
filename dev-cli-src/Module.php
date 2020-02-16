@@ -2,6 +2,8 @@
 
 namespace RadCms\Cli;
 
+use RadCms\Auth\ACL;
+
 abstract class Module {
     /**
      * Rekisteröi dev-cli.php komentoriviohjelman "reitit".
@@ -10,7 +12,10 @@ abstract class Module {
      */
     public static function init(\stdClass $ctx) {
         $ctx->router->map('PSEUDO', '/make-release/[**:dirPath]',
-            [MainController::class, 'makeRelease', false]
+            [MainController::class, 'makeRelease', ACL::NO_NAME]
+        );
+        $ctx->router->map('PSEUDO', '/print-acl-rules',
+            [MainController::class, 'printAclRules', ACL::NO_NAME]
         );
     }
 }

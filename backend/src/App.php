@@ -58,11 +58,18 @@ class App {
             });
         $ctx->router->on('*', function ($req, $res, $next) use ($ctx) {
             $req->user = $ctx->auth->getIdentity();
-            $requireAuth = $req->routeCtx;
-            if ($requireAuth && !$req->user)
-                $res->status(403)->json(['err' => 'Login required']);
-            else
+            $aclActionAndResource = $req->routeCtx->myData;
+            if (!$aclActionAndResource)
+                throw new PikeException('A route context must be a non-empty ' .
+                                        'string or \RadCms\Auth\ACL::NO_NAME',
+                                        PikeException::BAD_INPUT);
+            if ($aclActionAndResource === ACL::NO_NAME)
                 $next();
+            elseif (!$req->user)
+                $res->status(401)->json(['err' => 'Login required']);
+            elseif (!$ctx->acl->can($req->user->role,
+                                    ...explode(':', $aclActionAndResource)))
+                $res->status(403)->json(['err' => 'Not permitted']);
         });
         self::$ctx = $ctx;
     }

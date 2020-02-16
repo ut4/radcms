@@ -5,6 +5,10 @@ declare module "@rad-commons" {
         export const config: {
             baseUrl: string;
             assetBaseUrl: string;
+            userPermissions: {
+                canCreateContent: boolean;
+                canManageFieldsOfMultiFieldContent: boolean;
+            };
         }
         export const http: {
             get(url: string): Promise<Object>;
@@ -22,8 +26,18 @@ declare module "@rad-commons" {
             {}>
         {
         }
+        interface FormProps {
+            onConfirm: (e: Event) => any;
+            onCancel?: (e: Event) => any;
+            close?: Function;
+            doDisableConfirmButton?: () => boolean;
+            autoClose?: bool;
+            confirmButtonText?: string;
+            cancelButtonText?: string;
+            usePseudoFormTag?: bool;
+        }
         export class Form extends preact.Component<
-            {label: preact.ComponentChild?; id?: string; className?: string; inline?: boolean;},
+            FormProps,
             {}>
         {
             static receiveInputValue(e:Event, dhis: preact.VNode, name?: string): void;

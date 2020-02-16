@@ -293,6 +293,9 @@ return [
         $this->assertArrayHasKey('name', $row);
         $this->assertEquals($s->input->siteName, $row['name']);
         $this->assertEquals($s->input->siteLang, $row['lang']);
+        $filePath = "{$s->backendPath}installer/default-acl-rules.php";
+        $this->assertEquals(json_encode((include $filePath)()),
+                            $row['aclRules']);
     }
     private function verifyCreatedUserZero($s) {
         $row = self::$db->fetchOne('SELECT * FROM ${p}users');

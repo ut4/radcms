@@ -17,4 +17,11 @@ class MainController {
                               function ($msg) { echo $msg . PHP_EOL; },
                               '\shell_exec');
     }
+    /**
+     * ...
+     */
+    public function printAclRules() {
+        $fn = require dirname(__DIR__) . '/backend/installer/default-acl-rules.php';
+        echo json_encode($fn());
+    }
 }

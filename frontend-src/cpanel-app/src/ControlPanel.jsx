@@ -25,7 +25,10 @@ class ControlPanel extends preact.Component {
      */
     makeState(dataFromBackend) {
         const newState = {contentPanels: [],
-                          collapsed: !this.state ? this.getIsCollapsed() : this.state.collapsed};
+                          adminPanels: [],
+                          collapsed: !this.state ? this.getIsCollapsed() : this.state.collapsed,
+                          userRole: undefined,
+                          userPermissions: {}};
         if (dataFromBackend.baseUrl) {
             const onEachMakePanel = this.makeContentPanelCreateVisitor(newState);
             const makePanel = (dataFromBackend, to, isAdminPanel) => {
@@ -38,6 +41,7 @@ class ControlPanel extends preact.Component {
             if (!this.siteInfo) {
                 config.baseUrl = dataFromBackend.baseUrl;
                 config.assetBaseUrl = dataFromBackend.assetBaseUrl;
+                config.userPermissions = dataFromBackend.userPermissions;
                 this.siteInfo = {baseUrl: dataFromBackend.baseUrl,
                                  assetBaseUrl: dataFromBackend.assetBaseUrl,
                                  currentPagePath: dataFromBackend.currentPagePath};
@@ -48,6 +52,8 @@ class ControlPanel extends preact.Component {
                     makePanel(c, newState.adminPanels, true);
                 });
                 newState.routesUpdated = true;
+                newState.userRole = dataFromBackend.user.role;
+                newState.userPermissions = dataFromBackend.userPermissions;
             }
             //
             dataFromBackend.contentPanels.forEach(p => {
@@ -74,54 +80,17 @@ class ControlPanel extends preact.Component {
                 </button>
                 <div id="logo">RAD<span>Cms</span></div>
             </header>
-            <section class="quick-links"><div>
-                <h2>Pikalinkit</h2>
-                <button onClick={ () => { urlUtils.redirect('/add-content'); } }
-                        class="icon-button">
-                    <FeatherSvg iconId="edit-2"/>
-                    <span>Luo sisältöä</span>
-                </button>
-            </div></section>
-            { this.state.routesUpdated
-                ? <section class="on-this-page"><div>
-                    <h2>Tällä sivulla</h2>
-                    { this.state.contentPanels.length
-                        ? this.state.contentPanels.map((panelCfg, i) =>
-                            <ControlPanel.ContentPanel
-                                Renderer={ panelCfg.UiImplClass }
-                                rendererProps={ {dataFromBackend: panelCfg.dataFromBackend,
-                                                    siteInfo: this.siteInfo} }
-                                siteIframe={ this.siteIframe }
-                                key={ `${panelCfg.dataFromBackend.title}-${i}` }/>
-                        )
-                        : this.state.routesUpdated ? 'Ei muokattavaa sisältöä tällä sivulla' : null }
-                </div></section>
-                : null
-            }
-            <ControlPanel.UserSection/>
-            { this.state.routesUpdated
-                ? <section class="for-devs"><div>
-                    <h2>Devaajalle</h2>
-                    { this.state.adminPanels.map(panelCfg =>
-                        <ControlPanel.AdminPanel
-                            Renderer={ panelCfg.UiImplClass }
-                            rendererProps={ {dataFromBackend: panelCfg.dataFromBackend,
-                                                siteInfo: this.siteInfo} }
-                            isPlugin={ true }/>
-                    ).concat(
-                        <ControlPanel.AdminPanel Renderer={ null } title="Kaikki sisältö" icon="database" mainUrl="/manage-content">
-                            <a href="#/manage-content">Selaa</a>
-                            <a href="#/add-content">Luo</a>
-                        </ControlPanel.AdminPanel>,
-                        <ControlPanel.AdminPanel Renderer={ null } title="Lisäosat" icon="box" mainUrl="/manage-plugins">
-                            <a href="#/manage-plugins">Selaa</a>
-                        </ControlPanel.AdminPanel>,
-                        <ControlPanel.AdminPanel Renderer={ null } title="Sivusto" icon="tool" mainUrl="/pack-website">
-                            <a href="#/pack-website">Paketoi</a>
-                        </ControlPanel.AdminPanel>
-                    ) }
-                </div></section>
-            : null }
+            <ControlPanel.QuickLinksSection
+                userCanCreateContent={ this.state.userPermissions.canCreateContent }/>
+            <ControlPanel.OnThisPageSection
+                contentPanels={ this.state.contentPanels }
+                siteIframe={ this.siteIframe }
+                siteInfo={ this.siteInfo }/>
+            <ControlPanel.AdminAndUserSection
+                adminPanels={ this.state.adminPanels }
+                siteInfo={ this.siteInfo }/>
+            <ControlPanel.ForDevsSectionction
+                userRole={ this.state.userRole }/>
         </div>;
     }
     /**
@@ -165,18 +134,84 @@ class ControlPanel extends preact.Component {
     }
 }
 
-ControlPanel.UserSection = class extends preact.Component {
+ControlPanel.QuickLinksSection = class extends preact.Component {
+    /**
+     * @param {{userCanCreateContent?: bool}} props
+     */
+    constructor(props) {
+        super(props);
+    }
+    /**
+     * @access protected
+     */
+    render() {
+        if (!this.props.userCanCreateContent) return null;
+        return <section class="quick-links"><div>
+            <h2>Pikalinkit</h2>
+            <button onClick={ () => { urlUtils.redirect('/add-content'); } }
+                    class="icon-button">
+                <FeatherSvg iconId="edit-2"/>
+                <span>Luo sisältöä</span>
+            </button>
+        </div></section>;
+    }
+};
+
+ControlPanel.OnThisPageSection = class extends preact.Component {
+    /**
+     * @param {{contentPanels: Array<>; siteIframe: HTMLIFrameElement|null; siteInfo: Object;}} props
+     */
+    constructor(props) {
+        super(props);
+    }
+    /**
+     * @access protected
+     */
+    render() {
+        if (!this.props.siteIframe) return null;
+        return <section class="on-this-page"><div>
+            <h2>Tällä sivulla</h2>
+            { this.props.contentPanels.length
+                ? this.props.contentPanels.map((panelCfg, i) =>
+                    <ControlPanel.ContentPanel
+                        Renderer={ panelCfg.UiImplClass }
+                        rendererProps={ {dataFromBackend: panelCfg.dataFromBackend,
+                                         siteInfo: this.props.siteInfo} }
+                        siteIframe={ this.props.siteIframe }
+                        key={ `${panelCfg.dataFromBackend.title}-${i}` }/>
+                )
+                : this.props.siteIframe ? 'Ei muokattavaa sisältöä tällä sivulla' : null }
+        </div></section>;
+    }
+};
+
+ControlPanel.AdminAndUserSection = class extends preact.Component {
+    /**
+     * @param {{adminPanels: Array<>; siteInfo: Object;}} props
+     */
+    constructor(props) {
+        super(props);
+    }
     /**
      * @access protected
      */
     render() {
         return <section class="site-admin"><div>
             <h2>Hallinta</h2>
-            <ControlPanel.AdminPanel Renderer={ null } title="Käyttäjä" icon="user" mainUrl="/me">
-                <a href={ urlUtils.makeUrl('/me') }>Profiili</a>
-                <a href={ urlUtils.makeUrl('/logout') }
-                   onClick={ e => this.logout(e) }>Kirjaudu ulos</a>
-            </ControlPanel.AdminPanel>
+            { this.props.adminPanels.map((panelCfg, i) =>
+                <ControlPanel.AdminPanel
+                    key={ `plugin-panel-${i}` }
+                    Renderer={ panelCfg.UiImplClass }
+                    rendererProps={ {dataFromBackend: panelCfg.dataFromBackend,
+                                     siteInfo: this.props.siteInfo} }
+                    isPlugin={ true }/>
+            ).concat(
+                <ControlPanel.AdminPanel Renderer={ null } title="Käyttäjä" icon="user" mainUrl="/me">
+                    <a href="#/me">Profiili</a>
+                    <a href={ urlUtils.makeUrl('/logout') }
+                    onClick={ e => this.logout(e) }>Kirjaudu ulos</a>
+                </ControlPanel.AdminPanel>
+            ) }
         </div></section>;
     }
     /**
@@ -191,6 +226,34 @@ ControlPanel.UserSection = class extends preact.Component {
             .catch(() => {
                 toast('Uloskirjautuminen epäonnistui', 'error');
             });
+    }
+};
+
+ControlPanel.ForDevsSectionction = class extends preact.Component {
+    /**
+     * @param {{userRole: number;}} props
+     */
+    constructor(props) {
+        super(props);
+    }
+    /**
+     * @access protected
+     */
+    render() {
+        if (this.props.userRole !== 0) return null;
+        return <section class="for-devs"><div>
+            <h2>Devaajalle</h2>
+            <ControlPanel.AdminPanel Renderer={ null } title="Kaikki sisältö" icon="database" mainUrl="/manage-content">
+                <a href="#/manage-content">Selaa</a>
+                <a href="#/add-content">Luo</a>
+            </ControlPanel.AdminPanel>
+            <ControlPanel.AdminPanel Renderer={ null } title="Lisäosat" icon="box" mainUrl="/manage-plugins">
+                <a href="#/manage-plugins">Selaa</a>
+            </ControlPanel.AdminPanel>
+            <ControlPanel.AdminPanel Renderer={ null } title="Sivusto" icon="tool" mainUrl="/pack-website">
+                <a href="#/pack-website">Paketoi</a>
+            </ControlPanel.AdminPanel>
+        </div></section>;
     }
 };
 

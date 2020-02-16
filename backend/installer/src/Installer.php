@@ -157,7 +157,7 @@ class Installer {
                                     $s->installedContentTypes ?? '{}',
                                     $s->installedContentTypesLastUpdated ?? null,
                                     $s->installedPlugins ?? '{}',
-                                    $s->aclRules ?? '{}',
+                                    $s->aclRules ?? $this->makeDefaultAclRules(),
                                 ]) !== 1)
                 throw new PikeException('Failed to insert main schema data',
                                         PikeException::INEFFECTUAL_DB_OP);
@@ -165,6 +165,14 @@ class Installer {
             throw new PikeException($e->getMessage(), PikeException::FAILED_DB_OP);
         }
         return true;
+    }
+    /**
+     * @return string
+     * @throws \Pike\PikeException
+     */
+    private function makeDefaultAclRules() {
+        $fn = include "{$this->backendPath}installer/default-acl-rules.php";
+        return json_encode($fn());
     }
     /**
      * @param object $s settings

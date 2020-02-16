@@ -1,14 +1,3 @@
-interface FormProps {
-    onConfirm: (e: Event) => any;
-    onCancel?: (e: Event) => any;
-    close?: Function;
-    doDisableConfirmButton?: () => boolean;
-    autoClose?: bool;
-    confirmButtonText?: string;
-    cancelButtonText?: string;
-    usePseudoFormTag?: bool;
-}
-
 interface FrontendPanelConfig {
     id?: string;
     impl: string; // 'Generic' | 'List' | ...
