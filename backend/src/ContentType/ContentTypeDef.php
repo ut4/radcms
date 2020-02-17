@@ -11,7 +11,7 @@ class ContentTypeDef {
     /**
      * @param string $name
      * @param string $friendlyName
-     * @param array|object $compactFields ['fieldName' => 'dataType:widget', 'another' => 'dataType'...]
+     * @param array|\stdClass $compactFields ['fieldName' => 'dataType:widget', 'another' => 'dataType'...]
      * @param bool $isInternal = false
      * @param string $origin = 'site.json' 'site.json' | 'SomePlugin.json'
      */

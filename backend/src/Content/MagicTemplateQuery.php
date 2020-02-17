@@ -7,6 +7,7 @@ namespace RadCms\Content;
  * palauttaa. Ei tarkoitettu käytettäväksi manuaalisesti.
  */
 class MagicTemplateQuery extends Query {
+    /** @var FrontendPanelInfo */
     private $frontendPanelInfo;
     /**
      * @param string $panelType
@@ -28,7 +29,7 @@ class MagicTemplateQuery extends Query {
         return $this;
     }
     /**
-     * @return object|null
+     * @return \FrontendPanelInfo
      */
     public function getFrontendPanelInfo() {
         if ($this->frontendPanelInfo && $this->whereDef)
@@ -36,7 +37,7 @@ class MagicTemplateQuery extends Query {
         return $this->frontendPanelInfo;
     }
     /**
-     * @return array|object|null
+     * @return array|\stdClass|null
      */
     public function exec() {
         $bindVals = [];

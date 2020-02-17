@@ -33,9 +33,9 @@ class SiteConfigDiffer {
     /**
      * @param \RadCms\ContentType\FieldCollection $fromFile
      * @param \RadCms\ContentType\FieldCollection $froDb
-     * @param object &$out ['added' => array, 'dataTypeChanged' => array]
+     * @param \stdClass $out {added: array, dataTypeChanged: array}
      */
-    private function diffFields($fromFile, $fromDb, &$out) {
+    private function diffFields($fromFile, $fromDb, $out) {
         foreach ($fromFile->toArray() as $f) {
             $current = $fromDb->find($f->name) ?? null;
             if (!$current)

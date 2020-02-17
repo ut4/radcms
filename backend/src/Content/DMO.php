@@ -13,7 +13,7 @@ class DMO extends DAO {
     public $lastInsertId;
     /** 
      * @param string $contentTypeName
-     * @param object $data
+     * @param \stdClass $data
      * @param bool $withRevision = false
      * @return int $db->rowCount()
      * @throws \Pike\PikeException
@@ -83,7 +83,7 @@ class DMO extends DAO {
     /**
      * @param string $id
      * @param string $contentTypeName
-     * @param object $data
+     * @param \stdClass $data
      * @param string $revisionSettings = '' 'publish' | ''
      * @return int $db->rowCount()
      * @throws \Pike\PikeException

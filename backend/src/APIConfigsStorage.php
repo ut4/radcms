@@ -69,38 +69,38 @@ class APIConfigsStorage {
         foreach ($defs as $def) $template->registerMethod(...$def);
     }
     /**
-     * @param \stdClass $file
+     * @param \stdClass $file {fileName: string, attrs: array}
      */
     public function putPluginJsFile($file) {
         $this->pluginJsFiles[] = $file;
     }
     /**
-     * @param \stdClass $info
+     * @param \stdClass $info {impl: string, title: string}
      */
     public function putAdminPanel($info) {
         $this->frontendAdminPanels[] = $info;
     }
     /**
-     * @param \stdClass[]
+     * @param \stdClass[] array<{fileName: string, attrs: array}>
      */
     public function getRegisteredPluginJsFiles() {
         return $this->pluginJsFiles;
     }
     /**
-     * @param \stdClass[]
+     * @param \stdClass[] array<{impl: string, title: string}>
      */
     public function getRegisteredAdminPanels() {
         return $this->frontendAdminPanels;
     }
     /**
-     * @return array[]
+     * @return array[] array<[string, string]>
      */
     private function getRegisteredTemplateAliases($for) {
         return array_merge($this->templateAliases['*'] ?? [],
                            $this->templateAliases[$for] ?? []);
     }
     /**
-     * @return array[]
+     * @return array[] array<[string, callable, bool]>
      */
     private function getRegisteredTemplateMethods($for) {
         return array_merge($this->templateFuncs['*'] ?? [],

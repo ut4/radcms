@@ -95,13 +95,13 @@ class AppState {
     }
     /**
      * @param \RadCms\Plugin\PluginAPI $pluginAPI
-     * @param object $installedPluginNames {"name": 1 ...}
+     * @param \stdClass $installedPluginNames {"name": 1 ...}
      * @throws \Pike\PikeException
      */
     private function scanAndInitPlugins(API $pluginAPI, $installedPluginNames) {
         // @allow \Pike\PikeException
         $this->scanPluginsFromDisk();
-        foreach ($this->plugins->toArray() as &$plugin) {
+        foreach ($this->plugins->toArray() as $plugin) {
             if (($plugin->isInstalled = property_exists($installedPluginNames,
                                                         $plugin->name))) {
                 $plugin->instantiate();

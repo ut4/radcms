@@ -26,7 +26,7 @@ class Packager {
     private $themeContentTypes;
     /** @var \RadCms\Content\DAO */
     private $cNodeDAO;
-    /** @var object */
+    /** @var array */
     private $config;
     /**
      * @param \RadCms\Packager\PackageStreamInterface $writer

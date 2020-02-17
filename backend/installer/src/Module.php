@@ -5,6 +5,8 @@ namespace RadCms\Installer;
 abstract class Module {
     /**
      * Rekisteröi install.php?q=* http-reitit.
+     *
+     * @param \stdClass $ctx
      */
     public static function init(\stdClass $ctx) {
         $ctx->router->map('GET', '/',

@@ -49,7 +49,7 @@ class SiteConfig {
                 $this->collectAll($parsed);
     }
     /**
-     * @param object $input
+     * @param \stdClass $input
      * @return bool
      * @throws \Pike\PikeException
      */
@@ -88,7 +88,7 @@ class SiteConfig {
     }
     /**
      * @param array $inputAssetFiles
-     * @return array Array<{url: string, type: string, attrs: array}>
+     * @return array array<{url: string, type: string, attrs: array}>
      */
     private function collectAssets($inputAssetFiles) {
         $out = [];
@@ -102,7 +102,7 @@ class SiteConfig {
         return $out;
     }
     /**
-     * @param object $input
+     * @param \stdClass $input
      * @param string $sitePath i.e. RAD_SITE_PATH
      * @return bool
      * @throws \Pike\PikeException
@@ -178,7 +178,7 @@ class SiteConfig {
             if (!is_string($friendlyName) || !strlen($friendlyName))
                 $errors[] = "contentType[{$i}][1] (friendlyName) must be a string";
             if (!($fields instanceof \stdClass))
-                $errors[] = "contentType[{$i}][2] (fields) must be an object";
+                $errors[] = "contentType[{$i}][2] (fields) must be a \stdClass";
         }
         return $errors;
     }
@@ -202,7 +202,7 @@ class SiteConfig {
                             implode('|', self::ASSET_TYPES);
             $attrs = $definition[2] ?? null;
             if ($attrs && !($attrs instanceof \stdClass))
-                $errors[] = "assetFile[{$i}][2] (attrs) must be an object";
+                $errors[] = "assetFile[{$i}][2] (attrs) must be a \stdClass";
         }
         return $errors;
     }

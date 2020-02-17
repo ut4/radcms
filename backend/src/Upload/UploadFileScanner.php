@@ -20,7 +20,7 @@ class UploadFileScanner {
     }
     /**
      * @param string $dirPath
-     * @return array Array<{fileName: string, basePath: string, mime: string}>
+     * @return array array<{fileName: string, basePath: string, mime: string}>
      * @throws \Pike\PikeException
      */
     public function scanAll($dirPath) {

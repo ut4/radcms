@@ -29,10 +29,10 @@ class ACL {
      *     ]
      * ]
      *
-     * @param {resources: \stdClass, userPermissions: object} $compactRules
+     * @param \stdClass $compactRules {resources: \stdClass, userPermissions: \stdClass}
      */
     public function setRules(\stdClass $compactRules) {
-        $this->compactRules = clone $compactRules;
+        $this->compactRules = $compactRules;
     }
     /**
      * @param int $role

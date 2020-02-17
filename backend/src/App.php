@@ -21,8 +21,8 @@ class App {
     private static $fs;
     /**
      * @param array $config
-     * @param object $ctx = null
-     * @param fn(): \Auryn\Injector $makeInjector = null
+     * @param \stdClass $ctx = null
+     * @param callable $makeInjector = null fn(): \Auryn\Injector
      * @return \Pike\App
      * @throws \Pike\PikeException
      */

@@ -82,7 +82,7 @@ class Query {
         return $this;
     }
     /**
-     * @return array|object|null
+     * @return array|\stdClass|null
      */
     public function exec() {
         $bindVals = [];
@@ -142,7 +142,7 @@ class Query {
         return $this;
     }
     /**
-     * @param object $joinDef {contentType: string, expr: string, isLeft: bool}
+     * @param \stdClass $joinDef {contentType: string, alias: string, expr: string, isLeft: bool}
      * @param string[] &$joins
      * @param string[] &$fields
      */

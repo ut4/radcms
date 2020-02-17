@@ -8,7 +8,7 @@ abstract class Module {
     /**
      * Rekisteröi dev-cli.php komentoriviohjelman "reitit".
      *
-     * @param object $ctx
+     * @param \stdClass $ctx
      */
     public static function init(\stdClass $ctx) {
         $ctx->router->map('PSEUDO', '/make-release/[**:dirPath]',

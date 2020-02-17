@@ -41,7 +41,7 @@ class MagicTemplateDAO extends DAO {
         return $this->queries[count($this->queries) - 1];
     }
     /**
-     * @return array Array<{impl: string, title: string ...}>
+     * @return array array<{impl: string, title: string ...}>
      */
     public function getFrontendPanelInfos() {
         $out = [];
@@ -55,9 +55,9 @@ class MagicTemplateDAO extends DAO {
      * @param string $sql
      * @param bool $isFetchOne
      * @param array $bindVals = null
-     * @param object $join = null {contentType: string, collector: [\Closure, string]}
-     * @param object $frontendPanelInfo = null
-     * @return array|object|null
+     * @param \stdClass $join = null {contentType: string, alias: string, collector: [\Closure, string]}
+     * @param \stdClass $frontendPanelInfo = null
+     * @return array|\stdClass|null
      */
     public function doExec($sql,
                            $isFetchOne,

@@ -53,7 +53,7 @@ final class SiteConfigTest extends TestCase {
         $this->verifyTheseErrorsWereReported($s,
             'assetFile must be an array',
             'assetFile[1][1] (file type) must be ' . $s->assetFileTypesStr,
-            'assetFile[2][2] (attrs) must be an object');
+            'assetFile[2][2] (attrs) must be a \stdClass');
     }
     private function setupAssetValidateTest() {
         $s = $this->setupValidateTest();

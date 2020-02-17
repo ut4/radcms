@@ -68,7 +68,7 @@ class InstallerControllers {
     /**
      * @return string[]
      */
-    private function validateInstallInput(&$input) {
+    private function validateInstallInput($input) {
         $v = new Validator($input);
         //
         if ($v->check('siteName', 'string'))

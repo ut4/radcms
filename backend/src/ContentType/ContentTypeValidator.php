@@ -55,12 +55,12 @@ abstract class ContentTypeValidator {
     }
     /**
      * @param \RadCms\ContentType\ContentTypeDef $contentType
-     * @param object $input
+     * @param \stdClass $input
      * @param \Closure $additionalChecks = null
      * @return string[]
      */
     public static function validateInsertData(ContentTypeDef $contentType,
-                                              &$input,
+                                              $input,
                                               $additionalChecks = null) {
         $v = new Validator($input);
         if ($v->is('id', 'present')) $v->check('id', 'nonEmptyString');
@@ -83,11 +83,11 @@ abstract class ContentTypeValidator {
     }
     /**
      * @param \RadCms\ContentType\ContentTypeDef $contentType
-     * @param object &$input
+     * @param \stdClass $input
      * @return string[]
      */
     public static function validateUpdateData(ContentTypeDef $contentType,
-                                              &$input) {
+                                              $input) {
         return self::validateInsertData($contentType, $input, function ($v) {
             $v->check('isRevision', ['in', [true, false]]);
         });

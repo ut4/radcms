@@ -10,7 +10,7 @@ use Pike\Translator;
  */
 class FieldCollection extends GenericArray implements \JsonSerializable {
     /**
-     * @param \Closure $formatterFn = null ($field: object): string
+     * @param callable $formatterFn = null fn({name: string, friendlyName: string, dataType: string, widget: string, defaultValue: string} $field): string
      * @return string '`name`, `name2`'
      */
     public function toSqlCols($formatterFn = null) {
@@ -53,7 +53,7 @@ class FieldCollection extends GenericArray implements \JsonSerializable {
     ////////////////////////////////////////////////////////////////////////////
 
     /**
-     * @param array|object $compactFields ['name' => ['dataType'], 'another' => 'datatype', 'yetanother' => ['dataType', 'FriendlyName', 'widgetName'], 'withArgs' => ['dataType', 'FriendlyName', 'widgetName(arg1, arg2=foo)'] ...]
+     * @param array|\stdClass $compactFields ['name' => ['dataType'], 'another' => 'datatype', 'yetanother' => ['dataType', 'FriendlyName', 'widgetName'], 'withArgs' => ['dataType', 'FriendlyName', 'widgetName(arg1, arg2=foo)'] ...]
      * @return \RadCms\ContentType\FieldCollection
      */
     public static function fromCompactForm($compactFields) {

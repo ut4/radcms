@@ -38,7 +38,7 @@ class Installer {
         $this->warnings = [];
     }
     /**
-     * @param object $settings Validoitu ja normalisoitu $req->body.
+     * @param \stdClass $settings Validoitu ja normalisoitu $req->body.
      * @return bool
      * @throws \Pike\PikeException
      */
@@ -99,7 +99,7 @@ class Installer {
         return $this->warnings;
     }
     /**
-     * @param object $s settings
+     * @param \stdClass $s settings
      * @return bool
      * @throws \Pike\PikeException
      */
@@ -126,7 +126,7 @@ class Installer {
         return true;
     }
     /**
-     * @param object $s settings
+     * @param \stdClass $s settings
      * @return bool
      * @throws \Pike\PikeException
      */
@@ -144,7 +144,7 @@ class Installer {
         return true;
     }
     /**
-     * @param object $s settings
+     * @param \stdClass $s settings
      * @return bool
      * @throws \Pike\PikeException
      */
@@ -175,7 +175,7 @@ class Installer {
         return json_encode($fn());
     }
     /**
-     * @param object $s settings
+     * @param \stdClass $s settings
      * @return bool
      * @throws \Pike\PikeException
      */
@@ -221,7 +221,7 @@ class Installer {
                                                                  $initialData);
     }
     /**
-     * @param object $s settings
+     * @param \stdClass $s settings
      * @return bool
      * @throws \Pike\PikeException
      */
@@ -259,7 +259,7 @@ class Installer {
         return true;
     }
     /**
-     * @param object $s settings
+     * @param \stdClass $s settings
      * @return bool
      * @throws \Pike\PikeException
      */

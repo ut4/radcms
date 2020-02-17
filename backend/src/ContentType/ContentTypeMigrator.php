@@ -151,7 +151,7 @@ class ContentTypeMigrator {
         }
     }
     /**
-     * @param array|null $data Array<[string, object]>
+     * @param array|null $data array<[string, array<\stdClass>]>
      * @param \RadCms\ContentType\ContentTypeCollection $contentTypes
      * @return bool
      * @throws \Pike\PikeException
