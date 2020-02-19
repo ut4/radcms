@@ -53,7 +53,7 @@ final class ContentControllersTest extends DbTestCase {
         return $s;
     }
     private function sendCreateContentNodeRequest($s, $urlTail = '') {
-        $req = new Request('/api/content/Products' . $urlTail,
+        $req = new Request("/api/content/Products{$urlTail}",
                            'POST',
                            $s->newProduct);
         $res = $this->createMock(Response::class);
@@ -159,7 +159,7 @@ final class ContentControllersTest extends DbTestCase {
         return $s;
     }
     private function sendUpdateContentNodeRequest($s, $urlTail = '') {
-        $req = new Request('/api/content/1/Products' . $urlTail,
+        $req = new Request("/api/content/1/Products{$urlTail}",
                            'PUT',
                            $s->newData);
         $res = $this->createMock(Response::class);

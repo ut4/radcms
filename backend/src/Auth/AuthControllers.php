@@ -99,7 +99,7 @@ class AuthControllers {
                     "Käyttäjä: {$user->username}\r\n\r\n" .
                     "Mikäli et ole pyytänyt uutta salasanaa, voit jättää tämän viestin huomiotta ja poistaa sen jos et halua tehdä mitään. Vaihtaaksesi salasanan, vieraile seuraavassa osoittessa: " .
                     $siteUrl . MagicTemplate::makeUrl("/finalize-password-reset/{$resetKey}") .
-                    ". Linkki on voimassa " . $expirationHours . " tuntia.\r\n";
+                    ". Linkki on voimassa {$expirationHours} tuntia.\r\n";
             });
             $res->json(['ok' => 'ok']);
         } catch (PikeException $e) {

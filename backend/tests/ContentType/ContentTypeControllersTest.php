@@ -66,7 +66,7 @@ final class ContentTypeControllersTest extends DbTestCase {
         ];
     }
     private function sendGetContentTypeRequest($s, $url = null) {
-        $req = new Request($url ?? '/api/content-types/' . $s->contentTypeName, 'GET');
+        $req = new Request($url ?? "/api/content-types/{$s->contentTypeName}", 'GET');
         $res = $this->createMock(Response::class);
         $this->sendResponseBodyCapturingRequest($req, $res, $this->app, $s);
     }

@@ -11,12 +11,6 @@ use Pike\Db;
  */
 class ContentTypeControllers {
     /**
-     * ...
-     */
-    public function __construct(Db $db) {
-        $this->db = $db;
-    }
-    /**
      * GET /api/content-type/:name.
      *
      * @param \Pike\Request $req

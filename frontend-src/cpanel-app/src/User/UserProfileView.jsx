@@ -1,4 +1,4 @@
-import {View} from '@rad-commons';
+import {http, View} from '@rad-commons';
 
 /**
  * #/me
@@ -9,6 +9,15 @@ class UserProfileView extends preact.Component {
      */
     constructor(props) {
         super(props);
+        this.state = {user: null, message: ''};
+        http.get('/api/users/me')
+            .then(user => {
+                if (user) this.setState({user});
+                else this.setState({message: 'Käyttäjää ei löytynyt'});
+            })
+            .catch(() => {
+                this.setState({message: 'Jokin meni pieleen'});
+            });
     }
     /**
      * @access protected
@@ -16,10 +25,15 @@ class UserProfileView extends preact.Component {
     render() {
         return <View><div>
             <h2>Profiili</h2>
-            <div>Hello</div>
+            <div>
+            { this.state.user
+                ? <p>Moi <b>{ this.state.user.username }</b>.</p>
+                : !this.state.message
+                    ? null
+                    : <p>{ this.state.message}</p>
+            }</div>
         </div></View>;
     }
 }
-
 
 export default UserProfileView;

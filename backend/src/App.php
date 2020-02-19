@@ -13,6 +13,7 @@ use RadCms\ContentType\ContentTypeModule;
 use RadCms\Packager\PackagerModule;
 use RadCms\Plugin\PluginModule;
 use RadCms\Upload\UploadModule;
+use RadCms\User\UserModule;
 use RadCms\Website\WebsiteModule;
 use RadCms\Auth\ACL;
 
@@ -35,6 +36,7 @@ class App {
             PackagerModule::class,
             PluginModule::class,
             UploadModule::class,
+            UserModule::class,
             WebsiteModule::class,
         ], $config, $ctx, $makeInjector);
     }

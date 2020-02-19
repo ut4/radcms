@@ -24,10 +24,13 @@ $out->resources = (object)[
     'multiFieldContent' => (object)[
         'manageFieldsOf' => $flag1
     ],
-    'plugins' =>  (object)[
+    'plugins' => (object)[
         'view'      => $flag1,
         'install'   => $flag2,
         'uninstall' => $flag3
+    ],
+    'profile' => (object)[
+        'viewItsOwn' => $flag1,
     ],
     'uploads' => (object)[
         'view'   => $flag1,
@@ -45,8 +48,9 @@ $out->userPermissions = (object)[
         'editMode'          => ACL::makePermissions('*', $out->resources->editMode),
         'multiFieldContent' => ACL::makePermissions('*', $out->resources->multiFieldContent),
         'plugins'           => ACL::makePermissions('*', $out->resources->plugins),
+        'profile'           => ACL::makePermissions('*', $out->resources->profile),
         'uploads'           => ACL::makePermissions('*', $out->resources->uploads),
-        'website'           => ACL::makePermissions('*', $out->resources->websites)
+        'websites'          => ACL::makePermissions('*', $out->resources->websites)
     ],
     ACL::ROLE_EDITOR => (object)[
         'auth'              => ACL::makePermissions(['logout'], $out->resources->auth),
@@ -55,8 +59,9 @@ $out->userPermissions = (object)[
         'editMode'          => ACL::makePermissions(['access'], $out->resources->editMode),
         'multiFieldContent' => 0,
         'plugins'           => 0,
+        'profile'           => ACL::makePermissions(['viewItsOwn'], $out->resources->profile),
         'uploads'           => ACL::makePermissions(['view','upload'], $out->resources->uploads),
-        'website'           => 0
+        'websites'          => 0
     ],
     ACL::ROLE_VIEWER => (object)[
         'auth' => ACL::makePermissions(['logout'], $out->resources->auth),

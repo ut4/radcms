@@ -76,8 +76,7 @@ class Bundler {
         //
         call_user_func($this->shellExecFn, self::makeCpCmd(
             "{$this->radPath}backend/src/",
-            "{$this->targetDirPath}backend/src/",
-            'Tests'
+            "{$this->targetDirPath}backend/src/"
         ));
         if (!$this->fs->isFile("{$this->targetDirPath}backend/src/App.php"))
             throw new PikeException("Failed to copy `{$this->radPath}backend/src/*`" .
@@ -86,7 +85,8 @@ class Bundler {
         //
         call_user_func($this->shellExecFn, self::makeCpCmd(
             "{$this->radPath}backend/installer/",
-            "{$this->targetDirPath}backend/installer/"
+            "{$this->targetDirPath}backend/installer/",
+            'tests'
         ));
         if (!$this->fs->isFile("{$this->targetDirPath}backend/installer/src/Installer.php"))
             throw new PikeException("Failed to copy `{$this->radPath}backend/installer/*`" .
@@ -101,6 +101,7 @@ class Bundler {
             ['frontend/common.css', null],
             ['frontend-src/cpanel-app/cpanel.css', 'frontend/cpanel-app.css'],
             ['frontend-src/install-app/install-app.css', 'frontend/install-app.css'],
+            ['frontend/rad-auth-apps.js', null],
             ['frontend/rad-commons.js', null],
             ['frontend/rad-cpanel-app.js', null],
             ['frontend/rad-cpanel-commons.js', null],

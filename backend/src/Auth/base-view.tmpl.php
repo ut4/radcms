@@ -17,7 +17,7 @@
     <script src="<?= $this->assetUrl('frontend/rad-auth-apps.js') ?>"></script>
     <script>
         radCommons.config.baseUrl = '<?= $this->url('/') ?>';
-        radCommons.config.assetBaseUrl = '<?= $this->url('/', true) ?>';
+        radCommons.config.assetBaseUrl = '<?= $this->assetUrl('/') ?>';
         preact.render(preact.createElement(radAuthApps.<?= $reactAppName ?>),
                       document.getElementById('<?= $reactAppName ?>'));
     </script>

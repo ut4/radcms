@@ -32,13 +32,13 @@ class ContentTypeSyncer {
             if ($ctypesDiff->deleted->length()) {
                 $migrator->uninstallMany($ctypesDiff->deleted);
                 LoggerAccess::getLogger()->log('debug',
-                    'Uninstalled ' . $ctypesDiff->deleted->length() . ' content types.');
+                    "Uninstalled {$ctypesDiff->deleted->length()} content types.");
             }
             //
             if ($ctypesDiff->added->length()) {
                 $migrator->installMany($ctypesDiff->added);
                 LoggerAccess::getLogger()->log('debug',
-                    'Installed ' . $ctypesDiff->added->length() . ' content types.');
+                    "Installed {$ctypesDiff->added->length()} content types.");
             }
             $this->db->commit();
             return true;

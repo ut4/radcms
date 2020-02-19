@@ -23,7 +23,7 @@ final class AppTest extends DbTestCase {
                 $ctx = (object)['db' => self::$db, 'fs' => $this->createMock(FileSystem::class)];
                 $ctx->fs->expects($this->once())
                     ->method('readDir')
-                    ->willReturn(['foo/bar/baz/plugins/' . $invalidClsPath]);
+                    ->willReturn(["foo/bar/baz/plugins/{$invalidClsPath}"]);
                 App::create([], $ctx);
             } catch (\RuntimeException $e) {
                 $this->assertEquals($expectedError, $e->getMessage());

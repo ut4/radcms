@@ -16,5 +16,7 @@ define('INDEX_DIR_PATH', __DIR__);
 $loader = require RAD_BACKEND_PATH . 'vendor/autoload.php';
 $loader->addPsr4('RadCms\\Installer\\', RAD_BACKEND_PATH . 'installer/src');
 
-\Pike\App::create([\RadCms\Installer\Module::class], [])
+\Pike\App::create([\RadCms\Installer\Module::class],
+                  [],
+                  [\Pike\App::SERVICE_DB => \Pike\App::MAKE_AUTOMATICALLY])
     ->handleRequest('', $_GET['q'] ?? '/');

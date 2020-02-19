@@ -150,7 +150,7 @@ final class PluginAPIIntegrationTest extends DbTestCase {
         return $out;
     }
     private function sendUpdateMovieRequest($s, $newData) {
-        $req = new Request('/movies/' . $s->testMovieId, 'PUT',
+        $req = new Request("/movies/{$s->testMovieId}", 'PUT',
                             (object)['title' => $newData->title,
                                      'releaseYear' => $newData->releaseYear,
                                      'isRevision' => false]);

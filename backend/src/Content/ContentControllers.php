@@ -12,12 +12,6 @@ use Pike\Db;
 class ContentControllers {
     const REV_SETTING_PUBLISH = 'publish';
     /**
-     * ...
-     */
-    public function __construct(Db $db) {
-        $this->db = $db;
-    }
-    /**
      * POST /api/content/:contentTypeName.
      *
      * @param \Pike\Request $req

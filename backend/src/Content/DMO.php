@@ -27,7 +27,7 @@ class DMO extends DAO {
                                     PikeException::BAD_INPUT);
         $q = ['cols' => [], 'qs' => [], 'vals' => []];
         $appendVal = function ($name) use (&$q, $data) {
-            $q['cols'][] = '`' . $name . '`';
+            $q['cols'][] = "`{$name}`";
             $q['qs'][] = '?';
             $q['vals'][] = $data->$name;
         };
@@ -139,7 +139,7 @@ class DMO extends DAO {
         $q = ['colQs' => ['`isPublished` = ?'],
               'vals' => [(int)$data->isPublished]];
         foreach ($fields as $f) {
-            $q['colQs'][] = '`' . $f->name . '` = ?';
+            $q['colQs'][] = "`{$f->name}` = ?";
             $q['vals'][] = $data->{$f->name};
         }
         $q['vals'][] = $id;
