@@ -284,6 +284,7 @@ return [
     'db.pass'        => '{$s->dbPass}',
     'db.tablePrefix' => '{$s->dbTablePrefix}',
     'db.charset'     => '{$s->dbCharset}',
+    'mail.transport' => 'phpsMailFunction',
 ];
 "
         )) return true;

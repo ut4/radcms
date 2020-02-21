@@ -249,6 +249,7 @@ return [
     'db.pass'        => '{$s->input->dbPass}',
     'db.tablePrefix' => '{$s->input->dbTablePrefix}',
     'db.charset'     => 'utf8',
+    'mail.transport' => 'phpsMailFunction',
 ];
 "
 )

@@ -76,24 +76,27 @@ class AuthControllers {
      * @param \Pike\Request $req
      * @param \Pike\Response $res
      * @param \RadCms\AppState $appState
+     * @param \Pike\AppConfig $config
      */
     public function handleRequestPassResetFormSubmit(Request $req,
                                                      Response $res,
-                                                     AppState $appState) {
+                                                     AppState $appState,
+                                                     AppConfig $appConfig) {
         if (($errors = $this->validateRequestPassResetFormInput($req->body))) {
             $res->status(400)->json($errors);
             return;
         }
         try {
         $this->auth->requestPasswordReset($req->body->usernameOrEmail,
-            function ($user, $resetKey, $out) use ($appState) {
+            function ($user, $resetKey, $settings) use ($appState, $appConfig) {
                 $siteName = $appState->siteInfo->name;
                 $siteUrl = $_SERVER['SERVER_NAME'];
-                $out->fromAddress = "root@{$siteUrl}";
-                $out->fromName = $siteName;
-                $out->subject = "[{$siteName}] salasanan palautus";
+                $settings->useSMTP = $appConfig->get('mail.transport') === 'SMTP';
+                $settings->fromAddress = "root@{$siteUrl}";
+                $settings->fromName = $siteName;
+                $settings->subject = "[{$siteName}] salasanan palautus";
                 $expirationHours = intval(Authenticator::RESET_KEY_EXPIRATION_SECS / 60 / 60);
-                $out->body =
+                $settings->body =
                     "Seuraavalle tilille on pyydetty salasanan palautus:\r\n\r\n" .
                     "Sivusto: {$siteName} ({$siteUrl})\r\n" .
                     "Käyttäjä: {$user->username}\r\n\r\n" .

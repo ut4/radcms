@@ -1,4 +1,4 @@
-import {http, urlUtils, Form, Toaster, InputGroup} from '@rad-commons';
+import {http, Form, Toaster, InputGroup} from '@rad-commons';
 
 class InstallApp extends preact.Component {
     /**

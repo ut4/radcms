@@ -9,7 +9,7 @@ class ControlPanel extends preact.Component {
         super(props);
         this.siteInfo = null;
         this.siteIframe = null;
-        this.navBarScroller = null;
+        this.cpanelScroller = null;
         this.state = this.makeState(props.dataFromBackend);
         if (this.state.collapsed) props.onIsCollapsedToggled();
     }
@@ -19,16 +19,16 @@ class ControlPanel extends preact.Component {
      */
     setup(dataFromBackend) {
         this.setState(this.makeState(dataFromBackend));
+        if (this.cpanelScroller)
+            this.cpanelScroller.onWebsiteIframeReloaded();
     }
     /**
      * @access private
      */
     makeState(dataFromBackend) {
         const newState = {contentPanels: [],
-                          adminPanels: [],
-                          collapsed: !this.state ? this.getIsCollapsed() : this.state.collapsed,
-                          userRole: undefined,
-                          userPermissions: {}};
+                          adminPanels: !this.state ? [] : this.state.adminPanels,
+                          collapsed: !this.state ? this.getIsCollapsed() : this.state.collapsed};
         if (dataFromBackend.baseUrl) {
             const onEachMakePanel = this.makeContentPanelCreateVisitor(newState);
             const makePanel = (dataFromBackend, to, isAdminPanel) => {
@@ -46,7 +46,6 @@ class ControlPanel extends preact.Component {
                                  assetBaseUrl: dataFromBackend.assetBaseUrl,
                                  currentPagePath: dataFromBackend.currentPagePath};
                 this.siteIframe = document.getElementById('rad-site-iframe');
-                newState.adminPanels = [];
                 newState.userDefinedRoutes = [];
                 dataFromBackend.adminPanels.forEach(c => {
                     makePanel(c, newState.adminPanels, true);
@@ -70,9 +69,8 @@ class ControlPanel extends preact.Component {
      * @access protected
      */
     render() {
-        return <div id="cpanel" ref={ el => { if (el && !this.navBarScroller && this.siteIframe) {
-                                        makeNavBarScroller(el, this.siteIframe);
-                                        this.navBarScroller = 1;
+        return <div id="cpanel" ref={ el => { if (el && !this.cpanelScroller && this.siteIframe) {
+                                        this.cpanelScroller = makeCpanelScroller(el, this.siteIframe);
                                     } } }>
             <header class="top-row">
                 <button onClick={ () => this.toggleIsCollapsed() } class="icon-button">
@@ -81,7 +79,7 @@ class ControlPanel extends preact.Component {
                 <div id="logo">RAD<span>Cms</span></div>
             </header>
             <ControlPanel.QuickLinksSection
-                userCanCreateContent={ this.state.userPermissions.canCreateContent }/>
+                userCanCreateContent={ (this.state.userPermissions || {}).canCreateContent }/>
             <ControlPanel.OnThisPageSection
                 contentPanels={ this.state.contentPanels }
                 siteIframe={ this.siteIframe }
@@ -91,6 +89,7 @@ class ControlPanel extends preact.Component {
                 siteInfo={ this.siteInfo }/>
             <ControlPanel.ForDevsSectionction
                 userRole={ this.state.userRole }/>
+            <footer>&nbsp;</footer>
         </div>;
     }
     /**
@@ -365,35 +364,53 @@ function makeHighlightToggler(selector, selectorIndex, siteIframe) {
 }
 
 /**
- * @param {HTMLElement} cpanelNavEl
+ * @param {HTMLElement} cpanelEl
  * @param {HTMLIFrameElement} siteIframe
  */
-function makeNavBarScroller(cpanelNavEl, siteIframe) {
-    let navHeight = 0;
-    let windowIsSmallEnough = false;
+function makeCpanelScroller(cpanelEl, siteIframe) {
+    let cpanelHeight = 0;
+    let cpanelIsTallerThanWindow = false;
+    let totalScroll = 0;
+    let totalScrollLast = 0;
+    let cpanelScroll = 0;
     //
-    const handleWinResize = () => {
-        const newVal = window.innerHeight < navHeight;
-        if (!newVal && windowIsSmallEnough)
-            cpanelNavEl.style.transform = '';
-        windowIsSmallEnough = newVal;
+    const onIframeLoad = () => {
+        setTimeout(() => {
+            cpanelHeight = cpanelEl.querySelector('footer').getBoundingClientRect().top;
+            if (cpanelHeight) {
+                cpanelIsTallerThanWindow = cpanelHeight > window.innerHeight;
+                if (cpanelIsTallerThanWindow)
+                    siteIframe.contentDocument.body.style.minHeight = `${cpanelHeight+20}px`;
+                siteIframe.contentDocument.addEventListener('scroll', handleScroll, true);
+                handleScroll();
+            }
+        }, 20);
     };
     const handleScroll = () => {
-        if (windowIsSmallEnough)
-            cpanelNavEl.style.transform = `translateY(-${siteIframe.contentWindow.scrollY}px)`;
-    };
-    window.addEventListener('resize', handleWinResize, true);
-    siteIframe.contentDocument.addEventListener('scroll', handleScroll, true);
-    //
-    setTimeout(() => {
-        navHeight = Array.from(cpanelNavEl.children).reduce((c, el) =>
-            c + el.getBoundingClientRect().height
-        , 0);
-        if (navHeight) {
-            handleWinResize();
-            handleScroll();
+        if (cpanelIsTallerThanWindow) {
+            const delta = siteIframe.contentWindow.scrollY - totalScrollLast;
+            totalScroll += delta;
+            totalScrollLast = totalScroll;
+            //
+            cpanelScroll += delta;
+            const translateMax = cpanelHeight - window.innerHeight;
+            if (cpanelScroll <= 0) cpanelScroll = 0;
+            else if (cpanelScroll > translateMax) cpanelScroll = translateMax;
+            cpanelEl.style.transform = `translateY(-${cpanelScroll}px)`;
         }
-    }, 20);
+    };
+    //
+    window.addEventListener('resize', () => {
+        const newIsTaller = cpanelHeight > window.innerHeight;
+        if (!newIsTaller && cpanelIsTallerThanWindow)
+            cpanelEl.style.transform = '';
+        cpanelIsTallerThanWindow = newIsTaller;
+    }, true);
+    onIframeLoad();
+    //
+    return {
+        onWebsiteIframeReloaded: onIframeLoad
+    };
 }
 
 export default ControlPanel;
