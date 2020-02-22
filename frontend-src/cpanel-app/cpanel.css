@@ -259,7 +259,9 @@ section.quick-links .icon-button .feather {
 }
 
 
-/* == Toaster =============================================================== */
+/* == Components ============================================================ */
+
+/* -- Components: Toaster ---- */
 .toaster {
     position: fixed;
     width: calc(100% - 8px);
@@ -271,7 +273,7 @@ section.quick-links .icon-button .feather {
 }
 
 
-/* == Popup overlay ========================================================= */
+/* -- Components: Popup overlay ---- */
 .popup-dialog {
     width: 100%;
     left: 0;
@@ -286,7 +288,7 @@ section.quick-links .icon-button .feather {
 }
 
 
-/* == Selectable item grid ================================================== */
+/* -- Components: Selectable item grid ---- */
 .item-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -319,7 +321,7 @@ section.quick-links .icon-button .feather {
 }
 
 
-/* == PikaDay datepicker ==================================================== */
+/* -- Components: PikaDay datepicker ---- */
 .datepicker-container {
     position: absolute;
     z-index: 1;
@@ -365,10 +367,25 @@ table.pika-time {
 }
 
 
-/* == Tree-builder ========================================================== */
+/* -- Components: Tree-builder ---- */
 .tree-builder textarea {
     font: normal 13px/13px Consolas, monospace;
     color: #333;
+}
+
+
+/* -- Components: .list ---- */
+.list.fields {
+    background-color: rgba(0, 0, 0, 0.04);
+    border-radius: 2px;
+    padding: 12px;
+    margin-top: 8px;
+}
+.list .configure {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    color: rgba(0,0,0,0.4);
 }
 
 

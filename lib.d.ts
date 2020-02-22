@@ -1,4 +1,5 @@
 import preact from 'preact';
+import 'cpanel-commons.d.ts';
 
 declare module "@rad-commons" {
     namespace radCommons {

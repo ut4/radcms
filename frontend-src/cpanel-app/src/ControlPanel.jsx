@@ -246,6 +246,10 @@ ControlPanel.ForDevsSectionction = class extends preact.Component {
                 <a href="#/manage-content">Selaa</a>
                 <a href="#/add-content">Luo</a>
             </ControlPanel.AdminPanel>
+            <ControlPanel.AdminPanel Renderer={ null } title="Sisältötyypit" icon="type" mainUrl="/manage-content-types">
+                <a href="#/manage-content-types">Selaa</a>
+                <a href="#/add-content-type">Luo</a>
+            </ControlPanel.AdminPanel>
             <ControlPanel.AdminPanel Renderer={ null } title="Lisäosat" icon="box" mainUrl="/manage-plugins">
                 <a href="#/manage-plugins">Selaa</a>
             </ControlPanel.AdminPanel>

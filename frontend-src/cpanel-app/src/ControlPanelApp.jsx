@@ -3,6 +3,7 @@ import ControlPanel from './ControlPanel.jsx';
 import ContentAddView from './Content/ContentAddView.jsx';
 import ContentManageView from './Content/ContentManageView.jsx';
 import ContentEditView from './Content/ContentEditView.jsx';
+import ContentTypesManageView from './ContentType/ContentTypesManageView.jsx';
 import PluginsManageView from './Plugin/PluginsManageView.jsx';
 import WebsitePackView from './Website/WebsitePackView.jsx';
 import UserProfileView from './User/UserProfileView.jsx';
@@ -37,6 +38,7 @@ class ControlPanelApp extends preact.Component {
                 <PluginsManageView path="/manage-plugins"/>
                 <WebsitePackView path="/pack-website"/>
                 <UserProfileView path="/me"/>
+                <ContentTypesManageView path="/manage-content-types"/>
                 { this.state.userDefinedRoutes }
             </PreactRouter> : null }
             <ControlPanelApp.PopupDialog/>

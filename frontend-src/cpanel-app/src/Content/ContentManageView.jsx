@@ -44,6 +44,7 @@ class ContentManageView extends preact.Component {
                 <InputGroup inline={ true }
                             label={ this.state.selectedContentTypeName
                                 ? () => <a href={ `#/add-content/${this.state.selectedContentTypeName}` }
+                                           title="Luo uusi"
                                            class="icon-only">
                                     <FeatherSvg iconId="plus-circle" className="small"/>
                                 </a>
