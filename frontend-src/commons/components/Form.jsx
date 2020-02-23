@@ -59,7 +59,7 @@ class Form extends preact.Component {
      * @access public
      */
     static receiveInputValue(e, dhis, name) {
-        dhis.setState({[name || e.target.name]: e.target.value});
+        dhis.setState({[name || e.target.name || e.target.id]: e.target.value});
     }
     /**
      * @access private

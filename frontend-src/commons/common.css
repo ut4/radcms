@@ -41,6 +41,12 @@ a:hover {
     height: 18px;
     vertical-align: top;
 }
+.contenteditable {
+    border-bottom: 1px dashed rgba(0,0,0,0.26);
+    display: inline-block;
+    padding: 0 2px 3px 2px;
+    min-width: 8px;
+}
 
 
 /* == Layout ================================================================ */
@@ -75,7 +81,7 @@ a:hover {
     flex: 1;
 }
 .box header > div {
-    margin: -6px -6px 0 0;
+    margin: -8px -6px 0 0;
 }
 .list {
     position: relative;
@@ -91,11 +97,6 @@ a:hover {
 }
 .list.left-aligned .row {
     padding-left: 0;
-}
-.row .buttons {
-    width: 45%;
-    text-align: right;
-    padding-right: 4px;
 }
 
 
@@ -188,29 +189,31 @@ a:hover {
 
 /* == Buttons =============================================================== */
 .nice-button,
-.icon-button {
+.icon-button,
+.text-button {
     cursor: pointer;
     color: inherit;
 }
 .nice-button {
-    background-color: #f5f5f5;
+    background-color: rgba(0,0,0,0.04);
     border: none;
     border-radius: 3px;
     padding: 12px 24px;
     font: normal 14px/14px "Fira sans light";
     transition: background-color 0.1s ease-out 0s;
 }
-.nice-button.small {
+.nice-button.small,
+.text-button.small {
     padding: 6px 12px;
     font-size: .9em;
 }
 .nice-button:disabled {
-    background-color: #eee;
+    background-color: rgba(0,0,0,0.1);
     color: #aaa;
     cursor: not-allowed;
 }
 .nice-button:enabled:hover {
-    background-color: #f2f2f2;
+    background-color: rgba(0,0,0,0.05);
     box-shadow: 0 1px 1px rgba(0,0,0,0.2);
 }
 .nice-button:enabled:active,
@@ -233,6 +236,11 @@ a:hover {
     padding: 6px;
     font: normal 12px/12px "Fira sans light";
     text-align: center;
+    vertical-align: middle;
+}
+.icon-button:disabled {
+    color: rgba(0,0,0,0.3);
+    cursor: not-allowed;
 }
 .icon-button span {
     margin: 0 3px 0 7px;
@@ -243,9 +251,8 @@ a:hover {
     background-color: transparent;
     border: none;
     font: normal 14px/14px "Fira sans light";
-    color: #282828;
 }
-.text-button:enaled:hover {
+.text-button:enabled:hover {
     color: #3d3d3d;
 }
 .text-button:disabled {
@@ -268,6 +275,7 @@ table.fixed {
 table th {
     padding-right: 10px;
     text-align: left;
+    padding-bottom: 8px;
 }
 table th:first-child {
     padding-left: 6px;
@@ -293,15 +301,10 @@ table.striped tbody td:first-child {
 .striped tbody tr:only-child td:first-child {
     padding-left: 0;
 }
-table .label {
-    max-width: 48%;
-    margin: 0 2% 0 0;
-}
-table .label > span:first-of-type {
-    display: none;
-}
-table .label input {
-    margin: 0;
+td.buttons {
+    padding-right: 0;
+    text-align: right;
+    width: 1px;
 }
 
 

@@ -294,6 +294,9 @@ section.quick-links .icon-button .feather {
     grid-template-columns: 1fr 1fr;
     gap: 5px;
 }
+.item-grid .full-width {
+    grid-column: 1 / -1;
+}
 .item-grid > button {
     border: none;
     padding: 5px;
@@ -378,16 +381,24 @@ table.pika-time {
 .list.fields {
     background-color: rgba(0, 0, 0, 0.04);
     border-radius: 2px;
-    padding: 12px;
+    padding: 8px 12px;
     margin-top: 8px;
+}
+.fields .row {
+    align-items: center;
 }
 .list .configure {
     position: absolute;
-    top: 10px;
-    right: 12px;
+    top: 7px;
+    right: 8px;
     color: rgba(0,0,0,0.4);
 }
-
+.disallow-edit {
+    opacity: 0.3;
+}
+.disallow-edit .fields .buttons {
+    display: none;
+}
 
 /* == Form extensions ======================================================= */
 .form-buttons a {

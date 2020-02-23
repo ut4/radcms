@@ -1,4 +1,4 @@
-import {http, urlUtils, View, InputGroup, Form} from '@rad-commons';
+import {http, toasters, urlUtils, View, InputGroup, Form} from '@rad-commons';
 import {widgetTypes} from '../Widgets/all.jsx';
 import ContentNodeFieldList from './ContentNodeFieldList.jsx';
 
@@ -25,7 +25,7 @@ class ContentAddView extends preact.Component {
                 this.setState(newState);
             })
             .catch(() => {
-                toast('Jokin meni pieleen.', 'error');
+                toasters.main('Jokin meni pieleen.', 'error');
             });
     }
     /**
@@ -33,7 +33,7 @@ class ContentAddView extends preact.Component {
      */
     render() {
         if (!this.state.contentTypes) return null;
-        return <View><Form onConfirm={ e => this.handleFormSubmit(e) }
+        return <View><Form onConfirm={ () => this.handleFormSubmit() }
                            confirmButtonText="Lisää"
                            autoClose={ false }>
             <h2>Lisää sisältöä</h2>
@@ -67,7 +67,7 @@ class ContentAddView extends preact.Component {
                 urlUtils.redirect(this.props.returnTo || '/', 'hard');
             })
             .catch(() => {
-                toast('Sisällön luonti epäonnistui.', 'error');
+                toasters.main('Sisällön luonti epäonnistui.', 'error');
             });
     }
     /**

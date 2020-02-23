@@ -22,7 +22,7 @@ class ControlPanelApp extends preact.Component {
      */
     render() {
         return <div>
-            <Toaster/>
+            <Toaster id="main"/>
             <ControlPanel dataFromBackend={ this.props.dataFromBackend }
                           onIsCollapsedToggled={ () => this.props.onIsCollapsedToggled() }
                           onRoutesLoaded={ userDefinedRoutes => this.setState({userDefinedRoutes}) }

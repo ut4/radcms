@@ -17,7 +17,9 @@ declare module "@rad-commons" {
             put(url: string, data: Object|string): Promise<Object>;
         }
         export function myFetch(url: string, settings?: Object): Promise<XMLHttpRequest>;
-
+        export const toasters: {
+            [key: string]: (message: string|function, level: keyof {info: 1; error: 1; message: 1;}) => any;
+        };
 
         ////////////////////////////////////////////////////////////////////////
 
@@ -47,6 +49,37 @@ declare module "@rad-commons" {
         export function InputGroup(props: {label?: string|Function; inline?: boolean; className?: string; id?: string;}): preact.VNode;
         export class Toaster extends preact.Component<
             {autoCloseTimeoutMillis?: number; publishFactoryTo?: Object;},
+            {}>
+        {
+        }
+        interface InputProps {
+            patternError?: string;
+            maxError?: string;
+            minError?: string;
+            stepError?: string;
+            maxLengthError?: string;
+            minLengthError?: string;
+            typeError?: string;
+            requiredError?:
+            string; [key: string]: any;
+        };
+        export class Input extends preact.Component<
+            InputProps,
+            {}>
+        {
+        }
+        export class Select extends preact.Component<
+            InputProps,
+            {}>
+        {
+        }
+        export class Textarea extends preact.Component<
+            InputProps,
+            {}>
+        {
+        }
+        export class Toaster extends preact.Component<
+            {id?: string; autoCloseTimeoutMillis?: number;},
             {}>
         {
         }

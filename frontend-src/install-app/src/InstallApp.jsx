@@ -1,4 +1,4 @@
-import {http, Form, Toaster, InputGroup} from '@rad-commons';
+import {http, toasters, Form, Toaster, InputGroup} from '@rad-commons';
 
 class InstallApp extends preact.Component {
     /**
@@ -31,7 +31,7 @@ class InstallApp extends preact.Component {
      */
     render() {
         return <div>
-            <Toaster autoCloseTimeoutMillis={ 60000 }/>
+            <Toaster autoCloseTimeoutMillis={ 60000 } id="main"/>
             <Form onConfirm={ () => this.handleSubmit() } confirmButtonText="Asenna" autoClose={ false }>
                 <h2>Asenna RadCMS</h2>
                 <div class="box">
@@ -127,12 +127,12 @@ class InstallApp extends preact.Component {
             : `index.php?${this.state.mainQueryVar}=/${url}`);
         http.post('', data)
             .then(() => {
-                toast(() => <p>Sivusto asennettiin kansioon <span style="font-weight: bold">{ this.props.siteDirPath }</span>. Aloita lukemalla README.md, siirry <a href={ makeUrl('') }>sivustolle</a>, tai hallintanäkymän <a href={ makeUrl('login') }>kirjautumissivulle</a>.</p>, 'success');
+                toasters.main(() => <p>Sivusto asennettiin kansioon <span style="font-weight: bold">{ this.props.siteDirPath }</span>. Aloita lukemalla README.md, siirry <a href={ makeUrl('') }>sivustolle</a>, tai hallintanäkymän <a href={ makeUrl('login') }>kirjautumissivulle</a>.</p>, 'success');
                 window.scrollTo(0, 0);
             })
             .catch(err => {
                 console.error(err);
-                toast('Asennus epäonnistui', 'error');
+                toasters.main('Asennus epäonnistui', 'error');
                 window.scrollTo(0, 0);
             });
     }

@@ -1,4 +1,4 @@
-import {config, urlUtils, http, FeatherSvg} from '@rad-commons';
+import {config, http, toasters, urlUtils, FeatherSvg} from '@rad-commons';
 import {uiPanelRegister} from '@rad-cpanel-commons';
 
 class ControlPanel extends preact.Component {
@@ -135,7 +135,7 @@ class ControlPanel extends preact.Component {
 
 ControlPanel.QuickLinksSection = class extends preact.Component {
     /**
-     * @param {{userCanCreateContent?: bool}} props
+     * @param {{userCanCreateContent?: boolean}} props
      */
     constructor(props) {
         super(props);
@@ -223,7 +223,7 @@ ControlPanel.AdminAndUserSection = class extends preact.Component {
                 window.location.href = urlUtils.makeUrl('/login?from-logout');
             })
             .catch(() => {
-                toast('Uloskirjautuminen epäonnistui', 'error');
+                toasters.main('Uloskirjautuminen epäonnistui', 'error');
             });
     }
 };
