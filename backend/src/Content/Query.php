@@ -2,9 +2,10 @@
 
 namespace RadCms\Content;
 
+use Pike\Validation;
+use Pike\PikeException;
 use RadCms\ContentType\ContentTypeDef;
 use RadCms\ContentType\ContentTypeValidator;
-use Pike\PikeException;
 
 /**
  * Luokka jonka DAO->fetchOne|All() instansoi ja palauttaa. Ei tarkoitettu
@@ -173,22 +174,19 @@ class Query {
      */
     private function selfValidate() {
         $errors = ContentTypeValidator::validate($this->contentType);
-        if (!ctype_alnum(str_replace(['_'], '', $this->contentTypeAlias)))
-            $errors[] = "fetch alias ({$this->contentTypeAlias}) must contain only a-zA-Z_";
+        if (!Validation::isIdentifier($this->contentTypeAlias))
+            $errors[] = "fetch alias ({$this->contentTypeAlias}) is not valid";
         foreach ($this->joinDefs as $d) {
             $errors = array_merge($errors,
                 ContentTypeValidator::validateName($d->contentType));
-            if (!ctype_alnum(str_replace(['_'], '', $d->alias)))
-                $errors[] = "join alias ({$d->alias}) must contain only a-zA-Z_";
+            if (!Validation::isIdentifier($d->alias))
+                $errors[] = "join alias ({$d->alias}) is not valid";
             if (!$d->collector)
                 $errors[] = 'join() was used, but no collectJoin(\'field\',' .
                             ' function () {}) was provided';
         }
-        if ($this->isFetchOne) {
-            if (!$this->whereDef) {
-                $errors[] = 'fetchOne(...)->where() is required';
-            }
-        }
+        if ($this->isFetchOne && !$this->whereDef)
+            $errors[] = 'fetchOne(...)->where() is required';
         if ($this->limitExpr &&
             !ctype_digit(str_replace([',', ' '], '', $this->limitExpr)))
                 $errors[] = "limit expression `{$this->limitExpr}` not valid";

@@ -16,16 +16,16 @@ final class AuthControllersInputValidationTest extends ConfigProvidingTestCase {
     public function testPOSTLoginRejectsEmptyInput() {
         $req = new Request('/api/login', 'POST', new \stdClass);
         $res = $this->createMockResponse(
-            ['username must be a non-empty string',
-             'password must be a non-empty string'], 400);
+            ['The length of username must be at least 1',
+             'The length of password must be at least 1'], 400);
         $this->sendRequest($req, $res, $this->app);
     }
     public function testPOSTLoginRejectsEmptyValues() {
         $req = new Request('/api/login', 'POST', (object)['username' => '',
                                                           'password' => '']);
         $res = $this->createMockResponse(
-            ['username must be a non-empty string',
-             'password must be a non-empty string'], 400);
+            ['The length of username must be at least 1',
+             'The length of password must be at least 1'], 400);
         $this->sendRequest($req, $res, $this->app);
     }
 }

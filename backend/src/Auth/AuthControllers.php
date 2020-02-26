@@ -4,7 +4,8 @@ namespace RadCms\Auth;
 
 use Pike\Request;
 use Pike\Response;
-use Pike\Validator;
+use Pike\AppConfig;
+use Pike\Validation;
 use Pike\Auth\Authenticator;
 use RadCms\Templating\MagicTemplate;
 use Pike\PikeException;
@@ -151,27 +152,27 @@ class AuthControllers {
      * @return string[]
      */
     private function validateLoginFormInput($input) {
-        $v = new Validator($input);
-        $v->check('username', 'nonEmptyString');
-        $v->check('password', 'nonEmptyString');
-        return $v->errors;
+        return (Validation::makeObjectValidator())
+            ->rule('username', 'minLength', 1)
+            ->rule('password', 'minLength', 1)
+            ->validate($input);
     }
     /**
      * @return string[]
      */
     private function validateRequestPassResetFormInput($input) {
-        $v = new Validator($input);
-        $v->check('usernameOrEmail', 'nonEmptyString');
-        return $v->errors;
+        return (Validation::makeObjectValidator())
+            ->rule('usernameOrEmail', 'minLength', 1)
+            ->validate($input);
     }
     /**
      * @return string[]
      */
     private function validateFinalizePassResetFormInput($input) {
-        $v = new Validator($input);
-        $v->check('email', 'nonEmptyString');
-        $v->check('newPassword', 'nonEmptyString');
-        $v->check('key', 'nonEmptyString');
-        return $v->errors;
+        return (Validation::makeObjectValidator())
+            ->rule('email', 'minLength', 1)
+            ->rule('newPassword', 'minLength', 1)
+            ->rule('key', 'minLength', 1)
+            ->validate($input);
     }
 }

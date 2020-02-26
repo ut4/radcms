@@ -118,16 +118,16 @@ final class DAOQueryBuildingTest extends TestCase {
             return $this->makeDao()->fetchOne('Games');
         }));
         $this->assertEquals(
-            'ContentType.name must be capitalized and contain only [a-zA-Z_]\n'.
-            'ContentType.name must be <= 64 chars long', $runInvalid(function() {
+            'ContentType.name must contain only [a-zA-Z0-9_] and start with [a-zA-Z_]\n'.
+            'The length of ContentType.name must be 64 or less', $runInvalid(function() {
                 $A_LONG_STRING = str_repeat('-', 65);
                 //
                 return $this->makeDao(false, function ($ctypes) use ($A_LONG_STRING) {
                     $ctypes->add($A_LONG_STRING, '', ['field' => 'text']);
                 })->fetchOne($A_LONG_STRING)->where('1=1');
             }));
-        $this->assertEquals('fetch alias (&&) must contain only a-zA-Z_\n' .
-                            'join alias (p-bas) must contain only a-zA-Z_', $runInvalid(function () {
+        $this->assertEquals('fetch alias (&&) is not valid\n' .
+                            'join alias (p-bas) is not valid', $runInvalid(function () {
             return $this->makeDao()
                 ->fetchAll('Games &&')
                 ->join('Platforms p-bas', '1=1')

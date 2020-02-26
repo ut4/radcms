@@ -32,7 +32,7 @@ class DMO extends DAO {
             $q['vals'][] = $data->$name;
         };
         foreach (['id', 'isPublished'] as $optional) {
-            if (property_exists($data, $optional)) $appendVal($optional);
+            if (($data->{$optional} ?? null) !== null) $appendVal($optional);
         }
         $fields = $type->fields->toArray();
         foreach ($fields as $f) {

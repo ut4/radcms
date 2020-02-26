@@ -12,10 +12,11 @@ class FieldSetting {
     public $args;
     /**
      * @param string $name
+     * @param \stdClass $args = null
      */
-    public function __construct($name) {
+    public function __construct($name, \stdClass $args = null) {
         $this->name = $name;
-        $this->args = new \stdClass();
+        $this->args = $args ?? new \stdClass;
     }
     /**
      * @param string $str 'text', 'int(11)', 'color(initial=#000000)'
@@ -25,9 +26,7 @@ class FieldSetting {
             return $this->name;
         $pairs = [];
         foreach ($this->args as $name => $val)
-            $pairs[] = !ctype_digit($name)
-                ? "{$name}={$val}"
-                : $val;
+            $pairs[] = !ctype_digit($name) ? "{$name}={$val}" : $val;
         return $this->name . '(' . implode(',', $pairs) . ')';
     }
 

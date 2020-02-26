@@ -5,7 +5,7 @@ namespace RadCms\Installer;
 use Pike\Request;
 use Pike\Response;
 use Pike\Template;
-use Pike\Validator;
+use Pike\Validation;
 use Pike\Auth\Crypto;
 use RadCms\Packager\PlainTextPackageStream;
 use Pike\FileSystem;
@@ -69,31 +69,30 @@ class InstallerControllers {
      * @return string[]
      */
     private function validateInstallInput($input) {
-        $v = new Validator($input);
-        //
-        if ($v->check('siteName', 'string'))
-            if (!strlen($input->siteName)) $input->siteName = 'My Site';
-        $v->check('siteLang', ['in', ['en_US', 'fi_FI']]);
-        $v->check('sampleContent', ['in', ['minimal', 'blog', 'test-content']]);
-        if ($v->is('mainQueryVar', 'nonEmptyString')) $v->check('mainQueryVar', 'word');
-        else $v->check('mainQueryVar', 'string');
-        $v->check('useDevMode', 'present');
-        //
-        $v->check('dbHost', 'nonEmptyString');
-        $v->check('dbUser', 'nonEmptyString');
-        $v->check('dbPass', 'nonEmptyString');
-        $v->check('dbDatabase', 'nonEmptyString');
-        $v->check('dbTablePrefix', 'nonEmptyString');
-        $v->check('dbCharset', ['in', ['utf8']]);
-        //
-        $v->check('firstUserName', 'nonEmptyString');
-        if ($v->is('firstUserEmail', 'present'))
-            $v->check('firstUserEmail', 'string');
-        $v->check('firstUserPass', 'nonEmptyString');
-        //
-        $v->check('baseUrl', 'nonEmptyString');
-        //
-        return $v->errors;
+        $errors = (Validation::makeObjectValidator())
+            ->rule('siteName?', 'type', 'string')
+            ->rule('siteLang', 'in', ['en_US', 'fi_FI'])
+            ->rule('sampleContent', 'in', ['minimal', 'blog', 'test-content'])
+            ->rule('mainQueryVar?', 'identifier')
+            ->rule('useDevMode?', 'type', 'bool')
+            ->rule('dbHost', 'minLength', 1)
+            ->rule('dbUser', 'minLength', 1)
+            ->rule('dbPass', 'type', 'string')
+            ->rule('dbDatabase', 'minLength', 1)
+            ->rule('dbTablePrefix?', 'minLength', 1)
+            ->rule('dbCharset', 'in', ['utf8'])
+            ->rule('firstUserName', 'minLength', 1)
+            ->rule('firstUserMail?', 'minLength', 3)
+            ->rule('firstUserPass', 'type', 'string')
+            ->rule('baseUrl', 'minLength', 1)
+            ->validate($input);
+        if (!$errors) {
+            $input->siteName = $input->siteName ?? 'My Site';
+            $input->mainQueryVar = $input->mainQueryVar ?? '';
+            $input->useDevMode = ($input->useDevMode ?? null) === true;
+            $input->firstUserMail = $input->firstUserMail ?? '';
+        }
+        return $errors;
     }
     /**
      * @return string[]

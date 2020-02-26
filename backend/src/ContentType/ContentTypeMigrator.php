@@ -11,8 +11,6 @@ use Pike\PikeException;
  * Luokka joka asentaa/päivittää/poistaa sisältötyyppejä tietokantaan.
  */
 class ContentTypeMigrator {
-    public const FIELD_DATA_TYPES = ['text', 'int', 'json'];
-    private const COLLECTION_SIZES = ['tiny', 'small', 'medium', '', 'big'];
     private $db;
     private $origin;
     /**
@@ -32,9 +30,9 @@ class ContentTypeMigrator {
     public function installMany(ContentTypeCollection $contentTypes,
                                 $initialData = null,
                                 $size = 'medium') {
-        if (!in_array($size, self::COLLECTION_SIZES)) {
+        if (!in_array($size, ContentTypeValidator::COLLECTION_SIZES)) {
             throw new PikeException('Not valid content type collection size ' .
-                                    implode(' | ', self::COLLECTION_SIZES),
+                                    implode(' | ', ContentTypeValidator::COLLECTION_SIZES),
                                     PikeException::BAD_INPUT);
         }
         // @allow \Pike\PikeException

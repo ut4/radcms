@@ -4,7 +4,7 @@ namespace RadCms\Upload;
 
 use Pike\Request;
 use Pike\Response;
-use Pike\Validator;
+use Pike\Validation;
 use Pike\PikeException;
 
 /**
@@ -50,10 +50,9 @@ class UploadControllers {
      * @return string[]
      */
     private function validateUploadInput($req) {
-        $v1 = new Validator($req->body);
-        $v1->check('returnTo', 'nonEmptyString');
-        $v2 = new Validator($req->files);
-        $v2->check('localFile', 'present');
-        return array_merge($v1->errors, $v2->errors);
+        return (Validation::makeObjectValidator())
+            ->rule('body.returnTo', 'minLength', 1)
+            ->rule('files.localFile', 'type', 'array')
+            ->validate($req);
     }
 }

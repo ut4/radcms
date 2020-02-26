@@ -14,6 +14,7 @@ use RadCms\Packager\Packager;
 use RadCms\Packager\PlainTextPackageStream;
 use RadCms\Tests\Packager\PackagerControllersTest;
 use RadCms\Auth\ACL;
+use RadCms\Installer\Installer;
 
 final class InstallerTest extends DbTestCase {
     use HttpTestUtils;
@@ -34,65 +35,60 @@ final class InstallerTest extends DbTestCase {
     public function testInstallerValidatesMissingValues() {
         $input = (object)['sampleContent' => 'test-content'];
         $res = $this->createMockResponse(json_encode([
-            'siteName must be a string',
-            'siteLang must be one of ["en_US","fi_FI"]',
-            'mainQueryVar must be a string',
-            'useDevMode is required',
-            'dbHost must be a non-empty string',
-            'dbUser must be a non-empty string',
-            'dbPass must be a non-empty string',
-            'dbDatabase must be a non-empty string',
-            'dbTablePrefix must be a non-empty string',
-            'dbCharset must be one of ["utf8"]',
-            'firstUserName must be a non-empty string',
-            'firstUserPass must be a non-empty string',
-            'baseUrl must be a non-empty string',
+            'The value of siteLang was not in the list',
+            'The length of dbHost must be at least 1',
+            'The length of dbUser must be at least 1',
+            'dbPass must be string',
+            'The length of dbDatabase must be at least 1',
+            'The value of dbCharset was not in the list',
+            'The length of firstUserName must be at least 1',
+            'firstUserPass must be string',
+            'The length of baseUrl must be at least 1',
         ]), 400);
         $app = $this->makeApp([$this,'createInstallerApp'], $this->getAppConfig());
         $this->sendRequest(new Request('/', 'POST', $input), $res, $app);
     }
     public function testInstallerValidatesInvalidValues() {
         $input = (object)[
-            'siteName' => [],
+            'siteName' => new \stdClass,
             'siteLang' => [],
             'sampleContent' => 'foo',
             'mainQueryVar' => '%&"¤',
-            'useDevMode' => true,
+            'useDevMode' => 'not-bool',
             'dbHost' => [],
             'dbUser' => [],
             'dbPass' => [],
             'dbDatabase' => [],
-            'dbTablePrefix' => [],
+            'dbTablePrefix' => new \stdClass,
             'dbCharset' => 'notValid',
             'firstUserName' => [],
             'firstUserPass' => [],
             'baseUrl' => [],
         ];
         $res = $this->createMockResponse(json_encode([
-            'siteName must be a string',
-            'siteLang must be one of ["en_US","fi_FI"]',
-            'sampleContent must be one of ["minimal","blog","test-content"]',
-            'mainQueryVar must be a word',
-            'dbHost must be a non-empty string',
-            'dbUser must be a non-empty string',
-            'dbPass must be a non-empty string',
-            'dbDatabase must be a non-empty string',
-            'dbTablePrefix must be a non-empty string',
-            'dbCharset must be one of ["utf8"]',
-            'firstUserName must be a non-empty string',
-            'firstUserPass must be a non-empty string',
-            'baseUrl must be a non-empty string',
+            'siteName must be string',
+            'The value of siteLang was not in the list',
+            'The value of sampleContent was not in the list',
+            'mainQueryVar must contain only [a-zA-Z0-9_] and start with [a-zA-Z_]',
+            'useDevMode must be bool',
+            'The length of dbHost must be at least 1',
+            'The length of dbUser must be at least 1',
+            'dbPass must be string',
+            'The length of dbDatabase must be at least 1',
+            'The length of dbTablePrefix must be at least 1',
+            'The value of dbCharset was not in the list',
+            'The length of firstUserName must be at least 1',
+            'firstUserPass must be string',
+            'The length of baseUrl must be at least 1'
         ]), 400);
         $app = $this->makeApp([$this,'createInstallerApp'], $this->getAppConfig());
         $this->sendRequest(new Request('/', 'POST', $input), $res, $app);
     }
     public function testInstallerFillsDefaultValues() {
         $input = (object)[
-            'siteName' => '',
             'siteLang' => 'fi_FI',
             'sampleContent' => 'test-content',
             'mainQueryVar' => '',
-            'useDevMode' => true,
             'dbHost' => 'locahost',
             'dbUser' => 'test',
             'dbPass' => 'pass',
@@ -101,13 +97,22 @@ final class InstallerTest extends DbTestCase {
             'dbCharset' => 'utf8',
             'firstUserName' => 'user',
             'firstUserPass' => 'pass',
-            'baseUrl' => [],
+            'baseUrl' => '/',
         ];
-        $res = $this->createMockResponse($this->anything(), 400);
-        $app = $this->makeApp([$this,'createInstallerApp'], $this->getAppConfig());
+        $res = $this->createMockResponse($this->anything());
+        $app = $this->makeApp([$this,'createInstallerApp'], $this->getAppConfig(),
+            null, function ($injector) {
+                $injector->delegate(Installer::class, function() {
+                    $m = $this->createMock(Installer::class);
+                    $m->method('doInstall')->willReturn(true);
+                    $m->method('getWarnings')->willReturn([]);
+                    return $m;
+                });
+            });
         $this->sendRequest(new Request('/', 'POST', $input), $res, $app);
         $this->assertEquals('My Site', $input->siteName);
         $this->assertEquals('', $input->mainQueryVar);
+        $this->assertEquals(false, $input->useDevMode);
     }
     public function testInstallerCreatesDbSchemaAndInsertsSampleContent() {
         $s = $this->setupInstallerTest1();
