@@ -1,0 +1,8 @@
+{
+    "extend:stockContentTypes": null,
+    "Articles": ["Artikkelit", {
+        "slug": "text:Slug (url):textField",
+        "title": "text:Otsikko:textField",
+        "body": "text:Sisältö:richText"
+    }]
+}

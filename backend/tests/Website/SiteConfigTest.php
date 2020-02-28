@@ -13,8 +13,7 @@ final class SiteConfigTest extends TestCase {
         $this->stubFsToReturnThisSiteCfg($s, '{}');
         $this->loadInvalidSiteCfg($s);
         $this->verifyTheseErrorsWereReported($s,
-            '{..."urlMatchers": ["pattern", "layout.php"]} is required',
-            '{..."contentTypes": [["Name", "FriendlyName", <fields>]...]} is required');
+            '{..."urlMatchers": ["pattern", "layout.php"]} is required');
     }
     private function setupValidateTest() {
         return (object)[
@@ -69,20 +68,15 @@ final class SiteConfigTest extends TestCase {
         $s = $this->setupLoadAllTest();
         $this->stubFsToReturnThisSiteCfg($s, json_encode([
             'urlMatchers' => [['/regexp.', 'path/to/file.tmpl.php']],
-            'contentTypes' => [['Games', 'Pelit', [
-                'title' => 'text:Nimi:textField:Default value',
-            ]]],
             'assetFiles' => [['main.css', 'local-stylesheet']],
         ]));
         $this->loadSiteConfig($s);
         $this->verifyLoadedUrlMatchers($s);
-        $this->verifyLoadedContentTypes($s);
         $this->verifyLoadedAssets($s);
     }
     private function setupLoadAllTest() {
         $s = $this->setupValidateTest();
         $s->actuallyLoadedUrlMatchers = null;
-        $s->actuallyLoadedContentTypes = null;
         $s->actuallyLoadedCssAssets = null;
         $s->actuallyLoadedJsAssets = null;
         return $s;
@@ -91,7 +85,6 @@ final class SiteConfigTest extends TestCase {
         $siteConfig = new SiteConfig($s->mockFs);
         $siteConfig->selfLoad('', false);
         $s->actuallyLoadedUrlMatchers = $siteConfig->urlMatchers;
-        $s->actuallyLoadedContentTypes = $siteConfig->contentTypes;
         $s->actuallyLoadedCssAssets = $siteConfig->cssAssets;
         $s->actuallyLoadedJsAssets = $siteConfig->jsAssets;
     }
@@ -103,20 +96,6 @@ final class SiteConfigTest extends TestCase {
             ]]),
             json_encode($s->actuallyLoadedUrlMatchers->toArray())
         );
-    }
-    private function verifyLoadedContentTypes($s) {
-        $ctype = $s->actuallyLoadedContentTypes->toArray()[0];
-        $this->assertEquals('Games', $ctype->name);
-        $this->assertEquals('Pelit', $ctype->friendlyName);
-        //
-        $field = $ctype->fields->toArray()[0];
-        $this->assertEquals('title', $field->name);
-        $this->assertEquals('Nimi', $field->friendlyName);
-        $this->assertEquals('text', $field->dataType);
-        $this->assertEquals('textField', $field->widget->name);
-        $this->assertEquals('Default value', $field->defaultValue);
-        //
-        $this->assertEquals(false, $ctype->isInternal);
     }
     private function verifyLoadedAssets($s) {
         $this->assertEquals(

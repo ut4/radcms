@@ -9,15 +9,14 @@ use RadCms\Packager\PlainTextPackageStream;
 use Pike\Request;
 use Pike\TestUtils\MockCrypto;
 use RadCms\Packager\Packager;
-use RadCms\Website\SiteConfig;
-use Pike\FileSystem;
 use RadCms\ContentType\ContentTypeMigrator;
+use RadCms\ContentType\ContentTypeCollection;
 
 final class PackagerControllersTest extends DbTestCase {
     use HttpTestUtils;
     use ContentTestUtils;
-    private static $testSiteCfg;
     private static $migrator;
+    private static $testSiteContentTypes;
     private static $testSiteContentTypesData;
     private $app;
     public static function setUpBeforeClass() {
@@ -25,18 +24,17 @@ final class PackagerControllersTest extends DbTestCase {
             ['SomeType', [(object)['name' => 'val1'], (object)['name' => 'val2']]],
             // AnotherTypellä ei sisältöä
         ];
-        self::$testSiteCfg = new SiteConfig(new FileSystem);
-        // @allow \Pike\PikeException
-        self::$testSiteCfg->selfLoad(TEST_SITE_PATH . 'site.json', false);
+        $parsed = json_decode(file_get_contents(TEST_SITE_PATH . 'content-types.json'));
+        self::$testSiteContentTypes = ContentTypeCollection::fromCompactForm($parsed);
         self::$migrator = new ContentTypeMigrator(self::getDb());
         // @allow \Pike\PikeException
-        self::$migrator->installMany(self::$testSiteCfg->contentTypes,
+        self::$migrator->installMany(self::$testSiteContentTypes,
                                      self::$testSiteContentTypesData);
     }
     public static function tearDownAfterClass() {
         parent::tearDownAfterClass();
         // @allow \Pike\PikeException
-        self::$migrator->uninstallMany(self::$testSiteCfg->contentTypes);
+        self::$migrator->uninstallMany(self::$testSiteContentTypes);
         self::clearInstalledContentTypesFromDb();
     }
     protected function setUp() {
@@ -49,7 +47,7 @@ final class PackagerControllersTest extends DbTestCase {
         $this->verifyReturnedSignedPackage($s);
         $this->verifyIncludedDbConfig($s);
         $this->verifyIncludedWebsiteState($s);
-        $this->verifyIncludedSiteConfigFile($s);
+        $this->verifyIncludedContentTypesFile($s);
         $this->verifyIncludedThemeContentData($s);
     }
     private function setupCreatePackageTest() {
@@ -91,9 +89,9 @@ final class PackagerControllersTest extends DbTestCase {
                                                           $s->testWebsiteState),
                             $s->actualPackage->read(Packager::WEBSITE_STATE_VIRTUAL_FILE_NAME));
     }
-    private function verifyIncludedSiteConfigFile($s) {
-        $this->assertEquals(self::makeExpectedPackageFile(Packager::WEBSITE_CONFIG_VIRTUAL_FILE_NAME),
-                            $s->actualPackage->read(Packager::WEBSITE_CONFIG_VIRTUAL_FILE_NAME));
+    private function verifyIncludedContentTypesFile($s) {
+        $this->assertEquals(self::makeExpectedPackageFile(Packager::THEME_CONTENT_TYPES_VIRTUAL_FILE_NAME),
+                            $s->actualPackage->read(Packager::THEME_CONTENT_TYPES_VIRTUAL_FILE_NAME));
     }
     private function verifyIncludedThemeContentData($s) {
         [, $someTypeData] = self::$testSiteContentTypesData[0];
@@ -138,8 +136,9 @@ final class PackagerControllersTest extends DbTestCase {
                 'useDevMode' => boolval(RAD_FLAGS & RAD_DEVMODE),
             ], JSON_UNESCAPED_UNICODE);
         }
-        if ($virtualFileName === Packager::WEBSITE_CONFIG_VIRTUAL_FILE_NAME) {
-            return file_get_contents(RAD_SITE_PATH . 'site.json');
+        if ($virtualFileName === Packager::THEME_CONTENT_TYPES_VIRTUAL_FILE_NAME) {
+            return '{"SomeType":["Friendly name",{"name":["text","name","textField",""]},"site.json"],'.
+                    '"AnotherType":["Friendly eman",{"title":["text","title","textField",""]},"site.json"]}';
         }
         throw new \RuntimeException("Unknown package file {$virtualFileName}");
     }

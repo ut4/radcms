@@ -3,9 +3,7 @@
 namespace RadCms\Website;
 
 use Pike\FileSystemInterface;
-use RadCms\ContentType\ContentTypeCollection;
 use Pike\PikeException;
-use RadCms\StockContentTypes\MultiFieldBlobs\MultiFieldBlobs;
 
 /**
  * Lukee, ja pitää sisällään site.json -tiedostoon conffatut tiedot.
@@ -13,7 +11,6 @@ use RadCms\StockContentTypes\MultiFieldBlobs\MultiFieldBlobs;
 class SiteConfig {
     public const ASSET_TYPES = ['local-stylesheet', 'local-script'];
     public $urlMatchers;
-    public $contentTypes;
     private $assets;
     private $fs;
     /**
@@ -47,7 +44,6 @@ class SiteConfig {
      */
     private function collectAll($input) {
         $this->urlMatchers = $this->collectUrlMatchers($input->urlMatchers);
-        $this->contentTypes = $this->collectContentTypes($input->contentTypes);
         $this->assets = $this->collectAssets($input->assetFiles ?? []);
         return true;
     }
@@ -60,23 +56,6 @@ class SiteConfig {
         foreach ($inputUrlMatchers as $definition)
             $out->add(...$definition);
         return $out;
-    }
-    /**
-     * @param array $ctypeInput
-     * @return \RadCms\ContentType\ContentTypeCollection
-     */
-    private function collectContentTypes($ctypeInput) {
-        $asMap = [];
-        foreach ($ctypeInput as $i => $definition) {
-            if (!is_string($definition)) continue;
-            $ctypeInput[$i] = MultiFieldBlobs::DEFINITION;
-            $ctypeInput[$i][2] = (object)$ctypeInput[$i][2];
-        }
-        foreach ($ctypeInput as $definition) {
-            $nameParts = array_shift($definition);
-            $asMap[$nameParts] = $definition;
-        }
-        return ContentTypeCollection::fromCompactForm($asMap);
     }
     /**
      * @param array $inputAssetFiles
@@ -102,7 +81,6 @@ class SiteConfig {
     private function selfValidate($input, $sitePath) {
         if (!($errors = array_merge($this->validateUrlMatchers($input->urlMatchers ?? [],
                                                                $sitePath),
-                                    $this->validateContentTypes($input->contentTypes ?? []),
                                     $this->validateAssets($input->assetFiles ?? [])))) {
             return true;
         }
@@ -144,33 +122,6 @@ class SiteConfig {
             if (!$this->fs->isFile($sitePath . $layout))
                 $errors[] = 'Failed to locate UrlMatcher layout file `' .
                             $sitePath . $layout . '`';
-        }
-        return $errors;
-    }
-    /**
-     * @return string[]
-     */
-    private function validateContentTypes($inputContentTypes) {
-        if (!$inputContentTypes || !is_array($inputContentTypes))
-            return ['{..."contentTypes": [["Name", "FriendlyName", <fields>]...]} is required'];
-        $errors = [];
-        foreach ($inputContentTypes as $i => $definition) {
-            if (is_string($definition)) {
-                if ($definition !== 'extend:stockContentTypes')
-                    $errors[] = 'Expected "extend:stockContentTypes"';
-                continue;
-            }
-            if (!is_array($definition) || count($definition) !== 3) {
-                $errors[] = 'contentType must be an array ["Name", "FriendlyName", <fields>]';
-                continue;
-            }
-            [$name, $friendlyName, $fields] = $definition;
-            if (!is_string($name) || !strlen($name))
-                $errors[] = "contentType[{$i}][0] (name) must be a string";
-            if (!is_string($friendlyName) || !strlen($friendlyName))
-                $errors[] = "contentType[{$i}][1] (friendlyName) must be a string";
-            if (!($fields instanceof \stdClass))
-                $errors[] = "contentType[{$i}][2] (fields) must be a \stdClass";
         }
         return $errors;
     }

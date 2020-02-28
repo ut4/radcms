@@ -13,7 +13,6 @@ class Packager {
     public const WEBSITE_STATE_VIRTUAL_FILE_NAME = 'website-state.json';
     public const THEME_CONTENT_TYPES_VIRTUAL_FILE_NAME = 'theme-content-types.json';
     public const THEME_CONTENT_DATA_VIRTUAL_FILE_NAME = 'theme-content-data.json';
-    public const WEBSITE_CONFIG_VIRTUAL_FILE_NAME = 'site.json';
     /** @var \RadCms\Packager\PackageStreamInterface */
     private $writer;
     /** @var \Pike\Auth\Crypto */
@@ -64,8 +63,8 @@ class Packager {
             [self::WEBSITE_STATE_VIRTUAL_FILE_NAME, function () use ($sitePath) {
                 return $this->generateWebsiteStateJson($sitePath);
             }],
-            [self::WEBSITE_CONFIG_VIRTUAL_FILE_NAME, function () use ($sitePath) {
-                return $this->fs->read($sitePath . 'site.json');
+            [self::THEME_CONTENT_TYPES_VIRTUAL_FILE_NAME, function () {
+                return json_encode($this->themeContentTypes->toCompactForm('site.json'));
             }],
             [self::THEME_CONTENT_DATA_VIRTUAL_FILE_NAME, function () {
                 return $this->generateThemeContentDataJson();

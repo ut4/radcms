@@ -6,12 +6,13 @@ use Pike\Db;
 use Pike\FileSystem;
 use Pike\FileSystemInterface;
 use RadCms\ContentType\ContentTypeMigrator;
-use RadCms\Website\SiteConfig;
 use Pike\PikeException;
 use RadCms\Packager\Packager;
 use RadCms\Packager\PackageStreamInterface;
 use Pike\Auth\Crypto;
 use RadCms\Auth\ACL;
+use RadCms\ContentType\ContentTypeCollection;
+use RadCms\StockContentTypes\MultiFieldBlobs\MultiFieldBlobs;
 
 class Installer {
     private $db;
@@ -49,7 +50,7 @@ class Installer {
                $this->createMainSchema($settings) &&
                $this->insertMainSchemaData($settings) &&
                $this->createUserZero($settings) &&
-               $this->createContentTypesAndInsertInitialData("{$base}site.json",
+               $this->createContentTypesAndInsertInitialData("{$base}content-types.json",
                                                              "{$base}sample-data.json",
                                                              $this->fs) &&
                $this->copyFiles($settings) &&
@@ -88,7 +89,7 @@ class Installer {
                $this->createMainSchema($settings) &&
                $this->insertMainSchemaData($settings) &&
                $this->createContentTypesAndInsertInitialData(
-                    Packager::WEBSITE_CONFIG_VIRTUAL_FILE_NAME,
+                    Packager::THEME_CONTENT_TYPES_VIRTUAL_FILE_NAME,
                     Packager::THEME_CONTENT_DATA_VIRTUAL_FILE_NAME,
                     $package);
     }
@@ -199,26 +200,44 @@ class Installer {
         return true;
     }
     /**
-     * @param string $siteConfigFilePath '/path/to/site/site.json'
+     * @param string $contentTypesFilePath '/path/to/site/content-types.json'
      * @param string $dataFilePath '/path/to/site/sample-content.json'
      * @param \Pike\FileSystemInterface $fs
      * @return bool
      * @throws \Pike\PikeException
      */
-    private function createContentTypesAndInsertInitialData($siteCfgFilePath,
+    private function createContentTypesAndInsertInitialData($contentTypesFilePath,
                                                             $dataFilePath,
                                                             $fs) {
-        $json = $fs->read($dataFilePath);
-        if (!$json)
-            throw new PikeException("Failed to read `{$dataFilePath}`", PikeException::FAILED_FS_OP);
-        if (($initialData = json_decode($json)) === null)
-            throw new PikeException("Failed to parse `{$dataFilePath}`", PikeException::FAILED_FS_OP);
-        //
-        $cfg = new SiteConfig($fs);
+        $parsed = [null, null];
+        foreach ([$contentTypesFilePath, $dataFilePath] as $i => $filePath) {
+            if (!($json = $fs->read($filePath)))
+                throw new PikeException("Failed to read `{$filePath}`",
+                                        PikeException::FAILED_FS_OP);
+            if (($parsed[$i] = json_decode($json)) === null)
+                throw new PikeException("Failed to parse `{$filePath}`",
+                                        PikeException::FAILED_FS_OP);
+        }
         // @allow \Pike\PikeException
-        return $cfg->selfLoad($siteCfgFilePath, true) &&
-               (new ContentTypeMigrator($this->db))->installMany($cfg->contentTypes,
-                                                                 $initialData);
+        $collection = self::makeContentTypes($parsed[0]);
+        // @allow \Pike\PikeException
+        return (new ContentTypeMigrator($this->db))->installMany($collection,
+                                                                 $parsed[1]);
+    }
+    /**
+     * @return \RadCms\ContentType\ContentTypeCollection
+     */
+    private static function makeContentTypes($inputContentTypes) {
+        $extended = [];
+        foreach ($inputContentTypes as $name => $definition) {
+            if ($name !== 'extend:stockContentTypes') {
+                $extended[$name] = $definition;
+            } else {
+                $def = MultiFieldBlobs::DEFINITION;
+                $extended[$def[0]] = array_slice($def, 1);
+            }
+        }
+        return ContentTypeCollection::fromCompactForm($extended);
     }
     /**
      * @param \stdClass $s settings

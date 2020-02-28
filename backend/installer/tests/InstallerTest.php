@@ -116,7 +116,6 @@ final class InstallerTest extends DbTestCase {
     }
     public function testInstallerCreatesDbSchemaAndInsertsSampleContent() {
         $s = $this->setupInstallerTest1();
-        $this->addFsExpectation('checksTemplatesExist', $s);
         $this->addFsExpectation('readsDataFiles', $s);
         $this->addFsExpectation('readsSampleContentFiles', $s);
         $this->addFsExpectation('createsSiteDirs', $s);
@@ -157,31 +156,24 @@ final class InstallerTest extends DbTestCase {
         ];
     }
     private function addFsExpectation($expectation, $s) {
-        if ($expectation === 'checksTemplatesExist') {
-            $s->mockFs->expects($this->atLeastOnce())
-                ->method('isFile')
-                ->willReturn(true);
-            return;
-        }
         if ($expectation === 'readsDataFiles') {
             $s->mockFs->expects($this->exactly(3))
                 ->method('read')
                 ->withConsecutive(
                     ["{$s->backendPath}installer/schema.mariadb.sql"],
-                    ["{$s->sampleContentDirPath}sample-data.json"],
-                    ["{$s->sampleContentDirPath}site.json"]
+                    ["{$s->sampleContentDirPath}content-types.json"],
+                    ["{$s->sampleContentDirPath}sample-data.json"]
                 )
                 ->willReturnOnConsecutiveCalls(
                     file_get_contents("{$s->backendPath}installer/schema.mariadb.sql"),
                     //
+                    '{' .
+                        '"Movies": ["Elokuvat", {"title": "text"}]' .
+                    '}',
+                    //
                     '[' .
                         '["Movies", [{"title": "Foo"}, {"title": "Bar"}]]' .
-                    ']',
-                    //
-                    '{' .
-                        '"contentTypes": [["Movies", "Elokuvat", {"title": "text"}]]' .
-                        ',"urlMatchers": [["/url", "file.tmpl.php"]]' .
-                    '}'
+                    ']'
                 );
             return;
         }
@@ -384,8 +376,8 @@ return [
             Packager::WEBSITE_STATE_VIRTUAL_FILE_NAME =>
                 PackagerControllersTest::makeExpectedPackageFile(Packager::WEBSITE_STATE_VIRTUAL_FILE_NAME,
                                                                  $s->input),
-            Packager::WEBSITE_CONFIG_VIRTUAL_FILE_NAME =>
-                PackagerControllersTest::makeExpectedPackageFile(Packager::WEBSITE_CONFIG_VIRTUAL_FILE_NAME),
+            Packager::THEME_CONTENT_TYPES_VIRTUAL_FILE_NAME =>
+                PackagerControllersTest::makeExpectedPackageFile(Packager::THEME_CONTENT_TYPES_VIRTUAL_FILE_NAME),
             Packager::THEME_CONTENT_DATA_VIRTUAL_FILE_NAME =>
                 json_encode($s->testSiteContentTypesData, JSON_UNESCAPED_UNICODE),
         ]);
