@@ -10,19 +10,17 @@ use RadCms\Plugin\API;
 use RadCms\Plugin\PluginCollection;
 use RadCms\ContentType\ContentTypeCollection;
 use RadCms\Plugin\PluginInterface;
-use RadCms\Website\SiteConfigDiffer;
-use RadCms\ContentType\ContentTypeSyncer;
 use RadCms\Auth\ACL;
 
 class AppState {
     public $acl;
     public $plugins;
     public $contentTypes;
-    public $contentTypesLastUpdated;
     public $siteInfo;
     public $apiConfigs;
     private $db;
     private $fs;
+    private $contentTypesLastUpdated;
     /**
      * @param \Pike\Db $db
      * @param \Pike\FileSystemInterface $db
@@ -53,20 +51,6 @@ class AppState {
                              $this->apiConfigs);
         // @allow \Pike\PikeException
         $this->scanAndInitPlugins($pluginAPI, $state->installedPluginNames);
-    }
-    /**
-     * @param \RadCms\ContentType\ContentTypeCollection $newDefsFromFile
-     * @param string $origin 'site.json' | 'SomePlugin.json'
-     * @throws \Pike\PikeException
-     * @return bool
-     */
-    public function diffAndSaveChangesToDb(ContentTypeCollection $newDefsFromFile,
-                                           $origin) {
-        $currentDefsFromDb = $this->contentTypes->filter($origin, 'origin');
-        [$ctypesDiff, $fieldsDiff] = (new SiteConfigDiffer())
-            ->run($newDefsFromFile, $currentDefsFromDb);
-        // @allow \Pike\PikeException
-        return (new ContentTypeSyncer($this->db))->sync($ctypesDiff, $fieldsDiff);
     }
     /**
      * @throws \Pike\PikeException

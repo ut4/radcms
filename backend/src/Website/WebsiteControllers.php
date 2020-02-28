@@ -30,7 +30,7 @@ class WebsiteControllers {
                                 AppState $appState,
                                 Theme $theme) {
         // @allow \Pike\PikeException
-        $siteConfig->selfLoad(RAD_SITE_PATH . 'site.json', false);
+        $siteConfig->selfLoad(RAD_SITE_PATH . 'site.json');
         $api = new BaseAPI($appState->apiConfigs);
         // @allow \Pike\PikeException
         $theme->load($api);

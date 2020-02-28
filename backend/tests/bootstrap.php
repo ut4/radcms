@@ -4,6 +4,7 @@ use Monolog\Logger;
 use Monolog\Handler\NullHandler;
 use RadCms\Common\LoggerAccess;
 
+error_reporting(E_ALL);
 define('TEST_CONFIG_DIR_PATH', str_replace('\\', '/', __DIR__) . '/_test-site/');
 define('TEST_SITE_PATH', TEST_CONFIG_DIR_PATH);
 

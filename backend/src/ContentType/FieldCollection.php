@@ -71,4 +71,21 @@ class FieldCollection extends GenericArray implements \JsonSerializable {
         }
         return $out;
     }
+    /**
+     * @param array $input array<{name: string, friendlyName: string, dataType: string, widget: {name: string, args?: object}, defaultValue: string}> Olettaa että on validi
+     * @return \RadCms\ContentType\FieldCollection
+     */
+    public static function fromArray(array $input) {
+        $out = new FieldCollection('stdClass');
+        foreach ($input as $field)
+            $out->add((object)['name' => $field->name,
+                               'friendlyName' => $field->friendlyName,
+                               'dataType' => $field->dataType,
+                               'widget' => new FieldSetting(
+                                    $field->widget->name,
+                                    $field->widget->args ?? null
+                                ),
+                               'defaultValue' => $field->defaultValue ?? '']);
+        return $out;
+    }
 }

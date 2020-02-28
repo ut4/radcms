@@ -21,6 +21,18 @@ class ContentTypeMigrator {
         $this->origin = 'site.json';
     }
     /**
+     * @param object $data Validoitu $req->body
+     */
+    public function installSingle($data) {
+        $contentTypes = new ContentTypeCollection();
+        $contentTypes->add($data->name,
+                           $data->friendlyName,
+                           FieldCollection::fromArray($data->fields)->toCompactForm(),
+                           $data->isInternal);
+        // @allow \Pike\PikeException
+        return $this->installMany($contentTypes);
+    }
+    /**
      * @param \RadCms\ContentType\ContentTypeCollection $contentTypes
      * @param string $size = 'medium' 'tiny' | 'small' | 'medium' | '' | 'big'
      * @param array $initialData = null [['ContentTypeName', [(object)['key' => 'value']]]]
@@ -137,7 +149,7 @@ class ContentTypeMigrator {
         try {
             if ($this->db->exec(
                 'UPDATE ${p}websiteState SET `installedContentTypes` =' .
-                ' JSON_MERGE_PATCH(`installedContentTypes`, ?)' .
+                ' JSON_MERGE_PATCH(?, `installedContentTypes`)' .
                 ', `installedContentTypesLastUpdated` = UNIX_TIMESTAMP()',
                 [json_encode($compactCtypes)]) > 0) {
                 return true;

@@ -27,7 +27,7 @@ final class PackagerControllersTest extends DbTestCase {
         ];
         self::$testSiteCfg = new SiteConfig(new FileSystem);
         // @allow \Pike\PikeException
-        self::$testSiteCfg->selfLoad(TEST_SITE_PATH . 'site.json', false, false);
+        self::$testSiteCfg->selfLoad(TEST_SITE_PATH . 'site.json', false);
         self::$migrator = new ContentTypeMigrator(self::getDb());
         // @allow \Pike\PikeException
         self::$migrator->installMany(self::$testSiteCfg->contentTypes,

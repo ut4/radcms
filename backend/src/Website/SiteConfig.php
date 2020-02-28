@@ -14,29 +14,21 @@ class SiteConfig {
     public const ASSET_TYPES = ['local-stylesheet', 'local-script'];
     public $urlMatchers;
     public $contentTypes;
-    public $lastModTime;
     private $assets;
     private $fs;
     /**
      * @param \Pike\FileSystemInterface $fs
      */
     public function __construct(FileSystemInterface $fs) {
-        $this->lastModTime = 0;
         $this->fs = $fs;
     }
     /**
      * @param string $filePath Absoluuttinen polku configurointitiedostoon Esim. '/home/me/foo/site.json'.
-     * @param bool $checkLastModTime = true
      * @param bool $autoSelfValidate = true
      * @return bool
      * @throws \Pike\PikeException
      */
-    public function selfLoad($filePath,
-                             $checkLastModTime = true,
-                             $autoSelfValidate = true) {
-        if ($checkLastModTime && !($this->lastModTime = $this->fs->lastModTime($filePath)))
-            throw new PikeException("Failed to read mtime of `{$filePath}`",
-                                    PikeException::FAILED_FS_OP);
+    public function selfLoad($filePath, $autoSelfValidate = true) {
         if (!($str = $this->fs->read($filePath)))
             throw new PikeException("Failed to read `{$filePath}`",
                                     PikeException::FAILED_FS_OP);

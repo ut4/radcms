@@ -27,6 +27,8 @@ if (!(RAD_FLAGS & RAD_DEVMODE)) {
         $logger->error(sprintf('%d @%s:%d %s%s', $e['type'], $e['file'], $e['line'],
                                $e['message'], PHP_EOL));
     });
+} else {
+    error_reporting(E_ALL);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

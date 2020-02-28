@@ -4,12 +4,30 @@ namespace RadCms\ContentType;
 
 use Pike\Request;
 use Pike\Response;
-use Pike\Db;
+use Pike\Validation;
 
 /**
  * Handlaa /api/content-types -alkuiset pyynnöt.
  */
 class ContentTypeControllers {
+    /**
+     * POST /api/content-types.
+     *
+     * @param \Pike\Request $req
+     * @param \Pike\Response $res
+     * @param \RadCms\ContentType\ContentTypeMigrator $migrator
+     */
+    public function handleCreateContentType(Request $req,
+                                            Response $res,
+                                            ContentTypeMigrator $migrator) {
+        if (($errors = $this->validateInsertInput($req->body))) {
+            $res->status(400)->json($errors);
+            return;
+        }
+        // @allow \Pike\PikeException
+        $migrator->installSingle($req->body);
+        $res->json(['ok' => 'ok']);
+    }
     /**
      * GET /api/content-type/:name.
      *
@@ -38,5 +56,20 @@ class ContentTypeControllers {
         $res->json($filter !== 'no-internals'
             ? $ctypes->toArray()
             : $ctypes->filter(false, 'isInternal')->toArray());
+    }
+    /**
+     * @return string[]
+     */
+    private static function validateInsertInput($input) {
+        return (Validation::makeObjectValidator())
+            ->rule('name', 'identifier')
+            ->rule('friendlyName', 'minLength', 1)
+            ->rule('isInternal', 'type', 'bool')
+            ->rule('fields.*.name', 'identifier')
+            ->rule('fields.*.friendlyName', 'minLength', 1)
+            ->rule('fields.*.dataType', 'in', ContentTypeValidator::FIELD_DATA_TYPES)
+            ->rule('fields.*.defaultValue', 'type', 'string')
+            ->rule('fields.*.widget.name', 'in', ContentTypeValidator::FIELD_WIDGETS)
+            ->validate($input);
     }
 }

@@ -9,6 +9,9 @@ abstract class ContentTypeModule {
      * @param \stdClass $ctx {\Pike\Router router, \Pike\Db db, \RadCms\Auth\Authenticator auth, \RadCms\Auth\ACL acl, \RadCms\AppState state, \Pike\Translator translator}
      */
     public static function init($ctx) {
+        $ctx->router->map('POST', '/api/content-types',
+            [ContentTypeControllers::class, 'handleCreateContentType', 'create:contentTypes']
+        );
         $ctx->router->map('GET', '/api/content-types/[no-internals:filter]?',
             [ContentTypeControllers::class, 'handleGetContentTypes', 'view:contentTypes']
         );

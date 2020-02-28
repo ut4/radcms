@@ -27,7 +27,7 @@ final class SiteConfigTest extends TestCase {
     }
     private function loadInvalidSiteCfg($s) {
         try {
-            (new SiteConfig($s->mockFs))->selfLoad('', false);
+            (new SiteConfig($s->mockFs))->selfLoad('');
         } catch (PikeException $e) {
             $s->errors = $e->getMessage();
         }
@@ -89,7 +89,7 @@ final class SiteConfigTest extends TestCase {
     }
     private function loadSiteConfig($s) {
         $siteConfig = new SiteConfig($s->mockFs);
-        $siteConfig->selfLoad('', false, false);
+        $siteConfig->selfLoad('', false);
         $s->actuallyLoadedUrlMatchers = $siteConfig->urlMatchers;
         $s->actuallyLoadedContentTypes = $siteConfig->contentTypes;
         $s->actuallyLoadedCssAssets = $siteConfig->cssAssets;

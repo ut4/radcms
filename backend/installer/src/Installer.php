@@ -216,7 +216,7 @@ class Installer {
         //
         $cfg = new SiteConfig($fs);
         // @allow \Pike\PikeException
-        return $cfg->selfLoad($siteCfgFilePath, false, true) &&
+        return $cfg->selfLoad($siteCfgFilePath, true) &&
                (new ContentTypeMigrator($this->db))->installMany($cfg->contentTypes,
                                                                  $initialData);
     }

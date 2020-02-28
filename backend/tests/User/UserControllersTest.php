@@ -10,6 +10,9 @@ use Pike\Response;
 
 final class UserControllersTest extends DbTestCase {
     use HttpTestUtils; // makeApp(), sendRequest()
+    public function tearDown() {
+        self::$db->exec('DELETE FROM ${p}users');
+    }
     public function testHandleGetCurrentUserReturnsCurrentUserDetails() {
         $s = $this->setupGetCurrentUserTest();
         $this->sendHandleGetCurrentUserRequest($s);

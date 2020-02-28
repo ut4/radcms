@@ -40,6 +40,39 @@ final class ContentTypeControllersTest extends DbTestCase {
         parent::setUp();
         $this->app = $this->makeApp('\RadCms\App::create', $this->getAppConfig());
     }
+    public function testPOSTContentTypeValidatesInputData() {
+        $s = $this->setupValidationTest((object)[
+            'name' => 'not-valid-identifier%&#',
+            'friendlyName' => new \stdClass,
+            'isInternal' => new \stdClass,
+            // ei kenttiä
+        ]);
+        $this->sendCreateContentTypeRequest($s);
+        $this->verifyResponseBodyEquals([
+            'name must contain only [a-zA-Z0-9_] and start with [a-zA-Z_]',
+            'The length of friendlyName must be at least 1',
+            'isInternal must be bool',
+            'fields.*.name must contain only [a-zA-Z0-9_] and start with [a-zA-Z_]',
+            'The length of fields.*.friendlyName must be at least 1',
+            'The value of fields.*.dataType was not in the list',
+            'fields.*.defaultValue must be string',
+            'The value of fields.*.widget.name was not in the list',
+        ], $s);
+    }
+    private function setupValidationTest($reqBody) {
+        return (object)[
+            'reqBody' => $reqBody,
+            'actualResponseBody' => null
+        ];
+    }
+    private function sendCreateContentTypeRequest($s) {
+        $req = new Request('/api/content-types', 'POST', $s->reqBody);
+        $res = $this->createMockResponse(null, 400);
+        $this->sendResponseBodyCapturingRequest($req, $res, $this->app, $s);
+    }
+
+    ////////////////////////////////////////////////////////////////////////////
+
     public function testGETContentTypeReturnsContentType() {
         $s = $this->setupGetContentTypeTest();
         $this->sendGetContentTypeRequest($s);
