@@ -34,15 +34,14 @@ class DMO extends DAO {
         foreach (['id', 'isPublished'] as $optional) {
             if (($data->{$optional} ?? null) !== null) $appendVal($optional);
         }
-        $fields = $type->fields->toArray();
-        foreach ($fields as $f) {
+        foreach ($type->fields as $f) {
             $appendVal($f->name);
         }
         //
         try {
             return !$withRevision
                 ? $this->insertWithoutRevision($contentTypeName, $q)
-                : $this->insertWithRevision($contentTypeName, $q, $data, $fields);
+                : $this->insertWithRevision($contentTypeName, $q, $data, $type->fields);
         } catch (\PDOException $e) {
             $this->db->rollback();
             throw new PikeException($e->getMessage(), PikeException::FAILED_DB_OP);
@@ -97,7 +96,7 @@ class DMO extends DAO {
             throw new PikeException(implode(PHP_EOL, $errors),
                                     PikeException::BAD_INPUT);
         //
-        $fields = $type->fields->toArray();
+        $fields = $type->fields;
         $execs = [];
         if (!$data->isRevision) {
             $execs = [self::makeUpdateMainExec($id, $contentTypeName, $data, $fields)];

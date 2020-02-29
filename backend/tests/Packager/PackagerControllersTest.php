@@ -105,7 +105,7 @@ final class PackagerControllersTest extends DbTestCase {
     }
     public static function makeTestWebsiteState() {
         $c = require TEST_SITE_PATH . 'config.php';
-        $row = self::getDb()->fetchOne('SELECT * FROM ${p}websiteState');
+        $row = self::getDb()->fetchOne('SELECT * FROM ${p}cmsState');
         return (object)[
             'siteName' => $row['name'],
             'siteLang' => $row['lang'],

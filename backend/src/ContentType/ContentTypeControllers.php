@@ -5,6 +5,8 @@ namespace RadCms\ContentType;
 use Pike\Request;
 use Pike\Response;
 use Pike\Validation;
+use Pike\ArrayUtils;
+use RadCms\CmsState;
 
 /**
  * Handlaa /api/content-types -alkuiset pyynnöt.
@@ -33,12 +35,14 @@ class ContentTypeControllers {
      *
      * @param \Pike\Request $req
      * @param \Pike\Response $res
-     * @param \RadCms\ContentType\ContentTypeCollection $ctypes
+     * @param \RadCms\CmsState $cmsState
      */
     public function handleGetContentType(Request $req,
                                          Response $res,
-                                         ContentTypeCollection $ctypes) {
-        $ctype = $ctypes->find($req->params->name);
+                                         CmsState $cmsState) {
+        $ctype = ArrayUtils::findByKey($cmsState->getContentTypes(),
+                                       $req->params->name,
+                                       'name');
         if ($ctype) $res->json($ctype);
         else $res->status(404)->json(['got' => 'nothing']);
     }
@@ -47,15 +51,17 @@ class ContentTypeControllers {
      *
      * @param \Pike\Request $req
      * @param \Pike\Response $res
-     * @param \RadCms\ContentType\ContentTypeCollection $ctypes
+     * @param \RadCms\CmsState $cmsState
      */
     public function handleGetContentTypes(Request $req,
                                           Response $res,
-                                          ContentTypeCollection $ctypes) {
+                                          CmsState $cmsState) {
         $filter = $req->params->filter ?? '';
         $res->json($filter !== 'no-internals'
-            ? $ctypes->toArray()
-            : $ctypes->filter(false, 'isInternal')->toArray());
+            ? $cmsState->getContentTypes()->getArrayCopy()
+            : ArrayUtils::filterByKey($cmsState->getContentTypes(),
+                                      false,
+                                      'isInternal')->getArrayCopy());
     }
     /**
      * @return string[]

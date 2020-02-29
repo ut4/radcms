@@ -46,16 +46,18 @@ class App {
      */
     public static function init(\stdClass $ctx) {
         self::$fs = $ctx->fs ?? new FileSystem(); // translaattorille
-        $ctx->acl = new ACL;
-        $ctx->state = new AppState($ctx->db, self::$fs, $ctx->acl);
         // @allow \Pike\PikeException
         $ctx->db->open();
         // @allow \Pike\PikeException
-        $ctx->state->selfLoad($ctx->router);
+        $ctx->cmsState = CmsStateLoader::getAndInitStateFromDb($ctx->db,
+                                                               self::$fs,
+                                                               $ctx->router);
+        $ctx->acl = new ACL;
+        $ctx->acl->setRules($ctx->cmsState->getAclRules());
         if (!isset($ctx->translator))
             $ctx->translator = new Translator(function () use ($ctx) {
                 $mainLangFilePath = RAD_SITE_PATH . 'translations/' .
-                    $ctx->state->siteInfo->lang . '.php';
+                    $ctx->cmsState->getSiteInfo()->lang . '.php';
                 return self::$fs->isFile($mainLangFilePath) ? include $mainLangFilePath : [];
             });
         $ctx->router->on('*', function ($req, $res, $next) use ($ctx) {
@@ -81,9 +83,8 @@ class App {
      */
     public static function alterIoc(Injector $container) {
         $container->share(self::$ctx->acl);
-        $container->share(self::$ctx->state);
+        $container->share(self::$ctx->cmsState);
         $container->share(self::$ctx->translator);
-        $container->share(self::$ctx->state->plugins);
-        $container->share(self::$ctx->state->contentTypes);
+        $container->share(self::$ctx->cmsState->getContentTypes());
     }
 }

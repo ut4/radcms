@@ -3,10 +3,11 @@
 namespace RadCms\Packager;
 
 use Pike\FileSystemInterface;
-use RadCms\AppState;
+use RadCms\CmsState;
 use RadCms\Content\DAO;
 use Pike\Db;
 use Pike\Auth\Crypto;
+use Pike\ArrayUtils;
 
 class Packager {
     public const DB_CONFIG_VIRTUAL_FILE_NAME = 'db-config.json';
@@ -17,8 +18,8 @@ class Packager {
     private $writer;
     /** @var \Pike\Auth\Crypto */
     private $crypto;
-    /** @var \RadCms\AppState */
-    private $appState;
+    /** @var \RadCms\CmsState */
+    private $cmsState;
     /** @var \Pike\FileSystemInterface */
     private $fs;
     /** @var \RadCms\ContentType\ContentTypeCollection */
@@ -30,20 +31,22 @@ class Packager {
     /**
      * @param \RadCms\Packager\PackageStreamInterface $writer
      * @param \Pike\Auth\Crypto $crypto
-     * @param \RadCms\AppState $appState
+     * @param \RadCms\CmsState $cmsState
      * @param \Pike\Db $db
      * @param \Pike\FileSystemInterface $fs
      */
     public function __construct(PackageStreamInterface $writer,
                                 Crypto $crypto,
-                                AppState $state,
+                                CmsState $cmsState,
                                 Db $db,
                                 FileSystemInterface $fs) {
         $this->writer = $writer;
         $this->crypto = $crypto;
-        $this->appState = $state;
+        $this->cmsState = $cmsState;
         $this->fs = $fs;
-        $this->themeContentTypes = $state->contentTypes->filter('site.json', 'origin');
+        $this->themeContentTypes = ArrayUtils::filterByKey($cmsState->getContentTypes(),
+                                                           'site.json',
+                                                           'origin');
         $this->cNodeDAO = new DAO($db, $this->themeContentTypes);
         $this->config = include RAD_SITE_PATH . 'config.php';
     }
@@ -95,8 +98,8 @@ class Packager {
      */
     private function generateWebsiteStateJson($sitePath) {
         return json_encode([
-            'siteName' => $this->appState->siteInfo->name,
-            'siteLang' => $this->appState->siteInfo->lang,
+            'siteName' => $this->cmsState->getSiteInfo()->name,
+            'siteLang' => $this->cmsState->getSiteInfo()->lang,
             'baseUrl' => RAD_BASE_URL,
             'radPath' => RAD_BASE_PATH,
             'sitePath' => $sitePath,
@@ -109,7 +112,7 @@ class Packager {
      */
     private function generateThemeContentDataJson() {
         $out = [];
-        foreach ($this->themeContentTypes->toArray() as $ctype) {
+        foreach ($this->themeContentTypes as $ctype) {
             // @allow \Pike\PikeException
             if (!($nodes = $this->cNodeDAO->fetchAll($ctype->name)->exec()))
                 continue;

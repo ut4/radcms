@@ -9,13 +9,14 @@ use Pike\Request;
 use RadCms\ContentType\ContentTypeCollection;
 use Pike\PikeException;
 use RadCms\Common\LoggerAccess;
+use Pike\ArrayUtils;
 
 class MoviesControllers {
     /**
      * @param \RadCms\ContentType\ContentTypeCollection $contentTypes
      */
     public function __construct(ContentTypeCollection $contentTypes) {
-        $this->contentType = $contentTypes->find('Movies');
+        $this->contentType = ArrayUtils::findByKey($contentTypes, 'Movies', 'name');
     }
     /**
      * Auryn\Injector injektoi argumentit automaattisesti kutsun yhteydessä

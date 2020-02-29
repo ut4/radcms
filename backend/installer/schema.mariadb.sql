@@ -1,7 +1,7 @@
 USE ${database};
 
 DROP TABLE IF EXISTS ${p}contentRevisions;
-DROP TABLE IF EXISTS ${p}websiteState;
+DROP TABLE IF EXISTS ${p}cmsState;
 DROP TABLE IF EXISTS ${p}users;
 
 CREATE TABLE ${p}users (
@@ -15,7 +15,7 @@ CREATE TABLE ${p}users (
     PRIMARY KEY (`id`)
 ) DEFAULT CHARSET = utf8mb4;
 
-CREATE TABLE ${p}websiteState (
+CREATE TABLE ${p}cmsState (
     `id` SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `name` VARCHAR(127) NOT NULL,
     `lang` VARCHAR(12) NOT NULL,

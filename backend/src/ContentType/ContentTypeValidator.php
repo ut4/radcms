@@ -24,9 +24,7 @@ abstract class ContentTypeValidator {
             ->rule('fields.*.widget.name', 'in', self::FIELD_WIDGETS);
         return array_merge(
             self::validateName($contentType->name),
-            $validator->validate((object)[
-                'fields' => $contentType->fields->toArray()
-            ])
+            $validator->validate($contentType)
         );
     }
     /**
@@ -34,7 +32,7 @@ abstract class ContentTypeValidator {
      * @return string[]
      */
     public static function validateAll(ContentTypeCollection $contentTypes) {
-        return array_reduce($contentTypes->toArray(), function ($all, $def) {
+        return array_reduce($contentTypes->getArrayCopy(), function ($all, $def) {
             return array_merge($all, ContentTypeValidator::validate($def));
         }, []);
     }
@@ -61,7 +59,7 @@ abstract class ContentTypeValidator {
         $v->rule('id?', 'type', 'int');
         $v->rule('isPublished?', 'type', 'bool');
         if ($additionalChecks) $additionalChecks($v);
-        foreach ($contentType->fields->toArray() as $f) {
+        foreach ($contentType->fields as $f) {
             $validationRuleArgs = [
                 'text' => ['type', 'string'],
                 'json' => ['type', 'string'],

@@ -11,18 +11,20 @@ class ContentTypeDef {
     /**
      * @param string $name
      * @param string $friendlyName
-     * @param array|\stdClass $compactFields ['fieldName' => 'dataType:widget', 'another' => 'dataType'...]
+     * @param array|\stdClass|\RadCms\ContentType\FieldCollection $fields ['fieldName' => 'dataType:widget', 'another' => 'dataType'...]
      * @param bool $isInternal = false
      * @param string $origin = 'site.json' 'site.json' | 'SomePlugin.json'
      */
     public function __construct($name,
                                 $friendlyName,
-                                $compactFields,
+                                $fields,
                                 $isInternal = false,
                                 $origin = 'site.json') {
         $this->name = $name;
         $this->friendlyName = $friendlyName;
-        $this->fields = FieldCollection::fromCompactForm($compactFields);
+        $this->fields = !($fields instanceof FieldCollection)
+            ? FieldCollection::fromCompactForm($fields)
+            : $fields;
         $this->isInternal = $isInternal;
         $this->origin = $origin;
     }

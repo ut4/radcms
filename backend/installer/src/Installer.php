@@ -151,7 +151,7 @@ class Installer {
      */
     private function insertMainSchemaData($s) {
         try {
-            if ($this->db->exec('INSERT INTO ${p}websiteState VALUES (1,?,?,?,?,?,?)',
+            if ($this->db->exec('INSERT INTO ${p}cmsState VALUES (1,?,?,?,?,?,?)',
                                 [
                                     $s->siteName,
                                     $s->siteLang,

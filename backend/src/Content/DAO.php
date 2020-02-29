@@ -5,6 +5,7 @@ namespace RadCms\Content;
 use Pike\Db;
 use RadCms\ContentType\ContentTypeCollection;
 use Pike\PikeException;
+use Pike\ArrayUtils;
 
 /**
  * Luokka jonka DAO->fetchOne|All() instansoi ja palauttaa. Ei tarkoitettu
@@ -80,7 +81,7 @@ class DAO {
      * @throws \Pike\PikeException
      */
     public function getContentType($name) {
-        if (!($type = $this->contentTypes->find($name)))
+        if (!($type = ArrayUtils::findByKey($this->contentTypes, $name, 'name')))
             throw new PikeException("Content type `{$name}` not registered",
                                     PikeException::BAD_INPUT);
         return $type;

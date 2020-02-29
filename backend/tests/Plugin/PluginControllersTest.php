@@ -36,7 +36,7 @@ final class PluginControllersTest extends DbTestCase {
             ValidPlugin::$instantiated = false;
             ValidPlugin::$initialized = false;
             ValidPlugin::$installed = false;
-            self::$db->exec('UPDATE ${p}websiteState SET `installedPlugins` = \'{}\'');
+            self::$db->exec('UPDATE ${p}cmsState SET `installedPlugins` = \'{}\'');
         };
         $s->app = $this->makeApp('\RadCms\App::create', $this->getAppConfig(),
             $s->ctx);
@@ -51,7 +51,7 @@ final class PluginControllersTest extends DbTestCase {
         $this->assertEquals(true, ValidPlugin::$installed);
     }
     private function verifyRegisteredPluginToDb($s) {
-        $rows = self::$db->fetchAll('SELECT `installedPlugins` FROM ${p}websiteState');
+        $rows = self::$db->fetchAll('SELECT `installedPlugins` FROM ${p}cmsState');
         $this->assertEquals(1, count($rows));
         $parsed = json_decode($rows[0]['installedPlugins'], true);
         $this->assertEquals(true, array_key_exists($s->testPluginName, $parsed));
@@ -88,7 +88,7 @@ final class PluginControllersTest extends DbTestCase {
         $this->assertEquals(false, ValidAndInstalledPlugin::$installed);
     }
     private function verifyUnregisteredPluginFromDb($s) {
-        $rows = self::$db->fetchAll('SELECT `installedPlugins` FROM ${p}websiteState');
+        $rows = self::$db->fetchAll('SELECT `installedPlugins` FROM ${p}cmsState');
         $this->assertEquals(1, count($rows));
         $parsed = json_decode($rows[0]['installedPlugins'], true);
         $this->assertEquals(false, array_key_exists($s->testPluginName, $parsed));

@@ -283,11 +283,11 @@ return [
         $this->assertEquals(1, count(self::$db->fetchAll(
             'SELECT `table_name` FROM information_schema.tables' .
             ' WHERE `table_schema` = ? AND `table_name` = ?',
-            [$s->input->dbDatabase, $s->input->dbTablePrefix . 'websiteState']
+            [$s->input->dbDatabase, $s->input->dbTablePrefix . 'cmsState']
         )));
     }
     private function verifyInsertedMainSchemaData($s) {
-        $row = self::$db->fetchOne('SELECT * FROM ${p}websiteState');
+        $row = self::$db->fetchOne('SELECT * FROM ${p}cmsState');
         $this->assertArrayHasKey('name', $row);
         $this->assertEquals($s->input->siteName, $row['name']);
         $this->assertEquals($s->input->siteLang, $row['lang']);

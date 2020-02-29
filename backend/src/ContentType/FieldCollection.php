@@ -2,13 +2,12 @@
 
 namespace RadCms\ContentType;
 
-use Pike\GenericArray;
 use Pike\Translator;
 
 /**
  * ContentTypeDef->fields.
  */
-class FieldCollection extends GenericArray implements \JsonSerializable {
+class FieldCollection extends \ArrayObject implements \JsonSerializable {
     /**
      * @param callable $formatterFn = null fn({name: string, friendlyName: string, dataType: string, widget: string, defaultValue: string} $field): string
      * @return string '`name`, `name2`'
@@ -16,7 +15,7 @@ class FieldCollection extends GenericArray implements \JsonSerializable {
     public function toSqlCols($formatterFn = null) {
         return implode(', ', array_map($formatterFn ?? function($f) {
             return "`{$f->name}`";
-        }, $this->vals));
+        }, $this->getArrayCopy()));
     }
     /**
      * @return string '`name` TEXT, `name2` VARCHAR'
@@ -28,7 +27,7 @@ class FieldCollection extends GenericArray implements \JsonSerializable {
                 'json' => 'JSON',
                 'int' => 'INT',
             ][$f->dataType];
-        }, $this->vals));
+        }, $this->getArrayCopy()));
     }
     /**
      * @param \Pike\Translator $translator = null
@@ -36,7 +35,7 @@ class FieldCollection extends GenericArray implements \JsonSerializable {
      */
     public function toCompactForm(Translator $translator = null) {
         $out = [];
-        foreach ($this->toArray() as $f)
+        foreach ($this as $f)
             $out[$f->name] = [$f->dataType,
                               !$translator ? $f->friendlyName : $translator->t($f->name),
                               $f->widget->toCompactForm(),
@@ -44,10 +43,10 @@ class FieldCollection extends GenericArray implements \JsonSerializable {
         return $out;
     }
     /**
-     * @return string
+     * @return array
      */
     public function jsonSerialize() {
-        return $this->toArray();
+        return $this->getArrayCopy();
     }
 
     ////////////////////////////////////////////////////////////////////////////
@@ -57,17 +56,17 @@ class FieldCollection extends GenericArray implements \JsonSerializable {
      * @return \RadCms\ContentType\FieldCollection
      */
     public static function fromCompactForm($compactFields) {
-        $out = new FieldCollection('stdClass');
+        $out = new FieldCollection;
         $DEFAULT_WIDGET = new FieldSetting(ContentTypeValidator::FIELD_WIDGETS[0]);
         foreach ($compactFields as $name => $def) {
             $remainingArgs = !is_string($def) ? $def : explode(':', $def);
-            $out->add((object)['name' => $name,
-                               'friendlyName' => $remainingArgs[1] ?? $name,
-                               'dataType' => $remainingArgs[0],
-                               'widget' => !isset($remainingArgs[2])
-                                   ? $DEFAULT_WIDGET
-                                   : FieldSetting::fromCompactForm($remainingArgs[2]),
-                               'defaultValue' => $remainingArgs[3] ?? '']);
+            $out[] = (object)['name' => $name,
+                              'friendlyName' => $remainingArgs[1] ?? $name,
+                              'dataType' => $remainingArgs[0],
+                              'widget' => !isset($remainingArgs[2])
+                                  ? $DEFAULT_WIDGET
+                                  : FieldSetting::fromCompactForm($remainingArgs[2]),
+                              'defaultValue' => $remainingArgs[3] ?? ''];
         }
         return $out;
     }
@@ -76,16 +75,16 @@ class FieldCollection extends GenericArray implements \JsonSerializable {
      * @return \RadCms\ContentType\FieldCollection
      */
     public static function fromArray(array $input) {
-        $out = new FieldCollection('stdClass');
+        $out = new FieldCollection;
         foreach ($input as $field)
-            $out->add((object)['name' => $field->name,
-                               'friendlyName' => $field->friendlyName,
-                               'dataType' => $field->dataType,
-                               'widget' => new FieldSetting(
-                                    $field->widget->name,
-                                    $field->widget->args ?? null
-                                ),
-                               'defaultValue' => $field->defaultValue ?? '']);
+            $out[] = (object)['name' => $field->name,
+                              'friendlyName' => $field->friendlyName,
+                              'dataType' => $field->dataType,
+                              'widget' => new FieldSetting(
+                                  $field->widget->name,
+                                  $field->widget->args ?? null
+                              ),
+                              'defaultValue' => $field->defaultValue ?? ''];
         return $out;
     }
 }

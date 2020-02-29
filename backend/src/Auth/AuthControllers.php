@@ -9,7 +9,7 @@ use Pike\Validation;
 use Pike\Auth\Authenticator;
 use RadCms\Templating\MagicTemplate;
 use Pike\PikeException;
-use RadCms\AppState;
+use RadCms\CmsState;
 
 class AuthControllers {
     private $auth;
@@ -76,12 +76,12 @@ class AuthControllers {
      *
      * @param \Pike\Request $req
      * @param \Pike\Response $res
-     * @param \RadCms\AppState $appState
+     * @param \RadCms\CmsState $cmsState
      * @param \Pike\AppConfig $config
      */
     public function handleRequestPassResetFormSubmit(Request $req,
                                                      Response $res,
-                                                     AppState $appState,
+                                                     CmsState $cmsState,
                                                      AppConfig $appConfig) {
         if (($errors = $this->validateRequestPassResetFormInput($req->body))) {
             $res->status(400)->json($errors);
@@ -89,8 +89,8 @@ class AuthControllers {
         }
         try {
         $this->auth->requestPasswordReset($req->body->usernameOrEmail,
-            function ($user, $resetKey, $settings) use ($appState, $appConfig) {
-                $siteName = $appState->siteInfo->name;
+            function ($user, $resetKey, $settings) use ($cmsState, $appConfig) {
+                $siteName = $cmsState->getSiteInfo()->name;
                 $siteUrl = $_SERVER['SERVER_NAME'];
                 $settings->useSMTP = $appConfig->get('mail.transport') === 'SMTP';
                 $settings->fromAddress = "root@{$siteUrl}";

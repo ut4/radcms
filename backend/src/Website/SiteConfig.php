@@ -49,12 +49,12 @@ class SiteConfig {
     }
     /**
      * @param array $inputUrlMatchers
-     * @return \RadCms\Website\UrlMatcherCollection
+     * @return array
      */
     private function collectUrlMatchers($inputUrlMatchers) {
-        $out = new UrlMatcherCollection();
+        $out = [];
         foreach ($inputUrlMatchers as $definition)
-            $out->add(...$definition);
+            $out[] = new UrlMatcher(...$definition);
         return $out;
     }
     /**

@@ -6,7 +6,7 @@ use Pike\Request;
 use Pike\Response;
 use RadCms\Templating\MagicTemplate;
 use RadCms\Content\MagicTemplateDAO as MagicTemplateContentDAO;
-use RadCms\AppState;
+use RadCms\CmsState;
 use Pike\FileSystem;
 use Pike\PikeException;
 use RadCms\Theme\Theme;
@@ -19,25 +19,25 @@ use RadCms\Auth\ACL;
  */
 class WebsiteControllers {
     private $siteCfg;
-    private $appState;
+    private $cmsState;
     private $stockContentTypes;
     /**
      * @param \RadCms\Website\SiteConfig $siteConfig
-     * @param \RadCms\AppState $appState
+     * @param \RadCms\CmsState $cmsState
      * @param \RadCms\Theme\Theme $theme
      */
     public function __construct(SiteConfig $siteConfig,
-                                AppState $appState,
+                                CmsState $cmsState,
                                 Theme $theme) {
         // @allow \Pike\PikeException
         $siteConfig->selfLoad(RAD_SITE_PATH . 'site.json');
-        $api = new BaseAPI($appState->apiConfigs);
+        $api = new BaseAPI($cmsState->getApiConfigs());
         // @allow \Pike\PikeException
         $theme->load($api);
         // @allow \Pike\PikeException
         $this->initStockContentTypes($api);
         $this->siteCfg = $siteConfig;
-        $this->appState = $appState;
+        $this->cmsState = $cmsState;
     }
     /**
      * GET *: handlaa sivupyynnön.
@@ -54,7 +54,7 @@ class WebsiteControllers {
                                       MagicTemplateContentDAO $dao,
                                       FileSystem $fs,
                                       ACL $acl) {
-        $layoutFileName = $this->siteCfg->urlMatchers->findLayoutFor($req->path);
+        $layoutFileName = self::findLayout($this->siteCfg->urlMatchers, $req->path);
         if (!$layoutFileName) {
             $res->html('404');
             return;
@@ -65,13 +65,13 @@ class WebsiteControllers {
                                        '_jsFiles' => $this->siteCfg->jsAssets],
                                       $dao,
                                       $fs);
-        $this->appState->apiConfigs->applyRegisteredTemplateStuff($template,
+        $this->cmsState->getApiConfigs()->applyRegisteredTemplateStuff($template,
             'WebsiteLayout');
         try {
             $url = $req->path ? explode('/', ltrim($req->path, '/')) : [''];
             $html = $template->render(['url' => $url,
                                        'urlStr' => $req->path,
-                                       'site' => $this->appState->siteInfo]);
+                                       'site' => $this->cmsState->getSiteInfo()]);
         } catch (PikeException $e) {
             if (!(RAD_FLAGS & RAD_DEVMODE)) {
                 $res->html("Hmm, {$layoutFileName} teki jotain odottamatonta.");
@@ -85,6 +85,17 @@ class WebsiteControllers {
             : $this->injectParentWindowCpanelSetupScript($html, $bodyEnd,
                 $this->makeFrontendData($req, $dao, $template, $acl))
         );
+    }
+    /**
+     * @param \RadCms\Website\UrlMatcher[] $urlMatchers
+     * @param string $url
+     * @return string
+     */
+    public static function findLayout($urlMatchers, $url) {
+        foreach ($urlMatchers as $rule) {
+            if (preg_match($rule->pattern, $url)) return $rule->layoutFileName;
+        }
+        return '';
     }
     /**
      * ...
@@ -119,7 +130,7 @@ class WebsiteControllers {
         return json_encode([
             'contentPanels' => $dao->getFrontendPanelInfos(),
             'adminPanels' => $role === ACL::ROLE_SUPER_ADMIN
-                ? $this->appState->apiConfigs->getRegisteredAdminPanels()
+                ? $this->cmsState->getApiConfigs()->getRegisteredAdminPanels()
                 : [],
             'baseUrl' => $template->url('/'),
             'assetBaseUrl' => $template->assetUrl('/'),

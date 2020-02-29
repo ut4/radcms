@@ -47,7 +47,7 @@ final class AppTest extends DbTestCase {
                           "{$pluginDirPath}/ValidPlugin"]);
         self::markPluginAsInstalled('ValidAndInstalledPlugin', self::$db);
         App::create([], $ctx);
-        $actuallyRegisteredPlugins = $ctx->state->plugins->toArray();
+        $actuallyRegisteredPlugins = $ctx->cmsState->getPlugins();
         $this->assertEquals(2, count($actuallyRegisteredPlugins));
         $this->assertEquals('ValidAndInstalledPlugin', $actuallyRegisteredPlugins[0]->name);
         $this->assertEquals('ValidPlugin', $actuallyRegisteredPlugins[1]->name);
@@ -61,13 +61,13 @@ final class AppTest extends DbTestCase {
         self::markPluginAsUninstalled('ValidAndInstalledPlugin', self::$db);
     }
     public static function markPluginAsInstalled($pluginName, $db) {
-        if ($db->exec('UPDATE ${p}websiteState SET `installedPlugins`=' .
+        if ($db->exec('UPDATE ${p}cmsState SET `installedPlugins`=' .
                       ' JSON_SET(`installedPlugins`, ?, 1)',
                       ['$."' . $pluginName . '"']) < 1)
             throw new \RuntimeException('Failed to setup test data.');
     }
     public static function markPluginAsUninstalled($pluginName, $db) {
-        if ($db->exec('UPDATE ${p}websiteState SET `installedPlugins`=' .
+        if ($db->exec('UPDATE ${p}cmsState SET `installedPlugins`=' .
                       ' JSON_REMOVE(`installedPlugins`, ?)',
                       ['$."' . $pluginName . '"']) < 1)
             throw new \RuntimeException('Failed to clean test data.');

@@ -22,7 +22,7 @@ trait ContentTestUtils {
         }
         $this->assertEquals(intval($isInstalled), self::$db->fetchOne(
             'SELECT JSON_CONTAINS_PATH(`installedContentTypes`, \'one\',' .
-            ' ?) as `containsKey` FROM ${p}websiteState',
+            ' ?) as `containsKey` FROM ${p}cmsState',
             ['$."' . $contentTypeName . '"']
         )['containsKey']);
     }
@@ -54,7 +54,7 @@ trait ContentTestUtils {
             throw new \RuntimeException('Failed to clean test data');
     }
     public static function clearInstalledContentTypesFromDb() {
-        self::$db->exec('UPDATE ${p}websiteState SET' .
+        self::$db->exec('UPDATE ${p}cmsState SET' .
                         ' `installedContentTypes` = \'{}\'' .
                         ', `installedContentTypesLastUpdated` = NULL');
     }

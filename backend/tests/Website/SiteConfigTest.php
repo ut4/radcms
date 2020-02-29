@@ -94,7 +94,7 @@ final class SiteConfigTest extends TestCase {
                 'pattern' => '/^\\/regexp.$/i',
                 'layoutFileName' => 'path/to/file.tmpl.php'
             ]]),
-            json_encode($s->actuallyLoadedUrlMatchers->toArray())
+            json_encode($s->actuallyLoadedUrlMatchers)
         );
     }
     private function verifyLoadedAssets($s) {

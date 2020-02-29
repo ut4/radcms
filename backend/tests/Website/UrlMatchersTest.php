@@ -2,18 +2,19 @@
 
 namespace RadCms\Tests\Website;
 
-use RadCms\Website\UrlMatcherCollection;
 use PHPUnit\Framework\TestCase;
+use RadCms\Website\UrlMatcher;
+use RadCms\Website\WebsiteControllers;
 
 final class UrlMatchersTest extends TestCase {
-    public function testFindLayoutReturnsLayoutNameBasedOnPassedRules() {
-        $matchers = new UrlMatcherCollection();
-        $matchers->add('foo', 'file1.php');
-        $matchers->add('bar.*', 'file2.php');
-        $this->assertEquals('file1.php', $matchers->findLayoutFor('foo'));
-        $this->assertEquals('file1.php', $matchers->findLayoutFor('FOO'));
-        $this->assertEquals('',          $matchers->findLayoutFor('foos'));
-        $this->assertEquals('file2.php', $matchers->findLayoutFor('bar'));
-        $this->assertEquals('file2.php', $matchers->findLayoutFor('barss'));
+    public function testFindLayoutReturnsLayoutName() {
+        $matchers = [];
+        $matchers[] = new UrlMatcher('foo', 'file1.php');
+        $matchers[] = new UrlMatcher('bar.*', 'file2.php');
+        $this->assertEquals('file1.php', WebsiteControllers::findLayout($matchers, 'foo'));
+        $this->assertEquals('file1.php', WebsiteControllers::findLayout($matchers, 'FOO'));
+        $this->assertEquals('',          WebsiteControllers::findLayout($matchers, 'foos'));
+        $this->assertEquals('file2.php', WebsiteControllers::findLayout($matchers, 'bar'));
+        $this->assertEquals('file2.php', WebsiteControllers::findLayout($matchers, 'barss'));
     }
 }
