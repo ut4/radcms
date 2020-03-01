@@ -18,7 +18,7 @@ class ContentTypeMigrator {
      */
     public function __construct(Db $db) {
         $this->db = $db;
-        $this->origin = 'site.json';
+        $this->origin = 'Website';
     }
     /**
      * @param object $data Validoitu $req->body
@@ -74,7 +74,7 @@ class ContentTypeMigrator {
     public function addField(FieldDef $field, ContentTypeDef $contentType) {
         $contentType->fields[] = $field;
         try {
-            $this->db->exec('ALTER TABLE ${p}' . $contentType->name .
+            $this->db->exec('ALTER TABLE `${p}' . $contentType->name . '`' .
                             ' ADD COLUMN ' . $field->toSqlTableField());
             //
             $compacted = $contentType->toCompactForm($this->origin);
@@ -92,10 +92,10 @@ class ContentTypeMigrator {
         }
     }
     /**
-     * @param string $origin
+     * @param \RadCms\Plugin\Plugin $plugin
      */
     public function setOrigin(Plugin $plugin) {
-        $this->origin = $plugin->name . '.json';
+        $this->origin = $plugin->name;
     }
     /**
      * @param \RadCms\ContentType\ContentTypeCollection $contentTypes
@@ -137,7 +137,7 @@ class ContentTypeMigrator {
     private function createContentTypes($contentTypes, $size) {
         $sql = '';
         foreach ($contentTypes as $type) {
-            $sql .= 'CREATE TABLE ${p}' . $type->name . '(' .
+            $sql .= 'CREATE TABLE `${p}' . $type->name . '` (' .
                 '`id` ' . strtoupper($size) . 'INT UNSIGNED NOT NULL AUTO_INCREMENT' .
                 ', `isPublished` TINYINT(1) UNSIGNED NOT NULL DEFAULT 0' .
                 ', ' . $type->fields->toSqlTableFields() .
@@ -159,7 +159,7 @@ class ContentTypeMigrator {
     private function removeContentTypes($contentTypes) {
         try {
             $this->db->exec(implode('', array_map(function ($type) {
-                return 'DROP TABLE ${p}' . $type->name . ';';
+                return 'DROP TABLE `${p}' . $type->name . '`;';
             }, $contentTypes->getArrayCopy())));
             return true;
         } catch (\PDOException $e) {

@@ -45,7 +45,7 @@ class Packager {
         $this->cmsState = $cmsState;
         $this->fs = $fs;
         $this->themeContentTypes = ArrayUtils::filterByKey($cmsState->getContentTypes(),
-                                                           'site.json',
+                                                           'Website',
                                                            'origin');
         $this->cNodeDAO = new DAO($db, $this->themeContentTypes);
         $this->config = include RAD_SITE_PATH . 'config.php';
@@ -67,7 +67,7 @@ class Packager {
                 return $this->generateWebsiteStateJson($sitePath);
             }],
             [self::THEME_CONTENT_TYPES_VIRTUAL_FILE_NAME, function () {
-                return json_encode($this->themeContentTypes->toCompactForm('site.json'));
+                return json_encode($this->themeContentTypes->toCompactForm('Website'));
             }],
             [self::THEME_CONTENT_DATA_VIRTUAL_FILE_NAME, function () {
                 return $this->generateThemeContentDataJson();

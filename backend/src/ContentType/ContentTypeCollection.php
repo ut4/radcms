@@ -10,13 +10,13 @@ class ContentTypeCollection extends \ArrayObject {
      * @param string $friendlyName
      * @param array|\stdClass|\RadCms\ContentType\FieldCollection $fields ['fieldName' => 'dataType:widget', 'another' => 'dataType'...]
      * @param bool $isInternal = false
-     * @param string $origin = 'site.json' 'site.json' | 'SomePlugin.json'
+     * @param string $origin = null 'Website' | 'SomePlugin'
      */
     public function add($name,
                         $friendlyName,
                         $fields,
                         $isInternal = false,
-                        $origin = 'site.json') {
+                        $origin = null) {
         $this[] = new ContentTypeDef($name,
                                      $friendlyName,
                                      $fields,
@@ -51,7 +51,7 @@ class ContentTypeCollection extends \ArrayObject {
                                         $remainingArgs[0],
                                         $remainingArgs[1],
                                         ($pcs[1] ?? '') === 'internal',
-                                        $remainingArgs[2] ?? 'site.json');
+                                        $remainingArgs[2] ?? null);
         }
         return $out;
     }

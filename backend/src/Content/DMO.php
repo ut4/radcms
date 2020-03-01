@@ -51,7 +51,7 @@ class DMO extends DAO {
      * @return int $numAffectedRows
      */
     private function insertWithoutRevision($contentTypeName, $q) {
-        $numRows = $this->db->exec('INSERT INTO ${p}' . $contentTypeName .
+        $numRows = $this->db->exec('INSERT INTO `${p}' . $contentTypeName . '`' .
                                    ' (' . implode(', ', $q['cols']) . ')' .
                                    ' VALUES (' . implode(', ', $q['qs']) . ')',
                                    $q['vals']);
@@ -144,7 +144,7 @@ class DMO extends DAO {
         $q['vals'][] = $id;
         //
         return [
-            'UPDATE ${p}' . $contentTypeName .
+            'UPDATE `${p}' . $contentTypeName . '`' .
             ' SET ' . implode(', ', $q['colQs']) .
             ' WHERE `id` = ?',
             $q['vals']

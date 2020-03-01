@@ -37,7 +37,7 @@ class ContentAddView extends preact.Component {
                            confirmButtonText="Lisää"
                            autoClose={ false }>
             <h2>Lisää sisältöä</h2>
-            <InputGroup label={ () => <span data-help-text="Dev note: Voit luoda uusia sisältötyyppejä muokkaamalla site.json-tiedostoa (ks. https://todo).">Sisältötyyppi</span> }>
+            <InputGroup label={ () => <span data-help-text="Dev note: Voit luoda uusia sisältötyyppejä hallintapaneelin devaaja-osiosta (ks. https://todo).">Sisältötyyppi</span> }>
                 <select onChange={ e => this.receiveContentTypeSelection(e) }
                         value={ this.state.contentType.name }>
                     { this.state.contentTypes.map(type =>

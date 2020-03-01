@@ -137,8 +137,8 @@ final class PackagerControllersTest extends DbTestCase {
             ], JSON_UNESCAPED_UNICODE);
         }
         if ($virtualFileName === Packager::THEME_CONTENT_TYPES_VIRTUAL_FILE_NAME) {
-            return '{"SomeType":["Friendly name",{"name":["text","name","textField",""]},"site.json"],'.
-                    '"AnotherType":["Friendly eman",{"title":["text","title","textField",""]},"site.json"]}';
+            return '{"SomeType":["Friendly name",{"name":["text","name","textField",""]},"Website"],'.
+                    '"AnotherType":["Friendly eman",{"title":["text","title","textField",""]},"Website"]}';
         }
         throw new \RuntimeException("Unknown package file {$virtualFileName}");
     }

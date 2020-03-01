@@ -158,7 +158,7 @@ final class ContentTypeControllersTest extends DbTestCase {
                   'defaultValue' => 'default.jpg'],
              ],
              'isInternal' => false,
-             'origin' => 'site.json'],
+             'origin' => 'Website'],
             $s
         );
     }
@@ -193,12 +193,12 @@ final class ContentTypeControllersTest extends DbTestCase {
                 ['name' => 'pic', 'friendlyName' => 'Kuva', 'dataType' => 'text',
                  'widget' => new FieldSetting('image'),
                  'defaultValue' => 'default.jpg'],
-            ], 'isInternal' => false, 'origin' => 'site.json'],
+            ], 'isInternal' => false, 'origin' => 'Website'],
             ['name' => 'Locations', 'friendlyName' => 'Paikat', 'fields' => [
                 ['name' => 'name', 'friendlyName' => 'Tapahtumapaikka', 'dataType' => 'text',
                  'widget' => new FieldSetting(self::DEFAULT_WIDGET),
                  'defaultValue' => ''],
-            ], 'isInternal' => false, 'origin' => 'site.json']],
+            ], 'isInternal' => false, 'origin' => 'Website']],
             $s
         );
     }

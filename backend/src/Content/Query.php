@@ -107,7 +107,7 @@ class Query {
         $mainQ = 'SELECT `id`, `isPublished`, ' .
                  $this->contentType->fields->toSqlCols() .
                  ', \'' . $this->contentType->name . '\' AS `contentType`' .
-                 ' FROM ${p}' . $this->contentType->name .
+                 ' FROM `${p}' . $this->contentType->name . '`' .
                  (!$this->whereDef ? '' : ' WHERE ' . $this->whereDef->expr) .
                  (!$this->orderByExpr ? '' : ' ORDER BY ' . $this->orderByExpr) .
                  (!$this->limitExpr ? '' : ' LIMIT ' . $this->limitExpr);
@@ -151,7 +151,7 @@ class Query {
         $ctypeName = $joinDef->contentType;
         $a = $joinDef->alias;
         $joins[] = (!$joinDef->isLeft ? '' : 'LEFT ') . 'JOIN' .
-                    ' ${p}' . $ctypeName . ' AS ' . $joinDef->alias .
+                    ' `${p}' . $ctypeName . '` AS ' . $joinDef->alias .
                     ' ON (' . $joinDef->expr . ')';
         $fields[] = "{$a}.`id` AS `{$a}Id`, '{$ctypeName}' AS `{$a}ContentType`, " .
                     $this->dao->getContentType($ctypeName)->fields
