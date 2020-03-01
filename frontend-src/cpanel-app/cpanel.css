@@ -381,8 +381,11 @@ table.pika-time {
 .list.fields {
     background-color: rgba(0, 0, 0, 0.04);
     border-radius: 2px;
-    padding: 8px 12px;
+    padding: 18px 12px 8px 12px;
     margin-top: 8px;
+}
+.fields.no-thead {
+    padding-top: 8px;
 }
 .fields .row {
     align-items: center;
@@ -394,6 +397,12 @@ table.pika-time {
     color: rgba(0,0,0,0.4);
 }
 .disallow-edit {
+    opacity: 0.3;
+}
+.content-type-card .blurred header,
+.content-type-card .blurred .list,
+.content-type-card .list.blurred,
+.content-type-card tr.blurred {
     opacity: 0.3;
 }
 .disallow-edit .fields .buttons {

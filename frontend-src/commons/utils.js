@@ -36,6 +36,12 @@ const urlUtils = {
         }
     },
     /**
+     * ...
+     */
+    reload() {
+        window.location.reload();
+    },
+    /**
      * @param {string} url
      */
     makeUrl(url) {

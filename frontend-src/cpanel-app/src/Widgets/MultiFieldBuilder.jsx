@@ -82,6 +82,7 @@ class MultiFieldBuilder extends preact.Component {
      */
     updateFieldName(val, field) {
         field.name = val;
+        this.emitChange();
     }
     /**
      * @access private

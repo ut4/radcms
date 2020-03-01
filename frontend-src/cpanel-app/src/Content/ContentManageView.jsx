@@ -46,7 +46,7 @@ class ContentManageView extends preact.Component {
                                 ? () => <a href={ `#/add-content/${this.state.selectedContentTypeName}` }
                                            title="Luo uusi"
                                            class="icon-only">
-                                    <FeatherSvg iconId="plus-circle" className="small"/>
+                                    <FeatherSvg iconId="plus-circle" className="medium"/>
                                 </a>
                                 : '' }>
                     <select onChange={ e => this.updateContent(e) }>{
@@ -72,7 +72,7 @@ class ContentManageView extends preact.Component {
                         }</td>
                         <td>
                             <a href={ href } class="icon-only">
-                                <FeatherSvg iconId="edit-2" className="small"/>
+                                <FeatherSvg iconId="edit-2" className="medium"/>
                             </a>
                         </td>
                     </tr>;

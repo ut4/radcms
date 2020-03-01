@@ -90,6 +90,7 @@ declare module "@rad-commons" {
         };
         export const urlUtils: {
             redirect(to: string, full?: boolean);
+            reload();
             makeUrl(url: string): string;
             makeAssetUrl(url: string): string;
             normalizeUrl(url: string): string;

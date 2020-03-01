@@ -23,6 +23,11 @@ a {
 a:hover {
     color: #5c5a75d5;
 }
+a.disabled {
+    color: #e2e2e2;
+    pointer-events: none;
+    cursor: not-allowed;
+}
 .hidden {
     display: none;
 }
@@ -35,11 +40,15 @@ a:hover {
     stroke-linejoin: round;
     fill: none;
 }
-.feather.small,
+.feather.medium,
 .icon-button .feather {
     width: 18px;
     height: 18px;
     vertical-align: top;
+}
+.feather.small {
+    width: 16px;
+    height: 16px;
 }
 .contenteditable {
     border-bottom: 1px dashed rgba(0,0,0,0.26);
@@ -304,7 +313,7 @@ table.striped tbody td:first-child {
 td.buttons {
     padding-right: 0;
     text-align: right;
-    width: 1px;
+    width: 64px;
 }
 
 
