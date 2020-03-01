@@ -328,7 +328,7 @@ ControlPanel.ContentPanel = class extends ControlPanel.AdminPanel {
  * @param {string} selector
  * @param {number} selectorIndex
  * @param {HTMLIFrameElement} siteIframe
- * @return {Function|null} togglerFn tail null jos $selector ei mätchännyt
+ * @returns {Function|null} togglerFn tail null jos $selector ei mätchännyt
  */
 function makeHighlightToggler(selector, selectorIndex, siteIframe) {
     const siteIframeWin = siteIframe.contentWindow;

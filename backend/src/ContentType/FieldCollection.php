@@ -9,25 +9,23 @@ use Pike\Translator;
  */
 class FieldCollection extends \ArrayObject implements \JsonSerializable {
     /**
-     * @param callable $formatterFn = null fn({name: string, friendlyName: string, dataType: string, widget: string, defaultValue: string} $field): string
+     * @param \Closure $formatterFn = null fn(\RadCms\ContentType\FieldDef $field): string
      * @return string '`name`, `name2`'
      */
     public function toSqlCols($formatterFn = null) {
-        return implode(', ', array_map($formatterFn ?? function($f) {
-            return "`{$f->name}`";
-        }, $this->getArrayCopy()));
+        $names = [];
+        foreach ($this as $f)
+            $names[] = $f->toSqlCol($formatterFn);
+        return implode(', ', $names);
     }
     /**
-     * @return string '`name` TEXT, `name2` VARCHAR'
+     * @return string '`name` TEXT, `name2` INT UNSIGNED'
      */
     public function toSqlTableFields() {
-        return implode(',', array_map(function ($f) {
-            return "`{$f->name}` " . [
-                'text' => 'TEXT',
-                'json' => 'JSON',
-                'int' => 'INT',
-            ][$f->dataType];
-        }, $this->getArrayCopy()));
+        $fields = [];
+        foreach ($this as $f)
+            $fields[] = $f->toSqlTableField();
+        return implode(', ', $fields);
     }
     /**
      * @param \Pike\Translator $translator = null
@@ -60,13 +58,13 @@ class FieldCollection extends \ArrayObject implements \JsonSerializable {
         $DEFAULT_WIDGET = new FieldSetting(ContentTypeValidator::FIELD_WIDGETS[0]);
         foreach ($compactFields as $name => $def) {
             $remainingArgs = !is_string($def) ? $def : explode(':', $def);
-            $out[] = (object)['name' => $name,
-                              'friendlyName' => $remainingArgs[1] ?? $name,
-                              'dataType' => $remainingArgs[0],
-                              'widget' => !isset($remainingArgs[2])
-                                  ? $DEFAULT_WIDGET
-                                  : FieldSetting::fromCompactForm($remainingArgs[2]),
-                              'defaultValue' => $remainingArgs[3] ?? ''];
+            $out[] = new FieldDef($name,
+                                  $remainingArgs[1] ?? $name, // friendlyName
+                                  $remainingArgs[0],          // dataType
+                                  !isset($remainingArgs[2])   // widget
+                                      ? $DEFAULT_WIDGET
+                                      : FieldSetting::fromCompactForm($remainingArgs[2]),
+                                  $remainingArgs[3] ?? '');   // defaultValue
         }
         return $out;
     }
@@ -77,14 +75,7 @@ class FieldCollection extends \ArrayObject implements \JsonSerializable {
     public static function fromArray(array $input) {
         $out = new FieldCollection;
         foreach ($input as $field)
-            $out[] = (object)['name' => $field->name,
-                              'friendlyName' => $field->friendlyName,
-                              'dataType' => $field->dataType,
-                              'widget' => new FieldSetting(
-                                  $field->widget->name,
-                                  $field->widget->args ?? null
-                              ),
-                              'defaultValue' => $field->defaultValue ?? ''];
+            $out[] = FieldDef::fromObject($field);
         return $out;
     }
 }

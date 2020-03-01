@@ -21,6 +21,8 @@ final class ContentTypeControllersTest extends DbTestCase {
     private $app;
     public static function setUpBeforeClass() {
         self::$testContentTypes = new ContentTypeCollection();
+        self::$testContentTypes->add('ATest', 'Testi',
+                                     ['field1' => ['text']]);
         self::$testContentTypes->add('Events', 'Tapahtumat',
                                      ['name' => ['text'],
                                       'pic' => ['text', 'Kuva', 'image', 'default.jpg']]);
@@ -71,7 +73,75 @@ final class ContentTypeControllersTest extends DbTestCase {
         $this->sendResponseBodyCapturingRequest($req, $res, $this->app, $s);
     }
 
+
     ////////////////////////////////////////////////////////////////////////////
+
+
+    public function testPOSTContentTypeFieldAddsFieldToContentType() {
+        $s = $this->setupAddFieldTest();
+        $this->sendAddFieldToContentTypeRequest($s);
+        $this->verifyAddedFieldToContentTypeTable($s);
+        $this->verifyAddedFieldToInternalTable($s);
+        $this->uninstallAddFieldTestContentType();
+    }
+    private function setupAddFieldTest() {
+        return (object) [
+            'contentTypeName' => 'ATest',
+            'reqBody' => (object) [
+                'name' => 'newField',
+                'dataType' => 'text',
+                'friendlyName' => 'Uusi kenttä',
+                'isInternal' => false,
+                'defaultValue' => '',
+                'widget' => (object) ['name' => 'textField']
+            ],
+        ];
+    }
+    private function sendAddFieldToContentTypeRequest($s) {
+        $req = new Request("/api/content-types/field/{$s->contentTypeName}",
+                           'POST',
+                           $s->reqBody);
+        $res = $this->createMockResponse(['ok' => 'ok']);
+        $this->sendRequest($req, $res, $this->app);
+    }
+    private function verifyAddedFieldToContentTypeTable($s) {
+        $fieldData = $s->reqBody;
+        $info = self::$db->fetchOne(
+            'SELECT COLUMN_NAME, COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS' .
+            ' WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND COLUMN_NAME = ?',
+            [self::$db->getCurrentDatabaseName(),
+             self::$db->getTablePrefix() . $s->contentTypeName,
+             $fieldData->name]
+        );
+        $this->assertNotNull($info);
+        $this->assertEquals($fieldData->dataType, $info['COLUMN_TYPE']);
+    }
+    private function verifyAddedFieldToInternalTable($s) {
+        $fieldData = $s->reqBody;
+        $row = self::$db->fetchOne('SELECT `installedContentTypes` FROM ${p}cmsState');
+        $this->assertNotNull($row);
+        $parsed = json_decode($row['installedContentTypes']);
+        $this->assertNotNull($parsed);
+        $actualContentType = $parsed->{$s->contentTypeName} ?? null;
+        $this->assertNotNull($actualContentType);
+        $actualNewField = $actualContentType[1]->{$fieldData->name} ?? null;
+        $this->assertNotNull($actualNewField);
+        $this->assertEquals($fieldData->dataType, $actualNewField[0]);
+        $this->assertEquals($fieldData->friendlyName, $actualNewField[1]);
+        $this->assertEquals($fieldData->widget->name, $actualNewField[2]);
+        $this->assertEquals($fieldData->defaultValue, $actualNewField[3]);
+    }
+    private function uninstallAddFieldTestContentType() {
+        $onlyAddFieldTestContentType = new ContentTypeCollection();
+        $onlyAddFieldTestContentType[] = self::$testContentTypes[0];
+        self::$testContentTypes->offsetUnset(0);
+        // @allow \Pike\PikeException
+        self::$migrator->uninstallMany($onlyAddFieldTestContentType);
+    }
+
+
+    ////////////////////////////////////////////////////////////////////////////
+
 
     public function testGETContentTypeReturnsContentType() {
         $s = $this->setupGetContentTypeTest();

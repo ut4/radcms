@@ -161,7 +161,7 @@ class BaseInput extends preact.Component {
         }
     }
     /**
-     * @return string 'input'|'select' etc.
+     * @returns {string} 'input'|'select' etc.
      * @access protected
      */
     getTagName() {

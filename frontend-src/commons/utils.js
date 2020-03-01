@@ -4,7 +4,7 @@ const dateUtils = {
     /**
      * @param {Date} date
      * @param {boolean} includeTime = false
-     * @return {string}
+     * @returns {string}
      */
     getLocaleDateString(date, includeTime = false) {
         return date.getDate() + '.' + (date.getMonth() + 1) + ' ' + date.getFullYear() +
@@ -12,7 +12,7 @@ const dateUtils = {
     },
     /**
      * @param {Date} date
-     * @return {string}
+     * @returns {string}
      */
     getLocaleTimeString(date) {
         const zeroPrefix = num => num > 9 ? num.toString() : '0' + num;

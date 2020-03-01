@@ -9,7 +9,7 @@ abstract class ContentTypeValidator {
     const FIELD_WIDGETS = ['textField', 'textArea', 'richText', 'image',
                            'multiFieldBuilder', 'date', 'dateTime',
                            'color', 'contentRef', 'hidden'];
-    const FIELD_DATA_TYPES = ['text', 'json', 'int'];
+    const FIELD_DATA_TYPES = ['text', 'json', 'int', 'uint'];
     const COLLECTION_SIZES = ['tiny', 'small', 'medium', '', 'big'];
     /**
      * @param \RadCms\ContentType\ContentTypeDef $contentType
@@ -56,18 +56,20 @@ abstract class ContentTypeValidator {
                                               $input,
                                               $additionalChecks = null) {
         $v = Validation::makeObjectValidator();
-        $v->rule('id?', 'type', 'int');
+        $v->rule('id?', 'type', 'string');
         $v->rule('isPublished?', 'type', 'bool');
         if ($additionalChecks) $additionalChecks($v);
         foreach ($contentType->fields as $f) {
-            $validationRuleArgs = [
-                'text' => ['type', 'string'],
-                'json' => ['type', 'string'],
-                'int' => ['type', 'int'],
+            $rules = [
+                'text' => [['type', 'string']],
+                'json' => [['type', 'string']],
+                'int' => [['type', 'int']],
+                'uint' => [['type', 'int'], ['min', 0]],
             ][$f->dataType] ?? null;
-            if (!$validationRuleArgs)
+            if (!$rules)
                 throw new \RuntimeException('Shouldn\'t happen');
-            $v->rule($f->name, ...$validationRuleArgs);
+            foreach ($rules as $ruleArgs)
+                $v->rule($f->name, ...$ruleArgs);
         }
         if (!($errors = $v->validate($input))) {
             $input->isPublished = $input->isPublished ?? false;

@@ -31,25 +31,8 @@ class ContentTypeCollection extends \ArrayObject {
     public function toCompactForm($origin, Translator $translator = null) {
         $out = [];
         foreach ($this as $t) {
-            $n = !$t->isInternal ? '' : ':internal';
-            $out[$t->name . $n] = [!$translator ? $t->friendlyName : $translator->t($t->name),
-                                   $t->fields->toCompactForm($translator),
-                                   $origin];
-        }
-        return $out;
-    }
-    /**
-     * @param string $origin
-     * @param \Pike\Translator $translator = null
-     * @return array see self::fromCompactForm()
-     */
-    public function filterByKey($origin, Translator $translator = null) {
-        $out = [];
-        foreach ($this as $t) {
-            $n = !$t->isInternal ? '' : ':internal';
-            $out[$t->name . $n] = [!$translator ? $t->friendlyName : $translator->t($t->name),
-                                   $t->fields->toCompactForm($translator),
-                                   $origin];
+            $compacted = $t->toCompactForm($origin, $translator);
+            $out[$compacted->key] = $compacted->definition;
         }
         return $out;
     }

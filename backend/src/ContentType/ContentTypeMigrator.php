@@ -66,6 +66,32 @@ class ContentTypeMigrator {
                $this->removeFromInstalledContentTypes($contentTypes);
     }
     /**
+     * @param \RadCms\ContentType\FieldDef $field
+     * @param \RadCms\ContentType\ContentTypeDef $contentType
+     * @return bool
+     * @throws \Pike\PikeException
+     */
+    public function addField(FieldDef $field, ContentTypeDef $contentType) {
+        $contentType->fields[] = $field;
+        try {
+            $this->db->exec('ALTER TABLE ${p}' . $contentType->name .
+                            ' ADD COLUMN ' . $field->toSqlTableField());
+            //
+            $compacted = $contentType->toCompactForm($this->origin);
+            if ($this->db->exec(
+                'UPDATE ${p}cmsState SET' .
+                ' `installedContentTypes` = JSON_MERGE_PATCH(`installedContentTypes`, ?)' .
+                ', `installedContentTypesLastUpdated` = UNIX_TIMESTAMP()',
+                [json_encode([$compacted->key => $compacted->definition])]) !== 1)
+                throw new PikeException('Failed to update cmsState.`installedContentTypes`',
+                                        PikeException::INEFFECTUAL_DB_OP);
+            return true;
+        } catch (\PDOException $e) {
+            throw new PikeException('Unexpected database error:' . $e->getMessage(),
+                                    PikeException::FAILED_DB_OP);
+        }
+    }
+    /**
      * @param string $origin
      */
     public function setOrigin(Plugin $plugin) {

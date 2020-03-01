@@ -28,4 +28,17 @@ class ContentTypeDef {
         $this->isInternal = $isInternal;
         $this->origin = $origin;
     }
+    /**
+     * @param string $origin
+     * @param \Pike\Translator $translator = null
+     * @return array {key: string, definition: [string, array[], string]}
+     */
+    public function toCompactForm($origin, Translator $translator = null) {
+        return (object)[
+            'key' => $this->name . (!$this->isInternal ? '' : ':internal'),
+            'definition' => [!$translator ? $this->friendlyName : $translator->t($this->name),
+                             $this->fields->toCompactForm($translator),
+                             $origin]
+        ];
+    }
 }
