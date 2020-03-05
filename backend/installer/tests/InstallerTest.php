@@ -126,7 +126,7 @@ final class InstallerTest extends DbTestCase {
         $this->verifyCreatedNewDatabaseAndMainSchema($s);
         $this->verifyInsertedMainSchemaData($s);
         $this->verifyCreatedUserZero($s);
-        $this->verifyContentTypeIsInstalled('Movies', true, self::$db);
+        $this->verifyContentTypeIsInstalled('Movies', true);
         $this->verifyInsertedSampleContent($s);
     }
     private function setupInstallerTest1() {
@@ -281,8 +281,8 @@ return [
         self::$db->setCurrentDatabaseName($s->input->dbDatabase);
         self::$db->setTablePrefix($s->input->dbTablePrefix);
         $this->assertEquals(1, count(self::$db->fetchAll(
-            'SELECT `table_name` FROM information_schema.tables' .
-            ' WHERE `table_schema` = ? AND `table_name` = ?',
+            'SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES' .
+            ' WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?',
             [$s->input->dbDatabase, $s->input->dbTablePrefix . 'cmsState']
         )));
     }
@@ -360,7 +360,7 @@ return [
     }
     private function verifyInstalledThemeContentTypes($s) {
         [$name] = $s->testSiteContentTypesData[0];
-        $this->verifyContentTypeIsInstalled($name, true, self::$db);
+        $this->verifyContentTypeIsInstalled($name, true);
     }
     private function verifyInsertedThemeContentData($s) {
         [$name, $data] = $s->testSiteContentTypesData[0];

@@ -3,9 +3,10 @@
 namespace RadCms\ContentType;
 
 use Pike\Db;
+use Pike\PikeException;
+use Pike\ArrayUtils;
 use RadCms\Plugin\Plugin;
 use RadCms\Content\DMO;
-use Pike\PikeException;
 
 /**
  * Luokka joka asentaa/päivittää/poistaa sisältötyyppejä tietokantaan.
@@ -51,7 +52,7 @@ class ContentTypeMigrator {
         return $this->validateContentTypes($contentTypes) &&
                $this->validateInitialData($initialData) &&
                $this->createContentTypes($contentTypes, $size) &&
-               $this->addToInstalledContentTypes($contentTypes->toCompactForm($this->origin)) &&
+               $this->addToInstalledContentTypes($contentTypes) &&
                $this->insertInitialData($initialData, $contentTypes);
     }
     /**
@@ -64,6 +65,43 @@ class ContentTypeMigrator {
         return $this->validateContentTypes($contentTypes) &&
                $this->removeContentTypes($contentTypes) &&
                $this->removeFromInstalledContentTypes($contentTypes);
+    }
+    /**
+     * @param \stdClass $data {name: string, friendlyName: string, isInternal: bool} Olettaa että on validi
+     * @param \RadCms\ContentType\ContentTypeDef $contentType
+     * @return bool
+     * @throws \Pike\PikeException
+     */
+    public function updateSingle(\stdClass $data,
+                                 ContentTypeDef $contentType,
+                                 ContentTypeCollection $currentContentTypes) {
+        try {
+            if ($data->name !== $contentType->name) {
+                $this->db->exec('RENAME TABLE `${p}' . $contentType->name .
+                                '` TO `${p}' . $data->name . '`');
+            }
+            if ($data->name !== $contentType->name ||
+                $data->friendlyName !== $contentType->friendlyName ||
+                $data->isInternal !== $contentType->isInternal) {
+                $idx = ArrayUtils::findIndexByKey($currentContentTypes,
+                                                  $contentType->name,
+                                                  'name');
+                $currentContentTypes[$idx]->name = $data->name;
+                $currentContentTypes[$idx]->friendlyName = $data->friendlyName;
+                $currentContentTypes[$idx]->isInternal = $data->isInternal;
+                if ($this->db->exec(
+                    'UPDATE ${p}cmsState SET'.
+                    ' `installedContentTypes` = JSON_UNQUOTE(?)' .
+                    ', `installedContentTypesLastUpdated` = UNIX_TIMESTAMP()',
+                    [json_encode($currentContentTypes->toCompactForm($this->origin))]) !== 1)
+                    throw new PikeException('Failed to rewrite cmsState.`installedContentTypes`',
+                                            PikeException::INEFFECTUAL_DB_OP);
+            }
+            return true;
+        } catch (\PDOException $e) {
+            throw new PikeException('Failed to rename contentType' . $e->getMessage(),
+                                    PikeException::FAILED_DB_OP);
+        }
     }
     /**
      * @param \RadCms\ContentType\FieldDef $field
@@ -167,17 +205,17 @@ class ContentTypeMigrator {
         }
     }
     /**
-     * @param array $compactCtypes see ContentTypeCollection->toCompactForm()
+     * @param \RadCms\ContentType\ContentTypeCollection $contentTypes
      * @return bool
      * @throws \Pike\PikeException
      */
-    private function addToInstalledContentTypes($compactCtypes) {
+    private function addToInstalledContentTypes(ContentTypeCollection $contentTypes) {
         try {
             if ($this->db->exec(
                 'UPDATE ${p}cmsState SET `installedContentTypes` =' .
                 ' JSON_MERGE_PATCH(?, `installedContentTypes`)' .
                 ', `installedContentTypesLastUpdated` = UNIX_TIMESTAMP()',
-                [json_encode($compactCtypes)]) > 0) {
+                [json_encode($contentTypes->toCompactForm($this->origin))]) > 0) {
                 return true;
             }
             throw new PikeException('Failed to update cmsState.`installedContentTypes`',

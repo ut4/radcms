@@ -5,20 +5,31 @@ namespace RadCms\Tests\_Internal;
 trait ContentTestUtils {
     /**
      * @param string $contentTypeName
+     * @param bool $shouldExist
+     */
+    public function verifyContentTypeTableExists($contentTypeName,
+                                                 $shouldExist) {
+        $info = self::$db->fetchOne(
+            'SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES' .
+            ' WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?',
+            [self::$db->getCurrentDatabaseName(),
+             self::$db->getTablePrefix() . $contentTypeName]
+        );
+        if ($shouldExist)
+            $this->assertIsArray($info, "Content type {$contentTypeName} should exist.");
+        else
+            $this->assertIsNotArray($info, "Content type {$contentTypeName} should not exist.");
+    }
+    /**
+     * @param string $contentTypeName
      * @param bool $isInstalled
-     * @param \Pike\Db $db
      * @param bool $verifyTableExists = true
      */
     public function verifyContentTypeIsInstalled($contentTypeName,
                                                  $isInstalled,
-                                                 $db,
                                                  $verifyTableExists = true) {
         if ($verifyTableExists) {
-            $this->assertEquals(intval($isInstalled), count($db->fetchAll(
-                'SELECT `table_name` FROM information_schema.tables' .
-                ' WHERE `table_schema` = ? AND `table_name` = ?',
-                [$db->getCurrentDatabaseName(), $db->getTablePrefix() . $contentTypeName]
-            )));
+            $this->verifyContentTypeTableExists($contentTypeName, true);
         }
         $this->assertEquals(intval($isInstalled), self::$db->fetchOne(
             'SELECT JSON_CONTAINS_PATH(`installedContentTypes`, \'one\',' .

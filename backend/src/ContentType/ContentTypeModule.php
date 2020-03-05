@@ -15,6 +15,9 @@ abstract class ContentTypeModule {
         $ctx->router->map('POST', '/api/content-types',
             [ContentTypeControllers::class, 'handleCreateContentType', 'create:contentTypes']
         );
+        $ctx->router->map('PUT', '/api/content-types/[w:contentTypeName]',
+            [ContentTypeControllers::class, 'handleUpdateContentType', 'update:contentTypes']
+        );
         $ctx->router->map('GET', '/api/content-types/[no-internals:filter]?',
             [ContentTypeControllers::class, 'handleGetContentTypes', 'view:contentTypes']
         );

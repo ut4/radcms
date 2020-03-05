@@ -68,7 +68,7 @@ final class PluginAPIIntegrationTest extends DbTestCase {
         ];
     }
     private function verifyContentTypeWasInstalledToDb() {
-        $this->verifyContentTypeIsInstalled('Movies', true, self::getDb());
+        $this->verifyContentTypeIsInstalled('Movies', true);
     }
     private function verifyInitialDataWasInsertedToDb() {
         $this->verifyMovieWasInsertedToDb('Initial movie');

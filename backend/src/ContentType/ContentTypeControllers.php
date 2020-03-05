@@ -65,6 +65,37 @@ class ContentTypeControllers {
                                       'isInternal')->getArrayCopy());
     }
     /**
+     * PUT /api/content-types/:contentTypeName.
+     *
+     * @param \Pike\Request $req
+     * @param \Pike\Response $res
+     * @param \RadCms\ContentType\ContentTypeMigrator $migrator
+     * @param \RadCms\CmaState $cmsState
+     * @throws \Pike\PikeException
+     */
+    public function handleUpdateContentType(Request $req,
+                                            Response $res,
+                                            ContentTypeMigrator $migrator,
+                                            CmsState $cmsState) {
+        if (($errors = $this->validateUpdateInput($req->body))) {
+            $res->status(400)->json($errors);
+            return;
+        }
+        if (!($contentType = ArrayUtils::findByKey($cmsState->getContentTypes(),
+                                                   $req->params->contentTypeName,
+                                                   'name')))
+            throw new PikeException('Content type not found.', PikeException::BAD_INPUT);
+        // @allow \Pike\PikeException
+        $migrator->updateSingle((object) [
+                                    'name' => $req->body->name,
+                                    'friendlyName' => $req->body->friendlyName,
+                                    'isInternal' => $req->body->isInternal,
+                                ],
+                                $contentType,
+                                $cmsState->getContentTypes());
+        $res->json(['ok' => 'ok']);
+    }
+    /**
      * POST /api/content-types/field/:contentTypeName.
      *
      * @param \Pike\Request $req
@@ -93,16 +124,20 @@ class ContentTypeControllers {
      * @return string[]
      */
     private static function validateInsertInput($input) {
-        return (Validation::makeObjectValidator())
-            ->rule('name', 'identifier')
-            ->rule('friendlyName', 'minLength', 1)
-            ->rule('isInternal', 'type', 'bool')
+        return self::getBaseValidationRules()
             ->rule('fields.*.name', 'identifier')
             ->rule('fields.*.friendlyName', 'minLength', 1)
             ->rule('fields.*.dataType', 'in', ContentTypeValidator::FIELD_DATA_TYPES)
             ->rule('fields.*.defaultValue', 'type', 'string')
             ->rule('fields.*.widget.name', 'in', ContentTypeValidator::FIELD_WIDGETS)
             ->rule('fields.*.widget.args?', 'type', 'object')
+            ->validate($input);
+    }
+    /**
+     * @return string[]
+     */
+    private static function validateUpdateInput($input) {
+        return self::getBaseValidationRules()
             ->validate($input);
     }
     /**
@@ -117,5 +152,16 @@ class ContentTypeControllers {
             ->rule('widget.name', 'in', ContentTypeValidator::FIELD_WIDGETS)
             ->rule('widget.args?', 'type', 'object')
             ->validate($input);
+    }
+    /**
+     * @return \Pike\Validation\ObjectValidator
+     */
+    private static function getBaseValidationRules() {
+        return (Validation::makeObjectValidator())
+            ->rule('name', 'identifier')
+            ->rule('name', 'maxLength', ContentTypeValidator::MAX_NAME_LEN)
+            ->rule('friendlyName', 'type', 'string')
+            ->rule('friendlyName', 'minLength', 1)
+            ->rule('isInternal', 'type', 'bool');
     }
 }

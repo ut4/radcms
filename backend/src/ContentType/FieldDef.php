@@ -51,7 +51,7 @@ class FieldDef {
 
     /**
      * @param object $input array<{name: string, friendlyName: string, dataType: string, widget: {name: string, args?: object}, defaultValue: string}> Olettaa että on validi
-     * @return \RadCms\ContentType\FieldDe
+     * @return \RadCms\ContentType\FieldDef
      */
     public static function fromObject($input) {
         return new FieldDef($input->name,

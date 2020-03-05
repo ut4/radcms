@@ -21,8 +21,6 @@ final class ContentTypeControllersTest extends DbTestCase {
     private $app;
     public static function setUpBeforeClass() {
         self::$testContentTypes = new ContentTypeCollection();
-        self::$testContentTypes->add('ATest', 'Testi',
-                                     ['field1' => ['text']]);
         self::$testContentTypes->add('Events', 'Tapahtumat',
                                      ['name' => ['text'],
                                       'pic' => ['text', 'Kuva', 'image', 'default.jpg']]);
@@ -38,10 +36,6 @@ final class ContentTypeControllersTest extends DbTestCase {
         self::$migrator->uninstallMany(self::$testContentTypes);
         self::clearInstalledContentTypesFromDb();
     }
-    protected function setUp() {
-        parent::setUp();
-        $this->app = $this->makeApp('\RadCms\App::create', $this->getAppConfig());
-    }
     public function testPOSTContentTypeValidatesInputData() {
         $s = $this->setupValidationTest((object)[
             'name' => 'not-valid-identifier%&#',
@@ -52,6 +46,7 @@ final class ContentTypeControllersTest extends DbTestCase {
         $this->sendCreateContentTypeRequest($s);
         $this->verifyResponseBodyEquals([
             'name must contain only [a-zA-Z0-9_] and start with [a-zA-Z_]',
+            'friendlyName must be string',
             'The length of friendlyName must be at least 1',
             'isInternal must be bool',
             'fields.*.name must contain only [a-zA-Z0-9_] and start with [a-zA-Z_]',
@@ -70,7 +65,8 @@ final class ContentTypeControllersTest extends DbTestCase {
     private function sendCreateContentTypeRequest($s) {
         $req = new Request('/api/content-types', 'POST', $s->reqBody);
         $res = $this->createMockResponse(null, 400);
-        $this->sendResponseBodyCapturingRequest($req, $res, $this->app, $s);
+        $app = $this->makeApp('\RadCms\App::create', $this->getAppConfig());
+        $this->sendResponseBodyCapturingRequest($req, $res, $app, $s);
     }
 
 
@@ -79,10 +75,13 @@ final class ContentTypeControllersTest extends DbTestCase {
 
     public function testPOSTContentTypeFieldAddsFieldToContentType() {
         $s = $this->setupAddFieldTest();
+        $this->installTestContentType($s);
+        //
         $this->sendAddFieldToContentTypeRequest($s);
         $this->verifyAddedFieldToContentTypeTable($s);
         $this->verifyAddedFieldToInternalTable($s);
-        $this->uninstallAddFieldTestContentType();
+        //
+        $this->uninstallTestContentType($s);
     }
     private function setupAddFieldTest() {
         return (object) [
@@ -95,6 +94,7 @@ final class ContentTypeControllersTest extends DbTestCase {
                 'defaultValue' => '',
                 'widget' => (object) ['name' => 'textField']
             ],
+            'testContentTypes' => new ContentTypeCollection()
         ];
     }
     private function sendAddFieldToContentTypeRequest($s) {
@@ -102,7 +102,8 @@ final class ContentTypeControllersTest extends DbTestCase {
                            'POST',
                            $s->reqBody);
         $res = $this->createMockResponse(['ok' => 'ok']);
-        $this->sendRequest($req, $res, $this->app);
+        $app = $this->makeApp('\RadCms\App::create', $this->getAppConfig());
+        $this->sendRequest($req, $res, $app);
     }
     private function verifyAddedFieldToContentTypeTable($s) {
         $fieldData = $s->reqBody;
@@ -118,25 +119,15 @@ final class ContentTypeControllersTest extends DbTestCase {
     }
     private function verifyAddedFieldToInternalTable($s) {
         $fieldData = $s->reqBody;
-        $row = self::$db->fetchOne('SELECT `installedContentTypes` FROM ${p}cmsState');
-        $this->assertNotNull($row);
-        $parsed = json_decode($row['installedContentTypes']);
-        $this->assertNotNull($parsed);
-        $actualContentType = $parsed->{$s->contentTypeName} ?? null;
-        $this->assertNotNull($actualContentType);
-        $actualNewField = $actualContentType[1]->{$fieldData->name} ?? null;
+        $parsed = $this->getInternalInstalledContentTypesFromDb();
+        $actualCompactCtype = $parsed->{$s->contentTypeName} ?? null;
+        $this->assertNotNull($actualCompactCtype);
+        $actualNewField = $actualCompactCtype[1]->{$fieldData->name} ?? null;
         $this->assertNotNull($actualNewField);
         $this->assertEquals($fieldData->dataType, $actualNewField[0]);
         $this->assertEquals($fieldData->friendlyName, $actualNewField[1]);
         $this->assertEquals($fieldData->widget->name, $actualNewField[2]);
         $this->assertEquals($fieldData->defaultValue, $actualNewField[3]);
-    }
-    private function uninstallAddFieldTestContentType() {
-        $onlyAddFieldTestContentType = new ContentTypeCollection();
-        $onlyAddFieldTestContentType[] = self::$testContentTypes[0];
-        self::$testContentTypes->offsetUnset(0);
-        // @allow \Pike\PikeException
-        self::$migrator->uninstallMany($onlyAddFieldTestContentType);
     }
 
 
@@ -171,7 +162,8 @@ final class ContentTypeControllersTest extends DbTestCase {
     private function sendGetContentTypeRequest($s, $url = null) {
         $req = new Request($url ?? "/api/content-types/{$s->contentTypeName}", 'GET');
         $res = $this->createMock(Response::class);
-        $this->sendResponseBodyCapturingRequest($req, $res, $this->app, $s);
+        $app = $this->makeApp('\RadCms\App::create', $this->getAppConfig());
+        $this->sendResponseBodyCapturingRequest($req, $res, $app, $s);
     }
     private function verifyResponseBodyEquals($expected, $s) {
         $this->assertEquals(json_encode($expected),
@@ -209,5 +201,87 @@ final class ContentTypeControllersTest extends DbTestCase {
     }
     private function sendGetContentTypesRequest($s) {
         $this->sendGetContentTypeRequest($s, '/api/content-types');
+    }
+
+
+    ////////////////////////////////////////////////////////////////////////////
+
+
+    public function testPUTContentTypesUpdatesBasicInfoOfContentType() {
+        $s = $this->setupUpdateTest();
+        $this->installTestContentType($s);
+        //
+        $this->sendUpdateContentTypeRequest($s);
+        $this->verifyUpdatedBasicInfoToInternalTable($s);
+        $this->verifyDidNotRenameContentTypeTable($s);
+        //
+        $this->uninstallTestContentType($s);
+    }
+    private function setupUpdateTest() {
+        return (object) [
+            'contentTypeName' => 'Another',
+            'reqBody' => (object) [
+                'name' => 'Another',
+                'friendlyName' => 'Päivitetty selkonimi',
+                'isInternal' => true,
+            ],
+            'testContentTypes' => new ContentTypeCollection()
+        ];
+    }
+    private function sendUpdateContentTypeRequest($s) {
+        $req = new Request("/api/content-types/{$s->contentTypeName}",
+                           'PUT',
+                           $s->reqBody);
+        $res = $this->createMockResponse(['ok' => 'ok']);
+        $app = $this->makeApp('\RadCms\App::create', $this->getAppConfig());
+        $this->sendResponseBodyCapturingRequest($req, $res, $app, $s);
+    }
+    private function verifyUpdatedBasicInfoToInternalTable($s) {
+        $parsed = $this->getInternalInstalledContentTypesFromDb();
+        $actualCompactCtype = $parsed->{$s->reqBody->name . ':internal'} ?? null;
+        $this->assertNotNull($actualCompactCtype);
+        $this->assertEquals($s->reqBody->friendlyName, $actualCompactCtype[0]);
+    }
+    private function verifyDidNotRenameContentTypeTable($s) {
+        $this->verifyContentTypeTableExists($s->contentTypeName, true);
+    }
+
+
+    ////////////////////////////////////////////////////////////////////////////
+
+
+    public function testPUTContentTypesRenamesContentType() {
+        $s = $this->setupUpdateTest();
+        $this->installTestContentType($s);
+        //
+        $s->reqBody->name = "Updated{$s->contentTypeName}";
+        $this->sendUpdateContentTypeRequest($s);
+        $this->verifyUpdatedBasicInfoToInternalTable($s);
+        $this->verifyRenamedContentTypeTable($s);
+        //
+        $s->testContentTypes[0]->name = $s->reqBody->name;
+        $this->uninstallTestContentType($s);
+    }
+    private function verifyRenamedContentTypeTable($s) {
+        $this->verifyContentTypeTableExists($s->contentTypeName, false);
+        $this->verifyContentTypeTableExists($s->reqBody->name, true);
+    }
+    private function installTestContentType($s) {
+        $s->testContentTypes->add($s->contentTypeName,
+                                  "Friendly name of {$s->contentTypeName}",
+                                  ['field1' => ['text']]);
+        // @allow \Pike\PikeException
+        self::$migrator->installMany($s->testContentTypes);
+    }
+    private function uninstallTestContentType($s) {
+        // @allow \Pike\PikeException
+        self::$migrator->uninstallMany($s->testContentTypes);
+    }
+    private function getInternalInstalledContentTypesFromDb() {
+        $row = self::$db->fetchOne('SELECT `installedContentTypes` FROM ${p}cmsState');
+        $this->assertNotNull($row);
+        $parsed = json_decode($row['installedContentTypes']);
+        $this->assertNotNull($parsed);
+        return $parsed;
     }
 }

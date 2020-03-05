@@ -87,7 +87,7 @@ class ContentTypesManageView extends preact.Component {
      */
     setBasicInfoEditModeOn(contentType, idx) {
         const modes = this.state.basicInfoEditModes;
-        this.setState({basicInfoEditModes: modes.map((m, i) => i !== idx ? m : true),
+        this.setState({basicInfoEditModes: modes.map((m, i) => i !== idx ? m : 'edit'),
                        contentTypeCurrentlyBeingEdited: contentType});
     }
     /**
@@ -103,6 +103,14 @@ class ContentTypesManageView extends preact.Component {
             })
             .catch(() => {
                 toasters.main('Sisältötyypin luonti epäonnistui.', 'error');
+            });
+        else
+            http.put(`/api/content-types/${this.state.contentTypes[idx].name}`, data)
+            .then(() => {
+                urlUtils.reload();
+            })
+            .catch(() => {
+                toasters.main('Sisältötyypin päivitys epäonnistui.', 'error');
             });
     }
     /**
@@ -185,7 +193,7 @@ class BasicInfo extends preact.Component {
                 </h3>
                 <div>
                     <button onClick={ () => this.endEdit() }
-                            title={ `${this.props.editMode === 'edit' ? 'tallenna' : 'Luo'} sisältötyyppi` }
+                            title={ `${this.props.editMode === 'edit' ? 'Tallenna' : 'Luo'} sisältötyyppi` }
                             class="icon-button">
                         <FeatherSvg iconId="save"/>
                     </button>
