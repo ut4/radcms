@@ -1,4 +1,5 @@
 import {config, urlUtils, http, InputGroup} from '@rad-commons';
+import popupDialog from '../Common/PopupDialog.jsx';
 
 class ImagePicker extends preact.Component {
     /**

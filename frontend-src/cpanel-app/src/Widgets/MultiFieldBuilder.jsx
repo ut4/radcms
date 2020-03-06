@@ -1,4 +1,5 @@
 import {InputGroup} from '@rad-commons';
+import popupDialog from '../Common/PopupDialog.jsx';
 import makeWidgetComponent, {widgetTypes} from '../Widgets/all.jsx';
 
 /**

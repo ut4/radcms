@@ -70,7 +70,7 @@ class ContentTypeControllers {
      * @param \Pike\Request $req
      * @param \Pike\Response $res
      * @param \RadCms\ContentType\ContentTypeMigrator $migrator
-     * @param \RadCms\CmaState $cmsState
+     * @param \RadCms\CmsState $cmsState
      * @throws \Pike\PikeException
      */
     public function handleUpdateContentType(Request $req,
@@ -96,12 +96,33 @@ class ContentTypeControllers {
         $res->json(['ok' => 'ok']);
     }
     /**
+     * DELETE /api/content-types/:contentTypeName.
+     *
+     * @param \Pike\Request $req
+     * @param \Pike\Response $res
+     * @param \RadCms\ContentType\ContentTypeMigrator $migrator
+     * @param \RadCms\CmsState $cmsState
+     * @throws \Pike\PikeException
+     */
+    public function handleDeleteContentType(Request $req,
+                                            Response $res,
+                                            ContentTypeMigrator $migrator,
+                                            CmsState $cmsState) {
+        if (!($contentType = ArrayUtils::findByKey($cmsState->getContentTypes(),
+                                                   $req->params->contentTypeName,
+                                                   'name')))
+            throw new PikeException('Content type not found.', PikeException::BAD_INPUT);
+        // @allow \Pike\PikeException
+        $migrator->uninstallSingle($contentType);
+        $res->json(['ok' => 'ok']);
+    }
+    /**
      * POST /api/content-types/field/:contentTypeName.
      *
      * @param \Pike\Request $req
      * @param \Pike\Response $res
      * @param \RadCms\ContentType\ContentTypeMigrator $migrator
-     * @param \RadCms\CmaState $cmsState
+     * @param \RadCms\CmsState $cmsState
      * @throws \Pike\PikeException
      */
     public function handleAddFieldToContentType(Request $req,
@@ -126,7 +147,7 @@ class ContentTypeControllers {
      * @param \Pike\Request $req
      * @param \Pike\Response $res
      * @param \RadCms\ContentType\ContentTypeMigrator $migrator
-     * @param \RadCms\CmaState $cmsState
+     * @param \RadCms\CmsState $cmsState
      * @throws \Pike\PikeException
      */
     public function handleDeleteFieldFromContentType(Request $req,

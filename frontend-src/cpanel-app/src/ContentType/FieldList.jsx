@@ -1,5 +1,6 @@
 import {http, toasters, urlUtils, Form, FeatherSvg} from '@rad-commons';
-import ContentEditable from './ContentEditable.jsx';
+import popupDialog from '../Common/PopupDialog.jsx';
+import ContentEditable from '../Common/ContentEditable.jsx';
 
 const dataTypes = [{name: 'text', friendlyName: 'Text'},
                    {name: 'json', friendlyName: 'Json'},

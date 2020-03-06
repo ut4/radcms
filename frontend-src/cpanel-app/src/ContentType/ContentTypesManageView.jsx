@@ -1,7 +1,8 @@
-import {http, toasters, urlUtils, View, FeatherSvg} from '@rad-commons';
+import {http, toasters, urlUtils, View, Form, FeatherSvg} from '@rad-commons';
 import FieldList from './FieldList.jsx';
 import FieldsStore from './FieldsStore.js';
-import ContentEditable from './ContentEditable.jsx';
+import ContentEditable from '../Common/ContentEditable.jsx';
+import popupDialog from '../Common/PopupDialog.jsx';
 let counter = 0;
 
 /**
@@ -170,7 +171,7 @@ class BasicInfo extends preact.Component {
                             class="icon-button">
                         <FeatherSvg iconId="edit"/>
                     </button>
-                    <button onClick={ () => this.showDeleteDialog() }
+                    <button onClick={ () => this.openDeleteDialog() }
                             disabled={ this.props.blur }
                             title="Poista sisältötyyppi"
                             class="icon-button">
@@ -233,6 +234,61 @@ class BasicInfo extends preact.Component {
             friendlyName: this.state.friendlyName,
             isInternal: this.state.isInternal
         });
+    }
+    /**
+     * @access private
+     */
+    openDeleteDialog() {
+        popupDialog.open(DeleteDialog, {
+            contentType: this.props.contentType,
+            onConfirm: () => {
+                http.delete('/api/content-types/' + this.props.contentType.name)
+                    .then(() => {
+                        urlUtils.reload();
+                    })
+                    .catch(() => {
+                        toasters.main('Sisältötyypin poisto epäonnistui.', 'error');
+                    });
+            }
+        });
+    }
+}
+
+class DeleteDialog extends preact.Component {
+    /**
+     * @param {{contentType: ContentType;}} props
+     */
+    constructor(props) {
+        super(props);
+    }
+    /**
+     * @access protected
+     */
+    render() {
+        return <div class="popup-dialog"><div class="box">
+            <Form onConfirm={ () => this.handleConfirm() }
+                usePseudoFormTag={ true }
+                confirmButtonText="Poista sisältötyyppi"
+                onCancel={ () => this.handleCancel() }
+                autoClose={ false }>
+            <h2>Poista sisältötyyppi</h2>
+            <div class="main">
+                <p>Poista sisältötyyppi &quot;{ this.props.contentType.friendlyName }&quot; ({ this.props.contentType.name }) ja siihen liittyvä data pysyvästi?</p>
+            </div>
+        </Form></div></div>;
+    }
+    /**
+     * @access private
+     */
+    handleConfirm() {
+        this.props.onConfirm();
+        this.handleCancel();
+    }
+    /**
+     * @access private
+     */
+    handleCancel() {
+        popupDialog.close();
     }
 }
 

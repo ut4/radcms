@@ -56,17 +56,6 @@ class ContentTypeMigrator {
                $this->insertInitialData($initialData, $contentTypes);
     }
     /**
-     * @param \RadCms\ContentType\ContentTypeCollection $contentTypes
-     * @return bool
-     * @throws \Pike\PikeException
-     */
-    public function uninstallMany(ContentTypeCollection $contentTypes) {
-        // @allow \Pike\PikeException
-        return $this->validateContentTypes($contentTypes) &&
-               $this->removeContentTypes($contentTypes) &&
-               $this->removeFromInstalledContentTypes($contentTypes);
-    }
-    /**
      * @param \stdClass $data {name: string, friendlyName: string, isInternal: bool} Olettaa että on validi
      * @param \RadCms\ContentType\ContentTypeDef $contentType
      * @return bool
@@ -102,6 +91,27 @@ class ContentTypeMigrator {
             throw new PikeException('Failed to rename contentType' . $e->getMessage(),
                                     PikeException::FAILED_DB_OP);
         }
+    }
+    /**
+     * @param \RadCms\ContentType\ContentTypeCollection $contentTypes
+     * @return bool
+     * @throws \Pike\PikeException
+     */
+    public function uninstallMany(ContentTypeCollection $contentTypes) {
+        // @allow \Pike\PikeException
+        return $this->validateContentTypes($contentTypes) &&
+               $this->removeContentTypes($contentTypes) &&
+               $this->removeFromInstalledContentTypes($contentTypes);
+    }
+    /**
+     * @param \RadCms\ContentType\ContentTypeDef $contentType
+     * @return bool
+     * @throws \Pike\PikeException
+     */
+    public function uninstallSingle(ContentTypeDef $contentType) {
+        $contentTypes = new ContentTypeCollection([$contentType]);
+        // @allow \Pike\PikeException
+        return $this->uninstallMany($contentTypes);
     }
     /**
      * @param \RadCms\ContentType\FieldDef $field Olettaa, että validi

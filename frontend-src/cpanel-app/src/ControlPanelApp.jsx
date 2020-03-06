@@ -1,5 +1,6 @@
 import {Toaster} from '@rad-commons';
 import ControlPanel from './ControlPanel.jsx';
+import {PopupDialog} from './Common/PopupDialog.jsx';
 import ContentAddView from './Content/ContentAddView.jsx';
 import ContentManageView from './Content/ContentManageView.jsx';
 import ContentEditView from './Content/ContentEditView.jsx';
@@ -43,41 +44,6 @@ class ControlPanelApp extends preact.Component {
             </PreactRouter> : null }
             <PopupDialog/>
         </div>;
-    }
-}
-
-class PopupDialog extends preact.Component {
-    /**
-     * @param {{publishApiTo?: any;}} props
-     */
-    constructor(props) {
-        super(props);
-        this.rendererProps = null;
-        this.state = {Renderer: null};
-        (props.publishApiTo || window).popupDialog = this;
-    }
-    /**
-     * @param {any} Renderer
-     * @param {any} rendererProps
-     * @access public
-     */
-    open(Renderer, rendererProps) {
-        this.rendererProps = rendererProps;
-        this.setState({Renderer});
-    }
-    /**
-     * @access public
-     */
-    close() {
-        this.setState({Renderer: null});
-    }
-    /**
-     * @access protected
-     */
-    render() {
-        return this.state.Renderer
-            ? preact.createElement(this.state.Renderer, this.rendererProps)
-            : null;
     }
 }
 

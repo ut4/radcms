@@ -18,7 +18,6 @@ final class ContentTypeControllersTest extends DbTestCase {
     private static $testContentTypes;
     private static $migrator;
     private const DEFAULT_WIDGET = ContentTypeValidator::FIELD_WIDGETS[0];
-    private $app;
     public static function setUpBeforeClass() {
         self::$testContentTypes = new ContentTypeCollection();
         self::$testContentTypes->add('Events', 'Tapahtumat',
@@ -204,6 +203,39 @@ final class ContentTypeControllersTest extends DbTestCase {
     private function verifyRenamedContentTypeTable($s) {
         $this->verifyContentTypeTableExists($s->contentTypeName, false);
         $this->verifyContentTypeTableExists($s->reqBody->name, true);
+    }
+
+
+    ////////////////////////////////////////////////////////////////////////////
+
+
+    public function testDELETEContentTypesDeletesContentType() {
+        $s = $this->setupDeleteTest();
+        $this->installTestContentType($s);
+        $this->verifyContentTypeTableExists($s->contentTypeName, true);
+        //
+        $this->sendDeleteContentTypeRequest($s);
+        $this->verifyDeletedContentTypeTable($s);
+        $this->verifyDeletedContentTypeFromInternalTable($s);
+    }
+    private function setupDeleteTest() {
+        return (object) [
+            'contentTypeName' => 'AnotherC',
+            'testContentTypes' => new ContentTypeCollection()
+        ];
+    }
+    private function sendDeleteContentTypeRequest($s) {
+        $req = new Request("/api/content-types/{$s->contentTypeName}", 'DELETE');
+        $res = $this->createMockResponse(['ok' => 'ok']);
+        $app = $this->makeApp('\RadCms\App::create', $this->getAppConfig());
+        $this->sendResponseBodyCapturingRequest($req, $res, $app, $s);
+    }
+    private function verifyDeletedContentTypeTable($s) {
+        $this->verifyContentTypeTableExists($s->contentTypeName, false);
+    }
+    private function verifyDeletedContentTypeFromInternalTable($s) {
+        $compactCtypes = $this->getInternalInstalledContentTypesFromDb();
+        $this->assertObjectNotHasAttribute($s->contentTypeName, $compactCtypes);
     }
 
 
