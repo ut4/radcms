@@ -121,6 +121,31 @@ class ContentTypeControllers {
         $res->json(['ok' => 'ok']);
     }
     /**
+     * DELETE /api/content-types/field/:contentTypeName/:fieldName.
+     *
+     * @param \Pike\Request $req
+     * @param \Pike\Response $res
+     * @param \RadCms\ContentType\ContentTypeMigrator $migrator
+     * @param \RadCms\CmaState $cmsState
+     * @throws \Pike\PikeException
+     */
+    public function handleDeleteFieldFromContentType(Request $req,
+                                                     Response $res,
+                                                     ContentTypeMigrator $migrator,
+                                                     CmsState $cmsState) {
+        if (!($contentType = ArrayUtils::findByKey($cmsState->getContentTypes(),
+                                                   $req->params->contentTypeName,
+                                                   'name')))
+            throw new PikeException('Content type not found.', PikeException::BAD_INPUT);
+        if (!($field = ArrayUtils::findByKey($contentType->fields,
+                                             $req->params->fieldName,
+                                             'name')))
+            throw new PikeException('Field not found.', PikeException::BAD_INPUT);
+        // @allow \Pike\PikeException
+        $migrator->removeField($field, $contentType);
+        $res->json(['ok' => 'ok']);
+    }
+    /**
      * @return string[]
      */
     private static function validateInsertInput($input) {

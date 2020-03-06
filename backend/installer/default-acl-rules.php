@@ -16,10 +16,11 @@ $out->resources = (object)[
         'update' => $flag3
     ],
     'contentTypes' => (object)[
-        'create'   => $flag1,
-        'view'     => $flag2,
-        'update'   => $flag3,
-        'addField' => 1 << 4,
+        'create'      => $flag1,
+        'view'        => $flag2,
+        'update'      => $flag3,
+        'addField'    => 1 << 4,
+        'deleteField' => 1 << 5,
     ],
     'editMode' => (object)[
         'access' => $flag1

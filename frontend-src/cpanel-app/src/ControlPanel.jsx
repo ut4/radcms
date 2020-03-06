@@ -78,16 +78,16 @@ class ControlPanel extends preact.Component {
                 </button>
                 <div id="logo">RAD<span>Cms</span></div>
             </header>
-            <ControlPanel.QuickLinksSection
+            <QuickLinksControlPanelSection
                 userCanCreateContent={ (this.state.userPermissions || {}).canCreateContent }/>
-            <ControlPanel.OnThisPageSection
+            <OnThisPageControlPanelSection
                 contentPanels={ this.state.contentPanels }
                 siteIframe={ this.siteIframe }
                 siteInfo={ this.siteInfo }/>
-            <ControlPanel.AdminAndUserSection
+            <AdminAndUserControlPanelSection
                 adminPanels={ this.state.adminPanels }
                 siteInfo={ this.siteInfo }/>
-            <ControlPanel.ForDevsSectionction
+            <ForDevsControlPanelSectionction
                 userRole={ this.state.userRole }/>
             <footer>&nbsp;</footer>
         </div>;
@@ -133,7 +133,7 @@ class ControlPanel extends preact.Component {
     }
 }
 
-ControlPanel.QuickLinksSection = class extends preact.Component {
+class QuickLinksControlPanelSection extends preact.Component {
     /**
      * @param {{userCanCreateContent?: boolean}} props
      */
@@ -154,9 +154,9 @@ ControlPanel.QuickLinksSection = class extends preact.Component {
             </button>
         </div></section>;
     }
-};
+}
 
-ControlPanel.OnThisPageSection = class extends preact.Component {
+class OnThisPageControlPanelSection extends preact.Component {
     /**
      * @param {{contentPanels: Array<>; siteIframe: HTMLIFrameElement|null; siteInfo: Object;}} props
      */
@@ -172,7 +172,7 @@ ControlPanel.OnThisPageSection = class extends preact.Component {
             <h2>Tällä sivulla</h2>
             { this.props.contentPanels.length
                 ? this.props.contentPanels.map((panelCfg, i) =>
-                    <ControlPanel.ContentPanel
+                    <ContentControlPanelPanel
                         Renderer={ panelCfg.UiImplClass }
                         rendererProps={ {dataFromBackend: panelCfg.dataFromBackend,
                                          siteInfo: this.props.siteInfo} }
@@ -182,9 +182,9 @@ ControlPanel.OnThisPageSection = class extends preact.Component {
                 : this.props.siteIframe ? 'Ei muokattavaa sisältöä tällä sivulla' : null }
         </div></section>;
     }
-};
+}
 
-ControlPanel.AdminAndUserSection = class extends preact.Component {
+class AdminAndUserControlPanelSection extends preact.Component {
     /**
      * @param {{adminPanels: Array<>; siteInfo: Object;}} props
      */
@@ -198,18 +198,18 @@ ControlPanel.AdminAndUserSection = class extends preact.Component {
         return <section class="site-admin"><div>
             <h2>Hallinta</h2>
             { this.props.adminPanels.map((panelCfg, i) =>
-                <ControlPanel.AdminPanel
+                <AdminControlPanelPanel
                     key={ `plugin-panel-${i}` }
                     Renderer={ panelCfg.UiImplClass }
                     rendererProps={ {dataFromBackend: panelCfg.dataFromBackend,
                                      siteInfo: this.props.siteInfo} }
                     isPlugin={ true }/>
             ).concat(
-                <ControlPanel.AdminPanel Renderer={ null } title="Käyttäjä" icon="user" mainUrl="/me">
+                <AdminControlPanelPanel Renderer={ null } title="Käyttäjä" icon="user" mainUrl="/me">
                     <a href="#/me">Profiili</a>
                     <a href={ urlUtils.makeUrl('/logout') }
                     onClick={ e => this.logout(e) }>Kirjaudu ulos</a>
-                </ControlPanel.AdminPanel>
+                </AdminControlPanelPanel>
             ) }
         </div></section>;
     }
@@ -226,9 +226,9 @@ ControlPanel.AdminAndUserSection = class extends preact.Component {
                 toasters.main('Uloskirjautuminen epäonnistui', 'error');
             });
     }
-};
+}
 
-ControlPanel.ForDevsSectionction = class extends preact.Component {
+class ForDevsControlPanelSectionction extends preact.Component {
     /**
      * @param {{userRole: number;}} props
      */
@@ -242,24 +242,24 @@ ControlPanel.ForDevsSectionction = class extends preact.Component {
         if (this.props.userRole !== 0) return null;
         return <section class="for-devs"><div>
             <h2>Devaajalle</h2>
-            <ControlPanel.AdminPanel Renderer={ null } title="Kaikki sisältö" icon="database" mainUrl="/manage-content">
+            <AdminControlPanelPanel Renderer={ null } title="Kaikki sisältö" icon="database" mainUrl="/manage-content">
                 <a href="#/manage-content">Selaa</a>
                 <a href="#/add-content">Luo</a>
-            </ControlPanel.AdminPanel>
-            <ControlPanel.AdminPanel Renderer={ null } title="Sisältötyypit" icon="type" mainUrl="/manage-content-types">
+            </AdminControlPanelPanel>
+            <AdminControlPanelPanel Renderer={ null } title="Sisältötyypit" icon="type" mainUrl="/manage-content-types">
                 <a href="#/manage-content-types">Selaa</a>
-            </ControlPanel.AdminPanel>
-            <ControlPanel.AdminPanel Renderer={ null } title="Lisäosat" icon="box" mainUrl="/manage-plugins">
+            </AdminControlPanelPanel>
+            <AdminControlPanelPanel Renderer={ null } title="Lisäosat" icon="box" mainUrl="/manage-plugins">
                 <a href="#/manage-plugins">Selaa</a>
-            </ControlPanel.AdminPanel>
-            <ControlPanel.AdminPanel Renderer={ null } title="Sivusto" icon="tool" mainUrl="/pack-website">
+            </AdminControlPanelPanel>
+            <AdminControlPanelPanel Renderer={ null } title="Sivusto" icon="tool" mainUrl="/pack-website">
                 <a href="#/pack-website">Paketoi</a>
-            </ControlPanel.AdminPanel>
+            </AdminControlPanelPanel>
         </div></section>;
     }
-};
+}
 
-ControlPanel.AdminPanel = class extends preact.Component {
+class AdminControlPanelPanel extends preact.Component {
     /**
      * @param {{Renderer: any; rendererProps?: any; title?: string; icon?: string; mainUrl?: string;}} props
      */
@@ -309,9 +309,9 @@ ControlPanel.AdminPanel = class extends preact.Component {
             </div></div>
         </div>;
     }
-};
+}
 
-ControlPanel.ContentPanel = class extends ControlPanel.AdminPanel {
+class ContentControlPanelPanel extends AdminControlPanelPanel {
     /**
      * @access protected
      * @override
@@ -322,7 +322,7 @@ ControlPanel.ContentPanel = class extends ControlPanel.AdminPanel {
                                                        dataFromBackend.selectorIndex,
                                                        this.props.siteIframe)});
     }
-};
+}
 
 /**
  * @param {string} selector

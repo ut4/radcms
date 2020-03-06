@@ -47,11 +47,11 @@ class Form extends preact.Component {
     handleSubmit(e) {
         e.preventDefault();
         const res = this.props.onConfirm(e);
-        if (res && res instanceof Promise && this.props.autoClose !== false) {
+        if (res && res instanceof Promise && this.props.autoClose) {
             res.then(() => this.close());
             return;
         }
-        if (this.props.autoClose !== false) {
+        if (this.props.autoClose) {
             this.close();
         }
     }
@@ -65,7 +65,10 @@ class Form extends preact.Component {
      * @access private
      */
     cancel(e) {
-        if (this.props.onCancel) this.props.onCancel(e);
+        if (!this.props.autoClose)
+            e.preventDefault();
+        if (this.props.onCancel)
+            this.props.onCancel(e);
     }
     /**
      * @access private
@@ -83,7 +86,7 @@ class Form extends preact.Component {
             this.props.close();
             return;
         }
-        urlUtils.redirect('/');
+        urlUtils.redirect(this.props.returnTo || '/');
     }
 }
 

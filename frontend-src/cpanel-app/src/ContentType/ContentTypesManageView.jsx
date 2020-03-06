@@ -50,11 +50,11 @@ class ContentTypesManageView extends preact.Component {
                                   <FeatherSvg iconId="plus-circle" className="medium"/>
                               </a></h2>
             { this.state.contentTypes
-                ? <div class="item-grid">{ this.state.contentTypes.map((t, i) =>
-                    <div class={ `box content-type-card${this.state.basicInfoEditModes[i] === 'none' &&
-                                                         this.fieldStates[i].getEditMode() === 'none'
-                                                            ? ''
-                                                            : ' full-width'}` }>
+                ? <div class="item-grid">{ this.state.contentTypes.map((t, i) => {
+                    const useNormalWidth = this.state.basicInfoEditModes[i] === 'none' &&
+                                           this.fieldStates[i].getEditMode() === 'none';
+                    return <div class={ `box content-type-card${useNormalWidth ? '' : ' full-width'}` }
+                                style={ useNormalWidth ? '' : `grid-row:${Math.floor(i / 2 + 1)}` }>
                         <BasicInfo
                             contentType={ t }
                             editMode={ this.state.basicInfoEditModes[i] }
@@ -74,8 +74,8 @@ class ContentTypesManageView extends preact.Component {
                                     this.state.fieldsCurrentlyBeingEdited !== t) }
                             contentType={ t }
                             key={ t.key }/>
-                    </div>
-                ) }</div>
+                    </div>;
+                }) }</div>
                 : !this.state.message
                     ? null
                     : <p>{ this.state.message}</p>

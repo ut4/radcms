@@ -1,5 +1,7 @@
 import myFetch from './myFetch.js';
 
+const defaultHeaders = {'Content-Type': 'application/json'};
+
 const http = {
     /**
      * @param {string} url
@@ -17,7 +19,7 @@ const http = {
     post(url, data, method = 'POST') {
         return myFetch(url, {
                 method,
-                headers: {'Content-Type': 'application/json'},
+                headers: defaultHeaders,
                 data: typeof data !== 'string' ? JSON.stringify(data) : data
             })
             .then(res => JSON.parse(res.responseText));
@@ -29,6 +31,14 @@ const http = {
      */
     put(url, data) {
         return this.post(url, data, 'PUT');
+    },
+    /**
+     * @param {string} url
+     * @returns Promise<Object>
+     */
+    delete(url) {
+        return myFetch(url, {method: 'DELETE', headers: defaultHeaders})
+            .then(res => JSON.parse(res.responseText));
     }
 };
 

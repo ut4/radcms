@@ -15,7 +15,7 @@ class ImagePicker extends preact.Component {
         return <div>
             <input value={ this.state.selectedImageName }
                     onClick={ () => popupDialog.open(
-                        ImagePicker.PickerDialog,
+                        PickImageDialog,
                         {selectedImageName: this.state.selectedImageName,
                         onSelected: img => {
                             this.props.onChange(img.fileName);
@@ -27,7 +27,7 @@ class ImagePicker extends preact.Component {
     }
 }
 
-ImagePicker.PickerDialog = class extends preact.Component {
+class PickImageDialog extends preact.Component {
     /**
      * @param {{onSelected: (image: {fileName: string; basePath: string; mime: string;}) => any; selectedImageName: string; assetBaseUrl: string;}} props
      */
@@ -50,7 +50,7 @@ ImagePicker.PickerDialog = class extends preact.Component {
         return <div class="popup-dialog"><div class="box">
             <h2>Valitse kuva</h2>
             <div class="main">
-                <ImagePicker.uploadButton/>
+                <UploadButton/>
                 <div class="item-grid image-grid">{ !this.state.message
                     ? this.state.images.map(i => <button onClick={ () => {
                                     this.props.onSelected(i);
@@ -71,9 +71,9 @@ ImagePicker.PickerDialog = class extends preact.Component {
             </div>
         </div></div>;
     }
-};
+}
 
-ImagePicker.uploadButton = class extends preact.Component {
+class UploadButton extends preact.Component {
     /**
      * @..
      */
@@ -119,6 +119,6 @@ ImagePicker.uploadButton = class extends preact.Component {
     handleFileInputChange(e) {
         if (e.target.value) this.hiddenForm.submit();
     }
-};
+}
 
 export default ImagePicker;

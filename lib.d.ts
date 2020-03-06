@@ -15,6 +15,7 @@ declare module "@rad-commons" {
             get(url: string): Promise<Object>;
             post(url: string, data: Object|string, method: string = 'POST'): Promise<Object>;
             put(url: string, data: Object|string): Promise<Object>;
+            delete(url: string): Promise<Object>;
         }
         export function myFetch(url: string, settings?: Object): Promise<XMLHttpRequest>;
         export const toasters: {
@@ -38,6 +39,7 @@ declare module "@rad-commons" {
             confirmButtonText?: string;
             cancelButtonText?: string;
             usePseudoFormTag?: bool;
+            returnTo?: string;
         }
         export class Form extends preact.Component<
             FormProps,

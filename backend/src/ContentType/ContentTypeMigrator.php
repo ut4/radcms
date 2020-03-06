@@ -104,25 +104,41 @@ class ContentTypeMigrator {
         }
     }
     /**
-     * @param \RadCms\ContentType\FieldDef $field
+     * @param \RadCms\ContentType\FieldDef $field Olettaa, että validi
      * @param \RadCms\ContentType\ContentTypeDef $contentType
      * @return bool
      * @throws \Pike\PikeException
      */
     public function addField(FieldDef $field, ContentTypeDef $contentType) {
-        $contentType->fields[] = $field;
         try {
             $this->db->exec('ALTER TABLE `${p}' . $contentType->name . '`' .
                             ' ADD COLUMN ' . $field->toSqlTableField());
             //
-            $compacted = $contentType->toCompactForm($this->origin);
-            if ($this->db->exec(
-                'UPDATE ${p}cmsState SET' .
-                ' `installedContentTypes` = JSON_MERGE_PATCH(`installedContentTypes`, ?)' .
-                ', `installedContentTypesLastUpdated` = UNIX_TIMESTAMP()',
-                [json_encode([$compacted->key => $compacted->definition])]) !== 1)
-                throw new PikeException('Failed to update cmsState.`installedContentTypes`',
-                                        PikeException::INEFFECTUAL_DB_OP);
+            $contentType->fields[] = $field;
+            // @allow \Pike\PikeException|\PDOException
+            $this->updateInstalledContenType($contentType);
+            return true;
+        } catch (\PDOException $e) {
+            throw new PikeException('Unexpected database error:' . $e->getMessage(),
+                                    PikeException::FAILED_DB_OP);
+        }
+    }
+    /**
+     * @param \RadCms\ContentType\FieldDef $field Olettaa, että validi
+     * @param \RadCms\ContentType\ContentTypeDef $contentType
+     * @return bool
+     * @throws \Pike\PikeException
+     */
+    public function removeField(FieldDef $field, ContentTypeDef $contentType) {
+        try {
+            $this->db->exec('ALTER TABLE `${p}' . $contentType->name . '`' .
+                            ' DROP COLUMN `' . $field->name . '`');
+            //
+            $contentType->fields->offsetUnset(ArrayUtils::findIndexByKey($contentType->fields,
+                                                                         $field->name,
+                                                                         'name'));
+            // @allow \Pike\PikeException|\PDOException
+            $this->updateInstalledContenType($contentType);
             return true;
         } catch (\PDOException $e) {
             throw new PikeException('Unexpected database error:' . $e->getMessage(),
@@ -223,6 +239,20 @@ class ContentTypeMigrator {
         } catch (\PDOException $e) {
             throw new PikeException($e->getMessage(), PikeException::FAILED_DB_OP);
         }
+    }
+    /**
+     * @param \RadCms\ContentType\ContentTypeDef $contentType
+     * @throws \Pike\PikeException
+     */
+    private function updateInstalledContenType(ContentTypeDef $contentType) {
+        $compacted = $contentType->toCompactForm($this->origin);
+        if ($this->db->exec(
+            'UPDATE ${p}cmsState SET' .
+            ' `installedContentTypes` = JSON_MERGE_PATCH(`installedContentTypes`, ?)' .
+            ', `installedContentTypesLastUpdated` = UNIX_TIMESTAMP()',
+            [json_encode([$compacted->key => $compacted->definition])]) !== 1)
+            throw new PikeException('Failed to update cmsState.`installedContentTypes`',
+                                    PikeException::INEFFECTUAL_DB_OP);
     }
     /**
      * @param array|null $data array<[string, array<\stdClass>]>

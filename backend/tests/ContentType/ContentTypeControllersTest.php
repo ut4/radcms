@@ -73,67 +73,6 @@ final class ContentTypeControllersTest extends DbTestCase {
     ////////////////////////////////////////////////////////////////////////////
 
 
-    public function testPOSTContentTypeFieldAddsFieldToContentType() {
-        $s = $this->setupAddFieldTest();
-        $this->installTestContentType($s);
-        //
-        $this->sendAddFieldToContentTypeRequest($s);
-        $this->verifyAddedFieldToContentTypeTable($s);
-        $this->verifyAddedFieldToInternalTable($s);
-        //
-        $this->uninstallTestContentType($s);
-    }
-    private function setupAddFieldTest() {
-        return (object) [
-            'contentTypeName' => 'ATest',
-            'reqBody' => (object) [
-                'name' => 'newField',
-                'dataType' => 'text',
-                'friendlyName' => 'Uusi kenttä',
-                'isInternal' => false,
-                'defaultValue' => '',
-                'widget' => (object) ['name' => 'textField']
-            ],
-            'testContentTypes' => new ContentTypeCollection()
-        ];
-    }
-    private function sendAddFieldToContentTypeRequest($s) {
-        $req = new Request("/api/content-types/field/{$s->contentTypeName}",
-                           'POST',
-                           $s->reqBody);
-        $res = $this->createMockResponse(['ok' => 'ok']);
-        $app = $this->makeApp('\RadCms\App::create', $this->getAppConfig());
-        $this->sendRequest($req, $res, $app);
-    }
-    private function verifyAddedFieldToContentTypeTable($s) {
-        $fieldData = $s->reqBody;
-        $info = self::$db->fetchOne(
-            'SELECT COLUMN_NAME, COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS' .
-            ' WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND COLUMN_NAME = ?',
-            [self::$db->getCurrentDatabaseName(),
-             self::$db->getTablePrefix() . $s->contentTypeName,
-             $fieldData->name]
-        );
-        $this->assertNotNull($info);
-        $this->assertEquals($fieldData->dataType, $info['COLUMN_TYPE']);
-    }
-    private function verifyAddedFieldToInternalTable($s) {
-        $fieldData = $s->reqBody;
-        $parsed = $this->getInternalInstalledContentTypesFromDb();
-        $actualCompactCtype = $parsed->{$s->contentTypeName} ?? null;
-        $this->assertNotNull($actualCompactCtype);
-        $actualNewField = $actualCompactCtype[1]->{$fieldData->name} ?? null;
-        $this->assertNotNull($actualNewField);
-        $this->assertEquals($fieldData->dataType, $actualNewField[0]);
-        $this->assertEquals($fieldData->friendlyName, $actualNewField[1]);
-        $this->assertEquals($fieldData->widget->name, $actualNewField[2]);
-        $this->assertEquals($fieldData->defaultValue, $actualNewField[3]);
-    }
-
-
-    ////////////////////////////////////////////////////////////////////////////
-
-
     public function testGETContentTypeReturnsContentType() {
         $s = $this->setupGetContentTypeTest();
         $this->sendGetContentTypeRequest($s);
@@ -266,10 +205,119 @@ final class ContentTypeControllersTest extends DbTestCase {
         $this->verifyContentTypeTableExists($s->contentTypeName, false);
         $this->verifyContentTypeTableExists($s->reqBody->name, true);
     }
+
+
+    ////////////////////////////////////////////////////////////////////////////
+
+
+    public function testPOSTContentTypeFieldAddsFieldToContentType() {
+        $s = $this->setupAddFieldTest();
+        $this->installTestContentType($s);
+        //
+        $this->sendAddFieldToContentTypeRequest($s);
+        $this->verifyAddedFieldToContentTypeTable($s);
+        $this->verifyAddedFieldToInternalTable($s);
+        //
+        $this->uninstallTestContentType($s);
+    }
+    private function setupAddFieldTest() {
+        return (object) [
+            'contentTypeName' => 'ATest',
+            'reqBody' => (object) [
+                'name' => 'newField',
+                'dataType' => 'text',
+                'friendlyName' => 'Uusi kenttä',
+                'isInternal' => false,
+                'defaultValue' => '',
+                'widget' => (object) ['name' => 'textField']
+            ],
+            'testContentTypes' => new ContentTypeCollection()
+        ];
+    }
+    private function sendAddFieldToContentTypeRequest($s) {
+        $req = new Request("/api/content-types/field/{$s->contentTypeName}",
+                           'POST',
+                           $s->reqBody);
+        $res = $this->createMockResponse(['ok' => 'ok']);
+        $app = $this->makeApp('\RadCms\App::create', $this->getAppConfig());
+        $this->sendRequest($req, $res, $app);
+    }
+    private function verifyContentTypeFieldExist($s, $expectedField, $shouldExist) {
+        $info = self::$db->fetchOne(
+            'SELECT COLUMN_NAME, COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS' .
+            ' WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND COLUMN_NAME = ?',
+            [self::$db->getCurrentDatabaseName(),
+             self::$db->getTablePrefix() . $s->contentTypeName,
+             $expectedField->name]
+        );
+        if ($shouldExist) {
+            $this->assertIsArray($info);
+            $this->assertEquals($expectedField->dataType, $info['COLUMN_TYPE']);
+        } else {
+            $this->assertIsNotArray($info);
+        }
+    }
+    private function verifyAddedFieldToContentTypeTable($s) {
+        $this->verifyContentTypeFieldExist($s, $s->reqBody, true);
+    }
+    private function verifyAddedFieldToInternalTable($s) {
+        $fieldData = $s->reqBody;
+        $parsed = $this->getInternalInstalledContentTypesFromDb();
+        $actualCompactCtype = $parsed->{$s->contentTypeName} ?? null;
+        $this->assertNotNull($actualCompactCtype);
+        $actualNewField = $actualCompactCtype[1]->{$fieldData->name} ?? null;
+        $this->assertNotNull($actualNewField);
+        $this->assertEquals($fieldData->dataType, $actualNewField[0]);
+        $this->assertEquals($fieldData->friendlyName, $actualNewField[1]);
+        $this->assertEquals($fieldData->widget->name, $actualNewField[2]);
+        $this->assertEquals($fieldData->defaultValue, $actualNewField[3]);
+    }
+
+
+    ////////////////////////////////////////////////////////////////////////////
+
+
+    public function testDELETEContentTypesFieldDeletesFieldFromContentType() {
+        $s = $this->setupDeleteFieldTest();
+        $this->installTestContentType($s);
+        //
+        $this->sendDeleteFieldFromContentTypeRequest($s);
+        $this->verifyDeletedFieldFromContentTypeTable($s);
+        $this->verifyDeletedFieldFromInternalTable($s);
+        //
+        $this->uninstallTestContentType($s);
+    }
+    private function setupDeleteFieldTest() {
+        return (object) [
+            'contentTypeName' => 'AnotherB',
+            'fieldName' => 'field1',
+            'testContentTypes' => new ContentTypeCollection()
+        ];
+    }
+    private function sendDeleteFieldFromContentTypeRequest($s) {
+        $req = new Request("/api/content-types/field/{$s->contentTypeName}/{$s->fieldName}",
+                           'DELETE');
+        $res = $this->createMockResponse(['ok' => 'ok']);
+        $app = $this->makeApp('\RadCms\App::create', $this->getAppConfig());
+        $this->sendResponseBodyCapturingRequest($req, $res, $app, $s);
+    }
+    private function verifyDeletedFieldFromContentTypeTable($s) {
+        $this->verifyContentTypeFieldExist($s,
+                                           (object) ['name' => $s->fieldName],
+                                           false);
+    }
+    private function verifyDeletedFieldFromInternalTable($s) {
+        $parsed = $this->getInternalInstalledContentTypesFromDb();
+        $actualCompactCtype = $parsed->{$s->contentTypeName} ?? null;
+        $this->assertNotNull($actualCompactCtype);
+        $fields = $actualCompactCtype[1];
+        $this->assertObjectNotHasAttribute($s->fieldName, $fields);
+    }
     private function installTestContentType($s) {
         $s->testContentTypes->add($s->contentTypeName,
                                   "Friendly name of {$s->contentTypeName}",
-                                  ['field1' => ['text']]);
+                                  ['field1' => ['text'],
+                                   'field2' => ['int']]);
         // @allow \Pike\PikeException
         self::$migrator->installMany($s->testContentTypes);
     }

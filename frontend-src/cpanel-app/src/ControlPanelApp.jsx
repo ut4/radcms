@@ -41,12 +41,12 @@ class ControlPanelApp extends preact.Component {
                 <ContentTypesManageView path="/manage-content-types"/>
                 { this.state.userDefinedRoutes }
             </PreactRouter> : null }
-            <ControlPanelApp.PopupDialog/>
+            <PopupDialog/>
         </div>;
     }
 }
 
-ControlPanelApp.PopupDialog = class extends preact.Component {
+class PopupDialog extends preact.Component {
     /**
      * @param {{publishApiTo?: any;}} props
      */
@@ -79,6 +79,6 @@ ControlPanelApp.PopupDialog = class extends preact.Component {
             ? preact.createElement(this.state.Renderer, this.rendererProps)
             : null;
     }
-};
+}
 
 export default ControlPanelApp;

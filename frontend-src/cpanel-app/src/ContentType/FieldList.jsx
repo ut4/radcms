@@ -1,4 +1,4 @@
-import {http, toasters, urlUtils, FeatherSvg} from '@rad-commons';
+import {http, toasters, urlUtils, Form, FeatherSvg} from '@rad-commons';
 import ContentEditable from './ContentEditable.jsx';
 
 const dataTypes = [{name: 'text', friendlyName: 'Text'},
@@ -143,12 +143,13 @@ class OneByOneEditableFieldList extends preact.Component {
                 </tr>
                 { this.state.fields.map((f, i) =>
                     !this.state.newFieldIsAppended || i !== this.state.fields.length - 1
-                        ? <OneByOneEditableFieldList.DefaultStateRow
+                        ? <DefaultOneByOneFieldRow
                             field={ f }
+                            onDeleteRequested={ () => this.openDeleteFieldDialog(f) }
                             blur={ this.state.newFieldIsAppended }
                             key={ i.toString() }/>
                         : [
-                            <OneByOneEditableFieldList.NewFieldRow
+                            <NewOneByOneFieldRow
                                 field={ f }
                                 fieldsState={ this.fields }
                                 contentTypeName={ this.props.contentType.name }
@@ -204,9 +205,66 @@ class OneByOneEditableFieldList extends preact.Component {
         const f = this.fields.getFields()[i];
         this.fields.removeField(f);
     }
+    /**
+     * @access private
+     */
+    openDeleteFieldDialog(field) {
+        popupDialog.open(DeleteFieldDialog, {
+            field,
+            contentTypeFriendlyName: this.props.contentType.friendlyName,
+            onConfirm: () => {
+            http.delete('/api/content-types/field/' + this.props.contentType.name +
+                                                '/' + field.name)
+                .then(() => {
+                    urlUtils.reload();
+                })
+                .catch(() => {
+                    toasters.main('Kentän poisto sisältötyypistä epäonnistui.', 'error');
+                });
+            }
+        });
+    }
 }
 
-OneByOneEditableFieldList.DefaultStateRow = class extends preact.Component {
+class DeleteFieldDialog extends preact.Component {
+    /**
+     * @param {{field: ContentTypeField; contentTypeFriendlyName: string;}} props
+     */
+    constructor(props) {
+        super(props);
+    }
+    /**
+     * @access protected
+     */
+    render() {
+        return <div class="popup-dialog"><div class="box">
+            <Form onConfirm={ () => this.handleConfirm() }
+                usePseudoFormTag={ true }
+                confirmButtonText="Poista kenttä"
+                onCancel={ () => this.handleCancel() }
+                autoClose={ false }>
+            <h2>Poista sisältötyyppi</h2>
+            <div class="main">
+                <p>Poista kenttä &quot;{ this.props.field.friendlyName }&quot; ({ this.props.field.name }) sisältötyypistä &quot;{ this.props.contentTypeFriendlyName }&quot; pysyvästi?</p>
+            </div>
+        </Form></div></div>;
+    }
+    /**
+     * @access private
+     */
+    handleConfirm() {
+        this.props.onConfirm();
+        this.handleCancel();
+    }
+    /**
+     * @access private
+     */
+    handleCancel() {
+        popupDialog.close();
+    }
+}
+
+class DefaultOneByOneFieldRow extends preact.Component {
     /**
      * @access protected
      */
@@ -224,15 +282,16 @@ OneByOneEditableFieldList.DefaultStateRow = class extends preact.Component {
                 </button>
                 <span> </span>
                 <button class="icon-button"
-                        disabled={ this.props.blur }>
+                        disabled={ this.props.blur }
+                        onClick={ () => this.props.onDeleteRequested() }>
                     <FeatherSvg iconId="x" className="small"/>
                 </button>
             </td>
         </tr>;
     }
-};
+}
 
-OneByOneEditableFieldList.NewFieldRow = class extends preact.Component {
+class NewOneByOneFieldRow extends preact.Component {
     /**
      * @access protected
      */
@@ -255,6 +314,6 @@ OneByOneEditableFieldList.NewFieldRow = class extends preact.Component {
             <td class="buttons"></td>
         </tr>;
     }
-};
+}
 
 export default FieldList;
