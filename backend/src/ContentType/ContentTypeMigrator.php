@@ -9,7 +9,8 @@ use RadCms\Plugin\Plugin;
 use RadCms\Content\DMO;
 
 /**
- * Luokka joka asentaa/päivittää/poistaa sisältötyyppejä tietokantaan.
+ * Luokka joka asentaa/päivittää/poistaa sisältötyyppejä ja sen sisältämiä
+ * kenttiä tietokantaan.
  */
 class ContentTypeMigrator {
     private $db;
@@ -24,7 +25,7 @@ class ContentTypeMigrator {
     /**
      * @param object $data Validoitu $req->body
      */
-    public function installSingle($data) {
+    public function installSingle(\stdClass $data) {
         $contentTypes = new ContentTypeCollection;
         $contentTypes[] = new ContentTypeDef($data->name,
                                              $data->friendlyName,
@@ -88,8 +89,7 @@ class ContentTypeMigrator {
             }
             return true;
         } catch (\PDOException $e) {
-            throw new PikeException('Failed to rename contentType' . $e->getMessage(),
-                                    PikeException::FAILED_DB_OP);
+            throw new PikeException($e->getMessage(), PikeException::FAILED_DB_OP);
         }
     }
     /**
@@ -129,8 +129,40 @@ class ContentTypeMigrator {
             $this->updateInstalledContenType($contentType);
             return true;
         } catch (\PDOException $e) {
-            throw new PikeException('Unexpected database error:' . $e->getMessage(),
-                                    PikeException::FAILED_DB_OP);
+            throw new PikeException($e->getMessage(), PikeException::FAILED_DB_OP);
+        }
+    }
+    /**
+     * @param \RadCms\ContentType\FieldDef $newData
+     * @param \RadCms\ContentType\FieldDef $currentField
+     * @param \RadCms\ContentType\ContentTypeDef $contentType
+     * @return bool
+     * @throws \Pike\PikeException
+     */
+    public function updateField(FieldDef $newData,
+                                FieldDef $currentField,
+                                ContentTypeDef $contentType) {
+        try {
+            if ($newData->name !== $currentField->name ||
+                $newData->dataType !== $currentField->dataType)
+                $this->db->exec(
+                    'ALTER TABLE `${p}' . $contentType->name . '`' .
+                    (($newData->name === $currentField->name)
+                        ? ' MODIFY ' . $newData->toSqlTableField()
+                        : ' CHANGE `' . $currentField->name . '` ' .
+                            $newData->toSqlTableField())
+                );
+            //
+            $idx = ArrayUtils::findIndexByKey($contentType->fields,
+                                              $currentField->name,
+                                              'name');
+            $contentType->fields[$idx] = $newData;
+            // @allow \Pike\PikeException|\PDOException
+            $this->updateInstalledContenType($contentType);
+            //
+            return true;
+        } catch (\PDOException $e) {
+            throw new PikeException($e->getMessage(), PikeException::FAILED_DB_OP);
         }
     }
     /**
@@ -151,8 +183,7 @@ class ContentTypeMigrator {
             $this->updateInstalledContenType($contentType);
             return true;
         } catch (\PDOException $e) {
-            throw new PikeException('Unexpected database error:' . $e->getMessage(),
-                                    PikeException::FAILED_DB_OP);
+            throw new PikeException($e->getMessage(), PikeException::FAILED_DB_OP);
         }
     }
     /**
@@ -195,6 +226,7 @@ class ContentTypeMigrator {
     }
     /**
      * @param \RadCms\ContentType\ContentTypeCollection $contentTypes
+     * @param string $size
      * @return bool
      * @throws \Pike\PikeException
      */

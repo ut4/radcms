@@ -73,7 +73,7 @@ class FreelyEditableFieldList extends preact.Component {
                 <th>Widgetti</th>
                 <th class="buttons"></th>
             </tr>
-            { this.state.fields.map((f, i) => <tr key={ i.toString() }>
+            { this.state.fields.map(f => <tr key={ f.key.toString() }>
                 <td><ContentEditable onChange={ val => this.fields.setFieldProps(f, {name: val}) }
                                      value={ f.name }/></td>
                 <td><ContentEditable onChange={ val => this.fields.setFieldProps(f, {friendlyName: val}) }
@@ -113,7 +113,10 @@ class OneByOneEditableFieldList extends preact.Component {
     constructor(props) {
         super(props);
         this.fields = this.props.fieldsState;
-        this.state = {fields: this.fields.getFields(), newFieldIsAppended: false};
+        this.state = {fields: this.fields.getFields(),
+                      fieldIdxCurrentlyBeingEdited: -1,
+                      fieldCurrentlyBeingEditedOriginalName: null,
+                      newFieldIsAppended: false};
         this.fields.listen('fields', fields => {
             this.setState({
                 fields,
@@ -142,31 +145,34 @@ class OneByOneEditableFieldList extends preact.Component {
                     <th>Widgetti</th>
                     <th class="buttons"></th>
                 </tr>
-                { this.state.fields.map((f, i) =>
-                    !this.state.newFieldIsAppended || i !== this.state.fields.length - 1
-                        ? <DefaultOneByOneFieldRow
+                { this.state.fields.map((f, i) => {
+                    const isNew = this.state.newFieldIsAppended && i === this.state.fields.length - 1;
+                    if (!isNew && this.state.fieldIdxCurrentlyBeingEdited !== i) {
+                        return <DefaultOneByOneFieldRow
                             field={ f }
+                            onEditRequested={ () => this.setFieldCurrentlyBeingEdited(f) }
                             onDeleteRequested={ () => this.openDeleteFieldDialog(f) }
-                            blur={ this.state.newFieldIsAppended }
-                            key={ i.toString() }/>
-                        : [
-                            <NewOneByOneFieldRow
-                                field={ f }
-                                fieldsState={ this.fields }
-                                contentTypeName={ this.props.contentType.name }
-                                key={ i.toString() }/>,
-                            <tr>
-                                <td colSpan="6">
-                                <button onClick={ () => this.confirmAddNewField(i) }
-                                        class="nice-button primary small">Luo kenttä</button>
-                                <span> </span>
-                                <button onClick={ () => this.discardAddNewField(i) }
-                                        class="nice-button small">Peruuta</button>
-                                </td>
-                            </tr>
-                        ]
-                ) }
-                { !this.state.newFieldIsAppended
+                            blur={ this.state.newFieldIsAppended || this.state.fieldIdxCurrentlyBeingEdited > -1 }
+                            key={ f.key }/>;
+                    }
+                    return [
+                        <EditableOneByOneFieldRow
+                            field={ f }
+                            fieldsState={ this.fields }
+                            contentTypeName={ this.props.contentType.name }
+                            key={ f.key }/>,
+                        <tr>
+                            <td colSpan="6">
+                            <button onClick={ () => this.confirmFieldChanges(i, !isNew ? 'edit' : 'create') }
+                                    class="nice-button primary small">{ !isNew ? 'Tallenna muutokset' : 'Luo kenttä' }</button>
+                            <span> </span>
+                            <button onClick={ () => this.discardFieldChanges(i, !isNew ? 'edit' : 'create') }
+                                    class="nice-button small">Peruuta</button>
+                            </td>
+                        </tr>
+                    ];
+                }) }
+                { !this.state.newFieldIsAppended && this.state.fieldIdxCurrentlyBeingEdited < 0
                     ? <tr><td colSpan="6">
                         <button onClick={ () => this.fields.addField() }
                                 title="Lisää kenttä"
@@ -182,7 +188,7 @@ class OneByOneEditableFieldList extends preact.Component {
     /**
      * @access private
      */
-    confirmAddNewField(i) {
+    confirmFieldChanges(i, editMode) {
         const f = this.fields.getFields()[i];
         const data = {
             name: f.name,
@@ -191,20 +197,35 @@ class OneByOneEditableFieldList extends preact.Component {
             defaultValue: f.defaultValue,
             widget: f.widget,
         };
-        http.post(`/api/content-types/field/${this.props.contentType.name}`, data)
+        let url = `/api/content-types/field/${this.props.contentType.name}`;
+        if (editMode !== 'create') url += `/${this.state.fieldCurrentlyBeingEditedOriginalName}`;
+        http[editMode === 'create' ? 'post' : 'put'](url, data)
             .then(() => {
                 urlUtils.reload();
             })
             .catch(() => {
-                toasters.main('Kentän lisäys sisältötyyppiin epäonnistui.', 'error');
+                toasters.main('Kentän ' + (editMode === 'create'
+                    ? 'lisäys sisältötyyppiin'
+                    : 'tallennus') + ' epäonnistui.', 'error');
             });
     }
     /**
      * @access private
      */
-    discardAddNewField(i) {
-        const f = this.fields.getFields()[i];
-        this.fields.removeField(f);
+    discardFieldChanges(i, editMode) {
+        if (editMode === 'create') {
+            const f = this.fields.getFields()[i];
+            this.fields.removeField(f);
+        } else {
+            this.setFieldCurrentlyBeingEdited(null);
+        }
+    }
+    /**
+     * @access private
+     */
+    setFieldCurrentlyBeingEdited(f) {
+        this.setState({fieldIdxCurrentlyBeingEdited: f ? this.state.fields.indexOf(f) : -1,
+                       fieldCurrentlyBeingEditedOriginalName: f ? f.name : null});
     }
     /**
      * @access private
@@ -242,8 +263,7 @@ class DeleteFieldDialog extends preact.Component {
             <Form onConfirm={ () => this.handleConfirm() }
                 usePseudoFormTag={ true }
                 confirmButtonText="Poista kenttä"
-                onCancel={ () => this.handleCancel() }
-                autoClose={ false }>
+                onCancel={ e => this.handleCancel(e) }>
             <h2>Poista sisältötyyppi</h2>
             <div class="main">
                 <p>Poista kenttä &quot;{ this.props.field.friendlyName }&quot; ({ this.props.field.name }) sisältötyypistä &quot;{ this.props.contentTypeFriendlyName }&quot; pysyvästi?</p>
@@ -255,12 +275,13 @@ class DeleteFieldDialog extends preact.Component {
      */
     handleConfirm() {
         this.props.onConfirm();
-        this.handleCancel();
+        this.handleCancel(null);
     }
     /**
      * @access private
      */
-    handleCancel() {
+    handleCancel(e) {
+        if (e) e.preventDefault();
         popupDialog.close();
     }
 }
@@ -278,7 +299,8 @@ class DefaultOneByOneFieldRow extends preact.Component {
             <td>{ JSON.stringify(this.props.field.widget) }</td>
             <td class="buttons">
                 <button class="icon-button"
-                        disabled={ this.props.blur }>
+                        disabled={ this.props.blur }
+                        onClick={ () => this.props.onEditRequested() }>
                     <FeatherSvg iconId="edit-2" className="small"/>
                 </button>
                 <span> </span>
@@ -292,7 +314,7 @@ class DefaultOneByOneFieldRow extends preact.Component {
     }
 }
 
-class NewOneByOneFieldRow extends preact.Component {
+class EditableOneByOneFieldRow extends preact.Component {
     /**
      * @access protected
      */

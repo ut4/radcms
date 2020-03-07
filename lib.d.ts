@@ -35,7 +35,6 @@ declare module "@rad-commons" {
             onCancel?: (e: Event) => any;
             close?: Function;
             doDisableConfirmButton?: () => boolean;
-            autoClose?: bool;
             confirmButtonText?: string;
             cancelButtonText?: string;
             usePseudoFormTag?: bool;

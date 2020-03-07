@@ -1,5 +1,3 @@
-import {urlUtils} from '../utils.js';
-
 class Form extends preact.Component {
     /**
      * @param {FormProps} props
@@ -21,7 +19,8 @@ class Form extends preact.Component {
                             type="submit">
                         { this.props.confirmButtonText || 'Ok' }
                     </button>
-                    <a href="#/" onClick={ e => this.cancel(e) } >
+                    <a href={ `#${this.props.returnTo || '/'}` }
+                        onClick={ e => this.cancel(e) } >
                         { this.props.cancelButtonText || 'Peruuta' }
                     </a>
                 </div>
@@ -35,7 +34,8 @@ class Form extends preact.Component {
                             type="button">
                         { this.props.confirmButtonText || 'Ok' }
                     </button>
-                    <a href="#/" onClick={ e => this.cancel(e) } >
+                    <a href={ `#${this.props.returnTo || '/'}` }
+                        onClick={ e => this.cancel(e) }>
                         { this.props.cancelButtonText || 'Peruuta' }
                     </a>
                 </div>
@@ -46,14 +46,7 @@ class Form extends preact.Component {
      */
     handleSubmit(e) {
         e.preventDefault();
-        const res = this.props.onConfirm(e);
-        if (res && res instanceof Promise && this.props.autoClose) {
-            res.then(() => this.close());
-            return;
-        }
-        if (this.props.autoClose) {
-            this.close();
-        }
+        this.props.onConfirm(e);
     }
     /**
      * @access public
@@ -65,10 +58,7 @@ class Form extends preact.Component {
      * @access private
      */
     cancel(e) {
-        if (!this.props.autoClose)
-            e.preventDefault();
-        if (this.props.onCancel)
-            this.props.onCancel(e);
+        if (this.props.onCancel) this.props.onCancel(e);
     }
     /**
      * @access private
@@ -77,16 +67,6 @@ class Form extends preact.Component {
         return typeof this.props.doDisableConfirmButton === 'function'
             ? this.props.doDisableConfirmButton()
             : false;
-    }
-    /**
-     * @access protected
-     */
-    close() {
-        if (this.props.close) {
-            this.props.close();
-            return;
-        }
-        urlUtils.redirect(this.props.returnTo || '/');
     }
 }
 

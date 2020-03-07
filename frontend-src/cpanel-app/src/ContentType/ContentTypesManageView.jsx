@@ -181,7 +181,7 @@ class BasicInfo extends preact.Component {
             </header>
             <div class="list left-aligned">
                 <div class="row">Selkonimi: { this.state.friendlyName }</div>
-                <div class="row">Sisäinen: { !this.state.isInternal ? 'ei' : 'kyllä' }</div>
+                <div class="row" data-help-text="Sisäiset sisältötyypit ei näy &quot;Luo sisältöä&quot;-, ja &quot;Kaikki sisältö&quot; -näkymissä.">Sisäinen: { !this.state.isInternal ? 'ei' : 'kyllä' }</div>
             </div>
         </div>;
         // edit or create
@@ -269,8 +269,7 @@ class DeleteDialog extends preact.Component {
             <Form onConfirm={ () => this.handleConfirm() }
                 usePseudoFormTag={ true }
                 confirmButtonText="Poista sisältötyyppi"
-                onCancel={ () => this.handleCancel() }
-                autoClose={ false }>
+                onCancel={ e => this.handleCancel(e) }>
             <h2>Poista sisältötyyppi</h2>
             <div class="main">
                 <p>Poista sisältötyyppi &quot;{ this.props.contentType.friendlyName }&quot; ({ this.props.contentType.name }) ja siihen liittyvä data pysyvästi?</p>
@@ -282,12 +281,13 @@ class DeleteDialog extends preact.Component {
      */
     handleConfirm() {
         this.props.onConfirm();
-        this.handleCancel();
+        this.handleCancel(null);
     }
     /**
      * @access private
      */
-    handleCancel() {
+    handleCancel(e) {
+        if (e) e.preventDefault();
         popupDialog.close();
     }
 }

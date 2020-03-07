@@ -21,7 +21,8 @@ $out->resources = (object)[
         'update'      => $flag3,
         'delete'      => 1 << 4,
         'addField'    => 1 << 5,
-        'deleteField' => 1 << 6,
+        'updateField' => 1 << 6,
+        'deleteField' => 1 << 7,
     ],
     'editMode' => (object)[
         'access' => $flag1

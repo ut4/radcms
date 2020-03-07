@@ -57,8 +57,7 @@ class ContentEditView extends preact.Component {
         if (!this.state.contentType) return null;
         const showPublishToggle = !this.props.publish && this.state.contentNode.isRevision;
         return <View><Form onConfirm={ () => this.handleFormSubmit() }
-                           confirmButtonText={ this.confirmButtonText }
-                           autoClose={ false }>
+                           confirmButtonText={ this.confirmButtonText }>
             <h2>{ [this.title, showPublishToggle ? <sup> (Luonnos)</sup> : null] }</h2>
             <ContentNodeFieldList contentNode={ this.state.contentNode }
                                   contentType={ this.state.contentType }

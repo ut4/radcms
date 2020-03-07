@@ -1,4 +1,5 @@
 const {createStore} = window.Redux;
+let counter = 0;
 
 class FieldsStore {
     /**
@@ -16,7 +17,10 @@ class FieldsStore {
                     ? Object.assign({}, field, action.props)
                     : field);
             return state;
-        }, initialFields);
+        }, initialFields.map(f => {
+            f.key = ++counter;
+            return f;
+        }));
         if (!initialFields)
             this.addField();
         this.editModeStore = createStore((state, action) =>
@@ -89,7 +93,8 @@ FieldsStore.makeField = () => ({
     widget: {
         name: 'textField',
         args: {}
-    }
+    },
+    key: ++counter
 });
 
 export default FieldsStore;

@@ -12,6 +12,9 @@ abstract class ContentTypeModule {
         $ctx->router->map('POST', '/api/content-types/field/[w:contentTypeName]',
             [ContentTypeControllers::class, 'handleAddFieldToContentType', 'addField:contentTypes']
         );
+        $ctx->router->map('PUT', '/api/content-types/field/[w:contentTypeName]/[w:fieldName]',
+            [ContentTypeControllers::class, 'handleUpdateFieldOfContentType', 'updateField:contentTypes']
+        );
         $ctx->router->map('DELETE', '/api/content-types/field/[w:contentTypeName]/[w:fieldName]',
             [ContentTypeControllers::class, 'handleDeleteFieldFromContentType', 'deleteField:contentTypes']
         );

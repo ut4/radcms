@@ -41,10 +41,9 @@ class ContentTypeControllers {
     public function handleGetContentType(Request $req,
                                          Response $res,
                                          CmsState $cmsState) {
-        $ctype = ArrayUtils::findByKey($cmsState->getContentTypes(),
-                                       $req->params->name,
-                                       'name');
-        if ($ctype) $res->json($ctype);
+        // @allow \Pike\PikeException
+        $contentType = self::getContentTypeOrThrow($req->params->name, $cmsState);
+        if ($contentType) $res->json($contentType);
         else $res->status(404)->json(['got' => 'nothing']);
     }
     /**
@@ -81,10 +80,9 @@ class ContentTypeControllers {
             $res->status(400)->json($errors);
             return;
         }
-        if (!($contentType = ArrayUtils::findByKey($cmsState->getContentTypes(),
-                                                   $req->params->contentTypeName,
-                                                   'name')))
-            throw new PikeException('Content type not found.', PikeException::BAD_INPUT);
+        // @allow \Pike\PikeException
+        $contentType = self::getContentTypeOrThrow($req->params->contentTypeName,
+                                                   $cmsState);
         // @allow \Pike\PikeException
         $migrator->updateSingle((object) [
                                     'name' => $req->body->name,
@@ -108,10 +106,9 @@ class ContentTypeControllers {
                                             Response $res,
                                             ContentTypeMigrator $migrator,
                                             CmsState $cmsState) {
-        if (!($contentType = ArrayUtils::findByKey($cmsState->getContentTypes(),
-                                                   $req->params->contentTypeName,
-                                                   'name')))
-            throw new PikeException('Content type not found.', PikeException::BAD_INPUT);
+        // @allow \Pike\PikeException
+        $contentType = self::getContentTypeOrThrow($req->params->contentTypeName,
+                                                   $cmsState);
         // @allow \Pike\PikeException
         $migrator->uninstallSingle($contentType);
         $res->json(['ok' => 'ok']);
@@ -133,12 +130,39 @@ class ContentTypeControllers {
             $res->status(400)->json($errors);
             return;
         }
-        if (!($contentType = ArrayUtils::findByKey($cmsState->getContentTypes(),
-                                                   $req->params->contentTypeName,
-                                                   'name')))
-            throw new PikeException('Content type not found.', PikeException::BAD_INPUT);
+        // @allow \Pike\PikeException
+        $contentType = self::getContentTypeOrThrow($req->params->contentTypeName,
+                                                   $cmsState);
         // @allow \Pike\PikeException
         $migrator->addField(FieldDef::fromObject($req->body), $contentType);
+        $res->json(['ok' => 'ok']);
+    }
+    /**
+     * PUT /api/content-types/field/:contentTypeName/:fieldName.
+     *
+     * @param \Pike\Request $req
+     * @param \Pike\Response $res
+     * @param \RadCms\ContentType\ContentTypeMigrator $migrator
+     * @param \RadCms\CmsState $cmsState
+     * @throws \Pike\PikeException
+     */
+    public function handleUpdateFieldOfContentType(Request $req,
+                                                   Response $res,
+                                                   ContentTypeMigrator $migrator,
+                                                   CmsState $cmsState) {
+        if (($errors = $this->validateAddFieldInput($req->body))) {
+            $res->status(400)->json($errors);
+            return;
+        }
+        // @allow \Pike\PikeException
+        $contentType = self::getContentTypeOrThrow($req->params->contentTypeName,
+                                                   $cmsState);
+        // @allow \Pike\PikeException
+        $field = self::getFieldOrThrow($req->params->fieldName, $contentType);
+        // @allow \Pike\PikeException
+        $migrator->updateField(FieldDef::fromObject($req->body),
+                               $field,
+                               $contentType);
         $res->json(['ok' => 'ok']);
     }
     /**
@@ -154,14 +178,11 @@ class ContentTypeControllers {
                                                      Response $res,
                                                      ContentTypeMigrator $migrator,
                                                      CmsState $cmsState) {
-        if (!($contentType = ArrayUtils::findByKey($cmsState->getContentTypes(),
-                                                   $req->params->contentTypeName,
-                                                   'name')))
-            throw new PikeException('Content type not found.', PikeException::BAD_INPUT);
-        if (!($field = ArrayUtils::findByKey($contentType->fields,
-                                             $req->params->fieldName,
-                                             'name')))
-            throw new PikeException('Field not found.', PikeException::BAD_INPUT);
+        // @allow \Pike\PikeException
+        $contentType = self::getContentTypeOrThrow($req->params->contentTypeName,
+                                                   $cmsState);
+        // @allow \Pike\PikeException
+        $field = self::getFieldOrThrow($req->params->fieldName, $contentType);
         // @allow \Pike\PikeException
         $migrator->removeField($field, $contentType);
         $res->json(['ok' => 'ok']);
@@ -209,5 +230,23 @@ class ContentTypeControllers {
             ->rule('friendlyName', 'type', 'string')
             ->rule('friendlyName', 'minLength', 1)
             ->rule('isInternal', 'type', 'bool');
+    }
+    /**
+     * @return \RadCms\ContentType\ContentTypeDef
+     */
+    private static function getContentTypeOrThrow($name, CmsState $from) {
+        if (($contentType = ArrayUtils::findByKey($from->getContentTypes(),
+                                                  $name,
+                                                  'name')))
+            return $contentType;
+        throw new PikeException('Content type not found.', PikeException::BAD_INPUT);
+    }
+    /**
+     * @return \RadCms\ContentType\FieldDef
+     */
+    private static function getFieldOrThrow($name, ContentTypeDef $from) {
+        if (($field = ArrayUtils::findByKey($from->fields, $name, 'name')))
+            return $field;
+        throw new PikeException('Field not found.', PikeException::BAD_INPUT);
     }
 }
