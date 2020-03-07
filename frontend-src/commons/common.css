@@ -62,6 +62,13 @@ a.disabled {
 .container:not(:last-of-type) {
     margin-bottom: 24px;
 }
+.grouped {
+    display: flex;
+    align-items: center;
+}
+.grouped > * {
+    flex: 1;
+}
 
 
 /* == Components ============================================================ */

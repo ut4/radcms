@@ -20,6 +20,7 @@ class InstallApp extends preact.Component {
             dbPass: '',
             dbTablePrefix: 'rad_',
             dbCharset: 'utf8',
+            doCreateDb: false,
             //
             firstUserName: 'my-name',
             firstUserEmail: 'my@mail.com',
@@ -97,11 +98,17 @@ class InstallApp extends preact.Component {
                         <Input name="dbPass" id="dbPass" onChange={ e => Form.receiveInputValue(e, this) }
                                value={ this.state.dbPass } type="password"/>
                     </InputGroup>
+                    <div class="grouped">
                     <InputGroup label={ () => <span data-help-text="Luotavan RadCMS-tietokannan nimi.">Tietokannan nimi</span> }>
                         <Input name="dbDatabase" id="dbDatabase" onChange={ e => Form.receiveInputValue(e, this) }
                                value={ this.state.dbDatabase }
                                required/>
                     </InputGroup>
+                    <InputGroup inline="true" label={ () => <span data-help-text="Luo tietokanta mikäli sitä ei ole vielä olemassa.">Luo tietokanta</span> }>
+                        <input type="checkbox" id="doCreateDb" onChange={ e => this.setState({doCreateDb: e.target.checked}) }
+                                value={ this.state.doCreateDb}/>
+                    </InputGroup>
+                    </div>
                     <div class="fieldset">
                         <div class="legend">Lisäasetukset</div>
                         <InputGroup label={ () => <span data-help-text="Prefix, jota käytetään RadCMS:n tietokantataulujen etuliitteenä.">Tietokantataulujen prefix</span> }>

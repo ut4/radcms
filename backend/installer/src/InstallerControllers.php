@@ -70,27 +70,29 @@ class InstallerControllers {
      */
     private function validateInstallInput($input) {
         $errors = (Validation::makeObjectValidator())
-            ->rule('siteName?', 'type', 'string')
+            ->rule('siteName', 'type', 'string')
             ->rule('siteLang', 'in', ['en_US', 'fi_FI'])
             ->rule('sampleContent', 'in', ['minimal', 'blog', 'test-content'])
             ->rule('mainQueryVar?', 'identifier')
-            ->rule('useDevMode?', 'type', 'bool')
+            ->rule('useDevMode', 'type', 'bool')
             ->rule('dbHost', 'minLength', 1)
             ->rule('dbUser', 'minLength', 1)
             ->rule('dbPass', 'type', 'string')
             ->rule('dbDatabase', 'minLength', 1)
+            ->rule('doCreateDb', 'type', 'bool')
+            ->rule('dbTablePrefix?', 'type', 'string')
             ->rule('dbTablePrefix?', 'minLength', 1)
             ->rule('dbCharset', 'in', ['utf8'])
             ->rule('firstUserName', 'minLength', 1)
-            ->rule('firstUserMail?', 'minLength', 3)
+            ->rule('firstUserEmail?', 'type', 'string')
+            ->rule('firstUserEmail?', 'minLength', 3)
             ->rule('firstUserPass', 'type', 'string')
             ->rule('baseUrl', 'minLength', 1)
             ->validate($input);
         if (!$errors) {
-            $input->siteName = $input->siteName ?? 'My Site';
+            $input->siteName = mb_strlen($input->siteName) ? $input->siteName : 'My Site';
             $input->mainQueryVar = $input->mainQueryVar ?? '';
-            $input->useDevMode = ($input->useDevMode ?? null) === true;
-            $input->firstUserMail = $input->firstUserMail ?? '';
+            $input->firstUserEmail = $input->firstUserEmail ?? '';
         }
         return $errors;
     }

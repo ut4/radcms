@@ -19,8 +19,9 @@ use RadCms\Installer\Installer;
 final class InstallerTest extends DbTestCase {
     use HttpTestUtils;
     use ContentTestUtils;
-    const TEST_DB_NAME1 = 'db1';
-    const TEST_DB_NAME2 = 'db2';
+    const TEST_DB_NAME1 = 'radInstallerTestDb1';
+    const TEST_DB_NAME2 = 'radInstallerTestDb2';
+    const TEST_DB_NAME3 = 'radInstallerTestDb3';
     public function setUp() {
         parent::setUp();
         if (!defined('INDEX_DIR_PATH')) {
@@ -30,16 +31,20 @@ final class InstallerTest extends DbTestCase {
     public static function tearDownAfterClass() {
         parent::tearDownAfterClass();
         self::$db->exec('DROP DATABASE IF EXISTS ' . self::TEST_DB_NAME1 .
-                        ';DROP DATABASE IF EXISTS ' . self::TEST_DB_NAME2);
+                        ';DROP DATABASE IF EXISTS ' . self::TEST_DB_NAME2 .
+                        ';DROP DATABASE IF EXISTS ' . self::TEST_DB_NAME3);
     }
     public function testInstallerValidatesMissingValues() {
         $input = (object)['sampleContent' => 'test-content'];
         $res = $this->createMockResponse(json_encode([
+            'siteName must be string',
             'The value of siteLang was not in the list',
+            'useDevMode must be bool',
             'The length of dbHost must be at least 1',
             'The length of dbUser must be at least 1',
             'dbPass must be string',
             'The length of dbDatabase must be at least 1',
+            'doCreateDb must be bool',
             'The value of dbCharset was not in the list',
             'The length of firstUserName must be at least 1',
             'firstUserPass must be string',
@@ -59,9 +64,11 @@ final class InstallerTest extends DbTestCase {
             'dbUser' => [],
             'dbPass' => [],
             'dbDatabase' => [],
+            'doCreateDb' => 'not-bool',
             'dbTablePrefix' => new \stdClass,
             'dbCharset' => 'notValid',
             'firstUserName' => [],
+            'firstUserEmail' => new \stdClass,
             'firstUserPass' => [],
             'baseUrl' => [],
         ];
@@ -75,9 +82,13 @@ final class InstallerTest extends DbTestCase {
             'The length of dbUser must be at least 1',
             'dbPass must be string',
             'The length of dbDatabase must be at least 1',
+            'doCreateDb must be bool',
+            'dbTablePrefix must be string',
             'The length of dbTablePrefix must be at least 1',
             'The value of dbCharset was not in the list',
             'The length of firstUserName must be at least 1',
+            'firstUserEmail must be string',
+            'The length of firstUserEmail must be at least 3',
             'firstUserPass must be string',
             'The length of baseUrl must be at least 1'
         ]), 400);
@@ -86,13 +97,16 @@ final class InstallerTest extends DbTestCase {
     }
     public function testInstallerFillsDefaultValues() {
         $input = (object)[
+            'siteName' => '',
             'siteLang' => 'fi_FI',
             'sampleContent' => 'test-content',
             'mainQueryVar' => '',
+            'useDevMode' => false,
             'dbHost' => 'locahost',
             'dbUser' => 'test',
             'dbPass' => 'pass',
             'dbDatabase' => 'name',
+            'doCreateDb' => false,
             'dbTablePrefix' => 'p_',
             'dbCharset' => 'utf8',
             'firstUserName' => 'user',
@@ -123,7 +137,7 @@ final class InstallerTest extends DbTestCase {
         $this->addFsExpectation('generatesConfigFile', $s);
         $this->addFsExpectation('deletesInstallerFiles', $s);
         $this->sendInstallRequest($s);
-        $this->verifyCreatedNewDatabaseAndMainSchema($s);
+        $this->verifyCreatedMainSchema($s);
         $this->verifyInsertedMainSchemaData($s);
         $this->verifyCreatedUserZero($s);
         $this->verifyContentTypeIsInstalled('Movies', true);
@@ -142,6 +156,7 @@ final class InstallerTest extends DbTestCase {
                 'dbUser' => $config['db.user'],
                 'dbPass' => $config['db.pass'],
                 'dbDatabase' => self::TEST_DB_NAME1,
+                'doCreateDb' => true,
                 'dbTablePrefix' => 'p_',
                 'dbCharset' => 'utf8',
                 'firstUserName' => 'user',
@@ -276,7 +291,7 @@ return [
             (object)['fs' => $s->mockFs]);
         $this->sendRequest(new Request('/', 'POST', $s->input), $res, $app);
     }
-    private function verifyCreatedNewDatabaseAndMainSchema($s) {
+    private function verifyCreatedMainSchema($s) {
         self::$db->exec("USE {$s->input->dbDatabase}");
         self::$db->setCurrentDatabaseName($s->input->dbDatabase);
         self::$db->setTablePrefix($s->input->dbTablePrefix);
@@ -316,18 +331,41 @@ return [
     ////////////////////////////////////////////////////////////////////////////
 
 
+    public function testInstallerInstallSiteToExistingDatabase() {
+        $s = $this->setupInstallerTest1();
+        $s->input->dbDatabase = self::TEST_DB_NAME2;
+        $s->input->doCreateDb = false;
+        self::$db->exec("CREATE DATABASE {$s->input->dbDatabase}");
+        $this->addFsExpectation('readsDataFiles', $s);
+        $this->addFsExpectation('readsSampleContentFiles', $s);
+        $this->addFsExpectation('createsSiteDirs', $s);
+        $this->addFsExpectation('clonesTemplateFilesAndSiteCfgFile', $s);
+        $this->addFsExpectation('generatesConfigFile', $s);
+        $this->addFsExpectation('deletesInstallerFiles', $s);
+        $this->sendInstallRequest($s);
+        $this->verifyCreatedMainSchema($s);
+        $this->verifyInsertedMainSchemaData($s);
+        $this->verifyCreatedUserZero($s);
+        $this->verifyContentTypeIsInstalled('Movies', true);
+        $this->verifyInsertedSampleContent($s);
+    }
+
+
+    ////////////////////////////////////////////////////////////////////////////
+
+
     public function testInstallerInstallsWebsiteFromPackage() {
         $s = $this->setupInstallFromPackageTest();
         $this->stubFsToReturnThisAsUploadedFileContents($s->inputPackageFileContents, $s);
         $this->sendInstallFromPackageRequest($s);
-        $this->verifyCreatedNewDatabaseAndMainSchema($s);
+        $this->verifyCreatedMainSchema($s);
         $this->verifyInsertedMainSchemaData($s);
         $this->verifyInstalledThemeContentTypes($s);
         $this->verifyInsertedThemeContentData($s);
     }
     private function setupInstallFromPackageTest() {
         $s = $this->setupInstallerTest1();
-        $s->input->dbDatabase = self::TEST_DB_NAME2;
+        $s->input->dbDatabase = self::TEST_DB_NAME3;
         $s->input->unlockKey = 'my-decrypt-key';
         $s->files = (object) ['packageFile' => ['tmp_name' => 'foo.rpkg']];
         $s->mockCrypto = new MockCrypto();

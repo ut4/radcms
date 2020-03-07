@@ -122,6 +122,7 @@ final class PackagerControllersTest extends DbTestCase {
             return json_encode([
                 'dbHost' => $input->dbHost, 'dbDatabase' => $input->dbDatabase,
                 'dbUser' => $input->dbUser, 'dbPass' => $input->dbPass,
+                'doCreateDb' => true,
                 'dbTablePrefix' => $input->dbTablePrefix, 'dbCharset' => $input->dbCharset,
             ], JSON_UNESCAPED_UNICODE);
         }

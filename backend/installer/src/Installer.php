@@ -46,7 +46,7 @@ class Installer {
     public function doInstall($settings) {
         $base = "{$this->backendPath}installer/sample-content/{$settings->sampleContent}/";
         // @allow \Pike\PikeException
-        return $this->createDb($settings) &&
+        return $this->createOrOpenDb($settings) &&
                $this->createMainSchema($settings) &&
                $this->insertMainSchemaData($settings) &&
                $this->createUserZero($settings) &&
@@ -85,7 +85,7 @@ class Installer {
         // </packagereader>
         //
         $settings = (object)array_merge($dbSettings, $siteSettings);
-        return $this->createDb($settings) &&
+        return $this->createOrOpenDb($settings) &&
                $this->createMainSchema($settings) &&
                $this->insertMainSchemaData($settings) &&
                $this->createContentTypesAndInsertInitialData(
@@ -104,11 +104,11 @@ class Installer {
      * @return bool
      * @throws \Pike\PikeException
      */
-    private function createDb($s) {
+    private function createOrOpenDb($s) {
         try {
             $this->db->setConfig([
                 'db.host'        => $s->dbHost,
-                'db.database'    => '',
+                'db.database'    => $s->doCreateDb ? '' : $s->dbDatabase,
                 'db.user'        => $s->dbUser,
                 'db.pass'        => $s->dbPass,
                 'db.tablePrefix' => $s->dbTablePrefix,
@@ -118,6 +118,8 @@ class Installer {
         } catch (\PDOException $e) {
             throw new PikeException($e->getMessage(), PikeException::FAILED_DB_OP);
         }
+        if (!$s->doCreateDb)
+            return true;
         try {
             $this->db->attr(\PDO::ATTR_EMULATE_PREPARES, 1);
             $this->db->exec("CREATE DATABASE {$s->dbDatabase}");

@@ -82,3 +82,8 @@ h2 {
 .step-indicators div.checked .feather {
     opacity: 1;
 }
+
+.grouped > .input-group {
+    max-width: 300px;
+    margin-right: 8px;
+}
