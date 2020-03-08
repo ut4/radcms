@@ -42,10 +42,11 @@ html, body {
     height: 16px;
 }
 #logo {
-    font: normal 14px/15px "Fira sans heavy";
+    font: normal 14px/14px "Fira sans heavy";
     color: #f5f5f5;
-    padding: 8px 11px 7px;
-    text-align: right;
+    padding: 9px 16px 8px;
+    text-decoration: none;
+    float: right;
 }
 #logo > span {
     font-family: "Fira sans light";
@@ -251,11 +252,11 @@ section.quick-links .icon-button .feather {
 }
 #view > div {
     margin: 15px;
-    max-width: 800px;
+    max-width: 1000px;
 }
 #view > div > button {
     float: right;
-    background-color: transparent;
+    margin: -10px -8px 0 0;
 }
 
 

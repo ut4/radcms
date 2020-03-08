@@ -20,7 +20,7 @@ class ControlPanel extends preact.Component {
     setup(dataFromBackend) {
         this.setState(this.makeState(dataFromBackend));
         if (this.cpanelScroller)
-            this.cpanelScroller.onWebsiteIframeReloaded();
+            this.cpanelScroller.updateMinHeight();
     }
     /**
      * @access private
@@ -76,7 +76,7 @@ class ControlPanel extends preact.Component {
                 <button onClick={ () => this.toggleIsCollapsed() } class="icon-button">
                     <FeatherSvg iconId={ `chevron-${!this.state.collapsed?'left':'right'}` }/>
                 </button>
-                <div id="logo">RAD<span>Cms</span></div>
+                <a id="logo" href="#/">RAD<span>CMS</span></a>
             </header>
             <QuickLinksControlPanelSection
                 userCanCreateContent={ (this.state.userPermissions || {}).canCreateContent }/>
@@ -123,6 +123,7 @@ class ControlPanel extends preact.Component {
         this.setState({collapsed});
         localStorage.radNavIsCollapsed = collapsed;
         this.props.onIsCollapsedToggled();
+        this.cpanelScroller.updateMinHeight();
     }
     /**
      * @access private
@@ -376,15 +377,19 @@ function makeCpanelScroller(cpanelEl, siteIframe) {
     let totalScroll = 0;
     let totalScrollLast = 0;
     let cpanelScroll = 0;
+    let currentSiteIframe = null;
     //
-    const onIframeLoad = () => {
+    const updateMinHeight = () => {
         setTimeout(() => {
             cpanelHeight = cpanelEl.querySelector('footer').getBoundingClientRect().top;
             if (cpanelHeight) {
                 cpanelIsTallerThanWindow = cpanelHeight > window.innerHeight;
                 if (cpanelIsTallerThanWindow)
                     siteIframe.contentDocument.body.style.minHeight = `${cpanelHeight+20}px`;
-                siteIframe.contentDocument.addEventListener('scroll', handleScroll, true);
+                if (siteIframe !== currentSiteIframe) {
+                    siteIframe.contentDocument.addEventListener('scroll', handleScroll, true);
+                    currentSiteIframe = siteIframe;
+                }
                 handleScroll();
             }
         }, 20);
@@ -409,11 +414,9 @@ function makeCpanelScroller(cpanelEl, siteIframe) {
             cpanelEl.style.transform = '';
         cpanelIsTallerThanWindow = newIsTaller;
     }, true);
-    onIframeLoad();
+    updateMinHeight();
     //
-    return {
-        onWebsiteIframeReloaded: onIframeLoad
-    };
+    return {updateMinHeight};
 }
 
 export default ControlPanel;

@@ -71,7 +71,7 @@ class Form extends preact.Component {
 }
 
 /**
- * @param {{label?: string|Function; inline?: boolean; className?: string; id?: string;}} props
+ * @param {{label: string|function?; id?: string; className?: string; inline?: boolean;}} props
  */
 function InputGroup(props) {
     const children = Array.isArray(props.children) ? props.children : [props.children];
@@ -103,6 +103,13 @@ class BaseInput extends preact.Component {
      */
     constructor(props) {
         super(props);
+        this.touched = false;
+        this.hookValidationListeners(props);
+    }
+    /**
+     * @access private
+     */
+    hookValidationListeners(props) {
         if (props.pattern || props.min || props.max || props.required ||
             props.step || props.minLength || props.maxLength) {
             const origOnInvalid = props.onInvalid;
@@ -132,8 +139,8 @@ class BaseInput extends preact.Component {
             };
             const origRefFn = props.ref;
             props.ref = el => {
-                if (!el) return;
-                el.classList.add('pristine');
+                if (!el || !el.classList) return;
+                if (!this.touched) el.classList.add('pristine');
                 if (origRefFn) origRefFn(el);
             };
             const origOnBlur = props.onBlur;
@@ -141,7 +148,18 @@ class BaseInput extends preact.Component {
                 e.target.classList.remove('pristine');
                 if (origOnBlur) origOnBlur(e);
             };
+            const origOnFocus = props.onFocus;
+            props.onFocus = e => {
+                this.touched = true;
+                if (origOnFocus) origOnFocus(e);
+            };
         }
+    }
+    /**
+     * @access protected
+     */
+    componentWillReceiveProps(props) {
+        if (this.props.onInput) this.hookValidationListeners(props);
     }
     /**
      * @returns {string} 'input'|'select' etc.

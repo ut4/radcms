@@ -34,7 +34,7 @@ class ControlPanelApp extends preact.Component {
                           } }/>
             { this.state.userDefinedRoutes ? <PreactRouter history={ History.createHashHistory() }>
                 <ContentAddView path="/add-content/:initialContentTypeName?"/>
-                <ContentManageView path="/manage-content"/>
+                <ContentManageView path="/manage-content/:initialContentTypeName?"/>
                 <ContentEditView path="/edit-content/:id/:contentTypeName/:publish?"/>
                 <PluginsManageView path="/manage-plugins"/>
                 <WebsitePackView path="/pack-website"/>
