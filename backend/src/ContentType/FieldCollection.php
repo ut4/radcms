@@ -37,7 +37,8 @@ class FieldCollection extends \ArrayObject implements \JsonSerializable {
             $out[$f->name] = [$f->dataType,
                               !$translator ? $f->friendlyName : $translator->t($f->name),
                               $f->widget->toCompactForm(),
-                              $f->defaultValue];
+                              $f->defaultValue,
+                              (int) $f->visibility];
         return $out;
     }
     /**
@@ -64,12 +65,13 @@ class FieldCollection extends \ArrayObject implements \JsonSerializable {
                                   !isset($remainingArgs[2])   // widget
                                       ? $DEFAULT_WIDGET
                                       : FieldSetting::fromCompactForm($remainingArgs[2]),
-                                  $remainingArgs[3] ?? '');   // defaultValue
+                                  $remainingArgs[3] ?? '',    // defaultValue
+                                  intval($remainingArgs[4] ?? 0)); // visibility
         }
         return $out;
     }
     /**
-     * @param array $input array<{name: string, friendlyName: string, dataType: string, widget: {name: string, args?: object}, defaultValue: string}> Olettaa että on validi
+     * @param array $input array<{name: string, friendlyName: string, dataType: string, widget: {name: string, args?: object}, defaultValue: string, visibility: int}> Olettaa että on validi
      * @return \RadCms\ContentType\FieldCollection
      */
     public static function fromArray(array $input) {

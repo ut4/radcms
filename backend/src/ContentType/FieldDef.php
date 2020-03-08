@@ -8,23 +8,27 @@ class FieldDef {
     public $dataType;
     public $widget;
     public $defaultValue;
+    public $visibility;
     /**
      * @param string $name
      * @param string $friendlyName
      * @param string $dataType
      * @param \RadCms\ContentType\FieldSetting $widget
      * @param string $defaultValue
+     * @param int $visibility
      */
     public function __construct($name,
                                 $friendlyName,
                                 $dataType,
                                 $widget,
-                                $defaultValue) {
+                                $defaultValue,
+                                $visibility) {
         $this->name = $name;
         $this->friendlyName = $friendlyName;
         $this->dataType = $dataType;
         $this->widget = $widget;
         $this->defaultValue = $defaultValue;
+        $this->visibility = $visibility;
     }
     /**
      * @param \Closure $formatterFn = null fn(\RadCms\ContentType\FieldDef $field): string
@@ -50,7 +54,7 @@ class FieldDef {
     ////////////////////////////////////////////////////////////////////////////
 
     /**
-     * @param object $input array<{name: string, friendlyName: string, dataType: string, widget: {name: string, args?: object}, defaultValue: string}> Olettaa että on validi
+     * @param object $input array<{name: string, friendlyName: string, dataType: string, widget: {name: string, args?: object}, defaultValue: string, visibility: int}> Olettaa että on validi
      * @return \RadCms\ContentType\FieldDef
      */
     public static function fromObject($input) {
@@ -61,6 +65,7 @@ class FieldDef {
                                 $input->widget->name,
                                 $input->widget->args ?? null
                             ),
-                            $input->defaultValue ?? '');
+                            $input->defaultValue ?? '',
+                            $input->visibility ?? 0);
     }
 }

@@ -28,13 +28,18 @@ class ContentNodeFieldList extends preact.Component {
      * @access protected
      */
     render() {
-        return <div>{ this.state.contentType.fields.map(field =>
-            field.widget.name !== 'hidden' && field.widget.name !== 'multiFieldBuilder'
-                ? <InputGroup label={ field.friendlyName }>
-                    { this.makeInput(field) }
-                </InputGroup>
-                : this.makeInput(field)
-        ) }</div>;
+        return <div>{ this.state.contentType.fields
+            .filter(f =>
+                f.visibility === 0 || f.visibility & config.user.role
+            )
+            .map(field =>
+                field.widget.name !== 'hidden' && field.widget.name !== 'multiFieldBuilder'
+                    ? <InputGroup label={ field.friendlyName }>
+                        { this.makeInput(field) }
+                    </InputGroup>
+                    : this.makeInput(field)
+            )
+        }</div>;
     }
     /**
      * @access private

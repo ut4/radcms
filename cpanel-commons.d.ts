@@ -3,6 +3,7 @@ interface ContentTypeField {
     friendlyName: string;
     dataType: string;
     defaultValue: string;
+    visibility: number;
     widget: {
         name: string;
         args: Object;

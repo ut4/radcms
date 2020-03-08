@@ -4,10 +4,11 @@ namespace RadCms\StockContentTypes\MultiFieldBlobs;
 
 use RadCms\BaseAPI;
 use RadCms\Templating\StockFrontendPanelImpls;
+use RadCms\Auth\ACL;
 
 class MultiFieldBlobs {
     public const DEFINITION = ['MultiFieldBlobs', 'Monikenttäsisältö', [
-        'name' => 'text:Nimi:textField',
+        'name' => 'text:Nimi:textField:' . /*defaultValue*/ '' . ':' . ACL::ROLE_SUPER_ADMIN,
         'fields' => 'json:Kentät:multiFieldBuilder'
     ]];
     /**

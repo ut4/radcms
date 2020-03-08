@@ -70,6 +70,7 @@ class FreelyEditableFieldList extends preact.Component {
                 <th>Nimi</th>
                 <th>Datatyyppi</th>
                 <th>Oletusarvo</th>
+                <th>Näkyvyys</th>
                 <th>Widgetti</th>
                 <th class="buttons"></th>
             </tr>
@@ -84,6 +85,7 @@ class FreelyEditableFieldList extends preact.Component {
                 ) }</select></td>
                 <td><ContentEditable onChange={ val => this.fields.setFieldProps(f, {defaultValue: val}) }
                                      value={ f.defaultValue }/></td>
+                <td>todo</td>
                 <td><ContentEditable onChange={ val => this.fields.setFieldProps(f, {widget: JSON.parse(val)}) }
                                      value={ JSON.stringify(f.widget) }/></td>
                 <td class="buttons">
@@ -142,6 +144,7 @@ class OneByOneEditableFieldList extends preact.Component {
                     <th>Nimi</th>
                     <th>Datatyyppi</th>
                     <th>Oletusarvo</th>
+                    <th>Näkyvyys</th>
                     <th>Widgetti</th>
                     <th class="buttons"></th>
                 </tr>
@@ -195,6 +198,7 @@ class OneByOneEditableFieldList extends preact.Component {
             friendlyName: f.friendlyName,
             dataType: f.dataType,
             defaultValue: f.defaultValue,
+            visibility: f.visibility,
             widget: f.widget,
         };
         let url = `/api/content-types/field/${this.props.contentType.name}`;
@@ -296,6 +300,7 @@ class DefaultOneByOneFieldRow extends preact.Component {
             <td>{ this.props.field.friendlyName }</td>
             <td>{ this.props.field.dataType }</td>
             <td>{ this.props.field.defaultValue || '(tyhjä)' }</td>
+            <td>todo</td>
             <td>{ JSON.stringify(this.props.field.widget) }</td>
             <td class="buttons">
                 <button class="icon-button"
@@ -332,6 +337,7 @@ class EditableOneByOneFieldRow extends preact.Component {
             ) }</select></td>
             <td><ContentEditable onChange={ val => fieldsState.setFieldProps(f, {defaultValue: val}) }
                                  value={ f.defaultValue }/></td>
+            <td>todo</td>
             <td><ContentEditable onChange={ val => fieldsState.setFieldProps(f, {widget: JSON.parse(val)}) }
                                  value={ JSON.stringify(f.widget) }/></td>
             <td class="buttons"></td>

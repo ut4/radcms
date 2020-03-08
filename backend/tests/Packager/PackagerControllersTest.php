@@ -79,7 +79,6 @@ final class PackagerControllersTest extends DbTestCase {
     }
     private function verifyIncludedDbConfig($s) {
         $s->testWebsiteState = self::makeTestWebsiteState();
-        $vals = $s->testWebsiteState;
         $this->assertEquals(self::makeExpectedPackageFile(Packager::DB_CONFIG_VIRTUAL_FILE_NAME,
                                                           $s->testWebsiteState),
                             $s->actualPackage->read(Packager::DB_CONFIG_VIRTUAL_FILE_NAME));
@@ -120,10 +119,13 @@ final class PackagerControllersTest extends DbTestCase {
     public static function makeExpectedPackageFile($virtualFileName, $input=null) {
         if ($virtualFileName === Packager::DB_CONFIG_VIRTUAL_FILE_NAME) {
             return json_encode([
-                'dbHost' => $input->dbHost, 'dbDatabase' => $input->dbDatabase,
-                'dbUser' => $input->dbUser, 'dbPass' => $input->dbPass,
+                'dbHost' => $input->dbHost,
+                'dbDatabase' => $input->dbDatabase,
                 'doCreateDb' => true,
-                'dbTablePrefix' => $input->dbTablePrefix, 'dbCharset' => $input->dbCharset,
+                'dbUser' => $input->dbUser,
+                'dbPass' => $input->dbPass,
+                'dbTablePrefix' => $input->dbTablePrefix,
+                'dbCharset' => $input->dbCharset,
             ], JSON_UNESCAPED_UNICODE);
         }
         if ($virtualFileName === Packager::WEBSITE_STATE_VIRTUAL_FILE_NAME) {
@@ -138,8 +140,8 @@ final class PackagerControllersTest extends DbTestCase {
             ], JSON_UNESCAPED_UNICODE);
         }
         if ($virtualFileName === Packager::THEME_CONTENT_TYPES_VIRTUAL_FILE_NAME) {
-            return '{"SomeType":["Friendly name",{"name":["text","name","textField",""]},"Website"],'.
-                    '"AnotherType":["Friendly eman",{"title":["text","title","textField",""]},"Website"]}';
+            return '{"SomeType":["Friendly name",{"name":["text","name","textField","",0]},"Website"],'.
+                    '"AnotherType":["Friendly eman",{"title":["text","title","textField","",0]},"Website"]}';
         }
         throw new \RuntimeException("Unknown package file {$virtualFileName}");
     }

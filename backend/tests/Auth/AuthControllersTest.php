@@ -43,7 +43,7 @@ final class AuthControllersTest extends DbTestCase {
             ->with($this->equalTo('user'),
                     $this->equalTo((object)[
                         'id' => 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx',
-                        'role' => 255
+                        'role' => 8388608
                     ]));
         $s->method('get')
             ->willReturn('xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx');

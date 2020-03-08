@@ -196,6 +196,7 @@ class ContentTypeControllers {
             ->rule('fields.*.friendlyName', 'minLength', 1)
             ->rule('fields.*.dataType', 'in', ContentTypeValidator::FIELD_DATA_TYPES)
             ->rule('fields.*.defaultValue', 'type', 'string')
+            ->rule('fields.*.visibility', 'type', 'int')
             ->rule('fields.*.widget.name', 'in', ContentTypeValidator::FIELD_WIDGETS)
             ->rule('fields.*.widget.args?', 'type', 'object')
             ->validate($input);
@@ -216,6 +217,7 @@ class ContentTypeControllers {
             ->rule('friendlyName', 'minLength', 1)
             ->rule('dataType', 'in', ContentTypeValidator::FIELD_DATA_TYPES)
             ->rule('defaultValue', 'type', 'string')
+            ->rule('visibility', 'type', 'int')
             ->rule('widget.name', 'in', ContentTypeValidator::FIELD_WIDGETS)
             ->rule('widget.args?', 'type', 'object')
             ->validate($input);

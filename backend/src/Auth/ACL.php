@@ -5,9 +5,9 @@ namespace RadCms\Auth;
 use Pike\PikeException;
 
 class ACL {
-    public const ROLE_SUPER_ADMIN = 0;
-    public const ROLE_EDITOR = 1;
-    public const ROLE_VIEWER = 255;
+    public const ROLE_SUPER_ADMIN = 1 << 0;
+    public const ROLE_EDITOR = 1 << 1;
+    public const ROLE_VIEWER = 1 << 23;
     public const NO_NAME = 'none:none';
     private $resources;
     private $permissions;

@@ -24,7 +24,7 @@ final class ContentTypeControllersTest extends DbTestCase {
                                      ['name' => ['text'],
                                       'pic' => ['text', 'Kuva', 'image', 'default.jpg']]);
         self::$testContentTypes->add('Locations', 'Paikat',
-                                     ['name' => ['text', 'Tapahtumapaikka']]);
+                                     ['name' => 'text:Tapahtumapaikka:textField::1']);
         self::$migrator = new ContentTypeMigrator(self::getDb());
         // @allow \Pike\PikeException
         self::$migrator->installMany(self::$testContentTypes);
@@ -52,6 +52,7 @@ final class ContentTypeControllersTest extends DbTestCase {
             'The length of fields.*.friendlyName must be at least 1',
             'The value of fields.*.dataType was not in the list',
             'fields.*.defaultValue must be string',
+            'fields.*.visibility must be int',
             'The value of fields.*.widget.name was not in the list',
         ], $s);
     }
@@ -81,10 +82,10 @@ final class ContentTypeControllersTest extends DbTestCase {
              'fields' => [
                  ['name' => 'name', 'friendlyName' => 'name', 'dataType' => 'text',
                   'widget' => new FieldSetting(self::DEFAULT_WIDGET),
-                  'defaultValue' => ''],
+                  'defaultValue' => '', 'visibility' => 0],
                  ['name' => 'pic', 'friendlyName' => 'Kuva', 'dataType' => 'text',
                   'widget' => new FieldSetting('image'),
-                  'defaultValue' => 'default.jpg'],
+                  'defaultValue' => 'default.jpg', 'visibility' => 0],
              ],
              'isInternal' => false,
              'origin' => 'Website'],
@@ -119,15 +120,15 @@ final class ContentTypeControllersTest extends DbTestCase {
             [['name' => 'Events', 'friendlyName' => 'Tapahtumat', 'fields' => [
                 ['name' => 'name', 'friendlyName' => 'name', 'dataType' => 'text',
                  'widget' => new FieldSetting(self::DEFAULT_WIDGET),
-                 'defaultValue' => ''],
+                 'defaultValue' => '', 'visibility' => 0],
                 ['name' => 'pic', 'friendlyName' => 'Kuva', 'dataType' => 'text',
                  'widget' => new FieldSetting('image'),
-                 'defaultValue' => 'default.jpg'],
+                 'defaultValue' => 'default.jpg', 'visibility' => 0],
             ], 'isInternal' => false, 'origin' => 'Website'],
             ['name' => 'Locations', 'friendlyName' => 'Paikat', 'fields' => [
                 ['name' => 'name', 'friendlyName' => 'Tapahtumapaikka', 'dataType' => 'text',
                  'widget' => new FieldSetting(self::DEFAULT_WIDGET),
-                 'defaultValue' => ''],
+                 'defaultValue' => '', 'visibility' => 1],
             ], 'isInternal' => false, 'origin' => 'Website']],
             $s
         );
@@ -261,6 +262,7 @@ final class ContentTypeControllersTest extends DbTestCase {
                 'friendlyName' => 'Uusi kenttä',
                 'isInternal' => false,
                 'defaultValue' => '',
+                'visibility' => 0,
                 'widget' => (object) ['name' => 'textField']
             ],
             'testContentTypes' => new ContentTypeCollection()
@@ -303,6 +305,7 @@ final class ContentTypeControllersTest extends DbTestCase {
         $this->assertEquals($fieldData->friendlyName, $actualNewField[1]);
         $this->assertEquals($fieldData->widget->name, $actualNewField[2]);
         $this->assertEquals($fieldData->defaultValue, $actualNewField[3]);
+        $this->assertEquals($fieldData->visibility, $actualNewField[4]);
     }
 
 

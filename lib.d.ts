@@ -10,6 +10,9 @@ declare module "@rad-commons" {
                 canCreateContent: boolean;
                 canManageFieldsOfMultiFieldContent: boolean;
             };
+            user: {
+                role: number;
+            }
         }
         export const http: {
             get(url: string): Promise<Object>;

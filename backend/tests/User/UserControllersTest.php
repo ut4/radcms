@@ -7,6 +7,7 @@ use Pike\TestUtils\HttpTestUtils;
 use Pike\Request;
 use Pike\Auth\Authenticator;
 use Pike\Response;
+use RadCms\Auth\ACL;
 
 final class UserControllersTest extends DbTestCase {
     use HttpTestUtils; // makeApp(), sendRequest()
@@ -34,7 +35,7 @@ final class UserControllersTest extends DbTestCase {
                 'username' => 'foo',
                 'email' => 'e@mail.com',
                 'passwordHash' => 'mock',
-                'role' => 1];
+                'role' => ACL::ROLE_SUPER_ADMIN];
         [$cols, $qs, $vals] = self::makeSelectColumnBinders($out);
         self::$db->exec("INSERT INTO \${p}users ({$cols}) VALUES ({$qs})", $vals);
         return $out;

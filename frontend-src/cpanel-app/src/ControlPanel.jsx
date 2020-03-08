@@ -42,6 +42,7 @@ class ControlPanel extends preact.Component {
                 config.baseUrl = dataFromBackend.baseUrl;
                 config.assetBaseUrl = dataFromBackend.assetBaseUrl;
                 config.userPermissions = dataFromBackend.userPermissions;
+                config.user = dataFromBackend.user;
                 this.siteInfo = {baseUrl: dataFromBackend.baseUrl,
                                  assetBaseUrl: dataFromBackend.assetBaseUrl,
                                  currentPagePath: dataFromBackend.currentPagePath};
@@ -240,7 +241,7 @@ class ForDevsControlPanelSectionction extends preact.Component {
      * @access protected
      */
     render() {
-        if (this.props.userRole !== 0) return null;
+        if (this.props.userRole !== 1) return null;
         return <section class="for-devs"><div>
             <h2>Devaajalle</h2>
             <AdminControlPanelPanel Renderer={ null } title="Kaikki sisältö" icon="database" mainUrl="/manage-content">

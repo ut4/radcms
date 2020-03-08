@@ -90,6 +90,7 @@ FieldsStore.makeField = () => ({
     friendlyName: 'Uusi kenttä',
     dataType: 'text',
     defaultValue: '',
+    visibility: 0,
     widget: {
         name: 'textField',
         args: {}

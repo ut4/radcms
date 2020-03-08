@@ -39,7 +39,7 @@ class User {
     public $username;
     /** @var string */
     public $email;
-    /** @var int 0 - 255 (ACL::ROLE_SUPER_ADMIN - ACL::ROLE_VIEWER) */
+    /** @var int 1 - 8388608 (ACL::ROLE_SUPER_ADMIN - ACL::ROLE_VIEWER) */
     public $role;
     /**
      * @param array $row
@@ -50,7 +50,7 @@ class User {
         $out->id = $row['id'];
         $out->username = $row['username'];
         $out->email = $row['email'];
-        $out->role = (int)$row['role'];
+        $out->role = (int) $row['role'];
         return $out;
     }
 }

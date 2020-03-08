@@ -87,6 +87,7 @@ class Packager {
         return json_encode([
             'dbHost' => $this->config['db.host'],
             'dbDatabase' => $this->config['db.database'],
+            'doCreateDb' => true,
             'dbUser' => $this->config['db.user'],
             'dbPass' => $this->config['db.pass'],
             'dbTablePrefix' => $this->config['db.tablePrefix'],
