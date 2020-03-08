@@ -4,8 +4,9 @@ namespace RadCms\Plugin;
 
 use Pike\Request;
 use Pike\Response;
-use RadCms\Common\LoggerAccess;
 use Pike\PikeException;
+use RadCms\CmsState;
+use Pike\ArrayUtils;
 
 /**
  * Handlaa /api/plugin -alkuiset pyynnöt.
@@ -13,10 +14,10 @@ use Pike\PikeException;
 class PluginControllers {
     private $plugins;
     /**
-     * @param \RadCms\Plugin\PluginCollection $plugins
+     * @param \RadCms\CmsState $cmsState
      */
-    public function __construct(PluginCollection $plugins) {
-        $this->plugins = $plugins;
+    public function __construct(CmsState $cmsState) {
+        $this->plugins = $cmsState->getPlugins();
     }
     /**
      * GET /api/plugins: listaa kaikki lisäosat.
@@ -27,7 +28,7 @@ class PluginControllers {
     public function handleGetPluginsRequest(Response $res) {
         $res->json(array_map(function ($plugin) {
             return ['name' => $plugin->name, 'isInstalled' => $plugin->isInstalled];
-        }, $this->plugins->toArray()));
+        }, $this->plugins->getArrayCopy()));
     }
     /**
      * PUT /api/plugins/:name/install: asentaa lisäosan $name.
@@ -39,7 +40,7 @@ class PluginControllers {
     public function handleInstallPluginRequest(Request $req,
                                                Response $res,
                                                PluginInstaller $installer) {
-        if (($plugin = $this->plugins->find($req->params->name))) {
+        if (($plugin = ArrayUtils::findByKey($this->plugins, $req->params->name, 'name'))) {
             // @allow \Pike\PikeException
             $installer->install($plugin);
             $res->json(['ok' => 'ok']);
@@ -58,7 +59,7 @@ class PluginControllers {
     public function handleUninstallPluginRequest(Request $req,
                                                  Response $res,
                                                  PluginInstaller $installer) {
-        if (($plugin = $this->plugins->find($req->params->name))) {
+        if (($plugin = ArrayUtils::findByKey($this->plugins, $req->params->name, 'name'))) {
             // @allow \Pike\PikeException
             $installer->uninstall($plugin);
             $res->json(['ok' => 'ok']);

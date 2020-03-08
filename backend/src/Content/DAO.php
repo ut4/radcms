@@ -5,6 +5,7 @@ namespace RadCms\Content;
 use Pike\Db;
 use RadCms\ContentType\ContentTypeCollection;
 use Pike\PikeException;
+use Pike\ArrayUtils;
 
 /**
  * Luokka jonka DAO->fetchOne|All() instansoi ja palauttaa. Ei tarkoitettu
@@ -50,8 +51,8 @@ class DAO {
      * @param string $sql
      * @param bool $isFetchOne
      * @param array $bindVals = null
-     * @param object $join = null {contentType: string, collector: [\Closure, string]}
-     * @return array|object|null
+     * @param \stdClass $join = null {contentType: string, alias: string, collector: [\Closure, string]}
+     * @return array|\stdClass|null
      */
     public function doExec($sql,
                            $isFetchOne,
@@ -80,13 +81,13 @@ class DAO {
      * @throws \Pike\PikeException
      */
     public function getContentType($name) {
-        if (!($type = $this->contentTypes->find($name)))
+        if (!($type = ArrayUtils::findByKey($this->contentTypes, $name, 'name')))
             throw new PikeException("Content type `{$name}` not registered",
                                     PikeException::BAD_INPUT);
         return $type;
     }
     /**
-     * @return object
+     * @return \stdClass
      */
     private function makeContentNode($row, $rows) {
         $out = (object)$row;

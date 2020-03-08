@@ -3,9 +3,7 @@
 namespace RadCms\Website;
 
 use Pike\FileSystemInterface;
-use RadCms\ContentType\ContentTypeCollection;
 use Pike\PikeException;
-use RadCms\StockContentTypes\MultiFieldBlobs\MultiFieldBlobs;
 
 /**
  * Lukee, ja pitää sisällään site.json -tiedostoon conffatut tiedot.
@@ -13,30 +11,21 @@ use RadCms\StockContentTypes\MultiFieldBlobs\MultiFieldBlobs;
 class SiteConfig {
     public const ASSET_TYPES = ['local-stylesheet', 'local-script'];
     public $urlMatchers;
-    public $contentTypes;
-    public $lastModTime;
     private $assets;
     private $fs;
     /**
      * @param \Pike\FileSystemInterface $fs
      */
     public function __construct(FileSystemInterface $fs) {
-        $this->lastModTime = 0;
         $this->fs = $fs;
     }
     /**
      * @param string $filePath Absoluuttinen polku configurointitiedostoon Esim. '/home/me/foo/site.json'.
-     * @param bool $checkLastModTime = true
      * @param bool $autoSelfValidate = true
      * @return bool
      * @throws \Pike\PikeException
      */
-    public function selfLoad($filePath,
-                             $checkLastModTime = true,
-                             $autoSelfValidate = true) {
-        if ($checkLastModTime && !($this->lastModTime = $this->fs->lastModTime($filePath)))
-            throw new PikeException("Failed to read mtime of `{$filePath}`",
-                                    PikeException::FAILED_FS_OP);
+    public function selfLoad($filePath, $autoSelfValidate = true) {
         if (!($str = $this->fs->read($filePath)))
             throw new PikeException("Failed to read `{$filePath}`",
                                     PikeException::FAILED_FS_OP);
@@ -49,46 +38,28 @@ class SiteConfig {
                 $this->collectAll($parsed);
     }
     /**
-     * @param object $input
+     * @param \stdClass $input
      * @return bool
      * @throws \Pike\PikeException
      */
     private function collectAll($input) {
         $this->urlMatchers = $this->collectUrlMatchers($input->urlMatchers);
-        $this->contentTypes = $this->collectContentTypes($input->contentTypes);
         $this->assets = $this->collectAssets($input->assetFiles ?? []);
         return true;
     }
     /**
      * @param array $inputUrlMatchers
-     * @return \RadCms\Website\UrlMatcherCollection
+     * @return array
      */
     private function collectUrlMatchers($inputUrlMatchers) {
-        $out = new UrlMatcherCollection();
+        $out = [];
         foreach ($inputUrlMatchers as $definition)
-            $out->add(...$definition);
+            $out[] = new UrlMatcher(...$definition);
         return $out;
     }
     /**
-     * @param array $ctypeInput
-     * @return \RadCms\ContentType\ContentTypeCollection
-     */
-    private function collectContentTypes($ctypeInput) {
-        $asMap = [];
-        foreach ($ctypeInput as $i => $definition) {
-            if (!is_string($definition)) continue;
-            $ctypeInput[$i] = MultiFieldBlobs::DEFINITION;
-            $ctypeInput[$i][2] = (object)$ctypeInput[$i][2];
-        }
-        foreach ($ctypeInput as $definition) {
-            $nameParts = array_shift($definition);
-            $asMap[$nameParts] = $definition;
-        }
-        return ContentTypeCollection::fromCompactForm($asMap);
-    }
-    /**
      * @param array $inputAssetFiles
-     * @return array Array<{url: string, type: string, attrs: array}>
+     * @return array array<{url: string, type: string, attrs: array}>
      */
     private function collectAssets($inputAssetFiles) {
         $out = [];
@@ -102,7 +73,7 @@ class SiteConfig {
         return $out;
     }
     /**
-     * @param object $input
+     * @param \stdClass $input
      * @param string $sitePath i.e. RAD_SITE_PATH
      * @return bool
      * @throws \Pike\PikeException
@@ -110,7 +81,6 @@ class SiteConfig {
     private function selfValidate($input, $sitePath) {
         if (!($errors = array_merge($this->validateUrlMatchers($input->urlMatchers ?? [],
                                                                $sitePath),
-                                    $this->validateContentTypes($input->contentTypes ?? []),
                                     $this->validateAssets($input->assetFiles ?? [])))) {
             return true;
         }
@@ -158,33 +128,6 @@ class SiteConfig {
     /**
      * @return string[]
      */
-    private function validateContentTypes($inputContentTypes) {
-        if (!$inputContentTypes || !is_array($inputContentTypes))
-            return ['{..."contentTypes": [["Name", "FriendlyName", <fields>]...]} is required'];
-        $errors = [];
-        foreach ($inputContentTypes as $i => $definition) {
-            if (is_string($definition)) {
-                if ($definition !== 'extend:stockContentTypes')
-                    $errors[] = 'Expected "extend:stockContentTypes"';
-                continue;
-            }
-            if (!is_array($definition) || count($definition) !== 3) {
-                $errors[] = 'contentType must be an array ["Name", "FriendlyName", <fields>]';
-                continue;
-            }
-            [$name, $friendlyName, $fields] = $definition;
-            if (!is_string($name) || !strlen($name))
-                $errors[] = "contentType[{$i}][0] (name) must be a string";
-            if (!is_string($friendlyName) || !strlen($friendlyName))
-                $errors[] = "contentType[{$i}][1] (friendlyName) must be a string";
-            if (!($fields instanceof \stdClass))
-                $errors[] = "contentType[{$i}][2] (fields) must be an object";
-        }
-        return $errors;
-    }
-    /**
-     * @return string[]
-     */
     private function validateAssets($inputAssetFiles) {
         if ($inputAssetFiles && !is_array($inputAssetFiles))
             return ['{..."assetFiles": [["file.ext", "asset-type", {"html-attr": "value"}?]]...} must be an array'];
@@ -202,7 +145,7 @@ class SiteConfig {
                             implode('|', self::ASSET_TYPES);
             $attrs = $definition[2] ?? null;
             if ($attrs && !($attrs instanceof \stdClass))
-                $errors[] = "assetFile[{$i}][2] (attrs) must be an object";
+                $errors[] = "assetFile[{$i}][2] (attrs) must be a \stdClass";
         }
         return $errors;
     }

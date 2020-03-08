@@ -2,16 +2,18 @@
 
 namespace RadCms\Website;
 
+use RadCms\Auth\ACL;
+
 abstract class WebsiteModule {
     /**
-     * @param object $ctx
+     * @param \stdClass $ctx {\Pike\Router router, \Pike\Db db, \RadCms\Auth\Authenticator auth, \RadCms\Auth\ACL acl, \RadCms\CmsState cmsState, \Pike\Translator translator}
      */
     public static function init($ctx) {
         $ctx->router->map('GET', '/edit/[**:q]?',
-            [AdminControllers::class, 'handleEditViewRequest', true]
+            [AdminControllers::class, 'handleEditViewRequest', 'access:editMode']
         );
         $ctx->router->map('GET', '*',
-            [WebsiteControllers::class, 'handlePageRequest', false]
+            [WebsiteControllers::class, 'handlePageRequest', ACL::NO_NAME]
         );
     }
 }

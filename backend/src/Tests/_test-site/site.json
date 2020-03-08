@@ -1,9 +1,0 @@
-{
-    "contentTypes": [
-        ["SomeType", "Friendly name", {"name": "text"}],
-        ["AnotherType", "Friendly eman", {"title": "text"}]
-    ],
-    "urlMatchers": [
-        [".*", "dummy.tmpl.php"]
-    ]
-}

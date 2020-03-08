@@ -16,7 +16,7 @@
         "ext-fileinfo": "*",
         "psr/log": "^1.1",
         "monolog/monolog": "^1.25",
-        "ut4/pike": "0.0.0"
+        "ut4/pike": "0.3.0"
     },
     "minimum-stability": "dev",
     "prefer-stable": true,
@@ -27,6 +27,6 @@
         "phpunit/phpunit": "7.*"
     },
     "scripts": {
-        "test": "\"vendor/bin/phpunit\" --bootstrap ./src/Tests/bootstrap.php"
+        "test": "\"vendor/bin/phpunit\" --bootstrap ./tests/bootstrap.php"
     }
 }

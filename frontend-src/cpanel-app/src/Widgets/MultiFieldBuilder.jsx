@@ -1,4 +1,5 @@
 import {InputGroup} from '@rad-commons';
+import popupDialog from '../Common/PopupDialog.jsx';
 import makeWidgetComponent, {widgetTypes} from '../Widgets/all.jsx';
 
 /**
@@ -8,7 +9,7 @@ import makeWidgetComponent, {widgetTypes} from '../Widgets/all.jsx';
  */
 class MultiFieldBuilder extends preact.Component {
     /**
-     * @param {{fields: Array<{id: string; type: 'textField'|'textArea'|'richText'|'image'|'date'|'dateTime'; name: string; value: string;}>; onChange: (structure: string, rendered: string) => any;}} props
+     * @param {{enableFieldEditing: boolean; fields: Array<{id: string; type: 'textField'|'textArea'|'richText'|'image'|'date'|'dateTime'; name: string; value: string;}>; onChange: (structure: string, rendered: string) => any;}} props
      */
     constructor(props) {
         super(props);
@@ -31,12 +32,16 @@ class MultiFieldBuilder extends preact.Component {
                     { preact.createElement(makeWidgetComponent(field.type), {field, onChange: val => {
                         this.emitChange(val, field);
                     }}) }
-                    <label onInput={ e => { this.updateFieldName(e.target.textContent, field); } }
-                           contentEditable={ true }
-                           htmlFor={ field.id }>{ field.name }</label>
+                    { this.props.enableFieldEditing
+                        ? <label onInput={ e => { this.updateFieldName(e.target.textContent, field); } }
+                                 contentEditable={ true }
+                                 htmlFor={ field.id }>{ field.name }</label>
+                        : <label htmlFor={ field.id }>{ field.name }</label>
+                    }
                 </InputGroup>
             </div>) }
-            <button onClick={ () => popupDialog.open(() =>
+            { this.props.enableFieldEditing
+                ? <button onClick={ () => popupDialog.open(() =>
                         <div class="popup-dialog"><div class="box">
                             <div class="main">
                                 <h2>Valitse tyyppi</h2>
@@ -49,6 +54,8 @@ class MultiFieldBuilder extends preact.Component {
                     ) }
                     class="nice-button small"
                     type="button">Lisää kenttä</button>
+                : null
+            }
         </div>;
     }
     /**
@@ -76,6 +83,7 @@ class MultiFieldBuilder extends preact.Component {
      */
     updateFieldName(val, field) {
         field.name = val;
+        this.emitChange();
     }
     /**
      * @access private

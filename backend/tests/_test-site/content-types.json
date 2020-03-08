@@ -1,0 +1,4 @@
+{
+    "SomeType": ["Friendly name", {"name": "text"}],
+    "AnotherType": ["Friendly eman", {"title": "text"}]
+}

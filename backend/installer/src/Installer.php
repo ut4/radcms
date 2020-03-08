@@ -6,44 +6,51 @@ use Pike\Db;
 use Pike\FileSystem;
 use Pike\FileSystemInterface;
 use RadCms\ContentType\ContentTypeMigrator;
-use RadCms\Website\SiteConfig;
 use Pike\PikeException;
 use RadCms\Packager\Packager;
 use RadCms\Packager\PackageStreamInterface;
 use Pike\Auth\Crypto;
+use RadCms\Auth\ACL;
+use RadCms\ContentType\ContentTypeCollection;
+use RadCms\StockContentTypes\MultiFieldBlobs\MultiFieldBlobs;
 
 class Installer {
     private $db;
     private $fs;
+    private $crypto;
     private $backendPath;
     private $siteDirPath;
     private $warnings;
     /**
      * @param \Pike\Db $db
      * @param \Pike\FileSystemInterface $fs
+     * @param \Pike\Auth\Crypto $crypto
      * @param string $siteDirPath = INDEX_DIR_PATH Absoluuttinen polku kansioon, jossa sijaitsee index|install.php.
      */
     public function __construct(Db $db,
                                 FileSystemInterface $fs,
+                                Crypto $crypto,
                                 $siteDirPath = INDEX_DIR_PATH) {
         $this->db = $db;
         $this->fs = $fs;
-        $this->backendPath = FileSystem::normalizePath(dirname(__DIR__, 2));
-        $this->siteDirPath = FileSystem::normalizePath($siteDirPath);
+        $this->crypto = $crypto;
+        $this->backendPath = FileSystem::normalizePath(dirname(__DIR__, 2)) . '/';
+        $this->siteDirPath = FileSystem::normalizePath($siteDirPath) . '/';
         $this->warnings = [];
     }
     /**
-     * @param object $settings Validoitu ja normalisoitu $req->body.
+     * @param \stdClass $settings Validoitu ja normalisoitu $req->body.
      * @return bool
      * @throws \Pike\PikeException
      */
     public function doInstall($settings) {
         $base = "{$this->backendPath}installer/sample-content/{$settings->sampleContent}/";
         // @allow \Pike\PikeException
-        return $this->createDb($settings) &&
+        return $this->createOrOpenDb($settings) &&
                $this->createMainSchema($settings) &&
                $this->insertMainSchemaData($settings) &&
-               $this->createContentTypesAndInsertInitialData("{$base}site.json",
+               $this->createUserZero($settings) &&
+               $this->createContentTypesAndInsertInitialData("{$base}content-types.json",
                                                              "{$base}sample-data.json",
                                                              $this->fs) &&
                $this->copyFiles($settings) &&
@@ -54,19 +61,17 @@ class Installer {
      * @param \RadCms\Packager\PackageStreamInterface $package
      * @param string $packageFilePath '/path/to/tmp/uploaded-package-file.zip'
      * @param string $unlockKey
-     * @param \Pike\Auth\Crypto $crypto
      * @return bool
      * @throws \Pike\PikeException
      */
     public function doInstallFromPackage(PackageStreamInterface $package,
                                          $packageFilePath,
-                                         $unlockKey,
-                                         Crypto $crypto) {
+                                         $unlockKey) {
         // <packagereader>
         if (!($signed = $this->fs->read($packageFilePath)))
             throw new PikeException('Failed to read package file contents',
                                     PikeException::BAD_INPUT);
-        $unlocked = $crypto->decrypt($signed, $unlockKey);
+        $unlocked = $this->crypto->decrypt($signed, $unlockKey);
         // @allow \Pike\PikeException
         $package->open($unlocked);
         if (!($json1 = $package->read(Packager::DB_CONFIG_VIRTUAL_FILE_NAME)) ||
@@ -80,11 +85,11 @@ class Installer {
         // </packagereader>
         //
         $settings = (object)array_merge($dbSettings, $siteSettings);
-        return $this->createDb($settings) &&
+        return $this->createOrOpenDb($settings) &&
                $this->createMainSchema($settings) &&
                $this->insertMainSchemaData($settings) &&
                $this->createContentTypesAndInsertInitialData(
-                    Packager::WEBSITE_CONFIG_VIRTUAL_FILE_NAME,
+                    Packager::THEME_CONTENT_TYPES_VIRTUAL_FILE_NAME,
                     Packager::THEME_CONTENT_DATA_VIRTUAL_FILE_NAME,
                     $package);
     }
@@ -95,15 +100,15 @@ class Installer {
         return $this->warnings;
     }
     /**
-     * @param object $s settings
+     * @param \stdClass $s settings
      * @return bool
      * @throws \Pike\PikeException
      */
-    private function createDb($s) {
+    private function createOrOpenDb($s) {
         try {
             $this->db->setConfig([
                 'db.host'        => $s->dbHost,
-                'db.database'    => '',
+                'db.database'    => $s->doCreateDb ? '' : $s->dbDatabase,
                 'db.user'        => $s->dbUser,
                 'db.pass'        => $s->dbPass,
                 'db.tablePrefix' => $s->dbTablePrefix,
@@ -113,6 +118,8 @@ class Installer {
         } catch (\PDOException $e) {
             throw new PikeException($e->getMessage(), PikeException::FAILED_DB_OP);
         }
+        if (!$s->doCreateDb)
+            return true;
         try {
             $this->db->attr(\PDO::ATTR_EMULATE_PREPARES, 1);
             $this->db->exec("CREATE DATABASE {$s->dbDatabase}");
@@ -122,7 +129,7 @@ class Installer {
         return true;
     }
     /**
-     * @param object $s settings
+     * @param \stdClass $s settings
      * @return bool
      * @throws \Pike\PikeException
      */
@@ -140,20 +147,21 @@ class Installer {
         return true;
     }
     /**
-     * @param object $s settings
+     * @param \stdClass $s settings
      * @return bool
      * @throws \Pike\PikeException
      */
     private function insertMainSchemaData($s) {
         try {
-            if ($this->db->exec('INSERT INTO ${p}websiteState VALUES (1,?,?,?,?,?)',
+            if ($this->db->exec('INSERT INTO ${p}cmsState VALUES (1,?,?,?,?,?,?)',
                                 [
                                     $s->siteName,
                                     $s->siteLang,
                                     $s->installedContentTypes ?? '{}',
                                     $s->installedContentTypesLastUpdated ?? null,
                                     $s->installedPlugins ?? '{}',
-                                ]) < 1)
+                                    $s->aclRules ?? $this->makeDefaultAclRules(),
+                                ]) !== 1)
                 throw new PikeException('Failed to insert main schema data',
                                         PikeException::INEFFECTUAL_DB_OP);
         } catch (\PDOException $e) {
@@ -162,29 +170,79 @@ class Installer {
         return true;
     }
     /**
-     * @param string $siteConfigFilePath '/path/to/site/site.json'
+     * @return string
+     * @throws \Pike\PikeException
+     */
+    private function makeDefaultAclRules() {
+        $fn = include "{$this->backendPath}installer/default-acl-rules.php";
+        return json_encode($fn());
+    }
+    /**
+     * @param \stdClass $s settings
+     * @return bool
+     * @throws \Pike\PikeException
+     */
+    private function createUserZero($s) {
+        try {
+            if ($this->db->exec('INSERT INTO ${p}users'.
+                                ' (`id`,`username`,`email`,`passwordHash`,`role`)' .
+                                ' VALUES (?,?,?,?,?)',
+                                [
+                                    $this->crypto->guidv4(),
+                                    $s->firstUserName,
+                                    $s->firstUserEmail ?? '',
+                                    $this->crypto->hashPass($s->firstUserPass),
+                                    ACL::ROLE_SUPER_ADMIN
+                                ]) !== 1)
+                throw new PikeException('Failed to insert user zero',
+                                        PikeException::INEFFECTUAL_DB_OP);
+        } catch (\PDOException $e) {
+            throw new PikeException($e->getMessage(), PikeException::FAILED_DB_OP);
+        }
+        return true;
+    }
+    /**
+     * @param string $contentTypesFilePath '/path/to/site/content-types.json'
      * @param string $dataFilePath '/path/to/site/sample-content.json'
      * @param \Pike\FileSystemInterface $fs
      * @return bool
      * @throws \Pike\PikeException
      */
-    private function createContentTypesAndInsertInitialData($siteCfgFilePath,
+    private function createContentTypesAndInsertInitialData($contentTypesFilePath,
                                                             $dataFilePath,
                                                             $fs) {
-        $json = $fs->read($dataFilePath);
-        if (!$json)
-            throw new PikeException("Failed to read `{$dataFilePath}`", PikeException::FAILED_FS_OP);
-        if (($initialData = json_decode($json)) === null)
-            throw new PikeException("Failed to parse `{$dataFilePath}`", PikeException::FAILED_FS_OP);
-        //
-        $cfg = new SiteConfig($fs);
+        $parsed = [null, null];
+        foreach ([$contentTypesFilePath, $dataFilePath] as $i => $filePath) {
+            if (!($json = $fs->read($filePath)))
+                throw new PikeException("Failed to read `{$filePath}`",
+                                        PikeException::FAILED_FS_OP);
+            if (($parsed[$i] = json_decode($json)) === null)
+                throw new PikeException("Failed to parse `{$filePath}`",
+                                        PikeException::FAILED_FS_OP);
+        }
         // @allow \Pike\PikeException
-        return $cfg->selfLoad($siteCfgFilePath, false, true) &&
-               (new ContentTypeMigrator($this->db))->installMany($cfg->contentTypes,
-                                                                 $initialData);
+        $collection = self::makeContentTypes($parsed[0]);
+        // @allow \Pike\PikeException
+        return (new ContentTypeMigrator($this->db))->installMany($collection,
+                                                                 $parsed[1]);
     }
     /**
-     * @param object $s settings
+     * @return \RadCms\ContentType\ContentTypeCollection
+     */
+    private static function makeContentTypes($inputContentTypes) {
+        $extended = [];
+        foreach ($inputContentTypes as $name => $definition) {
+            if ($name !== 'extend:stockContentTypes') {
+                $extended[$name] = $definition;
+            } else {
+                $def = MultiFieldBlobs::DEFINITION;
+                $extended[$def[0]] = array_slice($def, 1);
+            }
+        }
+        return ContentTypeCollection::fromCompactForm($extended);
+    }
+    /**
+     * @param \stdClass $s settings
      * @return bool
      * @throws \Pike\PikeException
      */
@@ -222,7 +280,7 @@ class Installer {
         return true;
     }
     /**
-     * @param object $s settings
+     * @param \stdClass $s settings
      * @return bool
      * @throws \Pike\PikeException
      */
@@ -237,7 +295,7 @@ if (!defined('RAD_BASE_PATH')) {
     define('RAD_BASE_PATH',      '{$this->backendPath}');
     define('RAD_SITE_PATH',      '{$this->siteDirPath}');
     define('RAD_DEVMODE',        1 << 1);
-    define('RAD_USE_BUNDLED_JS', 2 << 1);
+    define('RAD_USE_JS_MODULES', 1 << 2);
     define('RAD_FLAGS',          {$flags});
 }
 return [
@@ -247,6 +305,7 @@ return [
     'db.pass'        => '{$s->dbPass}',
     'db.tablePrefix' => '{$s->dbTablePrefix}',
     'db.charset'     => '{$s->dbCharset}',
+    'mail.transport' => 'phpsMailFunction',
 ];
 "
         )) return true;
@@ -296,7 +355,7 @@ return [
         foreach ($this->fs->readDir($dirPath) as $path) {
             if ($this->fs->isFile($path)) {
                 if (!$this->fs->unlink($path)) return $path;
-            } else if (($failedItem = $this->deleteFilesRecursive($path))) {
+            } elseif (($failedItem = $this->deleteFilesRecursive($path))) {
                 return $failedItem;
             }
         }

@@ -97,16 +97,24 @@ class MagicTemplate extends Template {
      * @param bool $withIndexFile = true
      * @return string
      */
-    public function url($url, $withIndexFile = true) {
-        static $indexFile = !RAD_QUERY_VAR ? '' : 'index.php?' . RAD_QUERY_VAR . '=/';
-        return RAD_BASE_URL . ($withIndexFile ? $indexFile : '') . ltrim($url, '/');
+    public static function url($url, $withIndexFile = true) {
+        return self::makeUrl($url, $withIndexFile);
     }
     /**
      * @param string $url
      * @return string
      */
     public function assetUrl($url) {
-        return $this->url($url, false);
+        return self::makeUrl($url, false);
+    }
+    /**
+     * @param string $url
+     * @param bool $withIndexFile = true
+     * @return string
+     */
+    public static function makeUrl($url, $withIndexFile = true) {
+        static $indexFile = !RAD_QUERY_VAR ? '' : 'index.php?' . RAD_QUERY_VAR . '=/';
+        return RAD_BASE_URL . ($withIndexFile ? $indexFile : '') . ltrim($url, '/');
     }
     /**
      * @return string
@@ -130,13 +138,13 @@ class MagicTemplate extends Template {
         }, $this->_jsFiles));
     }
     /**
-     * @param array $files Array<string>|Array<{fileName: string, attrs?: object}>
+     * @param array $files array<string>|array<{fileName: string, attrs?: \stdClass}>
      * @param bool $includeVendor = true
      * @return string <script src="frontend/file.js">... tai.
      *                <script src="frontend/file.js" type="module">...
      */
     public function jsBundle($files, $includeVendor = true) {
-        $baseAttrs = (RAD_FLAGS & RAD_USE_BUNDLED_JS) ? [] : ['type' => 'module'];
+        $baseAttrs = !(RAD_FLAGS & RAD_USE_JS_MODULES) ? [] : ['type' => 'module'];
         return ($includeVendor
             ? '<script src="'. $this->assetUrl('frontend/vendor/vendor.bundle.min.js') . '"></script>'
             : '') .

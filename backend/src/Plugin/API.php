@@ -2,9 +2,10 @@
 
 namespace RadCms\Plugin;
 
-use AltoRouter;
+use Pike\Router;
 use RadCms\BaseAPI;
 use RadCms\APIConfigsStorage;
+use RadCms\Auth\ACL;
 
 /**
  * Lisäosien oma API. Passataan lisäosien (PluginInterface) init-metodiin.
@@ -14,12 +15,12 @@ class API {
     private $baseApi;
     private $apiConfigs;
     /**
-     * @param \AltoRouter $ctx
-     * @param \AltoRouter $ctx
+     * @param \RadCms\BaseAPI $baseApi
+     * @param \Pike\Router $ctx
      * @param \RadCms\APIConfigsStorage $configs
      */
     public function __construct(BaseAPI $baseApi,
-                                AltoRouter $router,
+                                Router $router,
                                 APIConfigsStorage $configs) {
         $this->router = $router;
         $this->baseApi = $baseApi;
@@ -62,22 +63,22 @@ class API {
      *     '/my-plugin/foo/[i:id]/[w:name]',
      *     MyController::class,
      *     'doSomething',
-     *     true
+     *     'doSomething:myResource'
      * )
      *
      * @param string $method 'GET', 'POST'
      * @param string $url
      * @param string $ctrlCassPath
      * @param string $ctrlMethodNme
-     * @param string $requireAuthenticated = true
+     * @param string $linkedAclActionAndResource = ACL::NO_NAME
      */
     public function registerRoute($method,
                                   $url,
                                   $ctrlCassPath,
                                   $ctrlMethodName,
-                                  $requireAuthenticated = true) {
+                                  $linkedAclActionAndResource = ACL::NO_NAME) {
         $this->router->map($method, $url,
-            [$ctrlCassPath, $ctrlMethodName, $requireAuthenticated]
+            [$ctrlCassPath, $ctrlMethodName, $linkedAclActionAndResource]
         );
     }
     /**

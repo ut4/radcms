@@ -1,4 +1,4 @@
-import {http, urlUtils, View} from '@rad-commons';
+import {http, toasters, urlUtils, View} from '@rad-commons';
 
 /**
  * #/manage-plugins
@@ -69,7 +69,7 @@ function sendInstallOrUninstallRequest(plugin, url) {
             urlUtils.redirect('/', 'hard');
         })
         .catch(() => {
-            toast(`Lisäosan ${url === 'install' ? 'asennus' : 'poisto'} epäonnistui`, 'error');
+            toasters.main(`Lisäosan ${url === 'install' ? 'asennus' : 'poisto'} epäonnistui`, 'error');
         });
 }
 

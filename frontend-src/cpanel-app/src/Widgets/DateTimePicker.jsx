@@ -36,7 +36,7 @@ class DateTimePicker extends preact.Component {
             <input type={ this.props.showInput !== false ? 'text' : 'hidden' }
                    name={ this.props.inputName || 'date' }
                    ref={ el => { this.field = el; } }
-                   autocomplet="off"/>
+                   autoComplete="off"/>
             <div class="datepicker-container"
                  ref={ el => { this.container = el; } }></div>
         </div>;

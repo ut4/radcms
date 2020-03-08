@@ -12,12 +12,6 @@ use Pike\Db;
 class ContentControllers {
     const REV_SETTING_PUBLISH = 'publish';
     /**
-     * ...
-     */
-    public function __construct(Db $db) {
-        $this->db = $db;
-    }
-    /**
      * POST /api/content/:contentTypeName.
      *
      * @param \Pike\Request $req
@@ -39,7 +33,9 @@ class ContentControllers {
      * @param \Pike\Response $res
      * @param \RadCms\Content\MagicTemplateDAO $dao
      */
-    public function handleGetContentNode(Request $req, Response $res, MagicTemplateDAO $dao) {
+    public function handleGetContentNode(Request $req,
+                                         Response $res,
+                                         MagicTemplateDAO $dao) {
         // @allow \Pike\PikeException
         $node = $dao->fetchOne($req->params->contentTypeName)
                     ->where('`id` = ?', $req->params->id) // aina validi (läpäissyt routerin regexpin)
@@ -54,7 +50,9 @@ class ContentControllers {
      * @param \Pike\Response $res
      * @param \RadCms\Content\MagicTemplateDAO $dao
      */
-    public function handleGetContentNodesByType(Request $req, Response $res, MagicTemplateDAO $dao) {
+    public function handleGetContentNodesByType(Request $req,
+                                                Response $res,
+                                                MagicTemplateDAO $dao) {
         // @allow \Pike\PikeException
         $nodes = $dao->fetchAll($req->params->contentTypeName)->limit('50')->exec();
         $res->json($nodes);

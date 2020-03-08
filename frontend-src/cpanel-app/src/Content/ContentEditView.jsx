@@ -1,4 +1,4 @@
-import {http, urlUtils, View, Form, InputGroup} from '@rad-commons';
+import {http, toasters, urlUtils, View, Form, InputGroup} from '@rad-commons';
 import ContentNodeFieldList from './ContentNodeFieldList.jsx';
 
 /**
@@ -44,7 +44,7 @@ class ContentEditView extends preact.Component {
                 newState.contentType = ctype;
             })
             .catch(() => {
-                toast('Jokin meni pieleen', 'error');
+                toasters.main('Jokin meni pieleen', 'error');
             })
             .finally(() => {
                 this.setState(newState);
@@ -57,8 +57,7 @@ class ContentEditView extends preact.Component {
         if (!this.state.contentType) return null;
         const showPublishToggle = !this.props.publish && this.state.contentNode.isRevision;
         return <View><Form onConfirm={ () => this.handleFormSubmit() }
-                           confirmButtonText={ this.confirmButtonText }
-                           autoClose={ false }>
+                           confirmButtonText={ this.confirmButtonText }>
             <h2>{ [this.title, showPublishToggle ? <sup> (Luonnos)</sup> : null] }</h2>
             <ContentNodeFieldList contentNode={ this.state.contentNode }
                                   contentType={ this.state.contentType }
@@ -86,7 +85,7 @@ class ContentEditView extends preact.Component {
             urlUtils.redirect(this.props.returnTo || '/', 'hard');
         })
         .catch(() => {
-            toast('Sisällön tallennus epäonnistui.', 'error');
+            toasters.main('Sisällön tallennus epäonnistui.', 'error');
         });
     }
 }

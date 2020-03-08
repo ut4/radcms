@@ -76,8 +76,7 @@ class Bundler {
         //
         call_user_func($this->shellExecFn, self::makeCpCmd(
             "{$this->radPath}backend/src/",
-            "{$this->targetDirPath}backend/src/",
-            'Tests'
+            "{$this->targetDirPath}backend/src/"
         ));
         if (!$this->fs->isFile("{$this->targetDirPath}backend/src/App.php"))
             throw new PikeException("Failed to copy `{$this->radPath}backend/src/*`" .
@@ -86,7 +85,8 @@ class Bundler {
         //
         call_user_func($this->shellExecFn, self::makeCpCmd(
             "{$this->radPath}backend/installer/",
-            "{$this->targetDirPath}backend/installer/"
+            "{$this->targetDirPath}backend/installer/",
+            'tests'
         ));
         if (!$this->fs->isFile("{$this->targetDirPath}backend/installer/src/Installer.php"))
             throw new PikeException("Failed to copy `{$this->radPath}backend/installer/*`" .
@@ -98,9 +98,9 @@ class Bundler {
      */
     private function copyFrontendFiles() {
         foreach ([
-            ['frontend/common.css', null],
             ['frontend-src/cpanel-app/cpanel.css', 'frontend/cpanel-app.css'],
             ['frontend-src/install-app/install-app.css', 'frontend/install-app.css'],
+            ['frontend/rad-auth-apps.js', null],
             ['frontend/rad-commons.js', null],
             ['frontend/rad-cpanel-app.js', null],
             ['frontend/rad-cpanel-commons.js', null],
@@ -110,6 +110,16 @@ class Bundler {
             if (!$this->fs->copy($this->radPath . $from, $this->targetDirPath . $to))
                 throw new PikeException('Failed to copy `' . ($this->radPath . $from) .
                                         '` -> `' . ($this->targetDirPath . $to) . '`');
+        }
+        foreach ([
+            ['frontend-src/commons/common.css', 'frontend/common.css'],
+        ] as [$from, $to]) {
+            if (!($contents = $this->fs->read($this->radPath . $from)))
+                throw new PikeException('Failed to read `' . ($this->radPath . $from) . '`');
+            if (!$this->fs->write($this->targetDirPath . $to,
+                                  // 'url("../../frontend/assets' -> 'url("assets'
+                                  str_replace('../../frontend/', '', $contents)))
+                throw new PikeException('Failed to write `' . ($this->targetDirPath . $to) . '`');
         }
         //
         foreach(['assets', 'vendor'] as $p) {

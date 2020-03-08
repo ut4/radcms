@@ -1,12 +1,16 @@
 import FeatherSvg from './FeatherSvg.jsx';
 
+const toasters = {
+    unnamed: null,
+};
+
 class Toaster extends preact.Component {
     /**
-     * @param {{autoCloseTimeoutMillis?: number; publishFactoryTo?: Object;}} props
+     * @param {{id?: string; autoCloseTimeoutMillis?: number;}} props
      */
     constructor(props) {
         super(props);
-        (props.publishFactoryTo || window).toast = this.addMessage.bind(this);
+        toasters[props.id || 'unnamed'] = this.addMessage.bind(this);
         this.autoCloseTimeoutMillis = props.autoCloseTimeoutMillis || 8000;
         this.state = {messages: []};
     }
@@ -55,4 +59,5 @@ class Toaster extends preact.Component {
     }
 }
 
-export default Toaster;
+export default toasters;
+export {Toaster};

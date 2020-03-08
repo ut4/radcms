@@ -46,7 +46,7 @@ Esimerkki:
 
 ## Sisältötyypit
 
-Sisältötyypit, jotka tämä paketti rekisteröi. Sisältötyypin sisältöä voidaan hakea tietokannasta php-tiedostoista. Uusia sisältötyyppejä voi luoda muokkaamalla `site.json` -tiedostoa (RAD_DEVMODE tulee olla päällä).
+Sisältötyypit, jotka tämä paketti rekisteröi. Sisältötyypin sisältöä voidaan hakea tietokannasta php-tiedostoista. Uusia sisältötyyppejä voi luoda hallintapaneelin devaaja-osiosta.
 
 ks. https://todo/stock-content-types.
 

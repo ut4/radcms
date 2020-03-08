@@ -1,12 +1,4 @@
 {
-    "contentTypes": [
-        "extend:stockContentTypes",
-        ["Articles", "Artikkelit", {
-            "slug": "text:Slug (url):textField",
-            "title": "text:Otsikko:textField",
-            "body": "text:Sisältö:richText"
-        }]
-    ],
     "urlMatchers": [
         ["/artikkeli/.+", "article-layout.tmpl.php"],
         [".*", "main-layout.tmpl.php"]

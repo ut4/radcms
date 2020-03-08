@@ -1,5 +1,3 @@
-import {urlUtils} from '../utils.js';
-
 class Form extends preact.Component {
     /**
      * @param {FormProps} props
@@ -21,7 +19,8 @@ class Form extends preact.Component {
                             type="submit">
                         { this.props.confirmButtonText || 'Ok' }
                     </button>
-                    <a href="#/" onClick={ e => this.cancel(e) } >
+                    <a href={ `#${this.props.returnTo || '/'}` }
+                        onClick={ e => this.cancel(e) } >
                         { this.props.cancelButtonText || 'Peruuta' }
                     </a>
                 </div>
@@ -35,7 +34,8 @@ class Form extends preact.Component {
                             type="button">
                         { this.props.confirmButtonText || 'Ok' }
                     </button>
-                    <a href="#/" onClick={ e => this.cancel(e) } >
+                    <a href={ `#${this.props.returnTo || '/'}` }
+                        onClick={ e => this.cancel(e) }>
                         { this.props.cancelButtonText || 'Peruuta' }
                     </a>
                 </div>
@@ -46,20 +46,13 @@ class Form extends preact.Component {
      */
     handleSubmit(e) {
         e.preventDefault();
-        const res = this.props.onConfirm(e);
-        if (res && res instanceof Promise && this.props.autoClose !== false) {
-            res.then(() => this.close());
-            return;
-        }
-        if (this.props.autoClose !== false) {
-            this.close();
-        }
+        this.props.onConfirm(e);
     }
     /**
      * @access public
      */
     static receiveInputValue(e, dhis, name) {
-        dhis.setState({[name || e.target.name]: e.target.value});
+        dhis.setState({[name || e.target.name || e.target.id]: e.target.value});
     }
     /**
      * @access private
@@ -75,20 +68,10 @@ class Form extends preact.Component {
             ? this.props.doDisableConfirmButton()
             : false;
     }
-    /**
-     * @access protected
-     */
-    close() {
-        if (this.props.close) {
-            this.props.close();
-            return;
-        }
-        urlUtils.redirect('/');
-    }
 }
 
 /**
- * @param {{label?: string|Function; inline?: boolean; className?: string; id?: string;}} props
+ * @param {{label: string|function?; id?: string; className?: string; inline?: boolean;}} props
  */
 function InputGroup(props) {
     const children = Array.isArray(props.children) ? props.children : [props.children];
@@ -114,56 +97,95 @@ function makeLabelAttrs(children, props) {
     return id ? {htmlFor: id} : null;
 }
 
-/**
- * @param {{patternError?: string; maxError?: string; minError?: string; stepError?: string; maxLengthError?: string; minLengthError?: string; typeError?: string; requiredError?: string; [key: string]: any;}} props
- */
-function Input(props) {
-    return makeInput(props, 'input');
-}
-
-/**
- * @param {{patternError?: string; maxError?: string; minError?: string; stepError?: string; maxLengthError?: string; minLengthError?: string; typeError?: string; requiredError?: string; [key: string]: any;}} props
- */
-function Select(props) {
-    return makeInput(props, 'select');
-}
-
-/**
- * @param {{patternError?: string; maxError?: string; minError?: string; stepError?: string; maxLengthError?: string; minLengthError?: string; typeError?: string; requiredError?: string; [key: string]: any;}} props
- */
-function Textarea(props) {
-    return makeInput(props, 'textarea');
-}
-
-function makeInput(props, tag) {
-    if (props.pattern || props.min || props.max || props.required ||
-        props.step || props.minLength || props.maxLength) {
-        const origOnInvalid = props.onInvalid;
-        props.onInvalid = e => {
-            const v = e.target.validity;
-            if (!v.valid) {
-                let message = [];
-                if (v.patternMismatch && props.patternError) message.push(props.patternError);
-                if (v.rangeOverflow && props.maxError) message.push(props.maxError);
-                if (v.rangeUnderflow && props.minError) message.push(props.minError);
-                if (v.stepMismatch && props.stepError) message.push(props.stepError);
-                if (v.tooLong && props.maxLengthError) message.push(props.maxLengthError);
-                if (v.tooShort && props.minLengthError) message.push(props.minLengthError);
-                if (v.typeMismatch && props.typeError) message.push(props.typeError);
-                if (v.valueMissing && props.requiredError) message.push(props.requiredError);
-                //
-                if (message.length)
-                    e.target.setCustomValidity(message.join('\n'));
-            }
-            if (origOnInvalid) origOnInvalid(e);
-        };
-        const origOnInput = props.onInput;
-        props.onInput = e => {
-            e.target.checkValidity();
-            if (origOnInput) origOnInput(e);
-        };
+class BaseInput extends preact.Component {
+    /**
+     * @param {{patternError?: string; maxError?: string; minError?: string; stepError?: string; maxLengthError?: string; minLengthError?: string; typeError?: string; requiredError?: string; [key: string]: any;}} props
+     */
+    constructor(props) {
+        super(props);
+        this.touched = false;
+        this.hookValidationListeners(props);
     }
-    return preact.createElement(tag, props, props.children);
+    /**
+     * @access private
+     */
+    hookValidationListeners(props) {
+        if (props.pattern || props.min || props.max || props.required ||
+            props.step || props.minLength || props.maxLength) {
+            const origOnInvalid = props.onInvalid;
+            props.onInvalid = e => {
+                const v = e.target.validity;
+                if (!v.valid) {
+                    let message = [];
+                    if (v.patternMismatch && props.patternError) message.push(props.patternError);
+                    if (v.rangeOverflow && props.maxError) message.push(props.maxError);
+                    if (v.rangeUnderflow && props.minError) message.push(props.minError);
+                    if (v.stepMismatch && props.stepError) message.push(props.stepError);
+                    if (v.tooLong && props.maxLengthError) message.push(props.maxLengthError);
+                    if (v.tooShort && props.minLengthError) message.push(props.minLengthError);
+                    if (v.typeMismatch && props.typeError) message.push(props.typeError);
+                    if (v.valueMissing && props.requiredError) message.push(props.requiredError);
+                    //
+                    if (message.length)
+                        e.target.setCustomValidity(message.join('\n'));
+                }
+                if (origOnInvalid) origOnInvalid(e);
+            };
+            const origOnInput = props.onInput;
+            props.onInput = e => {
+                e.target.classList.remove('pristine');
+                e.target.checkValidity();
+                if (origOnInput) origOnInput(e);
+            };
+            const origRefFn = props.ref;
+            props.ref = el => {
+                if (!el || !el.classList) return;
+                if (!this.touched) el.classList.add('pristine');
+                if (origRefFn) origRefFn(el);
+            };
+            const origOnBlur = props.onBlur;
+            props.onBlur = e => {
+                e.target.classList.remove('pristine');
+                if (origOnBlur) origOnBlur(e);
+            };
+            const origOnFocus = props.onFocus;
+            props.onFocus = e => {
+                this.touched = true;
+                if (origOnFocus) origOnFocus(e);
+            };
+        }
+    }
+    /**
+     * @access protected
+     */
+    componentWillReceiveProps(props) {
+        if (this.props.onInput) this.hookValidationListeners(props);
+    }
+    /**
+     * @returns {string} 'input'|'select' etc.
+     * @access protected
+     */
+    getTagName() {
+        throw new Error('Abstract method not implemented');
+    }
+    /**
+     * @access protected
+     */
+    render() {
+        return preact.createElement(this.getTagName(), this.props, this.props.children);
+    }
+}
+
+class Input extends BaseInput {
+    getTagName() { return 'input'; }
+}
+
+class Select extends BaseInput {
+    getTagName() { return 'select'; }
+}
+
+class Textarea extends BaseInput {
+    getTagName() { return 'textarea'; }
 }
 
 export default Form;

@@ -6,11 +6,11 @@ abstract class PackagerModule {
     /**
      * Rekisteröi /api/packager -alkuiset http-reitit.
      *
-     * @param object $ctx
+     * @param \stdClass $ctx {\Pike\Router router, \Pike\Db db, \RadCms\Auth\Authenticator auth, \RadCms\Auth\ACL acl, \RadCms\CmsState cmsState, \Pike\Translator translator}
      */
     public static function init($ctx) {
         $ctx->router->map('POST', '/api/packager',
-            [PackagerControllers::class, 'handleCreatePackage', true]
+            [PackagerControllers::class, 'handleCreatePackage', 'pack:websites']
         );
     }
     /**

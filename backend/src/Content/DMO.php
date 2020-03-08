@@ -13,7 +13,7 @@ class DMO extends DAO {
     public $lastInsertId;
     /** 
      * @param string $contentTypeName
-     * @param object $data
+     * @param \stdClass $data
      * @param bool $withRevision = false
      * @return int $db->rowCount()
      * @throws \Pike\PikeException
@@ -27,22 +27,21 @@ class DMO extends DAO {
                                     PikeException::BAD_INPUT);
         $q = ['cols' => [], 'qs' => [], 'vals' => []];
         $appendVal = function ($name) use (&$q, $data) {
-            $q['cols'][] = '`' . $name . '`';
+            $q['cols'][] = "`{$name}`";
             $q['qs'][] = '?';
             $q['vals'][] = $data->$name;
         };
         foreach (['id', 'isPublished'] as $optional) {
-            if (property_exists($data, $optional)) $appendVal($optional);
+            if (($data->{$optional} ?? null) !== null) $appendVal($optional);
         }
-        $fields = $type->fields->toArray();
-        foreach ($fields as $f) {
+        foreach ($type->fields as $f) {
             $appendVal($f->name);
         }
         //
         try {
             return !$withRevision
                 ? $this->insertWithoutRevision($contentTypeName, $q)
-                : $this->insertWithRevision($contentTypeName, $q, $data, $fields);
+                : $this->insertWithRevision($contentTypeName, $q, $data, $type->fields);
         } catch (\PDOException $e) {
             $this->db->rollback();
             throw new PikeException($e->getMessage(), PikeException::FAILED_DB_OP);
@@ -52,7 +51,7 @@ class DMO extends DAO {
      * @return int $numAffectedRows
      */
     private function insertWithoutRevision($contentTypeName, $q) {
-        $numRows = $this->db->exec('INSERT INTO ${p}' . $contentTypeName .
+        $numRows = $this->db->exec('INSERT INTO `${p}' . $contentTypeName . '`' .
                                    ' (' . implode(', ', $q['cols']) . ')' .
                                    ' VALUES (' . implode(', ', $q['qs']) . ')',
                                    $q['vals']);
@@ -83,7 +82,7 @@ class DMO extends DAO {
     /**
      * @param string $id
      * @param string $contentTypeName
-     * @param object $data
+     * @param \stdClass $data
      * @param string $revisionSettings = '' 'publish' | ''
      * @return int $db->rowCount()
      * @throws \Pike\PikeException
@@ -97,7 +96,7 @@ class DMO extends DAO {
             throw new PikeException(implode(PHP_EOL, $errors),
                                     PikeException::BAD_INPUT);
         //
-        $fields = $type->fields->toArray();
+        $fields = $type->fields;
         $execs = [];
         if (!$data->isRevision) {
             $execs = [self::makeUpdateMainExec($id, $contentTypeName, $data, $fields)];
@@ -139,13 +138,13 @@ class DMO extends DAO {
         $q = ['colQs' => ['`isPublished` = ?'],
               'vals' => [(int)$data->isPublished]];
         foreach ($fields as $f) {
-            $q['colQs'][] = '`' . $f->name . '` = ?';
+            $q['colQs'][] = "`{$f->name}` = ?";
             $q['vals'][] = $data->{$f->name};
         }
         $q['vals'][] = $id;
         //
         return [
-            'UPDATE ${p}' . $contentTypeName .
+            'UPDATE `${p}' . $contentTypeName . '`' .
             ' SET ' . implode(', ', $q['colQs']) .
             ' WHERE `id` = ?',
             $q['vals']

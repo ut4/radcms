@@ -1,4 +1,4 @@
-import {InputGroup} from '@rad-commons';
+import {InputGroup, config} from '@rad-commons';
 import makeWidgetComponent from '../Widgets/all.jsx';
 import MultiFieldBuilder from '../Widgets/MultiFieldBuilder.jsx';
 import ContentRefPicker from '../Widgets/ContentRefPicker.jsx';
@@ -28,13 +28,18 @@ class ContentNodeFieldList extends preact.Component {
      * @access protected
      */
     render() {
-        return <div>{ this.state.contentType.fields.map(field =>
-            field.widget.name !== 'hidden' && field.widget.name !== 'multiFieldBuilder'
-                ? <InputGroup label={ field.friendlyName }>
-                    { this.makeInput(field) }
-                </InputGroup>
-                : this.makeInput(field)
-        ) }</div>;
+        return <div>{ this.state.contentType.fields
+            .filter(f =>
+                f.visibility === 0 || f.visibility & config.user.role
+            )
+            .map(field =>
+                field.widget.name !== 'hidden' && field.widget.name !== 'multiFieldBuilder'
+                    ? <InputGroup label={ field.friendlyName }>
+                        { this.makeInput(field) }
+                    </InputGroup>
+                    : this.makeInput(field)
+            )
+        }</div>;
     }
     /**
      * @access private
@@ -51,6 +56,7 @@ class ContentNodeFieldList extends preact.Component {
         if (widgetName === 'multiFieldBuilder') {
             return <MultiFieldBuilder
                     fields={ value ? JSON.parse(value) : [] }
+                    enableFieldEditing={ config.userPermissions.canManageFieldsOfMultiFieldContent }
                     onChange={ (structure, rendered) => {
                         applyWidgetValue(structure);
                         if (this.state.contentNode.rendered)

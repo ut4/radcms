@@ -2,15 +2,26 @@
 
 namespace RadCms\ContentType;
 
-use Pike\GenericArray;
 use Pike\Translator;
 
-class ContentTypeCollection extends GenericArray {
+class ContentTypeCollection extends \ArrayObject {
     /**
-     * ...
+     * @param string $name
+     * @param string $friendlyName
+     * @param array|\stdClass|\RadCms\ContentType\FieldCollection $fields ['fieldName' => 'dataType:widget', 'another' => 'dataType'...]
+     * @param bool $isInternal = false
+     * @param string $origin = null 'Website' | 'SomePlugin'
      */
-    public function __construct() {
-        parent::__construct(ContentTypeDef::class);
+    public function add($name,
+                        $friendlyName,
+                        $fields,
+                        $isInternal = false,
+                        $origin = null) {
+        $this[] = new ContentTypeDef($name,
+                                     $friendlyName,
+                                     $fields,
+                                     $isInternal,
+                                     $origin);
     }
     /**
      * @param string $origin
@@ -19,11 +30,9 @@ class ContentTypeCollection extends GenericArray {
      */
     public function toCompactForm($origin, Translator $translator = null) {
         $out = [];
-        foreach ($this->toArray() as $t) {
-            $n = !$t->isInternal ? '' : ':internal';
-            $out[$t->name . $n] = [!$translator ? $t->friendlyName : $translator->t($t->name),
-                                   $t->fields->toCompactForm($translator),
-                                   $origin];
+        foreach ($this as $t) {
+            $compacted = $t->toCompactForm($origin, $translator);
+            $out[$compacted->key] = $compacted->definition;
         }
         return $out;
     }
@@ -35,14 +44,14 @@ class ContentTypeCollection extends GenericArray {
      * @return \RadCms\ContentType\ContentTypeCollection
      */
     public static function fromCompactForm($compactCtypes) {
-        $out = new ContentTypeCollection(ContentTypeDef::class);
+        $out = new ContentTypeCollection;
         foreach ($compactCtypes as $ctypeName => $remainingArgs) {
             $pcs = explode(':', $ctypeName);
-            $out->add(new ContentTypeDef($pcs[0],
-                                         $remainingArgs[0],
-                                         $remainingArgs[1],
-                                         ($pcs[1] ?? '') === 'internal',
-                                         $remainingArgs[2] ?? 'site.json'));
+            $out[] = new ContentTypeDef($pcs[0],
+                                        $remainingArgs[0],
+                                        $remainingArgs[1],
+                                        ($pcs[1] ?? '') === 'internal',
+                                        $remainingArgs[2] ?? null);
         }
         return $out;
     }

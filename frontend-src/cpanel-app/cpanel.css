@@ -42,10 +42,11 @@ html, body {
     height: 16px;
 }
 #logo {
-    font: normal 14px/15px "Fira sans heavy";
+    font: normal 14px/14px "Fira sans heavy";
     color: #f5f5f5;
-    padding: 8px 11px 7px;
-    text-align: right;
+    padding: 9px 16px 8px;
+    text-decoration: none;
+    float: right;
 }
 #logo > span {
     font-family: "Fira sans light";
@@ -53,27 +54,33 @@ html, body {
 }
 
 section {
-    margin-bottom: 6px;
+    margin-bottom: 8px;
     font-size: 12px;
     line-height: 14px;
 }
 section h2 {
-    display: none;
+    font-size: 13px;
+    line-height: 13px;
+    color: rgba(255,255,255,0.22);
+    margin: 8px 0;
 }
 section > div {
-    padding-left: 10px;
+    padding: 1px 0 0 10px;
     border-radius: 2px;
     border-left: 3px solid #e8fbe2;
 }
-section:nth-of-type(2) > div {
-    border-color: #7197b3;
+section.on-this-page > div {
+    border-color: #a2d0bf;
 }
-section:nth-of-type(3) > div {
+section.site-admin > div {
+    border-color: #cab99b;
+}
+section.for-devs > div {
     border-color: #e69393;
 }
 
-section.quick-links > div {
-    padding: 10px;
+.quick-links > div {
+    padding: 1px 10px 10px 10px;
 }
 section.quick-links .icon-button {
     background-color: rgba(255,255,255,0.1);
@@ -205,10 +212,14 @@ section.quick-links .icon-button .feather {
 .collapsed #logo,
 .collapsed section.quick-links .icon-button span,
 .collapsed .section-row button,
+.collapsed section h2,
 .collapsed a i {
     display: none;
 }
-.collapsed section.quick-links .icon-button .feather {
+.collapsed .quick-links > div {
+    padding: 10px;
+}
+.collapsed .quick-links .icon-button .feather {
     margin-left: -6px;
 }
 .collapsed .section-row .sub-nav {
@@ -241,15 +252,17 @@ section.quick-links .icon-button .feather {
 }
 #view > div {
     margin: 15px;
-    max-width: 800px;
+    max-width: 1000px;
 }
 #view > div > button {
     float: right;
-    background-color: transparent;
+    margin: -10px -8px 0 0;
 }
 
 
-/* == Toaster =============================================================== */
+/* == Components ============================================================ */
+
+/* -- Components: Toaster ---- */
 .toaster {
     position: fixed;
     width: calc(100% - 8px);
@@ -261,7 +274,7 @@ section.quick-links .icon-button .feather {
 }
 
 
-/* == Popup overlay ========================================================= */
+/* -- Components: Popup overlay ---- */
 .popup-dialog {
     width: 100%;
     left: 0;
@@ -276,11 +289,14 @@ section.quick-links .icon-button .feather {
 }
 
 
-/* == Selectable item grid ================================================== */
+/* -- Components: Selectable item grid ---- */
 .item-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 5px;
+}
+.item-grid .full-width {
+    grid-column: 1 / -1;
 }
 .item-grid > button {
     border: none;
@@ -309,7 +325,7 @@ section.quick-links .icon-button .feather {
 }
 
 
-/* == PikaDay datepicker ==================================================== */
+/* -- Components: PikaDay datepicker ---- */
 .datepicker-container {
     position: absolute;
     z-index: 1;
@@ -355,12 +371,44 @@ table.pika-time {
 }
 
 
-/* == Tree-builder ========================================================== */
+/* -- Components: Tree-builder ---- */
 .tree-builder textarea {
     font: normal 13px/13px Consolas, monospace;
     color: #333;
 }
 
+
+/* -- Components: .list ---- */
+.list.fields {
+    background-color: rgba(0, 0, 0, 0.04);
+    border-radius: 2px;
+    padding: 18px 12px 8px 12px;
+    margin-top: 8px;
+}
+.fields.no-thead {
+    padding-top: 8px;
+}
+.fields .row {
+    align-items: center;
+}
+.list .configure {
+    position: absolute;
+    top: 7px;
+    right: 8px;
+    color: rgba(0,0,0,0.4);
+}
+.disallow-edit {
+    opacity: 0.3;
+}
+.content-type-card .blurred header,
+.content-type-card .blurred .list,
+.content-type-card .list.blurred,
+.content-type-card tr.blurred {
+    opacity: 0.3;
+}
+.disallow-edit .fields .buttons {
+    display: none;
+}
 
 /* == Form extensions ======================================================= */
 .form-buttons a {

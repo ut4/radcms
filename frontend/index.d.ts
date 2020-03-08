@@ -1,14 +1,3 @@
-interface FormProps {
-    onConfirm: (e: Event) => any;
-    onCancel?: (e: Event) => any;
-    close?: Function;
-    doDisableConfirmButton?: () => boolean;
-    autoClose?: bool;
-    confirmButtonText?: string;
-    cancelButtonText?: string;
-    usePseudoFormTag?: bool;
-}
-
 interface FrontendPanelConfig {
     id?: string;
     impl: string; // 'Generic' | 'List' | ...
@@ -33,10 +22,4 @@ interface ContentNode {
     isPublished?: boolean;
     isRevision?: boolean;
     [key: string]: any;
-}
-
-interface ContentType {
-    name: string;
-    friendlyName: string;
-    fields: Array<{name: string; dataType: string; widget?: {name: string; args: {[key: string]: any;}|{}};}>;
 }

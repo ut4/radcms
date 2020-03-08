@@ -1,6 +1,6 @@
 <?php
 
-define('RAD_VERSION', 'preview-0.1.0');
+define('RAD_VERSION', 'preview-0.2.0');
 
 $config = require 'config.php';
 $loader = require RAD_BASE_PATH . 'vendor/autoload.php';
@@ -27,7 +27,11 @@ if (!(RAD_FLAGS & RAD_DEVMODE)) {
         $logger->error(sprintf('%d @%s:%d %s%s', $e['type'], $e['file'], $e['line'],
                                $e['message'], PHP_EOL));
     });
+} else {
+    error_reporting(E_ALL);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-\RadCms\App::create($config)->handleRequest(RAD_BASE_URL, $_GET[RAD_QUERY_VAR] ?? null);
+\RadCms\App::create($config, [\Pike\App::SERVICE_DB => \Pike\App::MAKE_AUTOMATICALLY,
+                              \Pike\App::SERVICE_AUTH => \Pike\App::MAKE_AUTOMATICALLY])
+    ->handleRequest(RAD_BASE_URL, $_GET[RAD_QUERY_VAR] ?? null);

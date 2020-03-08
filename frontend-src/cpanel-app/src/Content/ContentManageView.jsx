@@ -2,7 +2,7 @@ import {http, View, FeatherSvg, InputGroup} from '@rad-commons';
 import {ContentNodeUtils} from '@rad-cpanel-commons';
 
 /**
- * #/manage-content.
+ * #/manage-content/:initialContentTypeName.
  */
 class ContentManageView extends preact.Component {
     /**
@@ -21,8 +21,11 @@ class ContentManageView extends preact.Component {
         http.get('/api/content-types')
             .then(ctypes => {
                 newState.contentTypes = ctypes;
-                newState.selectedContentTypeName = ctypes[0].name;
-                return http.get(`/api/content/${ctypes[0].name}`);
+                newState.selectedContentTypeName = !props.initialContentTypeName ||
+                    !ctypes.some(t => t.name === props.initialContentTypeName)
+                        ? ctypes[0].name
+                        : props.initialContentTypeName;
+                return http.get(`/api/content/${newState.selectedContentTypeName}`);
             })
             .then(cnodes => {
                 this.setContent(cnodes, newState);
@@ -44,11 +47,13 @@ class ContentManageView extends preact.Component {
                 <InputGroup inline={ true }
                             label={ this.state.selectedContentTypeName
                                 ? () => <a href={ `#/add-content/${this.state.selectedContentTypeName}` }
+                                           title="Luo uusi"
                                            class="icon-only">
-                                    <FeatherSvg iconId="plus-circle" className="small"/>
+                                    <FeatherSvg iconId="plus-circle" className="medium"/>
                                 </a>
                                 : '' }>
-                    <select onChange={ e => this.updateContent(e) }>{
+                    <select onChange={ e => this.updateContent(e) }
+                            value={ this.state.selectedContentTypeName }>{
                         this.state.contentTypes.map(t =>
                             <option value={ t.name }>{ t.friendlyName }</option>
                         )
@@ -71,7 +76,7 @@ class ContentManageView extends preact.Component {
                         }</td>
                         <td>
                             <a href={ href } class="icon-only">
-                                <FeatherSvg iconId="edit-2" className="small"/>
+                                <FeatherSvg iconId="edit-2" className="medium"/>
                             </a>
                         </td>
                     </tr>;

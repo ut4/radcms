@@ -1,7 +1,4 @@
 {
-    "contentTypes": [
-        "extend:stockContentTypes"
-    ],
     "urlMatchers": [
         [".*", "main-layout.tmpl.php"]
     ],

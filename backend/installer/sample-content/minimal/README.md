@@ -18,6 +18,6 @@ ks. https://todo/stock-content-types.
 
 ## Sisältötyypit
 
-Sisältötyypit, jotka tämä teema sisältää. Sisältötyypin sisältöä voidaan hakea tietokannasta php-tiedostoista. Uusia sisältötyyppejä voi luoda muokkaamalla `site.json` -tiedostoa (RAD_DEVMODE tulee olla päällä).
+Sisältötyypit, jotka tämä teema sisältää. Sisältötyypin sisältöä voidaan hakea tietokannasta php-tiedostoista. Uusia sisältötyyppejä voi luoda hallintapaneelin devaaja-osiosta.
 
 ks. https://todo/stock-content-types.

@@ -6,14 +6,14 @@ abstract class UploadModule {
     /**
      * Rekisteröi /api/uploads -alkuiset http-reitit.
      *
-     * @param object $ctx
+     * @param \stdClass $ctx {\Pike\Router router, \Pike\Db db, \RadCms\Auth\Authenticator auth, \RadCms\Auth\ACL acl, \RadCms\CmsState cmsState, \Pike\Translator translator}
      */
     public static function init($ctx) {
         $ctx->router->map('GET', '/api/uploads',
-            [UploadControllers::class, 'handleGetUploads', true]
+            [UploadControllers::class, 'handleGetUploads', 'view:uploads']
         );
         $ctx->router->map('POST', '/api/uploads',
-            [UploadControllers::class, 'handleUploadFile', true]
+            [UploadControllers::class, 'handleUploadFile', 'upload:uploads']
         );
     }
 }

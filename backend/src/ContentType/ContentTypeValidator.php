@@ -2,41 +2,37 @@
 
 namespace RadCms\ContentType;
 
-use Pike\Validator;
+use Pike\Validation;
 
 abstract class ContentTypeValidator {
     const MAX_NAME_LEN = 64;
     const FIELD_WIDGETS = ['textField', 'textArea', 'richText', 'image',
                            'multiFieldBuilder', 'date', 'dateTime',
                            'color', 'contentRef', 'hidden'];
+    const FIELD_DATA_TYPES = ['text', 'json', 'int', 'uint'];
+    const COLLECTION_SIZES = ['tiny', 'small', 'medium', '', 'big'];
     /**
      * @param \RadCms\ContentType\ContentTypeDef $contentType
      * @return string[]
      */
     public static function validate(ContentTypeDef $contentType) {
-        $errors = self::validateName($contentType->name);
-        //
-        if (!$contentType->fields->length()) {
-            $errors[] = 'ContentType.fields must contain at least one field';
-            return $errors;
-        }
-        foreach ($contentType->fields->toArray() as $f) {
-            if (!is_string($f->name) || !preg_match('/^[a-zA-Z_]+$/', $f->name))
-                $errors[] = "`{$f->name}` must contain only [a-zA-Z_]";
-            if (!in_array($f->dataType, ContentTypeMigrator::FIELD_DATA_TYPES))
-                $errors[] = "`{$f->dataType}` is not valid data type";
-            if (is_string($f->widget->name) &&
-                !in_array($f->widget->name, self::FIELD_WIDGETS))
-                $errors[] = "`{$f->widget->name}` is not valid widget";
-        }
-        return $errors;
+        static $validator = null;
+        if (!$validator) $validator = Validation::makeObjectValidator()
+            ->rule('fields', 'minLength', 1)
+            ->rule('fields.*.name', 'identifier')
+            ->rule('fields.*.dataType', 'in', self::FIELD_DATA_TYPES)
+            ->rule('fields.*.widget.name', 'in', self::FIELD_WIDGETS);
+        return array_merge(
+            self::validateName($contentType->name),
+            $validator->validate($contentType)
+        );
     }
     /**
      * @param \RadCms\ContentType\ContentTypeCollection $contentTypes
      * @return string[]
      */
     public static function validateAll(ContentTypeCollection $contentTypes) {
-        return array_reduce($contentTypes->toArray(), function ($all, $def) {
+        return array_reduce($contentTypes->getArrayCopy(), function ($all, $def) {
             return array_merge($all, ContentTypeValidator::validate($def));
         }, []);
     }
@@ -45,51 +41,50 @@ abstract class ContentTypeValidator {
      * @return string[]
      */
     public static function validateName($contentTypeName) {
-        $errors = [];
-        if (!ctype_alpha(str_replace('_', '', $contentTypeName)) ||
-            !ctype_upper(mb_substr($contentTypeName, 0, 1)))
-            $errors[] = 'ContentType.name must be capitalized and contain only [a-zA-Z_]';
-        if (mb_strlen($contentTypeName) > self::MAX_NAME_LEN)
-            $errors[] = 'ContentType.name must be <= 64 chars long';
-        return $errors;
+        return (Validation::makeValueValidator())
+            ->rule('identifier')
+            ->rule('maxLength', self::MAX_NAME_LEN)
+            ->validate($contentTypeName, 'ContentType.name');
     }
     /**
      * @param \RadCms\ContentType\ContentTypeDef $contentType
-     * @param object $input
+     * @param \stdClass $input
      * @param \Closure $additionalChecks = null
      * @return string[]
      */
     public static function validateInsertData(ContentTypeDef $contentType,
-                                              &$input,
+                                              $input,
                                               $additionalChecks = null) {
-        $v = new Validator($input);
-        if ($v->is('id', 'present')) $v->check('id', 'nonEmptyString');
-        if ($v->is('isPublished', 'present'))
-            $input->isPublished = $input->isPublished === true;
-        else
-            $input->isPublished = false;
+        $v = Validation::makeObjectValidator();
+        $v->rule('id?', 'type', 'string');
+        $v->rule('isPublished?', 'type', 'bool');
         if ($additionalChecks) $additionalChecks($v);
-        foreach ($contentType->fields->toArray() as $f) {
-            $validationRules = [
-                'text' => ['string'],
-                'json' => ['string'],
-                'int' => ['integer'],
+        foreach ($contentType->fields as $f) {
+            $rules = [
+                'text' => [['type', 'string']],
+                'json' => [['type', 'string']],
+                'int' => [['type', 'int']],
+                'uint' => [['type', 'int'], ['min', 0]],
             ][$f->dataType] ?? null;
-            if (!$validationRules)
+            if (!$rules)
                 throw new \RuntimeException('Shouldn\'t happen');
-            $v->check($f->name, ...$validationRules);
+            foreach ($rules as $ruleArgs)
+                $v->rule($f->name, ...$ruleArgs);
         }
-        return $v->errors;
+        if (!($errors = $v->validate($input))) {
+            $input->isPublished = $input->isPublished ?? false;
+        }
+        return $errors;
     }
     /**
      * @param \RadCms\ContentType\ContentTypeDef $contentType
-     * @param object &$input
+     * @param \stdClass $input
      * @return string[]
      */
     public static function validateUpdateData(ContentTypeDef $contentType,
-                                              &$input) {
+                                              $input) {
         return self::validateInsertData($contentType, $input, function ($v) {
-            $v->check('isRevision', ['in', [true, false]]);
+            $v->rule('isRevision', 'type', 'bool');
         });
     }
 }

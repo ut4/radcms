@@ -70,7 +70,7 @@ class GenericListUIPanelImpl extends preact.Component {
         return 'List';
     }
     getMainUrl() {
-        return '/manage-content';
+        return `/manage-content/${this.contentTypeName || (this.contentNodes[0] || {}).contentType}`;
     }
     getTitle() {
         return this.props.dataFromBackend.title;
@@ -83,7 +83,8 @@ class GenericListUIPanelImpl extends preact.Component {
             contentNodes={ this.contentNodes }
             createLinkText={ `Lisää uusi ${this.label}` }
             currentPagePath={ this.currentPagePath }
-            contentType={ this.contentTypeName || (this.contentNodes[0] || {}).contentType }/>;
+            contentType={ this.contentTypeName || (this.contentNodes[0] || {}).contentType }
+            noContentNodesContent={ this.contentNodes.length ? null : <div class="content">Ei sisältöä.</div> }/>;
     }
 }
 
