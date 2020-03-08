@@ -16,7 +16,7 @@
         "ext-fileinfo": "*",
         "psr/log": "^1.1",
         "monolog/monolog": "^1.25",
-        "ut4/pike": "0.2.0"
+        "ut4/pike": "0.3.0"
     },
     "minimum-stability": "dev",
     "prefer-stable": true,
