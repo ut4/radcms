@@ -2,147 +2,127 @@
 
 namespace RadCms\Tests\Packager;
 
+use Pike\Request;
 use Pike\TestUtils\DbTestCase;
 use Pike\TestUtils\HttpTestUtils;
-use RadCms\Tests\_Internal\ContentTestUtils;
-use RadCms\Packager\PlainTextPackageStream;
-use Pike\Request;
 use Pike\TestUtils\MockCrypto;
+use RadCms\Auth\ACL;
 use RadCms\Packager\Packager;
-use RadCms\ContentType\ContentTypeMigrator;
-use RadCms\ContentType\ContentTypeCollection;
+use RadCms\Packager\ZipPackageStream;
+use RadCms\Tests\_Internal\ContentTestUtils;
+use RadCms\Tests\_Internal\MockPackageStream;
 
 final class PackagerControllersTest extends DbTestCase {
     use HttpTestUtils;
     use ContentTestUtils;
-    private static $migrator;
-    private static $testSiteContentTypes;
-    private static $testSiteContentTypesData;
+    private $mockPackageStream;
     private $app;
-    public static function setUpBeforeClass() {
-        self::$testSiteContentTypesData = [
-            ['SomeType', [(object)['name' => 'val1'], (object)['name' => 'val2']]],
-            // AnotherTypellä ei sisältöä
-        ];
-        $parsed = json_decode(file_get_contents(TEST_SITE_PATH . 'content-types.json'));
-        self::$testSiteContentTypes = ContentTypeCollection::fromCompactForm($parsed);
-        self::$migrator = new ContentTypeMigrator(self::getDb());
-        // @allow \Pike\PikeException
-        self::$migrator->installMany(self::$testSiteContentTypes,
-                                     self::$testSiteContentTypesData);
-    }
-    public static function tearDownAfterClass() {
-        parent::tearDownAfterClass();
-        // @allow \Pike\PikeException
-        self::$migrator->uninstallMany(self::$testSiteContentTypes);
-        self::clearInstalledContentTypesFromDb();
-    }
     protected function setUp() {
         parent::setUp();
-        $this->app = $this->makeApp('\RadCms\App::create', $this->getAppConfig());
+        $this->mockPackageStream = new MockPackageStream();
+        $this->app = $this->makeApp('\RadCms\App::create', $this->getAppConfig(), null,
+            function ($injector) {
+                $injector->delegate(ZipPackageStream::class, function () {
+                    return $this->mockPackageStream;
+                });
+            });
     }
     public function testPOSTPackagerPacksWebsiteAndReturnsItAsAttachment() {
         $s = $this->setupCreatePackageTest();
         $this->sendCreatePackageRequest($s);
-        $this->verifyReturnedSignedPackage($s);
-        $this->verifyIncludedDbConfig($s);
-        $this->verifyIncludedWebsiteState($s);
-        $this->verifyIncludedContentTypesFile($s);
-        $this->verifyIncludedThemeContentData($s);
+        $this->verifyPackageWasReturned($s);
+        $this->verifyEncryptedMainDataWasIncluded($s);
+        $this->verifyDbAndSiteSettingsWereIncludedToMainData($s);
+        $this->verifyContentTypesWereIncludedToMainData($s);
+        $this->verifyAllContentWasIncludedToMainData($s);
+        $this->verifyUserWasIncludedToMainData($s);
+        $this->verifyTemplateFilesWereIncluded($s);
     }
     private function setupCreatePackageTest() {
-        $s = (object)[
-            'mockCrypto' => new MockCrypto(),
+        return (object) [
+            'reqBody' => (object) [
+                'templates' => json_encode(['test-layout1.tmpl.php',
+                                            'test-layout2.tmpl.php']),
+                'themeAssets' => json_encode(['test-styles1.css',
+                                              'test-styles2.css']),
+                'signingKey' => 'my-encrypt-key'
+            ],
             'actualAttachmentBody' => '',
-            'actualPackage' => null,
-            'testWebsiteState' => null,
+            'packageCreatedFromResponse' => null,
+            'parsedMainDataFromPackage' => null,
         ];
-        return $s;
     }
     private function sendCreatePackageRequest($s) {
-        $req = new Request('/api/packager', 'POST',
-                           (object)['signingKey' => 'my-encrypt-key']);
+        $req = new Request('/api/packager', 'POST', $s->reqBody);
         $res = $this->createMockResponse($this->callback(function ($body) use ($s) {
                                             $s->actualAttachmentBody = $body ?? '';
                                             return true;
                                          }),
                                          200,
                                          'attachment');
-        $this->app->getAppCtx()->crypto = $s->mockCrypto;
+        $this->app->getAppCtx()->crypto = new MockCrypto();
         $this->sendRequest($req, $res, $this->app);
     }
-    private function verifyReturnedSignedPackage($s) {
-        $this->assertTrue(strlen($s->actualAttachmentBody) > 0);
-        $s->actualPackage = new PlainTextPackageStream();
-        // @allow \Pike\PikeException
-        $s->actualPackage->open(MockCrypto::mockDecrypt($s->actualAttachmentBody));
+    private function verifyPackageWasReturned($s) {
+        $s->packageCreatedFromResponse = new MockPackageStream();
+        $s->packageCreatedFromResponse->open('json://'. $s->actualAttachmentBody);
+        $this->assertIsObject($s->packageCreatedFromResponse->getVirtualFiles());
     }
-    private function verifyIncludedDbConfig($s) {
-        $s->testWebsiteState = self::makeTestWebsiteState();
-        $this->assertEquals(self::makeExpectedPackageFile(Packager::DB_CONFIG_VIRTUAL_FILE_NAME,
-                                                          $s->testWebsiteState),
-                            $s->actualPackage->read(Packager::DB_CONFIG_VIRTUAL_FILE_NAME));
+    private function verifyEncryptedMainDataWasIncluded($s) {
+        $encodedJson = $s->packageCreatedFromResponse
+            ->read(Packager::MAIN_DATA_LOCAL_NAME);
+        $decodedJson = MockCrypto::mockDecrypt($encodedJson);
+        $parsed = json_decode($decodedJson);
+        $this->assertIsObject($parsed);
+        $this->assertEquals(['settings', 'contentTypes', 'content', 'user'],
+                            array_keys((array) $parsed));
+        $s->parsedMainDataFromPackage = $parsed;
     }
-    private function verifyIncludedWebsiteState($s) {
-        $this->assertEquals(self::makeExpectedPackageFile(Packager::WEBSITE_STATE_VIRTUAL_FILE_NAME,
-                                                          $s->testWebsiteState),
-                            $s->actualPackage->read(Packager::WEBSITE_STATE_VIRTUAL_FILE_NAME));
-    }
-    private function verifyIncludedContentTypesFile($s) {
-        $this->assertEquals(self::makeExpectedPackageFile(Packager::THEME_CONTENT_TYPES_VIRTUAL_FILE_NAME),
-                            $s->actualPackage->read(Packager::THEME_CONTENT_TYPES_VIRTUAL_FILE_NAME));
-    }
-    private function verifyIncludedThemeContentData($s) {
-        [, $someTypeData] = self::$testSiteContentTypesData[0];
-        $actual = json_decode($s->actualPackage->read(Packager::THEME_CONTENT_DATA_VIRTUAL_FILE_NAME) ?? '¤');
-        [, $actualData] = $actual[0];
-        $this->assertCount(count($someTypeData), $actualData);
-        $this->assertEquals($someTypeData[0]->name,
-                            $actualData[0]->name);
-        $this->assertEquals($someTypeData[1]->name,
-                            $actualData[1]->name);
-    }
-    public static function makeTestWebsiteState() {
+    private function verifyDbAndSiteSettingsWereIncludedToMainData($s) {
         $c = require TEST_SITE_PATH . 'config.php';
         $row = self::getDb()->fetchOne('SELECT * FROM ${p}cmsState');
-        return (object)[
-            'siteName' => $row['name'],
-            'siteLang' => $row['lang'],
+        $this->assertEquals((object) [
             'dbHost' => $c['db.host'],
             'dbDatabase' => $c['db.database'],
+            'doCreateDb' => true,
             'dbUser' => $c['db.user'],
             'dbPass' => $c['db.pass'],
             'dbTablePrefix' => $c['db.tablePrefix'],
             'dbCharset' => $c['db.charset'],
-        ];
+            //
+            'siteName' => $row['name'],
+            'siteLang' => $row['lang'],
+            'mainQueryVar' => RAD_QUERY_VAR,
+            'useDevMode' => boolval(RAD_FLAGS & RAD_DEVMODE),
+        ], $s->parsedMainDataFromPackage->settings);
     }
-    public static function makeExpectedPackageFile($virtualFileName, $input=null) {
-        if ($virtualFileName === Packager::DB_CONFIG_VIRTUAL_FILE_NAME) {
-            return json_encode([
-                'dbHost' => $input->dbHost,
-                'dbDatabase' => $input->dbDatabase,
-                'doCreateDb' => true,
-                'dbUser' => $input->dbUser,
-                'dbPass' => $input->dbPass,
-                'dbTablePrefix' => $input->dbTablePrefix,
-                'dbCharset' => $input->dbCharset,
-            ], JSON_UNESCAPED_UNICODE);
-        }
-        if ($virtualFileName === Packager::WEBSITE_STATE_VIRTUAL_FILE_NAME) {
-            return json_encode([
-                'siteName' => $input->siteName,
-                'siteLang' => $input->siteLang,
-                'baseUrl' => RAD_BASE_URL,
-                'radPath' => RAD_BASE_PATH,
-                'sitePath' => RAD_SITE_PATH,
-                'mainQueryVar' => RAD_QUERY_VAR,
-                'useDevMode' => boolval(RAD_FLAGS & RAD_DEVMODE),
-            ], JSON_UNESCAPED_UNICODE);
-        }
-        if ($virtualFileName === Packager::THEME_CONTENT_TYPES_VIRTUAL_FILE_NAME) {
-            return '{"SomeType":["Friendly name",{"name":["text","name","textField","",0]},"Website"],'.
-                    '"AnotherType":["Friendly eman",{"title":["text","title","textField","",0]},"Website"]}';
-        }
-        throw new \RuntimeException("Unknown package file {$virtualFileName}");
+    private function verifyContentTypesWereIncludedToMainData($s) {
+        $this->assertEquals([], $s->parsedMainDataFromPackage->contentTypes);
+    }
+    private function verifyAllContentWasIncludedToMainData($s) {
+        $this->assertEquals([], $s->parsedMainDataFromPackage->content);
+    }
+    private function verifyUserWasIncludedToMainData($s) {
+        $this->assertEquals((object) [
+            'id' => 'todo',
+            'username' => 'todo',
+            'email' => 'todo',
+            'passwordHash' => 'todo',
+            'role' => ACL::ROLE_SUPER_ADMIN,
+        ], $s->parsedMainDataFromPackage->user);
+    }
+    private function verifyTemplateFilesWereIncluded($s) {
+        $fileListFileContents = $s->packageCreatedFromResponse
+            ->read(Packager::TEMPLATE_FILE_NAMES_LOCAL_NAME);
+        $this->assertEquals(json_encode(['test-layout1.tmpl.php',
+                                         'test-layout2.tmpl.php']),
+                            $fileListFileContents);
+    }
+    private function verifyIncludedThemeAssetFiles($s) {
+        $fileListFileContents = $s->packageCreatedFromResponse
+            ->read(Packager::THEME_ASSET_FILE_NAMES_LOCAL_NAME);
+        $this->assertEquals(json_encode(['test-styles1.css',
+                                         'test-styles2.css']),
+                            $fileListFileContents);
     }
 }

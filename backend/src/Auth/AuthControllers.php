@@ -88,23 +88,23 @@ class AuthControllers {
             return;
         }
         try {
-        $this->auth->requestPasswordReset($req->body->usernameOrEmail,
-            function ($user, $resetKey, $settings) use ($cmsState, $appConfig) {
-                $siteName = $cmsState->getSiteInfo()->name;
-                $siteUrl = $_SERVER['SERVER_NAME'];
-                $settings->useSMTP = $appConfig->get('mail.transport') === 'SMTP';
-                $settings->fromAddress = "root@{$siteUrl}";
-                $settings->fromName = $siteName;
-                $settings->subject = "[{$siteName}] salasanan palautus";
-                $expirationHours = intval(Authenticator::RESET_KEY_EXPIRATION_SECS / 60 / 60);
-                $settings->body =
-                    "Seuraavalle tilille on pyydetty salasanan palautus:\r\n\r\n" .
-                    "Sivusto: {$siteName} ({$siteUrl})\r\n" .
-                    "Käyttäjä: {$user->username}\r\n\r\n" .
-                    "Mikäli et ole pyytänyt uutta salasanaa, voit jättää tämän viestin huomiotta ja poistaa sen jos et halua tehdä mitään. Vaihtaaksesi salasanan, vieraile seuraavassa osoittessa: " .
-                    $siteUrl . MagicTemplate::makeUrl("/finalize-password-reset/{$resetKey}") .
-                    ". Linkki on voimassa {$expirationHours} tuntia.\r\n";
-            });
+            $this->auth->requestPasswordReset($req->body->usernameOrEmail,
+                function ($user, $resetKey, $settings) use ($cmsState, $appConfig) {
+                    $siteName = $cmsState->getSiteInfo()->name;
+                    $siteUrl = $_SERVER['SERVER_NAME'];
+                    $settings->useSMTP = $appConfig->get('mail.transport') === 'SMTP';
+                    $settings->fromAddress = "root@{$siteUrl}";
+                    $settings->fromName = $siteName;
+                    $settings->subject = "[{$siteName}] salasanan palautus";
+                    $expirationHours = intval(Authenticator::RESET_KEY_EXPIRATION_SECS / 60 / 60);
+                    $settings->body =
+                        "Seuraavalle tilille on pyydetty salasanan palautus:\r\n\r\n" .
+                        "Sivusto: {$siteName} ({$siteUrl})\r\n" .
+                        "Käyttäjä: {$user->username}\r\n\r\n" .
+                        "Mikäli et ole pyytänyt uutta salasanaa, voit jättää tämän viestin huomiotta ja poistaa sen jos et halua tehdä mitään. Vaihtaaksesi salasanan, vieraile seuraavassa osoittessa: " .
+                        $siteUrl . MagicTemplate::makeUrl("/finalize-password-reset/{$resetKey}") .
+                        ". Linkki on voimassa {$expirationHours} tuntia.\r\n";
+                });
             $res->json(['ok' => 'ok']);
         } catch (PikeException $e) {
             if ($e->getCode() === Authenticator::INVALID_CREDENTIAL) {

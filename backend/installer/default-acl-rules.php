@@ -43,7 +43,8 @@ $out->resources = (object)[
         'upload' => $flag2
     ],
     'websites' => (object)[
-        'pack' => $flag1
+        'pack'    => $flag1,
+        'prePack' => $flag2,
     ]
 ];
 $out->userPermissions = (object)[

@@ -2,123 +2,173 @@
 
 namespace RadCms\Packager;
 
+use Pike\Db;
+use Pike\AppConfig;
+use Pike\ArrayUtils;
+use Pike\Auth\Crypto;
 use Pike\FileSystemInterface;
 use RadCms\CmsState;
 use RadCms\Content\DAO;
-use Pike\Db;
-use Pike\Auth\Crypto;
-use Pike\ArrayUtils;
+use RadCms\Auth\ACL;
 
 class Packager {
-    public const DB_CONFIG_VIRTUAL_FILE_NAME = 'db-config.json';
-    public const WEBSITE_STATE_VIRTUAL_FILE_NAME = 'website-state.json';
-    public const THEME_CONTENT_TYPES_VIRTUAL_FILE_NAME = 'theme-content-types.json';
-    public const THEME_CONTENT_DATA_VIRTUAL_FILE_NAME = 'theme-content-data.json';
-    /** @var \RadCms\Packager\PackageStreamInterface */
-    private $writer;
+    public const MAIN_DATA_LOCAL_NAME = 'main-data.data';
+    public const DB_SCHEMA_LOCAL_NAME = 'schema.mariadb.sql';
+    public const TEMPLATE_FILE_NAMES_LOCAL_NAME = 'template-file-names.json';
+    public const THEME_ASSET_FILE_NAMES_LOCAL_NAME = 'theme-asset-file-names.json';
+    /** @var \Pike\Db */
+    private $db;
+    /** @var \Pike\FileSystemInterface */
+    private $fs;
     /** @var \Pike\Auth\Crypto */
     private $crypto;
     /** @var \RadCms\CmsState */
     private $cmsState;
-    /** @var \Pike\FileSystemInterface */
-    private $fs;
-    /** @var \RadCms\ContentType\ContentTypeCollection */
-    private $themeContentTypes;
-    /** @var \RadCms\Content\DAO */
-    private $cNodeDAO;
-    /** @var array */
-    private $config;
+    /** @var \Pike\AppConfig */
+    private $appConfig;
     /**
-     * @param \RadCms\Packager\PackageStreamInterface $writer
-     * @param \Pike\Auth\Crypto $crypto
-     * @param \RadCms\CmsState $cmsState
      * @param \Pike\Db $db
      * @param \Pike\FileSystemInterface $fs
+     * @param \Pike\Auth\Crypto $crypto
+     * @param \RadCms\CmsState $cmsState
+     * @param \Pike\AppConfig $appConfig
      */
-    public function __construct(PackageStreamInterface $writer,
+    public function __construct(Db $db,
+                                FileSystemInterface $fs,
                                 Crypto $crypto,
                                 CmsState $cmsState,
-                                Db $db,
-                                FileSystemInterface $fs) {
-        $this->writer = $writer;
+                                AppConfig $appConfig) {
+        $this->db = $db;
+        $this->fs = $fs;
         $this->crypto = $crypto;
         $this->cmsState = $cmsState;
-        $this->fs = $fs;
-        $this->themeContentTypes = ArrayUtils::filterByKey($cmsState->getContentTypes(),
-                                                           'Website',
-                                                           'origin');
-        $this->cNodeDAO = new DAO($db, $this->themeContentTypes);
-        $this->config = include RAD_SITE_PATH . 'config.php';
+        $this->appConfig = $appConfig;
     }
     /**
-     * @param string $sitePath
-     * @param string $signingKey
+     * @return \stdClass {templates: string[], themeAssets: string[]}
      * @throws \Pike\PikeException
      */
-    public function packSite($sitePath, $signingKey) {
+    public function preRun() {
         // @allow \Pike\PikeException
-        $this->writer->open('', true);
-        //
-        foreach ([
-            [self::DB_CONFIG_VIRTUAL_FILE_NAME, function () {
-                return $this->generateDbConfigJson();
-            }],
-            [self::WEBSITE_STATE_VIRTUAL_FILE_NAME, function () use ($sitePath) {
-                return $this->generateWebsiteStateJson($sitePath);
-            }],
-            [self::THEME_CONTENT_TYPES_VIRTUAL_FILE_NAME, function () {
-                return json_encode($this->themeContentTypes->toCompactForm('Website'));
-            }],
-            [self::THEME_CONTENT_DATA_VIRTUAL_FILE_NAME, function () {
-                return $this->generateThemeContentDataJson();
-            }],
-        ] as [$virtualFilePath, $provideContents]) {
-            $this->writer->write($virtualFilePath,
-                                 $provideContents());
-        }
-        // @allow \Pike\PikeException
-        $data = $this->writer->getResult();
-        return $this->crypto->encrypt($data, $signingKey);
+        $dirPath = RAD_SITE_PATH . 'theme/';
+        $len = mb_strlen($dirPath);
+        $fullPathToFileName = function ($fullFilePath) use ($len) {
+            return substr($fullFilePath, $len);
+        };
+        return (object) [
+            'templates' => array_map($fullPathToFileName,
+                $this->fs->readDir($dirPath, '*.tmpl.php')),
+            'themeAssets' => array_map($fullPathToFileName,
+                $this->fs->readDir($dirPath, '*.{css,js}', GLOB_ERR|GLOB_BRACE))
+        ];
     }
     /**
+     * @param \RadCms\Packager\PackageStreamInterface $package
+     * @param \stdClass $config Olettaa että validi
      * @return string
+     * @throws \Pike\PikeException
      */
-    private function generateDbConfigJson() {
-        return json_encode([
-            'dbHost' => $this->config['db.host'],
-            'dbDatabase' => $this->config['db.database'],
-            'doCreateDb' => true,
-            'dbUser' => $this->config['db.user'],
-            'dbPass' => $this->config['db.pass'],
-            'dbTablePrefix' => $this->config['db.tablePrefix'],
-            'dbCharset' => $this->config['db.charset'],
+    public function packSite(PackageStreamInterface $package, \stdClass $config) {
+        // @allow \Pike\PikeException
+        $package->open('', true);
+        // @allow \Pike\PikeException
+        $this->addMainData($package, $config);
+        // @allow \Pike\PikeException
+        $this->addDbSchema($package);
+        // @allow \Pike\PikeException
+        $this->addThemeFiles($package, $config->templates,
+            self::TEMPLATE_FILE_NAMES_LOCAL_NAME);
+        // @allow \Pike\PikeException
+        $this->addThemeFiles($package, $config->themeAssets,
+            self::THEME_ASSET_FILE_NAMES_LOCAL_NAME);
+        // @allow \Pike\PikeException
+        return $package->getResult();
+    }
+    /**
+     * @throws \Pike\PikeException
+     */
+    private function addMainData($package, $config) {
+        $themeContentTypes = ArrayUtils::filterByKey($this->cmsState->getContentTypes(),
+                                                     'Website',
+                                                     'origin');
+        // @allow \Pike\PikeException
+        $data = json_encode((object) [
+            'settings' => $this->generateSettings(),
+            'contentTypes' => $themeContentTypes->toCompactForm('Website'),
+            'content' => $this->generateThemeContentData($themeContentTypes),
+            'user' => $this->generateUser(),
         ], JSON_UNESCAPED_UNICODE);
+        // @allow \Pike\PikeException
+        $padded = str_pad($config->signingKey, Crypto::SECRETBOX_KEYBYTES, '0');
+        $key = substr($padded, 0, Crypto::SECRETBOX_KEYBYTES);
+        $encrypted = $this->crypto->encrypt($data, $key);
+        // @allow \Pike\PikeException
+        $package->addFromString(self::MAIN_DATA_LOCAL_NAME, $encrypted);
     }
     /**
-     * @return string
+     * @throws \Pike\PikeException
      */
-    private function generateWebsiteStateJson($sitePath) {
-        return json_encode([
+    private function addDbSchema($package) {
+        // @allow \Pike\PikeException
+        $package->addFile(RAD_BASE_PATH . 'assets/schema.mariadb.sql',
+                          self::DB_SCHEMA_LOCAL_NAME);
+    }
+    /**
+     * @throws \Pike\PikeException
+     */
+    private function addThemeFiles($package, $files, $fileListFileLocalName) {
+        $package->addFromString($fileListFileLocalName,
+                                json_encode($files, JSON_UNESCAPED_UNICODE));
+        $base = RAD_SITE_PATH . 'theme/';
+        foreach ($files as $fileName) {
+            // @allow \Pike\PikeException
+            $package->addFile($base . str_replace('../', '', $fileName),
+                              $fileName);
+        }
+    }
+    /**
+     * @return \stdClass
+     */
+    private function generateSettings() {
+        return (object) [
+            'dbHost' => $this->appConfig->get('db.host'),
+            'dbDatabase' => $this->appConfig->get('db.database'),
+            'doCreateDb' => true,
+            'dbUser' => $this->appConfig->get('db.user'),
+            'dbPass' => $this->appConfig->get('db.pass'),
+            'dbTablePrefix' => $this->appConfig->get('db.tablePrefix'),
+            'dbCharset' => $this->appConfig->get('db.charset'),
+            //
             'siteName' => $this->cmsState->getSiteInfo()->name,
             'siteLang' => $this->cmsState->getSiteInfo()->lang,
-            'baseUrl' => RAD_BASE_URL,
-            'radPath' => RAD_BASE_PATH,
-            'sitePath' => $sitePath,
             'mainQueryVar' => RAD_QUERY_VAR,
             'useDevMode' => boolval(RAD_FLAGS & RAD_DEVMODE),
-        ], JSON_UNESCAPED_UNICODE);
+        ];
     }
     /**
-     * @return string '[["Articles", ContentNode[]], ...]'
+     * @return array [["Articles", ContentNode[]], ...]
      */
-    private function generateThemeContentDataJson() {
+    private function generateThemeContentData($themeContentTypes) {
+        $cNodeDAO = new DAO($this->db, $themeContentTypes);
         $out = [];
-        foreach ($this->themeContentTypes as $ctype) {
+        foreach ($themeContentTypes as $ctype) {
             // @allow \Pike\PikeException
-            if (!($nodes = $this->cNodeDAO->fetchAll($ctype->name)->exec()))
+            if (!($nodes = $cNodeDAO->fetchAll($ctype->name)->exec()))
                 continue;
             $out[] = [$ctype->name, $nodes];
         }
-        return json_encode($out, JSON_UNESCAPED_UNICODE);
+        return $out;
+    }
+    /**
+     * @return \stdClass
+     */
+    private function generateUser() {
+        return (object) [
+            'id' => 'todo',
+            'username' => 'todo',
+            'email' => 'todo',
+            'passwordHash' => 'todo',
+            'role' => ACL::ROLE_SUPER_ADMIN,
+        ];
     }
 }

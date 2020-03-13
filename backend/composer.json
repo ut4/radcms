@@ -9,14 +9,14 @@
         }
     ],
     "require": {
-        "php": "~7.1",
+        "php": ">=7.2",
         "ext-pdo_mysql": "*",
         "ext-mbstring": "*",
         "ext-ctype": "*",
         "ext-fileinfo": "*",
         "psr/log": "^1.1",
         "monolog/monolog": "^1.25",
-        "ut4/pike": "0.3.0"
+        "ut4/pike": "0.3.2"
     },
     "minimum-stability": "dev",
     "prefer-stable": true,

@@ -40,24 +40,52 @@ class ZipPackageStream implements PackageStreamInterface {
                                     PikeException::FAILED_FS_OP);
     }
     /**
-     * @param string $virtualFilePath
-     * @param string $contents
+     * @param string $filePath
+     * @param string $localName = null
+     * @param int $start = 0
+     * @param int $length = 0
+     * @return bool
      * @throws \Pike\PikeException
      */
-    public function write($virtualFilePath, $contents) {
-        if (!$this->zip->addFromString($virtualFilePath, $contents))
-            throw new PikeException('Failed to write to zip stream',
-                                    PikeException::FAILED_FS_OP);
+    public function addFile($filePath, $localName = null, $start = 0, $length = 0) {
+        if ($this->zip->addFile($filePath, $localName, $start, $length))
+            return true;
+        throw new PikeException("Failed to read `{$filePath}` to zip stream",
+                                PikeException::FAILED_FS_OP);
     }
     /**
-     * @param string $virtualFilePath
+     * @param string $localName
+     * @param string $contents
+     * @return bool
+     * @throws \Pike\PikeException
+     */
+    public function addFromString($localName, $contents) {
+        if ($this->zip->addFromString($localName, $contents))
+            return true;
+        throw new PikeException("Failed to add `{$localName}` to zip stream",
+                                PikeException::FAILED_FS_OP);
+    }
+    /**
+     * @param string $localName
      * @return string
      * @throws \Pike\PikeException
      */
-    public function read($virtualFilePath) {
-        if (($str = $this->zip->getFromName($virtualFilePath)) !== false)
+    public function read($localName) {
+        if (($str = $this->zip->getFromName($localName)) !== false)
             return $str;
-        throw new PikeException('Failed to read from zip stream',
+        throw new PikeException("Failed to read `{$localName}` zip stream",
+                                PikeException::FAILED_FS_OP);
+    }
+    /**
+     * @param string $destinationPath
+     * @param mixed $localNames = [] string|string[]
+     * @return bool
+     * @throws \Pike\PikeException
+     */
+    public function extractMany($destinationPath, $localNames = []) {
+        if ($this->zip->extractTo($destinationPath, $localNames))
+            return true;
+        throw new PikeException("Failed to extract entries to ${destinationPath}",
                                 PikeException::FAILED_FS_OP);
     }
     /**
@@ -75,32 +103,5 @@ class ZipPackageStream implements PackageStreamInterface {
             throw new PikeException('Failed to remove temp file',
                                     PikeException::FAILED_FS_OP);
         return $c;
-    }
-
-    ////////////////////////////////////////////////////////////////////////////
-
-    public function unlink($path) {
-        throw new PikeException('Not supported.');
-    }
-    public function copy($path, $destPath) {
-        throw new PikeException('Not supported.');
-    }
-    public function mkDir($path) {
-        throw new PikeException('Not supported.');
-    }
-    public function rmDir($path) {
-        throw new PikeException('Not supported.');
-    }
-    public function isFile($path) {
-        throw new PikeException('Not supported.');
-    }
-    public function isDir($path) {
-        throw new PikeException('Not supported.');
-    }
-    public function readDir($path) {
-        throw new PikeException('Not supported.');
-    }
-    public function lastModTime($path) {
-        throw new PikeException('Not supported.');
     }
 }

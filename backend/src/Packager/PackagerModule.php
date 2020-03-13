@@ -12,11 +12,14 @@ abstract class PackagerModule {
         $ctx->router->map('POST', '/api/packager',
             [PackagerControllers::class, 'handleCreatePackage', 'pack:websites']
         );
+        $ctx->router->map('GET', '/api/packager/pre-run',
+            [PackagerControllers::class, 'handlePreRunCreatePackage', 'prePack:websites']
+        );
     }
     /**
      * @param \Auryn\Injector $container
      */
     public static function alterIOC($container) {
-        $container->alias(PackageStreamInterface::class, PlainTextPackageStream::class);
+        $container->alias(PackageStreamInterface::class, ZipPackageStream::class);
     }
 }

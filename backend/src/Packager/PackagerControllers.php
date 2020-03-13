@@ -4,6 +4,7 @@ namespace RadCms\Packager;
 
 use Pike\Request;
 use Pike\Response;
+use Pike\Validation;
 
 /**
  * Handlaa /api/packager -alkuiset pyynnöt.
@@ -18,18 +19,47 @@ class PackagerControllers {
         $this->packager = $packager;
     }
     /**
+     * GET /api/packager/pre-run.
+     *
+     * @param \Pike\Response $res
+     */
+    public function handlePreRunCreatePackage(Response $res) {
+        $res->json($this->packager->preRun());
+    }
+    /**
      * POST /api/packager.
      *
      * @param \Pike\Request $req
      * @param \Pike\Response $res
+     * @param \Pike\Response $res
      */
-    public function handleCreatePackage(Request $req, Response $res) {
-        if (strlen($req->body->signingKey) < 12) {
-            $res->status(400)->json(['signingKey must be >= 12 characters long']);
+    public function handleCreatePackage(Request $req,
+                                        Response $res,
+                                        PackageStreamInterface $package) {
+        if (($errors = $this->validatePackSiteInput($req->body))) {
+            $res->status(400)->json($errors);
             return;
         }
-        // @allow \RadCMS\Common\PikeException
-        $data = $this->packager->packSite(RAD_SITE_PATH, $req->body->signingKey);
-        $res->attachment($data, 'site.rpkg', 'application/octet-stream');
+        // @allow \Pike\PikeException
+        $data = $this->packager->packSite($package, $req->body, RAD_SITE_PATH);
+        $res->attachment($data, 'packed.radsite', 'application/octet-stream');
+    }
+    /**
+     * @return string[]
+     */
+    private function validatePackSiteInput($input) {
+        $customErrors = [];
+        $v = Validation::makeObjectValidator()
+            ->rule('signingKey', 'type', 'string')
+            ->rule('signingKey', 'minLength', 12);
+        if (is_array($input->templates = json_decode($input->templates ?? null)))
+            $v->rule('templates.*', 'type', 'string');
+        else
+            $customErrors[] = 'templates must be json';
+        if (is_array($input->themeAssets = json_decode($input->themeAssets ?? null)))
+            $v->rule('themeAssets.*', 'type', 'string');
+        else
+            $customErrors[] = 'themeAssets must be json';
+        return array_merge($customErrors, $v->validate($input));
     }
 }
