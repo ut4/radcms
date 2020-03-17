@@ -28,4 +28,12 @@ final class AuthControllersInputValidationTest extends ConfigProvidingTestCase {
              'The length of password must be at least 1'], 400);
         $this->sendRequest($req, $res, $this->app);
     }
+    public function testPOSTUpdatePasswordRejectsInvalidValues() {
+        $req = new Request('/api/update-password', 'POST', (object)['userId' => '',
+                                                                    'newPassword' => '']);
+        $res = $this->createMockResponse(
+            ['The length of userId must be at least 36',
+             'The length of newPassword must be at least 1'], 400);
+        $this->sendRequest($req, $res, $this->app);
+    }
 }

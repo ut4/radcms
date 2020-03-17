@@ -8,7 +8,8 @@ $flag3 = 1 << 3;
 $out = new \stdClass;
 $out->resources = (object)[
     'auth' => (object)[
-        'logout' => $flag1
+        'logout'     => $flag1,
+        'updatePass' => $flag2,
     ],
     'content' => (object)[
         'create' => $flag1,

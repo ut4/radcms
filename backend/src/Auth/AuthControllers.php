@@ -149,6 +149,23 @@ class AuthControllers {
         }
     }
     /**
+     * POST /update-password.
+     *
+     * @param \Pike\Request $req
+     * @param \Pike\Response $res
+     */
+    public function handleUpdatePasswordRequest(Request $req,
+                                                Response $res) {
+        if (($errors = $this->validateUpdatePasswordInput($req->body))) {
+            $res->status(400)->json($errors);
+            return;
+        }
+        // @allow \Pike\PikeException
+        $this->auth->updatePassword($req->body->userId,
+                                    $req->body->newPassword);
+        $res->json(['ok' => 'ok']);
+    }
+    /**
      * @return string[]
      */
     private function validateLoginFormInput($input) {
@@ -173,6 +190,15 @@ class AuthControllers {
             ->rule('email', 'minLength', 1)
             ->rule('newPassword', 'minLength', 1)
             ->rule('key', 'minLength', 1)
+            ->validate($input);
+    }
+    /**
+     * @return string[]
+     */
+    private function validateUpdatePasswordInput($input) {
+        return (Validation::makeObjectValidator())
+            ->rule('userId', 'minLength', 36)
+            ->rule('newPassword', 'minLength', 1)
             ->validate($input);
     }
 }

@@ -32,5 +32,8 @@ abstract class AuthModule {
         $ctx->router->map('POST', '/api/finalize-password-reset',
             [AuthControllers::class, 'handleFinalizePassResetFormSubmit', ACL::NO_NAME]
         );
+        $ctx->router->map('POST', '/api/update-password',
+            [AuthControllers::class, 'handleUpdatePasswordRequest', 'updatePass:auth']
+        );
     }
 }

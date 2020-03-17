@@ -13,3 +13,4 @@ duk_source_meta.json
 node_modules
 package-lock.json
 installer.phar
+.DS_Store
