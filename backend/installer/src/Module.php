@@ -2,6 +2,9 @@
 
 namespace RadCms\Installer;
 
+use RadCms\Packager\PackageStreamInterface;
+use RadCms\Packager\ZipPackageStream;
+
 abstract class Module {
     /**
      * Rekisteröi install.php?q=* http-reitit.
@@ -18,5 +21,11 @@ abstract class Module {
         $ctx->router->map('POST', '/from-package',
             [InstallerControllers::class, 'handleInstallFromPackageRequest', false]
         );
+    }
+    /**
+     * @param \Auryn\Injector $container
+     */
+    public static function alterIOC($container) {
+        $container->alias(PackageStreamInterface::class, ZipPackageStream::class);
     }
 }

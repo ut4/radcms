@@ -6,18 +6,9 @@ use Pike\Request;
 use Pike\Response;
 use Pike\Template;
 use Pike\Validation;
-use Pike\Auth\Crypto;
-use RadCms\Packager\PlainTextPackageStream;
 use Pike\FileSystem;
 
 class InstallerControllers {
-    private $installer;
-    /**
-     * @param \RadCms\Installer\Installer $installer
-     */
-    public function __construct(Installer $installer) {
-        $this->installer = $installer;
-    }
     /**
      * GET /.
      *
@@ -35,35 +26,33 @@ class InstallerControllers {
     /**
      * POST /.
      */
-    public function handleInstallRequest(Request $req, Response $res) {
-        //
+    public function handleInstallRequest(Request $req,
+                                         Response $res,
+                                         Installer $installer) {
         if (($errors = $this->validateInstallInput($req->body))) {
             $res->status(400)->json(json_encode($errors));
             return;
         }
         // @allow \Pike\PikeException
-        $this->installer->doInstall($req->body);
+        $installer->doInstall($req->body);
         $res->json(json_encode(['ok' => 'ok',
-                                'warnings' => $this->installer->getWarnings()]));
+                                'warnings' => $installer->getWarnings()]));
     }
     /**
      * POST /from-package.
      */
     public function handleInstallFromPackageRequest(Request $req,
                                                     Response $res,
-                                                    PlainTextPackageStream $stream,
-                                                    Crypto $crypto) {
+                                                    PackageInstaller $installer) {
         if (($errors = $this->validateInstallFromPackageInput($req))) {
             $res->status(400)->json($errors);
             return;
         }
         // @allow \Pike\PikeException
-        $this->installer
-            ->doInstallFromPackage($stream,
-                                   $req->files->packageFile['tmp_name'],
-                                   $req->body->unlockKey,
-                                   $crypto);
-        $res->json(json_encode(['ok' => 'ok']));
+        $installer->doInstall($req->files->packageFile['tmp_name'],
+                              $req->body);
+        $res->json(json_encode(['ok' => 'ok',
+                                'warnings' => $installer->getWarnings()]));
     }
     /**
      * @return string[]
@@ -100,16 +89,14 @@ class InstallerControllers {
      * @return string[]
      */
     private function validateInstallFromPackageInput($req) {
-        $errors = [];
-        if (!$req->files->packageFile) {
-            $errors[] = 'packageFile is required';
-        }
-        if (!$req->body->unlockKey) {
-            $errors[] = 'unlockKey is required';
-        } elseif (!is_string($req->body->unlockKey) ||
-                  strlen($req->body->unlockKey) < 12) {
-            $errors[] = 'unlockKey must be >= 12 characters long';
-        }
-        return $errors;
+        return array_merge(
+            (Validation::makeObjectValidator())
+                ->rule('unlockKey', 'type', 'string')
+                ->rule('unlockKey', 'minLength', 12)
+                ->validate($req->body),
+            (Validation::makeObjectValidator())
+                ->rule('packageFile', 'type', 'array')
+                ->validate($req->files)
+        );
     }
 }

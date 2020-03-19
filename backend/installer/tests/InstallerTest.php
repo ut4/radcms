@@ -2,21 +2,14 @@
 
 namespace RadCms\Installer\Tests;
 
-use Pike\TestUtils\DbTestCase;
 use Pike\TestUtils\HttpTestUtils;
-use Pike\Request;
-use Pike\App;
-use Pike\FileSystem;
-use RadCms\Installer\Module;
 use RadCms\Tests\_Internal\ContentTestUtils;
-use Pike\TestUtils\MockCrypto;
-use RadCms\Packager\Packager;
-use RadCms\Packager\PlainTextPackageStream;
-use RadCms\Tests\Packager\PackagerControllersTest;
+use Pike\Request;
+use Pike\FileSystem;
 use RadCms\Auth\ACL;
 use RadCms\Installer\Installer;
 
-final class InstallerTest extends DbTestCase {
+final class InstallerTest extends BaseInstallerTest {
     use HttpTestUtils;
     use ContentTestUtils;
     const TEST_DB_NAME1 = 'radInstallerTestDb1';
@@ -137,7 +130,7 @@ final class InstallerTest extends DbTestCase {
         $this->addFsExpectation('generatesConfigFile', $s);
         $this->addFsExpectation('deletesInstallerFiles', $s);
         $this->sendInstallRequest($s);
-        $this->verifyCreatedMainSchema($s);
+        $this->verifyCreatedMainSchema($s->input);
         $this->verifyInsertedMainSchemaData($s);
         $this->verifyCreatedUserZero($s);
         $this->verifyContentTypeIsInstalled('Movies', true);
@@ -175,12 +168,12 @@ final class InstallerTest extends DbTestCase {
             $s->mockFs->expects($this->exactly(3))
                 ->method('read')
                 ->withConsecutive(
-                    ["{$s->backendPath}installer/schema.mariadb.sql"],
+                    ["{$s->backendPath}assets/schema.mariadb.sql"],
                     ["{$s->sampleContentDirPath}content-types.json"],
                     ["{$s->sampleContentDirPath}sample-data.json"]
                 )
                 ->willReturnOnConsecutiveCalls(
-                    file_get_contents("{$s->backendPath}installer/schema.mariadb.sql"),
+                    file_get_contents("{$s->backendPath}assets/schema.mariadb.sql"),
                     //
                     '{' .
                         '"Movies": ["Elokuvat", {"title": "text"}]' .
@@ -291,24 +284,16 @@ return [
             (object)['fs' => $s->mockFs]);
         $this->sendRequest(new Request('/', 'POST', $s->input), $res, $app);
     }
-    private function verifyCreatedMainSchema($s) {
-        self::$db->exec("USE {$s->input->dbDatabase}");
-        self::$db->setCurrentDatabaseName($s->input->dbDatabase);
-        self::$db->setTablePrefix($s->input->dbTablePrefix);
-        $this->assertEquals(1, count(self::$db->fetchAll(
-            'SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES' .
-            ' WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?',
-            [$s->input->dbDatabase, $s->input->dbTablePrefix . 'cmsState']
-        )));
-    }
     private function verifyInsertedMainSchemaData($s) {
         $row = self::$db->fetchOne('SELECT * FROM ${p}cmsState');
         $this->assertArrayHasKey('name', $row);
         $this->assertEquals($s->input->siteName, $row['name']);
         $this->assertEquals($s->input->siteLang, $row['lang']);
         $filePath = "{$s->backendPath}installer/default-acl-rules.php";
-        $this->assertEquals(json_encode((include $filePath)()),
-                            $row['aclRules']);
+        $expected = (include $filePath)(); // ['resources', 'userPermissions']
+        $actual = json_decode($row['aclRules']);
+        $this->assertEquals(array_keys((array) $expected),
+                            array_keys((array) $actual));
     }
     private function verifyCreatedUserZero($s) {
         $row = self::$db->fetchOne('SELECT * FROM ${p}users');
@@ -343,84 +328,10 @@ return [
         $this->addFsExpectation('generatesConfigFile', $s);
         $this->addFsExpectation('deletesInstallerFiles', $s);
         $this->sendInstallRequest($s);
-        $this->verifyCreatedMainSchema($s);
+        $this->verifyCreatedMainSchema($s->input);
         $this->verifyInsertedMainSchemaData($s);
         $this->verifyCreatedUserZero($s);
         $this->verifyContentTypeIsInstalled('Movies', true);
         $this->verifyInsertedSampleContent($s);
-    }
-
-
-    ////////////////////////////////////////////////////////////////////////////
-
-
-    public function testInstallerInstallsWebsiteFromPackage() {
-        $s = $this->setupInstallFromPackageTest();
-        $this->stubFsToReturnThisAsUploadedFileContents($s->inputPackageFileContents, $s);
-        $this->sendInstallFromPackageRequest($s);
-        $this->verifyCreatedMainSchema($s);
-        $this->verifyInsertedMainSchemaData($s);
-        $this->verifyInstalledThemeContentTypes($s);
-        $this->verifyInsertedThemeContentData($s);
-    }
-    private function setupInstallFromPackageTest() {
-        $s = $this->setupInstallerTest1();
-        $s->input->dbDatabase = self::TEST_DB_NAME3;
-        $s->input->unlockKey = 'my-decrypt-key';
-        $s->files = (object) ['packageFile' => ['tmp_name' => 'foo.rpkg']];
-        $s->mockCrypto = new MockCrypto();
-        $s->testSiteContentTypesData = [
-            ['SomeType', [(object)['name' => 'val1']]],
-            // AnotherTypellä ei sisältöä
-        ];
-        $s->inputPackageFileContents = $s->mockCrypto->encrypt(
-            $this->makeExpectedPackage($s)->getResult(), 'key');
-        return $s;
-    }
-    private function stubFsToReturnThisAsUploadedFileContents($encryptedFileContents, $s) {
-        $s->mockFs
-            ->method('read')
-            ->withConsecutive(
-                [$this->stringEndsWith('.rpkg')],
-                [$this->stringEndsWith('schema.mariadb.sql')]
-            )
-            ->willReturnOnConsecutiveCalls(
-                $encryptedFileContents,
-                file_get_contents(RAD_BASE_PATH . 'installer/schema.mariadb.sql')
-            );
-    }
-    private function sendInstallFromPackageRequest($s) {
-        $req = new Request('/from-package', 'POST', $s->input, $s->files);
-        $res = $this->createMockResponse('{"ok":"ok"}', 200);
-        $app = $this->makeApp([$this,'createInstallerApp'], $this->getAppConfig(),
-            (object)['fs' => $s->mockFs, 'crypto' => $s->mockCrypto]);
-        $this->sendRequest($req, $res, $app);
-    }
-    private function verifyInstalledThemeContentTypes($s) {
-        [$name] = $s->testSiteContentTypesData[0];
-        $this->verifyContentTypeIsInstalled($name, true);
-    }
-    private function verifyInsertedThemeContentData($s) {
-        [$name, $data] = $s->testSiteContentTypesData[0];
-        $rows = self::$db->fetchAll('SELECT `name` FROM ${p}' . $name);
-        $this->assertEquals(count($data), count($rows));
-        $this->assertEquals($data[0]->name, $rows[0]['name']);
-    }
-    private function makeExpectedPackage($s) {
-        return new PlainTextPackageStream([
-            Packager::DB_CONFIG_VIRTUAL_FILE_NAME =>
-                PackagerControllersTest::makeExpectedPackageFile(Packager::DB_CONFIG_VIRTUAL_FILE_NAME,
-                                                                 $s->input),
-            Packager::WEBSITE_STATE_VIRTUAL_FILE_NAME =>
-                PackagerControllersTest::makeExpectedPackageFile(Packager::WEBSITE_STATE_VIRTUAL_FILE_NAME,
-                                                                 $s->input),
-            Packager::THEME_CONTENT_TYPES_VIRTUAL_FILE_NAME =>
-                PackagerControllersTest::makeExpectedPackageFile(Packager::THEME_CONTENT_TYPES_VIRTUAL_FILE_NAME),
-            Packager::THEME_CONTENT_DATA_VIRTUAL_FILE_NAME =>
-                json_encode($s->testSiteContentTypesData, JSON_UNESCAPED_UNICODE),
-        ]);
-    }
-    public function createInstallerApp($config, $ctx, $makeInjector) {
-        return App::create([Module::class], $config, $ctx, $makeInjector);
     }
 }

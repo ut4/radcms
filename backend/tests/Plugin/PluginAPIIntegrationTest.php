@@ -51,7 +51,7 @@ final class PluginAPIIntegrationTest extends DbTestCase {
     }
     public static function tearDownAfterClass() {
         parent::tearDownAfterClass();
-        self::clearInstalledContentTypesFromDb();
+        self::clearInstalledContentTypesFromDb(false);
     }
     public function testPluginCanInstallContentType() {
         $initialMovies = [['Movies', [(object)['title' => 'Initial movie',

@@ -27,8 +27,6 @@ final class MagicTemplateDAOTest extends DbTestCase {
         // @allow \Pike\PikeException
         self::$migrator->uninstallMany(self::$testContentTypes);
         self::clearInstalledContentTypesFromDb();
-        self::$db->exec('DELETE FROM ${p}contentRevisions');
-        self::$db->commit();
     }
     private static function makeDao($fetchRevisions) {
         return new MagicTemplateDAO(self::$db, self::$testContentTypes, $fetchRevisions);

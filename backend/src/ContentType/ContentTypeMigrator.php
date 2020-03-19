@@ -327,6 +327,8 @@ class ContentTypeMigrator {
         $values = [];
         foreach ($contentTypes as $t) {
             $values[] = '$."' . $t->name . '"';
+            $values[] = '$."' . $t->name . ':internal"';
+            $placeholders[] = '?';
             $placeholders[] = '?';
         }
         try {

@@ -290,11 +290,6 @@ section.quick-links .icon-button .feather {
 
 
 /* -- Components: Selectable item grid ---- */
-.item-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 5px;
-}
 .item-grid .full-width {
     grid-column: 1 / -1;
 }

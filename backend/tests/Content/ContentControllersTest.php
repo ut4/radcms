@@ -29,7 +29,6 @@ final class ContentControllersTest extends DbTestCase {
         // @allow \Pike\PikeException
         self::$migrator->uninstallMany(self::$testContentTypes);
         self::clearInstalledContentTypesFromDb();
-        self::$db->exec('DELETE FROM ${p}contentRevisions');
     }
     protected function setUp() {
         parent::setUp();
@@ -84,11 +83,17 @@ final class ContentControllersTest extends DbTestCase {
         $this->verifyRevisionWasInsertedToDb($s);
     }
     private function verifyRevisionWasInsertedToDb($s) {
-        $this->assertEquals(json_encode(['title' => $s->newProduct->title]), self::$db->fetchOne(
-            'SELECT `revisionSnapshot` FROM ${p}contentRevisions WHERE `contentId` = ?' .
-            ' AND `contentType` = ?',
-            [$s->actualResponseParsed->lastInsertId, 'Products']
+        $this->verifyRevisionSnapshotEquals($s->newProduct,
+                                            $s->actualResponseParsed->lastInsertId,
+                                            'Products');
+    }
+    private function verifyRevisionSnapshotEquals($expected, $cNodeId, $cTypeName) {
+        $actual = json_decode(self::$db->fetchOne(
+            'SELECT `revisionSnapshot` FROM ${p}contentRevisions' .
+            ' WHERE `contentId` = ? AND `contentType` = ?',
+            [$cNodeId, $cTypeName]
         )['revisionSnapshot']);
+        $this->assertEquals($expected->title, $actual->title);
     }
 
 
@@ -193,13 +198,7 @@ final class ContentControllersTest extends DbTestCase {
         return $s;
     }
     private function verifyRevisionWasUpdatedToDb($s) {
-        $expectedSnapshot = json_encode(['title' => $s->newData->title],
-                                        JSON_UNESCAPED_UNICODE);
-        $this->assertEquals($expectedSnapshot, self::$db->fetchOne(
-            'SELECT `revisionSnapshot` FROM ${p}contentRevisions' .
-            ' WHERE `contentId` = 1 AND `contentType` = ?',
-            ['Products']
-        )['revisionSnapshot']);
+        $this->verifyRevisionSnapshotEquals($s->newData, 1, 'Products');
     }
 
 

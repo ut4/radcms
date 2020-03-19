@@ -69,6 +69,11 @@ a.disabled {
 .grouped > * {
     flex: 1;
 }
+.grid, .item-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5px;
+}
 
 
 /* == Components ============================================================ */
@@ -222,6 +227,10 @@ a.disabled {
 .text-button.small {
     padding: 6px 12px;
     font-size: .9em;
+}
+.nice-button.huge,
+.text-button.huge {
+    padding: 32px 64px;
 }
 .nice-button:disabled {
     background-color: rgba(0,0,0,0.1);

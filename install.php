@@ -4,8 +4,8 @@ define('RAD_BACKEND_PATH', __DIR__ . '/backend/');
 
 // Do not edit below this line -------------------------------------------------
 
-if (version_compare(phpversion(), '7.1.0', '<'))
-    die('RadCMS requires PHP 7.1 or later.');
+if (version_compare(phpversion(), '7.2.0', '<'))
+    die('RadCMS requires PHP 7.2 or later.');
 if (!function_exists('random_bytes'))
     die('!function_exists(\'random_bytes\') for some reason.');
 foreach (['pdo_mysql', 'mbstring', 'fileinfo'] as $ext)

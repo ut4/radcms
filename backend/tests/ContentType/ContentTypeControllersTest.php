@@ -33,7 +33,7 @@ final class ContentTypeControllersTest extends DbTestCase {
         parent::tearDownAfterClass();
         // @allow \Pike\PikeException
         self::$migrator->uninstallMany(self::$testContentTypes);
-        self::clearInstalledContentTypesFromDb();
+        self::clearInstalledContentTypesFromDb(false);
     }
     public function testPOSTContentTypeValidatesInputData() {
         $s = $this->setupValidationTest((object)[
@@ -76,7 +76,7 @@ final class ContentTypeControllersTest extends DbTestCase {
     public function testGETContentTypeReturnsContentType() {
         $s = $this->setupGetContentTypeTest();
         $this->sendGetContentTypeRequest($s);
-        $this->verifyResponseBodyEquals(
+        $this->verifyResponseContentTypesEquals(
             ['name' => 'Events',
              'friendlyName' => 'Tapahtumat',
              'fields' => [
@@ -105,8 +105,22 @@ final class ContentTypeControllersTest extends DbTestCase {
         $this->sendResponseBodyCapturingRequest($req, $res, $app, $s);
     }
     private function verifyResponseBodyEquals($expected, $s) {
-        $this->assertEquals(json_encode($expected),
-                            $s->actualResponseBody);
+        $this->assertEquals(json_encode($expected), $s->actualResponseBody);
+    }
+    private function verifyResponseContentTypesEquals($expected, $s) {
+        $actual = json_decode($s->actualResponseBody, true);
+        $expected = json_decode(json_encode($expected), true);
+        $sortByName = function ($a, $b) { return $a['name'] <=> $b['name']; };
+        if (isset($expected[0])) {
+            for ($i = 0; $i < count($expected); ++$i)
+                usort($expected[$i]['fields'], $sortByName);
+            for ($i = 0; $i < count($actual); ++$i)
+                usort($actual[$i]['fields'], $sortByName);
+        } else {
+            usort($expected['fields'], $sortByName);
+            usort($actual['fields'], $sortByName);
+        }
+        $this->assertEquals(json_encode($expected), json_encode($actual));
     }
 
 
@@ -116,7 +130,7 @@ final class ContentTypeControllersTest extends DbTestCase {
     public function testGETContentTypesReturnsAllContentTypes() {
         $s = $this->setupGetContentTypesTest();
         $this->sendGetContentTypesRequest($s);
-        $this->verifyResponseBodyEquals(
+        $this->verifyResponseContentTypesEquals(
             [['name' => 'Events', 'friendlyName' => 'Tapahtumat', 'fields' => [
                 ['name' => 'name', 'friendlyName' => 'name', 'dataType' => 'text',
                  'widget' => new FieldSetting(self::DEFAULT_WIDGET),

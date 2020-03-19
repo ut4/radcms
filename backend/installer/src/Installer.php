@@ -3,40 +3,34 @@
 namespace RadCms\Installer;
 
 use Pike\Db;
-use Pike\FileSystem;
 use Pike\FileSystemInterface;
 use RadCms\ContentType\ContentTypeMigrator;
 use Pike\PikeException;
-use RadCms\Packager\Packager;
-use RadCms\Packager\PackageStreamInterface;
-use Pike\Auth\Crypto;
-use RadCms\Auth\ACL;
 use RadCms\ContentType\ContentTypeCollection;
 use RadCms\StockContentTypes\MultiFieldBlobs\MultiFieldBlobs;
 
+/**
+ * Asentaa sivuston asennusvelholomakkeen inputista.
+ */
 class Installer {
     private $db;
     private $fs;
-    private $crypto;
+    private $commons;
     private $backendPath;
     private $siteDirPath;
-    private $warnings;
     /**
      * @param \Pike\Db $db
      * @param \Pike\FileSystemInterface $fs
-     * @param \Pike\Auth\Crypto $crypto
-     * @param string $siteDirPath = INDEX_DIR_PATH Absoluuttinen polku kansioon, jossa sijaitsee index|install.php.
+     * @param \RadCms\Installer\InstallerCommons $commons
      */
     public function __construct(Db $db,
                                 FileSystemInterface $fs,
-                                Crypto $crypto,
-                                $siteDirPath = INDEX_DIR_PATH) {
+                                InstallerCommons $commons) {
         $this->db = $db;
         $this->fs = $fs;
-        $this->crypto = $crypto;
-        $this->backendPath = FileSystem::normalizePath(dirname(__DIR__, 2)) . '/';
-        $this->siteDirPath = FileSystem::normalizePath($siteDirPath) . '/';
-        $this->warnings = [];
+        $this->commons = $commons;
+        $this->backendPath = $commons->getBackendPath();
+        $this->siteDirPath = $commons->getSiteDirPath();
     }
     /**
      * @param \stdClass $settings Validoitu ja normalisoitu $req->body.
@@ -44,181 +38,41 @@ class Installer {
      * @throws \Pike\PikeException
      */
     public function doInstall($settings) {
-        $base = "{$this->backendPath}installer/sample-content/{$settings->sampleContent}/";
         // @allow \Pike\PikeException
-        return $this->createOrOpenDb($settings) &&
-               $this->createMainSchema($settings) &&
-               $this->insertMainSchemaData($settings) &&
-               $this->createUserZero($settings) &&
-               $this->createContentTypesAndInsertInitialData("{$base}content-types.json",
-                                                             "{$base}sample-data.json",
-                                                             $this->fs) &&
+        return $this->commons->createOrOpenDb($settings) &&
+               $this->commons->createMainSchema($settings,
+                                                $this->fs,
+                                                "{$this->backendPath}assets/schema.mariadb.sql") &&
+               $this->commons->insertMainSchemaData($settings) &&
+               $this->commons->createUserZero($settings) &&
+               $this->createContentTypesAndInsertInitialData($settings) &&
                $this->copyFiles($settings) &&
-               $this->generateConfigFile($settings) &&
-               $this->selfDestruct();
-    }
-    /**
-     * @param \RadCms\Packager\PackageStreamInterface $package
-     * @param string $packageFilePath '/path/to/tmp/uploaded-package-file.zip'
-     * @param string $unlockKey
-     * @return bool
-     * @throws \Pike\PikeException
-     */
-    public function doInstallFromPackage(PackageStreamInterface $package,
-                                         $packageFilePath,
-                                         $unlockKey) {
-        // <packagereader>
-        if (!($signed = $this->fs->read($packageFilePath)))
-            throw new PikeException('Failed to read package file contents',
-                                    PikeException::BAD_INPUT);
-        $unlocked = $this->crypto->decrypt($signed, $unlockKey);
-        // @allow \Pike\PikeException
-        $package->open($unlocked);
-        if (!($json1 = $package->read(Packager::DB_CONFIG_VIRTUAL_FILE_NAME)) ||
-            ($dbSettings = json_decode($json1, true)) === null)
-                throw new PikeException('Failed to parse data',
-                                        PikeException::BAD_INPUT);
-        if (!($json2 = $package->read(Packager::WEBSITE_STATE_VIRTUAL_FILE_NAME)) ||
-            ($siteSettings = json_decode($json2, true)) === null)
-                throw new PikeException('Failed to parse data',
-                                        PikeException::BAD_INPUT);
-        // </packagereader>
-        //
-        $settings = (object)array_merge($dbSettings, $siteSettings);
-        return $this->createOrOpenDb($settings) &&
-               $this->createMainSchema($settings) &&
-               $this->insertMainSchemaData($settings) &&
-               $this->createContentTypesAndInsertInitialData(
-                    Packager::THEME_CONTENT_TYPES_VIRTUAL_FILE_NAME,
-                    Packager::THEME_CONTENT_DATA_VIRTUAL_FILE_NAME,
-                    $package);
+               $this->commons->generateConfigFile($settings) &&
+               $this->commons->selfDestruct();
     }
     /**
      * @return array
      */
     public function getWarnings() {
-        return $this->warnings;
+        return $this->commons->getWarnings();
     }
     /**
      * @param \stdClass $s settings
      * @return bool
      * @throws \Pike\PikeException
      */
-    private function createOrOpenDb($s) {
-        try {
-            $this->db->setConfig([
-                'db.host'        => $s->dbHost,
-                'db.database'    => $s->doCreateDb ? '' : $s->dbDatabase,
-                'db.user'        => $s->dbUser,
-                'db.pass'        => $s->dbPass,
-                'db.tablePrefix' => $s->dbTablePrefix,
-                'db.charset'     => $s->dbCharset,
-            ]);
-            $this->db->open();
-        } catch (\PDOException $e) {
-            throw new PikeException($e->getMessage(), PikeException::FAILED_DB_OP);
-        }
-        if (!$s->doCreateDb)
-            return true;
-        try {
-            $this->db->attr(\PDO::ATTR_EMULATE_PREPARES, 1);
-            $this->db->exec("CREATE DATABASE {$s->dbDatabase}");
-        } catch (\PDOException $e) {
-            throw new PikeException($e->getMessage(), PikeException::FAILED_DB_OP);
-        }
-        return true;
-    }
-    /**
-     * @param \stdClass $s settings
-     * @return bool
-     * @throws \Pike\PikeException
-     */
-    private function createMainSchema($s) {
-        try {
-            $sql = $this->fs->read("{$this->backendPath}installer/schema.mariadb.sql");
-            if (!$sql)
-                throw new PikeException("Failed to read `{$this->backendPath}installer/schema.mariadb.sql`",
-                                        PikeException::FAILED_FS_OP);
-            $this->db->exec(str_replace('${database}', $s->dbDatabase, $sql));
-            $this->db->attr(\PDO::ATTR_EMULATE_PREPARES, 0);
-        } catch (\PDOException $e) {
-            throw new PikeException($e->getMessage(), PikeException::FAILED_DB_OP);
-        }
-        return true;
-    }
-    /**
-     * @param \stdClass $s settings
-     * @return bool
-     * @throws \Pike\PikeException
-     */
-    private function insertMainSchemaData($s) {
-        try {
-            if ($this->db->exec('INSERT INTO ${p}cmsState VALUES (1,?,?,?,?,?,?)',
-                                [
-                                    $s->siteName,
-                                    $s->siteLang,
-                                    $s->installedContentTypes ?? '{}',
-                                    $s->installedContentTypesLastUpdated ?? null,
-                                    $s->installedPlugins ?? '{}',
-                                    $s->aclRules ?? $this->makeDefaultAclRules(),
-                                ]) !== 1)
-                throw new PikeException('Failed to insert main schema data',
-                                        PikeException::INEFFECTUAL_DB_OP);
-        } catch (\PDOException $e) {
-            throw new PikeException($e->getMessage(), PikeException::FAILED_DB_OP);
-        }
-        return true;
-    }
-    /**
-     * @return string
-     * @throws \Pike\PikeException
-     */
-    private function makeDefaultAclRules() {
-        $fn = include "{$this->backendPath}installer/default-acl-rules.php";
-        return json_encode($fn());
-    }
-    /**
-     * @param \stdClass $s settings
-     * @return bool
-     * @throws \Pike\PikeException
-     */
-    private function createUserZero($s) {
-        try {
-            if ($this->db->exec('INSERT INTO ${p}users'.
-                                ' (`id`,`username`,`email`,`passwordHash`,`role`)' .
-                                ' VALUES (?,?,?,?,?)',
-                                [
-                                    $this->crypto->guidv4(),
-                                    $s->firstUserName,
-                                    $s->firstUserEmail ?? '',
-                                    $this->crypto->hashPass($s->firstUserPass),
-                                    ACL::ROLE_SUPER_ADMIN
-                                ]) !== 1)
-                throw new PikeException('Failed to insert user zero',
-                                        PikeException::INEFFECTUAL_DB_OP);
-        } catch (\PDOException $e) {
-            throw new PikeException($e->getMessage(), PikeException::FAILED_DB_OP);
-        }
-        return true;
-    }
-    /**
-     * @param string $contentTypesFilePath '/path/to/site/content-types.json'
-     * @param string $dataFilePath '/path/to/site/sample-content.json'
-     * @param \Pike\FileSystemInterface $fs
-     * @return bool
-     * @throws \Pike\PikeException
-     */
-    private function createContentTypesAndInsertInitialData($contentTypesFilePath,
-                                                            $dataFilePath,
-                                                            $fs) {
+    private function createContentTypesAndInsertInitialData($s) {
+        $base = "{$this->backendPath}installer/sample-content/{$s->sampleContent}/";
+        $contentTypesFilePath = "{$base}content-types.json";
+        $dataFilePath = "{$base}sample-data.json";
         $parsed = [null, null];
         foreach ([$contentTypesFilePath, $dataFilePath] as $i => $filePath) {
-            if (!($json = $fs->read($filePath)))
+            if (!($json = $this->fs->read($filePath)))
                 throw new PikeException("Failed to read `{$filePath}`",
                                         PikeException::FAILED_FS_OP);
             if (($parsed[$i] = json_decode($json)) === null)
                 throw new PikeException("Failed to parse `{$filePath}`",
-                                        PikeException::FAILED_FS_OP);
+                                        PikeException::BAD_INPUT);
         }
         // @allow \Pike\PikeException
         $collection = self::makeContentTypes($parsed[0]);
@@ -247,13 +101,8 @@ class Installer {
      * @throws \Pike\PikeException
      */
     private function copyFiles($s) {
-        //
-        foreach ([$this->siteDirPath . 'uploads',
-                  $this->siteDirPath . 'theme'] as $path) {
-            if (!$this->fs->isDir($path) && !$this->fs->mkDir($path))
-                throw new PikeException("Failed to create `{$path}`",
-                                        PikeException::FAILED_FS_OP);
-        }
+        // @allow \Pike\PikeException
+        $this->commons->createSiteDirectories();
         //
         $base = "{$this->backendPath}installer/sample-content/{$s->sampleContent}/";
         // @allow \Pike\PikeException
@@ -280,39 +129,6 @@ class Installer {
         return true;
     }
     /**
-     * @param \stdClass $s settings
-     * @return bool
-     * @throws \Pike\PikeException
-     */
-    private function generateConfigFile($s) {
-        $flags = $s->useDevMode ? 'RAD_DEVMODE' : '0';
-        if ($this->fs->write(
-            "{$this->siteDirPath}config.php",
-"<?php
-if (!defined('RAD_BASE_PATH')) {
-    define('RAD_BASE_URL',       '{$s->baseUrl}');
-    define('RAD_QUERY_VAR',      '{$s->mainQueryVar}');
-    define('RAD_BASE_PATH',      '{$this->backendPath}');
-    define('RAD_SITE_PATH',      '{$this->siteDirPath}');
-    define('RAD_DEVMODE',        1 << 1);
-    define('RAD_USE_JS_MODULES', 1 << 2);
-    define('RAD_FLAGS',          {$flags});
-}
-return [
-    'db.host'        => '{$s->dbHost}',
-    'db.database'    => '{$s->dbDatabase}',
-    'db.user'        => '{$s->dbUser}',
-    'db.pass'        => '{$s->dbPass}',
-    'db.tablePrefix' => '{$s->dbTablePrefix}',
-    'db.charset'     => '{$s->dbCharset}',
-    'mail.transport' => 'phpsMailFunction',
-];
-"
-        )) return true;
-        throw new PikeException("Failed to generate `{$this->siteDirPath}config.php`",
-                                PikeException::FAILED_FS_OP);
-    }
-    /**
      * @return string[] ['file.php', 'another.php']
      * @throws \Pike\PikeException
      */
@@ -324,41 +140,5 @@ return [
         }
         throw new PikeException("Failed to read `{$dirPath}${$globPattern}`",
                                 PikeException::FAILED_FS_OP);
-    }
-    /**
-     * @return bool
-     * @throws \Pike\PikeException
-     */
-    private function selfDestruct() {
-        foreach ([
-            'install.php',
-            'frontend/install-app.css',
-            'frontend/rad-install-app.js'
-        ] as $p) {
-            if (!$this->fs->unlink("{$this->siteDirPath}${p}"))
-                $this->warnings[] = "Failed to remove `{$this->siteDirPath}${p}`";
-        }
-        //
-        $installerDirPath = "{$this->backendPath}installer";
-        if (($failedEntry = $this->deleteFilesRecursive($installerDirPath)) ||
-            $this->fs->isDir($installerDirPath)) {
-            $this->warnings[] = 'Failed to remove installer-files `' .
-                                $installerDirPath . '/*`' . ($failedEntry
-                                ? " ({$failedEntry})" : '');
-        }
-        return true;
-    }
-    /**
-     * @return null|string null = ok, string = failedDirOrFilePath
-     */
-    private function deleteFilesRecursive($dirPath) {
-        foreach ($this->fs->readDir($dirPath) as $path) {
-            if ($this->fs->isFile($path)) {
-                if (!$this->fs->unlink($path)) return $path;
-            } elseif (($failedItem = $this->deleteFilesRecursive($path))) {
-                return $failedItem;
-            }
-        }
-        return $this->fs->rmDir($dirPath) ? null : $dirPath;
     }
 }
