@@ -186,21 +186,18 @@ final class InstallerTest extends BaseInstallerTest {
             return;
         }
         if ($expectation === 'readsSampleContentFiles') {
-            $s->mockFs->expects($this->exactly(3))
-                ->method('readDir')
+            $s->mockFs->expects($this->exactly(2))
+                ->method('readDirRecursive')
                 ->withConsecutive(
-                    ["{$s->sampleContentDirPath}theme/", '*.tmpl.php'],
-                    ["{$s->sampleContentDirPath}theme/frontend/", '*.{css,js}', $this->anything()],
-                    ["{$s->backendPath}installer"] // @selfDestruct
+                    ["{$s->sampleContentDirPath}theme/", '/^.*\.tmpl\.php$/'],
+                    ["{$s->sampleContentDirPath}theme/frontend/", '/^.*\.(css|js)$/']
                 )
                 ->willReturnOnConsecutiveCalls([
-                    "{$s->sampleContentDirPath}theme/main.tmpl.php",
+                    "{$s->sampleContentDirPath}theme/dir/main.tmpl.php",
                     "{$s->sampleContentDirPath}theme/Another.tmpl.php"
                 ], [
                     "{$s->sampleContentDirPath}theme/frontend/foo.css",
-                    "{$s->sampleContentDirPath}theme/frontend/bar.js"
-                ], [
-                    //
+                    "{$s->sampleContentDirPath}theme/frontend/dir/bar.js"
                 ]);
             return;
         }
@@ -226,10 +223,10 @@ final class InstallerTest extends BaseInstallerTest {
                 ->withConsecutive(
                     ["{$from}site.json", "{$to}site.json"],
                     ["{$from}README.md", "{$to}README.md"],
-                    ["{$from}theme/main.tmpl.php", "{$to}theme/main.tmpl.php"],
+                    ["{$from}theme/dir/main.tmpl.php", "{$to}theme/dir/main.tmpl.php"],
                     ["{$from}theme/Another.tmpl.php", "{$to}theme/Another.tmpl.php"],
                     ["{$from}theme/frontend/foo.css", "{$to}theme/foo.css"],
-                    ["{$from}theme/frontend/bar.js", "{$to}theme/bar.js"])
+                    ["{$from}theme/frontend/dir/bar.js", "{$to}theme/dir/bar.js"])
                 ->willReturn(true);
             return;
         }
@@ -262,7 +259,7 @@ return [
             return;
         }
         if ($expectation === 'deletesInstallerFiles') {
-            $s->mockFs->expects($this->atLeast(3))
+            $s->mockFs->expects($this->exactly(3))
                 ->method('unlink')
                 ->withConsecutive(
                     ["{$s->siteDirPath}install.php"],
@@ -270,7 +267,11 @@ return [
                     ["{$s->siteDirPath}frontend/rad-install-app.js"]
                 )
                 ->willReturn(true);
-            $s->mockFs->expects($this->atLeast(1))
+            $s->mockFs->expects($this->exactly(1))
+                ->method('readDir')
+                ->with("{$s->backendPath}installer")
+                ->willReturn([]);
+            $s->mockFs->expects($this->exactly(1))
                 ->method('rmDir')
                 ->with("{$s->backendPath}installer")
                 ->willReturn(true);

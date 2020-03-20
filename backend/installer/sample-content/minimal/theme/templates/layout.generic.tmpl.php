@@ -1,22 +1,18 @@
 <?php
-// Lokaalit tässä tiedostossa: {
-//     $url: string,
-//     $site: {$name: string, $lang: string},
-// }.
 // Lue lisää: https://todo/sivutemplaattien-käyttö.
-$main = $this->fetchMultiField('Etusivusisältö', 'Pääsisältö', '#main');
-$footer = $this->fetchMultiField('GlobalFooter', 'Footeri', 'footer'); ?>
+$main = $this->fetchMultiField('etusivusisältö', 'Pääsisältö', '#main');
+$footer = $this->fetchMultiField('globalFooter', 'Footeri', 'footer'); ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>Hello - <?= $site->name ?></title>
+    <title><?= $site->name ?></title>
     <meta name="generator" content="RadCMS <?= RAD_VERSION ?>">
     <?= $this->cssFiles() ?>
 </head>
 <body>
     <header>
-        <h1>Hello</h1>
+        <h1>Otsikko</h1>
     </header>
     <div id="main">
         <h2><?= $main->fields[0]->value ?></h2>

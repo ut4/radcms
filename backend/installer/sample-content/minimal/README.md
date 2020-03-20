@@ -6,13 +6,13 @@
 
 Layout-templaatit, jotka tämä paketti sisältää. Layout valitaan urlin perusteella dynaamisesti. Url-sääntöjä voi muokata `site.json` -tiedostosta.
 
-### main-layout.tmpl.php
+### layout.generic.tmpl.php
 
 Renderöi kaikki urlit.
 
 ## Php-tagit
 
-Tagit, jotka tämä paketti sisältää. Tageja voi kutsua layout-templaateista (kuten main-layout.tmpl.php).
+Tagit, jotka tämä paketti sisältää. Tageja voi kutsua layout-templaateista (kuten layout.generic.tmpl.php).
 
 ks. https://todo/stock-content-types.
 

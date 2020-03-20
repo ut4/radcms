@@ -1,8 +1,4 @@
 <?php
-// Lokaalit tässä tiedostossa: {
-//     $url: string,
-//     $site: {$name: string, $lang: string},
-// }.
 // Lue lisää: https://todo/sivutemplaattien-käyttö.
 $article = null;
 $rendered = $this->Article(['slug' => $url[1], 'bindTo' => &$article]); ?>

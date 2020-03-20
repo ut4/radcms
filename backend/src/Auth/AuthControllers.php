@@ -99,8 +99,8 @@ class AuthControllers {
                     $expirationHours = intval(Authenticator::RESET_KEY_EXPIRATION_SECS / 60 / 60);
                     $settings->body =
                         "Seuraavalle tilille on pyydetty salasanan palautus:\r\n\r\n" .
-                        "Sivusto: {$siteName} ({$siteUrl})\r\n" .
                         "Käyttäjä: {$user->username}\r\n\r\n" .
+                        "Sivusto: {$siteName} ({$siteUrl})\r\n" .
                         "Mikäli et ole pyytänyt uutta salasanaa, voit jättää tämän viestin huomiotta ja poistaa sen jos et halua tehdä mitään. Vaihtaaksesi salasanan, vieraile seuraavassa osoittessa: " .
                         $siteUrl . MagicTemplate::makeUrl("/finalize-password-reset/{$resetKey}") .
                         ". Linkki on voimassa {$expirationHours} tuntia.\r\n";

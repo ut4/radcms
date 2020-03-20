@@ -1,7 +1,7 @@
 [
     ["MultiFieldBlobs", [
-        {"name":"Etusivusisältö","fields":"[{\"id\":1,\"type\":\"textField\",\"name\":\"Otsikko\",\"value\":\"Hello World!\"},{\"id\":2,\"type\":\"textArea\",\"name\":\"Teksti\",\"value\":\"Hello from Etusivusisältö.\"}]"},
-        {"name":"GlobalFooter","fields":"[{\"id\":1,\"type\":\"textArea\",\"name\":\"Teksti\",\"value\":\"Hello from footer.\"},{\"id\":2,\"type\":\"textArea\",\"name\":\"Tagline\",\"value\":\"Tagline, here.\"}]"}
+        {"name":"etusivusisältö","fields":"[{\"id\":1,\"type\":\"textField\",\"name\":\"Otsikko\",\"value\":\"Hello World!\"},{\"id\":2,\"type\":\"textArea\",\"name\":\"Teksti\",\"value\":\"Hello from Etusivusisältö.\"}]"},
+        {"name":"globalFooter","fields":"[{\"id\":1,\"type\":\"textArea\",\"name\":\"Teksti\",\"value\":\"Hello from footer.\"},{\"id\":2,\"type\":\"textArea\",\"name\":\"Tagline\",\"value\":\"Tagline, here.\"}]"}
     ]],
     ["Articles", [
         {"slug":"art1","title":"Article 1","body":"Hello from article 1"},

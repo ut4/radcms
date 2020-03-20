@@ -3,6 +3,7 @@ out/
 internal/
 target/
 theme/
+!backend/**/theme
 translations/
 uploads/
 backend/vendor

@@ -106,20 +106,19 @@ class Installer {
         //
         $base = "{$this->backendPath}installer/sample-content/{$s->sampleContent}/";
         // @allow \Pike\PikeException
-        $tmplFileNames = $this->readDirFileNames("{$base}theme/", '*.tmpl.php');
-        $assetFileNames = $this->readDirFileNames("{$base}theme/frontend/", '*.{css,js}',
-                                                  GLOB_ERR | GLOB_BRACE);
+        $tmplFileNames = $this->readDirRelPaths("{$base}theme/", '/^.*\.tmpl\.php$/');
+        $assetFileNames = $this->readDirRelPaths("{$base}theme/frontend/", '/^.*\.(css|js)$/');
         //
         $toBeCopied = [];
         foreach (['site.json', 'README.md'] as $fileName)
             $toBeCopied[] = ["{$base}{$fileName}",
                              "{$this->siteDirPath}{$fileName}"];
-        foreach ($tmplFileNames as $fileName)
-            $toBeCopied[] = ["{$base}theme/{$fileName}",
-                             "{$this->siteDirPath}theme/{$fileName}"];
-        foreach ($assetFileNames as $fileName)
-            $toBeCopied[] = ["{$base}theme/frontend/{$fileName}",
-                             "{$this->siteDirPath}theme/{$fileName}"];
+        foreach ($tmplFileNames as $relativePath)
+            $toBeCopied[] = ["{$base}theme/{$relativePath}",
+                             "{$this->siteDirPath}theme/{$relativePath}"];
+        foreach ($assetFileNames as $relativePath)
+            $toBeCopied[] = ["{$base}theme/frontend/{$relativePath}",
+                             "{$this->siteDirPath}theme/{$relativePath}"];
         //
         foreach ($toBeCopied as [$from, $to]) {
             if (!$this->fs->copy($from, $to))
@@ -129,16 +128,16 @@ class Installer {
         return true;
     }
     /**
-     * @return string[] ['file.php', 'another.php']
+     * @return string[] ['file.php', 'dir/another.php']
      * @throws \Pike\PikeException
      */
-    private function readDirFileNames($dirPath, $globPattern, $globFlags = GLOB_ERR) {
-        if (($paths = $this->fs->readDir($dirPath, $globPattern, $globFlags))) {
+    private function readDirRelPaths($dirPath, $filterRegexp) {
+        if (($paths = $this->fs->readDirRecursive($dirPath, $filterRegexp))) {
             return array_map(function ($fullFilePath) use ($dirPath) {
                 return substr($fullFilePath, mb_strlen($dirPath));
             }, $paths);
         }
-        throw new PikeException("Failed to read `{$dirPath}${$globPattern}`",
+        throw new PikeException("Failed to read `{$dirPath} ({$filterRegexp})`",
                                 PikeException::FAILED_FS_OP);
     }
 }

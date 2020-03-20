@@ -6,11 +6,11 @@
 
 Layout-templaatit, jotka tämä paketti sisältää. Layout valitaan urlin perusteella dynaamisesti. Sääntöjä voi muokata `site.json` -tiedostosta.
 
-### main-layout.tmpl.php
+### layout.home.tmpl.php
 
 Listaa kaikki artikkelit. Renderöi kaikki, paitsi /artikkelit/-alkuiset urlit.
 
-### article-layout.tmpl.php
+### layout.article.tmpl.php
 
 Näyttää yhden artikkelin. Renderöi kaikki /artikkelit/-alkuiset urlit.
 

@@ -40,6 +40,14 @@ final class PackageInstallerTest extends BaseInstallerTest {
         parent::tearDownAfterClass();
         self::$db->exec('DROP DATABASE IF EXISTS ' . self::TEST_DB_NAME1);
         @unlink(self::$tmpTestPackageFilePath);
+        $r = str_replace('_test-site', '_unpacked-site', TEST_SITE_PATH);
+        @unlink("{$r}config.php");
+        @unlink("{$r}theme/test-layout1.tmpl.php");
+        @unlink("{$r}theme/test-layout2.tmpl.php");
+        @unlink("{$r}theme/test-styles1.css");
+        @unlink("{$r}theme/test-styles2.css");
+        @rmdir("{$r}theme");
+        @rmdir("{$r}uploads");
         // @allow \Pike\PikeException
         self::ensureMainTestDatabaseIsSelected();
         self::$migrator->uninstallMany(self::$testContentTypes);

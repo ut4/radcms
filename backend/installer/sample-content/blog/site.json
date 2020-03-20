@@ -1,7 +1,8 @@
 {
     "urlMatchers": [
-        ["/artikkeli/.+", "article-layout.tmpl.php"],
-        [".*", "main-layout.tmpl.php"]
+        ["/", "templates/layout.home.tmpl.php"],
+        ["/artikkeli/.+", "templates/layout.article.tmpl.php"],
+        [".*", "templates/layout.generic.tmpl.php"]
     ],
     "assetFiles": [
         ["main.css", "local-stylesheet"]
