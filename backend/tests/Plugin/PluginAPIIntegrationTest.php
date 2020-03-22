@@ -41,7 +41,7 @@ final class PluginAPIIntegrationTest extends DbTestCase {
         $this->app = $this->makeApp('\RadCms\App::create', $this->getAppConfig(),
             $ctx);
     }
-    public function tearDown() {
+    public function tearDown(): void {
         parent::tearDown();
         if ($this->testPlugin) {
             // Tekee suunnilleen saman kuin PUT /api/plugins/MoviesPlugin/uninstall
@@ -49,7 +49,7 @@ final class PluginAPIIntegrationTest extends DbTestCase {
             AppTest::markPluginAsUninstalled('MoviesPlugin', self::$db);
         }
     }
-    public static function tearDownAfterClass() {
+    public static function tearDownAfterClass(): void {
         parent::tearDownAfterClass();
         self::clearInstalledContentTypesFromDb(false);
     }

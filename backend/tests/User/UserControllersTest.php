@@ -11,7 +11,7 @@ use RadCms\Auth\ACL;
 
 final class UserControllersTest extends DbTestCase {
     use HttpTestUtils; // makeApp(), sendRequest()
-    public function tearDown() {
+    public function tearDown(): void {
         self::$db->exec('DELETE FROM ${p}users');
     }
     public function testHandleGetCurrentUserReturnsCurrentUserDetails() {

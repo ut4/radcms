@@ -9,7 +9,7 @@ use Pike\Request;
 final class AuthControllersInputValidationTest extends ConfigProvidingTestCase {
     use HttpTestUtils;
     private $app;
-    protected function setUp() {
+    protected function setUp(): void {
         parent::setUp();
         $this->app = $this->makeApp('\RadCms\App::create', $this->getAppConfig());
     }

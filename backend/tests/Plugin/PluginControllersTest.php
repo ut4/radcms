@@ -13,10 +13,10 @@ use RadCms\Tests\AppTest;
 final class PluginControllersTest extends DbTestCase {
     use HttpTestUtils;
     private $afterTest;
-    protected function setUp() {
+    protected function setUp(): void {
         parent::setUp();
     }
-    protected function tearDown() {
+    protected function tearDown(): void {
         parent::tearDown();
         $this->afterTest->__invoke();
     }

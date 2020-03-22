@@ -25,7 +25,7 @@ final class PackageInstallerTest extends BaseInstallerTest {
     private static $testContentTypes;
     private static $migrator;
     private static $testsiteConfig;
-    public static function setUpBeforeClass() {
+    public static function setUpBeforeClass(): void {
         self::$testsiteConfig = array_merge(include TEST_SITE_PATH . 'config.php',
                                             ['db.database' => self::TEST_DB_NAME1,
                                              'db.tablePrefix' => 'pkg_']);
@@ -36,7 +36,7 @@ final class PackageInstallerTest extends BaseInstallerTest {
         // @allow \Pike\PikeException
         self::$migrator->installMany(self::$testContentTypes);
     }
-    public static function tearDownAfterClass() {
+    public static function tearDownAfterClass(): void {
         parent::tearDownAfterClass();
         self::$db->exec('DROP DATABASE IF EXISTS ' . self::TEST_DB_NAME1);
         @unlink(self::$tmpTestPackageFilePath);
@@ -58,7 +58,7 @@ final class PackageInstallerTest extends BaseInstallerTest {
         self::setCurrentDatabase($testDbConfig['db.database'],
                                  $testDbConfig['db.tablePrefix']);
     }
-    public function setUp() {
+    public function setUp(): void {
         parent::setUp();
         if (!defined('INDEX_DIR_PATH')) {
             define('INDEX_DIR_PATH', RAD_SITE_PATH);

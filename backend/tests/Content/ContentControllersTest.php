@@ -16,7 +16,7 @@ final class ContentControllersTest extends DbTestCase {
     private static $testContentTypes;
     private static $migrator;
     private $app;
-    public static function setUpBeforeClass() {
+    public static function setUpBeforeClass(): void {
         self::$testContentTypes = new ContentTypeCollection();
         self::$testContentTypes->add('Products', 'Tuotteet', ['title' => 'text']);
         self::$testContentTypes->add('Brands', 'Tuotemerkit', ['name' => 'text']);
@@ -24,17 +24,17 @@ final class ContentControllersTest extends DbTestCase {
         // @allow \Pike\PikeException
         self::$migrator->installMany(self::$testContentTypes);
     }
-    public static function tearDownAfterClass() {
+    public static function tearDownAfterClass(): void {
         parent::tearDownAfterClass();
         // @allow \Pike\PikeException
         self::$migrator->uninstallMany(self::$testContentTypes);
         self::clearInstalledContentTypesFromDb();
     }
-    protected function setUp() {
+    protected function setUp(): void {
         parent::setUp();
         $this->app = $this->makeApp('\RadCms\App::create', $this->getAppConfig());
     }
-    public function tearDown() {
+    public function tearDown(): void {
         $this->deleteAllTestProducts();
     }
     public function testPOSTContentCreatesContentNode() {

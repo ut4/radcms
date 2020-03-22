@@ -17,7 +17,7 @@ final class PackagerControllersTest extends DbTestCase {
     use ContentTestUtils;
     private $mockPackageStream;
     private $app;
-    protected function setUp() {
+    protected function setUp(): void {
         parent::setUp();
         $this->mockPackageStream = new MockPackageStream();
         $this->app = $this->makeApp('\RadCms\App::create', $this->getAppConfig(), null,

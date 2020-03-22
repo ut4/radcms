@@ -15,13 +15,13 @@ final class InstallerTest extends BaseInstallerTest {
     const TEST_DB_NAME1 = 'radInstallerTestDb1';
     const TEST_DB_NAME2 = 'radInstallerTestDb2';
     const TEST_DB_NAME3 = 'radInstallerTestDb3';
-    public function setUp() {
+    public function setUp(): void {
         parent::setUp();
         if (!defined('INDEX_DIR_PATH')) {
             define('INDEX_DIR_PATH', RAD_SITE_PATH);
         }
     }
-    public static function tearDownAfterClass() {
+    public static function tearDownAfterClass(): void {
         parent::tearDownAfterClass();
         self::$db->exec('DROP DATABASE IF EXISTS ' . self::TEST_DB_NAME1 .
                         ';DROP DATABASE IF EXISTS ' . self::TEST_DB_NAME2 .

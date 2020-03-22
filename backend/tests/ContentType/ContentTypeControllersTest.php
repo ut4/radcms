@@ -18,7 +18,7 @@ final class ContentTypeControllersTest extends DbTestCase {
     private static $testContentTypes;
     private static $migrator;
     private const DEFAULT_WIDGET = ContentTypeValidator::FIELD_WIDGETS[0];
-    public static function setUpBeforeClass() {
+    public static function setUpBeforeClass(): void {
         self::$testContentTypes = new ContentTypeCollection();
         self::$testContentTypes->add('Events', 'Tapahtumat',
                                      ['name' => ['text'],
@@ -29,7 +29,7 @@ final class ContentTypeControllersTest extends DbTestCase {
         // @allow \Pike\PikeException
         self::$migrator->installMany(self::$testContentTypes);
     }
-    public static function tearDownAfterClass() {
+    public static function tearDownAfterClass(): void {
         parent::tearDownAfterClass();
         // @allow \Pike\PikeException
         self::$migrator->uninstallMany(self::$testContentTypes);

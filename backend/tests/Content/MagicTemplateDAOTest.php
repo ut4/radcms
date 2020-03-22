@@ -13,7 +13,7 @@ final class MagicTemplateDAOTest extends DbTestCase {
     const NOT_PUBLISHED = false;
     private static $testContentTypes;
     private static $migrator;
-    public static function setUpBeforeClass() {
+    public static function setUpBeforeClass(): void {
         self::$testContentTypes = new ContentTypeCollection();
         self::$testContentTypes->add('Products', 'Tuotteet', ['title' => 'text']);
         self::$testContentTypes->add('Reviews', 'Arvostelut', ['content' => 'text',
@@ -22,7 +22,7 @@ final class MagicTemplateDAOTest extends DbTestCase {
         // @allow \Pike\PikeException
         self::$migrator->installMany(self::$testContentTypes);
     }
-    public static function tearDownAfterClass() {
+    public static function tearDownAfterClass(): void {
         parent::tearDownAfterClass();
         // @allow \Pike\PikeException
         self::$migrator->uninstallMany(self::$testContentTypes);
