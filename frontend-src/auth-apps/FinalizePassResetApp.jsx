@@ -1,4 +1,4 @@
-import {urlUtils, InputGroup, Input, http} from '@rad-commons';
+import {urlUtils, Form, InputGroup, Input, InputErrors, http} from '@rad-commons';
 import {translateError} from './commons.js';
 
 class FinalizePassResetApp extends preact.Component {
@@ -13,7 +13,7 @@ class FinalizePassResetApp extends preact.Component {
      * @access protected
      */
     render() {
-        return <form onSubmit={ e => this.handleSubmit(e) }>
+        return <Form onSubmit={ e => this.handleSubmit(e) } omitButtons>
             <img src={ urlUtils.makeAssetUrl('frontend/assets/logo.png') }/>
             { !this.state.message
                 ? null
@@ -24,24 +24,25 @@ class FinalizePassResetApp extends preact.Component {
                        value={ this.state.newPassword }
                        type="password"
                        id="newPassword"
-                       required/>
+                       validation={ [['required']] }/>
+                <InputErrors/>
             </InputGroup>
             <InputGroup label="Email">
                 <Input onInput={ e => this.setState({email: e.target.value}) }
                        value={ this.state.email }
                        id="email"
-                       required/>
+                       validation={ [['required']] }/>
+                <InputErrors/>
             </InputGroup>
             <div class="form-buttons">
                 <button class="nice-button" type="submit">Tallenna uusi salasana</button>
             </div>
-        </form>;
+        </Form>;
     }
     /**
      * @access private
      */
-    handleSubmit(e) {
-        e.preventDefault();
+    handleSubmit() {
         http.post('/api/finalize-password-reset',
                   {newPassword: this.state.newPassword,
                    email: this.state.email,

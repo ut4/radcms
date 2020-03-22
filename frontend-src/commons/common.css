@@ -122,7 +122,7 @@ a.disabled {
 
 
 /* == Forms ================================================================= */
-.input-group, .input-group-inline {
+.input-group {
     position: relative;
     margin-bottom: 18px;
 }
@@ -156,19 +156,34 @@ a.disabled {
     border-color: #d8d8d8;
     cursor: not-allowed;
 }
-.input-group input:not(.pristine):invalid,
-.input-group textarea:not(.pristine):invalid,
-.input-group select:not(.pristine):invalid,
-.input-group input:not(.pristine):invalid:focus,
-.input-group textarea:not(.pristine):invalid:focus,
-.input-group select:not(.pristine):invalid:focus {
+input.invalid.blurred-at-least-once,
+textarea.invalid.blurred-at-least-once,
+select.invalid.blurred-at-least-once,
+input.invalid.blurred-at-least-once:focus,
+textarea.invalid.blurred-at-least-once:focus,
+select.invalid.blurred-at-least-once:focus {
     outline: none;
     border-color: #f06464;
 }
-.input-group input:not(.pristine):invalid:hover,
-.input-group textarea:not(.pristine):invalid:hover,
-.input-group select:not(.pristine):invalid:hover {
+input.invalid.blurred-at-least-once:hover,
+textarea.invalid.blurred-at-least-once:hover,
+select.invalid.blurred-at-least-once:hover {
     border-color: #fc7f7f;
+}
+
+input + .error,
+textarea + .error,
+select + .error {
+    display: none;
+    font: normal 12px/12px "Fira sans light";
+    text-align: left;
+    margin: 8px 0;
+    color: #3c1d1f;
+}
+input.blurred-at-least-once + .error,
+textarea.blurred-at-least-once + .error,
+select.blurred-at-least-once + .error {
+    display: block;
 }
 
 .input-group textarea {
@@ -185,25 +200,16 @@ a.disabled {
     top: -6px;
     background-color: #ffffff;
 }
-.input-group input:disabled + label,
-.input-group textarea:disabled + label,
-.input-group select:disabled + label {
+.input-group.disabled label {
     color: #d0d0d0;
 }
-.input-group input:enabled:focus + label,
-.input-group textarea:enabled:focus + label,
-.input-group select:enabled:focus + label {
+.input-group.focused label {
     color: #24a29c;
 }
-.input-group input:not(.pristine):invalid + label,
-.input-group textarea:not(.pristine):invalid + label,
-.input-group select:not(.pristine):invalid + label,
-.input-group input:not(.pristine):invalid:focus + label,
-.input-group textarea:not(.pristine):invalid:focus + label,
-.input-group select:not(.pristine):invalid:focus + label {
+.input-group.blurred-at-least-once.invalid label {
     color: #a22424;
 }
-.input-group-inline input {
+.input-group.inline input {
     vertical-align: middle;
 }
 

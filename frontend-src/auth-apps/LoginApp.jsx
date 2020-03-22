@@ -1,4 +1,4 @@
-import {urlUtils, InputGroup, Input, http} from '@rad-commons';
+import {urlUtils, Form, InputGroup, Input, InputErrors, http} from '@rad-commons';
 import {translateError} from './commons.js';
 
 class LoginApp extends preact.Component {
@@ -19,7 +19,7 @@ class LoginApp extends preact.Component {
      * @access protected
      */
     render() {
-        return <form onSubmit={ e => this.handleSubmit(e) }>
+        return <Form onSubmit={ e => this.handleSubmit(e) } omitButtons>
             <img src={ urlUtils.makeAssetUrl('frontend/assets/logo.png') }/>
             { !this.state.message
                 ? null
@@ -29,14 +29,16 @@ class LoginApp extends preact.Component {
                 <Input onInput={ e => this.setState({username: e.target.value}) }
                        value={ this.state.username }
                        id="username"
-                       required/>
+                       validations={ [['required']] }/>
+                <InputErrors/>
             </InputGroup>
             <InputGroup label="Salasana">
                 <Input onInput={ e => this.setState({password: e.target.value}) }
                        value={ this.state.password }
                        type="password"
                        id="password"
-                       required/>
+                       validations={ [['required']] }/>
+                <InputErrors/>
             </InputGroup>
             <div class="form-buttons">
                 <button class="nice-button" type="submit">Kirjaudu</button>
@@ -44,13 +46,12 @@ class LoginApp extends preact.Component {
             <div>
                 <a href={ urlUtils.makeUrl('/request-password-reset') }>Unohtuiko salasana?</a>
             </div>
-        </form>;
+        </Form>;
     }
     /**
      * @access private
      */
-    handleSubmit(e) {
-        e.preventDefault();
+    handleSubmit() {
         http.post('/api/login', {username: this.state.username,
                                  password: this.state.password})
             .then(info => {

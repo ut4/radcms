@@ -34,14 +34,12 @@ declare module "@rad-commons" {
         {
         }
         interface FormProps {
-            onConfirm: (e: Event) => any;
-            onCancel?: (e: Event) => any;
-            close?: Function;
-            doDisableConfirmButton?: () => boolean;
+            onSubmit: (e: Event) => any;
             confirmButtonText?: string;
             cancelButtonText?: string;
-            usePseudoFormTag?: bool;
             returnTo?: string;
+            omitButtons?: boolean;
+            formId?: string;
         }
         export class Form extends preact.Component<
             FormProps,
@@ -50,24 +48,21 @@ declare module "@rad-commons" {
             static receiveInputValue(e:Event, dhis: preact.VNode, name?: string): void;
             close(): void;
         }
-        export function InputGroup(props: {label?: string|Function; inline?: boolean; className?: string; id?: string;}): preact.VNode;
-        export class Toaster extends preact.Component<
-            {autoCloseTimeoutMillis?: number; publishFactoryTo?: Object;},
+        export class InputGroup extends preact.Component<
+            {label?: string|Function; inline?: boolean; className?: string;},
             {}>
         {
         }
         interface InputProps {
-            patternError?: string;
-            maxError?: string;
-            minError?: string;
-            stepError?: string;
-            maxLengthError?: string;
-            minLengthError?: string;
-            typeError?: string;
-            requiredError?:
-            string; [key: string]: any;
+            validations: Array<[string, ...any]>;
+            [key: string]: any;
         };
         export class Input extends preact.Component<
+            InputProps,
+            {}>
+        {
+        }
+        export class Textarea extends preact.Component<
             InputProps,
             {}>
         {
@@ -77,8 +72,8 @@ declare module "@rad-commons" {
             {}>
         {
         }
-        export class Textarea extends preact.Component<
-            InputProps,
+        export class InputErrors extends preact.Component<
+            {},
             {}>
         {
         }

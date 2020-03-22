@@ -1,4 +1,4 @@
-import {urlUtils, InputGroup, Input, http} from '@rad-commons';
+import {urlUtils, Form, InputGroup, Input, InputErrors, http} from '@rad-commons';
 import {translateError} from './commons.js';
 
 class RequestPassResetApp extends preact.Component {
@@ -13,7 +13,7 @@ class RequestPassResetApp extends preact.Component {
      * @access protected
      */
     render() {
-        return <form onSubmit={ e => this.handleSubmit(e) }>
+        return <Form onSubmit={ e => this.handleSubmit(e) } omitButtons>
             <img src={ urlUtils.makeAssetUrl('frontend/assets/logo.png') }/>
             <div class="container box info">
                 Täytä sähköpostiosoitteesi tai käyttäjätunnuksesi alle, niin lähetämme salasanan palautuslinkin sähköpostilla.
@@ -26,18 +26,18 @@ class RequestPassResetApp extends preact.Component {
                 <Input onInput={ e => this.setState({usernameOrEmail: e.target.value}) }
                        value={ this.state.usernameOrEmail }
                        id="usernameOrEmail"
-                       required/>
+                       validations={ [['required']] }/>
+                <InputErrors/>
             </InputGroup>
             <div class="form-buttons">
                 <button class="nice-button" type="submit">Lähetä palautuslinkki</button>
             </div>
-        </form>;
+        </Form>;
     }
     /**
      * @access private
      */
-    handleSubmit(e) {
-        e.preventDefault();
+    handleSubmit() {
         http.post('/api/request-password-reset', {usernameOrEmail: this.state.usernameOrEmail})
             .then(info => {
                 if (info.ok) this.setState({message: {text: 'Palautuslinkki lähetetty.',
