@@ -1,6 +1,7 @@
 import {InputGroup} from '@rad-commons';
 import popupDialog from '../Common/PopupDialog.jsx';
 import makeWidgetComponent, {widgetTypes} from '../Widgets/all.jsx';
+import ContentEditable from '../Common/ContentEditable.jsx';
 
 /**
  * Widgetti, jolla voi rakentaa yhteen sisältötyypin kenttään jsonin, jossa on
@@ -29,15 +30,15 @@ class MultiFieldBuilder extends preact.Component {
         return <div class="multi-field-builder">
             { this.state.fields.map(field => <div>
                 <InputGroup key={ field.id }>
+                    { this.props.enableFieldEditing
+                        ? <label><ContentEditable
+                                    onChange={ val => this.updateFieldName(val, field) }
+                                    value={ field.name }/></label>
+                        : <label htmlFor={ field.id }>{ field.name }</label>
+                    }
                     { preact.createElement(makeWidgetComponent(field.type), {field, onChange: val => {
                         this.emitChange(val, field);
                     }}) }
-                    { this.props.enableFieldEditing
-                        ? <label onInput={ e => { this.updateFieldName(e.target.textContent, field); } }
-                                 contentEditable={ true }
-                                 htmlFor={ field.id }>{ field.name }</label>
-                        : <label htmlFor={ field.id }>{ field.name }</label>
-                    }
                 </InputGroup>
             </div>) }
             { this.props.enableFieldEditing
@@ -45,10 +46,13 @@ class MultiFieldBuilder extends preact.Component {
                         <div class="popup-dialog"><div class="box">
                             <div class="main">
                                 <h2>Valitse tyyppi</h2>
-                                <div class="item-grid">{ widgetTypes.map(w =>
+                                <div class="item-grid container">{ widgetTypes.map(w =>
                                     <button onClick={ () => this.addField(w) }
                                             type="button">{ w.description }</button>
                                 ) }</div>
+                                <button onClick={ () => popupDialog.close() }
+                                        class="nice-button small"
+                                        type="button">Peruuta</button>
                             </div>
                         </div></div>
                     ) }

@@ -1,4 +1,4 @@
-import {http, urlUtils, View, InputGroup, Form, Input} from '@rad-commons';
+import {http, urlUtils, View, InputGroup, Form, Input, InputErrors} from '@rad-commons';
 
 /**
  * #/pack-website
@@ -29,9 +29,10 @@ class WebsitePackView extends preact.Component {
      * @access protected
      */
     render() {
-        return <View><form onSubmit={ e => this.handleSubmit(e) }
+        return <View><Form onSubmit={ e => this.handleSubmit(e) }
+                           submitButtonText="Paketoi"
                            action={ urlUtils.makeUrl('/api/packager') }
-                           method="POST">
+                           method="post">
             <h2>Paketoi sivusto</h2>
             { this.state.templates ? <div>
                 <h3>Templaatit</h3>
@@ -63,16 +64,12 @@ class WebsitePackView extends preact.Component {
                     onInput={ e => Form.receiveInputValue(e, this) }
                     value={ this.state.signingKey }
                     name="signingKey"
-                    minlength="12"
-                    required/>
+                    validations={ [['minLength', 12]] }/>
+                <InputErrors/>
             </InputGroup>
-            <div class="form-buttons">
-                <button class="nice-button primary">Paketoi</button>
-                <a href="#/">Peruuta</a>
-            </div>
             <input ref={ this.templatesInputEl } type="hidden" name="templates" value=""/>
             <input ref={ this.themeAssetsInputEl } type="hidden" name="themeAssets" value=""/>
-        </form></View>;
+        </Form></View>;
     }
     /**
      * @access private

@@ -1,4 +1,4 @@
-import {http, toasters, urlUtils, View, Form, InputGroup} from '@rad-commons';
+import {http, toasters, urlUtils, View, Form, InputGroup, Input} from '@rad-commons';
 import ContentNodeFieldList from './ContentNodeFieldList.jsx';
 
 /**
@@ -30,10 +30,10 @@ class ContentEditView extends preact.Component {
     updateState(props) {
         const newState = {contentNode: null, contentType: null, doPublish: !!props.publish};
         this.title = 'Muokkaa sisältöä';
-        this.confirmButtonText = 'Tallenna';
+        this.submitButtonText = 'Tallenna';
         if (newState.doPublish) {
             this.title = 'Julkaise sisältöä';
-            this.confirmButtonText = 'Julkaise';
+            this.submitButtonText = 'Julkaise';
         }
         http.get(`/api/content/${props.id}/${props.contentTypeName}`)
             .then(cnode => {
@@ -56,8 +56,8 @@ class ContentEditView extends preact.Component {
     render() {
         if (!this.state.contentType) return null;
         const showPublishToggle = !this.props.publish && this.state.contentNode.isRevision;
-        return <View><Form onConfirm={ () => this.handleFormSubmit() }
-                           confirmButtonText={ this.confirmButtonText }>
+        return <View><Form onSubmit={ () => this.handleFormSubmit() }
+                           submitButtonText={ this.submitButtonText }>
             <h2>{ [this.title, showPublishToggle ? <sup> (Luonnos)</sup> : null] }</h2>
             <ContentNodeFieldList contentNode={ this.state.contentNode }
                                   contentType={ this.state.contentType }
@@ -65,7 +65,7 @@ class ContentEditView extends preact.Component {
                                   key={ this.state.contentNode.id }/>
             { showPublishToggle
                 ? <InputGroup label="Julkaise" inline={ true }>
-                    <input id="i-publish" type="checkbox" defaultChecked={ true }
+                    <Input id="i-publish" type="checkbox" defaultChecked={ true }
                            onChange={ e => this.setState({doPublish: e.target.checked}) }/>
                 </InputGroup>
                 : null }

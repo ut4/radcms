@@ -1,4 +1,5 @@
 const formInstances = {};
+const inputInstances = {};
 const FormEvent = Object.freeze({INPUT: 'input', BLUR: 'blur', SUBMIT: 'submit'});
 
 class Form extends preact.Component {
@@ -30,14 +31,14 @@ class Form extends preact.Component {
     render() {
         return <form onSubmit={ e => this.handleSubmit(e) }
                      action={ this.props.action || null }
-                     method={ this.props.method || null }>
+                     method={ this.props.method || null }
+                     encType={ this.props.encType || null }>
             { this.props.children }
             { !this.props.omitButtons ? <div class="form-buttons">
                 <button class="nice-button primary" type="submit">
                     { this.props.submitButtonText || 'Ok' }
                 </button>
-                <a href={ `#${this.props.returnTo || '/'}` }
-                    onClick={ e => this.cancel(e) } >
+                <a href={ `#${this.props.returnTo || '/'}` }>
                     { this.props.cancelButtonText || 'Peruuta' }
                 </a>
             </div> : null }
@@ -66,23 +67,25 @@ Form.counter = 0;
 
 class InputGroup extends preact.Component {
     /**
-     * @param {{label?: string; inline?: boolean; className?: string;}} props
+     * @param {{label?: string; inline?: boolean; className?: string; inputId?: string;}} props
      */
     constructor(props) {
         super(props);
-        this.baseClassName = (this.props.className || '') +
-                              !this.props.inline ? '' : ' inline';
-        this.state = {cssClassString: this.baseClassName, labelProps: null};
+        this.staticCssClassString = 'input-group' +
+                              (this.props.className || '') +
+                              (!this.props.inline ? '' : ' inline');
+        this.state = {cssClassString: '', labelProps: null};
     }
     /**
      * @access protected
      */
     componentDidMount() {
-        const myInput = this.findComponentInstance([Input, Textarea, Select]);
+        const myInput = !this.props.inputId
+            ? this.findComponentInstance([Input, Textarea, Select])
+            : inputInstances[this.props.inputId];
         if (myInput) {
             myInput.onCssClassesChanged(classes => {
-                this.setState({cssClassString: this.baseClassName +
-                                               ValidatableInput.formatCssClasses(classes)});
+                this.setState({cssClassString: ValidatableInput.formatCssClasses(classes)});
             });
             const inputEl = myInput.getDomInputEl();
             if (inputEl)
@@ -98,7 +101,7 @@ class InputGroup extends preact.Component {
      * @access protected
      */
     render() {
-        const cls = 'input-group' + this.state.cssClassString;
+        const cls = this.staticCssClassString + this.state.cssClassString;
         if (!this.props.label)
             return <div class={ cls }>{ this.props.children }</div>;
         return <div class={ cls }>
@@ -120,13 +123,13 @@ function getPreactComponentInstance(el) {
 
 class ValidatableInput extends preact.Component {
     /**
-     * @param {{validations?: Array; formId?: string; [key: string]: any;}} props
+     * @param {{validations?: Array; formId?: string; validationLabel?: string; [key: string]: any;}} props
      */
     constructor(props) {
         super(props);
         this.validator = null;
         this.inputEl = null;
-        this.label = '';
+        this.label = props.validationLabel || '';
         this.errorTarget = null;
         this.hasValidations = (props.validations || []).length > 0;
         this.state = {invalid: false, blurredAtLeastOnce: false, focused: false};
@@ -207,6 +210,8 @@ class ValidatableInput extends preact.Component {
      * @access protected
      */
     componentDidMount() {
+        if (this.props.id)
+            inputInstances[this.props.id] = this;
         if (this.hasValidations && !this.validator) {
             const instance = formInstances[this.props.formId || 'main'];
             if (instance)
@@ -214,6 +219,13 @@ class ValidatableInput extends preact.Component {
             else
                 throw new Error(`<@rad-commons.Form/> "${this.props.formId || 'main'}" not found.`);
         }
+    }
+    /**
+     * @access protected
+     */
+    componentWillUnmount() {
+        if (this.props.id)
+            delete inputInstances[this.props.id];
     }
     /**
      * @access protected
@@ -352,7 +364,7 @@ class ValidatorRunner {
     formatError(errorTmpl, args) {
         let out = errorTmpl.replace('{field}', this.myInput.getLabel());
         args.forEach((arg, i) => {
-            out = out.replace(`arg${i}`, arg);
+            out = out.replace(`{arg${i}}`, arg);
         });
         return out;
     }

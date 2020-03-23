@@ -1,4 +1,4 @@
-import {http, View, FeatherSvg, InputGroup} from '@rad-commons';
+import {http, View, FeatherSvg, InputGroup, Select} from '@rad-commons';
 import {ContentNodeUtils} from '@rad-cpanel-commons';
 
 /**
@@ -44,20 +44,20 @@ class ContentManageView extends preact.Component {
         return <View><div>
             <h2>Sisältö</h2>
             <div>
-                <InputGroup inline={ true }
-                            label={ this.state.selectedContentTypeName
-                                ? () => <a href={ `#/add-content/${this.state.selectedContentTypeName}` }
-                                           title="Luo uusi"
-                                           class="icon-only">
-                                    <FeatherSvg iconId="plus-circle" className="medium"/>
-                                </a>
-                                : '' }>
-                    <select onChange={ e => this.updateContent(e) }
+                <InputGroup inline>
+                    <Select onChange={ e => this.updateContent(e) }
                             value={ this.state.selectedContentTypeName }>{
                         this.state.contentTypes.map(t =>
                             <option value={ t.name }>{ t.friendlyName }</option>
                         )
-                    }</select>
+                    }</Select>
+                    { this.state.selectedContentTypeName
+                        ? <a href={ `#/add-content/${this.state.selectedContentTypeName}` }
+                                    title="Luo uusi"
+                                    class="icon-only">
+                            <FeatherSvg iconId="plus-circle" className="medium"/>
+                        </a>
+                        : '' }
                 </InputGroup>
             </div>
             { !this.state.message ? <table class="striped">

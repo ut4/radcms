@@ -1,3 +1,4 @@
+import {Input, Textarea} from '@rad-commons';
 import ImagePicker from './ImagePicker.jsx';
 import DateTimePicker from './DateTimePicker.jsx';
 import QuillEditor from './QuillEditor.jsx';
@@ -12,12 +13,13 @@ const widgetTypes = [
     {name: 'color', description: 'Väri', defaultInitialValue: '#33393e'},
 ];
 
-const makeTextWidget = (tagName, attrs = {}) =>
-    props => preact.createElement(tagName,
+const makeTextWidget = (Component, attrs = {}) =>
+    props => preact.createElement(Component,
         Object.assign({}, {value: props.field.value,
                            onInput: e => {
                                props.onChange(e.target.value);
-                           }}, attrs)
+                           },
+                           id: props.field.id}, attrs)
     );
 
 const makeDateWidget = showTime =>
@@ -33,8 +35,8 @@ const makeDateWidget = showTime =>
         showTime={ showTime }/>;
 
 const widgetComponents = {
-    textField: makeTextWidget('input'),
-    textArea: makeTextWidget('textarea'),
+    textField: makeTextWidget(Input),
+    textArea: makeTextWidget(Textarea),
     richText: props => <QuillEditor
         name={ `field-${props.field.id}` }
         value={ props.field.value }
@@ -46,7 +48,7 @@ const widgetComponents = {
         onChange={ src => props.onChange(src) }/>,
     date: makeDateWidget(false),
     dateTime: makeDateWidget(true),
-    color: makeTextWidget('input', {type: 'color'}),
+    color: makeTextWidget(Input, {type: 'color'}),
 };
 
 /**

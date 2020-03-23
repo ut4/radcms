@@ -34,7 +34,7 @@ class ContentNodeFieldList extends preact.Component {
             )
             .map(field =>
                 field.widget.name !== 'hidden' && field.widget.name !== 'multiFieldBuilder'
-                    ? <InputGroup label={ field.friendlyName }>
+                    ? <InputGroup label={ field.friendlyName } inputId={ field.name }>
                         { this.makeInput(field) }
                     </InputGroup>
                     : this.makeInput(field)

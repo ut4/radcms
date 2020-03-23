@@ -59,8 +59,8 @@ a.disabled {
 
 
 /* == Layout ================================================================ */
-.container:not(:last-of-type) {
-    margin-bottom: 24px;
+.container:not(:last-child) {
+    margin-bottom: 20px;
 }
 .grouped {
     display: flex;

@@ -1,4 +1,4 @@
-import {http, toasters, Form, InputGroup, Input, FeatherSvg} from '@rad-commons';
+import {http, toasters, Form, InputGroup, Input, InputErrors, FeatherSvg} from '@rad-commons';
 
 class WizardInstallerView extends preact.Component {
     /**
@@ -49,12 +49,14 @@ class WizardInstallerView extends preact.Component {
                                 <FeatherSvg iconId="check"/></div>
             </nav>
             <div class={ this.state.tabs[0].isCurrent ? '' : 'hidden' }>
-            <form onSubmit={ e => this.handleSubmit(0, e) }>
-                <InputGroup label={ () => <span data-help-text="Sivustoprojektin nimi, ei pakollinen.">Sivuston nimi</span> }>
-                    <input name="siteName" id="siteName" onChange={ e => Form.receiveInputValue(e, this) }
-                            value={ this.state.siteName}/>
+            <Form onSubmit={ () => this.handleSubmit(0) } formId="a" omitButtons>
+                <InputGroup>
+                    <label htmlFor="siteName" data-help-text="Sivustoprojektin nimi, ei pakollinen.">Sivuston nimi</label>
+                    <Input name="siteName" id="siteName" onInput={ e => Form.receiveInputValue(e, this) }
+                            value={ this.state.siteName} formId="a"/>
                 </InputGroup>
-                <InputGroup label={ () => <span data-help-text="Sisältö, jolla sivusto alustetaan.">Esimerkkisisältö</span> }>
+                <InputGroup>
+                    <label htmlFor="sampleContent" data-help-text="Sisältö, jolla sivusto alustetaan.">Esimerkkisisältö</label>
                     <select name="sampleContent" id="sampleContent"
                             value={ this.state.sampleContent }
                             onChange={ e => Form.receiveInputValue(e, this) }>
@@ -66,54 +68,74 @@ class WizardInstallerView extends preact.Component {
                 </InputGroup>
                 <div class="fieldset">
                     <div class="legend">Lisäasetukset</div>
-                    <InputGroup label={ () => <span data-help-text="Url-parametri (index.php?parametrinNimi=/) mikäli url-rewrite -säännöt ei ole käytössä.">Url-parametri</span> }>
-                        <input name="mainQueryVar" id="mainQueryVar" onChange={ e => Form.receiveInputValue(e, this) }
-                                value={ this.state.mainQueryVar}/>
+                    <InputGroup>
+                        <label htmlFor="mainQueryVar" data-help-text="Url-parametri (index.php?parametrinNimi=/) mikäli url-rewrite -säännöt ei ole käytössä.">Url-parametri</label>
+                        <Input name="mainQueryVar" id="mainQueryVar" onInput={ e => Form.receiveInputValue(e, this) }
+                                value={ this.state.mainQueryVar} formId="a"/>
                     </InputGroup>
-                    <InputGroup inline="true" label={ () => <span data-help-text="Ruksaa mikäli sivusto on vielä kehitysvaiheessa.">Käytä dev-modea</span> }>
-                        <input type="checkbox" id="devMode" onChange={ e => this.setState({useDevMode: e.target.checked}) }
+                    <InputGroup inline="true">
+                        <label htmlFor="devMode" data-help-text="Ruksaa mikäli sivusto on vielä kehitysvaiheessa.">Käytä dev-modea</label>
+                        <Input type="checkbox" id="devMode" onInput={ e => this.setState({useDevMode: e.target.checked}) }
                                 value={ this.state.useDevMode}
-                                defaultChecked={ this.state.useDevMode }/>
+                                defaultChecked={ this.state.useDevMode } formId="a"/>
                     </InputGroup>
                 </div>
                 <br/>
                 <button class="text-button"
                         type="submit">Seuraava &gt;</button>
-            </form>
+            </Form>
             </div>
             <div class={ this.state.tabs[1].isCurrent ? '' : 'hidden' }>
-            <form onSubmit={ e => this.handleSubmit(1, e) }>
-                <InputGroup label={ () => <span data-help-text="Tietokantaserverin osoite (host).">Tietokannan osoite</span> }>
-                    <Input name="dbHost" id="dbHost" onChange={ e => Form.receiveInputValue(e, this) }
+            <Form onSubmit={ () => this.handleSubmit(1) } formId="b" omitButtons>
+                <InputGroup>
+                    <label htmlFor="dbHost" data-help-text="Tietokantaserverin osoite (host).">Tietokannan osoite</label>
+                    <Input name="dbHost" id="dbHost" onInput={ e => Form.receiveInputValue(e, this) }
                             value={ this.state.dbHost }
-                            required/>
+                            validations={ [['required']] }
+                            validationLabel="Tietokannan osoite"
+                            formId="b"/>
+                    <InputErrors/>
                 </InputGroup>
-                <InputGroup label={ () => <span data-help-text="Tietokantakäyttäjän nimi, jota RadCMS käyttää luodessaan tietokantayhteyden.">Tietokantakäyttäjä</span> }>
-                    <Input name="dbUser" id="dbUser" onChange={ e => Form.receiveInputValue(e, this) }
+                <InputGroup>
+                    <label htmlFor="dbUser" data-help-text="Tietokantakäyttäjän nimi, jota RadCMS käyttää luodessaan tietokantayhteyden.">Tietokantakäyttäjä</label>
+                    <Input name="dbUser" id="dbUser" onInput={ e => Form.receiveInputValue(e, this) }
                             value={ this.state.dbUser }
-                            required/>
+                            validations={ [['required']] }
+                            validationLabel="Tietokantakäyttäjä"
+                            formId="b"/>
+                    <InputErrors/>
                 </InputGroup>
-                <InputGroup label={ () => <span data-help-text="Tietokantakäyttäjän salasana, jota RadCMS käyttää luodessaan tietokantayhteyden.">Tietokantakäyttäjän salasana</span> }>
-                    <Input name="dbPass" id="dbPass" onChange={ e => Form.receiveInputValue(e, this) }
-                            value={ this.state.dbPass } type="password"/>
+                <InputGroup>
+                    <label htmlFor="dbPass" data-help-text="Tietokantakäyttäjän salasana, jota RadCMS käyttää luodessaan tietokantayhteyden.">Tietokantakäyttäjän salasana</label>
+                    <Input name="dbPass" id="dbPass" onInput={ e => Form.receiveInputValue(e, this) }
+                            value={ this.state.dbPass } type="password"
+                            formId="b"/>
                 </InputGroup>
                 <div class="grouped">
-                <InputGroup label={ () => <span data-help-text="Luotavan RadCMS-tietokannan nimi.">Tietokannan nimi</span> }>
-                    <Input name="dbDatabase" id="dbDatabase" onChange={ e => Form.receiveInputValue(e, this) }
+                <InputGroup>
+                    <label htmlFor="dbDatabase" data-help-text="Käytettävän, tai luotavan RadCMS-tietokannan nimi.">Tietokannan nimi</label>
+                    <Input name="dbDatabase" id="dbDatabase" onInput={ e => Form.receiveInputValue(e, this) }
                             value={ this.state.dbDatabase }
-                            required/>
+                            validations={ [['required']] }
+                            validationLabel="Tietokannan nimi"
+                            formId="b"/>
+                    <InputErrors/>
                 </InputGroup>
-                <InputGroup inline="true" label={ () => <span data-help-text="Luo tietokanta mikäli sitä ei ole vielä olemassa.">Luo tietokanta</span> }>
-                    <input type="checkbox" id="doCreateDb" onChange={ e => this.setState({doCreateDb: e.target.checked}) }
+                <InputGroup>
+                    <label htmlFor="doCreateDb" data-help-text="Luo tietokanta mikäli sitä ei ole vielä olemassa.">Luo tietokanta</label>
+                    <Input type="checkbox" id="doCreateDb" onInput={ e => this.setState({doCreateDb: e.target.checked}) }
                             value={ this.state.doCreateDb}
-                            defaultChecked={ this.state.doCreateDb }/>
+                            defaultChecked={ this.state.doCreateDb }
+                            formId="b"/>
                 </InputGroup>
                 </div>
                 <div class="fieldset">
                     <div class="legend">Lisäasetukset</div>
-                    <InputGroup label={ () => <span data-help-text="Prefix, jota käytetään RadCMS:n tietokantataulujen etuliitteenä.">Tietokantataulujen prefix</span> }>
-                        <input name="dbTablePrefix" id="dbTablePrefix" onChange={ e => Form.receiveInputValue(e, this) }
-                                value={ this.state.dbTablePrefix }/>
+                    <InputGroup>
+                        <label htmlFor="dbTablePrefix" data-help-text="Prefix, jota käytetään RadCMS:n tietokantataulujen etuliitteenä.">Tietokantataulujen prefix</label>
+                        <Input name="dbTablePrefix" id="dbTablePrefix" onInput={ e => Form.receiveInputValue(e, this) }
+                                value={ this.state.dbTablePrefix }
+                                formId="b"/>
                     </InputGroup>
                     <InputGroup label="Tietokannan charset">
                         <select name="dbCharset" id="dbCharset"
@@ -131,27 +153,33 @@ class WizardInstallerView extends preact.Component {
                 <span> </span>
                 <button class="text-button"
                         type="submit">Seuraava &gt;</button>
-            </form>
+            </Form>
             </div>
             <div class={ this.state.tabs[2].isCurrent ? '' : 'hidden' }>
-            <form onSubmit={ e => this.handleSubmit(2, e) }>
+            <Form onSubmit={ () => this.handleSubmit(2) } formId="c" omitButtons>
                 <InputGroup label="Käyttäjä">
                     <Input name="firstUserName" id="firstUserName"
-                            onChange={ e => Form.receiveInputValue(e, this) }
+                            onInput={ e => Form.receiveInputValue(e, this) }
                             value={ this.state.firstUserName }
-                            required/>
+                            validations={ [['required']] }
+                            formId="c"/>
+                    <InputErrors/>
                 </InputGroup>
                 <InputGroup label="E-mail">
                     <Input name="firstUserEmail" id="firstUserEmail"
-                            onChange={ e => Form.receiveInputValue(e, this) }
+                            onInput={ e => Form.receiveInputValue(e, this) }
                             value={ this.state.firstUserEmail }
-                            required/>
+                            validations={ [['required']] }
+                            formId="c"/>
+                    <InputErrors/>
                 </InputGroup>
                 <InputGroup label="Salasana">
                     <Input name="firstUserPass" id="firstUserPass" type="password"
-                            onChange={ e => Form.receiveInputValue(e, this) }
+                            onInput={ e => Form.receiveInputValue(e, this) }
                             value={ this.state.firstUserPass }
-                            required/>
+                            validations={ [['required']] }
+                            formId="c"/>
+                    <InputErrors/>
                 </InputGroup>
                 <br/>
                 <button onClick={ () => this.goBack(1) } class="text-button"
@@ -159,7 +187,7 @@ class WizardInstallerView extends preact.Component {
                 <span> </span>
                 <button class="nice-button primary"
                         type="submit">Asenna</button>
-            </form>
+            </Form>
             </div>
         </div>;
     }
@@ -175,10 +203,7 @@ class WizardInstallerView extends preact.Component {
     /**
      * @access private
      */
-    handleSubmit(tabIdx, e) {
-        e.preventDefault();
-        if (!e.target.reportValidity())
-            return;
+    handleSubmit(tabIdx) {
         if (tabIdx < 2) {
             const tabs = this.state.tabs;
             tabs[tabIdx] = {isCurrent: false, isOk: true};

@@ -1,4 +1,4 @@
-import {config, urlUtils, http, InputGroup} from '@rad-commons';
+import {config, urlUtils, http, InputGroup, Input} from '@rad-commons';
 import popupDialog from '../Common/PopupDialog.jsx';
 
 class ImagePicker extends preact.Component {
@@ -14,7 +14,7 @@ class ImagePicker extends preact.Component {
      */
     render() {
         return <div>
-            <input value={ this.state.selectedImageName }
+            <Input value={ this.state.selectedImageName }
                     onClick={ () => popupDialog.open(
                         PickImageDialog,
                         {selectedImageName: this.state.selectedImageName,
@@ -52,15 +52,15 @@ class PickImageDialog extends preact.Component {
             <h2>Valitse kuva</h2>
             <div class="main">
                 <UploadButton/>
-                <div class="item-grid image-grid">{ !this.state.message
+                <div class="item-grid image-grid container">{ !this.state.message
                     ? this.state.images.map(i => <button onClick={ () => {
                                     this.props.onSelected(i);
                                     popupDialog.close();
                                 } }
                                 className={ this.props.selectedImageName !== i.fileName ? '' : 'selected' }
-                                type="button"
-                                data-caption={ i.fileName }>
+                                type="button">
                             <img src={ `${this.props.assetBaseUrl}uploads/${i.fileName}` }/>
+                            <span class="caption">{ i.fileName }</span>
                         </button> )
                     : <div>
                         <span>{ this.state.message }</span>
@@ -69,6 +69,9 @@ class PickImageDialog extends preact.Component {
                                 type="button">Ok</button>
                     </div>
                 }</div>
+                <button onClick={ () => popupDialog.close() }
+                        class="nice-button small"
+                        type="button">Peruuta</button>
             </div>
         </div></div>;
     }
@@ -90,7 +93,7 @@ class UploadButton extends preact.Component {
     render() {
         return <div>
             <InputGroup>
-                <input onChange={ e => { this.handleFileInputChange(e); } }
+                <Input onChange={ e => { this.handleFileInputChange(e); } }
                        name="localFile"
                        type="file"
                        accept="image/*"
@@ -109,7 +112,7 @@ class UploadButton extends preact.Component {
         if (this.hiddenForm) return;
         this.hiddenForm = window.document.createElement('form');
         this.hiddenForm.action = urlUtils.makeUrl('/api/uploads');
-        this.hiddenForm.method = 'POST';
+        this.hiddenForm.method = 'post';
         this.hiddenForm.enctype = 'multipart/form-data';
         this.hiddenForm.id = this.hiddenFormId;
         window.document.body.appendChild(this.hiddenForm);

@@ -1,4 +1,4 @@
-import {http, toasters, urlUtils, View, InputGroup, Form} from '@rad-commons';
+import {http, toasters, urlUtils, View, Form, InputGroup, Input, Select} from '@rad-commons';
 import {widgetTypes} from '../Widgets/all.jsx';
 import ContentNodeFieldList from './ContentNodeFieldList.jsx';
 
@@ -33,23 +33,24 @@ class ContentAddView extends preact.Component {
      */
     render() {
         if (!this.state.contentTypes) return null;
-        return <View><Form onConfirm={ () => this.handleFormSubmit() }
-                           confirmButtonText="Lisää">
+        return <View><Form onSubmit={ () => this.handleFormSubmit() }
+                           submitButtonText="Lisää">
             <h2>Lisää sisältöä</h2>
-            <InputGroup label={ () => <span data-help-text="Dev note: Voit luoda uusia sisältötyyppejä hallintapaneelin devaaja-osiosta (ks. https://todo).">Sisältötyyppi</span> }>
-                <select onChange={ e => this.receiveContentTypeSelection(e) }
+            <InputGroup>
+                <label><span data-help-text="Dev note: Voit luoda uusia sisältötyyppejä hallintapaneelin devaaja-osiosta (ks. https://todo).">Sisältötyyppi</span></label>
+                <Select onChange={ e => this.receiveContentTypeSelection(e) }
                         value={ this.state.contentType.name }>
                     { this.state.contentTypes.map(type =>
                         <option value={ type.name }>{ type.friendlyName }</option>
                     ) }
-                </select>
+                </Select>
             </InputGroup>
             <ContentNodeFieldList contentNode={ this.state.newContentNode }
                                   contentType={ this.state.contentType }
                                   ref={ cmp => { if (cmp) this.fieldListCmp = cmp; } }
                                   key={ this.state.contentType.name }/>
-            <InputGroup label="Lisää luonnoksena" inline={ true }>
-                <input id="i-create-rev" type="checkbox"
+            <InputGroup label="Lisää luonnoksena" inline>
+                <Input id="i-create-rev" type="checkbox"
                        onChange={ e => this.setState({createRevision: e.target.checked}) }/>
             </InputGroup>
         </Form></View>;

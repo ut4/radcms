@@ -1,4 +1,4 @@
-import {http, toasters, urlUtils, Form, FeatherSvg} from '@rad-commons';
+import {http, toasters, urlUtils, Confirmation, FeatherSvg} from '@rad-commons';
 import popupDialog from '../Common/PopupDialog.jsx';
 import ContentEditable from '../Common/ContentEditable.jsx';
 
@@ -264,28 +264,26 @@ class DeleteFieldDialog extends preact.Component {
      */
     render() {
         return <div class="popup-dialog"><div class="box">
-            <Form onConfirm={ () => this.handleConfirm() }
-                usePseudoFormTag={ true }
+            <Confirmation onConfirm={ () => this.handleConfirm() }
                 confirmButtonText="Poista kenttä"
-                onCancel={ e => this.handleCancel(e) }>
+                onCancel={ () => this.handleCancel() }>
             <h2>Poista sisältötyyppi</h2>
             <div class="main">
                 <p>Poista kenttä &quot;{ this.props.field.friendlyName }&quot; ({ this.props.field.name }) sisältötyypistä &quot;{ this.props.contentTypeFriendlyName }&quot; pysyvästi?</p>
             </div>
-        </Form></div></div>;
+        </Confirmation></div></div>;
     }
     /**
      * @access private
      */
     handleConfirm() {
         this.props.onConfirm();
-        this.handleCancel(null);
+        this.handleCancel();
     }
     /**
      * @access private
      */
-    handleCancel(e) {
-        if (e) e.preventDefault();
+    handleCancel() {
         popupDialog.close();
     }
 }

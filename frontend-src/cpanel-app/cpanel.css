@@ -298,10 +298,9 @@ section.quick-links .icon-button .feather {
 }
 .item-grid > button {
     border: none;
-    padding: 5px;
+    padding: 12px 24px;
     border-radius: 2px;
     cursor: pointer;
-    margin-bottom: 21px;
     position: relative;
     background-color: rgba(0,0,0,0.05);
 }
@@ -309,14 +308,17 @@ section.quick-links .icon-button .feather {
     background-color: rgba(0,0,0,0.08);
 }
 
-.image-grid > button:after {
-    content: attr(data-caption);
-    position: absolute;
-    left: 0;
-    bottom: -24px;
+.image-grid > button {
+    padding-bottom: 24px;
 }
 .image-grid > button.selected {
     border: 2px solid #37c1ff;
+}
+.image-grid > button .caption {
+    position: absolute;
+    bottom: 8px;
+    width: 100%;
+    left: 0;
 }
 .image-grid img {
     width: 100%;

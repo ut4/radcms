@@ -35,11 +35,14 @@ declare module "@rad-commons" {
         }
         interface FormProps {
             onSubmit: (e: Event) => any;
-            confirmButtonText?: string;
+            submitButtonText?: string;
             cancelButtonText?: string;
             returnTo?: string;
             omitButtons?: boolean;
             formId?: string;
+            action?: string;
+            method?: string;
+            encType?: string;
         }
         export class Form extends preact.Component<
             FormProps,
@@ -83,6 +86,16 @@ declare module "@rad-commons" {
         {
         }
         export function View(props: any): preact.VNode;
+        export class Confirmation extends preact.Component<
+            {
+                onConfirm: () => any;
+                onCancel: () => any;
+                confirmButtonText?: string;
+                cancelButtonText?: string;
+            },
+            {}>
+        {
+        }
         export const dateUtils: {
             getLocaleDateString(date: Date, includeTime: boolean = false): string;
             getLocaleTimeString(date: Date): string;

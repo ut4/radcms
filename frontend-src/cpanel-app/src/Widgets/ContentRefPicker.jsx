@@ -1,4 +1,4 @@
-import {http} from '@rad-commons';
+import {http, Select} from '@rad-commons';
 
 class ContentRefPicker extends preact.Component {
     /**
@@ -34,13 +34,13 @@ class ContentRefPicker extends preact.Component {
      */
     render() {
         return <div>
-            <select value={ this.state.selectedVal }
+            <Select value={ this.state.selectedVal }
                     onChange={ e => this.receiveSelection(e) }>
                 <option value=""> - </option>
                 { this.state.values.map((value, i) => <option value={ value }>
                     { this.state.contentNodes[i][this.labelField] }
                 </option>) }
-            </select>
+            </Select>
         </div>;
     }
     /**
