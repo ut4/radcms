@@ -175,9 +175,10 @@ final class InstallerTest extends BaseInstallerTest {
                 ->willReturnOnConsecutiveCalls(
                     file_get_contents("{$s->backendPath}assets/schema.mariadb.sql"),
                     //
-                    '{' .
-                        '"Movies": ["Elokuvat", {"title": "text"}]' .
-                    '}',
+                    '[' .
+                        '{"name":"Movies","friendlyName":"Elokuvat","isInternal":false' .
+                        ',"fields":[{"name":"title","dataType":"text"}]}' .
+                    ']',
                     //
                     '[' .
                         '["Movies", [{"title": "Foo"}, {"title": "Bar"}]]' .

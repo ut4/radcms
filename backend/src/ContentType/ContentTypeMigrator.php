@@ -73,9 +73,7 @@ class ContentTypeMigrator {
             if ($data->name !== $contentType->name ||
                 $data->friendlyName !== $contentType->friendlyName ||
                 $data->isInternal !== $contentType->isInternal) {
-                $idx = ArrayUtils::findIndexByKey($currentContentTypes,
-                                                  $contentType->name,
-                                                  'name');
+                $idx = $contentType->index;
                 $currentContentTypes[$idx]->name = $data->name;
                 $currentContentTypes[$idx]->friendlyName = $data->friendlyName;
                 $currentContentTypes[$idx]->isInternal = $data->isInternal;
@@ -120,6 +118,8 @@ class ContentTypeMigrator {
      * @throws \Pike\PikeException
      */
     public function addField(FieldDef $field, ContentTypeDef $contentType) {
+        // @allow \Pike\PikeException
+        $this->validateContentType($contentType);
         try {
             $this->db->exec('ALTER TABLE `${p}' . $contentType->name . '`' .
                             ' ADD COLUMN ' . $field->toSqlTableField());
@@ -142,6 +142,8 @@ class ContentTypeMigrator {
     public function updateField(FieldDef $newData,
                                 FieldDef $currentField,
                                 ContentTypeDef $contentType) {
+        // @allow \Pike\PikeException
+        $this->validateContentType($contentType);
         try {
             if ($newData->name !== $currentField->name ||
                 $newData->dataType !== $currentField->dataType)
@@ -172,13 +174,13 @@ class ContentTypeMigrator {
      * @throws \Pike\PikeException
      */
     public function removeField(FieldDef $field, ContentTypeDef $contentType) {
+        // @allow \Pike\PikeException
+        $this->validateContentType($contentType);
         try {
             $this->db->exec('ALTER TABLE `${p}' . $contentType->name . '`' .
                             ' DROP COLUMN `' . $field->name . '`');
             //
-            $contentType->fields->offsetUnset(ArrayUtils::findIndexByKey($contentType->fields,
-                                                                         $field->name,
-                                                                         'name'));
+            $contentType->fields->offsetUnset($contentType->index);
             // @allow \Pike\PikeException|\PDOException
             $this->updateInstalledContenType($contentType);
             return true;
@@ -200,7 +202,19 @@ class ContentTypeMigrator {
     private function validateContentTypes($contentTypes) {
         if (!($errors = ContentTypeValidator::validateAll($contentTypes)))
             return true;
-        throw new PikeException(implode(',', $errors), PikeException::BAD_INPUT);
+        throw new PikeException('Got invalid content types: '. implode(',', $errors),
+                                PikeException::BAD_INPUT);
+    }
+    /**
+     * @param \RadCms\ContentType\ContentTypeDef $contentType
+     * @return bool
+     * @throws \Pike\PikeException
+     */
+    private function validateContentType($contentType) {
+        if (!($errors = ContentTypeValidator::validate($contentType)))
+            return true;
+        throw new PikeException('Got invalid content type: '. implode(',', $errors),
+                                PikeException::BAD_INPUT);
     }
     /**
      * @param array|null $data
@@ -269,11 +283,21 @@ class ContentTypeMigrator {
      */
     private function addToInstalledContentTypes(ContentTypeCollection $contentTypes) {
         try {
+            $row = $this->db->fetchOne('SELECT `installedContentTypes` FROM ${p}cmsState');
+            if (!$row || !strlen($row['installedContentTypes'] ?? ''))
+                throw new PikeException('Failed to fetch cmsState.`installedContentTypes`',
+                                        PikeException::FAILED_DB_OP);
+            if (($parsed = json_decode($row['installedContentTypes'])) === null)
+                throw new PikeException('Failed to parse cmsState.`installedContentTypes`',
+                                        PikeException::BAD_INPUT);
+            $newCompactFormContentTypes = array_merge(
+                $contentTypes->toCompactForm($this->origin),
+                is_array($parsed) ? $parsed : (array) $parsed
+            );
             if ($this->db->exec(
-                'UPDATE ${p}cmsState SET `installedContentTypes` =' .
-                ' JSON_MERGE_PATCH(?, `installedContentTypes`)' .
+                'UPDATE ${p}cmsState SET `installedContentTypes` = JSON_UNQUOTE(?)' .
                 ', `installedContentTypesLastUpdated` = UNIX_TIMESTAMP()',
-                [json_encode($contentTypes->toCompactForm($this->origin))]) > 0) {
+                [json_encode($newCompactFormContentTypes)]) > 0) {
                 return true;
             }
             throw new PikeException('Failed to update cmsState.`installedContentTypes`',
@@ -290,9 +314,10 @@ class ContentTypeMigrator {
         $compacted = $contentType->toCompactForm($this->origin);
         if ($this->db->exec(
             'UPDATE ${p}cmsState SET' .
-            ' `installedContentTypes` = JSON_MERGE_PATCH(`installedContentTypes`, ?)' .
+            ' `installedContentTypes` = JSON_REPLACE(`installedContentTypes`' .
+                                                    ', ?, CAST(? AS JSON))' .
             ', `installedContentTypesLastUpdated` = UNIX_TIMESTAMP()',
-            [json_encode([$compacted->key => $compacted->definition])]) !== 1)
+            ["\$[{$contentType->index}]", json_encode($compacted)]) !== 1)
             throw new PikeException('Failed to update cmsState.`installedContentTypes`',
                                     PikeException::INEFFECTUAL_DB_OP);
     }
@@ -326,15 +351,13 @@ class ContentTypeMigrator {
         $placeholders = [];
         $values = [];
         foreach ($contentTypes as $t) {
-            $values[] = '$."' . $t->name . '"';
-            $values[] = '$."' . $t->name . ':internal"';
-            $placeholders[] = '?';
+            $values[] = "\$[{$t->index}]";
             $placeholders[] = '?';
         }
         try {
             if ($this->db->exec('UPDATE ${p}cmsState SET `installedContentTypes` =' .
                                 ' JSON_REMOVE(`installedContentTypes`' .
-                                            ', ' . implode(',', $placeholders) . ')' .
+                                             ', ' . implode(',', $placeholders) . ')' .
                                 ', `installedContentTypesLastUpdated` = UNIX_TIMESTAMP()',
                                 $values) > 0) {
                 return true;

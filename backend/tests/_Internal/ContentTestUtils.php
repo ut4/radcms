@@ -2,6 +2,8 @@
 
 namespace RadCms\Tests\_Internal;
 
+use Pike\ArrayUtils;
+
 trait ContentTestUtils {
     /**
      * @param string $contentTypeName
@@ -31,11 +33,17 @@ trait ContentTestUtils {
         if ($verifyTableExists) {
             $this->verifyContentTypeTableExists($contentTypeName, true);
         }
-        $this->assertEquals(intval($isInstalled), self::$db->fetchOne(
-            'SELECT JSON_CONTAINS_PATH(`installedContentTypes`, \'one\',' .
-            ' ?) as `containsKey` FROM ${p}cmsState',
-            ['$."' . $contentTypeName . '"']
-        )['containsKey']);
+        $row = self::$db->fetchOne('SELECT `installedContentTypes` FROM ${p}cmsState');
+        if (!$row || !strlen($row['installedContentTypes'] ?? ''))
+            throw new \RuntimeException('Failed to fetch cmsState.`installedContentTypes`');
+        if (($parsed = json_decode($row['installedContentTypes'])) === null)
+            throw new \RuntimeException('Failed to parse cmsState.`installedContentTypes`');
+        if (is_object($parsed))
+            $parsed = (array) $parsed;
+        if ($isInstalled)
+            $this->assertNotNull(ArrayUtils::findByKey($parsed, $contentTypeName, 'name'));
+        else
+            $this->assertNull(ArrayUtils::findByKey($parsed, $contentTypeName, 'name'));
     }
     public function insertContent($contentTypeName, ...$data) {
         $qGroups = [];

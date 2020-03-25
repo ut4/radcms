@@ -11,8 +11,13 @@ use Pike\PikeException;
 final class DAOQueryBuildingTest extends TestCase {
     private function makeDao($useRevisions = false, $alterContentTypesFn = null) {
         $ctypes = new ContentTypeCollection();
-        $ctypes->add('Games', 'Pelit', ['title' => 'text']);
-        $ctypes->add('Platforms', 'Alustat', ['name' => 'text', 'gameTitle'=>'text']);
+        $ctypes->add('Games', 'Pelit', [
+            (object) ['name' => 'title', 'dataType' => 'text']
+        ]);
+        $ctypes->add('Platforms', 'Alustat', [
+            (object) ['name' => 'name', 'dataType' => 'text'],
+            (object) ['name' => 'gameTitle', 'dataType' => 'text'],
+        ]);
         if ($alterContentTypesFn) $alterContentTypesFn($ctypes);
         return new DAO($this->createMock(Db::class), $ctypes, $useRevisions);
     }
@@ -123,7 +128,9 @@ final class DAOQueryBuildingTest extends TestCase {
                 $A_LONG_STRING = str_repeat('-', 65);
                 //
                 return $this->makeDao(false, function ($ctypes) use ($A_LONG_STRING) {
-                    $ctypes->add($A_LONG_STRING, '', ['field' => 'text']);
+                    $ctypes->add($A_LONG_STRING, '', [
+                        (object) ['name' => 'field', 'dataType' => 'text']
+                    ]);
                 })->fetchOne($A_LONG_STRING)->where('1=1');
             }));
         $this->assertEquals('fetch alias (&&) is not valid\n' .

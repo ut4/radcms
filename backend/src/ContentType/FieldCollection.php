@@ -34,11 +34,14 @@ class FieldCollection extends \ArrayObject implements \JsonSerializable {
     public function toCompactForm(Translator $translator = null) {
         $out = [];
         foreach ($this as $f)
-            $out[$f->name] = [$f->dataType,
-                              !$translator ? $f->friendlyName : $translator->t($f->name),
-                              $f->widget->toCompactForm(),
-                              $f->defaultValue,
-                              (int) $f->visibility];
+            $out[] = (object) [
+                'name' => $f->name,
+                'dataType' => $f->dataType,
+                'friendlyName' => !$translator ? $f->friendlyName ?? $f->name : $translator->t($f->name),
+                'widget' => $f->widget ?? null,
+                'defaultValue' => $f->defaultValue ?? '',
+                'visibility' => property_exists($f, 'visibility') ? (int) $f->visibility : 0,
+            ];
         return $out;
     }
     /**
@@ -51,24 +54,24 @@ class FieldCollection extends \ArrayObject implements \JsonSerializable {
     ////////////////////////////////////////////////////////////////////////////
 
     /**
-     * @param array|\stdClass $compactFields ['name' => ['dataType'], 'another' => 'datatype', 'yetanother' => ['dataType', 'FriendlyName', 'widgetName'], 'withArgs' => ['dataType', 'FriendlyName', 'widgetName(arg1, arg2=foo)'] ...]
+     * @param array $input
      * @return \RadCms\ContentType\FieldCollection
      */
-    public static function fromCompactForm($compactFields) {
-        $out = new FieldCollection;
-        $DEFAULT_WIDGET = new FieldSetting(ContentTypeValidator::FIELD_WIDGETS[0]);
-        foreach ($compactFields as $name => $def) {
-            $remainingArgs = !is_string($def) ? $def : explode(':', $def);
-            $out[] = new FieldDef($name,
-                                  $remainingArgs[1] ?? $name, // friendlyName
-                                  $remainingArgs[0],          // dataType
-                                  !isset($remainingArgs[2])   // widget
-                                      ? $DEFAULT_WIDGET
-                                      : FieldSetting::fromCompactForm($remainingArgs[2]),
-                                  $remainingArgs[3] ?? '',    // defaultValue
-                                  intval($remainingArgs[4] ?? 0)); // visibility
-        }
-        return $out;
+    public static function fromCompactForm($input) {
+        $defaultWidget = (object) ['name' => ContentTypeValidator::FIELD_WIDGETS[0],
+                                   'args' => null];
+        return self::fromArray(array_map(function ($compact) use ($defaultWidget) {
+            return (object) [
+                'name' => $compact->name,
+                'dataType' => $compact->dataType,
+                'friendlyName' => $compact->friendlyName ?? $compact->name,
+                'widget' => property_exists($compact, 'widget')
+                    ? !is_string($compact->widget) ? $compact->widget : (object) ['name' => $compact->widget]
+                    : $defaultWidget,
+                'defaultValue' => $compact->defaultValue ?? '',
+                'visibility' => intval($compact->visibility ?? 0),
+            ];
+        }, $input));
     }
     /**
      * @param array $input array<{name: string, friendlyName: string, dataType: string, widget: {name: string, args?: object}, defaultValue: string, visibility: int}> Olettaa että on validi

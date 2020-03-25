@@ -15,9 +15,13 @@ final class MagicTemplateDAOTest extends DbTestCase {
     private static $migrator;
     public static function setUpBeforeClass(): void {
         self::$testContentTypes = new ContentTypeCollection();
-        self::$testContentTypes->add('Products', 'Tuotteet', ['title' => 'text']);
-        self::$testContentTypes->add('Reviews', 'Arvostelut', ['content' => 'text',
-                                                               'productTitle' => 'text']);
+        self::$testContentTypes->add('Products', 'Tuotteet', [
+            (object) ['name' => 'title', 'dataType' => 'text']
+        ]);
+        self::$testContentTypes->add('Reviews', 'Arvostelut', [
+            (object) ['name' => 'content', 'dataType' => 'text'],
+            (object) ['name' => 'productTitle', 'dataType' => 'text'],
+        ]);
         self::$migrator = new ContentTypeMigrator(self::getDb());
         // @allow \Pike\PikeException
         self::$migrator->installMany(self::$testContentTypes);

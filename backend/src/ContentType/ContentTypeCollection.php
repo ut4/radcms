@@ -8,7 +8,7 @@ class ContentTypeCollection extends \ArrayObject {
     /**
      * @param string $name
      * @param string $friendlyName
-     * @param array|\stdClass|\RadCms\ContentType\FieldCollection $fields ['fieldName' => 'dataType:widget', 'another' => 'dataType'...]
+     * @param array|\RadCms\ContentType\FieldCollection $fields
      * @param bool $isInternal = false
      * @param string $origin = null 'Website' | 'SomePlugin'
      */
@@ -20,39 +20,37 @@ class ContentTypeCollection extends \ArrayObject {
         $this[] = new ContentTypeDef($name,
                                      $friendlyName,
                                      $fields,
+                                     count($this),
                                      $isInternal,
                                      $origin);
     }
     /**
-     * @param string $origin
+     * @param string $origin = null
      * @param \Pike\Translator $translator = null
      * @return array see self::fromCompactForm()
      */
-    public function toCompactForm($origin, Translator $translator = null) {
+    public function toCompactForm($origin = null, Translator $translator = null) {
         $out = [];
-        foreach ($this as $t) {
-            $compacted = $t->toCompactForm($origin, $translator);
-            $out[$compacted->key] = $compacted->definition;
-        }
+        foreach ($this as $t)
+            $out[] = $t->toCompactForm($origin, $translator);
         return $out;
     }
 
     ////////////////////////////////////////////////////////////////////////////
 
     /**
-     * @param array $compactCtypes ['name' => ['friendlyName', <compactFields>, 'origin'] ...]
+     * @param array $input [{name: string, friendlyName: string, fields: array ...}]
      * @return \RadCms\ContentType\ContentTypeCollection
      */
-    public static function fromCompactForm($compactCtypes) {
+    public static function fromCompactForm($input) {
         $out = new ContentTypeCollection;
-        foreach ($compactCtypes as $ctypeName => $remainingArgs) {
-            $pcs = explode(':', $ctypeName);
-            $out[] = new ContentTypeDef($pcs[0],
-                                        $remainingArgs[0],
-                                        $remainingArgs[1],
-                                        ($pcs[1] ?? '') === 'internal',
-                                        $remainingArgs[2] ?? null);
-        }
+        foreach ($input as $i => $def)
+            $out[] = new ContentTypeDef($def->name,
+                                        $def->friendlyName,
+                                        $def->fields,
+                                        $i,
+                                        $def->isInternal ?? false,
+                                        $def->origin ?? null);
         return $out;
     }
 }

@@ -14,7 +14,7 @@ class CmsState {
     private $contentTypes;
     private $apiConfigs;
     /**
-     * @param object $dataFromDb {siteInfo: {name: string, lang: string}, contentTypesLastUpdated: int, installedPluginNames: string[], compactContentTypes: \stdClass, compactAclRules:  {resources: \stdClass, userPermissions: \stdClass}}
+     * @param object $dataFromDb {siteInfo: {name: string, lang: string}, contentTypesLastUpdated: int, installedPluginNames: string[], compactContentTypes: \stdClass[], compactAclRules: {resources: \stdClass, userPermissions: \stdClass}}
      * @param \RadCms\APIConfigsStorage $apiConfigs
      */
     public function __construct($dataFromDb, APIConfigsStorage $apiConfigs) {

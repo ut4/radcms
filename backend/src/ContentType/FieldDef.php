@@ -13,7 +13,7 @@ class FieldDef {
      * @param string $name
      * @param string $friendlyName
      * @param string $dataType
-     * @param \RadCms\ContentType\FieldSetting $widget
+     * @param \stdClass $widget
      * @param string $defaultValue
      * @param int $visibility
      */
@@ -61,10 +61,10 @@ class FieldDef {
         return new FieldDef($input->name,
                             $input->friendlyName,
                             $input->dataType,
-                            new FieldSetting(
-                                $input->widget->name,
-                                $input->widget->args ?? null
-                            ),
+                            (object) [
+                                'name' => $input->widget->name,
+                                'args' => $input->widget->args ?? null
+                            ],
                             $input->defaultValue ?? '',
                             $input->visibility ?? 0);
     }

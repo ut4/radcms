@@ -7,10 +7,33 @@ use RadCms\Templating\StockFrontendPanelImpls;
 use RadCms\Auth\ACL;
 
 class MultiFieldBlobs {
-    public const DEFINITION = ['MultiFieldBlobs', 'Monikenttäsisältö', [
-        'name' => 'text:Nimi:textField:' . /*defaultValue*/ '' . ':' . ACL::ROLE_SUPER_ADMIN,
-        'fields' => 'json:Kentät:multiFieldBuilder'
-    ]];
+    /**
+     * @return \stdClass {name: string, friendlyName: string ...}
+     */
+    public static function asCompactForm() {
+        return (object) [
+            'name' => 'MultiFieldBlobs',
+            'friendlyName' => 'Monikenttäsisältö',
+            'fields' => [
+                (object) [
+                    'name' => 'name',
+                    'dataType' => 'text',
+                    'friendlyName' => 'Nimi',
+                    'widget' => (object) ['name' => 'textField'],
+                    'defaultValue' > '',
+                    'visibility' => ACL::ROLE_SUPER_ADMIN
+                ],
+                (object) [
+                    'name' => 'fields',
+                    'dataType' => 'json',
+                    'friendlyName' => 'Kentät',
+                    'widget' => (object) ['name' => 'multiFieldBuilder'],
+                    'defaultValue' > '',
+                    'visibility' => 0
+                ]
+            ]
+        ];
+    }
     /**
      * @param \RadCms\BaseAPI $api
      */

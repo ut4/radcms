@@ -30,7 +30,9 @@ final class PackageInstallerTest extends BaseInstallerTest {
                                             ['db.database' => self::TEST_DB_NAME1,
                                              'db.tablePrefix' => 'pkg_']);
         self::$testContentTypes = new ContentTypeCollection();
-        self::$testContentTypes->add('AType', 'Friendly name', ['title' => 'text']);
+        self::$testContentTypes->add('AType', 'Friendly name', [
+            (object) ['name' => 'title', 'dataType' => 'text']
+        ]);
         self::$migrator = new ContentTypeMigrator(self::getDb());
         self::ensureMainTestDatabaseIsSelected();
         // @allow \Pike\PikeException

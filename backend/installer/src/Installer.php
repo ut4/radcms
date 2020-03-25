@@ -84,16 +84,9 @@ class Installer {
      * @return \RadCms\ContentType\ContentTypeCollection
      */
     private static function makeContentTypes($inputContentTypes) {
-        $extended = [];
-        foreach ($inputContentTypes as $name => $definition) {
-            if ($name !== 'extend:stockContentTypes') {
-                $extended[$name] = $definition;
-            } else {
-                $def = MultiFieldBlobs::DEFINITION;
-                $extended[$def[0]] = array_slice($def, 1);
-            }
-        }
-        return ContentTypeCollection::fromCompactForm($extended);
+        return ContentTypeCollection::fromCompactForm(array_map(function ($c) {
+            return $c !== 'extend:stockContentTypes' ? $c : MultiFieldBlobs::asCompactForm();
+        }, $inputContentTypes));
     }
     /**
      * @param \stdClass $s settings

@@ -18,8 +18,12 @@ final class ContentControllersTest extends DbTestCase {
     private $app;
     public static function setUpBeforeClass(): void {
         self::$testContentTypes = new ContentTypeCollection();
-        self::$testContentTypes->add('Products', 'Tuotteet', ['title' => 'text']);
-        self::$testContentTypes->add('Brands', 'Tuotemerkit', ['name' => 'text']);
+        self::$testContentTypes->add('Products', 'Tuotteet', [
+            (object) ['name' => 'title', 'dataType' => 'text']
+        ]);
+        self::$testContentTypes->add('Brands', 'Tuotemerkit', [
+            (object) ['name' => 'name', 'dataType' => 'text']
+        ]);
         self::$migrator = new ContentTypeMigrator(self::getDb());
         // @allow \Pike\PikeException
         self::$migrator->installMany(self::$testContentTypes);
