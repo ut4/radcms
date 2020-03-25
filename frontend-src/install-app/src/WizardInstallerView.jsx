@@ -9,7 +9,7 @@ class WizardInstallerView extends preact.Component {
         const l = sessionStorage.lastTyped;
         this.state = Object.assign({}, !l ? {
             siteName: 'My site',
-            siteLang: 'fi_FI',
+            siteLang: 'fi',
             sampleContent: 'minimal',
             mainQueryVar: '',
             useDevMode: false,

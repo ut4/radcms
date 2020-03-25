@@ -1,9 +1,9 @@
 <?php
 // Lue lisää: https://todo/sivutemplaattien-käyttö.
-$main = $this->fetchMultiField('etusivusisältö', 'Pääsisältö', '#main');
-$footer = $this->fetchMultiField('globalFooter', 'Footeri', 'footer'); ?>
+$mainContent = $this->fetchMultiField('etusivusisältö', 'Pääsisältö', '#main');
+$footerContent = $this->fetchMultiField('globalFooter', 'Footeri', 'footer'); ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<?= $site->lang ?>">
 <head>
     <meta charset="utf-8">
     <title><?= $site->name ?></title>
@@ -15,12 +15,12 @@ $footer = $this->fetchMultiField('globalFooter', 'Footeri', 'footer'); ?>
         <h1>Otsikko</h1>
     </header>
     <div id="main">
-        <h2><?= $main->fields[0]->value ?></h2>
-        <div><?= $main->fields[1]->value ?></div>
+        <h2><?= $mainContent->Otsikko ?></h2>
+        <div><?= $mainContent->Teksti ?></div>
     </div>
     <footer>
-        <div><?= $footer->fields[0]->value ?></div>
-        <pre><?= $footer->fields[1]->value ?></pre>
+        <div><?= $footerContent->Teksti ?></div>
+        <pre><?= $footerContent->Tagline ?></pre>
         &copy; <?= $site->name ?> <?= date('Y') ?>
     </footer>
 </body>

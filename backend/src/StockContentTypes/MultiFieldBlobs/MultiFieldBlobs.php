@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RadCms\StockContentTypes\MultiFieldBlobs;
 
 use RadCms\BaseAPI;
@@ -10,7 +12,7 @@ class MultiFieldBlobs {
     /**
      * @return \stdClass {name: string, friendlyName: string ...}
      */
-    public static function asCompactForm() {
+    public static function asCompactForm(): \stdClass {
         return (object) [
             'name' => 'MultiFieldBlobs',
             'friendlyName' => 'Monikenttäsisältö',
@@ -37,29 +39,34 @@ class MultiFieldBlobs {
     /**
      * @param \RadCms\BaseAPI $api
      */
-    public function init(BaseAPI $api) {
+    public function init(BaseAPI $api): void {
         $api->registerDirectiveMethod('fetchMultiField', [$this, 'fetchMultiField'],
             'WebsiteLayout');
     }
     /**
      * @param string $name
-     * @param string $frontendPanelTitle = 'Sisältö'
-     * @param string $highlightSelector = null
+     * @param string? $frontendPanelTitle
+     * @param string? $highlightSelector
      * @param \RadCms\Templating\MagicTemplate $tmpl
+     * @return \stdClass|null
      */
     public function fetchMultiField($name,
-                                    $frontendPanelTitle = 'Sisältö',
-                                    $highlightSelector = null,
-                                    $tmpl = null) {
+                                    $frontendPanelTitle,
+                                    $highlightSelector,
+                                    $tmpl = null): ?\stdClass {
         $node = $tmpl
             ->fetchOne('MultiFieldBlobs')
             ->createFrontendPanel(StockFrontendPanelImpls::Generic,
-                                  $frontendPanelTitle,
-                                  $highlightSelector)
+                                  $frontendPanelTitle ?? 'Sisältö',
+                                  $highlightSelector,
+                                  $name)
             ->where('name = ?', $name)
             ->exec();
         if ($node) {
-            $out = (object)['fields' => json_decode($node->fields)];
+            $out = (object) ['fields' => json_decode($node->fields),
+                             'defaults' => null];
+            foreach ($out->fields as $field)
+                $out->{$field->name} = $field->value;
             $out->defaults = $node;
             return $out;
         }

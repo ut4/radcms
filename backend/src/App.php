@@ -52,7 +52,7 @@ class App {
         $ctx->cmsState = CmsStateLoader::getAndInitStateFromDb($ctx->db,
                                                                self::$fs,
                                                                $ctx->router);
-        $ctx->acl = new ACL;
+        $ctx->acl = new ACL((bool)(RAD_FLAGS & RAD_DEVMODE));
         $ctx->acl->setRules($ctx->cmsState->getAclRules());
         if (!isset($ctx->translator))
             $ctx->translator = new Translator(function () use ($ctx) {

@@ -60,7 +60,7 @@ class InstallerControllers {
     private function validateInstallInput($input) {
         $errors = (Validation::makeObjectValidator())
             ->rule('siteName', 'type', 'string')
-            ->rule('siteLang', 'in', ['en_US', 'fi_FI'])
+            ->rule('siteLang', 'in', ['en', 'fi'])
             ->rule('sampleContent', 'in', ['minimal', 'blog', 'test-content'])
             ->rule('mainQueryVar?', 'identifier')
             ->rule('useDevMode', 'type', 'bool')

@@ -28,9 +28,16 @@ class GenericUIPanelImpl extends preact.Component {
               '?returnTo=' + encodeURIComponent(this.currentPagePath);
     }
     getTitle() {
-        return <span>{ [
-            this.props.dataFromBackend.title,
-            !this.node || !this.node.isRevision ? null : <sup> (Luonnos)</sup>
+        const {title, subTitle} = this.props.dataFromBackend;
+        const isDraft = !this.node || !this.node.isRevision;
+        return <span title={
+            title +
+            (subTitle ? ` (${subTitle})` : '') +
+            (isDraft ? ` (Luonnos)` : '')
+        }>{ [
+            title,
+            isDraft ? <i class="draft"> (Luonnos)</i> : null,
+            subTitle ? <i class="subtitle">{ subTitle }</i> : null,
         ] }</span>;
     }
     getIcon() {

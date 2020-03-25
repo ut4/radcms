@@ -116,7 +116,7 @@ final class PackageInstallerTest extends BaseInstallerTest {
     private function createTestPackage($s) {
         $fs = new FileSystem;
         $cmsState = new CmsState((object) [
-            'siteInfo' => (object) ['name' => 'name', 'lang' => 'fi_FI'],
+            'siteInfo' => (object) ['name' => 'name', 'lang' => 'fi'],
             'compactContentTypes' => self::$testContentTypes->toCompactForm('Website'),
         ], new APIConfigsStorage($fs));
         $packager = new Packager(self::$db, $fs, new MockCrypto,

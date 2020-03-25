@@ -7,20 +7,22 @@ namespace RadCms\Content;
  * palauttaa. Ei tarkoitettu käytettäväksi manuaalisesti.
  */
 class MagicTemplateQuery extends Query {
-    /** @var FrontendPanelInfo */
     private $frontendPanelInfo;
     /**
      * @param string $panelType
      * @param string $title = ''
      * @param string $highlightSelector = ''
+     * @param string $subTitle = ''
      * @return $this
      */
     public function createFrontendPanel($panelType,
                                         $title = '',
-                                        $highlightSelector = '') {
-        $this->frontendPanelInfo = (object)[
+                                        $highlightSelector = '',
+                                        $subTitle = '') {
+        $this->frontendPanelInfo = (object) [
             'impl' => $panelType,
             'title' => $title ? $title : $this->contentType->name,
+            'subTitle' => $subTitle ?? null,
             'contentTypeName' => $this->contentType->name,
             'contentNodes' => null,
             'queryInfo' => (object)['where' => null],
@@ -29,7 +31,7 @@ class MagicTemplateQuery extends Query {
         return $this;
     }
     /**
-     * @return \FrontendPanelInfo
+     * @return \stdClass
      */
     public function getFrontendPanelInfo() {
         if ($this->frontendPanelInfo && $this->whereDef)

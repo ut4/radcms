@@ -3,7 +3,7 @@
 $article = null;
 $rendered = $this->Article(['slug' => $url[1], 'bindTo' => &$article]); ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<?= $site->lang ?>">
 <head>
     <meta charset="utf-8">
     <title><?= "{$article->title} - {$site->name}" ?></title>

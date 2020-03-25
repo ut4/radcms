@@ -1,6 +1,6 @@
 <?php // Lue lisää: https://todo/sivutemplaattien-käyttö. ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<?= $site->lang ?>">
 <head>
     <meta charset="utf-8">
     <title>Etusivu - <?= $site->name ?></title>

@@ -45,7 +45,7 @@ class AuthControllers {
                                $req->body->password,
                                function ($user) {
                                    return (object)['id' => $user->id,
-                                                   'role' => $user->role];
+                                                   'role' => (int) $user->role];
                                });
             $res->json(['ok' => 'ok']);
         } catch (PikeException $e) {

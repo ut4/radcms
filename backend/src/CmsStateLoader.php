@@ -45,9 +45,9 @@ class CmsStateLoader {
     private static function getStateFromDb($db) {
         try {
             if (!($row = $db->fetchOne(
-                'select `name`, `installedContentTypes`' .
+                'SELECT `name`, `lang`, `installedContentTypes`' .
                 ', `installedContentTypesLastUpdated`' .
-                ', `installedPlugins`, `aclRules`, `lang` from ${p}cmsState'
+                ', `installedPlugins`, `aclRules` FROM ${p}cmsState'
             ))) throw new PikeException('Failed to fetch cmsState',
                                         PikeException::INEFFECTUAL_DB_OP);
         } catch (\PDOException $e) {
@@ -57,7 +57,7 @@ class CmsStateLoader {
         return (object) [
             'siteInfo' => (object) [
                 'name' => $row['name'],
-                'lang' => $row['lang'] ?? 'fi_FI'
+                'lang' => $row['lang']
             ],
             'contentTypesLastUpdated' => intval($row['installedContentTypesLastUpdated'] ?? 0),
             'installedPluginNames' => self::parseJsonOrThrow($row, 'installedPlugins'),

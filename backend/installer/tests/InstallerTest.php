@@ -91,7 +91,7 @@ final class InstallerTest extends BaseInstallerTest {
     public function testInstallerFillsDefaultValues() {
         $input = (object)[
             'siteName' => '',
-            'siteLang' => 'fi_FI',
+            'siteLang' => 'fi',
             'sampleContent' => 'test-content',
             'mainQueryVar' => '',
             'useDevMode' => false,
@@ -141,7 +141,7 @@ final class InstallerTest extends BaseInstallerTest {
         return (object) [
             'input' => (object) [
                 'siteName' => '',
-                'siteLang' => 'en_US',
+                'siteLang' => 'en',
                 'sampleContent' => 'test-content',
                 'mainQueryVar' => '',
                 'useDevMode' => true,

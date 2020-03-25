@@ -124,7 +124,7 @@ section.quick-links .icon-button .feather {
     color: rgba(255,255,255,0.8);
     margin-left: -10px;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
 }
 .section-row > div:hover {
     background-color: rgba(0,0,0,0.18);
@@ -140,7 +140,7 @@ section.quick-links .icon-button .feather {
     text-overflow: ellipsis;
     overflow: hidden;
 }
-.section-row > div .feather {
+.section-row > div a .feather {
     float: left;
     width: 17px;
     height: 17px;
@@ -148,10 +148,18 @@ section.quick-links .icon-button .feather {
     padding-right: 10px;
     stroke: rgba(255,255,255,0.5);
 }
-.section-row > div i {
+.section-row > div a .draft {
+    font-size: 10px;
+    text-indent: 2px;
+    vertical-align: middle;
+}
+.section-row > div a .subtitle {
     font-size: 11px;
-    display: block;
     color: rgba(255,255,255,0.4);
+}
+.section-row > div a .subtitle:before {
+    content: ' ';
+    display: block;
 }
 .section-row > div button {
     width: 28px;
@@ -160,6 +168,7 @@ section.quick-links .icon-button .feather {
     border: none;
     padding: 2px 12px 2px 2px;
     flex: initial;
+    margin-top: 5px;
 }
 .section-row > div button .feather {
     stroke: rgba(255,255,255,0.2);
