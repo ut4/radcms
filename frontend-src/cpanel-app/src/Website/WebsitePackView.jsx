@@ -8,7 +8,7 @@ class WebsitePackView extends preact.Component {
         super(props);
         this.state = {templates: [],
                       themeAssets: [],
-                      signingKey: randomString(32),
+                      signingKey: genRandomString(32),
                       message: ''};
         this.templatesInputEl = preact.createRef();
         this.themeAssetsInputEl = preact.createRef();
@@ -96,9 +96,10 @@ class WebsitePackView extends preact.Component {
 }
 
 // https://stackoverflow.com/a/44678459
-function randomString(len) {
+function genRandomString(len) {
     const p = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
     return [...Array(len)].reduce(a=>a+p[~~(Math.random()*p.length)],'');
 }
 
 export default WebsitePackView;
+export {genRandomString};

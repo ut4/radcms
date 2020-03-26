@@ -138,6 +138,7 @@ class WebsiteControllers {
             'user' => ['role' => $role],
             'userPermissions' => [
                 'canCreateContent' => $acl->can($role, 'create', 'content'),
+                'canConfigureContent' => $acl->can($role, 'configure', 'content'),
                 'canManageFieldsOfMultiFieldContent' => $acl->can($role,
                     'manageFieldsOf', 'multiFieldContent')
             ],

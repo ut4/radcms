@@ -1,3 +1,4 @@
+import {config} from '@rad-commons';
 import ContentNodeList from './ContentNodeList.jsx';
 
 /*
@@ -29,14 +30,14 @@ class GenericUIPanelImpl extends preact.Component {
     }
     getTitle() {
         const {title, subTitle} = this.props.dataFromBackend;
-        const isDraft = !this.node || !this.node.isRevision;
+        const isDraft = this.node && this.node.isRevision;
         return <span title={
             title +
             (subTitle ? ` (${subTitle})` : '') +
             (isDraft ? ` (Luonnos)` : '')
         }>{ [
             title,
-            isDraft ? <i class="draft"> (Luonnos)</i> : null,
+            isDraft ? <i class="note">(Luonnos)</i> : null,
             subTitle ? <i class="subtitle">{ subTitle }</i> : null,
         ] }</span>;
     }
@@ -47,15 +48,16 @@ class GenericUIPanelImpl extends preact.Component {
         const url = `#${this.getMainUrl()}`;
         return this.node
             ? <div>
-                <div><a href={ url }>Muokkaa</a></div>
+                <a href={ url }>Muokkaa</a>
                 { this.node.isRevision
-                    ? <div><a href={ url }>Julkaise</a></div>
+                    ? <a href={ url }>Julkaise</a>
                     : null }
             </div>
-            : <div>
-                <div class="content">Ei sisältöä</div>
-                <a href={ url }>Luo sisältö</a>
-            </div>;
+            : <div>{ !config.userPermissions.canConfigureContent
+                ? [<div>Devaaja ei ole vielä luonut tätä sisältöä.</div>]
+                : [<div>Ei sisältöä filttereillä <pre>{ JSON.stringify(this.props.dataFromBackend.queryInfo.where, true, 2) }</pre></div>,
+                    <a href={ url }>Luo sisältö</a>]
+            }</div>;
     }
 }
 
@@ -91,7 +93,7 @@ class GenericListUIPanelImpl extends preact.Component {
             createLinkText={ `Lisää uusi ${this.label}` }
             currentPagePath={ this.currentPagePath }
             contentType={ this.contentTypeName || (this.contentNodes[0] || {}).contentType }
-            noContentNodesContent={ this.contentNodes.length ? null : <div class="content">Ei sisältöä.</div> }/>;
+            noContentNodesContent={ this.contentNodes.length ? null : <div>Ei sisältöä.</div> }/>;
     }
 }
 

@@ -1,4 +1,4 @@
-import {urlUtils, Form, InputGroup, Input, InputErrors, http} from '@rad-commons';
+import {services, urlUtils, Form, InputGroup, Input, InputErrors, http} from '@rad-commons';
 import {translateError} from './commons.js';
 
 class LoginApp extends preact.Component {
@@ -55,7 +55,12 @@ class LoginApp extends preact.Component {
         http.post('/api/login', {username: this.state.username,
                                  password: this.state.password})
             .then(info => {
-                if (info.ok) window.location.href = urlUtils.makeUrl('/edit');
+                if (info.ok) {
+                    services.sessionStorage.radMessage = JSON.stringify([
+                        'Olet nyt kirjautunut sisään.', 'success'
+                    ]);
+                    window.location.href = urlUtils.makeUrl('/edit');
+                }
                 else if (info.err) this.setState({message: {text: translateError(info.err),
                                                   level: 'error'}});
                 else throw new Error('wut?');

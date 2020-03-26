@@ -47,7 +47,9 @@ module.exports = args => {
             output: makeOutputCfg({
                 name: 'radCpanelCommons',
                 file: 'frontend/rad-cpanel-commons.js',
+                globals: {[commonsPath]: 'radCommons'},
             }),
+            external: [commonsPath],
             plugins: [makeJsxPlugin([
                 'frontend-src/cpanel-commons/src/**',
             ])],

@@ -8,6 +8,7 @@ declare module "@rad-commons" {
             assetBaseUrl: string;
             userPermissions: {
                 canCreateContent: boolean;
+                canConfigureContent: boolean;
                 canManageFieldsOfMultiFieldContent: boolean;
             };
             user: {

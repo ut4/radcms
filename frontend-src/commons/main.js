@@ -7,8 +7,9 @@ import toasters, {Toaster} from './components/Toaster.jsx';
 import View from './components/View.jsx';
 import Confirmation from './components/Confirmation.jsx';
 import {dateUtils, urlUtils} from './utils.js';
+const services = {sessionStorage: window.sessionStorage};
 
-export {config, http, myFetch, toasters,
+export {config, http, myFetch, services, toasters,
         FeatherSvg, Form, InputGroup, Input, Textarea, Select, InputErrors,
         Toaster, View, Confirmation,
         dateUtils, urlUtils};

@@ -1,5 +1,6 @@
 import {config, http, toasters, urlUtils, FeatherSvg} from '@rad-commons';
 import {uiPanelRegister} from '@rad-cpanel-commons';
+import {genRandomString} from './Website/WebsitePackView.jsx';
 
 class ControlPanel extends preact.Component {
     /**
@@ -34,8 +35,8 @@ class ControlPanel extends preact.Component {
             const makePanel = (dataFromBackend, to, isAdminPanel) => {
                 const Cls = uiPanelRegister.getUiPanelImpl(dataFromBackend.impl);
                 if (!Cls) return window.console.error(`UI panel ${dataFromBackend.impl} not implemented.`);
-                to.push({UiImplClass: Cls, dataFromBackend});
                 onEachMakePanel(Cls, dataFromBackend, isAdminPanel);
+                return {UiImplClass: Cls, dataFromBackend, id: null};
             };
             //
             if (!this.siteInfo) {
@@ -48,19 +49,21 @@ class ControlPanel extends preact.Component {
                                  currentPagePath: dataFromBackend.currentPagePath};
                 this.siteIframe = document.getElementById('rad-site-iframe');
                 newState.userDefinedRoutes = [];
-                dataFromBackend.adminPanels.forEach(c => {
-                    makePanel(c, newState.adminPanels, true);
-                });
+                newState.adminPanels = dataFromBackend.adminPanels.map(p =>
+                    makePanel(p, true)
+                );
                 newState.routesUpdated = true;
                 newState.userRole = dataFromBackend.user.role;
                 newState.userPermissions = dataFromBackend.userPermissions;
             }
             //
-            dataFromBackend.contentPanels.forEach(p => {
+            newState.contentPanels = dataFromBackend.contentPanels.map(p => {
                 if (!Array.isArray(p.contentNodes)) p.contentNodes = [p.contentNodes];
                 if (!p.contentNodes[0]) p.contentNodes = [];
-                makePanel(p, newState.contentPanels, false);
-            });
+                return makePanel(p, false);
+            }).map(contentPanel => Object.assign(contentPanel, {
+                id: genRandomString(16)
+            }));
         }
         if (newState.routesUpdated && (!this.state || !this.state.routesUpdated))
             this.props.onRoutesLoaded(newState.userDefinedRoutes);
@@ -160,7 +163,7 @@ class QuickLinksControlPanelSection extends preact.Component {
 
 class OnThisPageControlPanelSection extends preact.Component {
     /**
-     * @param {{contentPanels: Array<>; siteIframe: HTMLIFrameElement|null; siteInfo: Object;}} props
+     * @param {{contentPanels: Array<{UiImplClass: Object; dataFromBackend: Object; id: string;}>; siteIframe: HTMLIFrameElement|null; siteInfo: Object;}} props
      */
     constructor(props) {
         super(props);
@@ -179,7 +182,7 @@ class OnThisPageControlPanelSection extends preact.Component {
                         rendererProps={ {dataFromBackend: panelCfg.dataFromBackend,
                                          siteInfo: this.props.siteInfo} }
                         siteIframe={ this.props.siteIframe }
-                        key={ `${panelCfg.dataFromBackend.title}-${i}` }/>
+                        key={ panelCfg.id }/>
                 )
                 : this.props.siteIframe ? 'Ei muokattavaa sisältöä tällä sivulla' : null }
         </div></section>;
@@ -294,7 +297,7 @@ class AdminControlPanelPanel extends preact.Component {
                 <a href={ `#/${this.state.mainUrl}` }>{ [
                     this.state.icon ? <FeatherSvg iconId={ this.state.icon }/> : null,
                     this.state.title,
-                    !this.props.isPlugin !== false ? null : <i>Lisäosa</i>,
+                    !this.props.isPlugin !== false ? null : <i class="note">(Lisäosa)</i>,
                 ] }</a>
             { this.state.highlight
                 ? <button onClick={ () => this.state.highlight() } class="icon-button">
