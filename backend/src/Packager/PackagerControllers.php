@@ -53,16 +53,27 @@ class PackagerControllers {
     private function validatePackSiteInput($input) {
         $customErrors = [];
         $v = Validation::makeObjectValidator()
+            ->addRuleImpl('nonRelativePath', function ($value) {
+                return is_string($value) && strpos($value, './') === false;
+            }, '%s is not valid path')
             ->rule('signingKey', 'type', 'string')
             ->rule('signingKey', 'minLength', 12);
-        if (is_array($input->templates = json_decode($input->templates ?? null)))
-            $v->rule('templates.*', 'type', 'string');
+        if (is_array($input->templates = self::jsonDecodeSafe($input, 'templates')))
+            $v->rule('templates.*', 'nonRelativePath');
         else
             $customErrors[] = 'templates must be json';
-        if (is_array($input->themeAssets = json_decode($input->themeAssets ?? null)))
-            $v->rule('themeAssets.*', 'type', 'string');
+        if (is_array($input->assets = self::jsonDecodeSafe($input, 'assets')))
+            $v->rule('assets.*', 'nonRelativePath');
         else
-            $customErrors[] = 'themeAssets must be json';
+            $customErrors[] = 'assets must be json';
         return array_merge($customErrors, $v->validate($input));
+    }
+    /**
+     * @return array|null
+     */
+    private static function jsonDecodeSafe($input, $key) {
+        $candidate = $input->$key ?? null;
+        if (!is_string($candidate)) return null;
+        return json_decode($candidate);
     }
 }

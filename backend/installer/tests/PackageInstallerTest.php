@@ -17,6 +17,7 @@ use RadCms\ContentType\ContentTypeCollection;
 use RadCms\ContentType\ContentTypeMigrator;
 use RadCms\Installer\InstallerCommons;
 use RadCms\Packager\ZipPackageStream;
+use RadCms\Tests\_Internal\TestSite;
 use RadCms\Tests\User\UserControllersTest;
 
 final class PackageInstallerTest extends BaseInstallerTest {
@@ -30,10 +31,10 @@ final class PackageInstallerTest extends BaseInstallerTest {
     private static $testSiteConfig;
     private static $testSitePath;
     public static function setUpBeforeClass(): void {
-        self::$testSiteConfig = array_merge(include TEST_SITE_PATH . 'config.php',
+        self::$testSiteConfig = array_merge(include TestSite::PATH . 'config.php',
                                             ['db.database' => self::TEST_DB_NAME1,
                                              'db.tablePrefix' => 'pkg_']);
-        self::$testSitePath = str_replace('_test-site', '_unpacked-site', TEST_SITE_PATH);
+        self::$testSitePath = str_replace(TestSite::DIRNAME, '_unpacked-site', TestSite::PATH);
         self::$testContentTypes = new ContentTypeCollection();
         self::$testContentTypes->add('Books', 'Kirjat', [
             (object) ['name' => 'title', 'dataType' => 'text']
@@ -54,10 +55,10 @@ final class PackageInstallerTest extends BaseInstallerTest {
         @unlink(self::$tmpTestPackageFilePath);
         $r = self::$testSitePath;
         @unlink("{$r}config.php");
-        @unlink("{$r}theme/test-layout1.tmpl.php");
-        @unlink("{$r}theme/test-layout2.tmpl.php");
-        @unlink("{$r}theme/test-styles1.css");
-        @unlink("{$r}theme/test-styles2.css");
+        foreach (array_merge(TestSite::TEMPLATES, TestSite::ASSETS) as $relPath)
+            @unlink("{$r}theme/{$relPath}");
+        foreach (TestSite::DIRS as $relPath)
+            @rmdir("{$r}theme/{$relPath}");
         @rmdir("{$r}theme");
         @rmdir("{$r}uploads");
         // @allow \Pike\PikeException
@@ -67,7 +68,7 @@ final class PackageInstallerTest extends BaseInstallerTest {
         UserControllersTest::deleteTestUsers();
     }
     private static function ensureMainTestDatabaseIsSelected() {
-        $testDbConfig = include TEST_SITE_PATH . 'config.php';
+        $testDbConfig = include TestSite::PATH . 'config.php';
         self::setCurrentDatabase($testDbConfig['db.database'],
                                  $testDbConfig['db.tablePrefix']);
     }
@@ -96,10 +97,8 @@ final class PackageInstallerTest extends BaseInstallerTest {
     }
     private function setupInstallTest() {
         $state = (object) [
-            'templates' => ['test-layout1.tmpl.php',
-                            'test-layout2.tmpl.php'],
-            'themeAssets' => ['test-styles1.css',
-                              'test-styles2.css'],
+            'templates' => TestSite::TEMPLATES,
+            'assets' => TestSite::ASSETS,
             'config' => self::$testSiteConfig,
             'cmsStateData' => (object) [
                 'siteInfo' => (object) ['name' => 'name', 'lang' => 'fi'],
@@ -158,8 +157,8 @@ final class PackageInstallerTest extends BaseInstallerTest {
         $base = self::$testSitePath;
         $this->assertFileExists("{$base}theme/{$s->templates[0]}");
         $this->assertFileExists("{$base}theme/{$s->templates[1]}");
-        $this->assertFileExists("{$base}theme/{$s->themeAssets[0]}");
-        $this->assertFileExists("{$base}theme/{$s->themeAssets[1]}");
+        $this->assertFileExists("{$base}theme/{$s->assets[0]}");
+        $this->assertFileExists("{$base}theme/{$s->assets[1]}");
     }
     private function verifyCreatedConfigFile($s) {
         $expectedQueryVar = RAD_QUERY_VAR;
@@ -197,7 +196,7 @@ return [
         $config = (object) [
             'signingKey' => $s->reqBody->unlockKey,
             'templates' => $s->templates,
-            'themeAssets' => $s->themeAssets,
+            'assets' => $s->assets,
         ];
         $testPackage = new ZipPackageStream($fs);
         $contents = $packager->packSite($testPackage, $config, $s->testUser);

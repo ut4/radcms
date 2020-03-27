@@ -5,7 +5,9 @@ use Monolog\Handler\NullHandler;
 use RadCms\Common\LoggerAccess;
 
 error_reporting(E_ALL);
-define('TEST_CONFIG_DIR_PATH', str_replace('\\', '/', __DIR__) . '/_test-site/');
+define('TEST_SITE_DIRNAME', '_test-site');
+define('TEST_CONFIG_DIR_PATH', str_replace('\\', '/', __DIR__) . '/' .
+                               TEST_SITE_DIRNAME . '/');
 define('TEST_SITE_PATH', TEST_CONFIG_DIR_PATH);
 
 require TEST_CONFIG_DIR_PATH . 'config.php';

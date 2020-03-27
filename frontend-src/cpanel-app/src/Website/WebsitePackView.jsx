@@ -7,17 +7,17 @@ class WebsitePackView extends preact.Component {
     constructor(props) {
         super(props);
         this.state = {templates: [],
-                      themeAssets: [],
+                      assets: [],
                       signingKey: genRandomString(32),
                       message: ''};
         this.templatesInputEl = preact.createRef();
-        this.themeAssetsInputEl = preact.createRef();
+        this.assetsInputEl = preact.createRef();
         http.get('/api/packager/pre-run')
             .then(preview => {
                 this.setState({
                     templates: preview.templates.map(fileName =>
                         ({fileName, selected: true})),
-                    themeAssets: preview.themeAssets.map(fileName =>
+                    assets: preview.assets.map(fileName =>
                         ({fileName, selected: true})),
                 });
             })
@@ -34,27 +34,37 @@ class WebsitePackView extends preact.Component {
                            action={ urlUtils.makeUrl('/api/packager') }
                            method="post">
             <h2>Paketoi sivusto</h2>
-            { this.state.templates ? <div>
+            { this.state.templates ? <div class="container">
                 <h3>Templaatit</h3>
-                <ul>{ this.state.templates.map(t =>
-                    <li><label>
-                        <input onClick={ e => this.toggleIsSelected(t, e, 'templates') }
+                <label class="text-pale">
+                    <input onChange={ e => this.toggleAll(e, 'templates') }
+                        type="checkbox"
+                        defaultChecked/>(Kaikki)
+                </label>
+                <div>{ this.state.templates.map((t, i) =>
+                    <div key={ i }><label>
+                        <input onChange={ e => this.toggleIsSelected(t, e, 'templates') }
                                value={ t.selected }
                                type="checkbox"
-                               defaultChecked/>{ t.fileName }
-                    </label></li>
-                ) }</ul>
+                               checked={ t.selected }/>{ t.fileName }
+                    </label></div>
+                ) }</div>
             </div> : null }
-            { this.state.themeAssets ? <div>
+            { this.state.assets ? <div class="container">
                 <h3>Css/Js</h3>
-                <ul>{ this.state.themeAssets.map(a =>
-                    <li><label>
-                        <input onClick={ e => this.toggleIsSelected(a, e, 'themeAssets') }
+                <label class="text-pale">
+                    <input onChange={ e => this.toggleAll(e, 'assets') }
+                        type="checkbox"
+                        defaultChecked/>(Kaikki)
+                </label>
+                <div>{ this.state.assets.map((a, i) =>
+                    <div key={ i }><label>
+                        <input onChange={ e => this.toggleIsSelected(a, e, 'assets') }
                                value={ a.selected }
                                type="checkbox"
-                               defaultChecked/>{ a.fileName }
-                    </label></li>
-                ) }</ul>
+                               checked={ a.selected }/>{ a.fileName }
+                    </label></div>
+                ) }</div>
             </div> : null }
             { this.state.message ? <p>
                 { this.state.message }
@@ -68,15 +78,25 @@ class WebsitePackView extends preact.Component {
                 <InputErrors/>
             </InputGroup>
             <input ref={ this.templatesInputEl } type="hidden" name="templates" value=""/>
-            <input ref={ this.themeAssetsInputEl } type="hidden" name="themeAssets" value=""/>
+            <input ref={ this.assetsInputEl } type="hidden" name="assets" value=""/>
         </Form></View>;
     }
     /**
      * @access private
      */
-    toggleIsSelected(file, e, type) {
+    toggleIsSelected(file, e, collection) {
         file.selected = e.target.checked;
-        this.setState({[type]: this.state[type]});
+        this.setState({[collection]: this.state[collection]});
+    }
+    /**
+     * @access private
+     */
+    toggleAll(e, collection) {
+        const to = e.target.checked;
+        this.setState({[collection]: this.state[collection].map(file => {
+            file.selected = to;
+            return file;
+        })});
     }
     /**
      * @access private
@@ -88,8 +108,8 @@ class WebsitePackView extends preact.Component {
         this.templatesInputEl.current.value = JSON.stringify(
             this.state.templates.filter(onlySelected).map(onlyFileName)
         );
-        this.themeAssetsInputEl.current.value = JSON.stringify(
-            this.state.themeAssets.filter(onlySelected).map(onlyFileName)
+        this.assetsInputEl.current.value = JSON.stringify(
+            this.state.assets.filter(onlySelected).map(onlyFileName)
         );
         e.target.submit();
     }

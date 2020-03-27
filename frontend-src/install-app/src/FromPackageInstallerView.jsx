@@ -16,7 +16,7 @@ class FromPackageInstallerView extends preact.Component {
     render() {
         return <div>
             <h2>Asenna RadCMS</h2>
-            <Form action="?q=/from-package" method="post" encType="multipart/form-data" omitButtons>
+            <Form onSubmit={ e => this.handleSubmit(e) } action="?q=/from-package" method="post" encType="multipart/form-data" omitButtons>
                 <InputGroup label="Pakettitiedosto">
                     <Input
                         name="packageFile"
@@ -40,6 +40,12 @@ class FromPackageInstallerView extends preact.Component {
                         type="submit">Asenna</button>
             </Form>
         </div>;
+    }
+    /**
+     * @access private
+     */
+    handleSubmit(e) {
+        e.target.submit();
     }
 }
 

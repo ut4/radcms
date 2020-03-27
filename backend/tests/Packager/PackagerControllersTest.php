@@ -12,6 +12,7 @@ use RadCms\Packager\Packager;
 use RadCms\Packager\ZipPackageStream;
 use RadCms\Tests\_Internal\ContentTestUtils;
 use RadCms\Tests\_Internal\MockPackageStream;
+use RadCms\Tests\_Internal\TestSite;
 use RadCms\Tests\User\UserControllersTest;
 
 final class PackagerControllersTest extends DbTestCase {
@@ -21,6 +22,10 @@ final class PackagerControllersTest extends DbTestCase {
     protected function setUp(): void {
         parent::setUp();
         $this->mockPackageStream = new MockPackageStream();
+    }
+    protected function tearDown(): void {
+        parent::tearDown();
+        UserControllersTest::deleteTestUsers();
     }
     public function testPOSTPackagerPacksWebsiteAndReturnsItAsAttachment() {
         $s = $this->setupCreatePackageTest();
@@ -36,10 +41,8 @@ final class PackagerControllersTest extends DbTestCase {
     private function setupCreatePackageTest() {
         return (object) [
             'reqBody' => (object) [
-                'templates' => json_encode(['test-layout1.tmpl.php',
-                                            'test-layout2.tmpl.php']),
-                'themeAssets' => json_encode(['test-styles1.css',
-                                              'test-styles2.css']),
+                'templates' => json_encode(TestSite::TEMPLATES),
+                'assets' => json_encode(TestSite::ASSETS),
                 'signingKey' => 'my-encrypt-key'
             ],
             'actualAttachmentBody' => '',
@@ -76,7 +79,7 @@ final class PackagerControllersTest extends DbTestCase {
     }
     private function verifyEncryptedMainDataWasIncluded($s) {
         $encodedJson = $s->packageCreatedFromResponse
-            ->read(Packager::MAIN_DATA_LOCAL_NAME);
+            ->read(Packager::LOCAL_NAMES_MAIN_DATA);
         $decodedJson = MockCrypto::mockDecrypt($encodedJson);
         $parsed = json_decode($decodedJson);
         $this->assertIsObject($parsed);
@@ -87,7 +90,7 @@ final class PackagerControllersTest extends DbTestCase {
         $s->parsedMainDataFromPackage = $parsed;
     }
     private function verifyDbAndSiteSettingsWereIncludedToMainData($s) {
-        $c = require TEST_SITE_PATH . 'config.php';
+        $c = require TestSite::PATH . 'config.php';
         $row = self::getDb()->fetchOne('SELECT * FROM ${p}cmsState');
         $this->assertEquals((object) [
             'dbHost' => $c['db.host'],
@@ -119,16 +122,14 @@ final class PackagerControllersTest extends DbTestCase {
     }
     private function verifyTemplateFilesWereIncluded($s) {
         $fileListFileContents = $s->packageCreatedFromResponse
-            ->read(Packager::TEMPLATE_FILE_NAMES_LOCAL_NAME);
-        $this->assertEquals(json_encode(['test-layout1.tmpl.php',
-                                         'test-layout2.tmpl.php']),
+            ->read(Packager::LOCAL_NAMES_TEMPLATES_FILEMAP);
+        $this->assertEquals(json_encode(TestSite::TEMPLATES),
                             $fileListFileContents);
     }
     private function verifyIncludedThemeAssetFiles($s) {
         $fileListFileContents = $s->packageCreatedFromResponse
-            ->read(Packager::THEME_ASSET_FILE_NAMES_LOCAL_NAME);
-        $this->assertEquals(json_encode(['test-styles1.css',
-                                         'test-styles2.css']),
+            ->read(Packager::LOCAL_NAMES_ASSETS_FILEMAP);
+        $this->assertEquals(json_encode(TestSite::ASSETS),
                             $fileListFileContents);
     }
 }

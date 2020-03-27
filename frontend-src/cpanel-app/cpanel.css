@@ -145,16 +145,16 @@ section.quick-links .icon-button .feather {
     padding-right: 10px;
     stroke: rgba(255,255,255,0.5);
 }
-.section-row > div a .note {
+.section-row > div .note {
     font-size: 10px;
     margin-left: 2px;
     vertical-align: top;
 }
-.section-row > div a .subtitle {
+.section-row > div .subtitle {
     font-size: 11px;
     color: rgba(255,255,255,0.4);
 }
-.section-row > div a .subtitle:before {
+.section-row > div .subtitle:before {
     content: ' ';
     display: block;
 }
@@ -395,7 +395,7 @@ table.pika-time {
 
 /* -- Components: .list ---- */
 .list.fields {
-    background-color: rgba(0, 0, 0, 0.04);
+    background-color: rgba(0,0,0,0.04);
     border-radius: 2px;
     padding: 18px 12px 8px 12px;
     margin-top: 8px;

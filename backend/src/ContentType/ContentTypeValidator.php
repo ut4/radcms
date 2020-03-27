@@ -69,7 +69,7 @@ abstract class ContentTypeValidator {
             if (!$rules)
                 throw new \RuntimeException('Shouldn\'t happen');
             foreach ($rules as $ruleArgs)
-                $v->rule($f->name, ...$ruleArgs);
+                $v->rule("{$f->name}?", ...$ruleArgs);
         }
         if (!($errors = $v->validate($input))) {
             $input->isPublished = $input->isPublished ?? false;

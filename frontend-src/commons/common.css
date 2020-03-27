@@ -17,6 +17,9 @@ body {
 h2 {
     font: normal 18px/18px "Fira sans light";
 }
+.text-pale {
+    color: rgba(0,0,0,0.6);
+}
 a {
     color: #5c5a75;
 }
@@ -355,13 +358,13 @@ td.buttons {
     margin-bottom: 6px;
 }
 .toaster-message.success {
-    background-color: rgba(12, 191, 120, 0.85);
+    background-color: rgba(12,191,120,0.85);
 }
 .toaster-message.info {
-    background-color: rgba(48, 174, 253, 0.85);
+    background-color: rgba(48,174,253,0.85);
 }
 .toaster-message.error {
-    background-color: rgba(255, 62, 97, 0.85);
+    background-color: rgba(255,62,97,0.85);
 }
 .toaster-message .feather {
     position: absolute;

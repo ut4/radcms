@@ -14,6 +14,7 @@ use Pike\TestUtils\MockCrypto;
 final class UserControllersTest extends DbTestCase {
     use HttpTestUtils; // makeApp(), sendRequest()
     public function tearDown(): void {
+        parent::tearDown();
         self::deleteTestUsers();
     }
     public function testHandleGetCurrentUserReturnsCurrentUserDetails() {

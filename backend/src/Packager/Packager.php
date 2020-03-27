@@ -10,13 +10,12 @@ use Pike\FileSystemInterface;
 use Pike\PikeException;
 use RadCms\CmsState;
 use RadCms\Content\DAO;
-use RadCms\Auth\ACL;
 
 class Packager {
-    public const MAIN_DATA_LOCAL_NAME = 'main-data.data';
-    public const DB_SCHEMA_LOCAL_NAME = 'schema.mariadb.sql';
-    public const TEMPLATE_FILE_NAMES_LOCAL_NAME = 'template-file-names.json';
-    public const THEME_ASSET_FILE_NAMES_LOCAL_NAME = 'theme-asset-file-names.json';
+    public const LOCAL_NAMES_MAIN_DATA = 'main-data.data';
+    public const LOCAL_NAMES_DB_SCHEMA = 'schema.mariadb.sql';
+    public const LOCAL_NAMES_TEMPLATES_FILEMAP = 'template-file-paths.json';
+    public const LOCAL_NAMES_ASSETS_FILEMAP = 'theme-asset-file-paths.json';
     /** @var \Pike\Db */
     private $db;
     /** @var \Pike\FileSystemInterface */
@@ -46,22 +45,25 @@ class Packager {
         $this->appConfig = $appConfig;
     }
     /**
-     * @return \stdClass {templates: string[], themeAssets: string[]}
+     * @return \stdClass {templates: string[], assets: string[]}
      * @throws \Pike\PikeException
      */
     public function preRun() {
-        // @allow \Pike\PikeException
         $dirPath = RAD_SITE_PATH . 'theme/';
         $len = mb_strlen($dirPath);
-        $fullPathToFileName = function ($fullFilePath) use ($len) {
+        $fullPathToRelPath = function ($fullFilePath) use ($len) {
             return substr($fullFilePath, $len);
         };
-        return (object) [
-            'templates' => array_map($fullPathToFileName,
-                $this->fs->readDir($dirPath, '*.tmpl.php')),
-            'themeAssets' => array_map($fullPathToFileName,
-                $this->fs->readDir($dirPath, '*.{css,js}', GLOB_ERR|GLOB_BRACE))
+        // @allow \Pike\PikeException
+        $out = (object) [
+            'templates' => array_map($fullPathToRelPath,
+                $this->fs->readDirRecursive($dirPath, '/^.*\.tmpl\.php$/')),
+            'assets' => array_map($fullPathToRelPath,
+                $this->fs->readDirRecursive($dirPath, '/^.*\.(css|js)$/'))
         ];
+        sort($out->templates);
+        sort($out->assets);
+        return $out;
     }
     /**
      * @param \RadCms\Packager\PackageStreamInterface $package
@@ -81,10 +83,10 @@ class Packager {
         $this->addDbSchema($package);
         // @allow \Pike\PikeException
         $this->addThemeFiles($package, $config->templates,
-            self::TEMPLATE_FILE_NAMES_LOCAL_NAME);
+            self::LOCAL_NAMES_TEMPLATES_FILEMAP);
         // @allow \Pike\PikeException
-        $this->addThemeFiles($package, $config->themeAssets,
-            self::THEME_ASSET_FILE_NAMES_LOCAL_NAME);
+        $this->addThemeFiles($package, $config->assets,
+            self::LOCAL_NAMES_ASSETS_FILEMAP);
         // @allow \Pike\PikeException
         return $package->getResult();
     }
@@ -107,7 +109,7 @@ class Packager {
         $key = substr($padded, 0, Crypto::SECRETBOX_KEYBYTES);
         $encrypted = $this->crypto->encrypt($data, $key);
         // @allow \Pike\PikeException
-        $package->addFromString(self::MAIN_DATA_LOCAL_NAME, $encrypted);
+        $package->addFromString(self::LOCAL_NAMES_MAIN_DATA, $encrypted);
     }
     /**
      * @throws \Pike\PikeException
@@ -115,19 +117,18 @@ class Packager {
     private function addDbSchema($package) {
         // @allow \Pike\PikeException
         $package->addFile(RAD_BASE_PATH . 'assets/schema.mariadb.sql',
-                          self::DB_SCHEMA_LOCAL_NAME);
+                          self::LOCAL_NAMES_DB_SCHEMA);
     }
     /**
      * @throws \Pike\PikeException
      */
-    private function addThemeFiles($package, $files, $fileListFileLocalName) {
-        $package->addFromString($fileListFileLocalName,
+    private function addThemeFiles($package, $files, $localNameOfFileMapFile) {
+        $package->addFromString($localNameOfFileMapFile,
                                 json_encode($files, JSON_UNESCAPED_UNICODE));
         $base = RAD_SITE_PATH . 'theme/';
-        foreach ($files as $fileName) {
+        foreach ($files as $relativePath) {
             // @allow \Pike\PikeException
-            $package->addFile($base . str_replace('../', '', $fileName),
-                              $fileName);
+            $package->addFile("{$base}{$relativePath}", $relativePath);
         }
     }
     /**

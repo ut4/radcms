@@ -52,7 +52,7 @@ class PackageInstaller {
         return $this->commons->createOrOpenDb($settings) &&
                $this->commons->createMainSchema($settings,
                                                 $this->package,
-                                                Packager::DB_SCHEMA_LOCAL_NAME) &&
+                                                Packager::LOCAL_NAMES_DB_SCHEMA) &&
                $this->commons->insertMainSchemaData($settings) &&
                $this->commons->createUserZero($settings, $mainData->user) &&
                $this->createContentTypesAndInsertData($mainData->contentTypes,
@@ -74,12 +74,12 @@ class PackageInstaller {
      */
     private function readMainData(string $unlockKey): \stdClass {
         // @allow \Pike\PikeException
-        $encodedJson = $this->package->read(Packager::MAIN_DATA_LOCAL_NAME);
+        $encodedJson = $this->package->read(Packager::LOCAL_NAMES_MAIN_DATA);
         // @allow \Pike\PikeException
         $decodedJson = $this->crypto->decrypt($encodedJson, $unlockKey);
         if (($parsed = json_decode($decodedJson)) !== null)
             return $parsed;
-        throw new PikeException('Failed to parse `' . Packager::MAIN_DATA_LOCAL_NAME . '`',
+        throw new PikeException('Failed to parse `' . Packager::LOCAL_NAMES_MAIN_DATA . '`',
                                 PikeException::BAD_INPUT);
     }
     /**
@@ -104,15 +104,15 @@ class PackageInstaller {
         $this->commons->createSiteDirectories();
         $siteDirPath = $this->commons->getSiteDirPath();
         //
-        foreach ([Packager::TEMPLATE_FILE_NAMES_LOCAL_NAME,
-                  Packager::THEME_ASSET_FILE_NAMES_LOCAL_NAME] as $localName) {
+        foreach ([Packager::LOCAL_NAMES_TEMPLATES_FILEMAP,
+                  Packager::LOCAL_NAMES_ASSETS_FILEMAP] as $localName) {
             // @allow \Pike\PikeException
             $json = $this->package->read($localName);
-            if (!is_array($fileNamesMap = json_decode($json)))
+            if (!is_array($relativeFilePaths = json_decode($json)))
                 throw new PikeException("Failed to parse `{$localName}`",
                                         PikeException::BAD_INPUT);
             // @allow \Pike\PikeException
-            $this->package->extractMany("{$siteDirPath}theme", $fileNamesMap);
+            $this->package->extractMany("{$siteDirPath}theme", $relativeFilePaths);
         }
         return true;
     }

@@ -180,7 +180,10 @@ class ContentTypeMigrator {
             $this->db->exec('ALTER TABLE `${p}' . $contentType->name . '`' .
                             ' DROP COLUMN `' . $field->name . '`');
             //
-            $contentType->fields->offsetUnset($contentType->index);
+            $idx = ArrayUtils::findIndexByKey($contentType->fields,
+                                              $field->name,
+                                              'name');
+            $contentType->fields->offsetUnset($idx);
             // @allow \Pike\PikeException|\PDOException
             $this->updateInstalledContenType($contentType);
             return true;
