@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RadCms\Installer;
 
 use Pike\Db;
@@ -37,7 +39,7 @@ class Installer {
      * @return bool
      * @throws \Pike\PikeException
      */
-    public function doInstall($settings) {
+    public function doInstall(\stdClass $settings): bool {
         // @allow \Pike\PikeException
         return $this->commons->createOrOpenDb($settings) &&
                $this->commons->createMainSchema($settings,
@@ -51,9 +53,9 @@ class Installer {
                $this->commons->selfDestruct();
     }
     /**
-     * @return array
+     * @return string[]
      */
-    public function getWarnings() {
+    public function getWarnings(): array {
         return $this->commons->getWarnings();
     }
     /**
@@ -61,7 +63,7 @@ class Installer {
      * @return bool
      * @throws \Pike\PikeException
      */
-    private function createContentTypesAndInsertInitialData($s) {
+    private function createContentTypesAndInsertInitialData(\stdClass $s): bool {
         $base = "{$this->backendPath}installer/sample-content/{$s->sampleContent}/";
         $contentTypesFilePath = "{$base}content-types.json";
         $dataFilePath = "{$base}sample-data.json";
@@ -81,9 +83,10 @@ class Installer {
                                                                  $parsed[1]);
     }
     /**
+     * @param array $inputContentTypes
      * @return \RadCms\ContentType\ContentTypeCollection
      */
-    private static function makeContentTypes($inputContentTypes) {
+    private static function makeContentTypes(array $inputContentTypes): ContentTypeCollection {
         return ContentTypeCollection::fromCompactForm(array_map(function ($c) {
             return $c !== 'extend:stockContentTypes' ? $c : MultiFieldBlobs::asCompactForm();
         }, $inputContentTypes));
@@ -93,7 +96,7 @@ class Installer {
      * @return bool
      * @throws \Pike\PikeException
      */
-    private function copyFiles($s) {
+    private function copyFiles(\stdClass $s): bool {
         // @allow \Pike\PikeException
         $this->commons->createSiteDirectories();
         //
@@ -124,7 +127,7 @@ class Installer {
      * @return string[] ['file.php', 'dir/another.php']
      * @throws \Pike\PikeException
      */
-    private function readDirRelPaths($dirPath, $filterRegexp) {
+    private function readDirRelPaths(string $dirPath, string $filterRegexp): array {
         if (($paths = $this->fs->readDirRecursive($dirPath, $filterRegexp))) {
             return array_map(function ($fullFilePath) use ($dirPath) {
                 return substr($fullFilePath, mb_strlen($dirPath));

@@ -5,6 +5,7 @@ namespace RadCms\Packager;
 use Pike\Request;
 use Pike\Response;
 use Pike\Validation;
+use Pike\Auth\Authenticator;
 
 /**
  * Handlaa /api/packager -alkuiset pyynnöt.
@@ -31,17 +32,19 @@ class PackagerControllers {
      *
      * @param \Pike\Request $req
      * @param \Pike\Response $res
-     * @param \Pike\Response $res
+     * @param \RadCms\Packager\PackageStreamInterface $package
+     * @param \Pike\Auth\Authenticator $auth
      */
     public function handleCreatePackage(Request $req,
                                         Response $res,
-                                        PackageStreamInterface $package) {
+                                        PackageStreamInterface $package,
+                                        Authenticator $auth) {
         if (($errors = $this->validatePackSiteInput($req->body))) {
             $res->status(400)->json($errors);
             return;
         }
         // @allow \Pike\PikeException
-        $data = $this->packager->packSite($package, $req->body, RAD_SITE_PATH);
+        $data = $this->packager->packSite($package, $req->body, $auth->getIdentity());
         $res->attachment($data, 'packed.radsite', 'application/octet-stream');
     }
     /**

@@ -7,6 +7,7 @@ use Pike\AppConfig;
 use Pike\ArrayUtils;
 use Pike\Auth\Crypto;
 use Pike\FileSystemInterface;
+use Pike\PikeException;
 use RadCms\CmsState;
 use RadCms\Content\DAO;
 use RadCms\Auth\ACL;
@@ -65,14 +66,17 @@ class Packager {
     /**
      * @param \RadCms\Packager\PackageStreamInterface $package
      * @param \stdClass $config Olettaa että validi
+     * @param \stdClass $userIdentity Olettaa että validi
      * @return string
      * @throws \Pike\PikeException
      */
-    public function packSite(PackageStreamInterface $package, \stdClass $config) {
+    public function packSite(PackageStreamInterface $package,
+                             \stdClass $config,
+                             \stdClass $userIdentity) {
         // @allow \Pike\PikeException
         $package->open('', true);
         // @allow \Pike\PikeException
-        $this->addMainData($package, $config);
+        $this->addMainData($package, $config, $userIdentity);
         // @allow \Pike\PikeException
         $this->addDbSchema($package);
         // @allow \Pike\PikeException
@@ -87,7 +91,7 @@ class Packager {
     /**
      * @throws \Pike\PikeException
      */
-    private function addMainData($package, $config) {
+    private function addMainData($package, $config, $userIdentity) {
         $themeContentTypes = ArrayUtils::filterByKey($this->cmsState->getContentTypes(),
                                                      'Website',
                                                      'origin');
@@ -96,7 +100,7 @@ class Packager {
             'settings' => $this->generateSettings(),
             'contentTypes' => $themeContentTypes->toCompactForm('Website'),
             'content' => $this->generateThemeContentData($themeContentTypes),
-            'user' => $this->generateUser(),
+            'user' => $this->generateUserZero($userIdentity),
         ], JSON_UNESCAPED_UNICODE);
         // @allow \Pike\PikeException
         $padded = str_pad($config->signingKey, Crypto::SECRETBOX_KEYBYTES, '0');
@@ -141,6 +145,7 @@ class Packager {
             //
             'siteName' => $this->cmsState->getSiteInfo()->name,
             'siteLang' => $this->cmsState->getSiteInfo()->lang,
+            'aclRules' => $this->cmsState->getAclRules(),
             'mainQueryVar' => RAD_QUERY_VAR,
             'useDevMode' => boolval(RAD_FLAGS & RAD_DEVMODE),
         ];
@@ -162,13 +167,25 @@ class Packager {
     /**
      * @return \stdClass
      */
-    private function generateUser() {
-        return (object) [
-            'id' => 'todo',
-            'username' => 'todo',
-            'email' => 'todo',
-            'passwordHash' => 'todo',
-            'role' => ACL::ROLE_SUPER_ADMIN,
-        ];
+    private function generateUserZero($userIdentity) {
+        try {
+            if (($row = $this->db->fetchOne('SELECT `id`,`username`,`email`' .
+                                            ',`passwordHash`,`role` FROM ${p}users' .
+                                            ' WHERE `id` = ?',
+                                            [$userIdentity->id]))) {
+                return (object) [
+                    'id' => $row['id'],
+                    'username' => $row['username'],
+                    'email' => $row['email'] ?? '',
+                    'passwordHash' => $row['passwordHash'],
+                    'role' => (int) $row['role'],
+                ];
+            }
+            throw new PikeException('Failed to fetch user from db',
+                                    PikeException::BAD_INPUT);
+        } catch (\PDOException $e) {
+            throw new PikeException("Unexpected database error: {$e->getMessage()}",
+                                    PikeException::FAILED_DB_OP);
+        }
     }
 }

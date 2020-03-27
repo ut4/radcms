@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RadCms\Installer;
 
 use Pike\Request;
@@ -14,7 +16,7 @@ class InstallerControllers {
      *
      * @param \Pike\Response $res
      */
-    public function renderHomeView(Response $res) {
+    public function renderHomeView(Response $res): void {
         if (!defined('INDEX_DIR_PATH')) {
             $res->status(400)->html('Corrupt install.php (INDEX_DIR_PATH missing).');
             return;
@@ -28,7 +30,7 @@ class InstallerControllers {
      */
     public function handleInstallRequest(Request $req,
                                          Response $res,
-                                         Installer $installer) {
+                                         Installer $installer): void {
         if (($errors = $this->validateInstallInput($req->body))) {
             $res->status(400)->json(json_encode($errors));
             return;
@@ -43,7 +45,7 @@ class InstallerControllers {
      */
     public function handleInstallFromPackageRequest(Request $req,
                                                     Response $res,
-                                                    PackageInstaller $installer) {
+                                                    PackageInstaller $installer): void {
         if (($errors = $this->validateInstallFromPackageInput($req))) {
             $res->status(400)->json($errors);
             return;
@@ -57,7 +59,7 @@ class InstallerControllers {
     /**
      * @return string[]
      */
-    private function validateInstallInput($input) {
+    private function validateInstallInput(\stdClass $input): array {
         $errors = (Validation::makeObjectValidator())
             ->rule('siteName', 'type', 'string')
             ->rule('siteLang', 'in', ['en', 'fi'])
@@ -88,7 +90,7 @@ class InstallerControllers {
     /**
      * @return string[]
      */
-    private function validateInstallFromPackageInput($req) {
+    private function validateInstallFromPackageInput(Request $req): array {
         return array_merge(
             (Validation::makeObjectValidator())
                 ->rule('unlockKey', 'type', 'string')

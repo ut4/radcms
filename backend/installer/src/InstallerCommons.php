@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RadCms\Installer;
 
 use Pike\Db;
@@ -28,7 +30,7 @@ class InstallerCommons {
     public function __construct(Db $db,
                                 FileSystemInterface $fs,
                                 Crypto $crypto,
-                                $siteDirPath = INDEX_DIR_PATH) {
+                                string $siteDirPath = INDEX_DIR_PATH) {
         $this->db = $db;
         $this->fs = $fs;
         $this->crypto = $crypto;
@@ -41,7 +43,7 @@ class InstallerCommons {
      * @return bool
      * @throws \Pike\PikeException
      */
-    public function createOrOpenDb($s) {
+    public function createOrOpenDb(\stdClass $s): bool {
         try {
             $this->db->setConfig([
                 'db.host'        => $s->dbHost,
@@ -72,7 +74,9 @@ class InstallerCommons {
      * @return bool
      * @throws \Pike\PikeException
      */
-    public function createMainSchema($s, $fsOrPackage, $filePathOrLocalName) {
+    public function createMainSchema(\stdClass $s,
+                                     $fsOrPackage,
+                                     string $filePathOrLocalName): bool {
         try {
             $sql = $fsOrPackage->read($filePathOrLocalName);
             if (!$sql)
@@ -90,7 +94,7 @@ class InstallerCommons {
      * @return bool
      * @throws \Pike\PikeException
      */
-    public function insertMainSchemaData($s) {
+    public function insertMainSchemaData(\stdClass $s): bool {
         try {
             if ($this->db->exec('INSERT INTO ${p}cmsState VALUES (1,?,?,?,?,?,?)',
                                 [
@@ -99,7 +103,7 @@ class InstallerCommons {
                                     '{}', // installedContentTypes
                                     null, // installedContentTypesLastUpdated
                                     $s->installedPlugins ?? '{}',
-                                    $s->aclRules ?? $this->makeDefaultAclRules(),
+                                    json_encode($s->aclRules ?? $this->makeDefaultAclRules()),
                                 ]) !== 1)
                 throw new PikeException('Failed to insert main schema data',
                                         PikeException::INEFFECTUAL_DB_OP);
@@ -114,7 +118,7 @@ class InstallerCommons {
      * @return bool
      * @throws \Pike\PikeException
      */
-    public function createUserZero($s, $user = null) {
+    public function createUserZero(\stdClass $s, \stdClass $user = null): bool {
         try {
             if ($this->db->exec('INSERT INTO ${p}users'.
                                 ' (`id`,`username`,`email`,`passwordHash`,`role`)' .
@@ -142,7 +146,7 @@ class InstallerCommons {
     /**
      * @throws \Pike\PikeException
      */
-    public function createSiteDirectories() {
+    public function createSiteDirectories(): void {
         foreach ([$this->siteDirPath . 'uploads',
                   $this->siteDirPath . 'theme'] as $path) {
             if (!$this->fs->isDir($path) && !$this->fs->mkDir($path))
@@ -151,19 +155,19 @@ class InstallerCommons {
         }
     }
     /**
-     * @return string
+     * @return \stdClass
      * @throws \Pike\PikeException
      */
-    public function makeDefaultAclRules() {
+    public function makeDefaultAclRules(): \stdClass {
         $fn = include "{$this->backendPath}installer/default-acl-rules.php";
-        return json_encode($fn());
+        return $fn();
     }
     /**
      * @param \stdClass $s settings
      * @return bool
      * @throws \Pike\PikeException
      */
-    public function generateConfigFile($s) {
+    public function generateConfigFile(\stdClass $s): bool {
         $flags = $s->useDevMode ? 'RAD_DEVMODE' : '0';
         if ($this->fs->write(
             "{$this->siteDirPath}config.php",
@@ -195,7 +199,7 @@ return [
      * @return bool
      * @throws \Pike\PikeException
      */
-    public function selfDestruct() {
+    public function selfDestruct(): bool {
         if (defined('TEST_SITE_PATH') &&
             !($this->fs instanceof \PHPUnit\Framework\MockObject\MockObject))
             return true;
@@ -220,7 +224,7 @@ return [
     /**
      * @return null|string null = ok, string = failedDirOrFilePath
      */
-    private function deleteFilesRecursive($dirPath) {
+    private function deleteFilesRecursive(string $dirPath): ?string {
         foreach ($this->fs->readDir($dirPath) as $path) {
             if ($this->fs->isFile($path)) {
                 if (!$this->fs->unlink($path)) return $path;
@@ -233,19 +237,19 @@ return [
     /**
      * @return string
      */
-    public function getBackendPath() {
+    public function getBackendPath(): string {
         return $this->backendPath;
     }
     /**
      * @return string
      */
-    public function getSiteDirPath() {
+    public function getSiteDirPath(): string {
         return $this->siteDirPath;
     }
     /**
      * @return string[]
      */
-    public function getWarnings() {
+    public function getWarnings(): array {
         return $this->warnings;
     }
 }

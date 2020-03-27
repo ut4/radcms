@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RadCms\Installer;
 
+use Auryn\Injector;
 use RadCms\Packager\PackageStreamInterface;
 use RadCms\Packager\ZipPackageStream;
 
@@ -11,7 +14,7 @@ abstract class Module {
      *
      * @param \stdClass $ctx
      */
-    public static function init(\stdClass $ctx) {
+    public static function init(\stdClass $ctx): void {
         $ctx->router->map('GET', '/',
             [InstallerControllers::class, 'renderHomeView', false]
         );
@@ -25,7 +28,7 @@ abstract class Module {
     /**
      * @param \Auryn\Injector $container
      */
-    public static function alterIOC($container) {
+    public static function alterIOC(Injector $container): void {
         $container->alias(PackageStreamInterface::class, ZipPackageStream::class);
     }
 }

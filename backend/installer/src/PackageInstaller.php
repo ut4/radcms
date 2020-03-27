@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RadCms\Installer;
 
 use Pike\Db;
@@ -39,7 +41,7 @@ class PackageInstaller {
      * @return bool
      * @throws \Pike\PikeException
      */
-    public function doInstall($packageFilePath, $input) {
+    public function doInstall(string $packageFilePath, \stdClass $input): bool {
         // @allow \Pike\PikeException
         $this->package->open($packageFilePath);
         // @allow \Pike\PikeException
@@ -60,9 +62,9 @@ class PackageInstaller {
                $this->commons->selfDestruct();
     }
     /**
-     * @return array
+     * @return string[]
      */
-    public function getWarnings() {
+    public function getWarnings(): array {
         return $this->commons->getWarnings();
     }
     /**
@@ -70,7 +72,7 @@ class PackageInstaller {
      * @return \stdClass
      * @throws \Pike\PikeException
      */
-    private function readMainData($unlockKey) {
+    private function readMainData(string $unlockKey): \stdClass {
         // @allow \Pike\PikeException
         $encodedJson = $this->package->read(Packager::MAIN_DATA_LOCAL_NAME);
         // @allow \Pike\PikeException
@@ -86,7 +88,8 @@ class PackageInstaller {
      * @return bool
      * @throws \Pike\PikeException
      */
-    private function createContentTypesAndInsertData($compactCTypes, $data) {
+    private function createContentTypesAndInsertData(array $compactCTypes,
+                                                     array $data): bool {
         $collection = ContentTypeCollection::fromCompactForm($compactCTypes);
         // @allow \Pike\PikeException
         return (new ContentTypeMigrator($this->db))->installMany($collection,
@@ -96,7 +99,7 @@ class PackageInstaller {
      * @return bool
      * @throws \Pike\PikeException
      */
-    private function writeFiles() {
+    private function writeFiles(): bool {
         // @allow \Pike\PikeException
         $this->commons->createSiteDirectories();
         $siteDirPath = $this->commons->getSiteDirPath();

@@ -2,30 +2,25 @@
 
 namespace RadCms\Tests\Packager;
 
+use Pike\Auth\Authenticator;
 use Pike\Request;
 use Pike\TestUtils\DbTestCase;
 use Pike\TestUtils\HttpTestUtils;
 use Pike\TestUtils\MockCrypto;
-use RadCms\Auth\ACL;
+use RadCms\Installer\Tests\BaseInstallerTest;
 use RadCms\Packager\Packager;
 use RadCms\Packager\ZipPackageStream;
 use RadCms\Tests\_Internal\ContentTestUtils;
 use RadCms\Tests\_Internal\MockPackageStream;
+use RadCms\Tests\User\UserControllersTest;
 
 final class PackagerControllersTest extends DbTestCase {
     use HttpTestUtils;
     use ContentTestUtils;
     private $mockPackageStream;
-    private $app;
     protected function setUp(): void {
         parent::setUp();
         $this->mockPackageStream = new MockPackageStream();
-        $this->app = $this->makeApp('\RadCms\App::create', $this->getAppConfig(), null,
-            function ($injector) {
-                $injector->delegate(ZipPackageStream::class, function () {
-                    return $this->mockPackageStream;
-                });
-            });
     }
     public function testPOSTPackagerPacksWebsiteAndReturnsItAsAttachment() {
         $s = $this->setupCreatePackageTest();
@@ -35,7 +30,7 @@ final class PackagerControllersTest extends DbTestCase {
         $this->verifyDbAndSiteSettingsWereIncludedToMainData($s);
         $this->verifyContentTypesWereIncludedToMainData($s);
         $this->verifyAllContentWasIncludedToMainData($s);
-        $this->verifyUserWasIncludedToMainData($s);
+        $this->verifyUserZeroWasIncludedToMainData($s);
         $this->verifyTemplateFilesWereIncluded($s);
     }
     private function setupCreatePackageTest() {
@@ -50,9 +45,21 @@ final class PackagerControllersTest extends DbTestCase {
             'actualAttachmentBody' => '',
             'packageCreatedFromResponse' => null,
             'parsedMainDataFromPackage' => null,
+            'testUserZero' => UserControllersTest::makeAndInsertTestUser(),
         ];
     }
     private function sendCreatePackageRequest($s) {
+        $auth = $this->createMock(Authenticator::class);
+        $auth->method('getIdentity')
+             ->willReturn((object)['id' => $s->testUserZero->id,
+                                   'role' => $s->testUserZero->role]);
+        $app = $this->makeApp('\RadCms\App::create', $this->getAppConfig(),
+            ['crypto' => new MockCrypto(), 'auth' => $auth],
+            function ($injector) {
+                $injector->delegate(ZipPackageStream::class, function () {
+                    return $this->mockPackageStream;
+                });
+            });
         $req = new Request('/api/packager', 'POST', $s->reqBody);
         $res = $this->createMockResponse($this->callback(function ($body) use ($s) {
                                             $s->actualAttachmentBody = $body ?? '';
@@ -60,8 +67,7 @@ final class PackagerControllersTest extends DbTestCase {
                                          }),
                                          200,
                                          'attachment');
-        $this->app->getAppCtx()->crypto = new MockCrypto();
-        $this->sendRequest($req, $res, $this->app);
+        $this->sendRequest($req, $res, $app);
     }
     private function verifyPackageWasReturned($s) {
         $s->packageCreatedFromResponse = new MockPackageStream();
@@ -76,6 +82,8 @@ final class PackagerControllersTest extends DbTestCase {
         $this->assertIsObject($parsed);
         $this->assertEquals(['settings', 'contentTypes', 'content', 'user'],
                             array_keys((array) $parsed));
+        $sorted = BaseInstallerTest::sortAclRules($parsed->settings->aclRules);
+        $parsed->settings->aclRules = json_encode($sorted);
         $s->parsedMainDataFromPackage = $parsed;
     }
     private function verifyDbAndSiteSettingsWereIncludedToMainData($s) {
@@ -92,6 +100,9 @@ final class PackagerControllersTest extends DbTestCase {
             //
             'siteName' => $row['name'],
             'siteLang' => $row['lang'],
+            'aclRules' => json_encode(BaseInstallerTest::sortAclRules(
+                                          json_decode($row['aclRules'])
+                                      )),
             'mainQueryVar' => RAD_QUERY_VAR,
             'useDevMode' => boolval(RAD_FLAGS & RAD_DEVMODE),
         ], $s->parsedMainDataFromPackage->settings);
@@ -102,14 +113,9 @@ final class PackagerControllersTest extends DbTestCase {
     private function verifyAllContentWasIncludedToMainData($s) {
         $this->assertEquals([], $s->parsedMainDataFromPackage->content);
     }
-    private function verifyUserWasIncludedToMainData($s) {
-        $this->assertEquals((object) [
-            'id' => 'todo',
-            'username' => 'todo',
-            'email' => 'todo',
-            'passwordHash' => 'todo',
-            'role' => ACL::ROLE_SUPER_ADMIN,
-        ], $s->parsedMainDataFromPackage->user);
+    private function verifyUserZeroWasIncludedToMainData($s) {
+        $this->assertEquals($s->testUserZero,
+                            $s->parsedMainDataFromPackage->user);
     }
     private function verifyTemplateFilesWereIncluded($s) {
         $fileListFileContents = $s->packageCreatedFromResponse

@@ -130,9 +130,14 @@ final class InstallerTest extends BaseInstallerTest {
         $this->addFsExpectation('generatesConfigFile', $s);
         $this->addFsExpectation('deletesInstallerFiles', $s);
         $this->sendInstallRequest($s);
-        $this->verifyCreatedMainSchema($s->input);
-        $this->verifyInsertedMainSchemaData($s);
-        $this->verifyCreatedUserZero($s);
+        $this->verifyCreatedMainSchema($s->input->dbDatabase,
+                                       $s->input->dbTablePrefix);
+        $this->verifyInsertedMainSchemaData($s->input->siteName,
+                                            $s->input->siteLang,
+                                            "{$s->backendPath}installer/default-acl-rules.php");
+        $this->verifyCreatedUserZero($s->input->firstUserName,
+                                     $s->input->firstUserEmail,
+                                     ACL::ROLE_SUPER_ADMIN);
         $this->verifyContentTypeIsInstalled('Movies', true);
         $this->verifyInsertedSampleContent($s);
     }
@@ -286,28 +291,6 @@ return [
             (object)['fs' => $s->mockFs]);
         $this->sendRequest(new Request('/', 'POST', $s->input), $res, $app);
     }
-    private function verifyInsertedMainSchemaData($s) {
-        $row = self::$db->fetchOne('SELECT * FROM ${p}cmsState');
-        $this->assertArrayHasKey('name', $row);
-        $this->assertEquals($s->input->siteName, $row['name']);
-        $this->assertEquals($s->input->siteLang, $row['lang']);
-        $filePath = "{$s->backendPath}installer/default-acl-rules.php";
-        $expected = (include $filePath)(); // ['resources', 'userPermissions']
-        $actual = json_decode($row['aclRules']);
-        $this->assertEquals(array_keys((array) $expected),
-                            array_keys((array) $actual));
-    }
-    private function verifyCreatedUserZero($s) {
-        $row = self::$db->fetchOne('SELECT * FROM ${p}users');
-        $this->assertNotNull($row, 'Pitäisi luoda käyttäjä');
-        $expectedLen = strlen('xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx');
-        $this->assertEquals($expectedLen, strlen($row['id']));
-        $this->assertEquals($s->input->firstUserName, $row['username']);
-        $this->assertEquals($s->input->firstUserEmail, $row['email']);
-        $this->assertEquals(ACL::ROLE_SUPER_ADMIN, $row['role']);
-        $this->assertEquals(null, $row['resetKey']);
-        $this->assertEquals(null, $row['resetRequestedAt']);
-    }
     private function verifyInsertedSampleContent($s) {
         $this->assertEquals(2, count(self::$db->fetchAll(
             'SELECT `title` FROM ${p}Movies'
@@ -330,9 +313,14 @@ return [
         $this->addFsExpectation('generatesConfigFile', $s);
         $this->addFsExpectation('deletesInstallerFiles', $s);
         $this->sendInstallRequest($s);
-        $this->verifyCreatedMainSchema($s->input);
-        $this->verifyInsertedMainSchemaData($s);
-        $this->verifyCreatedUserZero($s);
+        $this->verifyCreatedMainSchema($s->input->dbDatabase,
+                                       $s->input->dbTablePrefix);
+        $this->verifyInsertedMainSchemaData($s->input->siteName,
+                                            $s->input->siteLang,
+                                            "{$s->backendPath}installer/default-acl-rules.php");
+        $this->verifyCreatedUserZero($s->input->firstUserName,
+                                     $s->input->firstUserEmail,
+                                     ACL::ROLE_SUPER_ADMIN);
         $this->verifyContentTypeIsInstalled('Movies', true);
         $this->verifyInsertedSampleContent($s);
     }
