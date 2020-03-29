@@ -15,6 +15,9 @@ use RadCms\ContentType\ContentTypeDef;
  * käytettäväksi manuaalisesti.
  */
 class DAO {
+    public const STATUS_PUBLISHED = 0;
+    public const STATUS_DRAFT = 1;
+    public const STATUS_DELETED = 2;
     public $fetchRevisions;
     protected $db;
     protected $contentTypes;
@@ -95,7 +98,7 @@ class DAO {
     private function makeContentNode(array $row, array $rows): \stdClass {
         $out = (object) $row;
         unset($out->revisionSnapshot);
-        $out->isPublished = (bool) $out->isPublished;
+        $out->status = (int) $out->status;
         $out->isRevision = false;
         $out->revisions = [];
         if (!$this->fetchRevisions) return $out;

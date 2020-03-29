@@ -30,13 +30,13 @@ class DMO extends DAO {
         if (($errors = ContentTypeValidator::validateInsertData($type, $data)))
             throw new PikeException(implode(PHP_EOL, $errors),
                                     PikeException::BAD_INPUT);
-        $q = ['cols' => [], 'qs' => [], 'vals' => []];
-        $appendVal = function ($name) use (&$q, $data) {
-            $q['cols'][] = "`{$name}`";
-            $q['qs'][] = '?';
-            $q['vals'][] = $data->$name;
+        $q = (object) ['cols' => [], 'qs' => [], 'vals' => []];
+        $appendVal = function ($name) use ($q, $data) {
+            $q->cols[] = "`{$name}`";
+            $q->qs[] = '?';
+            $q->vals[] = $data->$name;
         };
-        foreach (['id', 'isPublished'] as $optional) {
+        foreach (['id', 'status'] as $optional) {
             if (($data->{$optional} ?? null) !== null) $appendVal($optional);
         }
         foreach ($type->fields as $f) {
@@ -56,11 +56,11 @@ class DMO extends DAO {
      * @return int $numAffectedRows
      */
     private function insertWithoutRevision(string $contentTypeName,
-                                           array $q): int {
+                                           \stdClass $q): int {
         $numRows = $this->db->exec('INSERT INTO `${p}' . $contentTypeName . '`' .
-                                   ' (' . implode(', ', $q['cols']) . ')' .
-                                   ' VALUES (' . implode(', ', $q['qs']) . ')',
-                                   $q['vals']);
+                                   ' (' . implode(', ', $q->cols) . ')' .
+                                   ' VALUES (' . implode(', ', $q->qs) . ')',
+                                   $q->vals);
         $this->lastInsertId = $numRows ? $this->db->lastInsertId() : 0;
         return $numRows;
     }
@@ -68,7 +68,7 @@ class DMO extends DAO {
      * @return int $numAffectedRows
      */
     private function insertWithRevision(string $contentTypeName,
-                                        array $q,
+                                        \stdClass $q,
                                         \stdClass $data,
                                         FieldCollection $fields): int {
         $this->db->beginTransaction();
@@ -114,7 +114,7 @@ class DMO extends DAO {
             $execs = [self::makeUpdateMainExec($id, $contentTypeName, $data, $fields)];
         } else {
             if ($revisionSettings === ContentControllers::REV_SETTING_PUBLISH) {
-                $data->isPublished = true;
+                $data->status = DAO::STATUS_PUBLISHED;
                 $execs = [self::makeUpdateMainExec($id, $contentTypeName, $data, $fields),
                           self::makeDeleteRevisionExec($id, $contentTypeName)];
             } else {
@@ -150,19 +150,19 @@ class DMO extends DAO {
                                                string $contentTypeName,
                                                \stdClass $data,
                                                FieldCollection $fields): array {
-        $q = ['colQs' => ['`isPublished` = ?'],
-              'vals' => [(int)$data->isPublished]];
+        $q = (object) ['colQs' => ['`status` = ?'],
+                       'vals' => [(int) $data->status]];
         foreach ($fields as $f) {
-            $q['colQs'][] = "`{$f->name}` = ?";
-            $q['vals'][] = $data->{$f->name};
+            $q->colQs[] = "`{$f->name}` = ?";
+            $q->vals[] = $data->{$f->name};
         }
-        $q['vals'][] = $id;
+        $q->vals[] = $id;
         //
         return [
             'UPDATE `${p}' . $contentTypeName . '`' .
-            ' SET ' . implode(', ', $q['colQs']) .
+            ' SET ' . implode(', ', $q->colQs) .
             ' WHERE `id` = ?',
-            $q['vals']
+            $q->vals
         ];
     }
     /**

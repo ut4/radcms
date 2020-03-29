@@ -3,6 +3,7 @@
 namespace RadCms\ContentType;
 
 use Pike\Validation;
+use RadCms\Content\DAO;
 
 abstract class ContentTypeValidator {
     const MAX_NAME_LEN = 64;
@@ -57,7 +58,7 @@ abstract class ContentTypeValidator {
                                               $additionalChecks = null) {
         $v = Validation::makeObjectValidator();
         $v->rule('id?', 'type', 'string');
-        $v->rule('isPublished?', 'type', 'bool');
+        $v->rule('status?', 'max', DAO::STATUS_DRAFT);
         if ($additionalChecks) $additionalChecks($v);
         foreach ($contentType->fields as $f) {
             $rules = [
@@ -72,7 +73,7 @@ abstract class ContentTypeValidator {
                 $v->rule("{$f->name}?", ...$ruleArgs);
         }
         if (!($errors = $v->validate($input))) {
-            $input->isPublished = $input->isPublished ?? false;
+            $input->status = $input->status ?? DAO::STATUS_PUBLISHED;
         }
         return $errors;
     }

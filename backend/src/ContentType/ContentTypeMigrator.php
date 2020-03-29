@@ -5,8 +5,9 @@ namespace RadCms\ContentType;
 use Pike\Db;
 use Pike\PikeException;
 use Pike\ArrayUtils;
-use RadCms\Plugin\Plugin;
+use RadCms\Content\DAO;
 use RadCms\Content\DMO;
+use RadCms\Plugin\Plugin;
 
 /**
  * Luokka joka asentaa/päivittää/poistaa sisältötyyppejä ja sen sisältämiä
@@ -252,7 +253,7 @@ class ContentTypeMigrator {
         foreach ($contentTypes as $type) {
             $sql .= 'CREATE TABLE `${p}' . $type->name . '` (' .
                 '`id` ' . strtoupper($size) . 'INT UNSIGNED NOT NULL AUTO_INCREMENT' .
-                ', `isPublished` TINYINT(1) UNSIGNED NOT NULL DEFAULT 0' .
+                ', `status` TINYINT(1) UNSIGNED NOT NULL DEFAULT ' . DAO::STATUS_PUBLISHED .
                 ', ' . $type->fields->toSqlTableFields() .
                 ', PRIMARY KEY (`id`)' .
             ') DEFAULT CHARSET = utf8mb4;';
@@ -337,8 +338,8 @@ class ContentTypeMigrator {
                        );
         foreach ($data as [$contentTypeName, $contentNodes]) {
             foreach ($contentNodes as $data) {
-                if (!property_exists($data, 'isPublished'))
-                    $data->isPublished = true;
+                if (!property_exists($data, 'status'))
+                    $data->status = DAO::STATUS_PUBLISHED;
                 // @allow \Pike\PikeException
                 $dmo->insert($contentTypeName, $data);
             }

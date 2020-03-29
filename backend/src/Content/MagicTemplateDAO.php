@@ -74,7 +74,7 @@ class MagicTemplateDAO extends DAO {
         $out = [];
         if (!$this->fetchRevisions) {
             foreach ($res as $node) {
-                if ($node->isPublished) $out[] = $node;
+                if ($node->status === self::STATUS_PUBLISHED) $out[] = $node;
             }
         } else {
             foreach ($res as $node) {
@@ -82,7 +82,7 @@ class MagicTemplateDAO extends DAO {
                 $latestDraft = $node->revisions[0]->snapshot;
                 $latestDraft->id = $node->id;
                 $latestDraft->contentType = $node->contentType;
-                $latestDraft->isPublished = true;
+                $latestDraft->status = self::STATUS_PUBLISHED;
                 $latestDraft->isRevision = true;
                 $out[] = $latestDraft;
             }

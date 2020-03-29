@@ -106,7 +106,7 @@ class Query {
             throw new PikeException($errors, PikeException::BAD_INPUT);
         }
         //
-        $mainQ = 'SELECT `id`, `isPublished`, ' .
+        $mainQ = 'SELECT `id`, `status`, ' .
                  $this->contentType->fields->toSqlCols() .
                  ', \'' . $this->contentType->name . '\' AS `contentType`' .
                  ' FROM `${p}' . $this->contentType->name . '`' .

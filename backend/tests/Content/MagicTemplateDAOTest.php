@@ -3,6 +3,7 @@
 namespace RadCms\Tests\Content;
 
 use Pike\TestUtils\DbTestCase;
+use RadCms\Content\DAO;
 use RadCms\Tests\_Internal\ContentTestUtils;
 use RadCms\Content\MagicTemplateDAO;
 use RadCms\ContentType\ContentTypeCollection;
@@ -10,7 +11,6 @@ use RadCms\ContentType\ContentTypeMigrator;
 
 final class MagicTemplateDAOTest extends DbTestCase {
     use ContentTestUtils;
-    const NOT_PUBLISHED = false;
     private static $testContentTypes;
     private static $migrator;
     public static function setUpBeforeClass(): void {
@@ -20,7 +20,7 @@ final class MagicTemplateDAOTest extends DbTestCase {
         ]);
         self::$testContentTypes->add('Reviews', 'Arvostelut', [
             (object) ['name' => 'content', 'dataType' => 'text'],
-            (object) ['name' => 'productTitle', 'dataType' => 'text'],
+            (object) ['name' => 'productId', 'dataType' => 'uint'],
         ]);
         self::$migrator = new ContentTypeMigrator(self::getDb());
         // @allow \Pike\PikeException
@@ -36,7 +36,9 @@ final class MagicTemplateDAOTest extends DbTestCase {
         return new MagicTemplateDAO(self::$db, self::$testContentTypes, $fetchRevisions);
     }
     public function testFetchOneReturnsLatestDraftWhenFetchRevisionsIsEnabled() {
-        $this->insertContent('Products', [['Tuote'], [1, self::NOT_PUBLISHED]]);
+        $this->insertContent('Products', ['id' => 1,
+                                          'status' => DAO::STATUS_DRAFT,
+                                          'title' => 'Tuote']);
         $this->insertRevision(1, 'Products', '{"title":"New title"}');
         $dao = self::makeDao(true);
         $node = $dao->fetchOne('Products')->where('id=?', '1')->exec();
@@ -49,7 +51,9 @@ final class MagicTemplateDAOTest extends DbTestCase {
 
 
     public function testFetchOneDoesNotReturnDraftsWhenFetchRevisionsIsDisabled() {
-        $this->insertContent('Products', [['Tuote2'], [2, self::NOT_PUBLISHED]]);
+        $this->insertContent('Products', ['id' => 2,
+                                          'status' => DAO::STATUS_DRAFT,
+                                          'title' => 'Tuote2']);
         $this->insertRevision(2, 'Products', '{"title":"New title"}');
         $dao = self::makeDao(false);
         $node = $dao->fetchOne('Products')->where('id=?', '2')->exec();
@@ -61,19 +65,23 @@ final class MagicTemplateDAOTest extends DbTestCase {
 
 
     public function testFetchOneJoinProvidesRowsForCollector() {
-        $this->insertContent('Products', [['Tuote3'], [3]]);
-        $this->insertContent('Reviews', [['sucks','Tuote3'], [1]],
-                                        [['agreed','Tuote3'], [2]]);
+        $this->insertContent('Products', ['id' => 3, 'title' => 'Tuote3']);
+        $this->insertContent('Reviews', ['id' => 1,
+                                         'content' => 'I like Turtles',
+                                         'productId' => 3],
+                                        ['id' => 2,
+                                         'content' => 'Turtles!',
+                                         'productId' => 3]);
         $dao = self::makeDao(false);
         $node = $dao->fetchOne('Products p')
-                    ->join('Reviews r', 'r.productTitle=p.title')
+                    ->join('Reviews r', 'r.productId=p.id')
                     ->collectJoin('reviews', function ($product, $row) {
                         $product->reviews[] = (object)['content' => $row['rContent']];
                     })
-                    ->where('id=?', '3')
+                    ->where('id=?', 3)
                     ->exec();
         $this->assertEquals(true, $node !== null);
-        $this->assertEquals('[{"content":"sucks"},{"content":"agreed"}]',
+        $this->assertEquals('[{"content":"I like Turtles"},{"content":"Turtles!"}]',
                             json_encode($node->reviews));
     }
 }

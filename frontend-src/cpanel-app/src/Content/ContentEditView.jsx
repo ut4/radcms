@@ -77,7 +77,7 @@ class ContentEditView extends preact.Component {
     handleFormSubmit() {
         const revisionSettings = !this.state.doPublish ? '' : '/publish';
         return http.put(`/api/content/${this.props.id}/${this.props.contentTypeName}${revisionSettings}`,
-            Object.assign({isPublished: this.state.contentNode.isPublished,
+            Object.assign({status: this.state.contentNode.status,
                            isRevision: this.state.contentNode.isRevision},
                           this.fieldListCmp.getResult())
         )

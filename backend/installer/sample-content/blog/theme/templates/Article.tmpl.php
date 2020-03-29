@@ -9,7 +9,7 @@ $article = $this
                           $props['slug'])
     ->exec();
 if (array_key_exists('bindTo', $props))
-    $props['bindTo'] = $article;
+    $props['bindTo'] = $article ?? (object) ['title' => 404];
 if ($article): ?>
     <article>
         <h2><?= $article->title ?></h2>

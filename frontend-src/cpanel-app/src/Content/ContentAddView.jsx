@@ -60,8 +60,9 @@ class ContentAddView extends preact.Component {
      */
     handleFormSubmit() {
         const revisionSettings = this.state.createRevision ? '/with-revision' : '';
+        const Status = {PUBLISHED: 0, DRAFT: 1};
         return http.post(`/api/content/${this.state.contentType.name}${revisionSettings}`,
-            Object.assign({isPublished: revisionSettings === ''},
+            Object.assign({status: revisionSettings === '' ? Status.PUBLISHED : Status.DRAFT},
                           this.fieldListCmp.getResult()))
             .then(() => {
                 urlUtils.redirect(this.props.returnTo || '/', 'hard');

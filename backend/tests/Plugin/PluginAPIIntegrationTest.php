@@ -14,6 +14,7 @@ use Pike\TestUtils\MutedResponse;
 use RadPlugins\MoviesPlugin\MoviesPlugin;
 use RadCms\Plugin\Plugin;
 use RadCms\APIConfigsStorage;
+use RadCms\Content\DAO;
 
 final class PluginAPIIntegrationTest extends DbTestCase {
     use HttpTestUtils;
@@ -83,7 +84,7 @@ final class PluginAPIIntegrationTest extends DbTestCase {
         $this->insertTestMovie();
         $this->sendListMoviesRequest($s);
         $this->verifyResponseBodyEquals('[{"id":"1"' .
-                                        ',"isPublished":true' .
+                                        ',"status":' . DAO::STATUS_PUBLISHED .
                                         ',"title":"Fus"' .
                                         ',"releaseYear":"2020"' .
                                         ',"contentType":"Movies"' .
@@ -93,8 +94,10 @@ final class PluginAPIIntegrationTest extends DbTestCase {
     private function setupReadTest() {
         return $this->setupInstallCtypeTest();
     }
-    private function insertTestMovie($id = '1') {
-        $this->insertContent('Movies', [['Fus', 2020], [$id]]);
+    private function insertTestMovie($id = 1) {
+        $this->insertContent('Movies', ['id' => $id,
+                                        'title' => 'Fus',
+                                        'releaseYear' => 2020]);
     }
     private function sendListMoviesRequest($s) {
         $res = $this->createMock(Response::class);

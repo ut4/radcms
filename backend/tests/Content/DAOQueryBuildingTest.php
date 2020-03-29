@@ -23,7 +23,7 @@ final class DAOQueryBuildingTest extends TestCase {
     }
     public function testFetchOneGeneratesBasicQueries() {
         $query1 = $this->makeDao()->fetchOne('Games')->where('id=\'1\'');
-        $mainQ = 'SELECT `id`, `isPublished`, `title`, \'Games\' AS `contentType` FROM `${p}Games`';
+        $mainQ = 'SELECT `id`, `status`, `title`, \'Games\' AS `contentType` FROM `${p}Games`';
         $this->assertEquals($mainQ . ' WHERE id=\'1\'', $query1->toSql());
         //
         $withRevisions = $this->makeDao(true)->fetchOne('Games')->where('id=2')->limit(10, 2);
@@ -36,7 +36,7 @@ final class DAOQueryBuildingTest extends TestCase {
         );
     }
     public function testFetchOneGeneratesJoinQueries() {
-        $mainQ = 'SELECT `id`, `isPublished`, `title`, \'Games\' AS `contentType` FROM `${p}Games`' .
+        $mainQ = 'SELECT `id`, `status`, `title`, \'Games\' AS `contentType` FROM `${p}Games`' .
                  ' WHERE `title`=\'Commandos II\' LIMIT 10';
         $joinQ = ' JOIN `${p}Platforms` AS b ON (b.`gameTitle` = a.`title`)';
         $query = $this->makeDao()->fetchOne('Games')
@@ -82,7 +82,7 @@ final class DAOQueryBuildingTest extends TestCase {
         );
     }
     public function testFetchOneGeneratesJoinQueriesUsingAliases() {
-        $mainQ = 'SELECT `id`, `isPublished`, `title`, \'Games\' AS `contentType` FROM `${p}Games`' .
+        $mainQ = 'SELECT `id`, `status`, `title`, \'Games\' AS `contentType` FROM `${p}Games`' .
                  ' WHERE 1=1';
         $joinQ = ' JOIN `${p}Platforms` AS p ON (p.`gameTitle` = g.`title`)';
         $query = $this->makeDao()->fetchOne('Games g')
@@ -99,7 +99,7 @@ final class DAOQueryBuildingTest extends TestCase {
     }
     public function testFetchAllGeneratesBasicQuery() {
         $query1 = $this->makeDao()->fetchAll('Platforms');
-        $mainQ = 'SELECT `id`, `isPublished`, `name`, `gameTitle`, \'Platforms\' AS `contentType`' .
+        $mainQ = 'SELECT `id`, `status`, `name`, `gameTitle`, \'Platforms\' AS `contentType`' .
                  ' FROM `${p}Platforms`';
         $this->assertEquals($mainQ, $query1->toSql());
         //

@@ -9,6 +9,7 @@ use Pike\Request;
 use RadCms\ContentType\ContentTypeCollection;
 use RadCms\ContentType\ContentTypeMigrator;
 use Pike\Response;
+use RadCms\Content\DAO;
 
 final class ContentControllersTest extends DbTestCase {
     use HttpTestUtils;
@@ -109,7 +110,7 @@ final class ContentControllersTest extends DbTestCase {
         $this->insertTestProduct();
         $this->sendGetContentNodeRequest($s);
         $this->assertEquals('{"id":"1"' .
-                            ',"isPublished":true' .
+                            ',"status":' . DAO::STATUS_PUBLISHED .
                             ',"title":"Tuotteen nimi"' .
                             ',"contentType":"Products"' .
                             ',"revisionCreatedAt":null' .
@@ -137,7 +138,7 @@ final class ContentControllersTest extends DbTestCase {
         $this->insertTestBrand();
         $this->sendGetContentNodesByTypeRequest($s);
         $this->assertEquals('[{"id":"1"' .
-                            ',"isPublished":true' .
+                            ',"status":' . DAO::STATUS_PUBLISHED .
                             ',"name":"Tuotemerkin nimi"' .
                             ',"contentType":"Brands"' .
                             ',"revisionCreatedAt":null' .
@@ -174,12 +175,12 @@ final class ContentControllersTest extends DbTestCase {
         $res = $this->createMock(Response::class);
         $this->sendResponseBodyCapturingRequest($req, $res, $this->app, $s);
     }
-    private function verifyContentNodeWasUpdatedToDb($s, $isPublished = false) {
+    private function verifyContentNodeWasUpdatedToDb($s) {
         $row = self::$db->fetchOne(
-            'SELECT `title`, `isPublished` FROM ${p}Products WHERE `id` = 1'
+            'SELECT `title`, `status` FROM ${p}Products WHERE `id` = 1'
         ) ?? [];
         $this->assertEquals($s->newData->title, $row['title']);
-        $this->assertEquals((int)$isPublished, $row['isPublished']);
+        $this->assertEquals(DAO::STATUS_PUBLISHED, $row['status']);
     }
 
 
@@ -211,12 +212,12 @@ final class ContentControllersTest extends DbTestCase {
 
     public function testPUTContentPublishesContent() {
         $s = $this->setupPublishContentTest();
-        $this->insertTestProduct(false);
+        $this->insertTestProduct(DAO::STATUS_DRAFT);
         $this->insertRevision(1, 'Products');
         $this->sendUpdateContentNodeRequest($s, '/publish');
         $this->assertEquals('{"numAffectedRows":2}', $s->actualResponseBody);
         $this->verifyRevisionWasDeletedFromDb($s);
-        $this->verifyContentNodeWasUpdatedToDb($s, true);
+        $this->verifyContentNodeWasUpdatedToDb($s);
         $this->deleteAllRevisions();
     }
     private function setupPublishContentTest() {
@@ -232,11 +233,14 @@ final class ContentControllersTest extends DbTestCase {
             ['Products']
         ));
     }
-    private function insertTestProduct($isPublished = true) {
-        $this->insertContent('Products', [['Tuotteen nimi'], [1, $isPublished]]);
+    private function insertTestProduct($status = DAO::STATUS_PUBLISHED) {
+        $this->insertContent('Products', ['id' => 1,
+                                          'status' => $status,
+                                          'title' => 'Tuotteen nimi']);
     }
     private function insertTestBrand() {
-        $this->insertContent('Brands', [['Tuotemerkin nimi'], [1]]);
+        $this->insertContent('Brands', ['id' => 1,
+                                        'name' => 'Tuotemerkin nimi']);
     }
     private function deleteAllTestProducts() {
         $this->deleteContent('Products');
