@@ -1,10 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RadCms\Content;
 
 use Pike\Request;
 use Pike\Response;
-use Pike\Db;
 
 /**
  * Handlaa /api/content -alkuiset pyynnöt.
@@ -18,7 +19,9 @@ class ContentControllers {
      * @param \Pike\Response $res
      * @param \RadCms\Content\DMO $dmo
      */
-    public function handleCreateContentNode(Request $req, Response $res, DMO $dmo) {
+    public function handleCreateContentNode(Request $req,
+                                            Response $res,
+                                            DMO $dmo): void {
         // @allow \Pike\PikeException
         $numRows = $dmo->insert($req->params->contentTypeName,
                                 $req->body,
@@ -35,7 +38,7 @@ class ContentControllers {
      */
     public function handleGetContentNode(Request $req,
                                          Response $res,
-                                         MagicTemplateDAO $dao) {
+                                         MagicTemplateDAO $dao): void {
         // @allow \Pike\PikeException
         $node = $dao->fetchOne($req->params->contentTypeName)
                     ->where('`id` = ?', $req->params->id) // aina validi (läpäissyt routerin regexpin)
@@ -52,9 +55,9 @@ class ContentControllers {
      */
     public function handleGetContentNodesByType(Request $req,
                                                 Response $res,
-                                                MagicTemplateDAO $dao) {
+                                                MagicTemplateDAO $dao): void {
         // @allow \Pike\PikeException
-        $nodes = $dao->fetchAll($req->params->contentTypeName)->limit('50')->exec();
+        $nodes = $dao->fetchAll($req->params->contentTypeName)->limit(50)->exec();
         $res->json($nodes);
     }
     /**
@@ -64,7 +67,9 @@ class ContentControllers {
      * @param \Pike\Response $res
      * @param \RadCms\Content\DMO $dmo
      */
-    public function handleUpdateContentNode(Request $req, Response $res, DMO $dmo) {
+    public function handleUpdateContentNode(Request $req,
+                                            Response $res,
+                                            DMO $dmo): void {
         // @allow \Pike\PikeException
         $numRows = $dmo->update($req->params->id,
                                 $req->params->contentTypeName,

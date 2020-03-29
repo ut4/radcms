@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RadCms\Cli;
 
 use Pike\Request;
@@ -11,7 +13,7 @@ class MainController {
      * että tämä komento ajetaan komentokehotteesta, jonka pathista löytyy
      * `composer`, ja `git`.
      */
-    public function makeRelease(Request $req, Bundler $bundler) {
+    public function makeRelease(Request $req, Bundler $bundler): void {
         // @allow \Pike\PikeException
         $bundler->makeRelease($req->params->dirPath,
                               function ($msg) { echo $msg . PHP_EOL; },
@@ -20,7 +22,7 @@ class MainController {
     /**
      * ...
      */
-    public function printAclRules() {
+    public function printAclRules(): void {
         $fn = require dirname(__DIR__) . '/backend/installer/default-acl-rules.php';
         echo json_encode($fn());
     }

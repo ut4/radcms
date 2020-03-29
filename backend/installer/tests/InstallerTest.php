@@ -228,7 +228,7 @@ final class InstallerTest extends BaseInstallerTest {
                 ->method('copy')
                 ->withConsecutive(
                     ["{$from}site.json", "{$to}site.json"],
-                    ["{$from}README.md", "{$to}README.md"],
+                    ["{$from}theme/README.md", "{$to}theme/README.md"],
                     ["{$from}theme/dir/main.tmpl.php", "{$to}theme/dir/main.tmpl.php"],
                     ["{$from}theme/Another.tmpl.php", "{$to}theme/Another.tmpl.php"],
                     ["{$from}theme/frontend/foo.css", "{$to}theme/foo.css"],

@@ -1,9 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RadCms\Content;
 
 use RadCms\ContentType\ContentTypeValidator;
 use Pike\PikeException;
+use RadCms\ContentType\FieldCollection;
 
 /**
  * DataManipulationObject: implementoi sisältötyyppidatan insert-, update-, ja
@@ -18,7 +21,9 @@ class DMO extends DAO {
      * @return int $db->rowCount()
      * @throws \Pike\PikeException
      */
-    public function insert($contentTypeName, $data, $withRevision = false) {
+    public function insert(string $contentTypeName,
+                           \stdClass $data,
+                           bool $withRevision = false) {
         $this->lastInsertId = 0;
         // @allow \Pike\PikeException
         $type = $this->getContentType($contentTypeName);
@@ -50,7 +55,8 @@ class DMO extends DAO {
     /**
      * @return int $numAffectedRows
      */
-    private function insertWithoutRevision($contentTypeName, $q) {
+    private function insertWithoutRevision(string $contentTypeName,
+                                           array $q): int {
         $numRows = $this->db->exec('INSERT INTO `${p}' . $contentTypeName . '`' .
                                    ' (' . implode(', ', $q['cols']) . ')' .
                                    ' VALUES (' . implode(', ', $q['qs']) . ')',
@@ -61,7 +67,10 @@ class DMO extends DAO {
     /**
      * @return int $numAffectedRows
      */
-    private function insertWithRevision($contentTypeName, $q, $data, $fields) {
+    private function insertWithRevision(string $contentTypeName,
+                                        array $q,
+                                        \stdClass $data,
+                                        FieldCollection $fields): int {
         $this->db->beginTransaction();
         $numRows = 0;
         $numRows2 = 0;
@@ -87,8 +96,11 @@ class DMO extends DAO {
      * @return int $db->rowCount()
      * @throws \Pike\PikeException
      */
-    public function update($id, $contentTypeName, $data, $revisionSettings = '') {
-        if (!is_string($id) || !ctype_digit($id))
+    public function update(string $id,
+                           string $contentTypeName,
+                           \stdClass $data,
+                           string $revisionSettings = ''): int {
+        if (!ctype_digit($id))
             throw new PikeException('id must be a \'[0-9]+\'', PikeException::BAD_INPUT);
         // @allow \Pike\PikeException
         $type = $this->getContentType($contentTypeName);
@@ -134,7 +146,10 @@ class DMO extends DAO {
     /**
      * @return array [<sql>, <bindVals>]
      */
-    private static function makeUpdateMainExec($id, $contentTypeName, $data, $fields) {
+    private static function makeUpdateMainExec(string $id,
+                                               string $contentTypeName,
+                                               \stdClass $data,
+                                               FieldCollection $fields): array {
         $q = ['colQs' => ['`isPublished` = ?'],
               'vals' => [(int)$data->isPublished]];
         foreach ($fields as $f) {
@@ -153,7 +168,10 @@ class DMO extends DAO {
     /**
      * @return array [<sql>, <bindVals>]
      */
-    private static function makeUpdateRevisionExec($id, $contentTypeName, $data, $fields) {
+    private static function makeUpdateRevisionExec(string $id,
+                                                   string $contentTypeName,
+                                                   \stdClass $data,
+                                                   FieldCollection $fields): array {
         return [
             'UPDATE ${p}contentRevisions' .
             ' SET `revisionSnapshot` = ?' .
@@ -168,7 +186,8 @@ class DMO extends DAO {
     /**
      * @return array [<sql>, <bindVals>]
      */
-    private static function makeDeleteRevisionExec($id, $contentTypeName) {
+    private static function makeDeleteRevisionExec(string $id,
+                                                   string $contentTypeName): array {
         return [
             'DELETE FROM ${p}contentRevisions' .
             ' WHERE `contentId` = ? AND `contentType` = ?',
@@ -178,7 +197,8 @@ class DMO extends DAO {
     /**
      * @return string
      */
-    private static function makeSnapshot($data, $fields) {
+    private static function makeSnapshot(\stdClass $data,
+                                         FieldCollection $fields): string {
         $out = [];
         foreach ($fields as $f)
             $out[$f->name] = $data->{$f->name};

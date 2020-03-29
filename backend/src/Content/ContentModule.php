@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RadCms\Content;
 
 abstract class ContentModule {
@@ -8,7 +10,7 @@ abstract class ContentModule {
      *
      * @param \stdClass $ctx {\Pike\Router router, \Pike\Db db, \RadCms\Auth\Authenticator auth, \RadCms\Auth\ACL acl, \RadCms\CmsState cmsState, \Pike\Translator translator}
      */
-    public static function init($ctx) {
+    public static function init(\stdClass $ctx): void {
         $ctx->router->map('POST', '/api/content/[w:contentTypeName]/[with-revision:revisionSettings]?',
             [ContentControllers::class, 'handleCreateContentNode', 'create:content']
         );

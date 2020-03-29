@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RadCms\Auth;
 
 use Pike\Request;
@@ -24,7 +26,7 @@ class AuthControllers {
      *
      * @param \Pike\Response $res
      */
-    public function renderLoginView(Response $res) {
+    public function renderLoginView(Response $res): void {
         $res->html((new MagicTemplate(__DIR__ . '/base-view.tmpl.php'))
             ->render(['title' => 'Kirjautuminen',
                       'reactAppName' => 'LoginApp']));
@@ -35,7 +37,7 @@ class AuthControllers {
      * @param \Pike\Request $req
      * @param \Pike\Response $res
      */
-    public function handleLoginFormSubmit(Request $req, Response $res) {
+    public function handleLoginFormSubmit(Request $req, Response $res): void {
         if (($errors = $this->validateLoginFormInput($req->body))) {
             $res->status(400)->json($errors);
             return;
@@ -57,7 +59,7 @@ class AuthControllers {
      *
      * @param \Pike\Response $res
      */
-    public function handleLogoutRequest(Response $res) {
+    public function handleLogoutRequest(Response $res): void {
         $this->auth->logout();
         $res->json(['ok' => 'ok']);
     }
@@ -66,7 +68,7 @@ class AuthControllers {
      *
      * @param \Pike\Response $res
      */
-    public function renderRequestPassResetView(Response $res) {
+    public function renderRequestPassResetView(Response $res): void {
         $res->html((new MagicTemplate(__DIR__ . '/base-view.tmpl.php'))
             ->render(['title' => 'Uusi salasanan palautus',
                       'reactAppName' => 'RequestPassResetApp']));
@@ -82,7 +84,7 @@ class AuthControllers {
     public function handleRequestPassResetFormSubmit(Request $req,
                                                      Response $res,
                                                      CmsState $cmsState,
-                                                     AppConfig $appConfig) {
+                                                     AppConfig $appConfig): void {
         if (($errors = $this->validateRequestPassResetFormInput($req->body))) {
             $res->status(400)->json($errors);
             return;
@@ -119,7 +121,7 @@ class AuthControllers {
      *
      * @param \Pike\Response $res
      */
-    public function renderFinalizePassResetView(Response $res) {
+    public function renderFinalizePassResetView(Response $res): void {
         $res->html((new MagicTemplate(__DIR__ . '/base-view.tmpl.php'))
             ->render(['title' => 'Salasanan palautus',
                       'reactAppName' => 'FinalizePassResetApp']));
@@ -130,7 +132,8 @@ class AuthControllers {
      * @param \Pike\Request $req
      * @param \Pike\Response $res
      */
-    public function handleFinalizePassResetFormSubmit(Request $req, Response $res) {
+    public function handleFinalizePassResetFormSubmit(Request $req,
+                                                      Response $res): void {
         if (($errors = $this->validateFinalizePassResetFormInput($req->body))) {
             $res->status(400)->json($errors);
             return;
@@ -155,7 +158,7 @@ class AuthControllers {
      * @param \Pike\Response $res
      */
     public function handleUpdatePasswordRequest(Request $req,
-                                                Response $res) {
+                                                Response $res): void {
         if (($errors = $this->validateUpdatePasswordInput($req->body))) {
             $res->status(400)->json($errors);
             return;
@@ -168,7 +171,7 @@ class AuthControllers {
     /**
      * @return string[]
      */
-    private function validateLoginFormInput($input) {
+    private function validateLoginFormInput(\stdClass $input): array {
         return (Validation::makeObjectValidator())
             ->rule('username', 'minLength', 1)
             ->rule('password', 'minLength', 1)
@@ -177,7 +180,7 @@ class AuthControllers {
     /**
      * @return string[]
      */
-    private function validateRequestPassResetFormInput($input) {
+    private function validateRequestPassResetFormInput(\stdClass $input): array {
         return (Validation::makeObjectValidator())
             ->rule('usernameOrEmail', 'minLength', 1)
             ->validate($input);
@@ -185,7 +188,7 @@ class AuthControllers {
     /**
      * @return string[]
      */
-    private function validateFinalizePassResetFormInput($input) {
+    private function validateFinalizePassResetFormInput(\stdClass $input): array {
         return (Validation::makeObjectValidator())
             ->rule('email', 'minLength', 1)
             ->rule('newPassword', 'minLength', 1)
@@ -195,7 +198,7 @@ class AuthControllers {
     /**
      * @return string[]
      */
-    private function validateUpdatePasswordInput($input) {
+    private function validateUpdatePasswordInput(\stdClass $input): array {
         return (Validation::makeObjectValidator())
             ->rule('userId', 'minLength', 36)
             ->rule('newPassword', 'minLength', 1)

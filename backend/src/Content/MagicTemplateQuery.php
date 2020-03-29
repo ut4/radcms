@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RadCms\Content;
 
 /**
@@ -15,10 +17,10 @@ class MagicTemplateQuery extends Query {
      * @param string $subTitle = ''
      * @return $this
      */
-    public function createFrontendPanel($panelType,
-                                        $title = '',
-                                        $highlightSelector = '',
-                                        $subTitle = '') {
+    public function createFrontendPanel(string $panelType,
+                                        string $title = '',
+                                        string $highlightSelector = '',
+                                        string $subTitle = ''): MagicTemplateQuery {
         $this->frontendPanelInfo = (object) [
             'impl' => $panelType,
             'title' => $title ? $title : $this->contentType->name,
@@ -33,7 +35,7 @@ class MagicTemplateQuery extends Query {
     /**
      * @return \stdClass
      */
-    public function getFrontendPanelInfo() {
+    public function getFrontendPanelInfo(): \stdClass {
         if ($this->frontendPanelInfo && $this->whereDef)
             $this->frontendPanelInfo->queryInfo->where = $this->whereDef;
         return $this->frontendPanelInfo;

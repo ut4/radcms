@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RadCms\Content;
 
 use Pike\Db;
@@ -22,7 +24,7 @@ class MagicTemplateDAO extends DAO {
      * @param string $contentTypeName
      * @return \RadCms\Content\MagicTemplateQuery
      */
-    public function fetchOne($contentTypeName) {
+    public function fetchOne(string $contentTypeName): MagicTemplateQuery {
         [$contentTypeName, $alias] = parent::parseContentTypeNameAndAlias($contentTypeName);
         // @allow \Pike\PikeException
         $type = $this->getContentType($contentTypeName);
@@ -33,7 +35,7 @@ class MagicTemplateDAO extends DAO {
      * @param string $contentTypeName eg. 'Article', 'Product', 'Movie', 'Employee'
      * @return \RadCms\Content\MagicTemplateQuery
      */
-    public function fetchAll($contentTypeName) {
+    public function fetchAll(string $contentTypeName): MagicTemplateQuery {
         [$contentTypeName, $alias] = parent::parseContentTypeNameAndAlias($contentTypeName);
         // @allow \Pike\PikeException
         $type = $this->getContentType($contentTypeName);
@@ -43,7 +45,7 @@ class MagicTemplateDAO extends DAO {
     /**
      * @return array array<{impl: string, title: string ...}>
      */
-    public function getFrontendPanelInfos() {
+    public function getFrontendPanelInfos(): array {
         $out = [];
         foreach ($this->queries as $q) {
             if (($info = $q->getFrontendPanelInfo()))
@@ -59,11 +61,11 @@ class MagicTemplateDAO extends DAO {
      * @param \stdClass $frontendPanelInfo = null
      * @return array|\stdClass|null
      */
-    public function doExec($sql,
-                           $isFetchOne,
-                           $bindVals = null,
-                           $join = null,
-                           $frontendPanelInfo = null) {
+    public function doExec(string $sql,
+                           bool $isFetchOne,
+                           array $bindVals = null,
+                           \stdClass $join = null,
+                           \stdClass $frontendPanelInfo = null) {
         $res = parent::doExec($sql, $isFetchOne, $bindVals, $join);
         if ($frontendPanelInfo) $frontendPanelInfo->contentNodes = $res;
         if (!$res) return $res;

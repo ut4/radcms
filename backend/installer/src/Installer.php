@@ -106,10 +106,10 @@ class Installer {
         $assetFileNames = $this->readDirRelPaths("{$base}theme/frontend/", '/^.*\.(css|js)$/');
         //
         $toBeCopied = [];
-        foreach (['site.json', 'README.md'] as $fileName)
+        foreach (['site.json'] as $fileName)
             $toBeCopied[] = ["{$base}{$fileName}",
                              "{$this->siteDirPath}{$fileName}"];
-        foreach ($tmplFileNames as $relativePath)
+        foreach (array_merge(['README.md'], $tmplFileNames) as $relativePath)
             $toBeCopied[] = ["{$base}theme/{$relativePath}",
                              "{$this->siteDirPath}theme/{$relativePath}"];
         foreach ($assetFileNames as $relativePath)

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RadCms\Content;
 
 use Pike\Validation;
@@ -27,8 +29,8 @@ class Query {
      * $param \RadCms\Content\DAO $dao
      */
     public function __construct(ContentTypeDef $contentType,
-                                $contentTypeAlias,
-                                $isFetchOne,
+                                string $contentTypeAlias,
+                                bool $isFetchOne,
                                 DAO $dao) {
         $this->contentType = $contentType;
         $this->contentTypeAlias = $contentTypeAlias;
@@ -41,7 +43,7 @@ class Query {
      * @param mixed ...$bindVals
      * @return $this
      */
-    public function where($expr, ...$bindVals) {
+    public function where(string $expr, ...$bindVals): Query {
         $this->whereDef = (object)['expr' => $expr, 'bindVals' => $bindVals];
         return $this;
     }
@@ -51,7 +53,7 @@ class Query {
      * @param mixed ...$bindVals
      * @return $this
      */
-    public function join($contentType, $expr, ...$bindVals) {
+    public function join(string $contentType, string $expr, ...$bindVals): Query {
         return $this->doJoin($contentType, $expr, $bindVals, false);
     }
     /**
@@ -60,7 +62,7 @@ class Query {
      * @param mixed ...$bindVals
      * @return $this
      */
-    public function leftJoin($contentType, $expr, ...$bindVals) {
+    public function leftJoin(string $contentType, string $expr, ...$bindVals): Query {
         return $this->doJoin($contentType, $expr, $bindVals, true);
     }
     /**
@@ -68,7 +70,7 @@ class Query {
      * @param \Closure $fn
      * @return $this
      */
-    public function collectJoin($toField, \Closure $fn) {
+    public function collectJoin(string $toField, \Closure $fn): Query {
         $joinDef = $this->joinDefs[count($this->joinDefs) - 1];
         $joinDef->collector = [$fn, $toField];
         return $this;
@@ -78,8 +80,8 @@ class Query {
      * @param int $offset = null
      * @return $this
      */
-    public function limit($limit, $offset = null) {
-        $this->limitExpr = $offset === null ? (string)$limit : "{$offset}, {$limit}";
+    public function limit(int $limit, int $offset = null): Query {
+        $this->limitExpr = $offset === null ? (string) $limit : "{$offset}, {$limit}";
         return $this;
     }
     /**
@@ -99,7 +101,7 @@ class Query {
      * @return string
      * @throws \Pike\PikeException
      */
-    public function toSql() {
+    public function toSql(): string {
         if (($errors = $this->selfValidate())) {
             throw new PikeException($errors, PikeException::BAD_INPUT);
         }
@@ -132,7 +134,10 @@ class Query {
      * @param bool $isLeft
      * @return $this
      */
-    private function doJoin($contentType, $expr, $bindVals, $isLeft) {
+    private function doJoin(string $contentType,
+                            string $expr,
+                            array $bindVals,
+                            bool $isLeft): Query {
         [$contentTypeName, $alias] = DAO::parseContentTypeNameAndAlias($contentType, 'b');
         $this->joinDefs[] = (object)['contentType' => $contentTypeName,
                                      'alias' => $alias,
@@ -147,7 +152,9 @@ class Query {
      * @param string[] &$joins
      * @param string[] &$fields
      */
-    private function addContentTypeJoin($joinDef, &$joins, &$fields) {
+    private function addContentTypeJoin(\stdClass $joinDef,
+                                        array &$joins,
+                                        array &$fields): void {
         $ctypeName = $joinDef->contentType;
         $a = $joinDef->alias;
         $joins[] = (!$joinDef->isLeft ? '' : 'LEFT ') . 'JOIN' .
@@ -163,7 +170,7 @@ class Query {
      * @param string[] &$joins
      * @param string[] &$fields
      */
-    private function addRevisionsJoin(&$joins, &$fields) {
+    private function addRevisionsJoin(array &$joins, array &$fields): void {
         $joins[] = 'LEFT JOIN ${p}contentRevisions _r' .
                    ' ON (_r.`contentId` = ' . $this->contentTypeAlias . '.`id`' .
                    ' AND _r.`contentType` = \'' . $this->contentType->name . '\')';
@@ -172,7 +179,7 @@ class Query {
     /**
      * @return string
      */
-    private function selfValidate() {
+    private function selfValidate(): string {
         $errors = ContentTypeValidator::validate($this->contentType);
         if (!Validation::isIdentifier($this->contentTypeAlias))
             $errors[] = "fetch alias ({$this->contentTypeAlias}) is not valid";
