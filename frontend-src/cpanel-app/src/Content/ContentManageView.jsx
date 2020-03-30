@@ -1,5 +1,6 @@
 import {http, View, FeatherSvg, InputGroup, Select} from '@rad-commons';
 import {ContentNodeUtils} from '@rad-cpanel-commons';
+import openDeleteContentDialog from './ContentDeleteDialog.jsx';
 
 /**
  * #/manage-content/:initialContentTypeName.
@@ -42,7 +43,7 @@ class ContentManageView extends preact.Component {
      */
     render() {
         return <View><div>
-            <h2>Sisältö</h2>
+            <h2>Selaa sisältöä</h2>
             <div>
                 <InputGroup inline>
                     <Select onChange={ e => this.updateContent(e) }
@@ -67,16 +68,19 @@ class ContentManageView extends preact.Component {
                     <th></th>
                 </tr></thead>
                 <tbody>{ this.state.content.map(cnode => {
-                    const href = `/edit-content/${cnode.id}/${cnode.contentType}`;
+                    const href = `#/edit-content/${cnode.id}/${cnode.contentType}`;
                     return <tr>
                         <td>{ ContentNodeUtils.makeTitle(cnode) }</td>
                         <td>{ !cnode.isRevision
                             ? 'Kyllä'
-                            : ['Ei ', <a href={ `#${href}/publish` }>Julkaise</a>]
+                            : ['Ei ', <a href={ `${href}/publish` }>Julkaise</a>]
                         }</td>
                         <td>
-                            <a href={ href } class="icon-only">
+                            <a href={ href } class="icon-only" title="Muokkaa">
                                 <FeatherSvg iconId="edit-2" className="medium"/>
+                            </a> | <a onClick={ e => this.openDeleteDialog(e, cnode) }
+                                    href={ `#/delete-content/${cnode.id}` } class="icon-only" title="Poista">
+                                <FeatherSvg iconId="trash-2" className="medium"/>
                             </a>
                         </td>
                     </tr>;
@@ -110,6 +114,13 @@ class ContentManageView extends preact.Component {
         this.cache[newState.selectedContentTypeName] = cnodes;
         newState.message = cnodes.length ? null : 'Ei sisältöä tyypille ' +
             newState.contentTypes[0].friendlyName + '.';
+    }
+    /**
+     * @access private
+     */
+    openDeleteDialog(e, cnode) {
+        e.preventDefault();
+        openDeleteContentDialog(cnode);
     }
 }
 

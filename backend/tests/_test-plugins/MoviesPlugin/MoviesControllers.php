@@ -23,7 +23,9 @@ class MoviesControllers {
      * (myös konstruktoriin).
      */
     public function handleGetMoviesRequest(Response $res, DAO $dao) {
-        $res->json($dao->fetchAll('Movies')->exec());
+        $res->json(ArrayUtils::filterByKey($dao->fetchAll('Movies')->exec(),
+                                           DAO::STATUS_PUBLISHED,
+                                           'status'));
     }
     /**
      * ...

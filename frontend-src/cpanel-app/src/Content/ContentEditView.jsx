@@ -1,5 +1,7 @@
-import {http, toasters, urlUtils, View, Form, InputGroup, Input} from '@rad-commons';
+import {http, toasters, urlUtils, View, FeatherSvg, Form, InputGroup, Input} from '@rad-commons';
 import ContentNodeFieldList from './ContentNodeFieldList.jsx';
+import openDeleteContentDialog from './ContentDeleteDialog.jsx';
+import {Status} from './ContentAddView.jsx';
 
 /**
  * #/edit-content/:id/:contentTypeName/:publish?
@@ -58,7 +60,12 @@ class ContentEditView extends preact.Component {
         const showPublishToggle = !this.props.publish && this.state.contentNode.isRevision;
         return <View><Form onSubmit={ () => this.handleFormSubmit() }
                            submitButtonText={ this.submitButtonText }>
-            <h2>{ [this.title, showPublishToggle ? <sup> (Luonnos)</sup> : null] }</h2>
+            <h2>{ [this.title, showPublishToggle ? <sup> (Luonnos)</sup> : null] }
+                <button onClick={ () => openDeleteContentDialog(this.state.contentNode) }
+                        class="icon-button" title="Poista" type="button">
+                    <FeatherSvg iconId="trash-2" className="medium"/>
+                </button>
+            </h2>
             <ContentNodeFieldList contentNode={ this.state.contentNode }
                                   contentType={ this.state.contentType }
                                   ref={ cmp => { if (cmp) this.fieldListCmp = cmp; } }
@@ -76,9 +83,9 @@ class ContentEditView extends preact.Component {
      */
     handleFormSubmit() {
         const revisionSettings = !this.state.doPublish ? '' : '/publish';
+        const {isRevision, status} = this.state.contentNode;
         return http.put(`/api/content/${this.props.id}/${this.props.contentTypeName}${revisionSettings}`,
-            Object.assign({status: this.state.contentNode.status,
-                           isRevision: this.state.contentNode.isRevision},
+            Object.assign({status: revisionSettings === '' ? status : Status.DRAFT, isRevision},
                           this.fieldListCmp.getResult())
         )
         .then(() => {

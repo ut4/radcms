@@ -44,9 +44,13 @@ class MagicTemplateQuery extends Query {
      * @return array|\stdClass|null
      */
     public function exec() {
-        $bindVals = [];
-        if ($this->whereDef && $this->whereDef->bindVals)
-            $bindVals = array_merge($bindVals, $this->whereDef->bindVals);
+        if (!$this->whereDef)
+            $this->where('`status` < ?', DAO::STATUS_DELETED);
+        else {
+            $this->whereDef->expr .= ' AND `status` < ?';
+            $this->whereDef->bindVals[] = DAO::STATUS_DELETED;
+        }
+        $bindVals = $this->whereDef->bindVals;
         foreach ($this->joinDefs as $d)
             if ($d->bindVals) $bindVals = array_merge($bindVals, $d->bindVals);
         //

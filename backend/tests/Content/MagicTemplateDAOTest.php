@@ -41,8 +41,8 @@ final class MagicTemplateDAOTest extends DbTestCase {
                                           'title' => 'Tuote']);
         $this->insertRevision(1, 'Products', '{"title":"New title"}');
         $dao = self::makeDao(true);
-        $node = $dao->fetchOne('Products')->where('id=?', '1')->exec();
-        $this->assertEquals(true, $node !== null);
+        $node = $dao->fetchOne('Products')->where('id=?', 1)->exec();
+        $this->assertNotNull($node);
         $this->assertEquals('New title', $node->title);
     }
 
@@ -56,8 +56,8 @@ final class MagicTemplateDAOTest extends DbTestCase {
                                           'title' => 'Tuote2']);
         $this->insertRevision(2, 'Products', '{"title":"New title"}');
         $dao = self::makeDao(false);
-        $node = $dao->fetchOne('Products')->where('id=?', '2')->exec();
-        $this->assertEquals(true, $node === null);
+        $node = $dao->fetchOne('Products')->where('id=?', 2)->exec();
+        $this->assertNull($node);
     }
 
 
@@ -80,8 +80,21 @@ final class MagicTemplateDAOTest extends DbTestCase {
                     })
                     ->where('id=?', 3)
                     ->exec();
-        $this->assertEquals(true, $node !== null);
+        $this->assertNotNull($node);
         $this->assertEquals('[{"content":"I like Turtles"},{"content":"Turtles!"}]',
                             json_encode($node->reviews));
+    }
+
+
+    ////////////////////////////////////////////////////////////////////////////
+
+
+    public function testFetchOneDoesNotReturnDeletedContent() {
+        $this->insertContent('Products', ['id' => 4,
+                                          'status' => DAO::STATUS_DELETED,
+                                          'title' => 'Tuote4']);
+        $dao = self::makeDao(true);
+        $node = $dao->fetchOne('Products')->where('id=?', 4)->exec();
+        $this->assertNull($node);
     }
 }

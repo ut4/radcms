@@ -77,4 +77,19 @@ class ContentControllers {
                                 $req->params->revisionSettings ?? '');
         $res->json(['numAffectedRows' => $numRows]);
     }
+    /**
+     * DELETE /api/content/:id/:contentTypeName.
+     *
+     * @param \Pike\Request $req
+     * @param \Pike\Response $res
+     * @param \RadCms\Content\DMO $dmo
+     */
+    public function handleDeleteContentNode(Request $req,
+                                            Response $res,
+                                            DMO $dmo): void {
+        // @allow \Pike\PikeException
+        $numRows = $dmo->delete($req->params->id,
+                                $req->params->contentTypeName);
+        $res->json(['numAffectedRows' => $numRows]);
+    }
 }

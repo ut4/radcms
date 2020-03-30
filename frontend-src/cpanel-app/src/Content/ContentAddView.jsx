@@ -1,6 +1,7 @@
 import {http, toasters, urlUtils, View, Form, InputGroup, Input, Select} from '@rad-commons';
 import {widgetTypes} from '../Widgets/all.jsx';
 import ContentNodeFieldList from './ContentNodeFieldList.jsx';
+const Status = Object.freeze({PUBLISHED: 0, DRAFT: 1, DELETED: 2});
 
 /**
  * #/add-content[/:initialComponentTypeName?returnto=<url>]
@@ -60,7 +61,6 @@ class ContentAddView extends preact.Component {
      */
     handleFormSubmit() {
         const revisionSettings = this.state.createRevision ? '/with-revision' : '';
-        const Status = {PUBLISHED: 0, DRAFT: 1};
         return http.post(`/api/content/${this.state.contentType.name}${revisionSettings}`,
             Object.assign({status: revisionSettings === '' ? Status.PUBLISHED : Status.DRAFT},
                           this.fieldListCmp.getResult()))
@@ -95,3 +95,4 @@ class ContentAddView extends preact.Component {
 }
 
 export default ContentAddView;
+export {Status};

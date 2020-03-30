@@ -15,7 +15,8 @@ $out->resources = (object) [
         'create'    => $flag1,
         'view'      => $flag2,
         'update'    => $flag3,
-        'configure' => 1 << 4,
+        'delete'    => 1 << 4,
+        'configure' => 1 << 5,
     ],
     'contentTypes' => (object) [
         'create'      => $flag1,
@@ -66,11 +67,11 @@ $out->userPermissions = (object) [
         'content'           => ACL::makePermissions(['create','view','update'], $out->resources->content),
         'contentTypes'      => ACL::makePermissions(['view'], $out->resources->contentTypes),
         'editMode'          => ACL::makePermissions(['access'], $out->resources->editMode),
-        'multiFieldContent' => 0,
-        'plugins'           => 0,
+        'multiFieldContent' => ACL::NO_PERMISSIONS,
+        'plugins'           => ACL::NO_PERMISSIONS,
         'profile'           => ACL::makePermissions(['viewItsOwn'], $out->resources->profile),
         'uploads'           => ACL::makePermissions(['view','upload'], $out->resources->uploads),
-        'websites'          => 0
+        'websites'          => ACL::NO_PERMISSIONS
     ],
     ACL::ROLE_VIEWER => (object) [
         'auth' => ACL::makePermissions(['logout'], $out->resources->auth),

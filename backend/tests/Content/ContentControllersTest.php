@@ -176,11 +176,10 @@ final class ContentControllersTest extends DbTestCase {
         $this->sendResponseBodyCapturingRequest($req, $res, $this->app, $s);
     }
     private function verifyContentNodeWasUpdatedToDb($s) {
-        $row = self::$db->fetchOne(
-            'SELECT `title`, `status` FROM ${p}Products WHERE `id` = 1'
-        ) ?? [];
-        $this->assertEquals($s->newData->title, $row['title']);
-        $this->assertEquals(DAO::STATUS_PUBLISHED, $row['status']);
+        $this->verifyContentNodeFromDbEquals((object) array_merge(
+            (array) $s->newData,
+            ['status' => DAO::STATUS_PUBLISHED]
+        ));
     }
 
 
@@ -232,6 +231,34 @@ final class ContentControllersTest extends DbTestCase {
             ' WHERE `contentId` = 1 AND `contentType` = ?',
             ['Products']
         ));
+    }
+
+
+    ////////////////////////////////////////////////////////////////////////////
+
+
+    public function testDELETEContentMarksContentNodeAsDeleted() {
+        $s = $this->setupGetContentTest();
+        $this->insertTestProduct();
+        $this->sendDeleteContentNodeRequest($s);
+        $this->verifyContentNodeWasMarkedAsDeletedToDb($s);
+        $this->assertEquals('{"numAffectedRows":1}', $s->actualResponseBody);
+    }
+    private function sendDeleteContentNodeRequest($s) {
+        $req = new Request('/api/content/1/Products', 'DELETE');
+        $res = $this->createMock(Response::class);
+        $this->sendResponseBodyCapturingRequest($req, $res, $this->app, $s);
+    }
+    private function verifyContentNodeWasMarkedAsDeletedToDb($s) {
+        $this->verifyContentNodeFromDbEquals((object) ['title' => 'Tuotteen nimi',
+                                                       'status' => DAO::STATUS_DELETED]);
+    }
+    private function verifyContentNodeFromDbEquals($expected) {
+        $row = self::$db->fetchOne(
+            'SELECT `title`, `status` FROM ${p}Products WHERE `id` = 1'
+        ) ?? [];
+        $this->assertEquals($expected->title, $row['title']);
+        $this->assertEquals($expected->status, $row['status']);
     }
     private function insertTestProduct($status = DAO::STATUS_PUBLISHED) {
         $this->insertContent('Products', ['id' => 1,
