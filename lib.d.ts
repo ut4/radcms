@@ -6,6 +6,7 @@ declare module "@rad-commons" {
         export const config: {
             baseUrl: string;
             assetBaseUrl: string;
+            currentPagePath: string;
             userPermissions: {
                 canCreateContent: boolean;
                 canConfigureContent: boolean;

@@ -10,7 +10,6 @@ class GenericUIPanelImpl extends preact.Component {
      */
     constructor(props) {
         super(props);
-        this.currentPagePath = props.siteInfo.currentPagePath;
         this.newNodeContentType = props.dataFromBackend.contentTypeName;
         this.node = props.dataFromBackend.contentNodes[0] || null;
     }
@@ -23,10 +22,8 @@ class GenericUIPanelImpl extends preact.Component {
     getMainUrl() {
         return this.node
             ? '/edit-content/' + this.node.id + '/' +
-              this.node.contentType + (!this.node.isRevision ? '' : '/publish') +
-              '?returnTo=' + encodeURIComponent(this.currentPagePath)
-            : '/add-content/' + this.newNodeContentType +
-              '?returnTo=' + encodeURIComponent(this.currentPagePath);
+              this.node.contentType + (!this.node.isRevision ? '' : '/publish')
+            : '/add-content/' + this.newNodeContentType;
     }
     getTitle() {
         const {title, subTitle} = this.props.dataFromBackend;
@@ -71,7 +68,6 @@ class GenericListUIPanelImpl extends preact.Component {
     constructor(props) {
         super(props);
         this.contentNodes = props.dataFromBackend.contentNodes;
-        this.currentPagePath = props.siteInfo.currentPagePath;
         this.contentTypeName = props.dataFromBackend.contentTypeName;
         this.label = '';
     }
@@ -91,7 +87,6 @@ class GenericListUIPanelImpl extends preact.Component {
         return <ContentNodeList
             contentNodes={ this.contentNodes }
             createLinkText={ `Lisää uusi ${this.label}` }
-            currentPagePath={ this.currentPagePath }
             contentType={ this.contentTypeName || (this.contentNodes[0] || {}).contentType }
             noContentNodesContent={ this.contentNodes.length ? null : <div>Ei sisältöä.</div> }/>;
     }

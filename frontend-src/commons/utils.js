@@ -30,6 +30,8 @@ const urlUtils = {
         if (type !== 'hard') {
             window.location.hash = `#/${this.normalizeUrl(to)}`;
         } else {
+            if (to === '@current')
+                to = config.currentPagePath;
             window.location.href = window.location.origin + config.baseUrl +
                                    'edit' +
                                    (to !== '/' ? `/${this.normalizeUrl(to)}` : '');

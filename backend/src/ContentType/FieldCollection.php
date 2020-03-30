@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RadCms\ContentType;
 
 use Pike\Translator;
@@ -12,7 +14,7 @@ class FieldCollection extends \ArrayObject implements \JsonSerializable {
      * @param \Closure $formatterFn = null fn(\RadCms\ContentType\FieldDef $field): string
      * @return string '`name`, `name2`'
      */
-    public function toSqlCols($formatterFn = null) {
+    public function toSqlCols(\Closure $formatterFn = null): string {
         $names = [];
         foreach ($this as $f)
             $names[] = $f->toSqlCol($formatterFn);
@@ -21,7 +23,7 @@ class FieldCollection extends \ArrayObject implements \JsonSerializable {
     /**
      * @return string '`name` TEXT, `name2` INT UNSIGNED'
      */
-    public function toSqlTableFields() {
+    public function toSqlTableFields(): string {
         $fields = [];
         foreach ($this as $f)
             $fields[] = $f->toSqlTableField();
@@ -31,7 +33,7 @@ class FieldCollection extends \ArrayObject implements \JsonSerializable {
      * @param \Pike\Translator $translator = null
      * @return array see self::fromCompactForm()
      */
-    public function toCompactForm(Translator $translator = null) {
+    public function toCompactForm(Translator $translator = null): array {
         $out = [];
         foreach ($this as $f)
             $out[] = (object) [
@@ -47,7 +49,7 @@ class FieldCollection extends \ArrayObject implements \JsonSerializable {
     /**
      * @return array
      */
-    public function jsonSerialize() {
+    public function jsonSerialize(): array {
         return $this->getArrayCopy();
     }
 
@@ -57,7 +59,7 @@ class FieldCollection extends \ArrayObject implements \JsonSerializable {
      * @param array $input
      * @return \RadCms\ContentType\FieldCollection
      */
-    public static function fromCompactForm($input) {
+    public static function fromCompactForm(array $input): FieldCollection {
         $defaultWidget = (object) ['name' => ContentTypeValidator::FIELD_WIDGETS[0],
                                    'args' => null];
         return self::fromArray(array_map(function ($compact) use ($defaultWidget) {
@@ -77,7 +79,7 @@ class FieldCollection extends \ArrayObject implements \JsonSerializable {
      * @param array $input array<{name: string, friendlyName: string, dataType: string, widget: {name: string, args?: object}, defaultValue: string, visibility: int}> Olettaa että on validi
      * @return \RadCms\ContentType\FieldCollection
      */
-    public static function fromArray(array $input) {
+    public static function fromArray(array $input): FieldCollection {
         $out = new FieldCollection;
         foreach ($input as $field)
             $out[] = FieldDef::fromObject($field);

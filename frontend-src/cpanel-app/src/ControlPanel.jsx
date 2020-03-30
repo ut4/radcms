@@ -39,14 +39,14 @@ class ControlPanel extends preact.Component {
                 return {UiImplClass: Cls, dataFromBackend, id: null};
             };
             //
+            config.currentPagePath = dataFromBackend.currentPagePath;
             if (!this.siteInfo) {
                 config.baseUrl = dataFromBackend.baseUrl;
                 config.assetBaseUrl = dataFromBackend.assetBaseUrl;
                 config.userPermissions = dataFromBackend.userPermissions;
                 config.user = dataFromBackend.user;
                 this.siteInfo = {baseUrl: dataFromBackend.baseUrl,
-                                 assetBaseUrl: dataFromBackend.assetBaseUrl,
-                                 currentPagePath: dataFromBackend.currentPagePath};
+                                 assetBaseUrl: dataFromBackend.assetBaseUrl};
                 this.siteIframe = document.getElementById('rad-site-iframe');
                 newState.userDefinedRoutes = [];
                 newState.adminPanels = dataFromBackend.adminPanels.map(p =>

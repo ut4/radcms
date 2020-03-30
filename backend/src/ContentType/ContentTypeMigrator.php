@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RadCms\ContentType;
 
 use Pike\Db;
@@ -26,7 +28,7 @@ class ContentTypeMigrator {
     /**
      * @param object $data Validoitu $req->body
      */
-    public function installSingle(\stdClass $data) {
+    public function installSingle(\stdClass $data): bool {
         $contentTypes = new ContentTypeCollection;
         $contentTypes[] = new ContentTypeDef($data->name,
                                              $data->friendlyName,
@@ -43,8 +45,8 @@ class ContentTypeMigrator {
      * @throws \Pike\PikeException
      */
     public function installMany(ContentTypeCollection $contentTypes,
-                                $initialData = null,
-                                $size = 'medium') {
+                                array $initialData = null,
+                                string $size = 'medium'): bool {
         if (!in_array($size, ContentTypeValidator::COLLECTION_SIZES)) {
             throw new PikeException('Not valid content type collection size ' .
                                     implode(' | ', ContentTypeValidator::COLLECTION_SIZES),
@@ -65,7 +67,7 @@ class ContentTypeMigrator {
      */
     public function updateSingle(\stdClass $data,
                                  ContentTypeDef $contentType,
-                                 ContentTypeCollection $currentContentTypes) {
+                                 ContentTypeCollection $currentContentTypes): bool {
         try {
             if ($data->name !== $contentType->name) {
                 $this->db->exec('RENAME TABLE `${p}' . $contentType->name .
@@ -96,7 +98,7 @@ class ContentTypeMigrator {
      * @return bool
      * @throws \Pike\PikeException
      */
-    public function uninstallMany(ContentTypeCollection $contentTypes) {
+    public function uninstallMany(ContentTypeCollection $contentTypes): bool {
         // @allow \Pike\PikeException
         return $this->validateContentTypes($contentTypes) &&
                $this->removeContentTypes($contentTypes) &&
@@ -107,7 +109,7 @@ class ContentTypeMigrator {
      * @return bool
      * @throws \Pike\PikeException
      */
-    public function uninstallSingle(ContentTypeDef $contentType) {
+    public function uninstallSingle(ContentTypeDef $contentType): bool {
         $contentTypes = new ContentTypeCollection([$contentType]);
         // @allow \Pike\PikeException
         return $this->uninstallMany($contentTypes);
@@ -118,7 +120,7 @@ class ContentTypeMigrator {
      * @return bool
      * @throws \Pike\PikeException
      */
-    public function addField(FieldDef $field, ContentTypeDef $contentType) {
+    public function addField(FieldDef $field, ContentTypeDef $contentType): bool {
         // @allow \Pike\PikeException
         $this->validateContentType($contentType);
         try {
@@ -142,7 +144,7 @@ class ContentTypeMigrator {
      */
     public function updateField(FieldDef $newData,
                                 FieldDef $currentField,
-                                ContentTypeDef $contentType) {
+                                ContentTypeDef $contentType): bool {
         // @allow \Pike\PikeException
         $this->validateContentType($contentType);
         try {
@@ -174,7 +176,7 @@ class ContentTypeMigrator {
      * @return bool
      * @throws \Pike\PikeException
      */
-    public function removeField(FieldDef $field, ContentTypeDef $contentType) {
+    public function removeField(FieldDef $field, ContentTypeDef $contentType): bool {
         // @allow \Pike\PikeException
         $this->validateContentType($contentType);
         try {
@@ -195,7 +197,7 @@ class ContentTypeMigrator {
     /**
      * @param \RadCms\Plugin\Plugin $plugin
      */
-    public function setOrigin(Plugin $plugin) {
+    public function setOrigin(Plugin $plugin): void {
         $this->origin = $plugin->name;
     }
     /**
@@ -203,7 +205,7 @@ class ContentTypeMigrator {
      * @return bool
      * @throws \Pike\PikeException
      */
-    private function validateContentTypes($contentTypes) {
+    private function validateContentTypes(ContentTypeCollection $contentTypes): bool {
         if (!($errors = ContentTypeValidator::validateAll($contentTypes)))
             return true;
         throw new PikeException('Got invalid content types: '. implode(',', $errors),
@@ -214,7 +216,7 @@ class ContentTypeMigrator {
      * @return bool
      * @throws \Pike\PikeException
      */
-    private function validateContentType($contentType) {
+    private function validateContentType(ContentTypeDef $contentType): bool {
         if (!($errors = ContentTypeValidator::validate($contentType)))
             return true;
         throw new PikeException('Got invalid content type: '. implode(',', $errors),
@@ -225,7 +227,7 @@ class ContentTypeMigrator {
      * @return bool
      * @throws \Pike\PikeException
      */
-    private function validateInitialData($data) {
+    private function validateInitialData($data): bool {
         if (!$data)
             return true;
         if (!is_array($data))
@@ -248,7 +250,8 @@ class ContentTypeMigrator {
      * @return bool
      * @throws \Pike\PikeException
      */
-    private function createContentTypes($contentTypes, $size) {
+    private function createContentTypes(ContentTypeCollection $contentTypes,
+                                        string $size): bool {
         $sql = '';
         foreach ($contentTypes as $type) {
             $sql .= 'CREATE TABLE `${p}' . $type->name . '` (' .
@@ -270,7 +273,7 @@ class ContentTypeMigrator {
      * @return bool
      * @throws \Pike\PikeException
      */
-    private function removeContentTypes($contentTypes) {
+    private function removeContentTypes(ContentTypeCollection $contentTypes): bool {
         try {
             $this->db->exec(implode('', array_map(function ($type) {
                 return 'DROP TABLE `${p}' . $type->name . '`;';
@@ -285,7 +288,7 @@ class ContentTypeMigrator {
      * @return bool
      * @throws \Pike\PikeException
      */
-    private function addToInstalledContentTypes(ContentTypeCollection $contentTypes) {
+    private function addToInstalledContentTypes(ContentTypeCollection $contentTypes): bool {
         try {
             $row = $this->db->fetchOne('SELECT `installedContentTypes` FROM ${p}cmsState');
             if (!$row || !strlen($row['installedContentTypes'] ?? ''))
@@ -296,7 +299,7 @@ class ContentTypeMigrator {
                                         PikeException::BAD_INPUT);
             $newCompactFormContentTypes = array_merge(
                 $contentTypes->toCompactForm($this->origin),
-                is_array($parsed) ? $parsed : (array) $parsed
+                $parsed
             );
             if ($this->db->exec(
                 'UPDATE ${p}cmsState SET `installedContentTypes` = JSON_UNQUOTE(?)' .
@@ -314,7 +317,7 @@ class ContentTypeMigrator {
      * @param \RadCms\ContentType\ContentTypeDef $contentType
      * @throws \Pike\PikeException
      */
-    private function updateInstalledContenType(ContentTypeDef $contentType) {
+    private function updateInstalledContenType(ContentTypeDef $contentType): void {
         $compacted = $contentType->toCompactForm($this->origin);
         if ($this->db->exec(
             'UPDATE ${p}cmsState SET' .
@@ -331,7 +334,7 @@ class ContentTypeMigrator {
      * @return bool
      * @throws \Pike\PikeException
      */
-    private function insertInitialData($data, $contentTypes) {
+    private function insertInitialData($data, ContentTypeCollection $contentTypes): bool {
         if (!$data) return true;
         $dmo = new DMO($this->db, $contentTypes,
                        false // no revisions
@@ -351,7 +354,7 @@ class ContentTypeMigrator {
      * @return bool
      * @throws \Pike\PikeException
      */
-    private function removeFromInstalledContentTypes($contentTypes) {
+    private function removeFromInstalledContentTypes(ContentTypeCollection $contentTypes): bool {
         $placeholders = [];
         $values = [];
         foreach ($contentTypes as $t) {

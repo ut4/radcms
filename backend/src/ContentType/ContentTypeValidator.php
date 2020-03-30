@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RadCms\ContentType;
 
 use Pike\Validation;
@@ -16,7 +18,7 @@ abstract class ContentTypeValidator {
      * @param \RadCms\ContentType\ContentTypeDef $contentType
      * @return string[]
      */
-    public static function validate(ContentTypeDef $contentType) {
+    public static function validate(ContentTypeDef $contentType): array {
         static $validator = null;
         if (!$validator) $validator = Validation::makeObjectValidator()
             ->rule('fields', 'minLength', 1)
@@ -32,7 +34,7 @@ abstract class ContentTypeValidator {
      * @param \RadCms\ContentType\ContentTypeCollection $contentTypes
      * @return string[]
      */
-    public static function validateAll(ContentTypeCollection $contentTypes) {
+    public static function validateAll(ContentTypeCollection $contentTypes): array {
         return array_reduce($contentTypes->getArrayCopy(), function ($all, $def) {
             return array_merge($all, ContentTypeValidator::validate($def));
         }, []);
@@ -41,7 +43,7 @@ abstract class ContentTypeValidator {
      * @param string $contentTypeName
      * @return string[]
      */
-    public static function validateName($contentTypeName) {
+    public static function validateName(string $contentTypeName): array {
         return (Validation::makeValueValidator())
             ->rule('identifier')
             ->rule('maxLength', self::MAX_NAME_LEN)
@@ -54,8 +56,8 @@ abstract class ContentTypeValidator {
      * @return string[]
      */
     public static function validateInsertData(ContentTypeDef $contentType,
-                                              $input,
-                                              $additionalChecks = null) {
+                                              \stdClass $input,
+                                              \Closure $additionalChecks = null): array {
         $v = Validation::makeObjectValidator();
         $v->rule('id?', 'type', 'string');
         $v->rule('status?', 'max', DAO::STATUS_DRAFT);
@@ -83,7 +85,7 @@ abstract class ContentTypeValidator {
      * @return string[]
      */
     public static function validateUpdateData(ContentTypeDef $contentType,
-                                              $input) {
+                                              \stdClass $input): array {
         return self::validateInsertData($contentType, $input, function ($v) {
             $v->rule('isRevision', 'type', 'bool');
         });

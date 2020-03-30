@@ -42,8 +42,6 @@ trait ContentTestUtils {
             throw new \RuntimeException('Failed to fetch cmsState.`installedContentTypes`');
         if (($parsed = json_decode($row['installedContentTypes'])) === null)
             throw new \RuntimeException('Failed to parse cmsState.`installedContentTypes`');
-        if (is_object($parsed))
-            $parsed = (array) $parsed;
         if ($isInstalled)
             $this->assertNotNull(ArrayUtils::findByKey($parsed, $contentTypeName, 'name'));
         else
@@ -100,7 +98,7 @@ trait ContentTestUtils {
      */
     public static function clearInstalledContentTypesFromDb(bool $clearRevisions = true): void {
         self::$db->exec('UPDATE ${p}cmsState SET' .
-                        ' `installedContentTypes` = \'{}\'' .
+                        ' `installedContentTypes` = \'[]\'' .
                         ', `installedContentTypesLastUpdated` = NULL');
         if ($clearRevisions)
             self::$db->exec('DELETE FROM ${p}contentRevisions');

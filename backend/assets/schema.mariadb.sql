@@ -19,7 +19,7 @@ CREATE TABLE ${p}cmsState (
     `id` SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `name` VARCHAR(127) NOT NULL,
     `lang` VARCHAR(12) NOT NULL,
-    `installedContentTypes` JSON, -- {"Name": ["friendlyName", {"key": "datatype" ...}], "Another": [...]}
+    `installedContentTypes` JSON, -- [{"name": "Name", "fields": [{"name": "title" ...}, ...] ...}, ...]
     `installedContentTypesLastUpdated` INT(10) UNSIGNED DEFAULT NULL,
     `installedPlugins` JSON,      -- {"Name": 1, "Another": 1 ...}
     `aclRules` JSON,              -- {"resources": {}, "userPermissions": {}}

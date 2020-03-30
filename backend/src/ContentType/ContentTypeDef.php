@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RadCms\ContentType;
 
 use Pike\Translator;
@@ -19,12 +21,12 @@ class ContentTypeDef {
      * @param bool $isInternal = false
      * @param string $origin = 'Website' 'Website' | 'SomePlugin'
      */
-    public function __construct($name,
-                                $friendlyName,
+    public function __construct(string $name,
+                                string $friendlyName,
                                 $fields,
-                                $index,
-                                $isInternal = false,
-                                $origin = null) {
+                                int $index,
+                                bool $isInternal = false,
+                                string $origin = null) {
         $this->name = $name;
         $this->friendlyName = $friendlyName;
         $this->isInternal = $isInternal;
@@ -39,7 +41,8 @@ class ContentTypeDef {
      * @param \Pike\Translator $translator = null
      * @return \stdClass {name: string, friendlyName: string ...}
      */
-    public function toCompactForm($origin = null, Translator $translator = null) {
+    public function toCompactForm(string $origin = null,
+                                  Translator $translator = null): \stdClass {
         return (object) [
             'name' => $this->name,
             'friendlyName' => !$translator ? $this->friendlyName : $translator->t($this->name),

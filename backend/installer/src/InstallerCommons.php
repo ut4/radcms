@@ -100,7 +100,7 @@ class InstallerCommons {
                                 [
                                     $s->siteName,
                                     $s->siteLang,
-                                    '{}', // installedContentTypes
+                                    '[]', // installedContentTypes
                                     null, // installedContentTypesLastUpdated
                                     $s->installedPlugins ?? '{}',
                                     json_encode($s->aclRules ?? $this->makeDefaultAclRules()),
