@@ -4,11 +4,11 @@ import ContentNodeFieldList from './ContentNodeFieldList.jsx';
 const Status = Object.freeze({PUBLISHED: 0, DRAFT: 1, DELETED: 2});
 
 /**
- * #/add-content[/:initialComponentTypeName?returnto=<url>]
+ * #/add-content/:initialComponentTypeName?
  */
 class ContentAddView extends preact.Component {
     /**
-     * @param {{initialContentTypeName: string; returnTo?: string;}} props
+     * @param {{initialContentTypeName: string;}} props
      */
     constructor(props) {
         super(props);
@@ -62,10 +62,10 @@ class ContentAddView extends preact.Component {
     handleFormSubmit() {
         const revisionSettings = this.state.createRevision ? '/with-revision' : '';
         return http.post(`/api/content/${this.state.contentType.name}${revisionSettings}`,
-            Object.assign({status: revisionSettings === '' ? Status.PUBLISHED : Status.DRAFT},
-                          this.fieldListCmp.getResult()))
+            Object.assign(this.fieldListCmp.getResult(),
+                          {status: revisionSettings === '' ? Status.PUBLISHED : Status.DRAFT}))
             .then(() => {
-                urlUtils.redirect(this.props.returnTo || '/', 'hard');
+                urlUtils.redirect('@current', 'hard');
             })
             .catch(() => {
                 toasters.main('Sisällön luonti epäonnistui.', 'error');

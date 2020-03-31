@@ -41,7 +41,7 @@ class ContentDeleteDialog extends preact.Component {
 /**
  * @access private
  */
-function openDialog(contentNode, returnTo = null) {
+function openDialog(contentNode, returnTo = '@current') {
     popupDialog.open(ContentDeleteDialog, {
         contentNode,
         onConfirm: () => {

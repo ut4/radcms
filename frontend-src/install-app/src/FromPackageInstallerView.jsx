@@ -35,7 +35,6 @@ class FromPackageInstallerView extends preact.Component {
                     <InputErrors/>
                 </InputGroup>
                 <input type="hidden" name="baseUrl" value={ this.props.baseUrl }/>
-                <br/>
                 <button class="nice-button primary"
                         type="submit">Asenna</button>
             </Form>

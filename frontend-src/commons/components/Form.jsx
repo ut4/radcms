@@ -35,12 +35,17 @@ class Form extends preact.Component {
                      encType={ this.props.encType || null }>
             { this.props.children }
             { !this.props.omitButtons ? <div class="form-buttons">
-                <button class="nice-button primary" type="submit">
-                    { this.props.submitButtonText || 'Ok' }
-                </button>
-                <a href={ `#${this.props.returnTo || '/'}` }>
-                    { this.props.cancelButtonText || 'Peruuta' }
-                </a>
+                { (this.props.buttons || ['submit', 'cancel']).map(candidate => {
+                    if (candidate === 'submit')
+                        return <button class="nice-button primary" type="submit">
+                            { this.props.submitButtonText || 'Ok' }
+                        </button>;
+                    if (candidate === 'cancel')
+                        return <a href={ `#${this.props.returnTo || '/'}` }>
+                            { this.props.cancelButtonText || 'Peruuta' }
+                        </a>;
+                    return candidate;
+                }) }
             </div> : null }
         </form>;
     }

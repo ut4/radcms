@@ -427,7 +427,7 @@ table.pika-time {
 
 /* == Form extensions ======================================================= */
 .form-buttons a {
-    margin-left: 20px;
+    margin-left: 4px;
     text-decoration: none;
     color: inherit;
 }

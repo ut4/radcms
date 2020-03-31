@@ -13,7 +13,8 @@ class FinalizePassResetApp extends preact.Component {
      * @access protected
      */
     render() {
-        return <Form onSubmit={ e => this.handleSubmit(e) } omitButtons>
+        return <Form onSubmit={ e => this.handleSubmit(e) } buttons={ ['submit'] }
+                    submitButtonText="Tallenna uusi salasana">
             <img src={ urlUtils.makeAssetUrl('frontend/assets/logo.png') }/>
             { !this.state.message
                 ? null
@@ -34,9 +35,6 @@ class FinalizePassResetApp extends preact.Component {
                        validation={ [['required']] }/>
                 <InputErrors/>
             </InputGroup>
-            <div class="form-buttons">
-                <button class="nice-button" type="submit">Tallenna uusi salasana</button>
-            </div>
         </Form>;
     }
     /**

@@ -12,6 +12,7 @@ use Pike\Response;
  */
 class ContentControllers {
     const REV_SETTING_PUBLISH = 'publish';
+    const REV_SETTING_UNPUBLISH = 'unpublish';
     /**
      * POST /api/content/:contentTypeName.
      *
@@ -27,7 +28,7 @@ class ContentControllers {
                                 $req->body,
                                 property_exists($req->params, 'revisionSettings'));
         $res->json(['numAffectedRows' => $numRows,
-                    'lastInsertId' => $dmo->lastInsertId]);
+                    'lastInsertId' => (int) $dmo->lastInsertId]);
     }
     /**
      * GET /api/content/:id/:contentTypeName.
@@ -61,7 +62,7 @@ class ContentControllers {
         $res->json($nodes);
     }
     /**
-     * PUT /api/content/:id/:contentTypeName.
+     * PUT /api/content/:id/:contentTypeName/:revisionSettings?.
      *
      * @param \Pike\Request $req
      * @param \Pike\Response $res
@@ -71,7 +72,7 @@ class ContentControllers {
                                             Response $res,
                                             DMO $dmo): void {
         // @allow \Pike\PikeException
-        $numRows = $dmo->update($req->params->id,
+        $numRows = $dmo->update((int) $req->params->id,
                                 $req->params->contentTypeName,
                                 $req->body,
                                 $req->params->revisionSettings ?? '');
@@ -88,7 +89,7 @@ class ContentControllers {
                                             Response $res,
                                             DMO $dmo): void {
         // @allow \Pike\PikeException
-        $numRows = $dmo->delete($req->params->id,
+        $numRows = $dmo->delete((int) $req->params->id,
                                 $req->params->contentTypeName);
         $res->json(['numAffectedRows' => $numRows]);
     }

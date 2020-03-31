@@ -20,7 +20,7 @@ abstract class ContentModule {
         $ctx->router->map('GET', '/api/content/[w:contentTypeName]',
             [ContentControllers::class, 'handleGetContentNodesByType', 'view:content']
         );
-        $ctx->router->map('PUT', '/api/content/[i:id]/[w:contentTypeName]/[publish:revisionSettings]?',
+        $ctx->router->map('PUT', '/api/content/[i:id]/[w:contentTypeName]/[publish|unpublish:revisionSettings]?',
             [ContentControllers::class, 'handleUpdateContentNode', 'update:content']
         );
         $ctx->router->map('DELETE', '/api/content/[i:id]/[w:contentTypeName]',

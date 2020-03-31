@@ -13,7 +13,8 @@ class RequestPassResetApp extends preact.Component {
      * @access protected
      */
     render() {
-        return <Form onSubmit={ e => this.handleSubmit(e) } omitButtons>
+        return <Form onSubmit={ e => this.handleSubmit(e) } buttons={ ['submit'] }
+                    submitButtonText="Lähetä palautuslinkki">
             <img src={ urlUtils.makeAssetUrl('frontend/assets/logo.png') }/>
             <div class="container box info">
                 Täytä sähköpostiosoitteesi tai käyttäjätunnuksesi alle, niin lähetämme salasanan palautuslinkin sähköpostilla.
@@ -29,9 +30,6 @@ class RequestPassResetApp extends preact.Component {
                        validations={ [['required']] }/>
                 <InputErrors/>
             </InputGroup>
-            <div class="form-buttons">
-                <button class="nice-button" type="submit">Lähetä palautuslinkki</button>
-            </div>
         </Form>;
     }
     /**

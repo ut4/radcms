@@ -1,4 +1,4 @@
-import {http, toasters, urlUtils, View, FeatherSvg, Form, InputGroup, Input} from '@rad-commons';
+import {http, config, toasters, urlUtils, View, FeatherSvg, Form, InputGroup, Input} from '@rad-commons';
 import ContentNodeFieldList from './ContentNodeFieldList.jsx';
 import openDeleteContentDialog from './ContentDeleteDialog.jsx';
 import {Status} from './ContentAddView.jsx';
@@ -57,22 +57,36 @@ class ContentEditView extends preact.Component {
      */
     render() {
         if (!this.state.contentType) return null;
-        const showPublishToggle = !this.props.publish && this.state.contentNode.isRevision;
         return <View><Form onSubmit={ () => this.handleFormSubmit() }
-                           submitButtonText={ this.submitButtonText }>
-            <h2>{ [this.title, showPublishToggle ? <sup> (Luonnos)</sup> : null] }
-                <button onClick={ () => openDeleteContentDialog(this.state.contentNode) }
-                        class="icon-button" title="Poista" type="button">
-                    <FeatherSvg iconId="trash-2" className="medium"/>
-                </button>
-            </h2>
+                           submitButtonText={ this.submitButtonText }
+                           buttons={ [
+                               'submit',
+                                !this.state.contentNode.isRevision
+                                    ? <button onClick={ () => this.switchToDraft() } class="nice-button" type="button">
+                                        Vaihda luonnokseen
+                                    </button>
+                                    : null,
+                                'cancel'
+                            ] }>
+            <h2>{ [
+                this.title,
+                this.state.contentNode.isRevision && !this.state.doPublish
+                    ? <sup> (Luonnos)</sup>
+                    : null,
+                config.userPermissions.canDeleteContent
+                    ? <button onClick={ () => openDeleteContentDialog(this.state.contentNode) }
+                            class="icon-button" title="Poista" type="button">
+                        <FeatherSvg iconId="trash-2" className="medium"/>
+                    </button>
+                    : null
+            ] }</h2>
             <ContentNodeFieldList contentNode={ this.state.contentNode }
                                   contentType={ this.state.contentType }
                                   ref={ cmp => { if (cmp) this.fieldListCmp = cmp; } }
                                   key={ this.state.contentNode.id }/>
-            { showPublishToggle
+            { this.state.contentNode.isRevision
                 ? <InputGroup label="Julkaise" inline={ true }>
-                    <Input id="i-publish" type="checkbox" defaultChecked={ true }
+                    <Input id="i-publish" type="checkbox" defaultChecked={ this.state.doPublish }
                            onChange={ e => this.setState({doPublish: e.target.checked}) }/>
                 </InputGroup>
                 : null }
@@ -81,19 +95,30 @@ class ContentEditView extends preact.Component {
     /**
      * @access private
      */
-    handleFormSubmit() {
-        const revisionSettings = !this.state.doPublish ? '' : '/publish';
-        const {isRevision, status} = this.state.contentNode;
+    handleFormSubmit(revisionSettings = null) {
+        let status = this.state.contentNode.status;
+        if (!revisionSettings)
+            revisionSettings = !this.state.doPublish ? '' : '/publish';
+        if (revisionSettings === '/publish')
+            status = Status.PUBLISHED;
+        else if (revisionSettings === '/unpublish')
+            status = Status.DRAFT;
         return http.put(`/api/content/${this.props.id}/${this.props.contentTypeName}${revisionSettings}`,
-            Object.assign({status: revisionSettings === '' ? status : Status.DRAFT, isRevision},
-                          this.fieldListCmp.getResult())
+            Object.assign(this.fieldListCmp.getResult(),
+                          {status, isRevision: this.state.contentNode.isRevision})
         )
         .then(() => {
-            urlUtils.redirect(this.props.returnTo || '/', 'hard');
+            urlUtils.redirect('@current', 'hard');
         })
         .catch(() => {
             toasters.main('Sisällön tallennus epäonnistui.', 'error');
         });
+    }
+    /**
+     * @access private
+     */
+    switchToDraft() {
+        this.handleFormSubmit('/unpublish');
     }
 }
 

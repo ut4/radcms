@@ -79,7 +79,7 @@ function sendInstallOrUninstallRequest(plugin, url) {
             services.sessionStorage.radMessage = url === 'install'
                 ? JSON.stringify([`Lisäosa ${plugin.name} asennettu.`, 'success'])
                 : JSON.stringify([`Lisäosan ${plugin.name} asennus poistettu.`, 'success']);
-            urlUtils.redirect('/', 'hard');
+            urlUtils.redirect('@current', 'hard');
         })
         .catch(() => {
             toasters.main(`Lisäosan ${url === 'install' ? 'asennus' : 'poisto'} epäonnistui`, 'error');

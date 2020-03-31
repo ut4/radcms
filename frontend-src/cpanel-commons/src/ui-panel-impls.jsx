@@ -21,9 +21,8 @@ class GenericUIPanelImpl extends preact.Component {
      */
     getMainUrl() {
         return this.node
-            ? '/edit-content/' + this.node.id + '/' +
-              this.node.contentType + (!this.node.isRevision ? '' : '/publish')
-            : '/add-content/' + this.newNodeContentType;
+            ? `/edit-content/${this.node.id}/${this.node.contentType}`
+            : `/add-content/${this.newNodeContentType}`;
     }
     getTitle() {
         const {title, subTitle} = this.props.dataFromBackend;
@@ -47,7 +46,7 @@ class GenericUIPanelImpl extends preact.Component {
             ? <div>
                 <a href={ url }>Muokkaa</a>
                 { this.node.isRevision
-                    ? <a href={ url }>Julkaise</a>
+                    ? <a href={ `${url}/publish` }>Julkaise</a>
                     : null }
             </div>
             : <div>{ !config.userPermissions.canConfigureContent

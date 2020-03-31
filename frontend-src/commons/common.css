@@ -216,6 +216,12 @@ select.blurred-at-least-once + .error {
     vertical-align: middle;
 }
 
+.form-buttons > * {
+    margin-right: 12px;
+}
+.form-buttons > *:last-child {
+    margin-right: 0;
+}
 
 /* == Buttons =============================================================== */
 .nice-button,

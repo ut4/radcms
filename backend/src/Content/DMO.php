@@ -13,6 +13,7 @@ use RadCms\ContentType\FieldCollection;
  * delete -operaatiot.
  */
 class DMO extends DAO {
+    /** @var int */
     public $lastInsertId;
     /** 
      * @param string $contentTypeName
@@ -61,7 +62,7 @@ class DMO extends DAO {
                                    ' (' . implode(', ', $q->cols) . ')' .
                                    ' VALUES (' . implode(', ', $q->qs) . ')',
                                    $q->vals);
-        $this->lastInsertId = $numRows ? $this->db->lastInsertId() : 0;
+        $this->lastInsertId = $numRows ? (int) $this->db->lastInsertId() : 0;
         return $numRows;
     }
     /**
@@ -75,13 +76,9 @@ class DMO extends DAO {
         $numRows = 0;
         $numRows2 = 0;
         if (($numRows = $this->insertWithoutRevision($contentTypeName, $q)) === 1 &&
-            ($numRows2 = $this->db->exec('INSERT INTO ${p}contentRevisions VALUES (?,?,?,?)',
-                                         [
-                                             $this->lastInsertId,
-                                             $contentTypeName,
-                                             self::makeSnapshot($data, $fields),
-                                             strval(time())
-                                         ])) === 1) {
+            ($numRows2 = $this->db->exec(...self::makeCreateRevisionExec(
+                                            $this->lastInsertId, $contentTypeName,
+                                            $data, $fields))) === 1) {
             $this->db->commit();
         } else {
             $this->db->rollback();
@@ -89,19 +86,17 @@ class DMO extends DAO {
         return $numRows + $numRows2;
     }
     /**
-     * @param string $id
+     * @param int $id
      * @param string $contentTypeName
      * @param \stdClass $data
-     * @param string $revisionSettings = '' 'publish' | ''
+     * @param string $revisionSettings = '' 'publish' | 'unpublish' | ''
      * @return int $db->rowCount()
      * @throws \Pike\PikeException
      */
-    public function update(string $id,
+    public function update(int $id,
                            string $contentTypeName,
                            \stdClass $data,
                            string $revisionSettings = ''): int {
-        if (!ctype_digit($id))
-            throw new PikeException('id must be a \'[0-9]+\'', PikeException::BAD_INPUT);
         // @allow \Pike\PikeException
         $type = $this->getContentType($contentTypeName);
         if (($errors = ContentTypeValidator::validateUpdateData($type, $data)))
@@ -110,14 +105,19 @@ class DMO extends DAO {
         try {
             $this->db->beginTransaction();
             $doPublish = $revisionSettings === ContentControllers::REV_SETTING_PUBLISH;
-            $numRows = 0;
-            if (!$data->isRevision || $doPublish)
-                $numRows = $this->db->exec(...$this->makeUpdateMainExec($id, $contentTypeName, $data, $type->fields));
+            if ($doPublish) $data->isRevision = false;
+            //
+            $numRows = !$data->isRevision
+                ? $this->db->exec(...self::makeUpdateMainExec($id, $contentTypeName,
+                                                              $data, $type->fields))
+                : $this->db->exec(...self::makeUpdateRevisionExec($id, $contentTypeName,
+                                                                  $data, $type->fields));
             //
             if ($doPublish)
                 $numRows += $this->db->exec(...self::makeDeleteRevisionExec($id, $contentTypeName));
-            elseif ($data->isRevision)
-                $numRows += $this->db->exec(...self::makeUpdateRevisionExec($id, $contentTypeName, $data, $type->fields));
+            elseif ($revisionSettings === ContentControllers::REV_SETTING_UNPUBLISH)
+                $numRows += $this->db->exec(...self::makeCreateRevisionExec($id, $contentTypeName,
+                                                                            $data, $type->fields));
             //
             $this->db->commit();
             return $numRows;
@@ -126,12 +126,12 @@ class DMO extends DAO {
         }
     }
     /**
-     * @param string $id
+     * @param int $id
      * @param string $contentTypeName
      * @return int
      * @throws \Pike\PikeException
      */
-    public function delete(string $id, string $contentTypeName): int {
+    public function delete(int $id, string $contentTypeName): int {
         // @allow \Pike\PikeException
         $cnode = $this->fetchOne($contentTypeName)->where('`id`=?', $id)->exec();
         try {
@@ -159,7 +159,7 @@ class DMO extends DAO {
     /**
      * @return array [<sql>, <bindVals>]
      */
-    private static function makeUpdateMainExec(string $id,
+    private static function makeUpdateMainExec(int $id,
                                                string $contentTypeName,
                                                \stdClass $data,
                                                FieldCollection $fields): array {
@@ -181,7 +181,7 @@ class DMO extends DAO {
     /**
      * @return array [<sql>, <bindVals>]
      */
-    private static function makeUpdateRevisionExec(string $id,
+    private static function makeUpdateRevisionExec(int $contentNodeId,
                                                    string $contentTypeName,
                                                    \stdClass $data,
                                                    FieldCollection $fields): array {
@@ -191,7 +191,7 @@ class DMO extends DAO {
             ' WHERE `contentId` = ? AND `contentType` = ?',
             [
                 self::makeSnapshot($data, $fields),
-                $id,
+                $contentNodeId,
                 $contentTypeName
             ]
         ];
@@ -199,12 +199,29 @@ class DMO extends DAO {
     /**
      * @return array [<sql>, <bindVals>]
      */
-    private static function makeDeleteRevisionExec(string $id,
+    private static function makeDeleteRevisionExec(int $contentNodeId,
                                                    string $contentTypeName): array {
         return [
             'DELETE FROM ${p}contentRevisions' .
             ' WHERE `contentId` = ? AND `contentType` = ?',
-            [$id, $contentTypeName]
+            [$contentNodeId, $contentTypeName]
+        ];
+    }
+    /**
+     * @return array [<sql>, <bindVals>]
+     */
+    private static function makeCreateRevisionExec(int $contentNodeId,
+                                                   string $contentTypeName,
+                                                   \stdClass $data,
+                                                   FieldCollection $fields): array {
+        return [
+            'INSERT INTO ${p}contentRevisions VALUES (?,?,?,?)',
+            [
+                $contentNodeId,
+                $contentTypeName,
+                self::makeSnapshot($data, $fields),
+                strval(time())
+            ]
         ];
     }
     /**

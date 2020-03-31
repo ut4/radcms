@@ -10,6 +10,7 @@ declare module "@rad-commons" {
             userPermissions: {
                 canCreateContent: boolean;
                 canConfigureContent: boolean;
+                canDeleteContent: boolean;
                 canManageFieldsOfMultiFieldContent: boolean;
             };
             user: {
@@ -41,6 +42,7 @@ declare module "@rad-commons" {
             cancelButtonText?: string;
             returnTo?: string;
             omitButtons?: boolean;
+            buttons?: Array<string|preact.VNode>;
             formId?: string;
             action?: string;
             method?: string;
