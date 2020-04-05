@@ -1,7 +1,9 @@
 <?php
 // Lue lisää: https://todo/sivutemplaattien-käyttö.
-$mainContent = $this->fetchMultiField('etusivusisältö', 'Pääsisältö', '#main');
-$footerContent = $this->fetchMultiField('globalFooter', 'Footeri', 'footer'); ?>
+$mainContent = $this->fetchMultiField('etusivusisältö', // Sisällön nimi
+                                      'Pääsisältö',     // Hallintapaneeliosion otsikko
+                                      '#main'           // Highlight CSS-selector
+                                      ); ?>
 <!DOCTYPE html>
 <html lang="<?= $site->lang ?>">
 <head>
@@ -15,12 +17,15 @@ $footerContent = $this->fetchMultiField('globalFooter', 'Footeri', 'footer'); ?>
         <h1>Otsikko</h1>
     </header>
     <div id="main">
-        <h2><?= $mainContent->Otsikko ?></h2>
-        <div><?= $mainContent->Teksti ?></div>
+        <?php if ($mainContent): ?>
+            <h2><?= $mainContent->Otsikko ?></h2>
+            <div><?= $mainContent->Teksti ?></div>
+        <?php else: ?>
+            <h2>404</h2>
+            <div>404</div>
+        <?php endif; ?>
     </div>
     <footer>
-        <div><?= $footerContent->Teksti ?></div>
-        <pre><?= $footerContent->Tagline ?></pre>
         &copy; <?= $site->name ?> <?= date('Y') ?>
     </footer>
 </body>

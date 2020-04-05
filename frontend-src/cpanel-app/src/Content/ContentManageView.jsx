@@ -120,7 +120,7 @@ class ContentManageView extends preact.Component {
      */
     openDeleteDialog(e, cnode) {
         e.preventDefault();
-        openDeleteContentDialog(cnode);
+        openDeleteContentDialog(cnode, null);
     }
 }
 

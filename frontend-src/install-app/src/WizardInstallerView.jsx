@@ -220,7 +220,7 @@ class WizardInstallerView extends preact.Component {
             : `index.php?${this.state.mainQueryVar}=/${url}`);
         http.post('', data)
             .then(() => {
-                toasters.main(() => <p>Sivusto asennettiin kansioon <span style="font-weight: bold">{ this.props.siteDirPath }</span>. Aloita lukemalla README.md, siirry <a href={ makeUrl('') }>sivustolle</a>, tai hallintanäkymän <a href={ makeUrl('login') }>kirjautumissivulle</a>.</p>, 'success');
+                toasters.main(() => <p>Sivusto asennettiin kansioon <span style="font-weight: bold">{ this.props.siteDirPath }</span>. Aloita lukemalla theme/README.md, siirry <a href={ makeUrl('') }>sivustolle</a>, tai hallintanäkymän <a href={ makeUrl('login') }>kirjautumissivulle</a>.</p>, 'success');
                 const tabs = this.state.tabs;
                 tabs[2].isOk = true;
                 this.setState({tabs});

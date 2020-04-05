@@ -4,7 +4,7 @@
 
 ## Layoutit
 
-Layout-templaatit, jotka tämä paketti sisältää. Layout valitaan urlin perusteella dynaamisesti. Url-sääntöjä voi muokata `site.json` -tiedostosta.
+Layout-templaatit, jotka tämä paketti sisältää. Pike valitsee layoutin sivupyynnölle urlin perusteella dynaamisesti. Url-sääntöjä voi muokata `site.json` -tiedostoa.
 
 ### layout.generic.tmpl.php
 
@@ -12,7 +12,7 @@ Renderöi kaikki urlit.
 
 ## Php-tagit
 
-Tagit, jotka tämä paketti sisältää. Tageja voi kutsua layout-templaateista (kuten layout.generic.tmpl.php).
+Tagit, jotka tämä paketti sisältää. Tageja voi kutsua layout-templaateista (kuten `layout.generic.tmpl.php`).
 
 ks. https://todo/stock-content-types.
 

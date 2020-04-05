@@ -13,7 +13,7 @@ $articles = $this
             <h2><?= $art->title ?></h2>
             <div>
                 <p><?= mb_substr($art->body, 0, 6) . '...' ?></p>
-                <a href="<?= $this->url("/artikkeli/{$art->slug}") ?>">Read more</a>
+                <a href="<?= $this->url("/artikkeli/{$art->slug}") ?>">Lue lisää</a>
             </div>
         </article>
     <?php endforeach; ?>

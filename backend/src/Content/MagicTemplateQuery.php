@@ -33,9 +33,9 @@ class MagicTemplateQuery extends Query {
         return $this;
     }
     /**
-     * @return \stdClass
+     * @return \stdClass|null
      */
-    public function getFrontendPanelInfo(): \stdClass {
+    public function getFrontendPanelInfo(): ?\stdClass {
         if ($this->frontendPanelInfo && $this->whereDef)
             $this->frontendPanelInfo->queryInfo->where = $this->whereDef;
         return $this->frontendPanelInfo;

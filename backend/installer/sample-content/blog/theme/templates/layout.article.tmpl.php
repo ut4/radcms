@@ -15,7 +15,7 @@ $rendered = $this->Article(['slug' => $url[1], 'bindTo' => &$article]); ?>
         <h1>My site</h1>
     </header>
     <div id="main">
-        <a href="<?= $this->url('/') ?>">Back</a>
+        <a href="<?= $this->url('/') ?>">&lt; Takaisin etusivulle</a>
         <?= $rendered ?>
     </div>
     <?= $this->Footer() ?>

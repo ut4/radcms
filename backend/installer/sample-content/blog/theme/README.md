@@ -4,19 +4,23 @@
 
 ## Layoutit
 
-Layout-templaatit, jotka tämä paketti sisältää. Layout valitaan urlin perusteella dynaamisesti. Sääntöjä voi muokata `site.json` -tiedostosta.
+Layout-templaatit, jotka tämä paketti sisältää. Pike valitsee layoutin sivupyynnölle urlin perusteella dynaamisesti. Url-sääntöjä voi muokata `site.json` -tiedostoa.
 
 ### layout.home.tmpl.php
 
-Listaa kaikki artikkelit. Renderöi kaikki, paitsi /artikkelit/-alkuiset urlit.
+Renderöi urlin `/`.
 
 ### layout.article.tmpl.php
 
-Näyttää yhden artikkelin. Renderöi kaikki /artikkelit/-alkuiset urlit.
+Renderöi kaikki `/artikkeli/` -alkuiset urlit.
+
+### layout.generic.tmpl.php
+
+Renderöi kaikki paitsi `layout.home.tmpl.php`:n , ja `layout.article.tmpl.php`:n renderöimät urlit.
 
 ## Php-tagit
 
-Tagit, jotka tämä paketti sisältää. Tageja voi kutsua layout-templaateista (kuten main-layout.tmpl.php).
+Tagit, jotka tämä paketti sisältää. Tageja voi kutsua layout-templaateista (kuten `layout.home.tmpl.php`).
 
 ks. https://todo/stock-content-types.
 
