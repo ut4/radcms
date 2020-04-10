@@ -30,10 +30,10 @@ class ContentTypeMigrator {
      */
     public function installSingle(\stdClass $data): bool {
         $contentTypes = new ContentTypeCollection;
-        $contentTypes[] = new ContentTypeDef($data->name,
-                                             $data->friendlyName,
-                                             FieldCollection::fromArray($data->fields),
-                                             $data->isInternal);
+        $contentTypes->add($data->name,
+                           $data->friendlyName,
+                           $data->fields,
+                           $data->isInternal);
         // @allow \Pike\PikeException
         return $this->installMany($contentTypes);
     }

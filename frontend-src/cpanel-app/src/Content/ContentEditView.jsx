@@ -1,6 +1,7 @@
 import {http, config, toasters, urlUtils, View, FeatherSvg, Form, InputGroup, Input} from '@rad-commons';
-import ContentNodeFieldList from './ContentNodeFieldList.jsx';
 import openDeleteContentDialog from './ContentDeleteDialog.jsx';
+import getWidgetImpl from './FieldWidgets/all-with-multi.js';
+import {filterByUserRole} from '../ContentType/FieldList.jsx';
 import {Status} from './ContentAddView.jsx';
 
 /**
@@ -12,10 +13,12 @@ class ContentEditView extends preact.Component {
      */
     constructor(props) {
         super(props);
+        this.contentNode = null;
+        this.contentType = null;
         this.state = {
-            contentNode: null,
-            contentType: null,
             doPublish: false,
+            contentNodeFetched: false,
+            contentTypeFetched: false,
         };
         this.updateState(this.props);
     }
@@ -30,7 +33,9 @@ class ContentEditView extends preact.Component {
      * @access private
      */
     updateState(props) {
-        const newState = {contentNode: null, contentType: null, doPublish: !!props.publish};
+        const newState = {contentNodeFetched: false,
+                          contentTypeFetched: false,
+                          doPublish: !!props.publish};
         this.title = 'Muokkaa sisältöä';
         this.submitButtonText = 'Tallenna';
         if (newState.doPublish) {
@@ -39,11 +44,13 @@ class ContentEditView extends preact.Component {
         }
         http.get(`/api/content/${props.id}/${props.contentTypeName}`)
             .then(cnode => {
-                newState.contentNode = cnode;
+                this.contentNode = cnode;
+                newState.contentNodeFetched = true;
                 return http.get('/api/content-types/' + props.contentTypeName);
             })
             .then(ctype => {
-                newState.contentType = ctype;
+                this.contentType = ctype;
+                newState.contentTypeFetched = true;
             })
             .catch(() => {
                 toasters.main('Jokin meni pieleen', 'error');
@@ -56,12 +63,12 @@ class ContentEditView extends preact.Component {
      * @access protected
      */
     render() {
-        if (!this.state.contentType) return null;
+        if (!this.state.contentNodeFetched || !this.state.contentTypeFetched) return null;
         return <View><Form onSubmit={ () => this.handleFormSubmit() }
                            submitButtonText={ this.submitButtonText }
                            buttons={ [
                                'submit',
-                                !this.state.contentNode.isRevision
+                                !this.contentNode.isRevision
                                     ? <button onClick={ () => this.switchToDraft() } class="nice-button" type="button">
                                         Vaihda luonnokseen
                                     </button>
@@ -70,21 +77,27 @@ class ContentEditView extends preact.Component {
                             ] }>
             <h2>{ [
                 this.title,
-                this.state.contentNode.isRevision && !this.state.doPublish
+                this.contentNode.isRevision && !this.props.publish
                     ? <sup> (Luonnos)</sup>
                     : null,
                 config.userPermissions.canDeleteContent
-                    ? <button onClick={ () => openDeleteContentDialog(this.state.contentNode) }
+                    ? <button onClick={ () => openDeleteContentDialog(this.contentNode) }
                             class="icon-button" title="Poista" type="button">
                         <FeatherSvg iconId="trash-2" className="medium"/>
                     </button>
                     : null
             ] }</h2>
-            <ContentNodeFieldList contentNode={ this.state.contentNode }
-                                  contentType={ this.state.contentType }
-                                  ref={ cmp => { if (cmp) this.fieldListCmp = cmp; } }
-                                  key={ this.state.contentNode.id }/>
-            { this.state.contentNode.isRevision
+            { filterByUserRole(this.contentType.fields).map(f => {
+                const {ImplClass, props} = getWidgetImpl(f.widget.name);
+                return <ImplClass
+                    field={ f }
+                    initialValue={ this.contentNode[f.name] }
+                    settings={ props }
+                    onValueChange={ value => {
+                        this.contentNode[f.name] = value;
+                    }}/>;
+            }) }
+            { this.contentNode.isRevision && !this.props.publish
                 ? <InputGroup label="Julkaise" inline={ true }>
                     <Input id="i-publish" type="checkbox" defaultChecked={ this.state.doPublish }
                            onChange={ e => this.setState({doPublish: e.target.checked}) }/>
@@ -96,7 +109,7 @@ class ContentEditView extends preact.Component {
      * @access private
      */
     handleFormSubmit(revisionSettings = null) {
-        let status = this.state.contentNode.status;
+        let status = this.contentNode.status;
         if (!revisionSettings)
             revisionSettings = !this.state.doPublish ? '' : '/publish';
         if (revisionSettings === '/publish')
@@ -104,8 +117,7 @@ class ContentEditView extends preact.Component {
         else if (revisionSettings === '/unpublish')
             status = Status.DRAFT;
         return http.put(`/api/content/${this.props.id}/${this.props.contentTypeName}${revisionSettings}`,
-            Object.assign(this.fieldListCmp.getResult(),
-                          {status, isRevision: this.state.contentNode.isRevision})
+            Object.assign(this.contentNode, {status})
         )
         .then(() => {
             urlUtils.redirect('@current', 'hard');

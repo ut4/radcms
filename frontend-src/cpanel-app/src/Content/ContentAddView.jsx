@@ -1,6 +1,6 @@
 import {http, toasters, urlUtils, View, Form, InputGroup, Input, Select} from '@rad-commons';
-import {widgetTypes} from '../Widgets/all.jsx';
-import ContentNodeFieldList from './ContentNodeFieldList.jsx';
+import {filterByUserRole} from '../ContentType/FieldList.jsx';
+import getWidgetImpl from './FieldWidgets/all-with-multi.js';
 const Status = Object.freeze({PUBLISHED: 0, DRAFT: 1, DELETED: 2});
 
 /**
@@ -12,18 +12,20 @@ class ContentAddView extends preact.Component {
      */
     constructor(props) {
         super(props);
+        this.newContentNode = null;
+        this.contentTypes = null;
         this.state = {
-            contentTypes: null,
-            newContentNode: null,
+            contentTypeFetched: false,
             contentType: null,
             createRevision: false,
         };
         http.get('/api/content-types/no-internals')
             .then(contentTypes => {
-                const newState = {contentTypes};
-                const ctypeName = props.initialContentTypeName || newState.contentTypes[0].name;
-                this.setContentTypeAndCreateEmptyContentNode(ctypeName, newState);
-                this.setState(newState);
+                this.contentTypes = contentTypes;
+                const contentType = this.findContentType(props.initialContentTypeName,
+                                                         contentTypes);
+                this.newContentNode = this.makeNewContentNode(contentType);
+                this.setState({contentTypeFetched: true, contentType});
             })
             .catch(() => {
                 toasters.main('Jokin meni pieleen.', 'error');
@@ -33,7 +35,7 @@ class ContentAddView extends preact.Component {
      * @access protected
      */
     render() {
-        if (!this.state.contentTypes) return null;
+        if (!this.state.contentType) return null;
         return <View><Form onSubmit={ () => this.handleFormSubmit() }
                            submitButtonText="Lisää">
             <h2>Lisää sisältöä</h2>
@@ -41,15 +43,21 @@ class ContentAddView extends preact.Component {
                 <label><span data-help-text="Dev note: Voit luoda uusia sisältötyyppejä hallintapaneelin devaaja-osiosta (ks. https://todo).">Sisältötyyppi</span></label>
                 <Select onChange={ e => this.receiveContentTypeSelection(e) }
                         value={ this.state.contentType.name }>
-                    { this.state.contentTypes.map(type =>
+                    { this.contentTypes.map(type =>
                         <option value={ type.name }>{ type.friendlyName }</option>
                     ) }
                 </Select>
             </InputGroup>
-            <ContentNodeFieldList contentNode={ this.state.newContentNode }
-                                  contentType={ this.state.contentType }
-                                  ref={ cmp => { if (cmp) this.fieldListCmp = cmp; } }
-                                  key={ this.state.contentType.name }/>
+            { filterByUserRole(this.state.contentType.fields).map(f => {
+                const {ImplClass, props} = getWidgetImpl(f.widget.name);
+                return <ImplClass
+                    field={ f }
+                    initialValue={ this.newContentNode[f.name] }
+                    settings={ props }
+                    onValueChange={ value => {
+                        this.newContentNode[f.name] = value;
+                    }}/>;
+            }) }
             <InputGroup label="Lisää luonnoksena" inline>
                 <Input id="i-create-rev" type="checkbox"
                        onChange={ e => this.setState({createRevision: e.target.checked}) }/>
@@ -62,7 +70,7 @@ class ContentAddView extends preact.Component {
     handleFormSubmit() {
         const revisionSettings = this.state.createRevision ? '/with-revision' : '';
         return http.post(`/api/content/${this.state.contentType.name}${revisionSettings}`,
-            Object.assign(this.fieldListCmp.getResult(),
+            Object.assign(this.newContentNode,
                           {status: revisionSettings === '' ? Status.PUBLISHED : Status.DRAFT}))
             .then(() => {
                 urlUtils.redirect('@current', 'hard');
@@ -75,22 +83,26 @@ class ContentAddView extends preact.Component {
      * @access private
      */
     receiveContentTypeSelection(e) {
-        this.setContentTypeAndCreateEmptyContentNode(e.target.value, this.state);
-        this.setState({contentType: this.state.contentType, newContentNode: this.state.newContentNode});
+        const newState = {contentType: this.findContentType(e.target.value,
+                                                            this.contentTypes)};
+        this.newContentNode = this.makeNewContentNode(newState.contentType);
+        this.setState(newState);
     }
     /**
      * @access private
      */
-    setContentTypeAndCreateEmptyContentNode(ctypeName, newState) {
-        newState.contentType = newState.contentTypes.find(t => t.name === ctypeName);
-        newState.newContentNode = {};
-        newState.contentType.fields.forEach(field => {
-            const widgetInfo = field.widget
-                ? widgetTypes.find(w => w.name === field.widget.name)
-                : null;
-            newState.newContentNode[field.name] = field.defaultValue ||
-                (widgetInfo ? widgetInfo.defaultInitialValue : '');
-        });
+    findContentType(ctypeName, contentTypes) {
+        if (!ctypeName)
+            return contentTypes[0];
+        return contentTypes.find(t => t.name === ctypeName);
+    }
+    /**
+     * @access private
+     */
+    makeNewContentNode(contentType) {
+        return contentType.fields.reduce((out, f) =>
+            Object.assign(out, {[f.name]: f.defaultValue || undefined})
+        , {});
     }
 }
 

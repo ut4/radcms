@@ -23,7 +23,7 @@ final class ContentTypeControllersTest extends DbTestCase {
         self::$testContentTypes->add('Events', 'Tapahtumat', [
             (object) ['name' => 'name', 'dataType' => 'text'],
             (object) ['name' => 'pic', 'dataType' => 'text', 'friendlyName' => 'Kuva',
-                      'widget' => 'image', 'defaultValue' => 'default.jpg'],
+                      'widget' => 'imagePicker', 'defaultValue' => 'default.jpg'],
         ]);
         self::$testContentTypes->add('Locations', 'Paikat', [
             (object) ['name' => 'name', 'dataType' => 'text', 'friendlyName' => 'Tapahtumapaikka',
@@ -91,7 +91,7 @@ final class ContentTypeControllersTest extends DbTestCase {
                   'widget' => (object) ['name' => self::DEFAULT_WIDGET, 'args' => null],
                   'defaultValue' => '', 'visibility' => 0],
                  ['name' => 'pic', 'friendlyName' => 'Kuva', 'dataType' => 'text',
-                  'widget' => (object) ['name' => 'image', 'args' => null],
+                  'widget' => (object) ['name' => 'imagePicker', 'args' => null],
                   'defaultValue' => 'default.jpg', 'visibility' => 0],
              ]],
             $s
@@ -127,7 +127,7 @@ final class ContentTypeControllersTest extends DbTestCase {
                  'widget' => (object) ['name' => self::DEFAULT_WIDGET, 'args' => null],
                  'defaultValue' => '', 'visibility' => 0],
                 ['name' => 'pic', 'friendlyName' => 'Kuva', 'dataType' => 'text',
-                 'widget' => (object) ['name' => 'image', 'args' => null],
+                 'widget' => (object) ['name' => 'imagePicker', 'args' => null],
                  'defaultValue' => 'default.jpg', 'visibility' => 0],
             ]],
             ['name' => 'Locations', 'friendlyName' => 'Paikat',

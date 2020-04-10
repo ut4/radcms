@@ -9,9 +9,9 @@ use RadCms\Content\DAO;
 
 abstract class ContentTypeValidator {
     const MAX_NAME_LEN = 64;
-    const FIELD_WIDGETS = ['textField', 'textArea', 'richText', 'image',
-                           'multiFieldBuilder', 'date', 'dateTime',
-                           'color', 'contentRef', 'hidden'];
+    const FIELD_WIDGETS = ['textField', 'textArea', 'richText', 'imagePicker',
+                           'multiField', 'datePicker', 'dateTimePicker',
+                           'colorPicker', 'contentSelector', 'hidden'];
     const FIELD_DATA_TYPES = ['text', 'json', 'int', 'uint'];
     const COLLECTION_SIZES = ['tiny', 'small', 'medium', '', 'big'];
     /**

@@ -1,4 +1,4 @@
-import {http, toasters, urlUtils, Confirmation, FeatherSvg} from '@rad-commons';
+import {http, toasters, config, urlUtils, Confirmation, FeatherSvg} from '@rad-commons';
 import popupDialog from '../Common/PopupDialog.jsx';
 import ContentEditable from '../Common/ContentEditable.jsx';
 
@@ -343,4 +343,13 @@ class EditableOneByOneFieldRow extends preact.Component {
     }
 }
 
+/**
+ * @param {Array<ContentTypeField>} fields
+ */
+const filterByUserRole = fields =>
+    fields.filter(f =>
+        f.visibility === 0 || f.visibility & config.user.role
+    );
+
 export default FieldList;
+export {filterByUserRole};

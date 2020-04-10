@@ -30,7 +30,7 @@ class MultiFieldBlobs {
                     'name' => 'fields',
                     'dataType' => 'json',
                     'friendlyName' => 'Kentät',
-                    'widget' => (object) ['name' => 'multiFieldBuilder'],
+                    'widget' => (object) ['name' => 'multiField'],
                     'defaultValue' > '',
                     'visibility' => 0
                 ]

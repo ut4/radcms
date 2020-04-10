@@ -425,6 +425,17 @@ table.pika-time {
     display: none;
 }
 
+
+/* -- Components: MultiFieldConfigurer ---- */
+.multi-field-configurer {
+    background-color: #fbfbff;
+    padding: 14px 10px;
+    border: 1px dashed #ccc;
+    border-radius: 2px;
+    margin-bottom: 18px;
+}
+
+
 /* == Form extensions ======================================================= */
 .form-buttons a {
     margin-left: 4px;

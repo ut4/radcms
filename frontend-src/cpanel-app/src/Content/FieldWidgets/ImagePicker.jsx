@@ -1,30 +1,31 @@
 import {config, urlUtils, http, InputGroup, Input} from '@rad-commons';
-import popupDialog from '../Common/PopupDialog.jsx';
+import popupDialog from '../../Common/PopupDialog.jsx';
+import BaseFieldWidget from './Base.jsx';
 
-class ImagePicker extends preact.Component {
+class ImagePickerFieldWidget extends BaseFieldWidget {
     /**
-     * @param {{value: string; onChange: (imageFileName: string) => any; [key:string]: any;}} props
+     * @inheritdoc
      */
     constructor(props) {
         super(props);
-        this.state = {selectedImageName: props.value};
+        this.state = {selectedImageName: props.initialValue};
     }
     /**
      * @access protected
      */
     render() {
-        return <div>
+        return <InputGroup label={ this.label }>
             <Input value={ this.state.selectedImageName }
                     onClick={ () => popupDialog.open(
                         PickImageDialog,
                         {selectedImageName: this.state.selectedImageName,
-                        onSelected: img => {
-                            this.props.onChange(img.fileName);
-                            this.setState({selectedImageName: img.fileName});
-                        },
-                        assetBaseUrl: config.assetBaseUrl}
+                         onSelected: img => {
+                             this.setState({selectedImageName: img.fileName});
+                             this.props.onValueChange(img.fileName);
+                         },
+                         assetBaseUrl: config.assetBaseUrl}
                     ) }/>
-        </div>;
+        </InputGroup>;
     }
 }
 
@@ -79,7 +80,7 @@ class PickImageDialog extends preact.Component {
 
 class UploadButton extends preact.Component {
     /**
-     * @..
+     * @param {Object} props
      */
     constructor(props) {
         super(props);
@@ -125,4 +126,4 @@ class UploadButton extends preact.Component {
     }
 }
 
-export default ImagePicker;
+export default ImagePickerFieldWidget;

@@ -1,29 +1,32 @@
-import {http, Select} from '@rad-commons';
+import {http, InputGroup, Select} from '@rad-commons';
+import BaseFieldWidget from './Base.jsx';
 
-class ContentRefPicker extends preact.Component {
+class ContentSelectorFieldWidget extends BaseFieldWidget {
     /**
-     * @param {{value: string; onRefChange: (val: string) => any; contentType: string; valueField: string; labelField: string; [key: string]: any;}} props
+     * @inheritdoc
      */
     constructor(props) {
         super(props);
         ['contentType', 'valueField', 'labelField'].forEach(key => {
-            if (!props[key])
-                throw new Error(`contentRef(${key}=something) is required`);
+            if (!props.field.args || !props.field.args[key])
+                throw new Error(`contentSelector.args.${key} is required`);
         });
-        this.valueField = props.valueField;
-        this.labelField = props.labelField;
-        this.state = {contentNodes: [], selectedVal: props.value, values: []};
+        this.valueField = props.field.args.valueField;
+        this.labelField = props.field.args.labelField;
+        this.contentNodes = [];
+        this.state = {selectedVal: props.initialValue, values: []};
     }
     /**
      * @access protected
      */
     componentWillMount() {
-        http.get(`/api/content/${this.props.contentType}`)
+        const contentTypeName = this.props.field.args.contentType;
+        http.get(`/api/content/${contentTypeName}`)
             .then(contentNodes => {
                 // @allow Error
-                this.validateFieldNames(contentNodes, this.props.contentType);
-                this.setState({values: contentNodes.map(cnode => cnode[this.valueField]),
-                               contentNodes});
+                this.validateFieldNames(contentNodes, contentTypeName);
+                this.contentNodes = contentNodes;
+                this.setState({values: contentNodes.map(cnode => cnode[this.valueField])});
             })
             .catch(err => {
                 window.console.error(err);
@@ -33,22 +36,22 @@ class ContentRefPicker extends preact.Component {
      * @access protected
      */
     render() {
-        return <div>
+        return <InputGroup label={ this.label }>
             <Select value={ this.state.selectedVal }
                     onChange={ e => this.receiveSelection(e) }>
                 <option value=""> - </option>
                 { this.state.values.map((value, i) => <option value={ value }>
-                    { this.state.contentNodes[i][this.labelField] }
+                    { this.contentNodes[i][this.labelField] }
                 </option>) }
             </Select>
-        </div>;
+        </InputGroup>;
     }
     /**
      * @access private
      */
     receiveSelection(e) {
         this.setState({selectedVal: e.target.value});
-        this.props.onRefChange(e.target.value);
+        this.props.onValueChange(e.target.value);
     }
     /**
      * @access private
@@ -63,4 +66,4 @@ class ContentRefPicker extends preact.Component {
     }
 }
 
-export default ContentRefPicker;
+export default ContentSelectorFieldWidget;
