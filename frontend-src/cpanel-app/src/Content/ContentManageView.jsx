@@ -1,4 +1,4 @@
-import {http, View, FeatherSvg, InputGroup, Select} from '@rad-commons';
+import {http, View, FeatherSvg, InputGroup2, Select2, hookForm} from '@rad-commons';
 import {ContentNodeUtils} from '@rad-cpanel-commons';
 import openDeleteContentDialog from './ContentDeleteDialog.jsx';
 
@@ -12,24 +12,20 @@ class ContentManageView extends preact.Component {
     constructor(props) {
         super(props);
         this.cache = {};
+        this.contentTypes = [];
         this.state = {
-            content: [],
-            contentTypes: [],
-            selectedContentTypeName: null,
+            content: null,
             message: null
         };
-        const newState = {};
+        let newState = {};
         http.get('/api/content-types')
             .then(ctypes => {
-                newState.contentTypes = ctypes;
-                newState.selectedContentTypeName = !props.initialContentTypeName ||
-                    !ctypes.some(t => t.name === props.initialContentTypeName)
-                        ? ctypes[0].name
-                        : props.initialContentTypeName;
-                return http.get(`/api/content/${newState.selectedContentTypeName}`);
+                this.contentTypes = ctypes;
+                newState = hookForm(this, {selectedContentTypeName: getInitialContentTypeName(props, ctypes)});
+                return http.get(`/api/content/${newState.values.selectedContentTypeName}`);
             })
             .then(cnodes => {
-                this.setContent(cnodes, newState);
+                Object.assign(newState, this.collectContent(cnodes, newState.values.selectedContentTypeName));
             })
             .catch(() => {
                 newState.message = 'Jokin meni pieleen';
@@ -42,28 +38,30 @@ class ContentManageView extends preact.Component {
      * @access protected
      */
     render() {
+        if (this.state.content === null && !this.state.message)
+            return;
         return <View><div>
             <h2>Selaa sisältöä</h2>
             <div>
-                <InputGroup inline>
-                    <Select onChange={ e => this.updateContent(e) }
-                            value={ this.state.selectedContentTypeName }>{
-                        this.state.contentTypes.map(t =>
+                <InputGroup2 classes={ this.state.classes.selectedContentTypeName }>
+                    <Select2 vm={ this } myOnChange={ newState => this.updateContent(newState) }
+                            name="selectedContentTypeName">{
+                        this.contentTypes.map(t =>
                             <option value={ t.name }>{ t.friendlyName }</option>
                         )
-                    }</Select>
-                    { this.state.selectedContentTypeName
-                        ? <a href={ `#/add-content/${this.state.selectedContentTypeName}` }
+                    }</Select2>
+                    { this.state.values.selectedContentTypeName
+                        ? <a href={ `#/add-content/${this.state.values.selectedContentTypeName}` }
                                     title="Luo uusi"
                                     class="icon-only">
                             <FeatherSvg iconId="plus-circle" className="medium"/>
                         </a>
                         : '' }
-                </InputGroup>
+                </InputGroup2>
             </div>
             { !this.state.message ? <table class="striped">
                 <thead><tr>
-                    <th>Nimi</th>
+                    <th>#</th>
                     <th>Julkaistu</th>
                     <th></th>
                 </tr></thead>
@@ -91,29 +89,33 @@ class ContentManageView extends preact.Component {
     /**
      * @access private
      */
-    updateContent(e) {
-        const newState = {content: [], selectedContentTypeName: e.target.value};
-        if (this.state.selectedContentTypeName === newState.selectedContentTypeName) return;
-        newState.content = this.cache[newState.selectedContentTypeName];
-        if (newState.content) { this.setState(newState); return; }
+    updateContent(newState) {
+        const n = newState.values.selectedContentTypeName;
+        if (this.cache[n]) { // {content, message}
+            Object.assign(newState, this.cache[n]);
+            return newState;
+        }
         //
-        http.get(`/api/content/${newState.selectedContentTypeName}`)
+        http.get(`/api/content/${n}`)
             .then(cnodes => {
-                this.setContent(cnodes, newState);
-                this.setState(newState);
+                this.setState(
+                    this.collectContent(cnodes, n));
             })
             .catch(() => {
                 this.setState({message: 'Jokin meni pieleen'});
             });
+        return newState;
     }
     /**
      * @access private
      */
-    setContent(cnodes, newState) {
-        newState.content = cnodes;
-        this.cache[newState.selectedContentTypeName] = cnodes;
-        newState.message = cnodes.length ? null : 'Ei sisältöä tyypille ' +
-            newState.contentTypes[0].friendlyName + '.';
+    collectContent(cnodes, selectedContentTypeName) {
+        const out = {content: cnodes};
+        out.message = cnodes.length ? null : 'Ei sisältöä tyypille ' +
+            this.contentTypes.find(t => t.name === selectedContentTypeName).friendlyName +
+            '.';
+        this.cache[selectedContentTypeName] = out;
+        return out;
     }
     /**
      * @access private
@@ -122,6 +124,13 @@ class ContentManageView extends preact.Component {
         e.preventDefault();
         openDeleteContentDialog(cnode, null);
     }
+}
+
+function getInitialContentTypeName(props, ctypes) {
+    if (!props.initialContentTypeName ||
+        !ctypes.some(t => t.name === props.initialContentTypeName))
+            return ctypes[0].name;
+    return props.initialContentTypeName;
 }
 
 export default ContentManageView;

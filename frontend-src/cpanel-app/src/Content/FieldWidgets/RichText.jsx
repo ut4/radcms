@@ -1,4 +1,4 @@
-import {InputGroup} from '@rad-commons';
+import {hookForm, InputGroup2} from '@rad-commons';
 import BaseFieldWidget from './Base.jsx';
 import QuillEditor from '../../Common/QuillEditor.jsx';
 let counter = 0;
@@ -9,21 +9,31 @@ class RichTextFieldWidget extends BaseFieldWidget {
      */
     constructor(props) {
         super(props);
-        this.id = ++counter;
-        if (props.initialValue === undefined) props.initialValue = '...';
+        this.fieldName = `field-${++counter}`;
+        this.state = hookForm(this, {[this.fieldName]: this.fixedInitialValue});
+    }
+    /**
+     * @returns {string}
+     * @access protected
+     */
+    getInitialValue() {
+        return '...';
     }
     /**
      * @access protected
      */
     render() {
-        return <InputGroup label={ this.label }>
+        return <InputGroup2 classes={ this.state.classes[this.fieldName] }>
+            <label>{ this.label }</label>
             <QuillEditor
-                name={ `field-${this.id}` }
-                value={ this.props.initialValue }
+                name={ this.fieldName }
+                value={ this.fixedInitialValue }
                 onChange={ html => {
+                    this.form.triggerChange(html, this.fieldName);
                     this.props.onValueChange(html);
-                } }/>
-        </InputGroup>;
+                } }
+                onBlur={ () => this.form.triggerBlur(this.fieldName) }/>
+        </InputGroup2>;
     }
 }
 

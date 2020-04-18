@@ -63,7 +63,7 @@ declare module "@rad-commons" {
         interface InputProps {
             validations: Array<[string, ...any]>;
             [key: string]: any;
-        };
+        }
         export class Input extends preact.Component<
             InputProps,
             {}>
@@ -79,10 +79,70 @@ declare module "@rad-commons" {
             {}>
         {
         }
-        export class InputErrors extends preact.Component<
+        export class InputError extends preact.Component<
             {},
             {}>
         {
+        }
+        export function hookForm(vm: preact.Component,
+                                 values: Object,
+                                 validators?: Array<FormInputValidator>): {
+            values: Object;
+            errors: Object;
+            classes: Object;
+        }
+        export class FormButtons extends preact.Component<
+            {
+                buttons?: Array<string|preact.VNode>;
+                submitButtonText?: string;
+                cancelButtonText?: string;
+                returnTo?: string;
+            },
+            {}>
+        {
+        }
+        export class InputGroup2 extends preact.Component<
+            {
+                classes?: {invalid: boolean; focused: boolean; blurredAtLeastOnce: boolean;};
+                className?: string;
+                inline?: boolean;
+            },
+            {}>
+        {
+        }
+        export interface InputProps2 {
+            vm: preact.Component;
+            myOnChange?: (state: Object) => Object;
+            validations?: Array<[string, ...any]>;
+            errorLabel?: string;
+            [key: string]: any;
+        }
+        export class Input2 extends preact.Component<
+            InputProps2,
+            {}>
+        {
+        }
+        export class Textarea2 extends preact.Component<
+            InputProps2,
+            {}>
+        {
+        }
+        export class Select2 extends preact.Component<
+            InputProps2,
+            {}>
+        {
+        }
+        export class InputError2 extends preact.Component<
+            {error?: string;},
+            {}>
+        {
+        }
+        export class FormInputValidator {
+            myInput: {
+                getValue(): string;
+                getLabel(): string;
+            };
+            checkValidity(): string|null;
         }
         export class Toaster extends preact.Component<
             {id?: string; autoCloseTimeoutMillis?: number;},

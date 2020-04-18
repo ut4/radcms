@@ -1,4 +1,4 @@
-import {InputGroup, Input} from '@rad-commons';
+import {hookForm, InputGroup2, Input2} from '@rad-commons';
 import BaseFieldWidget from './Base.jsx';
 
 class TextFieldFieldWidget extends BaseFieldWidget {
@@ -7,32 +7,41 @@ class TextFieldFieldWidget extends BaseFieldWidget {
      */
     constructor(props) {
         super(props);
-        if (props.initialValue === undefined) props.initialValue = '...';
-        this.state = {value: props.initialValue};
+        this.inputName = props.field.name;
+        this.state = hookForm(this, {[this.inputName]: this.fixedInitialValue});
+    }
+    /**
+     * @returns {string}
+     * @access protected
+     */
+    getInitialValue() {
+        return '...';
     }
     /**
      * @access protected
      */
     getInputImplClass() {
-        return Input;
+        return Input2;
     }
     /**
      * @access protected
      */
     render() {
         const InputImplClass = this.getInputImplClass();
-        return <InputGroup label={ this.label }>
-            <InputImplClass onInput={ e => this.emitValueChange(e.target.value) }
-                    value={ this.state.value }
-                    id={ this.props.field.name }/>
-        </InputGroup>;
+        return <InputGroup2 classes={ this.state.classes[this.inputName] }>
+            <label htmlFor={ this.inputName }>{ this.label }</label>
+            <InputImplClass vm={ this }
+                            myOnChange={ newState => this.emitValueChange(newState) }
+                            name={ this.inputName }
+                            id={ this.inputName }/>
+        </InputGroup2>;
     }
     /**
      * @access private
      */
-    emitValueChange(newValue) {
-        this.setState({value: newValue});
-        this.props.onValueChange(newValue);
+    emitValueChange(newState) {
+        this.props.onValueChange(newState.values[this.inputName]);
+        return newState;
     }
 }
 

@@ -9,6 +9,18 @@ class BaseFieldWidget extends preact.Component {
         if (typeof props.onValueChange !== 'function')
             throw new Error('props.onValueChange is required');
         this.label = props.field.friendlyName || props.field.name;
+        this.fixedInitialValue = props.initialValue;
+        if (this.fixedInitialValue === undefined) {
+            this.fixedInitialValue = this.getInitialValue();
+            props.onValueChange(this.fixedInitialValue);
+        }
+    }
+    /**
+     * @returns {string}
+     * @access protected
+     */
+    getInitialValue() {
+        throw new Error('Abstract method not implemented.');
     }
     /**
      * @access protected

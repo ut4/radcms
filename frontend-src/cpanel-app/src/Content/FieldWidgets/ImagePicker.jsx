@@ -1,4 +1,4 @@
-import {config, urlUtils, http, InputGroup, Input} from '@rad-commons';
+import {http, config, urlUtils, hookForm, InputGroup2, Input2} from '@rad-commons';
 import popupDialog from '../../Common/PopupDialog.jsx';
 import BaseFieldWidget from './Base.jsx';
 
@@ -8,24 +8,35 @@ class ImagePickerFieldWidget extends BaseFieldWidget {
      */
     constructor(props) {
         super(props);
-        this.state = {selectedImageName: props.initialValue};
+        this.fieldName = props.field.name;
+        this.state = hookForm(this, {[this.fieldName]: this.fixedInitialValue});
+    }
+    /**
+     * @returns {string}
+     * @access protected
+     */
+    getInitialValue() {
+        return '';
     }
     /**
      * @access protected
      */
     render() {
-        return <InputGroup label={ this.label }>
-            <Input value={ this.state.selectedImageName }
+        return <InputGroup2 classes={ this.state.classes[this.fieldName] }>
+            <label htmlFor={ this.fieldName }>{ this.label }</label>
+            <Input2 vm={ this }
+                    name={ this.fieldName }
+                    id={ this.fieldName }
                     onClick={ () => popupDialog.open(
                         PickImageDialog,
-                        {selectedImageName: this.state.selectedImageName,
+                        {selectedImageName: this.state.values[this.fieldName],
                          onSelected: img => {
-                             this.setState({selectedImageName: img.fileName});
+                             this.form.triggerChange(img.fileName, this.fieldName);
                              this.props.onValueChange(img.fileName);
                          },
                          assetBaseUrl: config.assetBaseUrl}
                     ) }/>
-        </InputGroup>;
+        </InputGroup2>;
     }
 }
 
@@ -84,7 +95,7 @@ class UploadButton extends preact.Component {
      */
     constructor(props) {
         super(props);
-        this.hiddenForm = null;
+        this.hiddenForm = document.getElementById(this.hiddenFormId);
         this.hiddenFormId = 'hidden-upload-form';
         this.initHiddenUploadForm();
     }
@@ -93,13 +104,13 @@ class UploadButton extends preact.Component {
      */
     render() {
         return <div>
-            <InputGroup>
-                <Input onChange={ e => { this.handleFileInputChange(e); } }
+            <InputGroup2>
+                <input onChange={ e => { this.handleFileInputChange(e); } }
                        name="localFile"
                        type="file"
                        accept="image/*"
                        form={ this.hiddenFormId }/>
-            </InputGroup>
+            </InputGroup2>
             <input value={ window.location.href }
                    name="returnTo"
                    type="hidden"
@@ -111,12 +122,12 @@ class UploadButton extends preact.Component {
      */
     initHiddenUploadForm() {
         if (this.hiddenForm) return;
-        this.hiddenForm = window.document.createElement('form');
+        this.hiddenForm = document.createElement('form');
         this.hiddenForm.action = urlUtils.makeUrl('/api/uploads');
         this.hiddenForm.method = 'post';
         this.hiddenForm.enctype = 'multipart/form-data';
         this.hiddenForm.id = this.hiddenFormId;
-        window.document.body.appendChild(this.hiddenForm);
+        document.body.appendChild(this.hiddenForm);
     }
     /**
      * @access private

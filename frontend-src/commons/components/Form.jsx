@@ -97,7 +97,7 @@ class InputGroup extends preact.Component {
                 this.setState({labelProps: inputEl.id ? {htmlFor: inputEl.id} : null});
             if (this.props.label && !myInput.getLabel())
                 myInput.setLabel(this.props.label);
-            const errors = this.findComponentInstance([InputErrors]);
+            const errors = this.findComponentInstance([InputError]);
             if (errors)
                 myInput.setErrorTarget(errors);
         }
@@ -298,7 +298,7 @@ class Select extends ValidatableInput {
     getTagName() { return 'select'; }
 }
 
-class InputErrors extends preact.Component {
+class InputError extends preact.Component {
     /**
      * @param {string} errorMessage
      * @access public
@@ -376,4 +376,4 @@ class ValidatorRunner {
 }
 
 export default Form;
-export {InputGroup, InputErrors, Input, Textarea, Select};
+export {InputGroup, InputError, Input, Textarea, Select};

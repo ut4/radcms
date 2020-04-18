@@ -1,4 +1,4 @@
-import {http, urlUtils, View, InputGroup, Form, Input, InputErrors} from '@rad-commons';
+import {http, urlUtils, View, FormButtons, hookForm, InputGroup2, Input2, InputError2} from '@rad-commons';
 
 /**
  * #/pack-website
@@ -6,10 +6,11 @@ import {http, urlUtils, View, InputGroup, Form, Input, InputErrors} from '@rad-c
 class WebsitePackView extends preact.Component {
     constructor(props) {
         super(props);
-        this.state = {templates: [],
-                      assets: [],
-                      signingKey: genRandomString(32),
-                      message: ''};
+        this.state = Object.assign(hookForm(this, {signingKey: genRandomString(32)}), {
+            templates: [],
+            assets: [],
+            message: ''
+        });
         this.templatesInputEl = preact.createRef();
         this.assetsInputEl = preact.createRef();
         http.get('/api/packager/pre-run')
@@ -29,8 +30,7 @@ class WebsitePackView extends preact.Component {
      * @access protected
      */
     render() {
-        return <View><Form onSubmit={ e => this.handleSubmit(e) }
-                           submitButtonText="Paketoi"
+        return <View><form onSubmit={ e => this.handleSubmit(e) }
                            action={ urlUtils.makeUrl('/api/packager') }
                            method="post">
             <h2>Paketoi sivusto</h2>
@@ -69,17 +69,19 @@ class WebsitePackView extends preact.Component {
             { this.state.message ? <p>
                 { this.state.message }
             </p> : null }
-            <InputGroup label="Salausavain">
-                <Input
-                    onInput={ e => Form.receiveInputValue(e, this) }
-                    value={ this.state.signingKey }
+            <InputGroup2 classes={ this.state.classes.signingKey }>
+                <label htmlFor="signingKey">Salausavain</label>
+                <Input2
+                    vm={ this }
                     name="signingKey"
+                    id="signingKey"
                     validations={ [['minLength', 12]] }/>
-                <InputErrors/>
-            </InputGroup>
+                <InputError2 error={ this.state.errors.signingKey }/>
+            </InputGroup2>
             <input ref={ this.templatesInputEl } type="hidden" name="templates" value=""/>
             <input ref={ this.assetsInputEl } type="hidden" name="assets" value=""/>
-        </Form></View>;
+            <FormButtons submitButtonText="Paketoi"/>
+        </form></View>;
     }
     /**
      * @access private
@@ -102,7 +104,8 @@ class WebsitePackView extends preact.Component {
      * @access private
      */
     handleSubmit(e) {
-        e.preventDefault();
+        if (!this.form.handleSubmit(e))
+            return;
         const onlySelected = asset => asset.selected;
         const onlyFileName = asset => asset.fileName;
         this.templatesInputEl.current.value = JSON.stringify(

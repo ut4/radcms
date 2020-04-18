@@ -1,4 +1,4 @@
-import {http, toasters, Form, InputGroup, Input, InputErrors, FeatherSvg} from '@rad-commons';
+import {http, toasters, InputGroup2, Input2, Select2, InputError2, FeatherSvg, hookForm} from '@rad-commons';
 
 class WizardInstallerView extends preact.Component {
     /**
@@ -7,29 +7,13 @@ class WizardInstallerView extends preact.Component {
     constructor(props) {
         super(props);
         const l = sessionStorage.lastTyped;
-        this.state = Object.assign({}, !l ? {
-            siteName: 'My site',
-            siteLang: 'fi',
-            sampleContent: 'minimal',
-            mainQueryVar: '',
-            useDevMode: false,
-            //
-            dbHost: '127.0.0.1',
-            dbDatabase: 'rad',
-            dbUser: 'username',
-            dbPass: '',
-            dbTablePrefix: 'rad_',
-            dbCharset: 'utf8',
-            doCreateDb: false,
-            //
-            firstUserName: 'my-name',
-            firstUserEmail: 'my@mail.com',
-            firstUserPass: '',
-        } : JSON.parse(l), {
-            tabs: [{isCurrent: true, isOk: false},
-                   {isCurrent: false, isOk: false},
-                   {isCurrent: false, isOk: false}]
-        });
+        this.lastTyped = l ? JSON.parse(l) : {};
+        this.state = {tabs: [{isCurrent: true, isOk: false},
+                             {isCurrent: false, isOk: false},
+                             {isCurrent: false, isOk: false}]};
+        this.tabRefs = [preact.createRef(),
+                        preact.createRef(),
+                        preact.createRef()];
     }
     /**
      * @access protected
@@ -49,145 +33,13 @@ class WizardInstallerView extends preact.Component {
                                 <FeatherSvg iconId="check"/></div>
             </nav>
             <div class={ this.state.tabs[0].isCurrent ? '' : 'hidden' }>
-            <Form onSubmit={ () => this.handleSubmit(0) } formId="a" omitButtons>
-                <InputGroup>
-                    <label htmlFor="siteName" data-help-text="Sivustoprojektin nimi, ei pakollinen.">Sivuston nimi</label>
-                    <Input name="siteName" id="siteName" onInput={ e => Form.receiveInputValue(e, this) }
-                            value={ this.state.siteName} formId="a"/>
-                </InputGroup>
-                <InputGroup>
-                    <label htmlFor="sampleContent" data-help-text="Sisältö, jolla sivusto alustetaan.">Esimerkkisisältö</label>
-                    <select name="sampleContent" id="sampleContent"
-                            value={ this.state.sampleContent }
-                            onChange={ e => Form.receiveInputValue(e, this) }>
-                        { [{name: 'minimal', friendlyName: 'Minimaalinen'},
-                            {name: 'blog', friendlyName: 'Blogi'}].map(opt =>
-                            <option value={ opt.name }>{ opt.friendlyName }</option>
-                        ) }
-                    </select>
-                </InputGroup>
-                <div class="fieldset">
-                    <div class="legend">Lisäasetukset</div>
-                    <InputGroup>
-                        <label htmlFor="mainQueryVar" data-help-text="Url-parametri (index.php?parametrinNimi=/) mikäli url-rewrite -säännöt ei ole käytössä.">Url-parametri</label>
-                        <Input name="mainQueryVar" id="mainQueryVar" onInput={ e => Form.receiveInputValue(e, this) }
-                                value={ this.state.mainQueryVar} formId="a"/>
-                    </InputGroup>
-                    <InputGroup inline="true">
-                        <label htmlFor="devMode" data-help-text="Ruksaa mikäli sivusto on vielä kehitysvaiheessa.">Käytä dev-modea</label>
-                        <Input type="checkbox" id="devMode" onInput={ e => this.setState({useDevMode: e.target.checked}) }
-                                value={ this.state.useDevMode}
-                                defaultChecked={ this.state.useDevMode } formId="a"/>
-                    </InputGroup>
-                </div>
-                <br/>
-                <button class="text-button"
-                        type="submit">Seuraava &gt;</button>
-            </Form>
+                <SiteSettingsTab parent={ this } ref={ this.tabRefs[0] }/>
             </div>
             <div class={ this.state.tabs[1].isCurrent ? '' : 'hidden' }>
-            <Form onSubmit={ () => this.handleSubmit(1) } formId="b" omitButtons>
-                <InputGroup>
-                    <label htmlFor="dbHost" data-help-text="Tietokantaserverin osoite (host).">Tietokannan osoite</label>
-                    <Input name="dbHost" id="dbHost" onInput={ e => Form.receiveInputValue(e, this) }
-                            value={ this.state.dbHost }
-                            validations={ [['required']] }
-                            validationLabel="Tietokannan osoite"
-                            formId="b"/>
-                    <InputErrors/>
-                </InputGroup>
-                <InputGroup>
-                    <label htmlFor="dbUser" data-help-text="Tietokantakäyttäjän nimi, jota RadCMS käyttää luodessaan tietokantayhteyden.">Tietokantakäyttäjä</label>
-                    <Input name="dbUser" id="dbUser" onInput={ e => Form.receiveInputValue(e, this) }
-                            value={ this.state.dbUser }
-                            validations={ [['required']] }
-                            validationLabel="Tietokantakäyttäjä"
-                            formId="b"/>
-                    <InputErrors/>
-                </InputGroup>
-                <InputGroup>
-                    <label htmlFor="dbPass" data-help-text="Tietokantakäyttäjän salasana, jota RadCMS käyttää luodessaan tietokantayhteyden.">Tietokantakäyttäjän salasana</label>
-                    <Input name="dbPass" id="dbPass" onInput={ e => Form.receiveInputValue(e, this) }
-                            value={ this.state.dbPass } type="password"
-                            formId="b"/>
-                </InputGroup>
-                <div class="grouped">
-                <InputGroup>
-                    <label htmlFor="dbDatabase" data-help-text="Käytettävän, tai luotavan RadCMS-tietokannan nimi.">Tietokannan nimi</label>
-                    <Input name="dbDatabase" id="dbDatabase" onInput={ e => Form.receiveInputValue(e, this) }
-                            value={ this.state.dbDatabase }
-                            validations={ [['required']] }
-                            validationLabel="Tietokannan nimi"
-                            formId="b"/>
-                    <InputErrors/>
-                </InputGroup>
-                <InputGroup>
-                    <label htmlFor="doCreateDb" data-help-text="Luo tietokanta mikäli sitä ei ole vielä olemassa.">Luo tietokanta</label>
-                    <Input type="checkbox" id="doCreateDb" onInput={ e => this.setState({doCreateDb: e.target.checked}) }
-                            value={ this.state.doCreateDb}
-                            defaultChecked={ this.state.doCreateDb }
-                            formId="b"/>
-                </InputGroup>
-                </div>
-                <div class="fieldset">
-                    <div class="legend">Lisäasetukset</div>
-                    <InputGroup>
-                        <label htmlFor="dbTablePrefix" data-help-text="Prefix, jota käytetään RadCMS:n tietokantataulujen etuliitteenä.">Tietokantataulujen prefix</label>
-                        <Input name="dbTablePrefix" id="dbTablePrefix" onInput={ e => Form.receiveInputValue(e, this) }
-                                value={ this.state.dbTablePrefix }
-                                formId="b"/>
-                    </InputGroup>
-                    <InputGroup label="Tietokannan charset">
-                        <select name="dbCharset" id="dbCharset"
-                                onChange={ e => Form.receiveInputValue(e, this) }
-                                value={ this.state.dbCharset }>
-                            { ['utf8'].map(opt =>
-                                <option value={ opt }>{ opt }</option>
-                            ) }
-                        </select>
-                    </InputGroup>
-                </div>
-                <br/>
-                <button onClick={ () => this.goBack(0) } class="text-button"
-                        type="button">&lt; Edellinen</button>
-                <span> </span>
-                <button class="text-button"
-                        type="submit">Seuraava &gt;</button>
-            </Form>
+                <DatabaseSettingsTab parent={ this } ref={ this.tabRefs[1] }/>
             </div>
             <div class={ this.state.tabs[2].isCurrent ? '' : 'hidden' }>
-            <Form onSubmit={ () => this.handleSubmit(2) } formId="c" omitButtons>
-                <InputGroup label="Käyttäjä">
-                    <Input name="firstUserName" id="firstUserName"
-                            onInput={ e => Form.receiveInputValue(e, this) }
-                            value={ this.state.firstUserName }
-                            validations={ [['required']] }
-                            formId="c"/>
-                    <InputErrors/>
-                </InputGroup>
-                <InputGroup label="E-mail">
-                    <Input name="firstUserEmail" id="firstUserEmail"
-                            onInput={ e => Form.receiveInputValue(e, this) }
-                            value={ this.state.firstUserEmail }
-                            validations={ [['required']] }
-                            formId="c"/>
-                    <InputErrors/>
-                </InputGroup>
-                <InputGroup label="Salasana">
-                    <Input name="firstUserPass" id="firstUserPass" type="password"
-                            onInput={ e => Form.receiveInputValue(e, this) }
-                            value={ this.state.firstUserPass }
-                            validations={ [['required']] }
-                            formId="c"/>
-                    <InputErrors/>
-                </InputGroup>
-                <br/>
-                <button onClick={ () => this.goBack(1) } class="text-button"
-                        type="button">&lt; Edellinen</button>
-                <span> </span>
-                <button class="nice-button primary"
-                        type="submit">Asenna</button>
-            </Form>
+                <UserSettingsTab parent={ this } ref={ this.tabRefs[2] }/>
             </div>
         </div>;
     }
@@ -203,7 +55,9 @@ class WizardInstallerView extends preact.Component {
     /**
      * @access private
      */
-    handleSubmit(tabIdx) {
+    handleSubmit(e, tabIdx) {
+        if (!this.tabRefs[tabIdx].current.getForm().handleSubmit(e))
+            return;
         if (tabIdx < 2) {
             const tabs = this.state.tabs;
             tabs[tabIdx] = {isCurrent: false, isOk: true};
@@ -211,9 +65,15 @@ class WizardInstallerView extends preact.Component {
             this.setState({tabs});
             return;
         }
-        const data = Object.assign({}, this.state);
-        delete data.tabs;
-        sessionStorage.lastTyped = JSON.stringify(data);
+        const data = Object.assign({},
+            this.tabRefs[0].current.getValues(),
+            this.tabRefs[1].current.getValues(),
+            this.tabRefs[2].current.getValues()
+        );
+        sessionStorage.lastTyped = JSON.stringify(Object.assign({}, data, {
+            dbPass: '',
+            firstUserPass: '',
+        }));
         data.baseUrl = this.props.baseUrl;
         const makeUrl = url => data.baseUrl + (!this.state.mainQueryVar
             ? url
@@ -233,5 +93,208 @@ class WizardInstallerView extends preact.Component {
             });
     }
 }
+
+class Tab extends preact.Component {
+    /**
+     * @access public
+     */
+    getValues() {
+        return this.state.values;
+    }
+    /**
+     * @access public
+     */
+    getForm() {
+        return this.form;
+    }
+    /**
+     * @access protected
+     */
+    render() {
+        throw new Error('Abstract method not implemented.');
+    }
+}
+
+class SiteSettingsTab extends Tab {
+    /**
+     * @param {any} props
+     */
+    constructor(props) {
+        super(props);
+        const prev = props.parent.lastTyped;
+        this.state = hookForm(this, {
+            siteName: prev.siteName || 'My site',
+            siteLang: prev.siteLang || 'fi',
+            sampleContent: prev.sampleContent || 'minimal',
+            mainQueryVar: prev.mainQueryVar || '',
+            useDevMode: prev.useDevMode || false,
+        });
+    }
+    /**
+     * @access protected
+     */
+    render() {
+        const {classes} = this.state;
+        return <form onSubmit={ e => this.props.parent.handleSubmit(e, 0) }>
+            <InputGroup2 classes={ classes.siteName }>
+                <label htmlFor="siteName" data-help-text="Sivustoprojektin nimi, ei pakollinen.">Sivuston nimi</label>
+                <Input2 vm={ this } name="siteName" id="siteName"/>
+            </InputGroup2>
+            <InputGroup2 classes={ classes.sampleContent }>
+                <label htmlFor="sampleContent" data-help-text="Sisältö, jolla sivusto alustetaan.">Esimerkkisisältö</label>
+                <Select2 vm={ this } name="sampleContent" id="sampleContent">
+                    { [{name: 'minimal', friendlyName: 'Minimaalinen'},
+                        {name: 'blog', friendlyName: 'Blogi'}].map(opt =>
+                        <option value={ opt.name }>{ opt.friendlyName }</option>
+                    ) }
+                </Select2>
+            </InputGroup2>
+            <div class="fieldset">
+                <div class="legend">Lisäasetukset</div>
+                <InputGroup2 classes={ classes.mainQueryVar }>
+                    <label htmlFor="mainQueryVar" data-help-text="Url-parametri (index.php?parametrinNimi=/) mikäli url-rewrite -säännöt ei ole käytössä.">Url-parametri</label>
+                    <Input2 vm={ this } name="mainQueryVar" id="mainQueryVar"/>
+                </InputGroup2>
+                <InputGroup2 classes={ classes.useDevMode } inline="true">
+                    <label htmlFor="useDevMode" data-help-text="Ruksaa mikäli sivusto on vielä kehitysvaiheessa.">Käytä dev-modea</label>
+                    <Input2 vm={ this } type="checkbox" name="useDevMode" id="useDevMode" defaultChecked={ this.state.values.useDevMode }/>
+                </InputGroup2>
+            </div>
+            <br/>
+            <button class="text-button"
+                    type="submit">Seuraava &gt;</button>
+        </form>;
+    }
+}
+
+class DatabaseSettingsTab extends Tab {
+    /**
+     * @param {any} props
+     */
+    constructor(props) {
+        super(props);
+        const prev = props.parent.lastTyped;
+        this.state = hookForm(this, {
+            dbHost: prev.dbHost || '127.0.0.1',
+            dbDatabase: prev.dbDatabase || 'rad',
+            dbUser: prev.dbUser || 'username',
+            dbPass: prev.dbPass || '',
+            dbTablePrefix: prev.dbTablePrefix || 'rad_',
+            dbCharset: prev.dbCharset || 'utf8',
+            doCreateDb: prev.doCreateDb || false,
+        });
+    }
+    /**
+     * @access protected
+     */
+    render() {
+        const {errors, classes} = this.state;
+        return <form onSubmit={ e => this.props.parent.handleSubmit(e, 1) }>
+            <InputGroup2 classes={ classes.dbHost }>
+                <label htmlFor="dbHost" data-help-text="Tietokantaserverin osoite (host).">Tietokannan osoite</label>
+                <Input2 vm={ this } name="dbHost" id="dbHost"
+                        validations={ [['required']] }
+                        errorLabel="Tietokannan osoite"/>
+                <InputError2 error={ errors.dbHost }/>
+            </InputGroup2>
+            <InputGroup2 classes={ classes.dbUser }>
+                <label htmlFor="dbUser" data-help-text="Tietokantakäyttäjän nimi, jota RadCMS käyttää luodessaan tietokantayhteyden.">Tietokantakäyttäjä</label>
+                <Input2 vm={ this } name="dbUser" id="dbUser"
+                        validations={ [['required']] }
+                        errorLabel="Tietokantakäyttäjä"/>
+                <InputError2 error={ errors.dbUser }/>
+            </InputGroup2>
+            <InputGroup2 classes={ classes.dbPass }>
+                <label htmlFor="dbPass" data-help-text="Tietokantakäyttäjän salasana, jota RadCMS käyttää luodessaan tietokantayhteyden.">Tietokantakäyttäjän salasana</label>
+                <Input2 vm={ this } name="dbPass" id="dbPass" type="password"/>
+            </InputGroup2>
+            <div class="grouped">
+            <InputGroup2 classes={ classes.dbDatabase }>
+                <label htmlFor="dbDatabase" data-help-text="Käytettävän, tai luotavan RadCMS-tietokannan nimi.">Tietokannan nimi</label>
+                <Input2 vm={ this } name="dbDatabase" id="dbDatabase"
+                        validations={ [['required']] }
+                        errorLabel="Tietokannan nimi"/>
+                <InputError2 error={ errors.dbDatabase }/>
+            </InputGroup2>
+            <InputGroup2 classes={ classes.doCreateDb }>
+                <label htmlFor="doCreateDb" data-help-text="Luo tietokanta mikäli sitä ei ole vielä olemassa.">Luo tietokanta</label>
+                <Input2 vm={ this } type="checkbox" id="doCreateDb" name="doCreateDb" defaultChecked={ this.state.values.doCreateDb }/>
+            </InputGroup2>
+            </div>
+            <div class="fieldset">
+                <div class="legend">Lisäasetukset</div>
+                <InputGroup2 classes={ classes.dbTablePrefix }>
+                    <label htmlFor="dbTablePrefix" data-help-text="Prefix, jota käytetään RadCMS:n tietokantataulujen etuliitteenä.">Tietokantataulujen prefix</label>
+                    <Input2 vm={ this } name="dbTablePrefix" id="dbTablePrefix"/>
+                </InputGroup2>
+                <InputGroup2 classes={ classes.dbCharset }>
+                    <label htmlFor="dbCharset">Tietokannan charset</label>
+                    <Select2 vm={ this } name="dbCharset" id="dbCharset">
+                        { ['utf8'].map(opt =>
+                            <option value={ opt }>{ opt }</option>
+                        ) }
+                    </Select2>
+                </InputGroup2>
+            </div>
+            <br/>
+            <button onClick={ () => this.props.parent.goBack(0) } class="text-button"
+                    type="button">&lt; Edellinen</button>
+            <span> </span>
+            <button class="text-button"
+                    type="submit">Seuraava &gt;</button>
+        </form>;
+    }
+}
+
+class UserSettingsTab extends Tab {
+    /**
+     * @param {any} props
+     */
+    constructor(props) {
+        super(props);
+        const prev = props.parent.lastTyped;
+        this.state = hookForm(this, {
+            firstUserName: prev.firstUserName || 'my-name',
+            firstUserEmail: prev.firstUserEmail || 'my@mail.com',
+            firstUserPass: prev.firstUserPass || '',
+        });
+    }
+    /**
+     * @access protected
+     */
+    render() {
+        const {errors, classes} = this.state;
+        return <form onSubmit={ e => this.props.parent.handleSubmit(e, 2) }>
+            <InputGroup2 classes={ classes.firstUserName }>
+                <label htmlFor="firstUserName">Käyttäjä</label>
+                <Input2 vm={ this } name="firstUserName" id="firstUserName"
+                        errorLabel="Käyttäjä"
+                        validations={ [['required']] }/>
+                <InputError2 error={ errors.firstUserName }/>
+            </InputGroup2>
+            <InputGroup2 classes={ classes.firstUserEmail }>
+                <label htmlFor="firstUserEmail">E-mail</label>
+                <Input2 vm={ this } name="firstUserEmail" id="firstUserEmail"
+                        errorLabel="E-mail"
+                        validations={ [['required']] }/>
+                <InputError2 error={ errors.firstUserName }/>
+            </InputGroup2>
+            <InputGroup2 classes={ classes.firstUserPass }>
+                <label htmlFor="firstUserPass">Salasana</label>
+                <Input2 vm={ this } name="firstUserPass" id="firstUserPass" type="password"
+                        errorLabel="Salasana"
+                        validations={ [['required']] }/>
+                <InputError2 error={ errors.firstUserPass }/>
+            </InputGroup2>
+            <br/>
+            <button onClick={ () => this.props.parent.goBack(1) } class="text-button"
+                    type="button">&lt; Edellinen</button>
+            <span> </span>
+            <button class="nice-button primary"
+                    type="submit">Asenna</button>
+        </form>;
+    }
+}
+
 
 export default WizardInstallerView;

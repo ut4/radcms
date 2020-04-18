@@ -1,4 +1,4 @@
-import {http, config, toasters, urlUtils, View, FeatherSvg, Form, InputGroup, Input} from '@rad-commons';
+import {http, config, toasters, urlUtils, View, FeatherSvg, InputGroup2, FormButtons} from '@rad-commons';
 import openDeleteContentDialog from './ContentDeleteDialog.jsx';
 import getWidgetImpl from './FieldWidgets/all-with-multi.js';
 import {filterByUserRole} from '../ContentType/FieldList.jsx';
@@ -64,17 +64,7 @@ class ContentEditView extends preact.Component {
      */
     render() {
         if (!this.state.contentNodeFetched || !this.state.contentTypeFetched) return null;
-        return <View><Form onSubmit={ () => this.handleFormSubmit() }
-                           submitButtonText={ this.submitButtonText }
-                           buttons={ [
-                               'submit',
-                                !this.contentNode.isRevision
-                                    ? <button onClick={ () => this.switchToDraft() } class="nice-button" type="button">
-                                        Vaihda luonnokseen
-                                    </button>
-                                    : null,
-                                'cancel'
-                            ] }>
+        return <View><form onSubmit={ e => this.handleFormSubmit(e) }>
             <h2>{ [
                 this.title,
                 this.contentNode.isRevision && !this.props.publish
@@ -98,17 +88,30 @@ class ContentEditView extends preact.Component {
                     }}/>;
             }) }
             { this.contentNode.isRevision && !this.props.publish
-                ? <InputGroup label="Julkaise" inline={ true }>
-                    <Input id="i-publish" type="checkbox" defaultChecked={ this.state.doPublish }
+                ? <InputGroup2 inline>
+                    <label htmlFor="doPublish">Julkaise</label>
+                    <input id="doPublish" type="checkbox" defaultChecked={ this.state.doPublish }
                            onChange={ e => this.setState({doPublish: e.target.checked}) }/>
-                </InputGroup>
+                </InputGroup2>
                 : null }
-        </Form></View>;
+            <FormButtons
+                submitButtonText={ this.submitButtonText }
+                buttons={ [
+                    'submit',
+                    !this.contentNode.isRevision
+                        ? <button onClick={ e => this.switchToDraft(e) } class="nice-button" type="button">
+                            Vaihda luonnokseen
+                        </button>
+                        : null,
+                    'cancel'
+                ] }/>
+        </form></View>;
     }
     /**
      * @access private
      */
-    handleFormSubmit(revisionSettings = null) {
+    handleFormSubmit(e, revisionSettings = null) {
+        e.preventDefault();
         let status = this.contentNode.status;
         if (!revisionSettings)
             revisionSettings = !this.state.doPublish ? '' : '/publish';
@@ -129,8 +132,8 @@ class ContentEditView extends preact.Component {
     /**
      * @access private
      */
-    switchToDraft() {
-        this.handleFormSubmit('/unpublish');
+    switchToDraft(e) {
+        this.handleFormSubmit(e, '/unpublish');
     }
 }
 

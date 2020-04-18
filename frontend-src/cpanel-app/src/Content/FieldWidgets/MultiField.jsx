@@ -10,13 +10,17 @@ class MultiFieldFieldWidget extends BaseFieldWidget {
     constructor(props) {
         super(props);
         this.idCounter = 0;
-        if (props.initialValue) {
-            this.virtualFields = JSON.parse(props.initialValue);
-            this.idCounter = this.virtualFields.reduce((max, f) => f.id > max ? f.id : max, 0);
-        } else {
-            this.virtualFields = [this.makeField(widgetTypes[0])];
-        }
+        this.virtualFields = JSON.parse(this.fixedInitialValue);
+        this.idCounter = this.virtualFields.reduce((max, f) => f.id > max ? f.id : max, 0);
         this.state = {configModeIsOn: false};
+    }
+    /**
+     * @returns {string}
+     * @access protected
+     */
+    getInitialValue() {
+        this.virtualFields = [this.makeField(widgetTypes[0])];
+        return JSON.stringify(this.virtualFields);
     }
     /**
      * @access protected
@@ -37,6 +41,7 @@ class MultiFieldFieldWidget extends BaseFieldWidget {
             { this.virtualFields.map((f, i) => {
                 const {ImplClass, props} = getWidgetImpl(f.type);
                 return <ImplClass
+                    key={ f.id }
                     field={ f }
                     initialValue={ f.value }
                     settings={ props }
@@ -51,12 +56,13 @@ class MultiFieldFieldWidget extends BaseFieldWidget {
      * @access private
      */
     makeField(type) {
+        this.idCounter = this.idCounter || 0;
         return {id: (++this.idCounter).toString(),
                 type: type.name,
                 name: `${type.name} #${(this.virtualFields || []).reduce(f =>
                            f.type === type.name ? 1 : 0, 1
                        )}`,
-                value: ''};
+                value: undefined};
     }
 }
 

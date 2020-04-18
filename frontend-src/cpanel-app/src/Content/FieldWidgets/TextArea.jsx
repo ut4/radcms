@@ -1,4 +1,4 @@
-import {Textarea} from '@rad-commons';
+import {Textarea2} from '@rad-commons';
 import TextFieldFieldWidget from './TextField.jsx';
 
 class TextAreaFieldFieldWidget extends TextFieldFieldWidget {
@@ -6,7 +6,7 @@ class TextAreaFieldFieldWidget extends TextFieldFieldWidget {
      * @access protected
      */
     getInputImplClass() {
-        return Textarea;
+        return Textarea2;
     }
 }
 

@@ -159,33 +159,33 @@ a.disabled {
     border-color: #d8d8d8;
     cursor: not-allowed;
 }
-input.invalid.blurred-at-least-once,
-textarea.invalid.blurred-at-least-once,
-select.invalid.blurred-at-least-once,
-input.invalid.blurred-at-least-once:focus,
-textarea.invalid.blurred-at-least-once:focus,
-select.invalid.blurred-at-least-once:focus {
+.blurred-at-least-once.invalid input,
+.blurred-at-least-once.invalid textarea,
+.blurred-at-least-once.invalid select,
+.blurred-at-least-once.invalid input:focus,
+.blurred-at-least-once.invalid textarea:focus,
+.blurred-at-least-once.invalid select:focus {
     outline: none;
     border-color: #f06464;
 }
-input.invalid.blurred-at-least-once:hover,
-textarea.invalid.blurred-at-least-once:hover,
-select.invalid.blurred-at-least-once:hover {
+.blurred-at-least-once.invalid input:hover,
+.blurred-at-least-once.invalid textarea:hover,
+.blurred-at-least-once.invalid select:hover {
     border-color: #fc7f7f;
 }
 
-input + .error,
-textarea + .error,
-select + .error {
+.input-group .error,
+.input-group .error,
+.input-group .error {
     display: none;
     font: normal 12px/12px "Fira sans light";
     text-align: left;
     margin: 8px 0;
     color: #3c1d1f;
 }
-input.blurred-at-least-once + .error,
-textarea.blurred-at-least-once + .error,
-select.blurred-at-least-once + .error {
+.input-group.blurred-at-least-once .error,
+.input-group.blurred-at-least-once .error,
+.input-group.blurred-at-least-once .error {
     display: block;
 }
 

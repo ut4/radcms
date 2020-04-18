@@ -1,4 +1,4 @@
-import {dateUtils, Input} from '@rad-commons';
+import {dateUtils} from '@rad-commons';
 
 class DateTimePicker extends preact.Component {
     /**
@@ -33,9 +33,9 @@ class DateTimePicker extends preact.Component {
      */
     render() {
         return <div class="datepicker">
-            <Input type={ this.props.showInput !== false ? 'text' : 'hidden' }
+            <input type={ this.props.showInput !== false ? 'text' : 'hidden' }
                    name={ this.props.inputName || 'date' }
-                   ref={ myInput => { if (myInput) this.field = myInput.getDomInputEl(); } }
+                   ref={ el => { if (el) this.field = el; } }
                    autoComplete="off"/>
             <div class="datepicker-container"
                  ref={ el => { this.container = el; } }></div>

@@ -19,7 +19,8 @@ const makeJsxPlugin = include =>
         production: !isWatch,
         include: include || ['frontend-src/commons/components/**'],
         transforms: ['jsx'],
-        jsxPragma: 'preact.createElement'
+        jsxPragma: 'preact.createElement',
+        jsxFragmentPragma: 'preact.createFragment',
     });
 
 ////////////////////////////////////////////////////////////////////////////////

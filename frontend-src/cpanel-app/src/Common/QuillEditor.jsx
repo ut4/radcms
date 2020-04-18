@@ -1,6 +1,6 @@
 class QuillEditor extends preact.Component {
     /**
-     * @param {{name: string; value: string; onChange: (html: string) => any;}} props
+     * @param {{name: string; value: string; onChange: (html: string) => any; onBlur?: () => any;}} props
      */
     constructor(props) {
         super(props);
@@ -25,6 +25,10 @@ class QuillEditor extends preact.Component {
             if (this.quill.container.firstChild)
                 this.props.onChange(this.quill.container.firstChild.innerHTML);
         });
+        if (this.props.onBlur)
+            this.quill.on('selection-change', range => {
+                if (!range) this.props.onBlur();
+            });
     }
     /**
      * @access protected
