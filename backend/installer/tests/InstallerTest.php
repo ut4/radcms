@@ -288,7 +288,7 @@ return [
     private function sendInstallRequest($s) {
         $res = $this->createMockResponse('{"ok":"ok","warnings":[]}', 200);
         $app = $this->makeApp([$this,'createInstallerApp'], $this->getAppConfig(),
-            (object)['fs' => $s->mockFs]);
+            (object) ['db' => '@auto', 'auth' => '@auto', 'fs' => $s->mockFs]);
         $this->sendRequest(new Request('/', 'POST', $s->input), $res, $app);
     }
     private function verifyInsertedSampleContent($s) {

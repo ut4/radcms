@@ -57,7 +57,7 @@ final class PackagerControllersTest extends DbTestCase {
              ->willReturn((object)['id' => $s->testUserZero->id,
                                    'role' => $s->testUserZero->role]);
         $app = $this->makeApp('\RadCms\App::create', $this->getAppConfig(),
-            ['crypto' => new MockCrypto(), 'auth' => $auth],
+            ['db' => '@auto', 'crypto' => new MockCrypto(), 'auth' => $auth],
             function ($injector) {
                 $injector->delegate(ZipPackageStream::class, function () {
                     return $this->mockPackageStream;

@@ -32,7 +32,7 @@ final class PluginAPIIntegrationTest extends DbTestCase {
         $moviesPluginImpl->install($m);
         AppTest::markPluginAsInstalled('MoviesPlugin', $db);
         //
-        $ctx = new \stdClass;
+        $ctx = (object) ['db' => '@auto', 'auth' => '@auto'];
         $ctx->fs = $this->getMockBuilder(FileSystem::class)
             ->setMethods(['readDir'])
             ->getMock();

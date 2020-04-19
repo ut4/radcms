@@ -25,7 +25,7 @@ final class UserControllersTest extends DbTestCase {
     private function setupGetCurrentUserTest() {
         $out = new \stdClass;
         $out->testUser = self::makeAndInsertTestUser();
-        $out->ctx = new \stdClass;
+        $out->ctx = (object) ['db' => '@auto', 'auth' => null];
         $out->ctx->auth = $this->createMock(Authenticator::class);
         $out->ctx->auth->method('getIdentity')
             ->willReturn((object)['id' => $out->testUser->id,

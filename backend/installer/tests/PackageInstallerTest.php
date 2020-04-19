@@ -130,8 +130,8 @@ final class PackageInstallerTest extends BaseInstallerTest {
     private function sendInstallFromPackageRequest($s) {
         $res = $this->createMockResponse('{"ok":"ok","warnings":[]}', 200);
         $app = $this->makeApp([$this,'createInstallerApp'], $this->getAppConfig(),
-            (object) ['crypto' => new MockCrypto],
-            function ( $injector) {
+            (object) ['db' => '@auto', 'auth' => '@auto', 'crypto' => new MockCrypto],
+            function ($injector) {
                 $injector->delegate(InstallerCommons::class, function () {
                     $partiallyMocked = $this->getMockBuilder(InstallerCommons::class)
                         ->setConstructorArgs([self::$db, new FileSystem, new MockCrypto,

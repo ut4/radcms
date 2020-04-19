@@ -57,13 +57,13 @@ class DAO {
      * @param string $sql
      * @param bool $isFetchOne
      * @param array $bindVals = null
-     * @param \stdClass $join = null {contentType: string, alias: string, collector: [\Closure, string]}
+     * @param \stdClass[] $joins = [] {contentTypeName: string, alias: string, expr: string, bindVals: array, isLeft: bool, collectFn: \Closure, targetFieldName: string|null}[]
      * @return array|\stdClass|null
      */
     public function doExec(string $sql,
                            bool $isFetchOne,
                            array $bindVals = null,
-                           \stdClass $join = null) {
+                           array $joins = []) {
         $out = null;
         // @allow \PDOException
         $rows = $this->db->fetchAll($sql, $bindVals);
@@ -75,9 +75,10 @@ class DAO {
             }, $rows) : [];
         }
         //
-        if ($out && $join) {
-            $out = $this->runUserDefinedJoinCollector($join,
-				$rows, $isFetchOne, $out);
+        if ($out && $joins) {
+            foreach ($joins as $join)
+                $out = $this->runUserDefinedJoinCollector($join,
+				    $rows, $isFetchOne, $out);
 		}
         //
         return $out;
@@ -121,21 +122,32 @@ class DAO {
     private function runUserDefinedJoinCollector(\stdClass $join,
                                                  array $rows,
                                                  bool $isFetchOne,
-                                                 &$out) {
-        $joinContentTypeName = $join->contentType;
+                                                 $out) {
+        if (!$join->collectFn)
+            return $out;
+        $nodes = $isFetchOne ? [$out] : $out;
+        // one <-> one
+        if (!$join->targetFieldName) {
+            $fn = $join->collectFn;
+            foreach ($nodes as $node) {
+                foreach ($rows as $row)
+                    $fn($node, $row);
+            }
+            return $out;
+        }
+        // one <-> many
         $joinIdKey = $join->alias . 'Id';
-        $joinContentTypeKey = $join->alias . 'ContentType';
-        [$fn, $fieldName] = $join->collector;
-        //
+        $joinContentTypeNameKey = $join->alias . 'ContentType';
+        $fn = $join->collectFn;
         $processed = [];
-        foreach (($isFetchOne ? [$out] : $out) as $node) {
+        foreach ($nodes as $node) {
             if (!array_key_exists($node->id, $processed)) {
-                $node->$fieldName = [];
+                $node->{$join->targetFieldName} = [];
                 foreach ($rows as $row) {
                     if (
                         $row[$joinIdKey] &&
                         $row['id'] === $node->id &&
-                        $row[$joinContentTypeKey] === $joinContentTypeName
+                        $row[$joinContentTypeNameKey] === $join->contentTypeName
                     ) $fn($node, $row);
                 }
                 $processed[$node->id] = $node;
@@ -148,10 +160,10 @@ class DAO {
      * 'Foo f' -> ['foo', 'f'] tai 'Foo' -> ['Foo', <defaultAlias>]
      *
      * @param string $expr
-     * @param string $defaultAlias = 'a'
+     * @param string $defaultAlias = '_a'
      */
     public static function parseContentTypeNameAndAlias(string $expr,
-                                                        string $defaultAlias = 'a'): array {
+                                                        string $defaultAlias = '_a'): array {
         $pcs = explode(' ', $expr);
         return [$pcs[0], $pcs[1] ?? $defaultAlias];
     }

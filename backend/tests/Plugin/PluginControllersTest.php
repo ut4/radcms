@@ -29,7 +29,8 @@ final class PluginControllersTest extends DbTestCase {
     private function setupInstallTest($testPluginName = 'ValidPlugin') {
         $s = new \stdClass;
         $s->testPluginName = $testPluginName;
-        $s->ctx = (object)['fs' => $this->createMock(FileSystem::class)];
+        $s->ctx = (object) ['db' => '@auto', 'auth' => '@auto',
+                            'fs' => $this->createMock(FileSystem::class)];
         $s->ctx->fs->expects($this->once())->method('readDir')->willReturn(
             [dirname(RAD_SITE_PATH) . '/_test-plugins/' . $s->testPluginName]);
         $this->afterTest = function () {

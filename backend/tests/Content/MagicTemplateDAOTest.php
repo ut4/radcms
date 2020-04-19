@@ -75,7 +75,7 @@ final class MagicTemplateDAOTest extends DbTestCase {
         $dao = self::makeDao(false);
         $node = $dao->fetchOne('Products p')
                     ->join('Reviews r', 'r.productId=p.id')
-                    ->collectJoin('reviews', function ($product, $row) {
+                    ->collectPreviousJoin('reviews', function ($product, $row) {
                         $product->reviews[] = (object)['content' => $row['rContent']];
                     })
                     ->where('id=?', 3)

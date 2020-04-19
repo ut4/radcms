@@ -62,7 +62,7 @@ class App {
             });
         $ctx->router->on('*', function ($req, $res, $next) use ($ctx) {
             $req->user = $ctx->auth->getIdentity();
-            $aclActionAndResource = $req->routeCtx->myData;
+            $aclActionAndResource = $req->routeInfo->myCtx;
             if (!$aclActionAndResource)
                 throw new PikeException('A route context must be a non-empty ' .
                                         'string or \RadCms\Auth\ACL::NO_NAME',

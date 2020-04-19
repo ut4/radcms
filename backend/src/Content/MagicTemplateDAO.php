@@ -57,16 +57,16 @@ class MagicTemplateDAO extends DAO {
      * @param string $sql
      * @param bool $isFetchOne
      * @param array $bindVals = null
-     * @param \stdClass $join = null {contentType: string, alias: string, collector: [\Closure, string]}
+     * @param \stdClass[] $joins = [] {contentTypeName: string, alias: string, expr: string, bindVals: array, isLeft: bool, collectFn: \Closure, targetFieldName: string|null}[]
      * @param \stdClass $frontendPanelInfo = null
      * @return array|\stdClass|null
      */
     public function doExec(string $sql,
                            bool $isFetchOne,
                            array $bindVals = null,
-                           \stdClass $join = null,
+                           array $joins = [],
                            \stdClass $frontendPanelInfo = null) {
-        $res = parent::doExec($sql, $isFetchOne, $bindVals, $join);
+        $res = parent::doExec($sql, $isFetchOne, $bindVals, $joins);
         if ($frontendPanelInfo) $frontendPanelInfo->contentNodes = $res;
         if (!$res) return $res;
         //

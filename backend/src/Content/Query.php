@@ -48,31 +48,32 @@ class Query {
         return $this;
     }
     /**
-     * @param string $contentType 'Products', 'Products p'
+     * @param string $contentTypeExpr 'Products', 'Products p'
      * @param string $expr
      * @param mixed ...$bindVals
      * @return $this
      */
-    public function join(string $contentType, string $expr, ...$bindVals): Query {
-        return $this->doJoin($contentType, $expr, $bindVals, false);
+    public function join(string $contentTypeExpr, string $expr, ...$bindVals): Query {
+        return $this->doJoin($contentTypeExpr, $expr, $bindVals, false);
     }
     /**
-     * @param string $contentType 'Products', 'Products p'
+     * @param string $contentTypeExpr 'Products', 'Products p'
      * @param string $expr
      * @param mixed ...$bindVals
      * @return $this
      */
-    public function leftJoin(string $contentType, string $expr, ...$bindVals): Query {
-        return $this->doJoin($contentType, $expr, $bindVals, true);
+    public function leftJoin(string $contentTypeExpr, string $expr, ...$bindVals): Query {
+        return $this->doJoin($contentTypeExpr, $expr, $bindVals, true);
     }
     /**
-     * @param string $toField
+     * @param string|null $toField
      * @param \Closure $fn
      * @return $this
      */
-    public function collectJoin(string $toField, \Closure $fn): Query {
+    public function collectPreviousJoin(?string $toField, \Closure $fn): Query {
         $joinDef = $this->joinDefs[count($this->joinDefs) - 1];
-        $joinDef->collector = [$fn, $toField];
+        $joinDef->collectFn = $fn;
+        $joinDef->targetFieldName = $toField;
         return $this;
     }
     /**
@@ -95,7 +96,7 @@ class Query {
             if ($d->bindVals) $bindVals = array_merge($bindVals, $d->bindVals);
         //
         return $this->dao->doExec($this->toSql(), $this->isFetchOne,
-                                  $bindVals ?? null, $this->joinDefs[0] ?? null);
+                                  $bindVals ?? null, $this->joinDefs);
     }
     /**
      * @return string
@@ -116,8 +117,10 @@ class Query {
         //
         $joins = [];
         $fields = [];
-        if ($this->joinDefs) $this->addContentTypeJoin($this->joinDefs[0], $joins, $fields);
-        if ($this->dao->fetchRevisions) $this->addRevisionsJoin($joins, $fields);
+        foreach ($this->joinDefs as $def)
+            $this->addContentTypeJoin($def, $joins, $fields);
+        if ($this->dao->fetchRevisions)
+            $this->addRevisionsJoin($joins, $fields);
         //
         if (!$joins) {
             return $mainQ;
@@ -128,34 +131,35 @@ class Query {
                ' ' . implode(' ', $joins);
     }
     /**
-     * @param string $contentType 'Products', 'Products p'
+     * @param string $contentTypeExpr 'Products', 'Products p'
      * @param string $expr
      * @param array $bindVals
      * @param bool $isLeft
      * @return $this
      */
-    private function doJoin(string $contentType,
+    private function doJoin(string $contentTypeExpr,
                             string $expr,
                             array $bindVals,
                             bool $isLeft): Query {
-        [$contentTypeName, $alias] = DAO::parseContentTypeNameAndAlias($contentType, 'b');
-        $this->joinDefs[] = (object)['contentType' => $contentTypeName,
+        [$contentTypeName, $alias] = DAO::parseContentTypeNameAndAlias($contentTypeExpr, 'b');
+        $this->joinDefs[] = (object)['contentTypeName' => $contentTypeName,
                                      'alias' => $alias,
                                      'expr' => $expr,
                                      'bindVals' => $bindVals,
                                      'isLeft' => $isLeft,
-                                     'collector' => null];
+                                     'collectFn' => null,
+                                     'targetFieldName' => null];
         return $this;
     }
     /**
-     * @param \stdClass $joinDef {contentType: string, alias: string, expr: string, isLeft: bool}
+     * @param \stdClass $joinDef
      * @param string[] &$joins
      * @param string[] &$fields
      */
     private function addContentTypeJoin(\stdClass $joinDef,
                                         array &$joins,
                                         array &$fields): void {
-        $ctypeName = $joinDef->contentType;
+        $ctypeName = $joinDef->contentTypeName;
         $a = $joinDef->alias;
         $joins[] = (!$joinDef->isLeft ? '' : 'LEFT ') . 'JOIN' .
                     ' `${p}' . $ctypeName . '` AS ' . $joinDef->alias .
@@ -183,14 +187,22 @@ class Query {
         $errors = ContentTypeValidator::validate($this->contentType);
         if (!Validation::isIdentifier($this->contentTypeAlias))
             $errors[] = "fetch alias ({$this->contentTypeAlias}) is not valid";
+        $seenAliases = [];
+        $seenTargetFields = [];
         foreach ($this->joinDefs as $d) {
             $errors = array_merge($errors,
-                ContentTypeValidator::validateName($d->contentType));
+                ContentTypeValidator::validateName($d->contentTypeName));
             if (!Validation::isIdentifier($d->alias))
                 $errors[] = "join alias ({$d->alias}) is not valid";
-            if (!$d->collector)
-                $errors[] = 'join() was used, but no collectJoin(\'field\',' .
-                            ' function () {}) was provided';
+            elseif ($d->alias === $this->contentTypeAlias ||
+                    array_key_exists($d->alias, $seenAliases))
+                $errors[] = "can't use join alias ({$d->alias}) more than once";
+            if ($d->targetFieldName) {
+                if (array_key_exists($d->targetFieldName, $seenTargetFields))
+                    $errors[] = "can't use join targetField ({$d->targetFieldName}) more than once";
+                $seenTargetFields[$d->targetFieldName] = 1;
+            }
+            $seenAliases[$d->alias] = 1;
         }
         if ($this->isFetchOne && !$this->whereDef)
             $errors[] = 'fetchOne(...)->where() is required';

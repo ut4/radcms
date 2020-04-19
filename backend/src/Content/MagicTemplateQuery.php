@@ -55,7 +55,7 @@ class MagicTemplateQuery extends Query {
             if ($d->bindVals) $bindVals = array_merge($bindVals, $d->bindVals);
         //
         return $this->dao->doExec($this->toSql(), $this->isFetchOne,
-                                  $bindVals ?? null, $this->joinDefs[0] ?? null,
+                                  $bindVals ?? null, $this->joinDefs,
                                   $this->frontendPanelInfo);
     }
 }
