@@ -23,7 +23,7 @@ class AdminControllers {
                                           SiteConfig $siteConfig,
                                           CmsState $cmsState): void {
         // @allow \Pike\PikeException
-        $siteConfig->selfLoad(RAD_SITE_PATH . 'site.json');
+        $siteConfig->selfLoad(RAD_PUBLIC_PATH . 'site.json');
         $res->html((new MagicTemplate(RAD_BASE_PATH . 'src/Website/cpanel.tmpl.php'))
             ->render(['q' => $req->params->q ?? '/',
                       'adminJsFiles' => array_merge($siteConfig->getJsAssets(SiteConfig::DOCUMENT_CONTROL_PANEL),

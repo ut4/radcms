@@ -14,7 +14,7 @@ final class UploadControllersTest extends DbTestCase {
         $s = $this->setupListUploadsTest();
         $this->sendGetUploadsRequest($s);
         $this->verifyResponseBodyEquals([(object)['fileName' => 'sample.jpg',
-                                                  'basePath' => TEST_SITE_PATH . 'uploads/',
+                                                  'basePath' => TEST_SITE_PUBLIC_PATH . 'uploads/',
                                                   'mime' => 'image/jpeg']], $s);
     }
     private function setupListUploadsTest() {
@@ -40,7 +40,7 @@ final class UploadControllersTest extends DbTestCase {
     public function testPOSTUploadsUploadsFile() {
         $s = $this->setupUploadFileTest();
         $this->sendUploadFileRequest($s);
-        $this->verifyMovedUploadedFileTo(RAD_SITE_PATH . 'uploads/', $s);
+        $this->verifyMovedUploadedFileTo(RAD_PUBLIC_PATH . 'uploads/', $s);
     }
     private function setupUploadFileTest() {
         $s = (object)[

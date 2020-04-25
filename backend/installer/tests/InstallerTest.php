@@ -18,7 +18,7 @@ final class InstallerTest extends BaseInstallerTest {
     public function setUp(): void {
         parent::setUp();
         if (!defined('INDEX_DIR_PATH')) {
-            define('INDEX_DIR_PATH', RAD_SITE_PATH);
+            define('INDEX_DIR_PATH', RAD_PUBLIC_PATH);
         }
     }
     public static function tearDownAfterClass(): void {
@@ -142,7 +142,7 @@ final class InstallerTest extends BaseInstallerTest {
         $this->verifyInsertedSampleContent($s);
     }
     private function setupInstallerTest1() {
-        $config = require TEST_SITE_PATH . 'config.php';
+        $config = require TEST_SITE_PUBLIC_PATH . 'config.php';
         return (object) [
             'input' => (object) [
                 'siteName' => '',
@@ -245,7 +245,7 @@ if (!defined('RAD_BASE_PATH')) {
     define('RAD_BASE_URL',       '{$s->input->baseUrl}');
     define('RAD_QUERY_VAR',      '{$s->input->mainQueryVar}');
     define('RAD_BASE_PATH',      '{$s->backendPath}');
-    define('RAD_SITE_PATH',      '{$s->siteDirPath}');
+    define('RAD_PUBLIC_PATH',    '{$s->siteDirPath}');
     define('RAD_DEVMODE',        1 << 1);
     define('RAD_USE_JS_MODULES', 1 << 2);
     define('RAD_FLAGS',          RAD_DEVMODE);

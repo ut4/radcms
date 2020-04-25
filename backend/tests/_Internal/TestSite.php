@@ -4,7 +4,7 @@ namespace RadCms\Tests\_Internal;
 
 abstract class TestSite {
     public const DIRNAME = TEST_SITE_DIRNAME;
-    public const PATH = TEST_SITE_PATH;
+    public const PUBLIC_PATH = TEST_SITE_PUBLIC_PATH;
     public const TMPL_PATH_1 = 'templates/test-layout.tmpl.php';
     public const TMPL_PATH_2 = 'templates/my-tags/MyTag.tmpl.php';
     public const ASSET_PATH_1 = 'test-style.css';

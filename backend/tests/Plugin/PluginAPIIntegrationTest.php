@@ -38,7 +38,7 @@ final class PluginAPIIntegrationTest extends DbTestCase {
             ->getMock();
         $ctx->fs->method('readDir')
             ->with($this->stringEndsWith('plugins'))
-            ->willReturn([dirname(RAD_SITE_PATH) . '/_test-plugins/MoviesPlugin']);
+            ->willReturn([dirname(RAD_PUBLIC_PATH) . '/_test-plugins/MoviesPlugin']);
         $this->app = $this->makeApp('\RadCms\App::create', $this->getAppConfig(),
             $ctx);
     }

@@ -56,7 +56,7 @@ class App {
         $ctx->acl->setRules($ctx->cmsState->getAclRules());
         if (!isset($ctx->translator))
             $ctx->translator = new Translator(function () use ($ctx) {
-                $mainLangFilePath = RAD_SITE_PATH . 'translations/' .
+                $mainLangFilePath = RAD_PUBLIC_PATH . 'translations/' .
                     $ctx->cmsState->getSiteInfo()->lang . '.php';
                 return self::$fs->isFile($mainLangFilePath) ? include $mainLangFilePath : [];
             });

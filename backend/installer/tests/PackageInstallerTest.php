@@ -29,12 +29,12 @@ final class PackageInstallerTest extends BaseInstallerTest {
     private static $testContent;
     private static $migrator;
     private static $testSiteConfig;
-    private static $testSitePath;
+    private static $testSitePublicPath;
     public static function setUpBeforeClass(): void {
-        self::$testSiteConfig = array_merge(include TestSite::PATH . 'config.php',
+        self::$testSiteConfig = array_merge(include TestSite::PUBLIC_PATH . 'config.php',
                                             ['db.database' => self::TEST_DB_NAME1,
                                              'db.tablePrefix' => 'pkg_']);
-        self::$testSitePath = str_replace(TestSite::DIRNAME, '_unpacked-site', TestSite::PATH);
+        self::$testSitePublicPath = str_replace(TestSite::DIRNAME, '_unpacked-site', TestSite::PUBLIC_PATH);
         self::$testContentTypes = new ContentTypeCollection();
         self::$testContentTypes->add('Books', 'Kirjat', [
             (object) ['name' => 'title', 'dataType' => 'text']
@@ -53,7 +53,7 @@ final class PackageInstallerTest extends BaseInstallerTest {
         parent::tearDownAfterClass();
         self::$db->exec('DROP DATABASE IF EXISTS ' . self::TEST_DB_NAME1);
         @unlink(self::$tmpTestPackageFilePath);
-        $r = self::$testSitePath;
+        $r = self::$testSitePublicPath;
         @unlink("{$r}config.php");
         foreach (array_merge(TestSite::TEMPLATES, TestSite::ASSETS) as $relPath)
             @unlink("{$r}site/{$relPath}");
@@ -68,14 +68,14 @@ final class PackageInstallerTest extends BaseInstallerTest {
         UserControllersTest::deleteTestUsers();
     }
     private static function ensureMainTestDatabaseIsSelected() {
-        $testDbConfig = include TestSite::PATH . 'config.php';
+        $testDbConfig = include TestSite::PUBLIC_PATH . 'config.php';
         self::setCurrentDatabase($testDbConfig['db.database'],
                                  $testDbConfig['db.tablePrefix']);
     }
     public function setUp(): void {
         parent::setUp();
         if (!defined('INDEX_DIR_PATH')) {
-            define('INDEX_DIR_PATH', RAD_SITE_PATH);
+            define('INDEX_DIR_PATH', RAD_PUBLIC_PATH);
         }
     }
     public function testInstallerInstallsSiteFromPackageFile() {
@@ -135,7 +135,7 @@ final class PackageInstallerTest extends BaseInstallerTest {
                 $injector->delegate(InstallerCommons::class, function () {
                     $partiallyMocked = $this->getMockBuilder(InstallerCommons::class)
                         ->setConstructorArgs([self::$db, new FileSystem, new MockCrypto,
-                            self::$testSitePath])
+                            self::$testSitePublicPath])
                         ->setMethods(['selfDestruct'])
                         ->getMock();
                     $partiallyMocked->expects($this->once())
@@ -154,24 +154,24 @@ final class PackageInstallerTest extends BaseInstallerTest {
         $this->assertEquals(self::$testContent[1]->title, $rows[1]['title']);
     }
     private function verifyWroteFiles($s) {
-        $base = self::$testSitePath;
-        $this->assertFileExists("{$base}site/{$s->templates[0]}");
-        $this->assertFileExists("{$base}site/{$s->templates[1]}");
-        $this->assertFileExists("{$base}site/{$s->assets[0]}");
-        $this->assertFileExists("{$base}site/{$s->assets[1]}");
+        $base = self::$testSitePublicPath . 'site/';
+        $this->assertFileExists("{$base}{$s->templates[0]}");
+        $this->assertFileExists("{$base}{$s->templates[1]}");
+        $this->assertFileExists("{$base}{$s->assets[0]}");
+        $this->assertFileExists("{$base}{$s->assets[1]}");
     }
     private function verifyCreatedConfigFile($s) {
         $expectedQueryVar = RAD_QUERY_VAR;
         $expectedBackendPath = RAD_BASE_PATH;
-        $expectedSitePath = self::$testSitePath;
+        $expectedPublicPath = self::$testSitePublicPath;
         $expectedFlags = RAD_FLAGS & RAD_DEVMODE ? 'RAD_DEVMODE' : '0';
-        $this->assertStringEqualsFile(self::$testSitePath . 'config.php',
+        $this->assertStringEqualsFile(self::$testSitePublicPath . 'config.php',
 "<?php
 if (!defined('RAD_BASE_PATH')) {
     define('RAD_BASE_URL',       '{$s->reqBody->baseUrl}');
     define('RAD_QUERY_VAR',      '{$expectedQueryVar}');
     define('RAD_BASE_PATH',      '{$expectedBackendPath}');
-    define('RAD_SITE_PATH',      '{$expectedSitePath}');
+    define('RAD_PUBLIC_PATH',    '{$expectedPublicPath}');
     define('RAD_DEVMODE',        1 << 1);
     define('RAD_USE_JS_MODULES', 1 << 2);
     define('RAD_FLAGS',          {$expectedFlags});

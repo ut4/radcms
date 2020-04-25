@@ -5,7 +5,7 @@ namespace RadCms\Plugin;
 use RadCms\ContentType\ContentTypeMigrator;
 
 /**
- * Rajapinta, jonka lisäosien "main"-luokkien (RAD_SITE_PATH .
+ * Rajapinta, jonka lisäosien "main"-luokkien (RAD_PUBLIC_PATH .
  * 'plugins/PluginName/PluginName.php') tulee implementoida.
  */
 interface PluginInterface {

@@ -33,7 +33,7 @@ class WebsiteControllers {
                                 CmsState $cmsState,
                                 Theme $theme) {
         // @allow \Pike\PikeException
-        $siteConfig->selfLoad(RAD_SITE_PATH . 'site.json');
+        $siteConfig->selfLoad(RAD_PUBLIC_PATH . 'site.json');
         $api = new BaseAPI($cmsState->getApiConfigs());
         // @allow \Pike\PikeException
         $theme->load($api);
@@ -63,7 +63,7 @@ class WebsiteControllers {
             return;
         }
         $dao->fetchRevisions = isset($req->user);
-        $template = new MagicTemplate(RAD_SITE_PATH . "site/{$layoutFileName}",
+        $template = new MagicTemplate(RAD_PUBLIC_PATH . "site/{$layoutFileName}",
                                       ['_cssFiles' => $this->siteCfg->getCssAssets(),
                                        '_jsFiles' => $this->siteCfg->getJsAssets(SiteConfig::DOCUMENT_WEBSITE)],
                                       $dao,

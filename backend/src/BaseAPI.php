@@ -15,7 +15,7 @@ class BaseAPI {
     }
     /**
      * Rekisteröi <?= $this->DirectiveName(...) ?> käytettäväksi templaatteista.
-     * Esimerkki: registerDirective('Movies', RAD_SITE_PATH . 'plugins/foo/movies.inc');
+     * Esimerkki: registerDirective('Movies', RAD_PUBLIC_PATH . 'plugins/foo/movies.inc');
      *
      * @param string $directiveName
      * @param string $fullFilePath

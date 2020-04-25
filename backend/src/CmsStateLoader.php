@@ -80,7 +80,7 @@ class CmsStateLoader {
      */
     private static function scanPluginsFromDisk($to, $fs) {
         // @allow \Pike\PikeException
-        $paths = $fs->readDir(RAD_SITE_PATH . 'plugins', '*', GLOB_ONLYDIR);
+        $paths = $fs->readDir(RAD_PUBLIC_PATH . 'plugins', '*', GLOB_ONLYDIR);
         foreach ($paths as $path) {
             $clsName = substr($path, strrpos($path, '/') + 1);
             $clsPath = "RadPlugins\\{$clsName}\\{$clsName}";

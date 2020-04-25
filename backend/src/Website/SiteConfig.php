@@ -81,7 +81,7 @@ class SiteConfig {
     }
     /**
      * @param \stdClass $input
-     * @param string $sitePath i.e. RAD_SITE_PATH
+     * @param string $sitePath i.e. RAD_PUBLIC_PATH
      * @return bool
      * @throws \Pike\PikeException
      */

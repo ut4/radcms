@@ -90,7 +90,7 @@ final class PackagerControllersTest extends DbTestCase {
         $s->parsedMainDataFromPackage = $parsed;
     }
     private function verifyDbAndSiteSettingsWereIncludedToMainData($s) {
-        $c = require TestSite::PATH . 'config.php';
+        $c = require TestSite::PUBLIC_PATH . 'config.php';
         $row = self::getDb()->fetchOne('SELECT * FROM ${p}cmsState');
         $this->assertEquals((object) [
             'dbHost' => $c['db.host'],
