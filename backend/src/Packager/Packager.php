@@ -49,7 +49,7 @@ class Packager {
      * @throws \Pike\PikeException
      */
     public function preRun() {
-        $dirPath = RAD_SITE_PATH . 'theme/';
+        $dirPath = RAD_SITE_PATH . 'site/';
         $len = mb_strlen($dirPath);
         $fullPathToRelPath = function ($fullFilePath) use ($len) {
             return substr($fullFilePath, $len);
@@ -125,7 +125,7 @@ class Packager {
     private function addThemeFiles($package, $files, $localNameOfFileMapFile) {
         $package->addFromString($localNameOfFileMapFile,
                                 json_encode($files, JSON_UNESCAPED_UNICODE));
-        $base = RAD_SITE_PATH . 'theme/';
+        $base = RAD_SITE_PATH . 'site/';
         foreach ($files as $relativePath) {
             // @allow \Pike\PikeException
             $package->addFile("{$base}{$relativePath}", $relativePath);

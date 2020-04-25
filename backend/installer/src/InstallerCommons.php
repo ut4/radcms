@@ -147,8 +147,8 @@ class InstallerCommons {
      * @throws \Pike\PikeException
      */
     public function createSiteDirectories(): void {
-        foreach ([$this->siteDirPath . 'uploads',
-                  $this->siteDirPath . 'theme'] as $path) {
+        foreach (["{$this->siteDirPath}site",
+                  "{$this->siteDirPath}uploads"] as $path) {
             if (!$this->fs->isDir($path) && !$this->fs->mkDir($path))
                 throw new PikeException("Failed to create `{$path}`",
                                         PikeException::FAILED_FS_OP);
@@ -176,7 +176,7 @@ if (!defined('RAD_BASE_PATH')) {
     define('RAD_BASE_URL',       '{$s->baseUrl}');
     define('RAD_QUERY_VAR',      '{$s->mainQueryVar}');
     define('RAD_BASE_PATH',      '{$this->backendPath}');
-    define('RAD_SITE_PATH',      '{$this->siteDirPath}');
+    define('RAD_PUBLIC_PATH',    '{$this->siteDirPath}');
     define('RAD_DEVMODE',        1 << 1);
     define('RAD_USE_JS_MODULES', 1 << 2);
     define('RAD_FLAGS',          {$flags});
@@ -200,7 +200,7 @@ return [
      * @throws \Pike\PikeException
      */
     public function selfDestruct(): bool {
-        if (defined('TEST_SITE_PATH') &&
+        if (defined('TEST_SITE_PUBLIC_PATH') &&
             !($this->fs instanceof \PHPUnit\Framework\MockObject\MockObject))
             return true;
         foreach ([

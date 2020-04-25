@@ -195,28 +195,28 @@ final class InstallerTest extends BaseInstallerTest {
             $s->mockFs->expects($this->exactly(2))
                 ->method('readDirRecursive')
                 ->withConsecutive(
-                    ["{$s->sampleContentDirPath}theme/", '/^.*\.tmpl\.php$/'],
-                    ["{$s->sampleContentDirPath}theme/frontend/", '/^.*\.(css|js)$/']
+                    ["{$s->sampleContentDirPath}site/", '/^.*\.tmpl\.php$/'],
+                    ["{$s->sampleContentDirPath}site/", '/^.*\.(css|js)$/']
                 )
                 ->willReturnOnConsecutiveCalls([
-                    "{$s->sampleContentDirPath}theme/dir/main.tmpl.php",
-                    "{$s->sampleContentDirPath}theme/Another.tmpl.php"
+                    "{$s->sampleContentDirPath}site/templates/dir/main.tmpl.php",
+                    "{$s->sampleContentDirPath}site/templates/Another.tmpl.php"
                 ], [
-                    "{$s->sampleContentDirPath}theme/frontend/foo.css",
-                    "{$s->sampleContentDirPath}theme/frontend/dir/bar.js"
+                    "{$s->sampleContentDirPath}site/foo.css",
+                    "{$s->sampleContentDirPath}site/dir/bar.js"
                 ]);
             return;
         }
         if ($expectation === 'createsSiteDirs') {
             $s->mockFs->expects($this->atLeastOnce())
                 ->method('isDir')
-                ->willReturn(false); // #1,#2 = theme|uploadsDirExists (@copyFiles()),
+                ->willReturn(false); // #1,#2 = site|uploadsDirExists (@copyFiles()),
                                      // #3 = installDirExists (@selfDestruct())
             $s->mockFs->expects($this->atLeastOnce())
                 ->method('mkDir')
                 ->withConsecutive(
-                    ["{$s->siteDirPath}uploads"],
-                    ["{$s->siteDirPath}theme"]
+                    ["{$s->siteDirPath}site"],
+                    ["{$s->siteDirPath}uploads"]
                 )
                 ->willReturn(true);
             return;
@@ -228,11 +228,11 @@ final class InstallerTest extends BaseInstallerTest {
                 ->method('copy')
                 ->withConsecutive(
                     ["{$from}site.json", "{$to}site.json"],
-                    ["{$from}theme/README.md", "{$to}theme/README.md"],
-                    ["{$from}theme/dir/main.tmpl.php", "{$to}theme/dir/main.tmpl.php"],
-                    ["{$from}theme/Another.tmpl.php", "{$to}theme/Another.tmpl.php"],
-                    ["{$from}theme/frontend/foo.css", "{$to}theme/foo.css"],
-                    ["{$from}theme/frontend/dir/bar.js", "{$to}theme/dir/bar.js"])
+                    ["{$from}site/README.md", "{$to}site/README.md"],
+                    ["{$from}site/templates/dir/main.tmpl.php", "{$to}site/templates/dir/main.tmpl.php"],
+                    ["{$from}site/templates/Another.tmpl.php", "{$to}site/templates/Another.tmpl.php"],
+                    ["{$from}site/foo.css", "{$to}site/foo.css"],
+                    ["{$from}site/dir/bar.js", "{$to}site/dir/bar.js"])
                 ->willReturn(true);
             return;
         }

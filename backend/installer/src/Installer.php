@@ -102,19 +102,18 @@ class Installer {
         //
         $base = "{$this->backendPath}installer/sample-content/{$s->sampleContent}/";
         // @allow \Pike\PikeException
-        $tmplFileNames = $this->readDirRelPaths("{$base}theme/", '/^.*\.tmpl\.php$/');
-        $assetFileNames = $this->readDirRelPaths("{$base}theme/frontend/", '/^.*\.(css|js)$/');
+        $tmplFileNames = $this->readDirRelPaths("{$base}site/", '/^.*\.tmpl\.php$/');
+        $assetFileNames = $this->readDirRelPaths("{$base}site/", '/^.*\.(css|js)$/');
         //
         $toBeCopied = [];
         foreach (['site.json'] as $fileName)
             $toBeCopied[] = ["{$base}{$fileName}",
                              "{$this->siteDirPath}{$fileName}"];
-        foreach (array_merge(['README.md'], $tmplFileNames) as $relativePath)
-            $toBeCopied[] = ["{$base}theme/{$relativePath}",
-                             "{$this->siteDirPath}theme/{$relativePath}"];
-        foreach ($assetFileNames as $relativePath)
-            $toBeCopied[] = ["{$base}theme/frontend/{$relativePath}",
-                             "{$this->siteDirPath}theme/{$relativePath}"];
+        foreach (array_merge(['README.md'],
+                             $tmplFileNames,
+                             $assetFileNames) as $relativePath)
+            $toBeCopied[] = ["{$base}site/{$relativePath}",
+                             "{$this->siteDirPath}site/{$relativePath}"];
         //
         foreach ($toBeCopied as [$from, $to]) {
             if (!$this->fs->copy($from, $to))

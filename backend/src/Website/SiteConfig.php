@@ -40,7 +40,7 @@ class SiteConfig {
                                     PikeException::BAD_INPUT);
         //
         return (!$autoSelfValidate ||
-                $this->selfValidate($parsed, dirname($filePath) . '/theme/')) &&
+                $this->selfValidate($parsed, dirname($filePath) . '/site/')) &&
                 $this->collectAll($parsed);
     }
     /**

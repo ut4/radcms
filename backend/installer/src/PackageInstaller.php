@@ -112,7 +112,7 @@ class PackageInstaller {
                 throw new PikeException("Failed to parse `{$localName}`",
                                         PikeException::BAD_INPUT);
             // @allow \Pike\PikeException
-            $this->package->extractMany("{$siteDirPath}theme", $relativeFilePaths);
+            $this->package->extractMany("{$siteDirPath}site", $relativeFilePaths);
         }
         return true;
     }

@@ -123,7 +123,7 @@ class MagicTemplate extends Template {
         return implode(' ', array_map(function ($f) {
             $attrsMap = $f->attrs;
             if (!array_key_exists('rel', $attrsMap)) $attrsMap['rel'] = 'stylesheet';
-            return '<link href="' . $this->assetUrl('theme/' . $this->e($f->url)) .
+            return '<link href="' . $this->assetUrl('site/' . $this->e($f->url)) .
                    '"' . self::attrMapToStr($attrsMap) . '>';
         }, $this->_cssFiles));
     }
@@ -132,7 +132,7 @@ class MagicTemplate extends Template {
      */
     public function jsFiles() {
         return implode(' ', array_map(function ($f) {
-            return '<script src="' . $this->assetUrl('theme/' . $this->e($f->url)) .
+            return '<script src="' . $this->assetUrl('site/' . $this->e($f->url)) .
                    '"' . ($f->attrs ? '' : self::attrMapToStr($f->attrs)) .
                    '></script>';
         }, $this->_jsFiles));

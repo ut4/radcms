@@ -10,7 +10,7 @@ class Theme {
      * @throws \Pike\PikeException
      */
     public function load(BaseAPI $baseApi) {
-        $clsPath = 'RadTheme\\Theme';
+        $clsPath = 'RadSite\\Theme';
         if (class_exists($clsPath)) {
             if (!array_key_exists(ThemeInterface::class, class_implements($clsPath, false)))
                 throw new PikeException("A theme (\"{$clsPath}\") must implement RadCms\Theme\ThemeInterface",

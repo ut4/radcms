@@ -63,7 +63,7 @@ class WebsiteControllers {
             return;
         }
         $dao->fetchRevisions = isset($req->user);
-        $template = new MagicTemplate(RAD_SITE_PATH . "theme/{$layoutFileName}",
+        $template = new MagicTemplate(RAD_SITE_PATH . "site/{$layoutFileName}",
                                       ['_cssFiles' => $this->siteCfg->getCssAssets(),
                                        '_jsFiles' => $this->siteCfg->getJsAssets(SiteConfig::DOCUMENT_WEBSITE)],
                                       $dao,

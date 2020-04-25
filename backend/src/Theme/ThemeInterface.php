@@ -5,7 +5,7 @@ namespace RadCms\Theme;
 use RadCms\BaseAPI;
 
 /**
- * Rajapinta, jonka vapaaehtoinen teemaluokka (RAD_SITE_PATH . 'theme/Theme.php')
+ * Rajapinta, jonka vapaaehtoinen teemaluokka (RAD_SITE_PATH . 'site/Theme.php')
  * tulee implementoida.
  */
 interface ThemeInterface {

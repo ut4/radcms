@@ -56,10 +56,10 @@ final class PackageInstallerTest extends BaseInstallerTest {
         $r = self::$testSitePath;
         @unlink("{$r}config.php");
         foreach (array_merge(TestSite::TEMPLATES, TestSite::ASSETS) as $relPath)
-            @unlink("{$r}theme/{$relPath}");
+            @unlink("{$r}site/{$relPath}");
         foreach (TestSite::DIRS as $relPath)
-            @rmdir("{$r}theme/{$relPath}");
-        @rmdir("{$r}theme");
+            @rmdir("{$r}site/{$relPath}");
+        @rmdir("{$r}site");
         @rmdir("{$r}uploads");
         // @allow \Pike\PikeException
         self::ensureMainTestDatabaseIsSelected();
@@ -155,10 +155,10 @@ final class PackageInstallerTest extends BaseInstallerTest {
     }
     private function verifyWroteFiles($s) {
         $base = self::$testSitePath;
-        $this->assertFileExists("{$base}theme/{$s->templates[0]}");
-        $this->assertFileExists("{$base}theme/{$s->templates[1]}");
-        $this->assertFileExists("{$base}theme/{$s->assets[0]}");
-        $this->assertFileExists("{$base}theme/{$s->assets[1]}");
+        $this->assertFileExists("{$base}site/{$s->templates[0]}");
+        $this->assertFileExists("{$base}site/{$s->templates[1]}");
+        $this->assertFileExists("{$base}site/{$s->assets[0]}");
+        $this->assertFileExists("{$base}site/{$s->assets[1]}");
     }
     private function verifyCreatedConfigFile($s) {
         $expectedQueryVar = RAD_QUERY_VAR;
