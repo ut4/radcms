@@ -171,31 +171,31 @@ final class PluginAPIIntegrationTest extends DbTestCase {
     ////////////////////////////////////////////////////////////////////////////
 
 
-    public function testPluginCanRegisterJsFilesAndAdminPanels() {
+    public function testPluginCanEnqueuAdminJsFilesAndAdminPanels() {
         $this->setupFileRegTest();
         $res = $this->createMock(MutedResponse::class);
         $req = new Request('/noop', 'GET');
         $this->sendRequest($req, $res, $this->app);
         $apiConfigs = $this->app->getAppCtx()->cmsState->getApiConfigs();
-        $this->verifyJsFilesWereRegistered($apiConfigs);
-        $this->verifyAdminPanelsWereRegistered($apiConfigs);
+        $this->verifyAdminJsFilesWereEnqueued($apiConfigs);
+        $this->verifyAdminPanelsWereEnqueued($apiConfigs);
     }
     private function setupFileRegTest() {
         return $this->setupReadTest();
     }
-    private function verifyJsFilesWereRegistered(APIConfigsStorage $configs) {
-        $actual = $configs->getRegisteredPluginJsFiles();
+    private function verifyAdminJsFilesWereEnqueued(APIConfigsStorage $configs) {
+        $actual = $configs->getEnqueuedAdminJsFiles();
         $this->assertEquals(2, count($actual));
         $this->assertEquals([(object)[
-            'fileName' => 'file1.js',
+            'url' => 'file1.js',
             'attrs' => []
         ], (object)[
-            'fileName' => 'file2.js',
+            'url' => 'file2.js',
             'attrs' => ['id' => 'file2']
         ]], $actual);
     }
-    private function verifyAdminPanelsWereRegistered(APIConfigsStorage $configs) {
-        $actual = $configs->getRegisteredAdminPanels();
+    private function verifyAdminPanelsWereEnqueued(APIConfigsStorage $configs) {
+        $actual = $configs->getEnqueuedAdminPanels();
         $this->assertEquals(1, count($actual));
         $this->assertEquals((object)[
             'impl' => 'MoviesAdmin',

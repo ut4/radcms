@@ -3,10 +3,10 @@ use RadCms\Templating\StockFrontendPanelImpls;
 $article = $this
     ->fetchOne('Articles')
     ->where('slug = ?', $props['slug'])
-    ->createFrontendPanel(StockFrontendPanelImpls::Generic,
-                          $props['frontendPanelTitle'] ?? 'Artikkeli',
-                          'article',
-                          $props['slug'])
+    ->addFrontendPanel(StockFrontendPanelImpls::Generic,
+                       $props['frontendPanelTitle'] ?? 'Artikkeli',
+                       'article',
+                       $props['slug'])
     ->exec();
 if (array_key_exists('bindTo', $props))
     $props['bindTo'] = $article ?? (object) ['title' => 404];

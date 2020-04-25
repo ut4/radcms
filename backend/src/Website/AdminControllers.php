@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RadCms\Website;
 
 use Pike\Request;
@@ -19,11 +21,12 @@ class AdminControllers {
     public function handleEditViewRequest(Request $req,
                                           Response $res,
                                           SiteConfig $siteConfig,
-                                          CmsState $cmsState) {
+                                          CmsState $cmsState): void {
         // @allow \Pike\PikeException
         $siteConfig->selfLoad(RAD_SITE_PATH . 'site.json');
         $res->html((new MagicTemplate(RAD_BASE_PATH . 'src/Website/cpanel.tmpl.php'))
             ->render(['q' => $req->params->q ?? '/',
-                      'pluginJsFiles' => $cmsState->getApiConfigs()->getRegisteredPluginJsFiles()]));
+                      'adminJsFiles' => array_merge($siteConfig->getJsAssets(SiteConfig::DOCUMENT_CONTROL_PANEL),
+                                                    $cmsState->getApiConfigs()->getEnqueuedAdminJsFiles())]));
     }
 }

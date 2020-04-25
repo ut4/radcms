@@ -24,7 +24,7 @@
         <script src="<?= $this->assetUrl('frontend/vendor/vendor.bundle.min.js') ?>"></script>
         <script src="<?= $this->assetUrl('frontend/rad-commons.js') ?>"></script>
         <script src="<?= $this->assetUrl('frontend/rad-cpanel-commons.js') ?>"></script>
-        <?= $this->jsBundle($pluginJsFiles) ?>
+        <?= $this->jsBundle($adminJsFiles) ?>
         <script src="<?= $this->assetUrl('frontend/rad-cpanel-app.js') ?>"></script>
     </body>
 </html>

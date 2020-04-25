@@ -18,9 +18,9 @@ class MoviesPlugin implements PluginInterface {
         ]);
     }
     public function init(API $api) {
-        $api->registerJsFile('file1.js');
-        $api->registerJsFile('file2.js', ['id' => 'file2']);
-        $api->registerFrontendAdminPanel('MoviesAdmin', 'Elokuvat-app');
+        $api->enqueueAdminJsFile('file1.js');
+        $api->enqueueAdminJsFile('file2.js', ['id' => 'file2']);
+        $api->enqueueFrontendAdminPanel('MoviesAdmin', 'Elokuvat-app');
         //
         $api->registerRoute('GET', '/movies', MoviesControllers::class,
                             'handleGetMoviesRequest', ACL::NO_NAME);

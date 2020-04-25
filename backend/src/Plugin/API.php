@@ -44,17 +44,10 @@ class API {
         $this->baseApi->registerDirectiveMethod($methodName, $fn, $for, $bindToDirectiveScope);
     }
     /**
-     * Rekisteröi <script src="<?= $scriptFileName ?>"> sisällytettäväksi
-     * cpanel.php-tiedostoon. Esimerkki: registerJsFile('MyFile.js', ['type' => 'module']);
-     *
-     * @param string $scriptFileName
-     * @param array $attrs = array
+     * @see \RadCms\BaseAPI->enqueueAdminJsFile().
      */
-    public function registerJsFile($scriptFileName, array $attrs = []) {
-        $this->apiConfigs->putPluginJsFile((object)[
-            'fileName' => $scriptFileName,
-            'attrs' => $attrs,
-        ]);
+    public function enqueueAdminJsFile($scriptFileName, array $attrs = []) {
+        $this->baseApi->enqueueAdminJsFile($scriptFileName, $attrs);
     }
     /**
      * Rekisteröi reitti. Esimerkki: mapRoute(
@@ -84,12 +77,12 @@ class API {
     /**
      * Rekisteröi osion hallintapaneelin Devaajille-välilehteen. $panelImplName sama
      * kuin JS-API:n uiPanelRegister.registerUiPanelImpl(<tämä>, ...). Esimerkki:
-     * registerFrontendAdminPanel('MoviesApp', 'ElokuvatApp').
+     * enqueueFrontendAdminPanel('MoviesApp', 'ElokuvatApp').
      *
      * @param string $panelImplName
      * @param string $title
      */
-    public function registerFrontendAdminPanel($panelImplName, $title) {
+    public function enqueueFrontendAdminPanel($panelImplName, $title) {
         $this->apiConfigs->putAdminPanel((object)[
             'impl' => $panelImplName,
             'title' => $title,

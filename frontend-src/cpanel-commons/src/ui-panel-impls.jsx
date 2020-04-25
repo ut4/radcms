@@ -2,7 +2,7 @@ import {config} from '@rad-commons';
 import ContentNodeList from './ContentNodeList.jsx';
 
 /*
- * Implementoi hallintapaneeliosion <?php $this->fetchOne(...)->createFrontendPanel('Generic', 'My title') ?> kutsuille, jolla loppukäyttäjä voi muokata sisältöä.
+ * Implementoi hallintapaneeliosion <?php $this->fetchOne(...)->addFrontendPanel('Generic', 'My title') ?> kutsuille, jolla loppukäyttäjä voi muokata sisältöä.
  */
 class GenericUIPanelImpl extends preact.Component {
     /**
@@ -58,7 +58,7 @@ class GenericUIPanelImpl extends preact.Component {
 }
 
 /*
- * Implementoi hallintapaneeliosion <?php $this->fetchAll(...)->createFrontendPanel('List', 'My title') ?> kutsuille.
+ * Implementoi hallintapaneeliosion <?php $this->fetchAll(...)->addFrontendPanel('List', 'My title') ?> kutsuille.
  */
 class GenericListUIPanelImpl extends preact.Component {
     /**

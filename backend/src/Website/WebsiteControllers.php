@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RadCms\Website;
 
 use Pike\Request;
@@ -13,6 +15,7 @@ use RadCms\Theme\Theme;
 use RadCms\StockContentTypes\MultiFieldBlobs\MultiFieldBlobs;
 use RadCms\BaseAPI;
 use RadCms\Auth\ACL;
+use RadCms\Content\MagicTemplateDAO;
 
 /**
  * Handlaa sivupyynnöt, (GET '/' tai GET '/sivunnimi').
@@ -53,7 +56,7 @@ class WebsiteControllers {
                                       Response $res,
                                       MagicTemplateContentDAO $dao,
                                       FileSystem $fs,
-                                      ACL $acl) {
+                                      ACL $acl): void {
         $layoutFileName = self::findLayout($this->siteCfg->urlMatchers, $req->path);
         if (!$layoutFileName) {
             $res->html('404');
@@ -61,8 +64,8 @@ class WebsiteControllers {
         }
         $dao->fetchRevisions = isset($req->user);
         $template = new MagicTemplate(RAD_SITE_PATH . "theme/{$layoutFileName}",
-                                      ['_cssFiles' => $this->siteCfg->cssAssets,
-                                       '_jsFiles' => $this->siteCfg->jsAssets],
+                                      ['_cssFiles' => $this->siteCfg->getCssAssets(),
+                                       '_jsFiles' => $this->siteCfg->getJsAssets(SiteConfig::DOCUMENT_WEBSITE)],
                                       $dao,
                                       $fs);
         $this->cmsState->getApiConfigs()->applyRegisteredTemplateStuff($template,
@@ -91,7 +94,7 @@ class WebsiteControllers {
      * @param string $url
      * @return string
      */
-    public static function findLayout($urlMatchers, $url) {
+    public static function findLayout(array $urlMatchers, string $url): string {
         foreach ($urlMatchers as $rule) {
             if (preg_match($rule->pattern, $url)) return $rule->layoutFileName;
         }
@@ -100,16 +103,16 @@ class WebsiteControllers {
     /**
      * ...
      */
-    private function initStockContentTypes($api) {
+    private function initStockContentTypes(BaseAPI $api): void {
         $this->stockContentTypes[] = new MultiFieldBlobs();
         $this->stockContentTypes[0]->init($api);
     }
     /**
      * '<html>...</body>' -> '<html>...<script>...</script></body>'
      */
-    private function injectParentWindowCpanelSetupScript($html,
-                                                         $bodyEnd,
-                                                         $dataToFrontend) {
+    private function injectParentWindowCpanelSetupScript(string $html,
+                                                         int $bodyEnd,
+                                                         string $dataToFrontend): string {
         return substr($html, 0, $bodyEnd) .
             "<script>(function (data) {
                 var s = document.createElement('style');
@@ -125,12 +128,15 @@ class WebsiteControllers {
     /**
      * '{"contentPanels":[...}'
      */
-    private function makeFrontendData($req, $dao, $template, $acl) {
+    private function makeFrontendData(Request $req,
+                                      MagicTemplateDAO $dao,
+                                      MagicTemplate $template,
+                                      ACL $acl): string {
         $role = $req->user->role;
         return json_encode([
-            'contentPanels' => $dao->getFrontendPanelInfos(),
+            'contentPanels' => $dao->getFrontendPanels(),
             'adminPanels' => $role === ACL::ROLE_SUPER_ADMIN
-                ? $this->cmsState->getApiConfigs()->getRegisteredAdminPanels()
+                ? $this->cmsState->getApiConfigs()->getEnqueuedAdminPanels()
                 : [],
             'baseUrl' => $template->url('/'),
             'assetBaseUrl' => $template->assetUrl('/'),

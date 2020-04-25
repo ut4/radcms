@@ -14,7 +14,7 @@ use RadCms\Templating\MagicTemplate;
 class APIConfigsStorage {
     private $templateAliases;
     private $templateFuncs;
-    private $pluginJsFiles;
+    private $adminJsFiles;
     private $frontendAdminPanels;
     private $fs;
     /**
@@ -23,7 +23,7 @@ class APIConfigsStorage {
     public function __construct(FileSystemInterface $fs) {
         $this->templateAliases = [];
         $this->templateFuncs = [];
-        $this->pluginJsFiles = [];
+        $this->adminJsFiles = [];
         $this->frontendAdminPanels = [];
         $this->fs = $fs;
     }
@@ -69,10 +69,10 @@ class APIConfigsStorage {
         foreach ($defs as $def) $template->registerMethod(...$def);
     }
     /**
-     * @param \stdClass $file {fileName: string, attrs: array}
+     * @param \stdClass $file {url: string, attrs: array}
      */
-    public function putPluginJsFile($file) {
-        $this->pluginJsFiles[] = $file;
+    public function putAdminJsFile($file) {
+        $this->adminJsFiles[] = $file;
     }
     /**
      * @param \stdClass $info {impl: string, title: string}
@@ -81,15 +81,15 @@ class APIConfigsStorage {
         $this->frontendAdminPanels[] = $info;
     }
     /**
-     * @param \stdClass[] array<{fileName: string, attrs: array}>
+     * @param \stdClass[] array<{url: string, attrs: array}>
      */
-    public function getRegisteredPluginJsFiles() {
-        return $this->pluginJsFiles;
+    public function getEnqueuedAdminJsFiles() {
+        return $this->adminJsFiles;
     }
     /**
      * @param \stdClass[] array<{impl: string, title: string}>
      */
-    public function getRegisteredAdminPanels() {
+    public function getEnqueuedAdminPanels() {
         return $this->frontendAdminPanels;
     }
     /**

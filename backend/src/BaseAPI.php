@@ -45,4 +45,17 @@ class BaseAPI {
                                              $bindToDirectiveScope,
                                              $for);
     }
+    /**
+     * Rekisteröi <script src="<?= $scriptFileName ?>"> sisällytettäväksi
+     * cpanel.php-tiedostoon. Esimerkki: enqueueAdminJsFile('MyFile.js', ['type' => 'module']);
+     *
+     * @param string $scriptFileName
+     * @param array $attrs = array
+     */
+    public function enqueueAdminJsFile($scriptFileName, array $attrs = []) {
+        $this->apiConfigs->putAdminJsFile((object)[
+            'url' => $scriptFileName,
+            'attrs' => $attrs,
+        ]);
+    }
 }

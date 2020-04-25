@@ -57,10 +57,10 @@ class MultiFieldBlobs {
                                     MagicTemplate $tmpl): ?\stdClass {
         $node = $tmpl
             ->fetchOne('MultiFieldBlobs')
-            ->createFrontendPanel(StockFrontendPanelImpls::Generic,
-                                  $frontendPanelTitle ?? 'Sisältö',
-                                  $highlightSelector,
-                                  $name)
+            ->addFrontendPanel(StockFrontendPanelImpls::Generic,
+                               $frontendPanelTitle ?? 'Sisältö',
+                               $highlightSelector,
+                               $name)
             ->where('name = ?', $name)
             ->exec();
         if ($node) {

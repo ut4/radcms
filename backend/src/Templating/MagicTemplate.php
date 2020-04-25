@@ -138,7 +138,7 @@ class MagicTemplate extends Template {
         }, $this->_jsFiles));
     }
     /**
-     * @param array $files array<string>|array<{fileName: string, attrs?: \stdClass}>
+     * @param array $files array<string>|array<{url: string, attrs?: \stdClass}>
      * @param bool $includeVendor = true
      * @return string <script src="frontend/file.js">... tai.
      *                <script src="frontend/file.js" type="module">...
@@ -151,7 +151,7 @@ class MagicTemplate extends Template {
         implode('', array_map(function ($f) use ($baseAttrs) {
             [$url, $attrs] = is_string($f)
                 ? [$f, $baseAttrs]
-                : [$f->fileName, array_merge($f->attrs, $baseAttrs)];
+                : [$f->url, array_merge($f->attrs, $baseAttrs)];
             return '<script src="' . $this->assetUrl($this->e($url)) . '"' .
                    self::attrMapToStr($attrs) . '></script>' . PHP_EOL;
         }, $files));

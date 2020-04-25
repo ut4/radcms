@@ -2,9 +2,9 @@
 use RadCms\Templating\StockFrontendPanelImpls;
 $articles = $this
     ->fetchAll('Articles')
-    ->createFrontendPanel(StockFrontendPanelImpls::List,
-                          $props['frontendPanelTitle'] ?? 'Artikkelit',
-                          '.articles')
+    ->addFrontendPanel(StockFrontendPanelImpls::List,
+                       $props['frontendPanelTitle'] ?? 'Artikkelit',
+                       '.articles')
     ->exec(); ?>
 <div class="articles">
 <?php if ($articles):

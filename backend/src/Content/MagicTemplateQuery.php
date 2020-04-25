@@ -4,12 +4,27 @@ declare(strict_types=1);
 
 namespace RadCms\Content;
 
+use RadCms\ContentType\ContentTypeDef;
+
 /**
  * Luokka jonka templaattien <?php $this->fetchOne|All() ?> instansoi ja
  * palauttaa. Ei tarkoitettu käytettäväksi manuaalisesti.
  */
 class MagicTemplateQuery extends Query {
-    private $frontendPanelInfo;
+    private $frontendPanels;
+    /**
+     * $param \RadCms\ContentType\ContentTypeDef $contentType
+     * $param string $contentTypeAlias
+     * $param bool $isFetchOne
+     * $param \RadCms\Content\DAO $dao
+     */
+    public function __construct(ContentTypeDef $contentType,
+                                string $contentTypeAlias,
+                                bool $isFetchOne,
+                                DAO $dao) {
+        parent::__construct($contentType, $contentTypeAlias, $isFetchOne, $dao);
+        $this->frontendPanels = [];
+    }
     /**
      * @param string $panelType
      * @param string $title = ''
@@ -17,28 +32,30 @@ class MagicTemplateQuery extends Query {
      * @param string $subTitle = ''
      * @return $this
      */
-    public function createFrontendPanel(string $panelType,
-                                        string $title = '',
-                                        string $highlightSelector = '',
-                                        string $subTitle = ''): MagicTemplateQuery {
-        $this->frontendPanelInfo = (object) [
+    public function addFrontendPanel(string $panelType,
+                                     string $title = '',
+                                     string $highlightSelector = '',
+                                     string $subTitle = ''): MagicTemplateQuery {
+        $this->frontendPanels[] = (object) [
             'impl' => $panelType,
             'title' => $title ? $title : $this->contentType->name,
             'subTitle' => $subTitle ?? null,
             'contentTypeName' => $this->contentType->name,
             'contentNodes' => null,
-            'queryInfo' => (object)['where' => null],
+            'queryInfo' => (object) ['where' => null],
             'highlightSelector' => $highlightSelector,
         ];
         return $this;
     }
     /**
-     * @return \stdClass|null
+     * @return \stdClass[]
      */
-    public function getFrontendPanelInfo(): ?\stdClass {
-        if ($this->frontendPanelInfo && $this->whereDef)
-            $this->frontendPanelInfo->queryInfo->where = $this->whereDef;
-        return $this->frontendPanelInfo;
+    public function getFrontendPanels(): array {
+        if ($this->whereDef) {
+            foreach ($this->frontendPanels as $def)
+                $def->queryInfo->where = $this->whereDef;
+        }
+        return $this->frontendPanels;
     }
     /**
      * @return array|\stdClass|null
@@ -56,6 +73,6 @@ class MagicTemplateQuery extends Query {
         //
         return $this->dao->doExec($this->toSql(), $this->isFetchOne,
                                   $bindVals ?? null, $this->joinDefs,
-                                  $this->frontendPanelInfo);
+                                  $this->frontendPanels);
     }
 }

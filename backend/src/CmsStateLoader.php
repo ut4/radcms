@@ -18,6 +18,7 @@ class CmsStateLoader {
      * @param \Pike\Db $db
      * @param \Pike\FileSystem $fs
      * @param \Pike\Router $router
+     * @return \RadCms\CmsState
      */
     public static function getAndInitStateFromDb(Db $db,
                                                  FileSystem $fs,

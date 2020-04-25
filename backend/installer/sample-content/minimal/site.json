@@ -3,6 +3,6 @@
         [".*", "templates/layout.generic.tmpl.php"]
     ],
     "assetFiles": [
-        ["main.css", "local-stylesheet"]
+        ["main.css", "localStylesheet"]
     ]
 }

@@ -45,11 +45,11 @@ class MagicTemplateDAO extends DAO {
     /**
      * @return array array<{impl: string, title: string ...}>
      */
-    public function getFrontendPanelInfos(): array {
+    public function getFrontendPanels(): array {
         $out = [];
         foreach ($this->queries as $q) {
-            if (($info = $q->getFrontendPanelInfo()))
-                $out[] = $info;
+            if (($panels = $q->getFrontendPanels()))
+                $out = array_merge($out, $panels);
         }
         return $out;
     }
@@ -58,16 +58,16 @@ class MagicTemplateDAO extends DAO {
      * @param bool $isFetchOne
      * @param array $bindVals = null
      * @param \stdClass[] $joins = [] {contentTypeName: string, alias: string, expr: string, bindVals: array, isLeft: bool, collectFn: \Closure, targetFieldName: string|null}[]
-     * @param \stdClass $frontendPanelInfo = null
+     * @param \stdClass[] $frontendPanels = []
      * @return array|\stdClass|null
      */
     public function doExec(string $sql,
                            bool $isFetchOne,
                            array $bindVals = null,
                            array $joins = [],
-                           \stdClass $frontendPanelInfo = null) {
+                           array $frontendPanels = []) {
         $res = parent::doExec($sql, $isFetchOne, $bindVals, $joins);
-        if ($frontendPanelInfo) $frontendPanelInfo->contentNodes = $res;
+        foreach ($frontendPanels as $def) $def->contentNodes = $res;
         if (!$res) return $res;
         //
         $res = $isFetchOne ? [$res] : $res;
