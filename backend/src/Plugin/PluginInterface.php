@@ -10,9 +10,9 @@ use RadCms\ContentType\ContentTypeMigrator;
  */
 interface PluginInterface {
     /**
-     * @param \RadCms\Plugin\API $api
+     * @param \RadCms\Plugin\PluginAPI $api
      */
-    public function init(API $api);
+    public function init(PluginAPI $api);
     /**
      * @param \RadCms\ContentType\ContentTypeMigrator $migrator
      */

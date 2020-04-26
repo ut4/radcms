@@ -3,7 +3,7 @@
 namespace RadPlugins\MoviesPlugin;
 
 use RadCms\Plugin\PluginInterface;
-use RadCms\Plugin\API;
+use RadCms\Plugin\PluginAPI;
 use RadCms\ContentType\ContentTypeCollection;
 use RadCms\ContentType\ContentTypeMigrator;
 use RadCms\Auth\ACL;
@@ -17,7 +17,7 @@ class MoviesPlugin implements PluginInterface {
             (object) ['name' => 'releaseYear', 'dataType' => 'int'],
         ]);
     }
-    public function init(API $api) {
+    public function init(PluginAPI $api) {
         $api->enqueueAdminJsFile('file1.js');
         $api->enqueueAdminJsFile('file2.js', ['id' => 'file2']);
         $api->enqueueFrontendAdminPanel('MoviesAdmin', 'Elokuvat-app');

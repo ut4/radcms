@@ -14,22 +14,23 @@ use Pike\TestUtils\MutedResponse;
 use RadPlugins\MoviesPlugin\MoviesPlugin;
 use RadCms\Plugin\Plugin;
 use RadCms\APIConfigsStorage;
+use RadCms\BaseAPI;
 use RadCms\Content\DAO;
 
 final class PluginAPIIntegrationTest extends DbTestCase {
     use HttpTestUtils;
     use ContentTestUtils;
-    private $testPlugin;
+    private $moviesPlugin;
     private $app;
     public function setupTestPlugin($initialData = null) {
         // Tekee suunnilleen saman kuin PUT /api/plugins/MoviesPlugin/install
         $db = self::getDb();
-        $this->testPlugin = new Plugin('MoviesPlugin', MoviesPlugin::class);
+        $plugin = new Plugin('MoviesPlugin', MoviesPlugin::class);
         $m = new ContentTypeMigrator($db);
-        $m->setOrigin($this->testPlugin);
-        $moviesPluginImpl = $this->testPlugin->instantiate();
-        if ($initialData) $moviesPluginImpl->setTestInitalData($initialData);
-        $moviesPluginImpl->install($m);
+        $m->setOrigin($plugin);
+        $this->moviesPlugin = $plugin->instantiate();
+        if ($initialData) $this->moviesPlugin->setTestInitalData($initialData);
+        $this->moviesPlugin->install($m);
         AppTest::markPluginAsInstalled('MoviesPlugin', $db);
         //
         $ctx = (object) ['db' => '@auto', 'auth' => '@auto'];
@@ -44,9 +45,9 @@ final class PluginAPIIntegrationTest extends DbTestCase {
     }
     public function tearDown(): void {
         parent::tearDown();
-        if ($this->testPlugin) {
+        if ($this->moviesPlugin) {
             // Tekee suunnilleen saman kuin PUT /api/plugins/MoviesPlugin/uninstall
-            $this->testPlugin->impl->uninstall(new ContentTypeMigrator(self::$db));
+            $this->moviesPlugin->uninstall(new ContentTypeMigrator(self::$db));
             AppTest::markPluginAsUninstalled('MoviesPlugin', self::$db);
         }
     }
@@ -176,15 +177,15 @@ final class PluginAPIIntegrationTest extends DbTestCase {
         $res = $this->createMock(MutedResponse::class);
         $req = new Request('/noop', 'GET');
         $this->sendRequest($req, $res, $this->app);
-        $apiConfigs = $this->app->getAppCtx()->cmsState->getApiConfigs();
-        $this->verifyAdminJsFilesWereEnqueued($apiConfigs);
-        $this->verifyAdminPanelsWereEnqueued($apiConfigs);
+        $storage = $this->app->getAppCtx()->cmsState->getApiConfigs();
+        $this->verifyAdminJsFilesWereEnqueued($storage);
+        $this->verifyAdminPanelsWereEnqueued($storage);
     }
     private function setupFileRegTest() {
         return $this->setupReadTest();
     }
     private function verifyAdminJsFilesWereEnqueued(APIConfigsStorage $configs) {
-        $actual = $configs->getEnqueuedAdminJsFiles();
+        $actual = $configs->getEnqueuedJsFiles(BaseAPI::TARGET_CONTROL_PANEL_LAYOUT);
         $this->assertEquals(2, count($actual));
         $this->assertEquals([(object)[
             'url' => 'file1.js',

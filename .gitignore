@@ -2,8 +2,8 @@ frontend/*.js
 out/
 internal/
 target/
-theme/
-!backend/**/theme
+site/
+!backend/**/site
 translations/
 uploads/
 backend/vendor

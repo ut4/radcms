@@ -5,6 +5,7 @@ namespace RadCms;
 use Pike\FileSystemInterface;
 use Pike\PikeException;
 use RadCms\Templating\MagicTemplate;
+use RadCms\Website\UrlMatcher;
 
 /**
  * Varastoi \RadCms\BaseAPI & \RadCms\Plugin\API -wräppereissä configuroidut tiedot.
@@ -14,8 +15,10 @@ use RadCms\Templating\MagicTemplate;
 class APIConfigsStorage {
     private $templateAliases;
     private $templateFuncs;
-    private $adminJsFiles;
+    private $jsFiles;
+    private $cssFiles;
     private $frontendAdminPanels;
+    private $urlMatchers;
     private $fs;
     /**
      * @param \Pike\FileSystemInterface $fs
@@ -23,7 +26,10 @@ class APIConfigsStorage {
     public function __construct(FileSystemInterface $fs) {
         $this->templateAliases = [];
         $this->templateFuncs = [];
-        $this->adminJsFiles = [];
+        $this->jsFiles = [BaseAPI::TARGET_WEBSITE_LAYOUT => [],
+                          BaseAPI::TARGET_CONTROL_PANEL_LAYOUT => []];
+        $this->cssFiles = [BaseAPI::TARGET_WEBSITE_LAYOUT => [],
+                           BaseAPI::TARGET_CONTROL_PANEL_LAYOUT => []];
         $this->frontendAdminPanels = [];
         $this->fs = $fs;
     }
@@ -37,7 +43,7 @@ class APIConfigsStorage {
                                         PikeException::BAD_INPUT);
             if (!$this->fs->isFile($fullFilePath))
                 throw new PikeException("Failed to locate `{$fullFilePath}`",
-                                        PikeException::FAILED_FS_OP);
+                                        PikeException::BAD_INPUT);
         }
         $this->templateAliases[$for][$directiveName] = [$directiveName, $fullFilePath];
     }
@@ -70,27 +76,64 @@ class APIConfigsStorage {
     }
     /**
      * @param \stdClass $file {url: string, attrs: array}
+     * @param string $for 'WebsiteLayout'|'ControlPanel'
      */
-    public function putAdminJsFile($file) {
-        $this->adminJsFiles[] = $file;
+    public function putJsFile($file, $for) {
+        $this->jsFiles[$for][] = $file;
     }
     /**
-     * @param \stdClass $info {impl: string, title: string}
+     * @param \stdClass $file {url: string, attrs: array}
+     * @param string $for 'WebsiteLayout'|'ControlPanel'
      */
-    public function putAdminPanel($info) {
-        $this->frontendAdminPanels[] = $info;
+    public function putCssFile($file, $for) {
+        $this->cssFiles[$for][] = $file;
     }
     /**
      * @param \stdClass[] array<{url: string, attrs: array}>
      */
-    public function getEnqueuedAdminJsFiles() {
-        return $this->adminJsFiles;
+    public function getEnqueuedJsFiles($for) {
+        return $this->jsFiles[$for] ?? [];
+    }
+    /**
+     * @param \stdClass[] array<{url: string, attrs: array}>
+     */
+    public function getEnqueuedCssFiles($for) {
+        return $this->cssFiles[$for] ?? [];
+    }
+    /**
+     * @param \stdClass $panel {impl: string, title: string}
+     */
+    public function putAdminPanel($panel) {
+        $this->frontendAdminPanels[] = $panel;
     }
     /**
      * @param \stdClass[] array<{impl: string, title: string}>
      */
     public function getEnqueuedAdminPanels() {
         return $this->frontendAdminPanels;
+    }
+    /**
+     * @see \RadCms\Website\WebsiteAPI->registerLayoutForUrlPattern().
+     */
+    public function putUrlLayout($pattern, $layoutFilePath) {
+        $urlMatcher = new UrlMatcher($pattern, $layoutFilePath);
+        if (RAD_FLAGS & RAD_DEVMODE) {
+            if (preg_match($urlMatcher->pattern, '') === false) {
+                throw new PikeException("{$urlMatcher->pattern} is not valid regexp",
+                                        PikeException::BAD_INPUT);
+            }
+            $filePath = RAD_PUBLIC_PATH . "site/{$urlMatcher->layoutFileName}";
+            if (!$this->fs->isFile($filePath))
+                throw new PikeException("Failed to locate layout file `{$filePath}`",
+                                        PikeException::BAD_INPUT);
+        }
+        $this->urlMatchers[] = $urlMatcher;
+    }
+    /**
+     * @return \RadCms\Website\UrlMatcher[]
+     */
+    public function getRegisteredUrlLayouts() {
+        return $this->urlMatchers;
     }
     /**
      * @return array[] array<[string, string]>

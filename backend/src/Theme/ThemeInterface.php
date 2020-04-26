@@ -2,8 +2,6 @@
 
 namespace RadCms\Theme;
 
-use RadCms\BaseAPI;
-
 /**
  * Rajapinta, jonka vapaaehtoinen teemaluokka (RAD_PUBLIC_PATH . 'site/Theme.php')
  * tulee implementoida.
@@ -11,6 +9,8 @@ use RadCms\BaseAPI;
 interface ThemeInterface {
     /**
      * Metodi joka ajetaan jokaisella "/." -sivunlatauksella.
+     *
+     * @param \RadCms\Theme\ThemeAPI $api
      */
-    public function init(BaseAPI $api);
+    public function init(ThemeAPI $api);
 }

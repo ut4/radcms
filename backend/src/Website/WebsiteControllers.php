@@ -11,35 +11,34 @@ use RadCms\Content\MagicTemplateDAO as MagicTemplateContentDAO;
 use RadCms\CmsState;
 use Pike\FileSystem;
 use Pike\PikeException;
-use RadCms\Theme\Theme;
 use RadCms\StockContentTypes\MultiFieldBlobs\MultiFieldBlobs;
 use RadCms\BaseAPI;
 use RadCms\Auth\ACL;
 use RadCms\Content\MagicTemplateDAO;
+use RadCms\Theme\ThemeAPI;
+use RadCms\Theme\ThemeInterface;
 
 /**
  * Handlaa sivupyynnöt, (GET '/' tai GET '/sivunnimi').
  */
 class WebsiteControllers {
-    private $siteCfg;
     private $cmsState;
     private $stockContentTypes;
     /**
-     * @param \RadCms\Website\SiteConfig $siteConfig
      * @param \RadCms\CmsState $cmsState
-     * @param \RadCms\Theme\Theme $theme
      */
-    public function __construct(SiteConfig $siteConfig,
-                                CmsState $cmsState,
-                                Theme $theme) {
+    public function __construct(CmsState $cmsState) {
+        $storage = $cmsState->getApiConfigs();
         // @allow \Pike\PikeException
-        $siteConfig->selfLoad(RAD_PUBLIC_PATH . 'site.json');
-        $api = new BaseAPI($cmsState->getApiConfigs());
+        $theSite = self::instantiateWebsite();
+        $theSite->init(new WebsiteAPI($storage), false);
         // @allow \Pike\PikeException
-        $theme->load($api);
+        if (($theme = self::instantiateTheme())) {
+            $themeApi = new ThemeAPI($storage);
+            $theme->init($themeApi);
+        }
         // @allow \Pike\PikeException
-        $this->initStockContentTypes($api);
-        $this->siteCfg = $siteConfig;
+        $this->initStockContentTypes(new BaseAPI($storage));
         $this->cmsState = $cmsState;
     }
     /**
@@ -57,19 +56,22 @@ class WebsiteControllers {
                                       MagicTemplateContentDAO $dao,
                                       FileSystem $fs,
                                       ACL $acl): void {
-        $layoutFileName = self::findLayout($this->siteCfg->urlMatchers, $req->path);
+        $storage = $this->cmsState->getApiConfigs();
+        $layoutFileName = self::findLayout($storage->getRegisteredUrlLayouts(),
+                                           $req->path);
         if (!$layoutFileName) {
             $res->html('404');
             return;
         }
         $dao->fetchRevisions = isset($req->user);
         $template = new MagicTemplate(RAD_PUBLIC_PATH . "site/{$layoutFileName}",
-                                      ['_cssFiles' => $this->siteCfg->getCssAssets(),
-                                       '_jsFiles' => $this->siteCfg->getJsAssets(SiteConfig::DOCUMENT_WEBSITE)],
+                                      ['_cssFiles' => $storage->getEnqueuedCssFiles(
+                                          BaseAPI::TARGET_WEBSITE_LAYOUT),
+                                       '_jsFiles' => $storage->getEnqueuedJsFiles(
+                                           BaseAPI::TARGET_WEBSITE_LAYOUT)],
                                       $dao,
                                       $fs);
-        $this->cmsState->getApiConfigs()->applyRegisteredTemplateStuff($template,
-            'WebsiteLayout');
+        $storage->applyRegisteredTemplateStuff($template, BaseAPI::TARGET_WEBSITE_LAYOUT);
         try {
             $url = $req->path ? explode('/', ltrim($req->path, '/')) : [''];
             $html = $template->render(['url' => $url,
@@ -88,17 +90,6 @@ class WebsiteControllers {
             : $this->injectParentWindowCpanelSetupScript($html, $bodyEnd,
                 $this->makeFrontendData($req, $dao, $template, $acl))
         );
-    }
-    /**
-     * @param \RadCms\Website\UrlMatcher[] $urlMatchers
-     * @param string $url
-     * @return string
-     */
-    public static function findLayout(array $urlMatchers, string $url): string {
-        foreach ($urlMatchers as $rule) {
-            if (preg_match($rule->pattern, $url)) return $rule->layoutFileName;
-        }
-        return '';
     }
     /**
      * ...
@@ -150,5 +141,54 @@ class WebsiteControllers {
                     'manageFieldsOf', 'multiFieldContent'),
             ],
         ]);
+    }
+
+    ////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * Palauttaa uuden instanssin luokasta RAD_PUBLIC_PATH . 'site/Site.php'.
+     *
+     * @return \RadCms\Website\WebsiteInterface
+     * @throws \Pike\PikeException
+     */
+    public static function instantiateWebsite(): WebsiteInterface {
+        $clsPath = 'RadSite\\Site';
+        if (!class_exists($clsPath))
+            throw new PikeException("\"{$clsPath}\" missing",
+                                    PikeException::BAD_INPUT);
+        if (class_exists($clsPath)) {
+            if (!array_key_exists(WebsiteInterface::class, class_implements($clsPath, false)))
+                throw new PikeException("Site.php (\"{$clsPath}\") must implement RadCms\Website\WebsiteInterface",
+                                        PikeException::BAD_INPUT);
+            return new $clsPath();
+        }
+    }
+    /**
+     * Palauttaa uuden instanssin luokasta RAD_PUBLIC_PATH . 'site/Theme.php', tai
+     * null mikäli sitä ei ole olemassa.
+     *
+     * @return \RadCms\Theme\ThemeInterface
+     * @throws \Pike\PikeException
+     */
+    public static function instantiateTheme(): ?ThemeInterface {
+        $clsPath = 'RadSite\\Theme';
+        if (class_exists($clsPath)) {
+            if (!array_key_exists(ThemeInterface::class, class_implements($clsPath, false)))
+                throw new PikeException("Theme.php (\"{$clsPath}\") must implement RadCms\Theme\ThemeInterface",
+                                        PikeException::BAD_INPUT);
+            return new $clsPath();
+        }
+        return null;
+    }
+    /**
+     * @param \RadCms\Website\UrlMatcher[] $urlMatchers
+     * @param string $url
+     * @return string
+     */
+    public static function findLayout(array $urlMatchers, string $url): string {
+        foreach ($urlMatchers as $rule) {
+            if (preg_match($rule->pattern, $url)) return $rule->layoutFileName;
+        }
+        return '';
     }
 }
