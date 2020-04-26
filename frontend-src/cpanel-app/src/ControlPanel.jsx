@@ -176,7 +176,7 @@ class OnThisPageControlPanelSection extends preact.Component {
         return <section class="on-this-page"><div>
             <h2>Tällä sivulla</h2>
             { this.props.contentPanels.length
-                ? this.props.contentPanels.map((panelCfg, i) =>
+                ? this.props.contentPanels.map(panelCfg =>
                     <ContentControlPanelPanel
                         Renderer={ panelCfg.UiImplClass }
                         rendererProps={ {dataFromBackend: panelCfg.dataFromBackend,

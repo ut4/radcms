@@ -1,6 +1,5 @@
 const path = require('path');
 const sucrase = require('@rollup/plugin-sucrase');
-const isWatch = process.env.ROLLUP_WATCH !== undefined;
 
 ////////////////////////////////////////////////////////////////////////////////
 const makeOutputCfg = (...myCfg) => {
@@ -16,7 +15,7 @@ const makeOutputCfg = (...myCfg) => {
 
 const makeJsxPlugin = include =>
     sucrase({
-        production: !isWatch,
+        production: true,
         include: include || ['frontend-src/commons/components/**'],
         transforms: ['jsx'],
         jsxPragma: 'preact.createElement',
@@ -32,7 +31,7 @@ module.exports = args => {
            path.resolve(__dirname, 'frontend-src/cpanel-commons/main.js')];
     const allGlobals = {[commonsPath]: 'radCommons', [cpanelCommonsPath]: 'radCpanelCommons'};
     const allExternals = [commonsPath, cpanelCommonsPath];
-    const bundle = !args.configPlugin ? args.configBundle || 'main' : 'plugin';
+    const bundle = !args.configInput ? args.configBundle || 'main' : 'custom';
     // == rad-commons.js & rad-cpanel-commons.js & rad-cpanel-app.js ===========
     if (bundle === 'main') {
         return [{
@@ -100,8 +99,8 @@ module.exports = args => {
             watch: {clearScreen: false}
         }];
     }
-    // == some-plugin.js =======================================================
-    const cfg = require(path.resolve(__dirname, args.configPlugin));
+    // == custom.js ============================================================
+    const cfg = require(path.resolve(__dirname, args.configInput));
     const out = {
         input: cfg.input,
         output: makeOutputCfg({globals: allGlobals}, cfg.output),

@@ -14,9 +14,9 @@ class QuillEditor extends preact.Component {
             modules: {toolbar: [
                 ['bold', 'italic', 'underline', 'strike', 'blockquote'],
                 [{'list': 'ordered'}, {'list': 'bullet'}],
-                [{'indent': '-1'}, {'indent': '+1'}],
+                [{'indent': '-1'}, {'indent': '+1'}, {'align': [] }],
                 [{'header': [1, 2, 3, 4, 5, 6, false]}],
-                [{'align': [] }, 'code-block'],
+                ['link', 'image', 'video', 'code-block'],
                 ['clean']
             ]},
             theme: 'snow'

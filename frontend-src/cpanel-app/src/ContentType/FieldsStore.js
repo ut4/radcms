@@ -83,10 +83,8 @@ class FieldsStore {
     }
 }
 
-FieldsStore.counter = 0;
-
 FieldsStore.makeField = () => ({
-    name: `newField${++FieldsStore.counter}`,
+    name: `newField${++counter}`,
     friendlyName: 'Uusi kenttä',
     dataType: 'text',
     defaultValue: '',
@@ -95,7 +93,7 @@ FieldsStore.makeField = () => ({
         name: 'textField',
         args: {}
     },
-    key: ++counter
+    key: counter
 });
 
 export default FieldsStore;
