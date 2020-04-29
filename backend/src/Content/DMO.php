@@ -43,21 +43,17 @@ class DMO extends DAO {
         foreach ($type->fields as $f) {
             $appendVal($f->name);
         }
-        //
-        try {
-            return !$withRevision
-                ? $this->insertWithoutRevision($contentTypeName, $q)
-                : $this->insertWithRevision($contentTypeName, $q, $data, $type->fields);
-        } catch (\PDOException $e) {
-            $this->db->rollback();
-            throw new PikeException($e->getMessage(), PikeException::FAILED_DB_OP);
-        }
+        // @allow \Pike\PikeException
+        return !$withRevision
+            ? $this->insertWithoutRevision($contentTypeName, $q)
+            : $this->insertWithRevision($contentTypeName, $q, $data, $type->fields);
     }
     /**
      * @return int $numAffectedRows
      */
     private function insertWithoutRevision(string $contentTypeName,
                                            \stdClass $q): int {
+        // @allow \Pike\PikeException
         $numRows = $this->db->exec('INSERT INTO `${p}' . $contentTypeName . '`' .
                                    ' (' . implode(', ', $q->cols) . ')' .
                                    ' VALUES (' . implode(', ', $q->qs) . ')',
@@ -72,9 +68,14 @@ class DMO extends DAO {
                                         \stdClass $q,
                                         \stdClass $data,
                                         FieldCollection $fields): int {
-        $this->db->beginTransaction();
+        // @allow \PDOException
+        if ($this->db->beginTransaction() < 0) {
+            throw new PikeException('Failed to start a transaction',
+                                    PikeException::FAILED_DB_OP);
+        }
         $numRows = 0;
         $numRows2 = 0;
+        // @allow \Pike\PikeException
         if (($numRows = $this->insertWithoutRevision($contentTypeName, $q)) === 1 &&
             ($numRows2 = $this->db->exec(...self::makeCreateRevisionExec(
                                             $this->lastInsertId, $contentTypeName,
@@ -102,28 +103,25 @@ class DMO extends DAO {
         if (($errors = ContentTypeValidator::validateUpdateData($type, $data)))
             throw new PikeException(implode(PHP_EOL, $errors),
                                     PikeException::BAD_INPUT);
-        try {
-            $this->db->beginTransaction();
-            $doPublish = $revisionSettings === ContentControllers::REV_SETTING_PUBLISH;
-            if ($doPublish) $data->isRevision = false;
-            //
-            $numRows = !$data->isRevision
-                ? $this->db->exec(...self::makeUpdateMainExec($id, $contentTypeName,
-                                                              $data, $type->fields))
-                : $this->db->exec(...self::makeUpdateRevisionExec($id, $contentTypeName,
-                                                                  $data, $type->fields));
-            //
-            if ($doPublish)
-                $numRows += $this->db->exec(...self::makeDeleteRevisionExec($id, $contentTypeName));
-            elseif ($revisionSettings === ContentControllers::REV_SETTING_UNPUBLISH)
-                $numRows += $this->db->exec(...self::makeCreateRevisionExec($id, $contentTypeName,
-                                                                            $data, $type->fields));
-            //
-            $this->db->commit();
-            return $numRows;
-        } catch (\PDOException $e) {
-            throw new PikeException($e->getMessage(), PikeException::FAILED_DB_OP);
-        }
+        $this->db->beginTransaction();
+        $doPublish = $revisionSettings === ContentControllers::REV_SETTING_PUBLISH;
+        if ($doPublish) $data->isRevision = false;
+        // @allow \Pike\PikeException
+        $numRows = !$data->isRevision
+            ? $this->db->exec(...self::makeUpdateMainExec($id, $contentTypeName,
+                                                            $data, $type->fields))
+            : $this->db->exec(...self::makeUpdateRevisionExec($id, $contentTypeName,
+                                                                $data, $type->fields));
+        // @allow \Pike\PikeException
+        if ($doPublish)
+            $numRows += $this->db->exec(...self::makeDeleteRevisionExec($id, $contentTypeName));
+        elseif ($revisionSettings === ContentControllers::REV_SETTING_UNPUBLISH)
+            $numRows += $this->db->exec(...self::makeCreateRevisionExec($id, $contentTypeName,
+                                                                        $data, $type->fields));
+        //
+        $this->db->commit();
+        return $numRows;
+
     }
     /**
      * @param int $id
@@ -134,27 +132,25 @@ class DMO extends DAO {
     public function delete(int $id, string $contentTypeName): int {
         // @allow \Pike\PikeException
         $cnode = $this->fetchOne($contentTypeName)->where('`id`=?', $id)->exec();
-        try {
-            $this->db->beginTransaction();
-            //
-            $numOps = 1;
-            $numRows = $this->db->exec('UPDATE `${p}' . $contentTypeName . '`' .
-                                       ' SET `status` = ?' .
-                                       ' WHERE `id` = ?',
-                                       [DAO::STATUS_DELETED, $id]);
-            if ($numRows && $cnode->status === DAO::STATUS_DRAFT) {
-                $numOps += 1;
-                $numRows += $this->db->exec(...self::makeDeleteRevisionExec($id, $contentTypeName));
-            }
-            //
-            if ($numRows < $numOps)
-                throw new PikeException('numAffectedRows < expected',
-                                        PikeException::INEFFECTUAL_DB_OP);
-            $this->db->commit();
-            return $numRows;
-        } catch (\PDOException $e) {
-            throw new PikeException($e->getMessage(), PikeException::FAILED_DB_OP);
+        //
+        $this->db->beginTransaction();
+        $numOps = 1;
+        // @allow \Pike\PikeException
+        $numRows = $this->db->exec('UPDATE `${p}' . $contentTypeName . '`' .
+                                    ' SET `status` = ?' .
+                                    ' WHERE `id` = ?',
+                                    [DAO::STATUS_DELETED, $id]);
+        if ($numRows && $cnode->status === DAO::STATUS_DRAFT) {
+            $numOps += 1;
+            // @allow \Pike\PikeException
+            $numRows += $this->db->exec(...self::makeDeleteRevisionExec($id, $contentTypeName));
         }
+        //
+        if ($numRows < $numOps)
+            throw new PikeException('numAffectedRows < expected',
+                                    PikeException::INEFFECTUAL_DB_OP);
+        $this->db->commit();
+        return $numRows;
     }
     /**
      * @return array [<sql>, <bindVals>]

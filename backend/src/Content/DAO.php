@@ -65,7 +65,7 @@ class DAO {
                            array $bindVals = null,
                            array $joins = []) {
         $out = null;
-        // @allow \PDOException
+        // @allow \Pike\PikeException
         $rows = $this->db->fetchAll($sql, $bindVals);
         if ($isFetchOne) {
             $out = $rows ? $this->makeContentNode($rows[0], $rows) : null;

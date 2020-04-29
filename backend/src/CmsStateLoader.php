@@ -42,16 +42,13 @@ class CmsStateLoader {
      * @throws \Pike\PikeException
      */
     private static function getStateFromDb($db) {
-        try {
-            if (!($row = $db->fetchOne(
-                'SELECT `name`, `lang`, `installedContentTypes`' .
-                ', `installedContentTypesLastUpdated`' .
-                ', `installedPlugins`, `aclRules` FROM ${p}cmsState'
-            ))) throw new PikeException('Failed to fetch cmsState',
-                                        PikeException::INEFFECTUAL_DB_OP);
-        } catch (\PDOException $e) {
-            throw new PikeException($e->getMessage(), PikeException::FAILED_DB_OP);
-        }
+        // @allow \Pike\PikeException
+        if (!($row = $db->fetchOne(
+            'SELECT `name`, `lang`, `installedContentTypes`' .
+            ', `installedContentTypesLastUpdated`' .
+            ', `installedPlugins`, `aclRules` FROM ${p}cmsState'
+        ))) throw new PikeException('Failed to fetch cmsState',
+                                    PikeException::INEFFECTUAL_DB_OP);
         //
         return (object) [
             'siteInfo' => (object) [

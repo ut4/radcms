@@ -44,27 +44,21 @@ class InstallerCommons {
      * @throws \Pike\PikeException
      */
     public function createOrOpenDb(\stdClass $s): bool {
-        try {
-            $this->db->setConfig([
-                'db.host'        => $s->dbHost,
-                'db.database'    => $s->doCreateDb ? '' : $s->dbDatabase,
-                'db.user'        => $s->dbUser,
-                'db.pass'        => $s->dbPass,
-                'db.tablePrefix' => $s->dbTablePrefix,
-                'db.charset'     => $s->dbCharset,
-            ]);
-            $this->db->open();
-        } catch (\PDOException $e) {
-            throw new PikeException($e->getMessage(), PikeException::FAILED_DB_OP);
-        }
+        $this->db->setConfig([
+            'db.host'        => $s->dbHost,
+            'db.database'    => $s->doCreateDb ? '' : $s->dbDatabase,
+            'db.user'        => $s->dbUser,
+            'db.pass'        => $s->dbPass,
+            'db.tablePrefix' => $s->dbTablePrefix,
+            'db.charset'     => $s->dbCharset,
+        ]);
+        // @allow \Pike\PikeException
+        $this->db->open();
         if (!$s->doCreateDb)
             return true;
-        try {
-            $this->db->attr(\PDO::ATTR_EMULATE_PREPARES, 1);
-            $this->db->exec("CREATE DATABASE {$s->dbDatabase}");
-        } catch (\PDOException $e) {
-            throw new PikeException($e->getMessage(), PikeException::FAILED_DB_OP);
-        }
+        $this->db->attr(\PDO::ATTR_EMULATE_PREPARES, 1);
+        // @allow \Pike\PikeException
+        $this->db->exec("CREATE DATABASE {$s->dbDatabase}");
         return true;
     }
     /**
@@ -77,16 +71,13 @@ class InstallerCommons {
     public function createMainSchema(\stdClass $s,
                                      $fsOrPackage,
                                      string $filePathOrLocalName): bool {
-        try {
-            $sql = $fsOrPackage->read($filePathOrLocalName);
-            if (!$sql)
-                throw new PikeException("Failed to read `{$filePathOrLocalName}`",
-                                        PikeException::FAILED_FS_OP);
-            $this->db->exec(str_replace('${database}', $s->dbDatabase, $sql));
-            $this->db->attr(\PDO::ATTR_EMULATE_PREPARES, 0);
-        } catch (\PDOException $e) {
-            throw new PikeException($e->getMessage(), PikeException::FAILED_DB_OP);
-        }
+        $sql = $fsOrPackage->read($filePathOrLocalName);
+        if (!$sql)
+            throw new PikeException("Failed to read `{$filePathOrLocalName}`",
+                                    PikeException::FAILED_FS_OP);
+        // @allow \Pike\PikeException
+        $this->db->exec(str_replace('${database}', $s->dbDatabase, $sql));
+        $this->db->attr(\PDO::ATTR_EMULATE_PREPARES, 0);
         return true;
     }
     /**
@@ -95,21 +86,18 @@ class InstallerCommons {
      * @throws \Pike\PikeException
      */
     public function insertMainSchemaData(\stdClass $s): bool {
-        try {
-            if ($this->db->exec('INSERT INTO ${p}cmsState VALUES (1,?,?,?,?,?,?)',
-                                [
-                                    $s->siteName,
-                                    $s->siteLang,
-                                    '[]', // installedContentTypes
-                                    null, // installedContentTypesLastUpdated
-                                    $s->installedPlugins ?? '{}',
-                                    json_encode($s->aclRules ?? $this->makeDefaultAclRules()),
-                                ]) !== 1)
-                throw new PikeException('Failed to insert main schema data',
-                                        PikeException::INEFFECTUAL_DB_OP);
-        } catch (\PDOException $e) {
-            throw new PikeException($e->getMessage(), PikeException::FAILED_DB_OP);
-        }
+        // @allow \Pike\PikeException
+        if ($this->db->exec('INSERT INTO ${p}cmsState VALUES (1,?,?,?,?,?,?)',
+                            [
+                                $s->siteName,
+                                $s->siteLang,
+                                '[]', // installedContentTypes
+                                null, // installedContentTypesLastUpdated
+                                $s->installedPlugins ?? '{}',
+                                json_encode($s->aclRules ?? $this->makeDefaultAclRules()),
+                            ]) !== 1)
+            throw new PikeException('Failed to insert main schema data',
+                                    PikeException::INEFFECTUAL_DB_OP);
         return true;
     }
     /**
@@ -119,28 +107,25 @@ class InstallerCommons {
      * @throws \Pike\PikeException
      */
     public function createUserZero(\stdClass $s, \stdClass $user = null): bool {
-        try {
-            if ($this->db->exec('INSERT INTO ${p}users'.
-                                ' (`id`,`username`,`email`,`passwordHash`,`role`)' .
-                                ' VALUES (?,?,?,?,?)',
-                                !$user ? [
-                                    $this->crypto->guidv4(),
-                                    $s->firstUserName,
-                                    $s->firstUserEmail ?? '',
-                                    $this->crypto->hashPass($s->firstUserPass),
-                                    ACL::ROLE_SUPER_ADMIN
-                                ] : [
-                                    $user->id,
-                                    $user->username,
-                                    $user->email,
-                                    $user->passwordHash,
-                                    $user->role,
-                                ]) !== 1)
-                throw new PikeException('Failed to insert user zero',
-                                        PikeException::INEFFECTUAL_DB_OP);
-        } catch (\PDOException $e) {
-            throw new PikeException($e->getMessage(), PikeException::FAILED_DB_OP);
-        }
+        // @allow \Pike\PikeException
+        if ($this->db->exec('INSERT INTO ${p}users'.
+                            ' (`id`,`username`,`email`,`passwordHash`,`role`)' .
+                            ' VALUES (?,?,?,?,?)',
+                            !$user ? [
+                                $this->crypto->guidv4(),
+                                $s->firstUserName,
+                                $s->firstUserEmail ?? '',
+                                $this->crypto->hashPass($s->firstUserPass),
+                                ACL::ROLE_SUPER_ADMIN
+                            ] : [
+                                $user->id,
+                                $user->username,
+                                $user->email,
+                                $user->passwordHash,
+                                $user->role,
+                            ]) !== 1)
+            throw new PikeException('Failed to insert user zero',
+                                    PikeException::INEFFECTUAL_DB_OP);
         return true;
     }
     /**

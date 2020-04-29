@@ -61,14 +61,11 @@ class PluginInstaller {
      * @throws \Pike\PikeException
      */
     private function updateInstalledPlugins($sql, $pluginName) {
-        try {
-            if ($this->db->exec($sql, ['$."' . $pluginName . '"']) === 1) {
-                return true;
-            }
-            throw new PikeException('Failed to update cmsState.`installedPlugins`',
-                                    PikeException::INEFFECTUAL_DB_OP);
-        } catch (\PDOException $e) {
-            throw new PikeException($e->getMessage(), PikeException::FAILED_DB_OP);
+        // @allow \Pike\PikeException
+        if ($this->db->exec($sql, ['$."' . $pluginName . '"']) === 1) {
+            return true;
         }
+        throw new PikeException('Failed to update cmsState.`installedPlugins`',
+                                PikeException::INEFFECTUAL_DB_OP);
     }
 }

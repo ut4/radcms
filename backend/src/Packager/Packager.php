@@ -169,24 +169,20 @@ class Packager {
      * @return \stdClass
      */
     private function generateUserZero($userIdentity) {
-        try {
-            if (($row = $this->db->fetchOne('SELECT `id`,`username`,`email`' .
-                                            ',`passwordHash`,`role` FROM ${p}users' .
-                                            ' WHERE `id` = ?',
-                                            [$userIdentity->id]))) {
-                return (object) [
-                    'id' => $row['id'],
-                    'username' => $row['username'],
-                    'email' => $row['email'] ?? '',
-                    'passwordHash' => $row['passwordHash'],
-                    'role' => (int) $row['role'],
-                ];
-            }
-            throw new PikeException('Failed to fetch user from db',
-                                    PikeException::BAD_INPUT);
-        } catch (\PDOException $e) {
-            throw new PikeException("Unexpected database error: {$e->getMessage()}",
-                                    PikeException::FAILED_DB_OP);
+        // @allow \Pike\PikeException
+        if (($row = $this->db->fetchOne('SELECT `id`,`username`,`email`' .
+                                        ',`passwordHash`,`role` FROM ${p}users' .
+                                        ' WHERE `id` = ?',
+                                        [$userIdentity->id]))) {
+            return (object) [
+                'id' => $row['id'],
+                'username' => $row['username'],
+                'email' => $row['email'] ?? '',
+                'passwordHash' => $row['passwordHash'],
+                'role' => (int) $row['role'],
+            ];
         }
+        throw new PikeException('Failed to fetch user from db',
+                                PikeException::BAD_INPUT);
     }
 }
