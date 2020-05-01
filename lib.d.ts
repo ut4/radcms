@@ -174,3 +174,14 @@ declare module "@rad-commons" {
     }
     export = radCommons;
 }
+
+interface SiteInfo {
+    baseUrl: string;         // /foo/, tai /foo/index.php?q=/
+    assetBaseUrl: string;    // /foo/
+    currentPagePath: string; // /
+}
+
+interface ControlPanelAppProps extends SiteInfo {
+    contentPanels: Array<FrontendPanelConfig>;
+    adminPanels: Array<FrontendPanelConfig>;
+}

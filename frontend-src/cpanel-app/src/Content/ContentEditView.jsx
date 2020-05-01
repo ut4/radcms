@@ -1,11 +1,12 @@
 import {http, config, toasters, urlUtils, View, FeatherSvg, InputGroup2, FormButtons} from '@rad-commons';
+import {contentFormRegister} from '@rad-cpanel-commons';
 import openDeleteContentDialog from './ContentDeleteDialog.jsx';
 import getWidgetImpl from './FieldWidgets/all-with-multi.js';
 import {filterByUserRole} from '../ContentType/FieldList.jsx';
 import {Status} from './ContentAddView.jsx';
 
 /**
- * #/edit-content/:id/:contentTypeName/:publish?
+ * #/edit-content/:id/:contentTypeName/:formImpl/:publish?
  */
 class ContentEditView extends preact.Component {
     /**
@@ -20,19 +21,19 @@ class ContentEditView extends preact.Component {
             contentNodeFetched: false,
             contentTypeFetched: false,
         };
-        this.updateState(this.props);
+        this.fetchContentAndUpdateState(this.props);
     }
     /**
      * @access protected
      */
     componentWillReceiveProps(props) {
         if (props.id !== this.props.id)
-            this.updateState(props);
+            this.fetchContentAndUpdateState(props);
     }
     /**
      * @access private
      */
-    updateState(props) {
+    fetchContentAndUpdateState(props) {
         const newState = {contentNodeFetched: false,
                           contentTypeFetched: false,
                           doPublish: !!props.publish};
@@ -64,6 +65,7 @@ class ContentEditView extends preact.Component {
      */
     render() {
         if (!this.state.contentNodeFetched || !this.state.contentTypeFetched) return null;
+        const FormImpl = contentFormRegister.getImpl(this.props.formImpl);
         return <View><form onSubmit={ e => this.handleFormSubmit(e) }>
             <h2>{ [
                 this.title,
@@ -77,16 +79,13 @@ class ContentEditView extends preact.Component {
                     </button>
                     : null
             ] }</h2>
-            { filterByUserRole(this.contentType.fields).map(f => {
-                const {ImplClass, props} = getWidgetImpl(f.widget.name);
-                return <ImplClass
-                    field={ f }
-                    initialValue={ this.contentNode[f.name] }
-                    settings={ props }
-                    onValueChange={ value => {
-                        this.contentNode[f.name] = value;
-                    }}/>;
-            }) }
+            <FormImpl
+                fields={ filterByUserRole(this.contentType.fields) }
+                contentNode={ this.contentNode }
+                setContentNodeValue={ (value, fieldName) => {
+                    this.contentNode[fieldName] = value;
+                } }
+                getWidgetImpl={ getWidgetImpl }/>
             { this.contentNode.isRevision && !this.props.publish
                 ? <InputGroup2 inline>
                     <label htmlFor="doPublish">Julkaise</label>

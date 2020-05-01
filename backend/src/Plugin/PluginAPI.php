@@ -48,7 +48,7 @@ class PluginAPI extends BaseAPI {
     }
     /**
      * Rekisteröi osion hallintapaneelin "Devaajille"-välilehteen. $panelImplName
-     * on sama kuin JS-API:n uiPanelRegister.registerUiPanelImpl(<tämä>, ...).
+     * on sama kuin JS-API:n contentPanelRegister.registerImpl(<tämä>, ...).
      * Esimerkki: enqueueFrontendAdminPanel('MoviesApp', 'ElokuvatApp').
      *
      * @param string $panelImplName

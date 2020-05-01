@@ -1,40 +1,49 @@
 import {config} from '@rad-commons';
 import ContentNodeList from './ContentNodeList.jsx';
+import {ContentFormImpl} from './content-form-impls.jsx';
+
+const ContentPanelImpl = Object.freeze({
+    DefaultSingle: 'DefaultSingle',
+    DefaultCollection: 'DefaultCollection',
+});
 
 /*
- * Implementoi hallintapaneeliosion <?php $this->fetchOne(...)->addFrontendPanel('Generic', 'My title') ?> kutsuille, jolla loppukäyttäjä voi muokata sisältöä.
+ * Implementoi hallintapaneeliosion <?php $this->fetchOne(...)->addFrontendPanel(
+ * ['impl' => 'DefaultSingle'...]) ?> kutsuille, jolla loppukäyttäjä voi muokata
+ * sisältöä.
  */
-class GenericUIPanelImpl extends preact.Component {
+class DefaultImplForFetchOne extends preact.Component {
     /**
-     * @param {{dataFromBackend: FrontendPanelConfig; siteInfo: SiteInfo;}} props
+     * @param {{panel: FrontendPanelConfig; settings: Object; siteInfo: SiteInfo;}} props
      */
     constructor(props) {
         super(props);
-        this.newNodeContentType = props.dataFromBackend.contentTypeName;
-        this.node = props.dataFromBackend.contentNodes[0] || null;
+        this.newNodeContentType = props.panel.contentTypeName;
+        this.node = props.panel.contentNodes[0] || null;
+        this.editFormImpl = props.settings.editFormImpl || ContentFormImpl.Default;
     }
     getName() {
-        return 'Generic';
+        return ContentPanelImpl.DefaultSingle;
     }
     /**
      * @access public
      */
     getMainUrl() {
         return this.node
-            ? `/edit-content/${this.node.id}/${this.node.contentType}`
+            ? `/edit-content/${this.node.id}/${this.node.contentType}/${this.editFormImpl}`
             : `/add-content/${this.newNodeContentType}`;
     }
     getTitle() {
-        const {title, subTitle} = this.props.dataFromBackend;
+        const {title, subtitle} = this.props.panel;
         const isDraft = this.node && this.node.isRevision;
         return <span title={
             title +
-            (subTitle ? ` (${subTitle})` : '') +
+            (subtitle ? ` (${subtitle})` : '') +
             (isDraft ? ` (Luonnos)` : '')
         }>{ [
             title,
             isDraft ? <i class="note">(Luonnos)</i> : null,
-            subTitle ? <i class="subtitle">{ subTitle }</i> : null,
+            subtitle ? <i class="subtitle">{ subtitle }</i> : null,
         ] }</span>;
     }
     getIcon() {
@@ -51,33 +60,34 @@ class GenericUIPanelImpl extends preact.Component {
             </div>
             : <div>{ !config.userPermissions.canConfigureContent
                 ? [<div>Devaaja ei ole vielä luonut tätä sisältöä.</div>]
-                : [<div>Ei sisältöä filttereillä <pre>{ JSON.stringify(this.props.dataFromBackend.queryInfo.where, true, 2) }</pre></div>,
+                : [<div>Ei sisältöä filttereillä <pre>{ JSON.stringify(this.props.panel.queryInfo.where, true, 2) }</pre></div>,
                     <a href={ url }>Luo sisältö</a>]
             }</div>;
     }
 }
 
 /*
- * Implementoi hallintapaneeliosion <?php $this->fetchAll(...)->addFrontendPanel('List', 'My title') ?> kutsuille.
+ * Implementoi hallintapaneeliosion <?php $this->fetchAll(...)->addFrontendPanel(
+ * ['impl' => 'DefaultCollection'...]) ?> kutsuille.
  */
-class GenericListUIPanelImpl extends preact.Component {
+class DefaultImplForFetchAll extends preact.Component {
     /**
-     * @param {{dataFromBackend: FrontendPanelConfig; siteInfo: SiteInfo;}} props
+     * @param {{panel: FrontendPanelConfig; settings: Object; siteInfo: SiteInfo;}} props
      */
     constructor(props) {
         super(props);
-        this.contentNodes = props.dataFromBackend.contentNodes;
-        this.contentTypeName = props.dataFromBackend.contentTypeName;
+        this.contentNodes = props.panel.contentNodes;
+        this.contentTypeName = props.panel.contentTypeName;
         this.label = '';
     }
     getName() {
-        return 'List';
+        return ContentPanelImpl.DefaultCollection;
     }
     getMainUrl() {
         return `/manage-content/${this.contentTypeName || (this.contentNodes[0] || {}).contentType}`;
     }
     getTitle() {
-        return this.props.dataFromBackend.title;
+        return this.props.panel.title;
     }
     getIcon() {
         return 'layers';
@@ -91,4 +101,4 @@ class GenericListUIPanelImpl extends preact.Component {
     }
 }
 
-export {GenericUIPanelImpl, GenericListUIPanelImpl};
+export {ContentPanelImpl, DefaultImplForFetchOne, DefaultImplForFetchAll};

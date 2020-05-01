@@ -26,24 +26,23 @@ class MagicTemplateQuery extends Query {
         $this->frontendPanels = [];
     }
     /**
-     * @param string $panelType
-     * @param string $title = ''
-     * @param string $highlightSelector = ''
-     * @param string $subTitle = ''
+     * @param array|object $settings {impl: 'DefaultSingle'|'DefaultCollection'|'NameOfMyImpl', implProps?: array|object, title?: string, subtitle?: string, highlight: string}
      * @return $this
      */
-    public function addFrontendPanel(string $panelType,
-                                     string $title = '',
-                                     string $highlightSelector = '',
-                                     string $subTitle = ''): MagicTemplateQuery {
+    public function addFrontendPanel($settings): MagicTemplateQuery {
+        if (!is_object($settings))
+            $settings = (object) $settings;
         $this->frontendPanels[] = (object) [
-            'impl' => $panelType,
-            'title' => $title ? $title : $this->contentType->name,
-            'subTitle' => $subTitle ?? null,
+            // config
+            'impl' => $settings->impl,
+            'implProps' => (object) ($settings->implProps ?? new \stdClass),
+            'title' => $settings->title ?? $this->contentType->name,
+            'subtitle' => $settings->subtitle ?? null,
+            'highlightSelector' => $settings->highlight ?? null,
+            // data
             'contentTypeName' => $this->contentType->name,
             'contentNodes' => null,
             'queryInfo' => (object) ['where' => null],
-            'highlightSelector' => $highlightSelector,
         ];
         return $this;
     }

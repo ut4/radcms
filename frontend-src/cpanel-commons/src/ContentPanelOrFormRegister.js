@@ -1,4 +1,4 @@
-class UiPanelRegister {
+class ContentPanelOrFormRegister {
     constructor() {
         this._impls = {};
     }
@@ -7,18 +7,18 @@ class UiPanelRegister {
      * @param {Object} impl
      * @throws {TypeError}
      */
-    registerUiPanelImpl(name, impl) {
-        if (this._impls.hasOwnProperty(name))
-            throw new TypeError('Impl \''+name+'\' already exists.');
+    registerImpl(name, impl) {
+        if (this._impls[name])
+            throw new TypeError(`Impl '${name}' already exists.`);
         this._impls[name] = impl;
     }
     /**
      * @param {string} name
      * @returns {Object|undefined}
      */
-    getUiPanelImpl(name) {
+    getImpl(name) {
         return this._impls[name];
     }
 }
 
-export default UiPanelRegister;
+export default ContentPanelOrFormRegister;

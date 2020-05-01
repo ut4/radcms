@@ -1,9 +1,16 @@
-import UiPanelRegister from './src/UiPanelRegister.js';
-import {GenericUIPanelImpl, GenericListUIPanelImpl} from './src/ui-panel-impls.jsx';
+import Register from './src/ContentPanelOrFormRegister.js';
+import {ContentPanelImpl, DefaultImplForFetchOne,
+        DefaultImplForFetchAll} from './src/content-panel-impls.jsx';
+import {ContentFormImpl, DefaultImpl} from './src/content-form-impls.jsx';
 import ContentNodeUtils from './src/ContentNodeUtils.js';
 
-const uiPanelRegister = new UiPanelRegister();
-uiPanelRegister.registerUiPanelImpl('Generic', GenericUIPanelImpl);
-uiPanelRegister.registerUiPanelImpl('List', GenericListUIPanelImpl);
+const contentPanelRegister = new Register();
+contentPanelRegister.registerImpl('DefaultSingle', DefaultImplForFetchOne);
+contentPanelRegister.registerImpl('DefaultCollection', DefaultImplForFetchAll);
 
-export {uiPanelRegister, ContentNodeUtils};
+const contentFormRegister = new Register();
+contentFormRegister.registerImpl('Default', DefaultImpl);
+
+export {contentPanelRegister, contentFormRegister,
+        ContentPanelImpl, ContentFormImpl,
+        ContentNodeUtils};

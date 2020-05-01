@@ -47,20 +47,22 @@ class MultiFieldBlobs {
     /**
      * @param string $name
      * @param string|null $frontendPanelTitle
-     * @param string|null $highlightSelector
+     * @param string|null $highlight
      * @param \RadCms\Templating\MagicTemplate $tmpl
      * @return \stdClass|null
      */
     public function fetchMultiField(string $name,
                                     ?string $frontendPanelTitle,
-                                    ?string $highlightSelector,
+                                    ?string $highlight,
                                     MagicTemplate $tmpl): ?\stdClass {
         $node = $tmpl
             ->fetchOne('MultiFieldBlobs')
-            ->addFrontendPanel(StockFrontendPanelImpls::Generic,
-                               $frontendPanelTitle ?? 'Sisältö',
-                               $highlightSelector,
-                               $name)
+            ->addFrontendPanel([
+                'impl' => StockFrontendPanelImpls::DEFAULT_SINGLE,
+                'title' => $frontendPanelTitle ?? 'Sisältö',
+                'subtitle' => $name,
+                'highlight' => $highlight
+            ])
             ->where('name = ?', $name)
             ->exec();
         if ($node) {

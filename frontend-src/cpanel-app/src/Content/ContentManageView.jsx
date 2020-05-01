@@ -1,5 +1,5 @@
 import {http, View, FeatherSvg, InputGroup2, Select2, hookForm} from '@rad-commons';
-import {ContentNodeUtils} from '@rad-cpanel-commons';
+import {ContentFormImpl, ContentNodeUtils} from '@rad-cpanel-commons';
 import openDeleteContentDialog from './ContentDeleteDialog.jsx';
 
 /**
@@ -66,7 +66,7 @@ class ContentManageView extends preact.Component {
                     <th></th>
                 </tr></thead>
                 <tbody>{ this.state.content.map(cnode => {
-                    const href = `#/edit-content/${cnode.id}/${cnode.contentType}`;
+                    const href = `#/edit-content/${cnode.id}/${cnode.contentType}/${ContentFormImpl.Default}`;
                     return <tr>
                         <td>{ ContentNodeUtils.makeTitle(cnode) }</td>
                         <td>{ !cnode.isRevision
