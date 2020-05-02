@@ -8,6 +8,8 @@ class ContentPanelOrFormRegister {
      * @throws {TypeError}
      */
     registerImpl(name, impl) {
+        if (name === '__proto__' || name === 'constructor')
+            throw new Error(`Invalid implementation name ${name}`);
         if (this._impls[name])
             throw new TypeError(`Impl '${name}' already exists.`);
         this._impls[name] = impl;

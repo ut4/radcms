@@ -1,3 +1,5 @@
+import {FormButtons} from './Form2.jsx';
+
 class Confirmation extends preact.Component {
     /**
      * @param {{onConfirm: () => any; onCancel: () => any; confirmButtonText?: string; cancelButtonText?: string; }} props
@@ -12,7 +14,7 @@ class Confirmation extends preact.Component {
         return <div>
             { this.props.children }
             <div class="form-buttons">
-                <button onClick={ () => this.handleSubmit() }
+                <button onClick={ () => this.props.onConfirm() }
                         class="nice-button primary" type="button">
                     { this.props.confirmButtonText || 'Ok' }
                 </button>
@@ -25,16 +27,36 @@ class Confirmation extends preact.Component {
     /**
      * @access protected
      */
-    handleSubmit() {
-        this.props.onConfirm();
-    }
-    /**
-     * @access private
-     */
     handleCancel(e) {
         e.preventDefault();
         this.props.onCancel();
     }
 }
 
+class FormConfirmation extends Confirmation {
+    /**
+     * @param {{onConfirm: (e: UIEvent) => any; onCancel: () => any; confirmButtonText?: string; cancelButtonText?: string; }} props
+     */
+    constructor(props) {
+        super(props);
+    }
+    /**
+     * @access protected
+     */
+    render() {
+        return <form onSubmit={ e => this.props.onConfirm(e) }>
+            { this.props.children }
+            <div class="form-buttons">
+                <button class="nice-button primary" type="submit">
+                    { this.props.confirmButtonText || 'Ok' }
+                </button>
+                <a onClick={ e => this.handleCancel(e) } href="">
+                    { this.props.cancelButtonText || 'Peruuta' }
+                </a>
+            </div>
+        </form>;
+    }
+}
+
 export default Confirmation;
+export {FormConfirmation};

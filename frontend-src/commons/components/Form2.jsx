@@ -73,6 +73,8 @@ class ValidatorRunner {
      * @access public
      */
     setValidatorForInput(inputName, validator) {
+        if (inputName === '__proto__' || inputName === 'constructor')
+            throw new Error(`Invalid inputName ${inputName}`);
         this.validators[inputName] = validator;
     }
     /**
@@ -110,6 +112,7 @@ class Form {
     constructor(vm, validatorRunner) {
         this.vm = vm;
         this.validatorRunner = validatorRunner;
+        this.isSubmitting = false;
     }
     /**
      * @param {InputEvent} e
@@ -125,7 +128,6 @@ class Form {
         classes[name].invalid = !!errors[name];
         classes[name].focused = true;
         this.applyState({values, errors, classes}, myAlterStateFn);
-
     }
     /**
      * @param {string} value
@@ -157,6 +159,7 @@ class Form {
      * @access public
      */
     handleBlur(e, myAlterStateFn = null) {
+        if (this.isSubmitting) return;
         const name = e.target.name;
         const {errors, classes} = this.vm.state;
         errors[name] = this.validatorRunner.hasValidatorForInput(name)
@@ -178,12 +181,15 @@ class Form {
         }}, myAlterStateFn);
     }
     /**
-     * @param {InputEvent} e
+     * @param {InputEvent=} e
      * @param {(state: Object) => Object} myAlterStateFn = null
+     * @returns {bool|null} true = valid, false = invalid, null = alreadySubmitting
      * @access public
      */
     handleSubmit(e, myAlterStateFn = null) {
-        e.preventDefault();
+        if (e) e.preventDefault();
+        if (this.isSubmitting) return null;
+        this.setIsSubmitting();
         const {errors, classes} = this.vm.state;
         let overall = true;
         this.validatorRunner.each((validator, inputName) => {
@@ -202,6 +208,15 @@ class Form {
      */
     applyState(newState, alterFn) {
         this.vm.setState(!alterFn ? newState : alterFn(newState));
+    }
+    /**
+     * @access private
+     */
+    setIsSubmitting() {
+        this.isSubmitting = true;
+        setTimeout(() => {
+            this.isSubmitting = false;
+        }, 800);
     }
 }
 

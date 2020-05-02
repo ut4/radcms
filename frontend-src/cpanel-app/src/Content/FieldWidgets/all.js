@@ -18,20 +18,20 @@ const impls = {
 };
 
 const widgetTypes = [
-    {name: 'textField', description: 'Lyhyt tekstikenttä'},
-    {name: 'textArea', description: 'Pitkä tekstikenttä'},
-    {name: 'richText', description: 'Wysiwyg-tekstikenttä'},
-    {name: 'imagePicker', description: 'Kuva'},
-    {name: 'datePicker', description: 'Päivämäärä'},
-    {name: 'dateTimePicker', description: 'Päivämäärä ja aika'},
-    {name: 'colorPicker', description: 'Väri'},
-    {name: 'contentSelector', description: 'Sisällön valitsin'},
-    {name: 'hidden', description: 'Piilotettu kenttä'},
+    {name: 'textField', friendlyName: 'Lyhyt tekstikenttä', description: 'Lyhyt tekstikenttä'},
+    {name: 'textArea', friendlyName: 'Pitkä tekstikenttä', description: 'Pitkä tekstikenttä'},
+    {name: 'richText', friendlyName: 'Wysiwyg-tekstikenttä', description: 'Wysiwyg-tekstikenttä'},
+    {name: 'imagePicker', friendlyName: 'Kuva', description: 'Kuva'},
+    {name: 'datePicker', friendlyName: 'Päivämäärä', description: 'Päivämäärä'},
+    {name: 'dateTimePicker', friendlyName: 'Päivämäärä ja aika', description: 'Päivämäärä ja aika'},
+    {name: 'colorPicker', friendlyName: 'Väri', description: 'Väri'},
+    {name: 'contentSelector', friendlyName: 'Sisällön valitsin', description: 'Sisällön valitsin'},
+    {name: 'hidden', friendlyName: 'Piilotettu kenttä', description: 'Piilotettu kenttä'},
 ];
 
 /**
- * @param {'textField'|'textArea'|'richText'|'imagePicker'|'datePicker'|'dateTimePicker'|'colorPicker'|'contentSelector'|'hidden'} type
- * @returns {Object}
+ * @param {'textField'|'textArea'|'richText'|'imagePicker'|'datePicker'|'dateTimePicker'|'colorPicker'|'contentSelector'|'hidden'} widgetName
+ * @returns {{ImplClass: Object; props: Object;}}
  * @throws {Error}
  */
 export default widgetName => {

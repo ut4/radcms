@@ -424,15 +424,25 @@ table.pika-time {
 .disallow-edit .fields .buttons {
     display: none;
 }
+.buttons > button:first-child {
+    margin-right: 4px;
+}
 
 
 /* -- Components: MultiFieldConfigurer ---- */
+.multi-fields.configurable {
+    border-left: 2px solid #2dccc3;
+    padding-left: 10px;
+}
+.multi-fields.configurable .input-group:first-of-type {
+    margin-top: 7px;
+}
 .multi-field-configurer {
     background-color: #fbfbff;
     padding: 14px 10px;
     border: 1px dashed #ccc;
     border-radius: 2px;
-    margin-bottom: 18px;
+    margin: 4px 0 18px;
 }
 
 

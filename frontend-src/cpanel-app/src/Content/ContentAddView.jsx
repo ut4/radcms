@@ -58,6 +58,7 @@ class ContentAddView extends preact.Component {
                 </Select2>
             </InputGroup2>
             { filterByUserRole(this.state.contentType.fields).map(f => {
+                // @allow Error
                 const {ImplClass, props} = getWidgetImpl(f.widget.name);
                 return <ImplClass
                     key={ f.id }

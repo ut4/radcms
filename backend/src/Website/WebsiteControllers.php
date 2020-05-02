@@ -72,19 +72,10 @@ class WebsiteControllers {
                                       $dao,
                                       $fs);
         $storage->applyRegisteredTemplateStuff($template, BaseAPI::TARGET_WEBSITE_LAYOUT);
-        try {
-            $url = $req->path ? explode('/', ltrim($req->path, '/')) : [''];
-            $html = $template->render(['url' => $url,
-                                       'urlStr' => $req->path,
-                                       'site' => $this->cmsState->getSiteInfo()]);
-        } catch (PikeException $e) {
-            if (!(RAD_FLAGS & RAD_DEVMODE)) {
-                $res->html("Hmm, {$layoutFileName} teki jotain odottamatonta.");
-                return;
-            } else {
-                throw $e;
-            }
-        }
+        $url = $req->path ? explode('/', ltrim($req->path, '/')) : [''];
+        $html = $template->render(['url' => $url,
+                                   'urlStr' => $req->path,
+                                   'site' => $this->cmsState->getSiteInfo()]);
         $res->html(!$req->user || ($bodyEnd = strpos($html, '</body>')) === false
             ? $html
             : $this->injectParentWindowCpanelSetupScript($html, $bodyEnd,

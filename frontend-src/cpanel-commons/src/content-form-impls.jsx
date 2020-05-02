@@ -14,7 +14,7 @@ class DefaultImpl extends preact.Component {
      */
     render() {
         const {fields, getWidgetImpl, contentNode, setContentNodeValue} = this.props;
-        return <>{ fields.map(f => {
+        return <div>{ fields.map(f => {
             // TextFieldFieldWidget, TextAreaFieldWidget etc...
             const {ImplClass, props} = getWidgetImpl(f.widget.name);
             return <ImplClass
@@ -24,7 +24,7 @@ class DefaultImpl extends preact.Component {
                 onValueChange={ value => {
                     setContentNodeValue(value, f.name);
                 }}/>;
-        }) }</>;
+        }) }</div>;
     }
 }
 

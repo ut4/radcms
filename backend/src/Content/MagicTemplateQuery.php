@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace RadCms\Content;
 
+use Pike\PikeException;
 use RadCms\ContentType\ContentTypeDef;
 
 /**
@@ -32,6 +33,9 @@ class MagicTemplateQuery extends Query {
     public function addFrontendPanel($settings): MagicTemplateQuery {
         if (!is_object($settings))
             $settings = (object) $settings;
+        if (!isset($settings->impl))
+            throw new PikeException("['impl' => <SomeContentPanelImpl>] is required",
+                                    PikeException::BAD_INPUT);
         $this->frontendPanels[] = (object) [
             // config
             'impl' => $settings->impl,

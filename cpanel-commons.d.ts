@@ -35,6 +35,13 @@ interface ContentTypeField {
     };
 }
 
+interface MultiFieldField {
+    id: string;
+    name: string;
+    widget: {name: string, args: Object|null};
+    value: any;
+}
+
 interface ContentType {
     name: string;
     friendlyName: string;

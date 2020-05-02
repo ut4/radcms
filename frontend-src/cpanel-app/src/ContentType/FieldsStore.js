@@ -81,19 +81,24 @@ class FieldsStore {
             fn(store.getState());
         });
     }
+    /**
+     * @returns {ContentTypeField}
+     * @access public
+     */
+    static makeField() {
+        return {
+            name: `newField${++counter}`,
+            friendlyName: 'Uusi kenttä',
+            dataType: 'text',
+            defaultValue: '',
+            visibility: 0,
+            widget: {
+                name: 'textField',
+                args: {}
+            },
+            key: counter
+        };
+    }
 }
-
-FieldsStore.makeField = () => ({
-    name: `newField${++counter}`,
-    friendlyName: 'Uusi kenttä',
-    dataType: 'text',
-    defaultValue: '',
-    visibility: 0,
-    widget: {
-        name: 'textField',
-        args: {}
-    },
-    key: counter
-});
 
 export default FieldsStore;
