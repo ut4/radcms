@@ -1,4 +1,4 @@
-import {InputGroup2} from '@rad-commons';
+import {InputGroup} from '@rad-commons';
 import BaseFieldWidget from './Base.jsx';
 import DateTimePicker from '../../Common/DateTimePicker.jsx';
 
@@ -14,7 +14,7 @@ class DateTimePickerFieldWidget extends BaseFieldWidget {
      * @access protected
      */
     render() {
-        return <InputGroup2>
+        return <InputGroup>
             <label htmlFor={ this.props.field.name }>{ this.label }</label>
             <DateTimePicker
                 inputName={ this.props.field.name }
@@ -26,7 +26,7 @@ class DateTimePickerFieldWidget extends BaseFieldWidget {
                         : unixTime.toString());
                 } }
                 showTime={ this.props.settings.showTime }/>
-        </InputGroup2>;
+        </InputGroup>;
     }
 }
 

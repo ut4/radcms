@@ -30,38 +30,27 @@ declare module "@rad-commons" {
 
         ////////////////////////////////////////////////////////////////////////
 
-
-        export class FeatherSvg extends preact.Component<
-            {iconId: string; className?: string;},
-            {}>
-        {
-        }
-        interface FormProps {
-            onSubmit: (e: Event) => any;
-            submitButtonText?: string;
-            cancelButtonText?: string;
-            returnTo?: string;
-            omitButtons?: boolean;
-            buttons?: Array<string|preact.VNode>;
-            formId?: string;
-            action?: string;
-            method?: string;
-            encType?: string;
-        }
-        export class Form extends preact.Component<
-            FormProps,
-            {}>
-        {
-            static receiveInputValue(e:Event, dhis: preact.VNode, name?: string): void;
-            close(): void;
+        export function hookForm(vm: preact.Component,
+                                 values: Object,
+                                 validators?: Array<FormInputValidator>): {
+            values: Object;
+            errors: Object;
+            classes: Object;
         }
         export class InputGroup extends preact.Component<
-            {label?: string|Function; inline?: boolean; className?: string;},
+            {
+                classes?: {invalid: boolean; focused: boolean; blurredAtLeastOnce: boolean;};
+                className?: string;
+                inline?: boolean;
+            },
             {}>
         {
         }
-        interface InputProps {
-            validations: Array<[string, ...any]>;
+        export interface InputProps {
+            vm: preact.Component;
+            myOnChange?: (state: Object) => Object;
+            validations?: Array<[string, ...any]>;
+            errorLabel?: string;
             [key: string]: any;
         }
         export class Input extends preact.Component<
@@ -80,16 +69,9 @@ declare module "@rad-commons" {
         {
         }
         export class InputError extends preact.Component<
-            {},
+            {error?: string;},
             {}>
         {
-        }
-        export function hookForm(vm: preact.Component,
-                                 values: Object,
-                                 validators?: Array<FormInputValidator>): {
-            values: Object;
-            errors: Object;
-            classes: Object;
         }
         export class FormButtons extends preact.Component<
             {
@@ -98,42 +80,6 @@ declare module "@rad-commons" {
                 cancelButtonText?: string;
                 returnTo?: string;
             },
-            {}>
-        {
-        }
-        export class InputGroup2 extends preact.Component<
-            {
-                classes?: {invalid: boolean; focused: boolean; blurredAtLeastOnce: boolean;};
-                className?: string;
-                inline?: boolean;
-            },
-            {}>
-        {
-        }
-        export interface InputProps2 {
-            vm: preact.Component;
-            myOnChange?: (state: Object) => Object;
-            validations?: Array<[string, ...any]>;
-            errorLabel?: string;
-            [key: string]: any;
-        }
-        export class Input2 extends preact.Component<
-            InputProps2,
-            {}>
-        {
-        }
-        export class Textarea2 extends preact.Component<
-            InputProps2,
-            {}>
-        {
-        }
-        export class Select2 extends preact.Component<
-            InputProps2,
-            {}>
-        {
-        }
-        export class InputError2 extends preact.Component<
-            {error?: string;},
             {}>
         {
         }
@@ -157,6 +103,21 @@ declare module "@rad-commons" {
                 confirmButtonText?: string;
                 cancelButtonText?: string;
             },
+            {}>
+        {
+        }
+        export class FormConfirmation extends preact.Component<
+            {
+                onConfirm: (e: UIEvent) => any;
+                onCancel: () => any;
+                confirmButtonText?: string;
+                cancelButtonText?: string;
+            },
+            {}>
+        {
+        }
+        export class FeatherSvg extends preact.Component<
+            {iconId: string; className?: string;},
             {}>
         {
         }

@@ -1,4 +1,4 @@
-import {hookForm, InputGroup2, Input2, InputError2} from '@rad-commons';
+import {hookForm, InputGroup, Input, InputError} from '@rad-commons';
 
 class FromPackageInstallerView extends preact.Component {
     /**
@@ -18,9 +18,9 @@ class FromPackageInstallerView extends preact.Component {
         return <div>
             <h2>Asenna RadCMS</h2>
             <form onSubmit={ e => this.handleSubmit(e) } action="?q=/from-package" method="post" encType="multipart/form-data">
-                <InputGroup2 classes={ this.state.classes.packageFile }>
+                <InputGroup classes={ this.state.classes.packageFile }>
                     <label htmlFor="packageFile">Pakettitiedosto</label>
-                    <Input2
+                    <Input
                         vm={ this }
                         name="packageFile"
                         id="packageFile"
@@ -28,18 +28,18 @@ class FromPackageInstallerView extends preact.Component {
                         accept=".radsite"
                         validations={ [['required']] }
                         errorLabel="Pakettitiedosto"/>
-                    <InputError2 error={ this.state.errors.packageFile }/>
-                </InputGroup2>
-                <InputGroup2 classes={ this.state.classes.unlockKey }>
+                    <InputError error={ this.state.errors.packageFile }/>
+                </InputGroup>
+                <InputGroup classes={ this.state.classes.unlockKey }>
                     <label htmlFor="unlockKey">Avausavain</label>
-                    <Input2
+                    <Input
                         vm={ this }
                         name="unlockKey"
                         id="unlockKey"
                         validations={ [['minLength', 12]] }
                         errorLabel="Avausavain"/>
-                    <InputError2 error={ this.state.errors.unlockKey }/>
-                </InputGroup2>
+                    <InputError error={ this.state.errors.unlockKey }/>
+                </InputGroup>
                 <input type="hidden" name="baseUrl" value={ this.props.baseUrl }/>
                 <button class="nice-button primary" type="submit">Asenna</button>
             </form>

@@ -1,4 +1,4 @@
-import {hookForm, InputGroup2, Input2} from '@rad-commons';
+import {hookForm, InputGroup, Input} from '@rad-commons';
 import BaseFieldWidget from './Base.jsx';
 
 class ColorPickerFieldWidget extends BaseFieldWidget {
@@ -21,12 +21,12 @@ class ColorPickerFieldWidget extends BaseFieldWidget {
      * @access protected
      */
     render() {
-        return <InputGroup2 classes={ this.state.classes[this.fieldName] }>
+        return <InputGroup classes={ this.state.classes[this.fieldName] }>
             <label htmlFor={ this.fieldName }>{ this.label }</label>
-            <Input2 vm={ this } type="color" name={ this.fieldName } id={ this.fieldName }
+            <Input vm={ this } type="color" name={ this.fieldName } id={ this.fieldName }
                 myOnChange={ newState => this.emitValueChange(newState) }/>
             <span style={ `background-color:${this.state.values[this.fieldName]}` }>&nbsp;&nbsp;&nbsp;&nbsp;</span>
-        </InputGroup2>;
+        </InputGroup>;
     }
     /**
      * @access private

@@ -1,4 +1,4 @@
-import {http, toasters, urlUtils, View, Form, Select2, hookForm, InputGroup2, Input2} from '@rad-commons';
+import {http, toasters, urlUtils, View, Select, hookForm, InputGroup, Input, FormButtons} from '@rad-commons';
 import {filterByUserRole} from '../ContentType/FieldList.jsx';
 import getWidgetImpl from './FieldWidgets/all-with-multi.js';
 import {genRandomString} from '../Website/WebsitePackView.jsx';
@@ -46,17 +46,16 @@ class ContentAddView extends preact.Component {
      */
     render() {
         if (!this.state.contentType) return null;
-        return <View><Form onSubmit={ () => this.handleFormSubmit() }
-                           submitButtonText="Lisää">
+        return <View><form onSubmit={ e => this.handleFormSubmit(e) }>
             <h2>Lisää sisältöä</h2>
-            <InputGroup2 classes={ this.state.classes.contentTypeName }>
+            <InputGroup classes={ this.state.classes.contentTypeName }>
                 <label><span data-help-text="Dev note: Voit luoda uusia sisältötyyppejä hallintapaneelin devaaja-osiosta (ks. https://todo).">Sisältötyyppi</span></label>
-                <Select2 vm={ this } myOnChange={ newState => this.receiveContentTypeSelection(newState) } name="contentTypeName">
+                <Select vm={ this } myOnChange={ newState => this.receiveContentTypeSelection(newState) } name="contentTypeName">
                     { this.contentTypes.map(type =>
                         <option value={ type.name }>{ type.friendlyName }</option>
                     ) }
-                </Select2>
-            </InputGroup2>
+                </Select>
+            </InputGroup>
             { filterByUserRole(this.state.contentType.fields).map(f => {
                 // @allow Error
                 const {ImplClass, props} = getWidgetImpl(f.widget.name);
@@ -69,16 +68,17 @@ class ContentAddView extends preact.Component {
                         this.newContentNode[f.name] = value;
                     }}/>;
             }) }
-            <InputGroup2 classes={ {} } inline>
+            <InputGroup classes={ {} } inline>
                 <label htmlFor="createRevision">Lisää luonnoksena</label>
-                <Input2 vm={ this } type="checkbox" name="createRevision" id="createRevision"/>
-            </InputGroup2>
-        </Form></View>;
+                <Input vm={ this } type="checkbox" name="createRevision" id="createRevision"/>
+            </InputGroup>
+            <FormButtons submitButtonText="Lisää"/>
+        </form></View>;
     }
     /**
      * @access private
      */
-    handleFormSubmit() {
+    handleFormSubmit(_e) {
         const revisionSettings = this.state.values.createRevision ? '/with-revision' : '';
         return http.post(`/api/content/${this.state.contentType.name}${revisionSettings}`,
             Object.assign(this.newContentNode,

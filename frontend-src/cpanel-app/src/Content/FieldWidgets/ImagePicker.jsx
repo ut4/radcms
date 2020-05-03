@@ -1,4 +1,4 @@
-import {http, config, urlUtils, hookForm, InputGroup2, Input2} from '@rad-commons';
+import {http, config, urlUtils, hookForm, InputGroup, Input} from '@rad-commons';
 import popupDialog from '../../Common/PopupDialog.jsx';
 import BaseFieldWidget from './Base.jsx';
 
@@ -22,9 +22,9 @@ class ImagePickerFieldWidget extends BaseFieldWidget {
      * @access protected
      */
     render() {
-        return <InputGroup2 classes={ this.state.classes[this.fieldName] }>
+        return <InputGroup classes={ this.state.classes[this.fieldName] }>
             <label htmlFor={ this.fieldName }>{ this.label }</label>
-            <Input2 vm={ this }
+            <Input vm={ this }
                     name={ this.fieldName }
                     id={ this.fieldName }
                     onClick={ () => popupDialog.open(
@@ -36,7 +36,7 @@ class ImagePickerFieldWidget extends BaseFieldWidget {
                          },
                          assetBaseUrl: config.assetBaseUrl}
                     ) }/>
-        </InputGroup2>;
+        </InputGroup>;
     }
 }
 
@@ -104,13 +104,13 @@ class UploadButton extends preact.Component {
      */
     render() {
         return <div>
-            <InputGroup2>
+            <InputGroup>
                 <input onChange={ e => { this.handleFileInputChange(e); } }
                        name="localFile"
                        type="file"
                        accept="image/*"
                        form={ this.hiddenFormId }/>
-            </InputGroup2>
+            </InputGroup>
             <input value={ window.location.href }
                    name="returnTo"
                    type="hidden"

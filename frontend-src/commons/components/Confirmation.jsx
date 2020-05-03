@@ -1,4 +1,4 @@
-import {FormButtons} from './Form2.jsx';
+import {FormButtons} from './Form.jsx';
 
 class Confirmation extends preact.Component {
     /**
@@ -46,14 +46,10 @@ class FormConfirmation extends Confirmation {
     render() {
         return <form onSubmit={ e => this.props.onConfirm(e) }>
             { this.props.children }
-            <div class="form-buttons">
-                <button class="nice-button primary" type="submit">
-                    { this.props.confirmButtonText || 'Ok' }
-                </button>
-                <a onClick={ e => this.handleCancel(e) } href="">
-                    { this.props.cancelButtonText || 'Peruuta' }
-                </a>
-            </div>
+            <FormButtons
+                onCancel={ e => this.handleCancel(e) }
+                submitButtonText={ this.props.confirmButtonText }
+                cancelButtonText={ this.props.cancelButtonText }/>
         </form>;
     }
 }

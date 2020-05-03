@@ -1,4 +1,4 @@
-import {http, urlUtils, View, FormButtons, hookForm, InputGroup2, Input2, InputError2} from '@rad-commons';
+import {http, urlUtils, View, FormButtons, hookForm, InputGroup, Input, InputError} from '@rad-commons';
 
 /**
  * #/pack-website
@@ -69,15 +69,15 @@ class WebsitePackView extends preact.Component {
             { this.state.message ? <p>
                 { this.state.message }
             </p> : null }
-            <InputGroup2 classes={ this.state.classes.signingKey }>
+            <InputGroup classes={ this.state.classes.signingKey }>
                 <label htmlFor="signingKey">Salausavain</label>
-                <Input2
+                <Input
                     vm={ this }
                     name="signingKey"
                     id="signingKey"
                     validations={ [['minLength', 12]] }/>
-                <InputError2 error={ this.state.errors.signingKey }/>
-            </InputGroup2>
+                <InputError error={ this.state.errors.signingKey }/>
+            </InputGroup>
             <input ref={ this.templatesInputEl } type="hidden" name="templates" value=""/>
             <input ref={ this.assetsInputEl } type="hidden" name="assets" value=""/>
             <FormButtons submitButtonText="Paketoi"/>

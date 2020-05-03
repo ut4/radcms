@@ -1,4 +1,4 @@
-import {http, View, FeatherSvg, InputGroup2, Select2, hookForm} from '@rad-commons';
+import {http, View, FeatherSvg, InputGroup, Select, hookForm} from '@rad-commons';
 import {ContentFormImpl, ContentNodeUtils} from '@rad-cpanel-commons';
 import openDeleteContentDialog from './ContentDeleteDialog.jsx';
 
@@ -43,13 +43,13 @@ class ContentManageView extends preact.Component {
         return <View><div>
             <h2>Selaa sisältöä</h2>
             <div>
-                <InputGroup2 classes={ this.state.classes.selectedContentTypeName }>
-                    <Select2 vm={ this } myOnChange={ newState => this.updateContent(newState) }
+                <InputGroup classes={ this.state.classes.selectedContentTypeName }>
+                    <Select vm={ this } myOnChange={ newState => this.updateContent(newState) }
                             name="selectedContentTypeName">{
                         this.contentTypes.map(t =>
                             <option value={ t.name }>{ t.friendlyName }</option>
                         )
-                    }</Select2>
+                    }</Select>
                     { this.state.values.selectedContentTypeName
                         ? <a href={ `#/add-content/${this.state.values.selectedContentTypeName}` }
                                     title="Luo uusi"
@@ -57,7 +57,7 @@ class ContentManageView extends preact.Component {
                             <FeatherSvg iconId="plus-circle" className="medium"/>
                         </a>
                         : '' }
-                </InputGroup2>
+                </InputGroup>
             </div>
             { !this.state.message ? <table class="striped">
                 <thead><tr>

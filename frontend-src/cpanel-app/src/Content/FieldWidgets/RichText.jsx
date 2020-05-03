@@ -1,4 +1,4 @@
-import {hookForm, InputGroup2} from '@rad-commons';
+import {hookForm, InputGroup} from '@rad-commons';
 import BaseFieldWidget from './Base.jsx';
 import QuillEditor from '../../Common/QuillEditor.jsx';
 let counter = 0;
@@ -23,7 +23,7 @@ class RichTextFieldWidget extends BaseFieldWidget {
      * @access protected
      */
     render() {
-        return <InputGroup2 classes={ this.state.classes[this.fieldName] }>
+        return <InputGroup classes={ this.state.classes[this.fieldName] }>
             <label>{ this.label }</label>
             <QuillEditor
                 name={ this.fieldName }
@@ -33,7 +33,7 @@ class RichTextFieldWidget extends BaseFieldWidget {
                     this.props.onValueChange(html);
                 } }
                 onBlur={ () => this.form.triggerBlur(this.fieldName) }/>
-        </InputGroup2>;
+        </InputGroup>;
     }
 }
 

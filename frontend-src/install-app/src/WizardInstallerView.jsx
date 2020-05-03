@@ -1,4 +1,4 @@
-import {http, toasters, InputGroup2, Input2, Select2, InputError2, FeatherSvg, hookForm} from '@rad-commons';
+import {http, toasters, InputGroup, Input, Select, InputError, FeatherSvg, hookForm} from '@rad-commons';
 
 class WizardInstallerView extends preact.Component {
     /**
@@ -136,29 +136,29 @@ class SiteSettingsTab extends Tab {
     render() {
         const {classes} = this.state;
         return <form onSubmit={ e => this.props.parent.handleSubmit(e, 0) }>
-            <InputGroup2 classes={ classes.siteName }>
+            <InputGroup classes={ classes.siteName }>
                 <label htmlFor="siteName" data-help-text="Sivustoprojektin nimi, ei pakollinen.">Sivuston nimi</label>
-                <Input2 vm={ this } name="siteName" id="siteName"/>
-            </InputGroup2>
-            <InputGroup2 classes={ classes.sampleContent }>
+                <Input vm={ this } name="siteName" id="siteName"/>
+            </InputGroup>
+            <InputGroup classes={ classes.sampleContent }>
                 <label htmlFor="sampleContent" data-help-text="Sisältö, jolla sivusto alustetaan.">Esimerkkisisältö</label>
-                <Select2 vm={ this } name="sampleContent" id="sampleContent">
+                <Select vm={ this } name="sampleContent" id="sampleContent">
                     { [{name: 'minimal', friendlyName: 'Minimaalinen'},
                         {name: 'blog', friendlyName: 'Blogi'}].map(opt =>
                         <option value={ opt.name }>{ opt.friendlyName }</option>
                     ) }
-                </Select2>
-            </InputGroup2>
+                </Select>
+            </InputGroup>
             <div class="fieldset">
                 <div class="legend">Lisäasetukset</div>
-                <InputGroup2 classes={ classes.mainQueryVar }>
+                <InputGroup classes={ classes.mainQueryVar }>
                     <label htmlFor="mainQueryVar" data-help-text="Url-parametri (index.php?parametrinNimi=/) mikäli url-rewrite -säännöt ei ole käytössä.">Url-parametri</label>
-                    <Input2 vm={ this } name="mainQueryVar" id="mainQueryVar"/>
-                </InputGroup2>
-                <InputGroup2 classes={ classes.useDevMode } inline="true">
+                    <Input vm={ this } name="mainQueryVar" id="mainQueryVar"/>
+                </InputGroup>
+                <InputGroup classes={ classes.useDevMode } inline="true">
                     <label htmlFor="useDevMode" data-help-text="Ruksaa mikäli sivusto on vielä kehitysvaiheessa.">Käytä dev-modea</label>
-                    <Input2 vm={ this } type="checkbox" name="useDevMode" id="useDevMode" defaultChecked={ this.state.values.useDevMode }/>
-                </InputGroup2>
+                    <Input vm={ this } type="checkbox" name="useDevMode" id="useDevMode" defaultChecked={ this.state.values.useDevMode }/>
+                </InputGroup>
             </div>
             <br/>
             <button class="text-button"
@@ -190,51 +190,51 @@ class DatabaseSettingsTab extends Tab {
     render() {
         const {errors, classes} = this.state;
         return <form onSubmit={ e => this.props.parent.handleSubmit(e, 1) }>
-            <InputGroup2 classes={ classes.dbHost }>
+            <InputGroup classes={ classes.dbHost }>
                 <label htmlFor="dbHost" data-help-text="Tietokantaserverin osoite (host).">Tietokannan osoite</label>
-                <Input2 vm={ this } name="dbHost" id="dbHost"
+                <Input vm={ this } name="dbHost" id="dbHost"
                         validations={ [['required']] }
                         errorLabel="Tietokannan osoite"/>
-                <InputError2 error={ errors.dbHost }/>
-            </InputGroup2>
-            <InputGroup2 classes={ classes.dbUser }>
+                <InputError error={ errors.dbHost }/>
+            </InputGroup>
+            <InputGroup classes={ classes.dbUser }>
                 <label htmlFor="dbUser" data-help-text="Tietokantakäyttäjän nimi, jota RadCMS käyttää luodessaan tietokantayhteyden.">Tietokantakäyttäjä</label>
-                <Input2 vm={ this } name="dbUser" id="dbUser"
+                <Input vm={ this } name="dbUser" id="dbUser"
                         validations={ [['required']] }
                         errorLabel="Tietokantakäyttäjä"/>
-                <InputError2 error={ errors.dbUser }/>
-            </InputGroup2>
-            <InputGroup2 classes={ classes.dbPass }>
+                <InputError error={ errors.dbUser }/>
+            </InputGroup>
+            <InputGroup classes={ classes.dbPass }>
                 <label htmlFor="dbPass" data-help-text="Tietokantakäyttäjän salasana, jota RadCMS käyttää luodessaan tietokantayhteyden.">Tietokantakäyttäjän salasana</label>
-                <Input2 vm={ this } name="dbPass" id="dbPass" type="password"/>
-            </InputGroup2>
+                <Input vm={ this } name="dbPass" id="dbPass" type="password"/>
+            </InputGroup>
             <div class="grouped">
-            <InputGroup2 classes={ classes.dbDatabase }>
+            <InputGroup classes={ classes.dbDatabase }>
                 <label htmlFor="dbDatabase" data-help-text="Käytettävän, tai luotavan RadCMS-tietokannan nimi.">Tietokannan nimi</label>
-                <Input2 vm={ this } name="dbDatabase" id="dbDatabase"
+                <Input vm={ this } name="dbDatabase" id="dbDatabase"
                         validations={ [['required']] }
                         errorLabel="Tietokannan nimi"/>
-                <InputError2 error={ errors.dbDatabase }/>
-            </InputGroup2>
-            <InputGroup2 classes={ classes.doCreateDb }>
+                <InputError error={ errors.dbDatabase }/>
+            </InputGroup>
+            <InputGroup classes={ classes.doCreateDb }>
                 <label htmlFor="doCreateDb" data-help-text="Luo tietokanta mikäli sitä ei ole vielä olemassa.">Luo tietokanta</label>
-                <Input2 vm={ this } type="checkbox" id="doCreateDb" name="doCreateDb" defaultChecked={ this.state.values.doCreateDb }/>
-            </InputGroup2>
+                <Input vm={ this } type="checkbox" id="doCreateDb" name="doCreateDb" defaultChecked={ this.state.values.doCreateDb }/>
+            </InputGroup>
             </div>
             <div class="fieldset">
                 <div class="legend">Lisäasetukset</div>
-                <InputGroup2 classes={ classes.dbTablePrefix }>
+                <InputGroup classes={ classes.dbTablePrefix }>
                     <label htmlFor="dbTablePrefix" data-help-text="Prefix, jota käytetään RadCMS:n tietokantataulujen etuliitteenä.">Tietokantataulujen prefix</label>
-                    <Input2 vm={ this } name="dbTablePrefix" id="dbTablePrefix"/>
-                </InputGroup2>
-                <InputGroup2 classes={ classes.dbCharset }>
+                    <Input vm={ this } name="dbTablePrefix" id="dbTablePrefix"/>
+                </InputGroup>
+                <InputGroup classes={ classes.dbCharset }>
                     <label htmlFor="dbCharset">Tietokannan charset</label>
-                    <Select2 vm={ this } name="dbCharset" id="dbCharset">
+                    <Select vm={ this } name="dbCharset" id="dbCharset">
                         { ['utf8'].map(opt =>
                             <option value={ opt }>{ opt }</option>
                         ) }
-                    </Select2>
-                </InputGroup2>
+                    </Select>
+                </InputGroup>
             </div>
             <br/>
             <button onClick={ () => this.props.parent.goBack(0) } class="text-button"
@@ -265,27 +265,27 @@ class UserSettingsTab extends Tab {
     render() {
         const {errors, classes} = this.state;
         return <form onSubmit={ e => this.props.parent.handleSubmit(e, 2) }>
-            <InputGroup2 classes={ classes.firstUserName }>
+            <InputGroup classes={ classes.firstUserName }>
                 <label htmlFor="firstUserName">Käyttäjä</label>
-                <Input2 vm={ this } name="firstUserName" id="firstUserName"
+                <Input vm={ this } name="firstUserName" id="firstUserName"
                         errorLabel="Käyttäjä"
                         validations={ [['required']] }/>
-                <InputError2 error={ errors.firstUserName }/>
-            </InputGroup2>
-            <InputGroup2 classes={ classes.firstUserEmail }>
+                <InputError error={ errors.firstUserName }/>
+            </InputGroup>
+            <InputGroup classes={ classes.firstUserEmail }>
                 <label htmlFor="firstUserEmail">E-mail</label>
-                <Input2 vm={ this } name="firstUserEmail" id="firstUserEmail"
+                <Input vm={ this } name="firstUserEmail" id="firstUserEmail"
                         errorLabel="E-mail"
                         validations={ [['required']] }/>
-                <InputError2 error={ errors.firstUserName }/>
-            </InputGroup2>
-            <InputGroup2 classes={ classes.firstUserPass }>
+                <InputError error={ errors.firstUserName }/>
+            </InputGroup>
+            <InputGroup classes={ classes.firstUserPass }>
                 <label htmlFor="firstUserPass">Salasana</label>
-                <Input2 vm={ this } name="firstUserPass" id="firstUserPass" type="password"
+                <Input vm={ this } name="firstUserPass" id="firstUserPass" type="password"
                         errorLabel="Salasana"
                         validations={ [['required']] }/>
-                <InputError2 error={ errors.firstUserPass }/>
-            </InputGroup2>
+                <InputError error={ errors.firstUserPass }/>
+            </InputGroup>
             <br/>
             <button onClick={ () => this.props.parent.goBack(1) } class="text-button"
                     type="button">&lt; Edellinen</button>

@@ -1,4 +1,4 @@
-import {http, services, urlUtils, hookForm, InputGroup2, Input2, InputError2} from '@rad-commons';
+import {http, services, urlUtils, hookForm, InputGroup, Input, InputError, FormButtons} from '@rad-commons';
 import {translateError} from './commons.js';
 
 class LoginApp extends preact.Component {
@@ -9,7 +9,7 @@ class LoginApp extends preact.Component {
         super(props);
         this.state = Object.assign(
             hookForm(this, {username: '', password: ''}),
-            {message: location.search !== '?from-logout'
+            {message: !location.search.endsWith('?from-logout')
                 ? null
                 : {text: 'Olet nyt kirjautunut ulos.', level: 'info'}}
         );
@@ -25,21 +25,21 @@ class LoginApp extends preact.Component {
                 ? null
                 : <div class={ `container box ${message.level}` }>{ message.text }</div>
             }
-            <InputGroup2 classes={ classes.username }>
+            <InputGroup classes={ classes.username }>
                 <label htmlFor="username">Käyttäjänimi</label>
-                <Input2 vm={ this } name="username" id="username" errorLabel="Käyttäjänimi"
+                <Input vm={ this } name="username" id="username" errorLabel="Käyttäjänimi"
                     validations={ [['required']] }/>
-                <InputError2 error={ errors.username }/>
-            </InputGroup2>
-            <InputGroup2 classes={ classes.password }>
+                <InputError error={ errors.username }/>
+            </InputGroup>
+            <InputGroup classes={ classes.password }>
                 <label htmlFor="password">Salasana</label>
-                <Input2 vm={ this } name="password" id="password" errorLabel="Salasana"
+                <Input vm={ this } name="password" id="password" errorLabel="Salasana"
                        validations={ [['required']] } type="password"/>
-                <InputError2 error={ errors.password }/>
-            </InputGroup2>
-            <div class="form-buttons">
-                <button class="nice-button" type="submit">Kirjaudu</button>
-            </div>
+                <InputError error={ errors.password }/>
+            </InputGroup>
+            <FormButtons
+                buttons={ ['submit'] }
+                submitButtonText="Kirjaudu"/>
             <div>
                 <a href={ urlUtils.makeUrl('/request-password-reset') }>Unohtuiko salasana?</a>
             </div>

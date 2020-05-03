@@ -1,4 +1,4 @@
-import {http, config, toasters, urlUtils, View, FeatherSvg, InputGroup2, FormButtons} from '@rad-commons';
+import {http, config, toasters, urlUtils, View, FeatherSvg, InputGroup, FormButtons} from '@rad-commons';
 import {contentFormRegister} from '@rad-cpanel-commons';
 import openDeleteContentDialog from './ContentDeleteDialog.jsx';
 import getWidgetImpl from './FieldWidgets/all-with-multi.js';
@@ -87,11 +87,11 @@ class ContentEditView extends preact.Component {
                 } }
                 getWidgetImpl={ getWidgetImpl }/>
             { this.contentNode.isRevision && !this.props.publish
-                ? <InputGroup2 inline>
+                ? <InputGroup inline>
                     <label htmlFor="doPublish">Julkaise</label>
                     <input id="doPublish" type="checkbox" defaultChecked={ this.state.doPublish }
                            onChange={ e => this.setState({doPublish: e.target.checked}) }/>
-                </InputGroup2>
+                </InputGroup>
                 : null }
             <FormButtons
                 submitButtonText={ this.submitButtonText }

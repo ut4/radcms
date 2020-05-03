@@ -1,4 +1,4 @@
-import {http, urlUtils, hookForm, InputGroup2, Input2, InputError2} from '@rad-commons';
+import {http, urlUtils, hookForm, InputGroup, Input, InputError, FormButtons} from '@rad-commons';
 import {translateError} from './commons.js';
 
 class RequestPassResetApp extends preact.Component {
@@ -14,8 +14,7 @@ class RequestPassResetApp extends preact.Component {
      * @access protected
      */
     render() {
-        return <form onSubmit={ e => this.handleSubmit(e) } buttons={ ['submit'] }
-                    submitButtonText="Lähetä palautuslinkki">
+        return <form onSubmit={ e => this.handleSubmit(e) }>
             <img src={ urlUtils.makeAssetUrl('frontend/assets/logo.png') }/>
             <div class="container box info">
                 Täytä sähköpostiosoitteesi tai käyttäjätunnuksesi alle, niin lähetämme salasanan palautuslinkin sähköpostilla.
@@ -24,12 +23,15 @@ class RequestPassResetApp extends preact.Component {
                 ? null
                 : <div class={ `container box ${this.state.message.level}` }>{ this.state.message.text }</div>
             }
-            <InputGroup2 classes={ this.state.classes.usernameOrEmail }>
+            <InputGroup classes={ this.state.classes.usernameOrEmail }>
                 <label htmlFor="usernameOrEmail">Email tai käyttäjänimi</label>
-                <Input2 vm={ this } name="usernameOrEmail" id="usernameOrEmail"
+                <Input vm={ this } name="usernameOrEmail" id="usernameOrEmail"
                     errorLabel="Email tai käyttäjänimi" validations={ [['required']] }/>
-                <InputError2 error={ this.state.errors.usernameOrEmail }/>
-            </InputGroup2>
+                <InputError error={ this.state.errors.usernameOrEmail }/>
+            </InputGroup>
+            <FormButtons
+                buttons={ ['submit'] }
+                submitButtonText="Lähetä palautuslinkki"/>
         </form>;
     }
     /**

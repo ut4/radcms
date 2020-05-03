@@ -1,4 +1,4 @@
-import {http, urlUtils, hookForm, InputGroup2, Input2, InputError2, FormButtons} from '@rad-commons';
+import {http, urlUtils, hookForm, InputGroup, Input, InputError, FormButtons} from '@rad-commons';
 import {translateError} from './commons.js';
 
 class FinalizePassResetApp extends preact.Component {
@@ -22,19 +22,19 @@ class FinalizePassResetApp extends preact.Component {
                 ? null
                 : <div class={ `container box ${this.state.message.level}` }>{ this.state.message.text }</div>
             }
-            <InputGroup2 classes={ this.state.classes.newPassword }>
+            <InputGroup classes={ this.state.classes.newPassword }>
                 <label htmlFor="newPassword">Uusi salasana</label>
-                <Input2 vm={ this } name="newPassword" id="newPassword" errorLabel="Uusi salasana"
+                <Input vm={ this } name="newPassword" id="newPassword" errorLabel="Uusi salasana"
                        type="password"
                        validations={ [['required']] }/>
-                <InputError2 error={ this.state.errors.newPassword }/>
-            </InputGroup2>
-            <InputGroup2 classes={ this.state.classes.email }>
+                <InputError error={ this.state.errors.newPassword }/>
+            </InputGroup>
+            <InputGroup classes={ this.state.classes.email }>
                 <label htmlFor="email">Email</label>
-                <Input2 vm={ this } name="email" id="email" errorLabel="Email"
+                <Input vm={ this } name="email" id="email" errorLabel="Email"
                        validations={ [['required']] }/>
-                <InputError2 error={ this.state.errors.email }/>
-            </InputGroup2>
+                <InputError error={ this.state.errors.email }/>
+            </InputGroup>
             <FormButtons
                 buttons={ ['submit'] }
                 submitButtonText="Tallenna uusi salasana"/>

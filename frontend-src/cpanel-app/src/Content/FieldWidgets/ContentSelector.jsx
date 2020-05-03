@@ -1,4 +1,4 @@
-import {http, hookForm, InputGroup2, Select2} from '@rad-commons';
+import {http, hookForm, InputGroup, Select} from '@rad-commons';
 import BaseFieldWidget from './Base.jsx';
 
 class ContentSelectorFieldWidget extends BaseFieldWidget {
@@ -46,16 +46,16 @@ class ContentSelectorFieldWidget extends BaseFieldWidget {
      * @access protected
      */
     render() {
-        return <InputGroup2 classes={ this.state.classes[this.fieldName] }>
+        return <InputGroup classes={ this.state.classes[this.fieldName] }>
             <label htmlFor={ this.fieldName }>{ this.label }</label>
-            <Select2 vm={ this } name={ this.fieldName } id={ this.fieldName }
+            <Select vm={ this } name={ this.fieldName } id={ this.fieldName }
                      myOnChange={ newState => this.receiveSelection(newState) }>
                 <option value=""> - </option>
                 { this.state.options.map((value, i) => <option value={ value }>
                     { this.contentNodes[i][this.labelField] }
                 </option>) }
-            </Select2>
-        </InputGroup2>;
+            </Select>
+        </InputGroup>;
     }
     /**
      * @access private

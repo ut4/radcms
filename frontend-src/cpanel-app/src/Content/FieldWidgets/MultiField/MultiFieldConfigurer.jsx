@@ -1,4 +1,4 @@
-import {hookForm, InputGroup2, Input2, Select2, InputError2, FormConfirmation, Confirmation, FeatherSvg} from '@rad-commons';
+import {hookForm, InputGroup, Input, Select, InputError, FormConfirmation, Confirmation, FeatherSvg} from '@rad-commons';
 import popupDialog from '../../../Common/PopupDialog.jsx';
 import {widgetTypes} from '../all.js';
 
@@ -82,19 +82,19 @@ class MultiFieldFieldEditDialog extends preact.Component {
                 confirmButtonText="Tallenna">
             <h2>Muokkaa kenttää</h2>
             <div class="main">
-                <InputGroup2 classes={ classes.fieldName }>
+                <InputGroup classes={ classes.fieldName }>
                     <label htmlFor="fieldName">Nimi</label>
-                    <Input2 vm={ this } name="fieldName" id="fieldName"
+                    <Input vm={ this } name="fieldName" id="fieldName"
                         validations={ [['required']] }
                         errorLabel="Nimi"/>
-                    <InputError2 error={ errors.fieldName }/>
-                </InputGroup2>
-                <InputGroup2>
+                    <InputError error={ errors.fieldName }/>
+                </InputGroup>
+                <InputGroup>
                     <label>Widgetti</label>
-                    <Select2 vm={ this } name="widgetName">{ widgetTypes.map(w =>
+                    <Select vm={ this } name="widgetName">{ widgetTypes.map(w =>
                         <option value={ w.name }>{ w.friendlyName }</option>
-                    ) }</Select2>
-                </InputGroup2>
+                    ) }</Select>
+                </InputGroup>
             </div>
             </FormConfirmation>
         </div></div>;
