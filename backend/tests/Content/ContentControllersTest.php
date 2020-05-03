@@ -9,33 +9,39 @@ use Pike\Request;
 use RadCms\ContentType\ContentTypeCollection;
 use RadCms\ContentType\ContentTypeMigrator;
 use Pike\Response;
+use RadCms\Content\DAO;
 
 final class ContentControllersTest extends DbTestCase {
     use HttpTestUtils;
     use ContentTestUtils;
+    private const PRODUCT_ID = 1;
+    private const BRAND_ID = 1;
     private static $testContentTypes;
     private static $migrator;
     private $app;
-    public static function setUpBeforeClass() {
+    public static function setUpBeforeClass(): void {
         self::$testContentTypes = new ContentTypeCollection();
-        self::$testContentTypes->add('Products', 'Tuotteet', ['title' => 'text']);
-        self::$testContentTypes->add('Brands', 'Tuotemerkit', ['name' => 'text']);
+        self::$testContentTypes->add('Products', 'Tuotteet', [
+            (object) ['name' => 'title', 'dataType' => 'text']
+        ]);
+        self::$testContentTypes->add('Brands', 'Tuotemerkit', [
+            (object) ['name' => 'name', 'dataType' => 'text']
+        ]);
         self::$migrator = new ContentTypeMigrator(self::getDb());
         // @allow \Pike\PikeException
         self::$migrator->installMany(self::$testContentTypes);
     }
-    public static function tearDownAfterClass() {
+    public static function tearDownAfterClass(): void {
         parent::tearDownAfterClass();
         // @allow \Pike\PikeException
         self::$migrator->uninstallMany(self::$testContentTypes);
         self::clearInstalledContentTypesFromDb();
-        self::$db->exec('DELETE FROM ${p}contentRevisions');
     }
-    protected function setUp() {
+    protected function setUp(): void {
         parent::setUp();
         $this->app = $this->makeApp('\RadCms\App::create', $this->getAppConfig());
     }
-    public function tearDown() {
+    public function tearDown(): void {
         $this->deleteAllTestProducts();
     }
     public function testPOSTContentCreatesContentNode() {
@@ -83,12 +89,23 @@ final class ContentControllersTest extends DbTestCase {
         $this->verifyContentNodeWasInsertedToDb($s);
         $this->verifyRevisionWasInsertedToDb($s);
     }
-    private function verifyRevisionWasInsertedToDb($s) {
-        $this->assertEquals(json_encode(['title' => $s->newProduct->title]), self::$db->fetchOne(
-            'SELECT `revisionSnapshot` FROM ${p}contentRevisions WHERE `contentId` = ?' .
-            ' AND `contentType` = ?',
-            [$s->actualResponseParsed->lastInsertId, 'Products']
+    private function verifyRevisionWasInsertedToDb($s, $from = 'from-insert') {
+        if ($from === 'from-insert')
+            $this->verifyRevisionSnapshotEquals($s->newProduct,
+                                                $s->actualResponseParsed->lastInsertId,
+                                                'Products');
+        else
+            $this->verifyRevisionSnapshotEquals($s->newData,
+                                                self::PRODUCT_ID,
+                                                'Products');
+    }
+    private function verifyRevisionSnapshotEquals($expected, $cNodeId, $cTypeName) {
+        $actual = json_decode(self::$db->fetchOne(
+            'SELECT `revisionSnapshot` FROM ${p}contentRevisions' .
+            ' WHERE `contentId` = ? AND `contentType` = ?',
+            [$cNodeId, $cTypeName]
         )['revisionSnapshot']);
+        $this->assertEquals($expected->title, $actual->title);
     }
 
 
@@ -99,8 +116,8 @@ final class ContentControllersTest extends DbTestCase {
         $s = $this->setupGetContentTest();
         $this->insertTestProduct();
         $this->sendGetContentNodeRequest($s);
-        $this->assertEquals('{"id":"1"' .
-                            ',"isPublished":true' .
+        $this->assertEquals('{"id":"' . self::PRODUCT_ID . '"' .
+                            ',"status":' . DAO::STATUS_PUBLISHED .
                             ',"title":"Tuotteen nimi"' .
                             ',"contentType":"Products"' .
                             ',"revisionCreatedAt":null' .
@@ -113,7 +130,7 @@ final class ContentControllersTest extends DbTestCase {
         ];
     }
     private function sendGetContentNodeRequest($s) {
-        $req = new Request('/api/content/1/Products', 'GET');
+        $req = new Request('/api/content/' . self::PRODUCT_ID . '/Products', 'GET');
         $res = $this->createMock(Response::class);
         $this->sendResponseBodyCapturingRequest($req, $res, $this->app, $s);
     }
@@ -127,8 +144,8 @@ final class ContentControllersTest extends DbTestCase {
         $this->insertTestProduct();
         $this->insertTestBrand();
         $this->sendGetContentNodesByTypeRequest($s);
-        $this->assertEquals('[{"id":"1"' .
-                            ',"isPublished":true' .
+        $this->assertEquals('[{"id":"' . self::BRAND_ID . '"' .
+                            ',"status":' . DAO::STATUS_PUBLISHED .
                             ',"name":"Tuotemerkin nimi"' .
                             ',"contentType":"Brands"' .
                             ',"revisionCreatedAt":null' .
@@ -159,18 +176,17 @@ final class ContentControllersTest extends DbTestCase {
         return $s;
     }
     private function sendUpdateContentNodeRequest($s, $urlTail = '') {
-        $req = new Request("/api/content/1/Products{$urlTail}",
+        $req = new Request("/api/content/" . self::PRODUCT_ID . "/Products{$urlTail}",
                            'PUT',
                            $s->newData);
         $res = $this->createMock(Response::class);
         $this->sendResponseBodyCapturingRequest($req, $res, $this->app, $s);
     }
-    private function verifyContentNodeWasUpdatedToDb($s, $isPublished = false) {
-        $row = self::$db->fetchOne(
-            'SELECT `title`, `isPublished` FROM ${p}Products WHERE `id` = 1'
-        ) ?? [];
-        $this->assertEquals($s->newData->title, $row['title']);
-        $this->assertEquals((int)$isPublished, $row['isPublished']);
+    private function verifyContentNodeWasUpdatedToDb($s) {
+        $this->verifyContentNodeFromDbEquals((object) array_merge(
+            (array) $s->newData,
+            ['status' => DAO::STATUS_PUBLISHED]
+        ));
     }
 
 
@@ -180,7 +196,7 @@ final class ContentControllersTest extends DbTestCase {
     public function testPUTContentUpdatesRevision() {
         $s = $this->setupUpdateRevisionTest();
         $this->insertTestProduct();
-        $this->insertRevision(1, 'Products');
+        $this->insertRevision(self::PRODUCT_ID, 'Products');
         $this->sendUpdateContentNodeRequest($s);
         $this->assertEquals('{"numAffectedRows":1}', $s->actualResponseBody);
         $this->verifyRevisionWasUpdatedToDb($s);
@@ -193,13 +209,7 @@ final class ContentControllersTest extends DbTestCase {
         return $s;
     }
     private function verifyRevisionWasUpdatedToDb($s) {
-        $expectedSnapshot = json_encode(['title' => $s->newData->title],
-                                        JSON_UNESCAPED_UNICODE);
-        $this->assertEquals($expectedSnapshot, self::$db->fetchOne(
-            'SELECT `revisionSnapshot` FROM ${p}contentRevisions' .
-            ' WHERE `contentId` = 1 AND `contentType` = ?',
-            ['Products']
-        )['revisionSnapshot']);
+        $this->verifyRevisionSnapshotEquals($s->newData, self::PRODUCT_ID, 'Products');
     }
 
 
@@ -208,12 +218,12 @@ final class ContentControllersTest extends DbTestCase {
 
     public function testPUTContentPublishesContent() {
         $s = $this->setupPublishContentTest();
-        $this->insertTestProduct(false);
-        $this->insertRevision(1, 'Products');
+        $this->insertTestProduct(DAO::STATUS_DRAFT);
+        $this->insertRevision(self::PRODUCT_ID, 'Products');
         $this->sendUpdateContentNodeRequest($s, '/publish');
         $this->assertEquals('{"numAffectedRows":2}', $s->actualResponseBody);
         $this->verifyRevisionWasDeletedFromDb($s);
-        $this->verifyContentNodeWasUpdatedToDb($s, true);
+        $this->verifyContentNodeWasUpdatedToDb($s);
         $this->deleteAllRevisions();
     }
     private function setupPublishContentTest() {
@@ -225,15 +235,66 @@ final class ContentControllersTest extends DbTestCase {
     private function verifyRevisionWasDeletedFromDb($s) {
         $this->assertEquals(null, self::$db->fetchOne(
             'SELECT `revisionSnapshot` FROM ${p}contentRevisions' .
-            ' WHERE `contentId` = 1 AND `contentType` = ?',
-            ['Products']
+            ' WHERE `contentId` = ? AND `contentType` = ?',
+            [self::PRODUCT_ID, 'Products']
         ));
     }
-    private function insertTestProduct($isPublished = true) {
-        $this->insertContent('Products', [['Tuotteen nimi'], [1, $isPublished]]);
+
+
+    ////////////////////////////////////////////////////////////////////////////
+
+
+    public function testPUTContentUnpublishesContent() {
+        $s = $this->setupUnpublishContentTest();
+        $this->insertTestProduct();
+        $this->sendUpdateContentNodeRequest($s, '/unpublish');
+        $this->assertEquals('{"numAffectedRows":2}', $s->actualResponseBody);
+        $this->verifyRevisionWasInsertedToDb($s, 'from-update');
+        $this->verifyContentNodeWasUpdatedToDb($s);
+        $this->deleteAllRevisions();
+    }
+    private function setupUnpublishContentTest() {
+        $s = $this->setupUpdateContentTest();
+        $s->newData->title .= 4;
+        return $s;
+    }
+
+
+    ////////////////////////////////////////////////////////////////////////////
+
+
+    public function testDELETEContentMarksContentNodeAsDeleted() {
+        $s = $this->setupGetContentTest();
+        $this->insertTestProduct();
+        $this->sendDeleteContentNodeRequest($s);
+        $this->verifyContentNodeWasMarkedAsDeletedToDb($s);
+        $this->assertEquals('{"numAffectedRows":1}', $s->actualResponseBody);
+    }
+    private function sendDeleteContentNodeRequest($s) {
+        $req = new Request('/api/content/' . self::PRODUCT_ID . '/Products', 'DELETE');
+        $res = $this->createMock(Response::class);
+        $this->sendResponseBodyCapturingRequest($req, $res, $this->app, $s);
+    }
+    private function verifyContentNodeWasMarkedAsDeletedToDb($s) {
+        $this->verifyContentNodeFromDbEquals((object) ['title' => 'Tuotteen nimi',
+                                                       'status' => DAO::STATUS_DELETED]);
+    }
+    private function verifyContentNodeFromDbEquals($expected) {
+        $row = self::$db->fetchOne(
+            'SELECT `title`, `status` FROM ${p}Products WHERE `id` = ?',
+            [self::PRODUCT_ID]
+        ) ?? [];
+        $this->assertEquals($expected->title, $row['title']);
+        $this->assertEquals($expected->status, $row['status']);
+    }
+    private function insertTestProduct($status = DAO::STATUS_PUBLISHED) {
+        $this->insertContent('Products', ['id' => self::PRODUCT_ID,
+                                          'status' => $status,
+                                          'title' => 'Tuotteen nimi']);
     }
     private function insertTestBrand() {
-        $this->insertContent('Brands', [['Tuotemerkin nimi'], [1]]);
+        $this->insertContent('Brands', ['id' => self::BRAND_ID,
+                                        'name' => 'Tuotemerkin nimi']);
     }
     private function deleteAllTestProducts() {
         $this->deleteContent('Products');

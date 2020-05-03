@@ -2,27 +2,30 @@
 
 namespace RadCms\Plugin;
 
+use Pike\PikeException;
+
 class Plugin {
-    public $impl;
     public $name;
-    public $classPath;
     public $isInstalled;
     /**
-     * @param string $name // Same as "PluginName.php" minus ".php"
-     * @param string $classPath <base>/plugins/<PluginName>/<PluginName>.php
+     * @param string $name "PluginName.php" minus ".php"
      */
-    public function __construct($name, $classPath) {
-        $this->impl = null;
+    public function __construct($name) {
         $this->name = $name;
-        $this->classPath = $classPath;
         $this->isInstalled = false;
     }
     /**
      * @return \RadCms\Plugin\PluginInterface
+     * @throws \Pike\PikeException
      */
     public function instantiate() {
-        $Ctor = $this->classPath;
-        $this->impl = new $Ctor();
-        return $this->impl;
+        $Ctor = "RadPlugins\\{$this->name}\\{$this->name}";
+        if (!class_exists($Ctor))
+            throw new PikeException("Main plugin class \"{$Ctor}\" missing",
+                                    PikeException::BAD_INPUT);
+        if (!array_key_exists(PluginInterface::class, class_implements($Ctor, false)))
+            throw new PikeException("A plugin (\"{$Ctor}\") must implement RadCms\Plugin\PluginInterface",
+                                    PikeException::BAD_INPUT);
+        return new $Ctor();
     }
 }

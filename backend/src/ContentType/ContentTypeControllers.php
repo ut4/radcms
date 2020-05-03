@@ -1,11 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RadCms\ContentType;
 
 use Pike\Request;
 use Pike\Response;
 use Pike\Validation;
 use Pike\ArrayUtils;
+use Pike\ObjectValidator;
 use RadCms\CmsState;
 use Pike\PikeException;
 
@@ -22,7 +25,7 @@ class ContentTypeControllers {
      */
     public function handleCreateContentType(Request $req,
                                             Response $res,
-                                            ContentTypeMigrator $migrator) {
+                                            ContentTypeMigrator $migrator): void {
         if (($errors = $this->validateInsertInput($req->body))) {
             $res->status(400)->json($errors);
             return;
@@ -40,7 +43,7 @@ class ContentTypeControllers {
      */
     public function handleGetContentType(Request $req,
                                          Response $res,
-                                         CmsState $cmsState) {
+                                         CmsState $cmsState): void {
         // @allow \Pike\PikeException
         $contentType = self::getContentTypeOrThrow($req->params->name, $cmsState);
         if ($contentType) $res->json($contentType);
@@ -55,7 +58,7 @@ class ContentTypeControllers {
      */
     public function handleGetContentTypes(Request $req,
                                           Response $res,
-                                          CmsState $cmsState) {
+                                          CmsState $cmsState): void {
         $filter = $req->params->filter ?? '';
         $res->json($filter !== 'no-internals'
             ? $cmsState->getContentTypes()->getArrayCopy()
@@ -75,7 +78,7 @@ class ContentTypeControllers {
     public function handleUpdateContentType(Request $req,
                                             Response $res,
                                             ContentTypeMigrator $migrator,
-                                            CmsState $cmsState) {
+                                            CmsState $cmsState): void {
         if (($errors = $this->validateUpdateInput($req->body))) {
             $res->status(400)->json($errors);
             return;
@@ -105,7 +108,7 @@ class ContentTypeControllers {
     public function handleDeleteContentType(Request $req,
                                             Response $res,
                                             ContentTypeMigrator $migrator,
-                                            CmsState $cmsState) {
+                                            CmsState $cmsState): void {
         // @allow \Pike\PikeException
         $contentType = self::getContentTypeOrThrow($req->params->contentTypeName,
                                                    $cmsState);
@@ -125,7 +128,7 @@ class ContentTypeControllers {
     public function handleAddFieldToContentType(Request $req,
                                                 Response $res,
                                                 ContentTypeMigrator $migrator,
-                                                CmsState $cmsState) {
+                                                CmsState $cmsState): void {
         if (($errors = $this->validateAddFieldInput($req->body))) {
             $res->status(400)->json($errors);
             return;
@@ -149,7 +152,7 @@ class ContentTypeControllers {
     public function handleUpdateFieldOfContentType(Request $req,
                                                    Response $res,
                                                    ContentTypeMigrator $migrator,
-                                                   CmsState $cmsState) {
+                                                   CmsState $cmsState): void {
         if (($errors = $this->validateAddFieldInput($req->body))) {
             $res->status(400)->json($errors);
             return;
@@ -177,7 +180,7 @@ class ContentTypeControllers {
     public function handleDeleteFieldFromContentType(Request $req,
                                                      Response $res,
                                                      ContentTypeMigrator $migrator,
-                                                     CmsState $cmsState) {
+                                                     CmsState $cmsState): void {
         // @allow \Pike\PikeException
         $contentType = self::getContentTypeOrThrow($req->params->contentTypeName,
                                                    $cmsState);
@@ -190,7 +193,7 @@ class ContentTypeControllers {
     /**
      * @return string[]
      */
-    private static function validateInsertInput($input) {
+    private static function validateInsertInput(\stdClass $input): array {
         return self::getBaseValidationRules()
             ->rule('fields.*.name', 'identifier')
             ->rule('fields.*.friendlyName', 'minLength', 1)
@@ -204,14 +207,14 @@ class ContentTypeControllers {
     /**
      * @return string[]
      */
-    private static function validateUpdateInput($input) {
+    private static function validateUpdateInput(\stdClass $input): array {
         return self::getBaseValidationRules()
             ->validate($input);
     }
     /**
      * @return string[]
      */
-    private static function validateAddFieldInput($input) {
+    private static function validateAddFieldInput(\stdClass $input): array {
         return (Validation::makeObjectValidator())
             ->rule('name', 'identifier')
             ->rule('friendlyName', 'minLength', 1)
@@ -225,7 +228,7 @@ class ContentTypeControllers {
     /**
      * @return \Pike\Validation\ObjectValidator
      */
-    private static function getBaseValidationRules() {
+    private static function getBaseValidationRules(): ObjectValidator {
         return (Validation::makeObjectValidator())
             ->rule('name', 'identifier')
             ->rule('name', 'maxLength', ContentTypeValidator::MAX_NAME_LEN)
@@ -236,7 +239,8 @@ class ContentTypeControllers {
     /**
      * @return \RadCms\ContentType\ContentTypeDef
      */
-    private static function getContentTypeOrThrow($name, CmsState $from) {
+    private static function getContentTypeOrThrow(string $name,
+                                                  CmsState $from): ContentTypeDef {
         if (($contentType = ArrayUtils::findByKey($from->getContentTypes(),
                                                   $name,
                                                   'name')))
@@ -246,7 +250,8 @@ class ContentTypeControllers {
     /**
      * @return \RadCms\ContentType\FieldDef
      */
-    private static function getFieldOrThrow($name, ContentTypeDef $from) {
+    private static function getFieldOrThrow(string $name,
+                                            ContentTypeDef $from): FieldDef {
         if (($field = ArrayUtils::findByKey($from->fields, $name, 'name')))
             return $field;
         throw new PikeException('Field not found.', PikeException::BAD_INPUT);

@@ -114,9 +114,6 @@ section.quick-links .icon-button .feather {
 .section-row a:first-of-type {
     margin-top: 0;
 }
-.section-row a:last-child {
-    margin-bottom: 0;
-}
 
 .section-row > div {
     font-size: inherit;
@@ -124,20 +121,23 @@ section.quick-links .icon-button .feather {
     color: rgba(255,255,255,0.8);
     margin-left: -10px;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
 }
 .section-row > div:hover {
     background-color: rgba(0,0,0,0.18);
 }
 .section-row > div > a {
-    padding: 12px 10px;
+    padding: 12px 3px 12px 10px;
     margin: 0;
     flex: 1;
     color: inherit;
     font-size: 14px;
     line-height: 14px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
 }
-.section-row > div .feather {
+.section-row > div a .feather {
     float: left;
     width: 17px;
     height: 17px;
@@ -145,10 +145,18 @@ section.quick-links .icon-button .feather {
     padding-right: 10px;
     stroke: rgba(255,255,255,0.5);
 }
-.section-row > div i {
+.section-row > div .note {
+    font-size: 10px;
+    margin-left: 2px;
+    vertical-align: top;
+}
+.section-row > div .subtitle {
     font-size: 11px;
-    display: block;
     color: rgba(255,255,255,0.4);
+}
+.section-row > div .subtitle:before {
+    content: ' ';
+    display: block;
 }
 .section-row > div button {
     width: 28px;
@@ -157,6 +165,7 @@ section.quick-links .icon-button .feather {
     border: none;
     padding: 2px 12px 2px 2px;
     flex: initial;
+    margin-top: 5px;
 }
 .section-row > div button .feather {
     stroke: rgba(255,255,255,0.2);
@@ -198,8 +207,12 @@ section.quick-links .icon-button .feather {
     margin-top: 0;
     display: none;
 }
-.section-row .sub-nav .content {
+.section-row .sub-nav h3 + div > * {
     margin-bottom: 8px;
+}
+.section-row .sub-nav h3 + div > *:last-child,
+.section-row .sub-nav > div > *:last-child {
+    margin-bottom: 0;
 }
 .section-row .sub-nav a:hover {
     color: rgba(255,255,255,0.5);
@@ -265,9 +278,14 @@ section.quick-links .icon-button .feather {
 /* -- Components: Toaster ---- */
 .toaster {
     position: fixed;
-    width: calc(100% - 8px);
+    width: calc(100% - 168px);
     margin: 4px;
     z-index: 1;
+    left: 160px;
+}
+.collapsed .toaster {
+    width: calc(100% - 50px);
+    left: 42px;
 }
 .toaster-message:not(:only-of-type):not(:last-of-type) {
     margin-bottom: 4px;
@@ -290,20 +308,14 @@ section.quick-links .icon-button .feather {
 
 
 /* -- Components: Selectable item grid ---- */
-.item-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 5px;
-}
 .item-grid .full-width {
     grid-column: 1 / -1;
 }
 .item-grid > button {
     border: none;
-    padding: 5px;
+    padding: 12px 24px;
     border-radius: 2px;
     cursor: pointer;
-    margin-bottom: 21px;
     position: relative;
     background-color: rgba(0,0,0,0.05);
 }
@@ -311,14 +323,17 @@ section.quick-links .icon-button .feather {
     background-color: rgba(0,0,0,0.08);
 }
 
-.image-grid > button:after {
-    content: attr(data-caption);
-    position: absolute;
-    left: 0;
-    bottom: -24px;
+.image-grid > button {
+    padding-bottom: 24px;
 }
 .image-grid > button.selected {
     border: 2px solid #37c1ff;
+}
+.image-grid > button .caption {
+    position: absolute;
+    bottom: 8px;
+    width: 100%;
+    left: 0;
 }
 .image-grid img {
     width: 100%;
@@ -380,7 +395,7 @@ table.pika-time {
 
 /* -- Components: .list ---- */
 .list.fields {
-    background-color: rgba(0, 0, 0, 0.04);
+    background-color: rgba(0,0,0,0.04);
     border-radius: 2px;
     padding: 18px 12px 8px 12px;
     margin-top: 8px;
@@ -409,10 +424,31 @@ table.pika-time {
 .disallow-edit .fields .buttons {
     display: none;
 }
+.buttons > button:first-child {
+    margin-right: 4px;
+}
+
+
+/* -- Components: MultiFieldConfigurer ---- */
+.multi-fields.configurable {
+    border-left: 2px solid #2dccc3;
+    padding-left: 10px;
+}
+.multi-fields.configurable .input-group:first-of-type {
+    margin-top: 7px;
+}
+.multi-field-configurer {
+    background-color: #fbfbff;
+    padding: 14px 10px;
+    border: 1px dashed #ccc;
+    border-radius: 2px;
+    margin: 4px 0 18px;
+}
+
 
 /* == Form extensions ======================================================= */
 .form-buttons a {
-    margin-left: 20px;
+    margin-left: 4px;
     text-decoration: none;
     color: inherit;
 }

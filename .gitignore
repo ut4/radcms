@@ -2,7 +2,8 @@ frontend/*.js
 out/
 internal/
 target/
-theme/
+site/
+!backend/**/site
 translations/
 uploads/
 backend/vendor
@@ -13,3 +14,4 @@ duk_source_meta.json
 node_modules
 package-lock.json
 installer.phar
+.DS_Store

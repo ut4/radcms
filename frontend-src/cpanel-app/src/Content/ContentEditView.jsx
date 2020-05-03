@@ -1,8 +1,12 @@
-import {http, toasters, urlUtils, View, Form, InputGroup} from '@rad-commons';
-import ContentNodeFieldList from './ContentNodeFieldList.jsx';
+import {http, config, toasters, urlUtils, View, FeatherSvg, InputGroup, FormButtons} from '@rad-commons';
+import {contentFormRegister} from '@rad-cpanel-commons';
+import openDeleteContentDialog from './ContentDeleteDialog.jsx';
+import getWidgetImpl from './FieldWidgets/all-with-multi.js';
+import {filterByUserRole} from '../ContentType/FieldList.jsx';
+import {Status} from './ContentAddView.jsx';
 
 /**
- * #/edit-content/:id/:contentTypeName/:publish?
+ * #/edit-content/:id/:contentTypeName/:formImpl/:publish?
  */
 class ContentEditView extends preact.Component {
     /**
@@ -10,38 +14,44 @@ class ContentEditView extends preact.Component {
      */
     constructor(props) {
         super(props);
+        this.contentNode = null;
+        this.contentType = null;
         this.state = {
-            contentNode: null,
-            contentType: null,
             doPublish: false,
+            contentNodeFetched: false,
+            contentTypeFetched: false,
         };
-        this.updateState(this.props);
+        this.fetchContentAndUpdateState(this.props);
     }
     /**
      * @access protected
      */
     componentWillReceiveProps(props) {
         if (props.id !== this.props.id)
-            this.updateState(props);
+            this.fetchContentAndUpdateState(props);
     }
     /**
      * @access private
      */
-    updateState(props) {
-        const newState = {contentNode: null, contentType: null, doPublish: !!props.publish};
+    fetchContentAndUpdateState(props) {
+        const newState = {contentNodeFetched: false,
+                          contentTypeFetched: false,
+                          doPublish: !!props.publish};
         this.title = 'Muokkaa sisältöä';
-        this.confirmButtonText = 'Tallenna';
+        this.submitButtonText = 'Tallenna';
         if (newState.doPublish) {
             this.title = 'Julkaise sisältöä';
-            this.confirmButtonText = 'Julkaise';
+            this.submitButtonText = 'Julkaise';
         }
         http.get(`/api/content/${props.id}/${props.contentTypeName}`)
             .then(cnode => {
-                newState.contentNode = cnode;
+                this.contentNode = cnode;
+                newState.contentNodeFetched = true;
                 return http.get('/api/content-types/' + props.contentTypeName);
             })
             .then(ctype => {
-                newState.contentType = ctype;
+                this.contentType = ctype;
+                newState.contentTypeFetched = true;
             })
             .catch(() => {
                 toasters.main('Jokin meni pieleen', 'error');
@@ -54,39 +64,75 @@ class ContentEditView extends preact.Component {
      * @access protected
      */
     render() {
-        if (!this.state.contentType) return null;
-        const showPublishToggle = !this.props.publish && this.state.contentNode.isRevision;
-        return <View><Form onConfirm={ () => this.handleFormSubmit() }
-                           confirmButtonText={ this.confirmButtonText }>
-            <h2>{ [this.title, showPublishToggle ? <sup> (Luonnos)</sup> : null] }</h2>
-            <ContentNodeFieldList contentNode={ this.state.contentNode }
-                                  contentType={ this.state.contentType }
-                                  ref={ cmp => { if (cmp) this.fieldListCmp = cmp; } }
-                                  key={ this.state.contentNode.id }/>
-            { showPublishToggle
-                ? <InputGroup label="Julkaise" inline={ true }>
-                    <input id="i-publish" type="checkbox" defaultChecked={ true }
+        if (!this.state.contentNodeFetched || !this.state.contentTypeFetched) return null;
+        const FormImpl = contentFormRegister.getImpl(this.props.formImpl);
+        return <View><form onSubmit={ e => this.handleFormSubmit(e) }>
+            <h2>{ [
+                this.title,
+                this.contentNode.isRevision && !this.props.publish
+                    ? <sup> (Luonnos)</sup>
+                    : null,
+                config.userPermissions.canDeleteContent
+                    ? <button onClick={ () => openDeleteContentDialog(this.contentNode) }
+                            class="icon-button" title="Poista" type="button">
+                        <FeatherSvg iconId="trash-2" className="medium"/>
+                    </button>
+                    : null
+            ] }</h2>
+            <FormImpl
+                fields={ filterByUserRole(this.contentType.fields) }
+                contentNode={ this.contentNode }
+                setContentNodeValue={ (value, fieldName) => {
+                    this.contentNode[fieldName] = value;
+                } }
+                getWidgetImpl={ getWidgetImpl }/>
+            { this.contentNode.isRevision && !this.props.publish
+                ? <InputGroup inline>
+                    <label htmlFor="doPublish">Julkaise</label>
+                    <input id="doPublish" type="checkbox" defaultChecked={ this.state.doPublish }
                            onChange={ e => this.setState({doPublish: e.target.checked}) }/>
                 </InputGroup>
                 : null }
-        </Form></View>;
+            <FormButtons
+                submitButtonText={ this.submitButtonText }
+                buttons={ [
+                    'submit',
+                    !this.contentNode.isRevision
+                        ? <button onClick={ e => this.switchToDraft(e) } class="nice-button" type="button">
+                            Vaihda luonnokseen
+                        </button>
+                        : null,
+                    'cancel'
+                ] }/>
+        </form></View>;
     }
     /**
      * @access private
      */
-    handleFormSubmit() {
-        const revisionSettings = !this.state.doPublish ? '' : '/publish';
+    handleFormSubmit(e, revisionSettings = null) {
+        e.preventDefault();
+        let status = this.contentNode.status;
+        if (!revisionSettings)
+            revisionSettings = !this.state.doPublish ? '' : '/publish';
+        if (revisionSettings === '/publish')
+            status = Status.PUBLISHED;
+        else if (revisionSettings === '/unpublish')
+            status = Status.DRAFT;
         return http.put(`/api/content/${this.props.id}/${this.props.contentTypeName}${revisionSettings}`,
-            Object.assign({isPublished: this.state.contentNode.isPublished,
-                           isRevision: this.state.contentNode.isRevision},
-                          this.fieldListCmp.getResult())
+            Object.assign(this.contentNode, {status})
         )
         .then(() => {
-            urlUtils.redirect(this.props.returnTo || '/', 'hard');
+            urlUtils.redirect('@current', 'hard');
         })
         .catch(() => {
             toasters.main('Sisällön tallennus epäonnistui.', 'error');
         });
+    }
+    /**
+     * @access private
+     */
+    switchToDraft(e) {
+        this.handleFormSubmit(e, '/unpublish');
     }
 }
 

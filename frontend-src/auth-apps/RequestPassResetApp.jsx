@@ -1,4 +1,4 @@
-import {urlUtils, InputGroup, Input, http} from '@rad-commons';
+import {http, urlUtils, hookForm, InputGroup, Input, InputError, FormButtons} from '@rad-commons';
 import {translateError} from './commons.js';
 
 class RequestPassResetApp extends preact.Component {
@@ -7,7 +7,8 @@ class RequestPassResetApp extends preact.Component {
      */
     constructor(props) {
         super(props);
-        this.state = {usernameOrEmail: '', message: null};
+        this.state = Object.assign(hookForm(this, {usernameOrEmail: ''}),
+                                   {message: null});
     }
     /**
      * @access protected
@@ -22,23 +23,25 @@ class RequestPassResetApp extends preact.Component {
                 ? null
                 : <div class={ `container box ${this.state.message.level}` }>{ this.state.message.text }</div>
             }
-            <InputGroup label="Email tai käyttäjänimi">
-                <Input onInput={ e => this.setState({usernameOrEmail: e.target.value}) }
-                       value={ this.state.usernameOrEmail }
-                       id="usernameOrEmail"
-                       required/>
+            <InputGroup classes={ this.state.classes.usernameOrEmail }>
+                <label htmlFor="usernameOrEmail">Email tai käyttäjänimi</label>
+                <Input vm={ this } name="usernameOrEmail" id="usernameOrEmail"
+                    errorLabel="Email tai käyttäjänimi" validations={ [['required']] }/>
+                <InputError error={ this.state.errors.usernameOrEmail }/>
             </InputGroup>
-            <div class="form-buttons">
-                <button class="nice-button" type="submit">Lähetä palautuslinkki</button>
-            </div>
+            <FormButtons
+                buttons={ ['submit'] }
+                submitButtonText="Lähetä palautuslinkki"/>
         </form>;
     }
     /**
      * @access private
      */
     handleSubmit(e) {
-        e.preventDefault();
-        http.post('/api/request-password-reset', {usernameOrEmail: this.state.usernameOrEmail})
+        if (!this.form.handleSubmit(e))
+            return;
+        http.post('/api/request-password-reset',
+                  {usernameOrEmail: this.state.values.usernameOrEmail})
             .then(info => {
                 if (info.ok) this.setState({message: {text: 'Palautuslinkki lähetetty.',
                                                       level: 'info'}});

@@ -8,6 +8,7 @@
     <style>
         form { text-align: center; max-width: 200px; margin: 0 auto; }
         img { width: 100px; margin: 20px 0; }
+        .container { margin-bottom: 24px }
     </style>
 </head>
 <body class="light">

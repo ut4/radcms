@@ -46,7 +46,7 @@ final class SiteConfigTest extends TestCase {
         $this->stubFsToReturnThisSiteCfg($s, json_encode(['assetFiles' => [
                                                  [],
                                                  ['foo.css', 'invalid'],
-                                                 ['foo.css', 'local-stylesheet', 'invalid'],
+                                                 ['foo.css', 'localStylesheet', 'site', 'invalid'],
                                              ]]));
         $this->loadInvalidSiteCfg($s);
         $this->verifyTheseErrorsWereReported($s,
@@ -68,7 +68,7 @@ final class SiteConfigTest extends TestCase {
         $s = $this->setupLoadAllTest();
         $this->stubFsToReturnThisSiteCfg($s, json_encode([
             'urlMatchers' => [['/regexp.', 'path/to/file.tmpl.php']],
-            'assetFiles' => [['main.css', 'local-stylesheet']],
+            'assetFiles' => [['main.css', 'localStylesheet']],
         ]));
         $this->loadSiteConfig($s);
         $this->verifyLoadedUrlMatchers($s);
@@ -85,8 +85,8 @@ final class SiteConfigTest extends TestCase {
         $siteConfig = new SiteConfig($s->mockFs);
         $siteConfig->selfLoad('', false);
         $s->actuallyLoadedUrlMatchers = $siteConfig->urlMatchers;
-        $s->actuallyLoadedCssAssets = $siteConfig->cssAssets;
-        $s->actuallyLoadedJsAssets = $siteConfig->jsAssets;
+        $s->actuallyLoadedCssAssets = $siteConfig->getCssAssets();
+        $s->actuallyLoadedJsAssets = $siteConfig->getJsAssets(SiteConfig::DOCUMENT_WEBSITE);
     }
     private function verifyLoadedUrlMatchers($s) {
         $this->assertEquals(
@@ -99,7 +99,8 @@ final class SiteConfigTest extends TestCase {
     }
     private function verifyLoadedAssets($s) {
         $this->assertEquals(
-            [(object)['url'=>'main.css','type'=>'local-stylesheet','attrs'=>[]]],
+            [(object)['url'=>'main.css','type'=>'localStylesheet','attrs'=>[],
+                      'targetDocument'=>SiteConfig::DOCUMENT_WEBSITE]],
             $s->actuallyLoadedCssAssets
         );
         $this->assertEquals('[]', json_encode($s->actuallyLoadedJsAssets));

@@ -9,7 +9,7 @@ use Pike\Request;
 final class AuthControllersInputValidationTest extends ConfigProvidingTestCase {
     use HttpTestUtils;
     private $app;
-    protected function setUp() {
+    protected function setUp(): void {
         parent::setUp();
         $this->app = $this->makeApp('\RadCms\App::create', $this->getAppConfig());
     }
@@ -26,6 +26,14 @@ final class AuthControllersInputValidationTest extends ConfigProvidingTestCase {
         $res = $this->createMockResponse(
             ['The length of username must be at least 1',
              'The length of password must be at least 1'], 400);
+        $this->sendRequest($req, $res, $this->app);
+    }
+    public function testPOSTUpdatePasswordRejectsInvalidValues() {
+        $req = new Request('/api/update-password', 'POST', (object)['userId' => '',
+                                                                    'newPassword' => '']);
+        $res = $this->createMockResponse(
+            ['The length of userId must be at least 36',
+             'The length of newPassword must be at least 1'], 400);
         $this->sendRequest($req, $res, $this->app);
     }
 }

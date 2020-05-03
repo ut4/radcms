@@ -52,17 +52,17 @@ class App {
         $ctx->cmsState = CmsStateLoader::getAndInitStateFromDb($ctx->db,
                                                                self::$fs,
                                                                $ctx->router);
-        $ctx->acl = new ACL;
+        $ctx->acl = new ACL((bool)(RAD_FLAGS & RAD_DEVMODE));
         $ctx->acl->setRules($ctx->cmsState->getAclRules());
         if (!isset($ctx->translator))
             $ctx->translator = new Translator(function () use ($ctx) {
-                $mainLangFilePath = RAD_SITE_PATH . 'translations/' .
+                $mainLangFilePath = RAD_PUBLIC_PATH . 'translations/' .
                     $ctx->cmsState->getSiteInfo()->lang . '.php';
                 return self::$fs->isFile($mainLangFilePath) ? include $mainLangFilePath : [];
             });
         $ctx->router->on('*', function ($req, $res, $next) use ($ctx) {
             $req->user = $ctx->auth->getIdentity();
-            $aclActionAndResource = $req->routeCtx->myData;
+            $aclActionAndResource = $req->routeInfo->myCtx;
             if (!$aclActionAndResource)
                 throw new PikeException('A route context must be a non-empty ' .
                                         'string or \RadCms\Auth\ACL::NO_NAME',

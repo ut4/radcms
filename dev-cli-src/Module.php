@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RadCms\Cli;
 
 use RadCms\Auth\ACL;
@@ -10,7 +12,7 @@ abstract class Module {
      *
      * @param \stdClass $ctx
      */
-    public static function init(\stdClass $ctx) {
+    public static function init(\stdClass $ctx): void {
         $ctx->router->map('PSEUDO', '/make-release/[**:dirPath]',
             [MainController::class, 'makeRelease', ACL::NO_NAME]
         );

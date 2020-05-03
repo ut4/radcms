@@ -5,14 +5,14 @@ namespace RadCms\Plugin;
 use RadCms\ContentType\ContentTypeMigrator;
 
 /**
- * Rajapinta, jonka lisäosien "main"-luokkien (RAD_SITE_PATH .
+ * Rajapinta, jonka lisäosien "main"-luokkien (RAD_PUBLIC_PATH .
  * 'plugins/PluginName/PluginName.php') tulee implementoida.
  */
 interface PluginInterface {
     /**
-     * @param \RadCms\Plugin\API $api
+     * @param \RadCms\Plugin\PluginAPI $api
      */
-    public function init(API $api);
+    public function init(PluginAPI $api);
     /**
      * @param \RadCms\ContentType\ContentTypeMigrator $migrator
      */

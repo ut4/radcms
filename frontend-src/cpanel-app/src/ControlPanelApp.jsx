@@ -1,4 +1,4 @@
-import {Toaster} from '@rad-commons';
+import {Toaster, services} from '@rad-commons';
 import ControlPanel from './ControlPanel.jsx';
 import {PopupDialog} from './Common/PopupDialog.jsx';
 import ContentAddView from './Content/ContentAddView.jsx';
@@ -23,7 +23,12 @@ class ControlPanelApp extends preact.Component {
      */
     render() {
         return <div>
-            <Toaster id="main"/>
+            <Toaster id="main" ref={ cmp => {
+                if (cmp && services.sessionStorage.radMessage) {
+                    cmp.addMessage(...JSON.parse(services.sessionStorage.radMessage));
+                    delete services.sessionStorage.radMessage;
+                }
+            } }/>
             <ControlPanel dataFromBackend={ this.props.dataFromBackend }
                           onIsCollapsedToggled={ () => this.props.onIsCollapsedToggled() }
                           onRoutesLoaded={ userDefinedRoutes => this.setState({userDefinedRoutes}) }
@@ -35,7 +40,7 @@ class ControlPanelApp extends preact.Component {
             { this.state.userDefinedRoutes ? <PreactRouter history={ History.createHashHistory() }>
                 <ContentAddView path="/add-content/:initialContentTypeName?"/>
                 <ContentManageView path="/manage-content/:initialContentTypeName?"/>
-                <ContentEditView path="/edit-content/:id/:contentTypeName/:publish?"/>
+                <ContentEditView path="/edit-content/:id/:contentTypeName/:formImpl/:publish?"/>
                 <PluginsManageView path="/manage-plugins"/>
                 <WebsitePackView path="/pack-website"/>
                 <UserProfileView path="/me"/>

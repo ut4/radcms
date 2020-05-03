@@ -1,12 +1,15 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RadCms\ContentType;
 
 use Pike\Db;
 use Pike\PikeException;
 use Pike\ArrayUtils;
-use RadCms\Plugin\Plugin;
+use RadCms\Content\DAO;
 use RadCms\Content\DMO;
+use RadCms\Plugin\Plugin;
 
 /**
  * Luokka joka asentaa/päivittää/poistaa sisältötyyppejä ja sen sisältämiä
@@ -25,12 +28,12 @@ class ContentTypeMigrator {
     /**
      * @param object $data Validoitu $req->body
      */
-    public function installSingle(\stdClass $data) {
+    public function installSingle(\stdClass $data): bool {
         $contentTypes = new ContentTypeCollection;
-        $contentTypes[] = new ContentTypeDef($data->name,
-                                             $data->friendlyName,
-                                             FieldCollection::fromArray($data->fields),
-                                             $data->isInternal);
+        $contentTypes->add($data->name,
+                           $data->friendlyName,
+                           $data->fields,
+                           $data->isInternal);
         // @allow \Pike\PikeException
         return $this->installMany($contentTypes);
     }
@@ -42,8 +45,8 @@ class ContentTypeMigrator {
      * @throws \Pike\PikeException
      */
     public function installMany(ContentTypeCollection $contentTypes,
-                                $initialData = null,
-                                $size = 'medium') {
+                                array $initialData = null,
+                                string $size = 'medium'): bool {
         if (!in_array($size, ContentTypeValidator::COLLECTION_SIZES)) {
             throw new PikeException('Not valid content type collection size ' .
                                     implode(' | ', ContentTypeValidator::COLLECTION_SIZES),
@@ -64,40 +67,36 @@ class ContentTypeMigrator {
      */
     public function updateSingle(\stdClass $data,
                                  ContentTypeDef $contentType,
-                                 ContentTypeCollection $currentContentTypes) {
-        try {
-            if ($data->name !== $contentType->name) {
-                $this->db->exec('RENAME TABLE `${p}' . $contentType->name .
-                                '` TO `${p}' . $data->name . '`');
-            }
-            if ($data->name !== $contentType->name ||
-                $data->friendlyName !== $contentType->friendlyName ||
-                $data->isInternal !== $contentType->isInternal) {
-                $idx = ArrayUtils::findIndexByKey($currentContentTypes,
-                                                  $contentType->name,
-                                                  'name');
-                $currentContentTypes[$idx]->name = $data->name;
-                $currentContentTypes[$idx]->friendlyName = $data->friendlyName;
-                $currentContentTypes[$idx]->isInternal = $data->isInternal;
-                if ($this->db->exec(
-                    'UPDATE ${p}cmsState SET'.
-                    ' `installedContentTypes` = JSON_UNQUOTE(?)' .
-                    ', `installedContentTypesLastUpdated` = UNIX_TIMESTAMP()',
-                    [json_encode($currentContentTypes->toCompactForm($this->origin))]) !== 1)
-                    throw new PikeException('Failed to rewrite cmsState.`installedContentTypes`',
-                                            PikeException::INEFFECTUAL_DB_OP);
-            }
-            return true;
-        } catch (\PDOException $e) {
-            throw new PikeException($e->getMessage(), PikeException::FAILED_DB_OP);
+                                 ContentTypeCollection $currentContentTypes): bool {
+        if ($data->name !== $contentType->name) {
+            // @allow \Pike\PikeException
+            $this->db->exec('RENAME TABLE `${p}' . $contentType->name .
+                            '` TO `${p}' . $data->name . '`');
         }
+        if ($data->name !== $contentType->name ||
+            $data->friendlyName !== $contentType->friendlyName ||
+            $data->isInternal !== $contentType->isInternal) {
+            $idx = $contentType->index;
+            $currentContentTypes[$idx]->name = $data->name;
+            $currentContentTypes[$idx]->friendlyName = $data->friendlyName;
+            $currentContentTypes[$idx]->isInternal = $data->isInternal;
+            // @allow \Pike\PikeException
+            if ($this->db->exec(
+                'UPDATE ${p}cmsState SET'.
+                ' `installedContentTypes` = JSON_UNQUOTE(?)' .
+                ', `installedContentTypesLastUpdated` = UNIX_TIMESTAMP()',
+                [json_encode($currentContentTypes->toCompactForm($this->origin))]) !== 1)
+                throw new PikeException('Failed to rewrite cmsState.`installedContentTypes`',
+                                        PikeException::INEFFECTUAL_DB_OP);
+        }
+        return true;
     }
     /**
      * @param \RadCms\ContentType\ContentTypeCollection $contentTypes
      * @return bool
      * @throws \Pike\PikeException
      */
-    public function uninstallMany(ContentTypeCollection $contentTypes) {
+    public function uninstallMany(ContentTypeCollection $contentTypes): bool {
         // @allow \Pike\PikeException
         return $this->validateContentTypes($contentTypes) &&
                $this->removeContentTypes($contentTypes) &&
@@ -108,7 +107,7 @@ class ContentTypeMigrator {
      * @return bool
      * @throws \Pike\PikeException
      */
-    public function uninstallSingle(ContentTypeDef $contentType) {
+    public function uninstallSingle(ContentTypeDef $contentType): bool {
         $contentTypes = new ContentTypeCollection([$contentType]);
         // @allow \Pike\PikeException
         return $this->uninstallMany($contentTypes);
@@ -119,18 +118,17 @@ class ContentTypeMigrator {
      * @return bool
      * @throws \Pike\PikeException
      */
-    public function addField(FieldDef $field, ContentTypeDef $contentType) {
-        try {
-            $this->db->exec('ALTER TABLE `${p}' . $contentType->name . '`' .
-                            ' ADD COLUMN ' . $field->toSqlTableField());
-            //
-            $contentType->fields[] = $field;
-            // @allow \Pike\PikeException|\PDOException
-            $this->updateInstalledContenType($contentType);
-            return true;
-        } catch (\PDOException $e) {
-            throw new PikeException($e->getMessage(), PikeException::FAILED_DB_OP);
-        }
+    public function addField(FieldDef $field, ContentTypeDef $contentType): bool {
+        // @allow \Pike\PikeException
+        $this->validateContentType($contentType);
+        // @allow \Pike\PikeException
+        $this->db->exec('ALTER TABLE `${p}' . $contentType->name . '`' .
+                        ' ADD COLUMN ' . $field->toSqlTableField());
+        //
+        $contentType->fields[] = $field;
+        // @allow \Pike\PikeException
+        $this->updateInstalledContenType($contentType);
+        return true;
     }
     /**
      * @param \RadCms\ContentType\FieldDef $newData
@@ -141,29 +139,28 @@ class ContentTypeMigrator {
      */
     public function updateField(FieldDef $newData,
                                 FieldDef $currentField,
-                                ContentTypeDef $contentType) {
-        try {
-            if ($newData->name !== $currentField->name ||
-                $newData->dataType !== $currentField->dataType)
-                $this->db->exec(
-                    'ALTER TABLE `${p}' . $contentType->name . '`' .
-                    (($newData->name === $currentField->name)
-                        ? ' MODIFY ' . $newData->toSqlTableField()
-                        : ' CHANGE `' . $currentField->name . '` ' .
-                            $newData->toSqlTableField())
-                );
-            //
-            $idx = ArrayUtils::findIndexByKey($contentType->fields,
-                                              $currentField->name,
-                                              'name');
-            $contentType->fields[$idx] = $newData;
-            // @allow \Pike\PikeException|\PDOException
-            $this->updateInstalledContenType($contentType);
-            //
-            return true;
-        } catch (\PDOException $e) {
-            throw new PikeException($e->getMessage(), PikeException::FAILED_DB_OP);
-        }
+                                ContentTypeDef $contentType): bool {
+        // @allow \Pike\PikeException
+        $this->validateContentType($contentType);
+        // @allow \Pike\PikeException
+        if ($newData->name !== $currentField->name ||
+            $newData->dataType !== $currentField->dataType)
+            $this->db->exec(
+                'ALTER TABLE `${p}' . $contentType->name . '`' .
+                (($newData->name === $currentField->name)
+                    ? ' MODIFY ' . $newData->toSqlTableField()
+                    : ' CHANGE `' . $currentField->name . '` ' .
+                        $newData->toSqlTableField())
+            );
+        //
+        $idx = ArrayUtils::findIndexByKey($contentType->fields,
+                                            $currentField->name,
+                                            'name');
+        $contentType->fields[$idx] = $newData;
+        // @allow \Pike\PikeException
+        $this->updateInstalledContenType($contentType);
+        //
+        return true;
     }
     /**
      * @param \RadCms\ContentType\FieldDef $field Olettaa, että validi
@@ -171,25 +168,25 @@ class ContentTypeMigrator {
      * @return bool
      * @throws \Pike\PikeException
      */
-    public function removeField(FieldDef $field, ContentTypeDef $contentType) {
-        try {
-            $this->db->exec('ALTER TABLE `${p}' . $contentType->name . '`' .
-                            ' DROP COLUMN `' . $field->name . '`');
-            //
-            $contentType->fields->offsetUnset(ArrayUtils::findIndexByKey($contentType->fields,
-                                                                         $field->name,
-                                                                         'name'));
-            // @allow \Pike\PikeException|\PDOException
-            $this->updateInstalledContenType($contentType);
-            return true;
-        } catch (\PDOException $e) {
-            throw new PikeException($e->getMessage(), PikeException::FAILED_DB_OP);
-        }
+    public function removeField(FieldDef $field, ContentTypeDef $contentType): bool {
+        // @allow \Pike\PikeException
+        $this->validateContentType($contentType);
+        // @allow \Pike\PikeException
+        $this->db->exec('ALTER TABLE `${p}' . $contentType->name . '`' .
+                        ' DROP COLUMN `' . $field->name . '`');
+        //
+        $idx = ArrayUtils::findIndexByKey($contentType->fields,
+                                            $field->name,
+                                            'name');
+        $contentType->fields->offsetUnset($idx);
+        // @allow \Pike\PikeException
+        $this->updateInstalledContenType($contentType);
+        return true;
     }
     /**
      * @param \RadCms\Plugin\Plugin $plugin
      */
-    public function setOrigin(Plugin $plugin) {
+    public function setOrigin(Plugin $plugin): void {
         $this->origin = $plugin->name;
     }
     /**
@@ -197,17 +194,29 @@ class ContentTypeMigrator {
      * @return bool
      * @throws \Pike\PikeException
      */
-    private function validateContentTypes($contentTypes) {
+    private function validateContentTypes(ContentTypeCollection $contentTypes): bool {
         if (!($errors = ContentTypeValidator::validateAll($contentTypes)))
             return true;
-        throw new PikeException(implode(',', $errors), PikeException::BAD_INPUT);
+        throw new PikeException('Got invalid content types: '. implode(',', $errors),
+                                PikeException::BAD_INPUT);
+    }
+    /**
+     * @param \RadCms\ContentType\ContentTypeDef $contentType
+     * @return bool
+     * @throws \Pike\PikeException
+     */
+    private function validateContentType(ContentTypeDef $contentType): bool {
+        if (!($errors = ContentTypeValidator::validate($contentType)))
+            return true;
+        throw new PikeException('Got invalid content type: '. implode(',', $errors),
+                                PikeException::BAD_INPUT);
     }
     /**
      * @param array|null $data
      * @return bool
      * @throws \Pike\PikeException
      */
-    private function validateInitialData($data) {
+    private function validateInitialData($data): bool {
         if (!$data)
             return true;
         if (!is_array($data))
@@ -230,69 +239,74 @@ class ContentTypeMigrator {
      * @return bool
      * @throws \Pike\PikeException
      */
-    private function createContentTypes($contentTypes, $size) {
+    private function createContentTypes(ContentTypeCollection $contentTypes,
+                                        string $size): bool {
         $sql = '';
         foreach ($contentTypes as $type) {
             $sql .= 'CREATE TABLE `${p}' . $type->name . '` (' .
                 '`id` ' . strtoupper($size) . 'INT UNSIGNED NOT NULL AUTO_INCREMENT' .
-                ', `isPublished` TINYINT(1) UNSIGNED NOT NULL DEFAULT 0' .
+                ', `status` TINYINT(1) UNSIGNED NOT NULL DEFAULT ' . DAO::STATUS_PUBLISHED .
                 ', ' . $type->fields->toSqlTableFields() .
                 ', PRIMARY KEY (`id`)' .
             ') DEFAULT CHARSET = utf8mb4;';
         }
-        try {
-            $this->db->exec($sql);
-            return true;
-        } catch (\PDOException $e) {
-            throw new PikeException($e->getMessage(), PikeException::FAILED_DB_OP);
-        }
+        // @allow \Pike\PikeException
+        $this->db->exec($sql);
+        return true;
     }
     /**
      * @param \RadCms\ContentType\ContentTypeCollection $contentTypes
      * @return bool
      * @throws \Pike\PikeException
      */
-    private function removeContentTypes($contentTypes) {
-        try {
-            $this->db->exec(implode('', array_map(function ($type) {
-                return 'DROP TABLE `${p}' . $type->name . '`;';
-            }, $contentTypes->getArrayCopy())));
-            return true;
-        } catch (\PDOException $e) {
-            throw new PikeException($e->getMessage(), PikeException::FAILED_DB_OP);
-        }
+    private function removeContentTypes(ContentTypeCollection $contentTypes): bool {
+        // @allow \Pike\PikeException
+        $this->db->exec(implode('', array_map(function ($type) {
+            return 'DROP TABLE `${p}' . $type->name . '`;';
+        }, $contentTypes->getArrayCopy())));
+        return true;
     }
     /**
      * @param \RadCms\ContentType\ContentTypeCollection $contentTypes
      * @return bool
      * @throws \Pike\PikeException
      */
-    private function addToInstalledContentTypes(ContentTypeCollection $contentTypes) {
-        try {
-            if ($this->db->exec(
-                'UPDATE ${p}cmsState SET `installedContentTypes` =' .
-                ' JSON_MERGE_PATCH(?, `installedContentTypes`)' .
-                ', `installedContentTypesLastUpdated` = UNIX_TIMESTAMP()',
-                [json_encode($contentTypes->toCompactForm($this->origin))]) > 0) {
-                return true;
-            }
-            throw new PikeException('Failed to update cmsState.`installedContentTypes`',
-                                    PikeException::INEFFECTUAL_DB_OP);
-        } catch (\PDOException $e) {
-            throw new PikeException($e->getMessage(), PikeException::FAILED_DB_OP);
+    private function addToInstalledContentTypes(ContentTypeCollection $contentTypes): bool {
+        // @allow \Pike\PikeException
+        $row = $this->db->fetchOne('SELECT `installedContentTypes` FROM ${p}cmsState');
+        if (!$row || !strlen($row['installedContentTypes'] ?? ''))
+            throw new PikeException('Failed to fetch cmsState.`installedContentTypes`',
+                                    PikeException::FAILED_DB_OP);
+        if (($parsed = json_decode($row['installedContentTypes'])) === null)
+            throw new PikeException('Failed to parse cmsState.`installedContentTypes`',
+                                    PikeException::BAD_INPUT);
+        $newCompactFormContentTypes = array_merge(
+            $contentTypes->toCompactForm($this->origin),
+            $parsed
+        );
+        // @allow \Pike\PikeException
+        if ($this->db->exec(
+            'UPDATE ${p}cmsState SET `installedContentTypes` = JSON_UNQUOTE(?)' .
+            ', `installedContentTypesLastUpdated` = UNIX_TIMESTAMP()',
+            [json_encode($newCompactFormContentTypes)]) > 0) {
+            return true;
         }
+        throw new PikeException('Failed to update cmsState.`installedContentTypes`',
+                                PikeException::INEFFECTUAL_DB_OP);
     }
     /**
      * @param \RadCms\ContentType\ContentTypeDef $contentType
      * @throws \Pike\PikeException
      */
-    private function updateInstalledContenType(ContentTypeDef $contentType) {
+    private function updateInstalledContenType(ContentTypeDef $contentType): void {
         $compacted = $contentType->toCompactForm($this->origin);
+        // @allow \Pike\PikeException
         if ($this->db->exec(
             'UPDATE ${p}cmsState SET' .
-            ' `installedContentTypes` = JSON_MERGE_PATCH(`installedContentTypes`, ?)' .
+            ' `installedContentTypes` = JSON_REPLACE(`installedContentTypes`' .
+                                                    ', ?, CAST(? AS JSON))' .
             ', `installedContentTypesLastUpdated` = UNIX_TIMESTAMP()',
-            [json_encode([$compacted->key => $compacted->definition])]) !== 1)
+            ["\$[{$contentType->index}]", json_encode($compacted)]) !== 1)
             throw new PikeException('Failed to update cmsState.`installedContentTypes`',
                                     PikeException::INEFFECTUAL_DB_OP);
     }
@@ -302,15 +316,15 @@ class ContentTypeMigrator {
      * @return bool
      * @throws \Pike\PikeException
      */
-    private function insertInitialData($data, $contentTypes) {
+    private function insertInitialData($data, ContentTypeCollection $contentTypes): bool {
         if (!$data) return true;
         $dmo = new DMO($this->db, $contentTypes,
                        false // no revisions
                        );
         foreach ($data as [$contentTypeName, $contentNodes]) {
             foreach ($contentNodes as $data) {
-                if (!property_exists($data, 'isPublished'))
-                    $data->isPublished = true;
+                if (!property_exists($data, 'status'))
+                    $data->status = DAO::STATUS_PUBLISHED;
                 // @allow \Pike\PikeException
                 $dmo->insert($contentTypeName, $data);
             }
@@ -322,25 +336,22 @@ class ContentTypeMigrator {
      * @return bool
      * @throws \Pike\PikeException
      */
-    private function removeFromInstalledContentTypes($contentTypes) {
+    private function removeFromInstalledContentTypes(ContentTypeCollection $contentTypes): bool {
         $placeholders = [];
         $values = [];
         foreach ($contentTypes as $t) {
-            $values[] = '$."' . $t->name . '"';
+            $values[] = "\$[{$t->index}]";
             $placeholders[] = '?';
         }
-        try {
-            if ($this->db->exec('UPDATE ${p}cmsState SET `installedContentTypes` =' .
-                                ' JSON_REMOVE(`installedContentTypes`' .
-                                            ', ' . implode(',', $placeholders) . ')' .
-                                ', `installedContentTypesLastUpdated` = UNIX_TIMESTAMP()',
-                                $values) > 0) {
-                return true;
-            }
-            throw new PikeException('Failed to update cmsState.`installedContentTypes`',
-                                    PikeException::INEFFECTUAL_DB_OP);
-        } catch (\PDOException $e) {
-            throw new PikeException($e->getMessage(), PikeException::FAILED_DB_OP);
+        // @allow \Pike\PikeException
+        if ($this->db->exec('UPDATE ${p}cmsState SET `installedContentTypes` =' .
+                            ' JSON_REMOVE(`installedContentTypes`' .
+                                          ', ' . implode(',', $placeholders) . ')' .
+                            ', `installedContentTypesLastUpdated` = UNIX_TIMESTAMP()',
+                            $values) > 0) {
+            return true;
         }
+        throw new PikeException('Failed to update cmsState.`installedContentTypes`',
+                                PikeException::INEFFECTUAL_DB_OP);
     }
 }

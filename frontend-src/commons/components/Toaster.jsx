@@ -10,7 +10,10 @@ class Toaster extends preact.Component {
      */
     constructor(props) {
         super(props);
-        toasters[props.id || 'unnamed'] = this.addMessage.bind(this);
+        const id = props.id || 'unnamed';
+        if (id === '__proto__' || id === 'constructor')
+            throw new Error(`Invalid toasterId ${id}`);
+        toasters[id] = this.addMessage.bind(this);
         this.autoCloseTimeoutMillis = props.autoCloseTimeoutMillis || 8000;
         this.state = {messages: []};
     }

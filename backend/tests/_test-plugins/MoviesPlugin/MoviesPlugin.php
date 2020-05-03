@@ -3,7 +3,7 @@
 namespace RadPlugins\MoviesPlugin;
 
 use RadCms\Plugin\PluginInterface;
-use RadCms\Plugin\API;
+use RadCms\Plugin\PluginAPI;
 use RadCms\ContentType\ContentTypeCollection;
 use RadCms\ContentType\ContentTypeMigrator;
 use RadCms\Auth\ACL;
@@ -12,13 +12,15 @@ class MoviesPlugin implements PluginInterface {
     private $initialDataToInstall;
     public function __construct() {
         $this->myContentTypes = new ContentTypeCollection();
-        $this->myContentTypes->add('Movies', 'Elokuvat', ['title' => 'text',
-                                                          'releaseYear' => 'int']);
+        $this->myContentTypes->add('Movies', 'Elokuvat', [
+            (object) ['name' => 'title', 'dataType' => 'text'],
+            (object) ['name' => 'releaseYear', 'dataType' => 'int'],
+        ]);
     }
-    public function init(API $api) {
-        $api->registerJsFile('file1.js');
-        $api->registerJsFile('file2.js', ['id' => 'file2']);
-        $api->registerFrontendAdminPanel('MoviesAdmin', 'Elokuvat-app');
+    public function init(PluginAPI $api) {
+        $api->enqueueAdminJsFile('file1.js');
+        $api->enqueueAdminJsFile('file2.js', ['id' => 'file2']);
+        $api->enqueueFrontendAdminPanel('MoviesAdmin', 'Elokuvat-app');
         //
         $api->registerRoute('GET', '/movies', MoviesControllers::class,
                             'handleGetMoviesRequest', ACL::NO_NAME);

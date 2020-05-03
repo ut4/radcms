@@ -1,8 +1,34 @@
-{
-    "extend:stockContentTypes": null,
-    "Articles": ["Artikkelit", {
-        "slug": "text:Slug (url):textField::1",
-        "title": "text:Otsikko:textField",
-        "body": "text:Sisältö:richText"
-    }]
-}
+[
+    "extend:stockContentTypes",
+    {
+        "name": "Articles",
+        "friendlyName": "Artikkelit",
+        "isInternal": false,
+        "fields": [
+            {
+                "name": "slug",
+                "dataType": "text",
+                "friendlyName": "Slug (url)",
+                "widget": {"name": "textField"},
+                "defaultValue": "",
+                "visibility": 1
+            },
+            {
+                "name": "title",
+                "dataType": "text",
+                "friendlyName": "Otsikko",
+                "widget": {"name": "textField"},
+                "defaultValue": "",
+                "visibility": 0
+            },
+            {
+                "name": "body",
+                "dataType": "text",
+                "friendlyName": "Slug (url)",
+                "widget": {"name": "richText"},
+                "defaultValue": "",
+                "visibility": 0
+            }
+        ]
+    }
+]

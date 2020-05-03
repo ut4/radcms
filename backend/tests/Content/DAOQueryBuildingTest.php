@@ -11,79 +11,84 @@ use Pike\PikeException;
 final class DAOQueryBuildingTest extends TestCase {
     private function makeDao($useRevisions = false, $alterContentTypesFn = null) {
         $ctypes = new ContentTypeCollection();
-        $ctypes->add('Games', 'Pelit', ['title' => 'text']);
-        $ctypes->add('Platforms', 'Alustat', ['name' => 'text', 'gameTitle'=>'text']);
+        $ctypes->add('Games', 'Pelit', [
+            (object) ['name' => 'title', 'dataType' => 'text']
+        ]);
+        $ctypes->add('Platforms', 'Alustat', [
+            (object) ['name' => 'name', 'dataType' => 'text'],
+            (object) ['name' => 'gameTitle', 'dataType' => 'text'],
+        ]);
         if ($alterContentTypesFn) $alterContentTypesFn($ctypes);
         return new DAO($this->createMock(Db::class), $ctypes, $useRevisions);
     }
     public function testFetchOneGeneratesBasicQueries() {
         $query1 = $this->makeDao()->fetchOne('Games')->where('id=\'1\'');
-        $mainQ = 'SELECT `id`, `isPublished`, `title`, \'Games\' AS `contentType` FROM `${p}Games`';
+        $mainQ = 'SELECT `id`, `status`, `title`, \'Games\' AS `contentType` FROM `${p}Games`';
         $this->assertEquals($mainQ . ' WHERE id=\'1\'', $query1->toSql());
         //
         $withRevisions = $this->makeDao(true)->fetchOne('Games')->where('id=2')->limit(10, 2);
         $this->assertEquals(
-            'SELECT a.*, _r.`revisionSnapshot`, _r.`createdAt` AS `revisionCreatedAt`' .
-            ' FROM (' . $mainQ . ' WHERE id=2 LIMIT 2, 10) AS a' .
-            ' LEFT JOIN ${p}contentRevisions _r ON (_r.`contentId` = a.`id`' .
+            'SELECT _a.*, _r.`revisionSnapshot`, _r.`createdAt` AS `revisionCreatedAt`' .
+            ' FROM (' . $mainQ . ' WHERE id=2 LIMIT 2, 10) AS _a' .
+            ' LEFT JOIN ${p}contentRevisions _r ON (_r.`contentId` = _a.`id`' .
                                             ' AND _r.`contentType` = \'Games\')',
             $withRevisions->toSql()
         );
     }
     public function testFetchOneGeneratesJoinQueries() {
-        $mainQ = 'SELECT `id`, `isPublished`, `title`, \'Games\' AS `contentType` FROM `${p}Games`' .
+        $mainQ = 'SELECT `id`, `status`, `title`, \'Games\' AS `contentType` FROM `${p}Games`' .
                  ' WHERE `title`=\'Commandos II\' LIMIT 10';
-        $joinQ = ' JOIN `${p}Platforms` AS b ON (b.`gameTitle` = a.`title`)';
+        $joinQ = ' JOIN `${p}Platforms` AS b ON (b.`gameTitle` = _a.`title`)';
         $query = $this->makeDao()->fetchOne('Games')
-            ->join('Platforms', 'b.`gameTitle` = a.`title`')
+            ->join('Platforms', 'b.`gameTitle` = _a.`title`')
             ->where("`title`='Commandos II'")
             ->limit(10)
-            ->collectJoin('platforms',function(){});
+            ->collectPreviousJoin('platforms',function(){});
         $this->assertEquals(
-            'SELECT a.*, b.`id` AS `bId`, \'Platforms\' AS `bContentType`' .
+            'SELECT _a.*, b.`id` AS `bId`, \'Platforms\' AS `bContentType`' .
                     ', b.`name` AS `bName`, b.`gameTitle` AS `bGameTitle`' .
-            ' FROM (' . $mainQ . ') AS a' .
+            ' FROM (' . $mainQ . ') AS _a' .
             $joinQ,
             $query->toSql()
         );
         //
         $asLeft = $this->makeDao()->fetchOne('Games')
-            ->leftJoin('Platforms', 'b.`gameTitle` = a.`title`')
+            ->leftJoin('Platforms', 'b.`gameTitle` = _a.`title`')
             ->where("`title`='Commandos II'")
             ->limit(10)
-            ->collectJoin('platforms',function(){});
+            ->collectPreviousJoin('platforms',function(){});
         $this->assertEquals(
-            'SELECT a.*, b.`id` AS `bId`, \'Platforms\' AS `bContentType`' .
+            'SELECT _a.*, b.`id` AS `bId`, \'Platforms\' AS `bContentType`' .
                     ', b.`name` AS `bName`, b.`gameTitle` AS `bGameTitle`' .
-            ' FROM (' . $mainQ . ') AS a' .
+            ' FROM (' . $mainQ . ') AS _a' .
             ' LEFT' . $joinQ,
             $asLeft->toSql()
         );
         //
         $withRevisions = $this->makeDao(true)->fetchOne('Games')
-            ->join('Platforms', 'b.`gameTitle` = a.`title`')
+            ->join('Platforms', 'b.`gameTitle` = _a.`title`')
             ->where("`title`='Commandos II'")
             ->limit(10)
-            ->collectJoin('platforms',function(){});
+            ->collectPreviousJoin('platforms',function(){});
         $this->assertEquals(
-            'SELECT a.*, b.`id` AS `bId`, \'Platforms\' AS `bContentType`'.
+            'SELECT _a.*, b.`id` AS `bId`, \'Platforms\' AS `bContentType`'.
                     ', b.`name` AS `bName`, b.`gameTitle` AS `bGameTitle`' .
                     ', _r.`revisionSnapshot`, _r.`createdAt` AS `revisionCreatedAt`' .
-            ' FROM (' . $mainQ . ') AS a' .
+            ' FROM (' . $mainQ . ') AS _a' .
             $joinQ .
-            ' LEFT JOIN ${p}contentRevisions _r ON (_r.`contentId` = a.`id`' .
+            ' LEFT JOIN ${p}contentRevisions _r ON (_r.`contentId` = _a.`id`' .
                                             ' AND _r.`contentType` = \'Games\')',
             $withRevisions->toSql()
         );
     }
     public function testFetchOneGeneratesJoinQueriesUsingAliases() {
-        $mainQ = 'SELECT `id`, `isPublished`, `title`, \'Games\' AS `contentType` FROM `${p}Games`' .
+        $mainQ = 'SELECT `id`, `status`, `title`, \'Games\' AS `contentType` FROM `${p}Games`' .
                  ' WHERE 1=1';
         $joinQ = ' JOIN `${p}Platforms` AS p ON (p.`gameTitle` = g.`title`)';
-        $query = $this->makeDao()->fetchOne('Games g')
+        $query = $this->makeDao()->fetchAll('Games g')
             ->join('Platforms p', 'p.`gameTitle` = g.`title`')
             ->where('1=1')
-            ->collectJoin('platforms',function(){});
+            ->collectPreviousJoin('platforms',function(){});
         $this->assertEquals(
             'SELECT g.*, p.`id` AS `pId`, \'Platforms\' AS `pContentType`' .
                     ', p.`name` AS `pName`, p.`gameTitle` AS `pGameTitle`' .
@@ -94,17 +99,37 @@ final class DAOQueryBuildingTest extends TestCase {
     }
     public function testFetchAllGeneratesBasicQuery() {
         $query1 = $this->makeDao()->fetchAll('Platforms');
-        $mainQ = 'SELECT `id`, `isPublished`, `name`, `gameTitle`, \'Platforms\' AS `contentType`' .
+        $mainQ = 'SELECT `id`, `status`, `name`, `gameTitle`, \'Platforms\' AS `contentType`' .
                  ' FROM `${p}Platforms`';
         $this->assertEquals($mainQ, $query1->toSql());
         //
         $withRevisions = $this->makeDao(true)->fetchAll('Platforms');
         $this->assertEquals(
-            'SELECT a.*, _r.`revisionSnapshot`, _r.`createdAt` AS `revisionCreatedAt`' .
-            ' FROM (' . $mainQ . ') AS a' .
-            ' LEFT JOIN ${p}contentRevisions _r ON (_r.`contentId` = a.`id`' .
+            'SELECT _a.*, _r.`revisionSnapshot`, _r.`createdAt` AS `revisionCreatedAt`' .
+            ' FROM (' . $mainQ . ') AS _a' .
+            ' LEFT JOIN ${p}contentRevisions _r ON (_r.`contentId` = _a.`id`' .
                                             ' AND _r.`contentType` = \'Platforms\')',
             $withRevisions->toSql()
+        );
+    }
+    public function testFetchAllAddsMultipleJoins() {
+        $mainQ = 'SELECT `id`, `status`, `title`, \'Games\' AS `contentType` FROM `${p}Games`' .
+                 ' WHERE 1=1';
+        $joinQ = ' JOIN `${p}Platforms` AS p1 ON (p1.`gameTitle` = _a.`title`)' .
+                 ' LEFT JOIN `${p}Platforms` AS p2 ON (2=2)';
+        $query = $this->makeDao()->fetchOne('Games')
+            ->join('Platforms p1', 'p1.`gameTitle` = _a.`title`')
+            ->leftJoin('Platforms p2', '2=2')
+            ->where('1=1')
+            ->collectPreviousJoin('platforms',function(){});
+        $this->assertEquals(
+            'SELECT _a.*, p1.`id` AS `p1Id`, \'Platforms\' AS `p1ContentType`' .
+                    ', p1.`name` AS `p1Name`, p1.`gameTitle` AS `p1GameTitle`' .
+                    ', p2.`id` AS `p2Id`, \'Platforms\' AS `p2ContentType`' .
+                    ', p2.`name` AS `p2Name`, p2.`gameTitle` AS `p2GameTitle`' .
+            ' FROM (' . $mainQ . ') AS _a' .
+            $joinQ,
+            $query->toSql()
         );
     }
     public function testToSqlValidatesItself() {
@@ -123,7 +148,9 @@ final class DAOQueryBuildingTest extends TestCase {
                 $A_LONG_STRING = str_repeat('-', 65);
                 //
                 return $this->makeDao(false, function ($ctypes) use ($A_LONG_STRING) {
-                    $ctypes->add($A_LONG_STRING, '', ['field' => 'text']);
+                    $ctypes->add($A_LONG_STRING, '', [
+                        (object) ['name' => 'field', 'dataType' => 'text']
+                    ]);
                 })->fetchOne($A_LONG_STRING)->where('1=1');
             }));
         $this->assertEquals('fetch alias (&&) is not valid\n' .
@@ -131,7 +158,7 @@ final class DAOQueryBuildingTest extends TestCase {
             return $this->makeDao()
                 ->fetchAll('Games &&')
                 ->join('Platforms p-bas', '1=1')
-                ->collectJoin('field', function(){});
+                ->collectPreviousJoin('field', function(){});
         }));
     }
 }

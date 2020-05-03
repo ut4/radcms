@@ -4,6 +4,8 @@ namespace RadCms\Packager;
 
 use Pike\Request;
 use Pike\Response;
+use Pike\Validation;
+use Pike\Auth\Authenticator;
 
 /**
  * Handlaa /api/packager -alkuiset pyynnöt.
@@ -18,18 +20,60 @@ class PackagerControllers {
         $this->packager = $packager;
     }
     /**
+     * GET /api/packager/pre-run.
+     *
+     * @param \Pike\Response $res
+     */
+    public function handlePreRunCreatePackage(Response $res) {
+        $res->json($this->packager->preRun());
+    }
+    /**
      * POST /api/packager.
      *
      * @param \Pike\Request $req
      * @param \Pike\Response $res
+     * @param \RadCms\Packager\PackageStreamInterface $package
+     * @param \Pike\Auth\Authenticator $auth
      */
-    public function handleCreatePackage(Request $req, Response $res) {
-        if (strlen($req->body->signingKey) < 12) {
-            $res->status(400)->json(['signingKey must be >= 12 characters long']);
+    public function handleCreatePackage(Request $req,
+                                        Response $res,
+                                        PackageStreamInterface $package,
+                                        Authenticator $auth) {
+        if (($errors = $this->validatePackSiteInput($req->body))) {
+            $res->status(400)->json($errors);
             return;
         }
-        // @allow \RadCMS\Common\PikeException
-        $data = $this->packager->packSite(RAD_SITE_PATH, $req->body->signingKey);
-        $res->attachment($data, 'site.rpkg', 'application/octet-stream');
+        // @allow \Pike\PikeException
+        $data = $this->packager->packSite($package, $req->body, $auth->getIdentity());
+        $res->attachment($data, 'packed.radsite', 'application/octet-stream');
+    }
+    /**
+     * @return string[]
+     */
+    private function validatePackSiteInput($input) {
+        $customErrors = [];
+        $v = Validation::makeObjectValidator()
+            ->addRuleImpl('nonRelativePath', function ($value) {
+                return is_string($value) && strpos($value, './') === false;
+            }, '%s is not valid path')
+            ->rule('signingKey', 'type', 'string')
+            ->rule('signingKey', 'minLength', 12);
+        if (is_array($input->templates = self::jsonDecodeSafe($input, 'templates')))
+            $v->rule('templates.*', 'nonRelativePath');
+        else
+            $customErrors[] = 'templates must be json';
+        if (is_array($input->assets = self::jsonDecodeSafe($input, 'assets')))
+            $v->rule('assets.*', 'nonRelativePath');
+        else
+            $customErrors[] = 'assets must be json';
+        return array_merge($customErrors, $v->validate($input));
+    }
+    /**
+     * @return array|null
+     */
+    private static function jsonDecodeSafe($input, $key) {
+        $candidate = $input->$key ?? null;
+        if (!is_string($candidate)) return null;
+        return json_decode($candidate);
     }
 }

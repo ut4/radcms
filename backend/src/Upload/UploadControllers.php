@@ -11,7 +11,7 @@ use Pike\PikeException;
  * Handlaa /api/uploads -alkuiset pyynnöt.
  */
 class UploadControllers {
-    private const UPLOADS_DIR_PATH = RAD_SITE_PATH . 'uploads';
+    private const UPLOADS_DIR_PATH = RAD_PUBLIC_PATH . 'uploads';
     /**
      * GET /api/uploads.
      *

@@ -17,6 +17,9 @@ body {
 h2 {
     font: normal 18px/18px "Fira sans light";
 }
+.text-pale {
+    color: rgba(0,0,0,0.6);
+}
 a {
     color: #5c5a75;
 }
@@ -59,8 +62,8 @@ a.disabled {
 
 
 /* == Layout ================================================================ */
-.container:not(:last-of-type) {
-    margin-bottom: 24px;
+.container:not(:last-child) {
+    margin-bottom: 20px;
 }
 .grouped {
     display: flex;
@@ -68,6 +71,11 @@ a.disabled {
 }
 .grouped > * {
     flex: 1;
+}
+.grid, .item-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5px;
 }
 
 
@@ -117,7 +125,7 @@ a.disabled {
 
 
 /* == Forms ================================================================= */
-.input-group, .input-group-inline {
+.input-group {
     position: relative;
     margin-bottom: 18px;
 }
@@ -151,19 +159,34 @@ a.disabled {
     border-color: #d8d8d8;
     cursor: not-allowed;
 }
-.input-group input:not(.pristine):invalid,
-.input-group textarea:not(.pristine):invalid,
-.input-group select:not(.pristine):invalid,
-.input-group input:not(.pristine):invalid:focus,
-.input-group textarea:not(.pristine):invalid:focus,
-.input-group select:not(.pristine):invalid:focus {
+.blurred-at-least-once.invalid input,
+.blurred-at-least-once.invalid textarea,
+.blurred-at-least-once.invalid select,
+.blurred-at-least-once.invalid input:focus,
+.blurred-at-least-once.invalid textarea:focus,
+.blurred-at-least-once.invalid select:focus {
     outline: none;
     border-color: #f06464;
 }
-.input-group input:not(.pristine):invalid:hover,
-.input-group textarea:not(.pristine):invalid:hover,
-.input-group select:not(.pristine):invalid:hover {
+.blurred-at-least-once.invalid input:hover,
+.blurred-at-least-once.invalid textarea:hover,
+.blurred-at-least-once.invalid select:hover {
     border-color: #fc7f7f;
+}
+
+.input-group .error,
+.input-group .error,
+.input-group .error {
+    display: none;
+    font: normal 12px/12px "Fira sans light";
+    text-align: left;
+    margin: 8px 0;
+    color: #3c1d1f;
+}
+.input-group.blurred-at-least-once .error,
+.input-group.blurred-at-least-once .error,
+.input-group.blurred-at-least-once .error {
+    display: block;
 }
 
 .input-group textarea {
@@ -180,28 +203,25 @@ a.disabled {
     top: -6px;
     background-color: #ffffff;
 }
-.input-group input:disabled + label,
-.input-group textarea:disabled + label,
-.input-group select:disabled + label {
+.input-group.disabled label {
     color: #d0d0d0;
 }
-.input-group input:enabled:focus + label,
-.input-group textarea:enabled:focus + label,
-.input-group select:enabled:focus + label {
+.input-group.focused label {
     color: #24a29c;
 }
-.input-group input:not(.pristine):invalid + label,
-.input-group textarea:not(.pristine):invalid + label,
-.input-group select:not(.pristine):invalid + label,
-.input-group input:not(.pristine):invalid:focus + label,
-.input-group textarea:not(.pristine):invalid:focus + label,
-.input-group select:not(.pristine):invalid:focus + label {
+.input-group.blurred-at-least-once.invalid label {
     color: #a22424;
 }
-.input-group-inline input {
+.input-group.inline input {
     vertical-align: middle;
 }
 
+.form-buttons > * {
+    margin-right: 12px;
+}
+.form-buttons > *:last-child {
+    margin-right: 0;
+}
 
 /* == Buttons =============================================================== */
 .nice-button,
@@ -222,6 +242,10 @@ a.disabled {
 .text-button.small {
     padding: 6px 12px;
     font-size: .9em;
+}
+.nice-button.huge,
+.text-button.huge {
+    padding: 32px 64px;
 }
 .nice-button:disabled {
     background-color: rgba(0,0,0,0.1);
@@ -340,13 +364,13 @@ td.buttons {
     margin-bottom: 6px;
 }
 .toaster-message.success {
-    background-color: rgba(12, 191, 120, 0.85);
+    background-color: rgba(12,191,120,0.85);
 }
 .toaster-message.info {
-    background-color: rgba(48, 174, 253, 0.85);
+    background-color: rgba(48,174,253,0.85);
 }
 .toaster-message.error {
-    background-color: rgba(255, 62, 97, 0.85);
+    background-color: rgba(255,62,97,0.85);
 }
 .toaster-message .feather {
     position: absolute;

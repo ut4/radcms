@@ -1,10 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RadCms\ContentType;
 
 /**
- * Parsii ja serialisoi site.json-tiedostossa käytettäviä merkkijonoja, esim:
- * 'int(11)' tulee {name: 'int', args: {v0: '11'}} ja 'color(initial=#000000)' tulee
+ * Parsii ja serialisoi kompaktoituja merkkijonoja, esim: 'int(11)' tulee
+ * {name: 'int', args: {v0: '11'}} ja 'color(initial=#000000)' tulee
  * {name: color, args: {initial: '#000000'}}.
  */
 class FieldSetting {
@@ -14,14 +16,14 @@ class FieldSetting {
      * @param string $name
      * @param \stdClass $args = null
      */
-    public function __construct($name, \stdClass $args = null) {
+    public function __construct(string $name, \stdClass $args = null) {
         $this->name = $name;
         $this->args = $args ?? new \stdClass;
     }
     /**
      * @param string $str 'text', 'int(11)', 'color(initial=#000000)'
      */
-    public function toCompactForm() {
+    public function toCompactForm(): string {
         if (empty((array)$this->args))
             return $this->name;
         $pairs = [];
@@ -40,7 +42,7 @@ class FieldSetting {
      * @param string $compactSetting
      * @return \RadCms\ContentType\FieldSetting
      */
-    public static function fromCompactForm($compactSetting) {
+    public static function fromCompactForm(string $compactSetting): FieldSetting {
         $pcs = explode('(', trim($compactSetting));
         $out = new static(rtrim($pcs[0]));
         if (count($pcs) > 1) {

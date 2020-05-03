@@ -6,8 +6,11 @@ declare module "@rad-commons" {
         export const config: {
             baseUrl: string;
             assetBaseUrl: string;
+            currentPagePath: string;
             userPermissions: {
                 canCreateContent: boolean;
+                canConfigureContent: boolean;
+                canDeleteContent: boolean;
                 canManageFieldsOfMultiFieldContent: boolean;
             };
             user: {
@@ -27,52 +30,30 @@ declare module "@rad-commons" {
 
         ////////////////////////////////////////////////////////////////////////
 
-
-        export class FeatherSvg extends preact.Component<
-            {iconId: string; className?: string;},
+        export function hookForm(vm: preact.Component,
+                                 values: Object,
+                                 validators?: Array<FormInputValidator>): {
+            values: Object;
+            errors: Object;
+            classes: Object;
+        }
+        export class InputGroup extends preact.Component<
+            {
+                classes?: {invalid: boolean; focused: boolean; blurredAtLeastOnce: boolean;};
+                className?: string;
+                inline?: boolean;
+            },
             {}>
         {
         }
-        interface FormProps {
-            onConfirm: (e: Event) => any;
-            onCancel?: (e: Event) => any;
-            close?: Function;
-            doDisableConfirmButton?: () => boolean;
-            confirmButtonText?: string;
-            cancelButtonText?: string;
-            usePseudoFormTag?: bool;
-            returnTo?: string;
+        export interface InputProps {
+            vm: preact.Component;
+            myOnChange?: (state: Object) => Object;
+            validations?: Array<[string, ...any]>;
+            errorLabel?: string;
+            [key: string]: any;
         }
-        export class Form extends preact.Component<
-            FormProps,
-            {}>
-        {
-            static receiveInputValue(e:Event, dhis: preact.VNode, name?: string): void;
-            close(): void;
-        }
-        export function InputGroup(props: {label?: string|Function; inline?: boolean; className?: string; id?: string;}): preact.VNode;
-        export class Toaster extends preact.Component<
-            {autoCloseTimeoutMillis?: number; publishFactoryTo?: Object;},
-            {}>
-        {
-        }
-        interface InputProps {
-            patternError?: string;
-            maxError?: string;
-            minError?: string;
-            stepError?: string;
-            maxLengthError?: string;
-            minLengthError?: string;
-            typeError?: string;
-            requiredError?:
-            string; [key: string]: any;
-        };
         export class Input extends preact.Component<
-            InputProps,
-            {}>
-        {
-        }
-        export class Select extends preact.Component<
             InputProps,
             {}>
         {
@@ -82,12 +63,64 @@ declare module "@rad-commons" {
             {}>
         {
         }
+        export class Select extends preact.Component<
+            InputProps,
+            {}>
+        {
+        }
+        export class InputError extends preact.Component<
+            {error?: string;},
+            {}>
+        {
+        }
+        export class FormButtons extends preact.Component<
+            {
+                buttons?: Array<string|preact.VNode>;
+                submitButtonText?: string;
+                cancelButtonText?: string;
+                returnTo?: string;
+            },
+            {}>
+        {
+        }
+        export class FormInputValidator {
+            myInput: {
+                getValue(): string;
+                getLabel(): string;
+            };
+            checkValidity(): string|null;
+        }
         export class Toaster extends preact.Component<
             {id?: string; autoCloseTimeoutMillis?: number;},
             {}>
         {
         }
         export function View(props: any): preact.VNode;
+        export class Confirmation extends preact.Component<
+            {
+                onConfirm: () => any;
+                onCancel: () => any;
+                confirmButtonText?: string;
+                cancelButtonText?: string;
+            },
+            {}>
+        {
+        }
+        export class FormConfirmation extends preact.Component<
+            {
+                onConfirm: (e: UIEvent) => any;
+                onCancel: () => any;
+                confirmButtonText?: string;
+                cancelButtonText?: string;
+            },
+            {}>
+        {
+        }
+        export class FeatherSvg extends preact.Component<
+            {iconId: string; className?: string;},
+            {}>
+        {
+        }
         export const dateUtils: {
             getLocaleDateString(date: Date, includeTime: boolean = false): string;
             getLocaleTimeString(date: Date): string;
@@ -103,14 +136,13 @@ declare module "@rad-commons" {
     export = radCommons;
 }
 
-declare module "@rad-cpanel-commons" {
-    namespace radCpanelCommons {
-        export const uiPanelRegister: {
-            registerUiPanelImpl(name: string, Impl: any): void;
-        }
-        export class ContentNodeUtils {
-            static makeTitle(contentNode: any): string;
-        }
-    }
-    export = radCpanelCommons;
+interface SiteInfo {
+    baseUrl: string;         // /foo/, tai /foo/index.php?q=/
+    assetBaseUrl: string;    // /foo/
+    currentPagePath: string; // /
+}
+
+interface ControlPanelAppProps extends SiteInfo {
+    contentPanels: Array<FrontendPanelConfig>;
+    adminPanels: Array<FrontendPanelConfig>;
 }

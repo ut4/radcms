@@ -3,7 +3,6 @@
 namespace RadCms\User;
 
 use Pike\Db;
-use Pike\PikeException;
 
 class UserRepository {
     private $db;
@@ -14,21 +13,15 @@ class UserRepository {
         $this->db = $db;
     }
     /**
-     * @param string $wherePlaceholders Olettaa että on validi
-     * @param array $whereVals Olettaa että on validi
+     * @param string $id Olettaa että validi
      * @return \RadCms\User\User|null
      */
-    public function getSingle($wherePlaceholders, $whereVals) {
-        try {
-            $row = $this->db->fetchOne('SELECT `id`,`username`,`email`,`role`' .
-                                       ' FROM ${p}users' .
-                                       ' WHERE ' . $wherePlaceholders,
-                                       $whereVals);
-            return $row ? User::fromDbResult($row) : null;
-        } catch (\PDOException $e) {
-            throw new PikeException("Failed to fetch user: {$e->getMessage()}",
-                                    PikeException::FAILED_DB_OP);
-        }
+    public function getSingle($id) {
+        // @allow \Pike\PikeException
+        return $this->db->fetchOne('SELECT `id`,`username`,`email`,`role`' .
+                                   ' FROM ${p}users' .
+                                   ' WHERE `id` = ?',
+                                   [$id], \PDO::FETCH_CLASS, User::class);
     }
 }
 
@@ -42,15 +35,9 @@ class User {
     /** @var int 1 - 8388608 (ACL::ROLE_SUPER_ADMIN - ACL::ROLE_VIEWER) */
     public $role;
     /**
-     * @param array $row
-     * @return \RadCms\User\User
+     * Normalisoi \PDO:n asettamat arvot.
      */
-    public static function fromDbResult($row) {
-        $out = new User;
-        $out->id = $row['id'];
-        $out->username = $row['username'];
-        $out->email = $row['email'];
-        $out->role = (int) $row['role'];
-        return $out;
+    public function __construct() {
+        $this->role = (int) $this->role;
     }
 }

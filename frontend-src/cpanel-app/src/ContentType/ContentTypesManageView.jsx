@@ -1,4 +1,4 @@
-import {http, toasters, urlUtils, View, Form, FeatherSvg} from '@rad-commons';
+import {http, toasters, urlUtils, View, Confirmation, FeatherSvg} from '@rad-commons';
 import FieldList from './FieldList.jsx';
 import FieldsStore from './FieldsStore.js';
 import ContentEditable from '../Common/ContentEditable.jsx';
@@ -45,11 +45,13 @@ class ContentTypesManageView extends preact.Component {
      */
     render() {
         return <View><div>
-            <h2>Sisältötyypit <a onClick={ () => this.prependNewContentType() }
-                                 class={ `icon-only${!this.state.fieldsCurrentlyBeingEdited ? '' : ' disabled'}` }
-                                 title="Luo uusi sisältötyyppi">
-                                  <FeatherSvg iconId="plus-circle" className="medium"/>
-                              </a></h2>
+            <h2>Sisältötyypit
+                <button onClick={ () => this.prependNewContentType() }
+                        class={ `icon-button${!this.state.fieldsCurrentlyBeingEdited ? '' : ' disabled'}` }
+                        title="Luo uusi sisältötyyppi">
+                    <FeatherSvg iconId="plus-circle" className="medium"/>
+                </button>
+            </h2>
             { this.state.contentTypes
                 ? <div class="item-grid">{ this.state.contentTypes.map((t, i) => {
                     const useNormalWidth = this.state.basicInfoEditModes[i] === 'none' &&
@@ -266,28 +268,26 @@ class DeleteDialog extends preact.Component {
      */
     render() {
         return <div class="popup-dialog"><div class="box">
-            <Form onConfirm={ () => this.handleConfirm() }
-                usePseudoFormTag={ true }
+            <Confirmation onConfirm={ () => this.handleConfirm() }
                 confirmButtonText="Poista sisältötyyppi"
-                onCancel={ e => this.handleCancel(e) }>
+                onCancel={ () => this.handleCancel() }>
             <h2>Poista sisältötyyppi</h2>
             <div class="main">
                 <p>Poista sisältötyyppi &quot;{ this.props.contentType.friendlyName }&quot; ({ this.props.contentType.name }) ja siihen liittyvä data pysyvästi?</p>
             </div>
-        </Form></div></div>;
+        </Confirmation></div></div>;
     }
     /**
      * @access private
      */
     handleConfirm() {
         this.props.onConfirm();
-        this.handleCancel(null);
+        this.handleCancel();
     }
     /**
      * @access private
      */
-    handleCancel(e) {
-        if (e) e.preventDefault();
+    handleCancel() {
         popupDialog.close();
     }
 }

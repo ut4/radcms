@@ -40,8 +40,6 @@
     "globals": {
         "preact": true,
         "preactRouter": true,
-        "QUnit": true,
-        "toast": true,
-        "popupDialog": true
+        "QUnit": true
     }
 }

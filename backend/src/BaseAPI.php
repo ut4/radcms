@@ -3,19 +3,22 @@
 namespace RadCms;
 
 /**
- * Teemoissa ja lisäosissa käytettävä luokka.
+ * Site.php-luokissa, teemoissa ja lisäosissa käytettävä luokka.
  */
 class BaseAPI {
-    private $apiConfigs;
+    public const TARGET_WEBSITE_LAYOUT = 'WebsiteLayout';
+    public const TARGET_CONTROL_PANEL_LAYOUT = 'ControlPanelLayout';
+    public const TARGET_ALL = '*';
+    protected $configsStorage;
     /**
      * @param \RadCms\APIConfigsStorage $configs
      */
     public function __construct(APIConfigsStorage $configs) {
-        $this->apiConfigs = $configs;
+        $this->configsStorage = $configs;
     }
     /**
      * Rekisteröi <?= $this->DirectiveName(...) ?> käytettäväksi templaatteista.
-     * Esimerkki: registerDirective('Movies', RAD_SITE_PATH . 'plugins/foo/movies.inc');
+     * Esimerkki: registerDirective('Movies', RAD_PUBLIC_PATH . 'plugins/foo/movies.inc');
      *
      * @param string $directiveName
      * @param string $fullFilePath
@@ -24,7 +27,7 @@ class BaseAPI {
      */
     public function registerDirective($directiveName, $fullFilePath, $for = '*') {
         // @allow \Pike\PikeException
-        $this->apiConfigs->putTemplateAlias($directiveName, $fullFilePath, $for);
+        $this->configsStorage->putTemplateAlias($directiveName, $fullFilePath, $for);
     }
     /**
      * Rekisteröi <?php $this->methodName(...) ?> käytettäväksi templaatteista.
@@ -40,9 +43,22 @@ class BaseAPI {
                                             $for = '*',
                                             $bindToDirectiveScope = false) {
         // @allow \Pike\PikeException
-        $this->apiConfigs->putTemplateMethod($methodName,
-                                             $fn,
-                                             $bindToDirectiveScope,
-                                             $for);
+        $this->configsStorage->putTemplateMethod($methodName,
+                                                 $fn,
+                                                 $bindToDirectiveScope,
+                                                 $for);
+    }
+    /**
+     * Rekisteröi <script src="<?= $scriptFileName ?>"> sisällytettäväksi
+     * cpanel.php-tiedostoon. Esimerkki: enqueueAdminJsFile('my-file.js', ['type' => 'module']);
+     *
+     * @param string $scriptFileName
+     * @param array $attrs = array
+     */
+    public function enqueueAdminJsFile($scriptFileName, array $attrs = []) {
+        $this->configsStorage->putJsFile((object)[
+            'url' => $scriptFileName,
+            'attrs' => $attrs,
+        ], self::TARGET_CONTROL_PANEL_LAYOUT);
     }
 }

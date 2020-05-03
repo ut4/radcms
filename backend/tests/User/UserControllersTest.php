@@ -6,13 +6,16 @@ use Pike\TestUtils\DbTestCase;
 use Pike\TestUtils\HttpTestUtils;
 use Pike\Request;
 use Pike\Auth\Authenticator;
+use Pike\DbUtils;
 use Pike\Response;
 use RadCms\Auth\ACL;
+use Pike\TestUtils\MockCrypto;
 
 final class UserControllersTest extends DbTestCase {
     use HttpTestUtils; // makeApp(), sendRequest()
-    public function tearDown() {
-        self::$db->exec('DELETE FROM ${p}users');
+    public function tearDown(): void {
+        parent::tearDown();
+        self::deleteTestUsers();
     }
     public function testHandleGetCurrentUserReturnsCurrentUserDetails() {
         $s = $this->setupGetCurrentUserTest();
@@ -21,23 +24,13 @@ final class UserControllersTest extends DbTestCase {
     }
     private function setupGetCurrentUserTest() {
         $out = new \stdClass;
-        $out->testUser = $this->makeAndInsertTestUser();
-        $out->ctx = new \stdClass;
+        $out->testUser = self::makeAndInsertTestUser();
+        $out->ctx = (object) ['db' => '@auto', 'auth' => null];
         $out->ctx->auth = $this->createMock(Authenticator::class);
         $out->ctx->auth->method('getIdentity')
-            ->willReturn((object)['id' => $out->testUser['id'],
-                                  'role' => $out->testUser['role']]);
+            ->willReturn((object)['id' => $out->testUser->id,
+                                  'role' => $out->testUser->role]);
         $out->actualResponseBody = null;
-        return $out;
-    }
-    private function makeAndInsertTestUser() {
-        $out = ['id' => 'abc',
-                'username' => 'foo',
-                'email' => 'e@mail.com',
-                'passwordHash' => 'mock',
-                'role' => ACL::ROLE_SUPER_ADMIN];
-        [$cols, $qs, $vals] = self::makeSelectColumnBinders($out);
-        self::$db->exec("INSERT INTO \${p}users ({$cols}) VALUES ({$qs})", $vals);
         return $out;
     }
     private function sendHandleGetCurrentUserRequest($s) {
@@ -48,20 +41,22 @@ final class UserControllersTest extends DbTestCase {
     }
     private function verifyReturnedCurrentUserDetails($s) {
         $user = json_decode($s->actualResponseBody);
-        $this->assertEquals($s->testUser['id'], $user->id);
-        $this->assertEquals($s->testUser['username'], $user->username);
-        $this->assertEquals($s->testUser['email'], $user->email);
-        $this->assertEquals($s->testUser['role'], $user->role);
+        $this->assertEquals($s->testUser->id, $user->id);
+        $this->assertEquals($s->testUser->username, $user->username);
+        $this->assertEquals($s->testUser->email, $user->email);
+        $this->assertEquals($s->testUser->role, $user->role);
     }
-    private static function makeSelectColumnBinders($data) {
-        $cols = [];
-        $qs = [];
-        $vals = [];
-        foreach ($data as $key => $val) {
-            $cols[] = "`${key}`";
-            $qs[] = '?';
-            $vals[] = $val;
-        }
-        return [implode(',', $cols), implode(',', $qs), $vals];
+    public static function makeAndInsertTestUser() {
+        $out = ['id' => 'xxxxxxxx-xxxx-5xxx-yxxx-xxxxxxxxxxxx',
+                'username' => 'foo',
+                'email' => 'e@mail.com',
+                'passwordHash' => MockCrypto::mockHashPass('pass'),
+                'role' => ACL::ROLE_SUPER_ADMIN];
+        [$qs, $vals, $cols] = DbUtils::makeInsertBinders($out);
+        self::$db->exec("INSERT INTO \${p}users ({$cols}) VALUES ({$qs})", $vals);
+        return (object) $out;
+    }
+    public static function deleteTestUsers() {
+        self::$db->exec('DELETE FROM ${p}users');
     }
 }

@@ -3,6 +3,13 @@
 namespace RadCms\Templating;
 
 abstract class StockFrontendPanelImpls {
-    const List = 'List';
-    const Generic = 'Generic';
+    /**
+     * Oletushallintapaneeli-implementaatio yksittäiselle sisältönodelle
+     * (fetchOne()).
+     */
+    public const DEFAULT_SINGLE = 'DefaultSingle';
+    /**
+     * Oletushallintapaneeli-implementaatio sisältönodetaulukolle (fetchAll()).
+     */
+    public const DEFAULT_COLLECTION = 'DefaultCollection';
 }

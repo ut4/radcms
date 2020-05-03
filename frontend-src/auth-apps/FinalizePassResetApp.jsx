@@ -1,4 +1,4 @@
-import {urlUtils, InputGroup, Input, http} from '@rad-commons';
+import {http, urlUtils, hookForm, InputGroup, Input, InputError, FormButtons} from '@rad-commons';
 import {translateError} from './commons.js';
 
 class FinalizePassResetApp extends preact.Component {
@@ -7,7 +7,10 @@ class FinalizePassResetApp extends preact.Component {
      */
     constructor(props) {
         super(props);
-        this.state = {newPassword: '', email: '', message: null};
+        this.state = Object.assign(
+            hookForm(this, {newPassword: '', email: ''}),
+            {message: null}
+        );
     }
     /**
      * @access protected
@@ -19,33 +22,34 @@ class FinalizePassResetApp extends preact.Component {
                 ? null
                 : <div class={ `container box ${this.state.message.level}` }>{ this.state.message.text }</div>
             }
-            <InputGroup label="Uusi salasana">
-                <Input onInput={ e => this.setState({newPassword: e.target.value}) }
-                       value={ this.state.newPassword }
+            <InputGroup classes={ this.state.classes.newPassword }>
+                <label htmlFor="newPassword">Uusi salasana</label>
+                <Input vm={ this } name="newPassword" id="newPassword" errorLabel="Uusi salasana"
                        type="password"
-                       id="newPassword"
-                       required/>
+                       validations={ [['required']] }/>
+                <InputError error={ this.state.errors.newPassword }/>
             </InputGroup>
-            <InputGroup label="Email">
-                <Input onInput={ e => this.setState({email: e.target.value}) }
-                       value={ this.state.email }
-                       id="email"
-                       required/>
+            <InputGroup classes={ this.state.classes.email }>
+                <label htmlFor="email">Email</label>
+                <Input vm={ this } name="email" id="email" errorLabel="Email"
+                       validations={ [['required']] }/>
+                <InputError error={ this.state.errors.email }/>
             </InputGroup>
-            <div class="form-buttons">
-                <button class="nice-button" type="submit">Tallenna uusi salasana</button>
-            </div>
+            <FormButtons
+                buttons={ ['submit'] }
+                submitButtonText="Tallenna uusi salasana"/>
         </form>;
     }
     /**
      * @access private
      */
     handleSubmit(e) {
-        e.preventDefault();
+        if (!this.form.handleSubmit(e))
+            return;
         http.post('/api/finalize-password-reset',
-                  {newPassword: this.state.newPassword,
-                   email: this.state.email,
-                   key: location.pathname.split('/').pop()})
+                  {newPassword: this.state.values.newPassword,
+                   email: this.state.values.email,
+                   key: location.href.split('/').pop()})
             .then(info => {
                 if (info.ok) this.setState({message: {
                     text: <div>Salasana päivitetty. <a href={ urlUtils.makeUrl('/login') }>Kirjaudu tästä</a>.</div>,
@@ -58,8 +62,7 @@ class FinalizePassResetApp extends preact.Component {
                 else throw new Error('wut?');
             })
             .catch(() => {
-                this.setState({message: {text: 'Jokin meni pieleen.',
-                                         level: 'error'}});
+                this.setState({message: {text: 'Jokin meni pieleen.', level: 'error'}});
             });
     }
 }

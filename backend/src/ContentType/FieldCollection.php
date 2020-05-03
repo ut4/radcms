@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RadCms\ContentType;
 
 use Pike\Translator;
@@ -12,7 +14,7 @@ class FieldCollection extends \ArrayObject implements \JsonSerializable {
      * @param \Closure $formatterFn = null fn(\RadCms\ContentType\FieldDef $field): string
      * @return string '`name`, `name2`'
      */
-    public function toSqlCols($formatterFn = null) {
+    public function toSqlCols(\Closure $formatterFn = null): string {
         $names = [];
         foreach ($this as $f)
             $names[] = $f->toSqlCol($formatterFn);
@@ -21,7 +23,7 @@ class FieldCollection extends \ArrayObject implements \JsonSerializable {
     /**
      * @return string '`name` TEXT, `name2` INT UNSIGNED'
      */
-    public function toSqlTableFields() {
+    public function toSqlTableFields(): string {
         $fields = [];
         foreach ($this as $f)
             $fields[] = $f->toSqlTableField();
@@ -31,50 +33,53 @@ class FieldCollection extends \ArrayObject implements \JsonSerializable {
      * @param \Pike\Translator $translator = null
      * @return array see self::fromCompactForm()
      */
-    public function toCompactForm(Translator $translator = null) {
+    public function toCompactForm(Translator $translator = null): array {
         $out = [];
         foreach ($this as $f)
-            $out[$f->name] = [$f->dataType,
-                              !$translator ? $f->friendlyName : $translator->t($f->name),
-                              $f->widget->toCompactForm(),
-                              $f->defaultValue,
-                              (int) $f->visibility];
+            $out[] = (object) [
+                'name' => $f->name,
+                'dataType' => $f->dataType,
+                'friendlyName' => !$translator ? $f->friendlyName ?? $f->name : $translator->t($f->name),
+                'widget' => $f->widget ?? null,
+                'defaultValue' => $f->defaultValue ?? '',
+                'visibility' => property_exists($f, 'visibility') ? (int) $f->visibility : 0,
+            ];
         return $out;
     }
     /**
      * @return array
      */
-    public function jsonSerialize() {
+    public function jsonSerialize(): array {
         return $this->getArrayCopy();
     }
 
     ////////////////////////////////////////////////////////////////////////////
 
     /**
-     * @param array|\stdClass $compactFields ['name' => ['dataType'], 'another' => 'datatype', 'yetanother' => ['dataType', 'FriendlyName', 'widgetName'], 'withArgs' => ['dataType', 'FriendlyName', 'widgetName(arg1, arg2=foo)'] ...]
+     * @param array $input
      * @return \RadCms\ContentType\FieldCollection
      */
-    public static function fromCompactForm($compactFields) {
-        $out = new FieldCollection;
-        $DEFAULT_WIDGET = new FieldSetting(ContentTypeValidator::FIELD_WIDGETS[0]);
-        foreach ($compactFields as $name => $def) {
-            $remainingArgs = !is_string($def) ? $def : explode(':', $def);
-            $out[] = new FieldDef($name,
-                                  $remainingArgs[1] ?? $name, // friendlyName
-                                  $remainingArgs[0],          // dataType
-                                  !isset($remainingArgs[2])   // widget
-                                      ? $DEFAULT_WIDGET
-                                      : FieldSetting::fromCompactForm($remainingArgs[2]),
-                                  $remainingArgs[3] ?? '',    // defaultValue
-                                  intval($remainingArgs[4] ?? 0)); // visibility
-        }
-        return $out;
+    public static function fromCompactForm(array $input): FieldCollection {
+        $defaultWidget = (object) ['name' => ContentTypeValidator::FIELD_WIDGETS[0],
+                                   'args' => null];
+        return self::fromArray(array_map(function ($compact) use ($defaultWidget) {
+            return (object) [
+                'name' => $compact->name,
+                'dataType' => $compact->dataType,
+                'friendlyName' => $compact->friendlyName ?? $compact->name,
+                'widget' => property_exists($compact, 'widget')
+                    ? !is_string($compact->widget) ? $compact->widget : (object) ['name' => $compact->widget]
+                    : $defaultWidget,
+                'defaultValue' => $compact->defaultValue ?? '',
+                'visibility' => intval($compact->visibility ?? 0),
+            ];
+        }, $input));
     }
     /**
      * @param array $input array<{name: string, friendlyName: string, dataType: string, widget: {name: string, args?: object}, defaultValue: string, visibility: int}> Olettaa että on validi
      * @return \RadCms\ContentType\FieldCollection
      */
-    public static function fromArray(array $input) {
+    public static function fromArray(array $input): FieldCollection {
         $out = new FieldCollection;
         foreach ($input as $field)
             $out[] = FieldDef::fromObject($field);

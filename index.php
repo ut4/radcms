@@ -1,11 +1,11 @@
 <?php
 
-define('RAD_VERSION', 'preview-0.2.0');
+define('RAD_VERSION', '0.3.0-preview');
 
 $config = require 'config.php';
 $loader = require RAD_BASE_PATH . 'vendor/autoload.php';
-$loader->addPsr4('RadPlugins\\', RAD_SITE_PATH . 'plugins');
-$loader->addPsr4('RadTheme\\', RAD_SITE_PATH . 'theme');
+$loader->addPsr4('RadSite\\', RAD_PUBLIC_PATH . 'site');
+$loader->addPsr4('RadPlugins\\', RAD_PUBLIC_PATH . 'plugins');
 
 ////////////////////////////////////////////////////////////////////////////////
 $logger = new \Monolog\Logger('mainLogger');

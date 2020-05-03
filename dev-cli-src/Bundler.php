@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RadCms\Cli;
 
 use Pike\PikeException;
@@ -23,7 +25,9 @@ class Bundler {
      * @param callable $shellExecFn function ($cmd) { return shell_exec($cmd); }
      * @throws \Pike\PikeException
      */
-    public function makeRelease($toDir, \Closure $printFn, callable $shellExecFn) {
+    public function makeRelease(string $toDir,
+                                \Closure $printFn,
+                                callable $shellExecFn): void {
         $this->doPrint = $printFn;
         $this->shellExecFn = $shellExecFn;
         $this->radPath = dirname(__DIR__) . '/';
@@ -37,7 +41,7 @@ class Bundler {
      * Luo kohdekansion $this->targetDirPath, ja kopioi sinne
      * rad/<kansio*>/<kaikkiRelevantitTiedostot>.
      */
-    private function copySourceFiles() {
+    private function copySourceFiles(): void {
         $this->doPrint->__invoke('Copying files...');
         // @allow \Pike\PikeException
         $this->createTargetDirectories();
@@ -50,12 +54,13 @@ class Bundler {
     /**
      * @throws \Pike\PikeException
      */
-    private function createTargetDirectories() {
-        $targetDirPaths = ["{$this->targetDirPath}backend", "{$this->targetDirPath}frontend"];
+    private function createTargetDirectories(): void {
+        $targetDirPaths = ["{$this->targetDirPath}backend/assets",
+                           "{$this->targetDirPath}frontend"];
         foreach ($targetDirPaths as $p) {
             if ($this->fs->isDir($p)) {
-                $alradyContainsEntries = (new \FilesystemIterator($p))->valid();
-                if (!$alradyContainsEntries) continue;
+                $alreadyContainsEntries = (new \FilesystemIterator($p))->valid();
+                if (!$alreadyContainsEntries) continue;
                 throw new PikeException("`{$p}` already exists and is not empty",
                                         PikeException::BAD_INPUT);
             }
@@ -67,8 +72,12 @@ class Bundler {
     /**
      * @throws \Pike\PikeException
      */
-    private function copyBackendFiles() {
-        foreach (['backend/composer.json', 'index.php', 'install.php', 'LICENSE.txt'] as $f) {
+    private function copyBackendFiles(): void {
+        foreach (['backend/assets/schema.mariadb.sql',
+                  'backend/composer.json',
+                  'index.php',
+                  'install.php',
+                  'LICENSE.txt'] as $f) {
             if (!$this->fs->copy($this->radPath . $f, $this->targetDirPath . $f))
                 throw new PikeException('Failed to copy `' . ($this->radPath . $f) .
                                         '` -> `' . ($this->targetDirPath . $f) . '`');
@@ -96,7 +105,7 @@ class Bundler {
     /**
      * @throws \Pike\PikeException
      */
-    private function copyFrontendFiles() {
+    private function copyFrontendFiles(): void {
         foreach ([
             ['frontend-src/cpanel-app/cpanel.css', 'frontend/cpanel-app.css'],
             ['frontend-src/install-app/install-app.css', 'frontend/install-app.css'],
@@ -136,7 +145,7 @@ class Bundler {
     /**
      * @throws \Pike\PikeException
      */
-    private function installBackendVendorDeps() {
+    private function installBackendVendorDeps(): void {
         $this->doPrint->__invoke('cd <targetDir>/backend...');
         $originalCwd = getcwd();
         chdir("{$this->targetDirPath}backend");
@@ -152,7 +161,7 @@ class Bundler {
     /**
      * @return string esim. `rsync -r --exclude 'kansio' /mistä/ /mihin/`
      */
-    private static function makeCpCmd($from, $to, ...$exclude) {
+    private static function makeCpCmd($from, $to, ...$exclude): string {
         $isWin = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
         $excludes = '';
         if ($exclude) {
@@ -166,13 +175,13 @@ class Bundler {
                 $excludes = (!$dirs ? '' : ' /xd ' . implode(' ', $dirs)) .
                             (!$files ? '' : ' /xf ' . implode(' ', $files));
             } else {
-                $excludes = ' ' . implode(' ', array_map(function ($path) {
+                $excludes = implode(' ', array_map(function ($path) {
                     return "--exclude \'{$path}\'";
                 }, $exclude)) . ' ';
             }
         }
         return $isWin
             ? "robocopy {$from} {$to} /e{$excludes}"
-            : "rsync -r{$excludes}{$from} {$to}";
+            : "rsync -r {$excludes}{$from} {$to}";
     }
 }

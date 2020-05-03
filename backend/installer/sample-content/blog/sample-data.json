@@ -1,11 +1,11 @@
 [
     ["MultiFieldBlobs", [
-        {"name":"Etusivusisältö","fields":"[{\"id\":1,\"type\":\"textField\",\"name\":\"Otsikko\",\"value\":\"Hello World!\"},{\"id\":2,\"type\":\"textArea\",\"name\":\"Teksti\",\"value\":\"Hello from Etusivusisältö.\"}]"},
-        {"name":"GlobalFooter","fields":"[{\"id\":1,\"type\":\"textArea\",\"name\":\"Teksti\",\"value\":\"Hello from footer.\"},{\"id\":2,\"type\":\"textArea\",\"name\":\"Tagline\",\"value\":\"Tagline, here.\"}]"}
+        {"name":"etusivusisältö","fields":"[{\"id\":1,\"widget\":{\"name\":\"textField\",\"args\":{}},\"name\":\"Otsikko\",\"value\":\"Hei maailma!\"},{\"id\":2,\"widget\":{\"name\":\"textArea\",\"args\":{}},\"name\":\"Teksti\",\"value\":\"Lorem ipsum corundum ingot.\"}]"},
+        {"name":"globalFooter","fields":"[{\"id\":1,\"widget\":{\"name\":\"textArea\",\"args\":{}},\"name\":\"Teksti\",\"value\":\"Footerin teksti.\"},{\"id\":2,\"widget\":{\"name\":\"textArea\",\"args\":{}},\"name\":\"Tagline\",\"value\":\"Footerin tagline.\"}]"}
     ]],
     ["Articles", [
-        {"slug":"art1","title":"Article 1","body":"Hello from article 1"},
-        {"slug":"art2","title":"Article 2","body":"Hello from article 2"},
-        {"slug":"art3","title":"Article 3","body":"Hello from article 3"}
+        {"slug":"artikkeli-1","title":"Artikkeli 1","body":"Terve artikkelista 1"},
+        {"slug":"artikkeli-2","title":"Artikkeli 2","body":"Terve artikkelista 2"},
+        {"slug":"artikkeli-3","title":"Artikkeli 3","body":"Terve artikkelista 3"}
     ]]
 ]

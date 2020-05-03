@@ -13,10 +13,10 @@ use RadCms\Tests\AppTest;
 final class PluginControllersTest extends DbTestCase {
     use HttpTestUtils;
     private $afterTest;
-    protected function setUp() {
+    protected function setUp(): void {
         parent::setUp();
     }
-    protected function tearDown() {
+    protected function tearDown(): void {
         parent::tearDown();
         $this->afterTest->__invoke();
     }
@@ -29,9 +29,10 @@ final class PluginControllersTest extends DbTestCase {
     private function setupInstallTest($testPluginName = 'ValidPlugin') {
         $s = new \stdClass;
         $s->testPluginName = $testPluginName;
-        $s->ctx = (object)['fs' => $this->createMock(FileSystem::class)];
+        $s->ctx = (object) ['db' => '@auto', 'auth' => '@auto',
+                            'fs' => $this->createMock(FileSystem::class)];
         $s->ctx->fs->expects($this->once())->method('readDir')->willReturn(
-            [dirname(RAD_SITE_PATH) . '/_test-plugins/' . $s->testPluginName]);
+            [dirname(RAD_PUBLIC_PATH) . '/_test-plugins/' . $s->testPluginName]);
         $this->afterTest = function () {
             ValidPlugin::$instantiated = false;
             ValidPlugin::$initialized = false;

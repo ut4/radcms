@@ -14,44 +14,46 @@ use Pike\TestUtils\MutedResponse;
 use RadPlugins\MoviesPlugin\MoviesPlugin;
 use RadCms\Plugin\Plugin;
 use RadCms\APIConfigsStorage;
+use RadCms\BaseAPI;
+use RadCms\Content\DAO;
 
 final class PluginAPIIntegrationTest extends DbTestCase {
     use HttpTestUtils;
     use ContentTestUtils;
-    private $testPlugin;
+    private $moviesPlugin;
     private $app;
     public function setupTestPlugin($initialData = null) {
         // Tekee suunnilleen saman kuin PUT /api/plugins/MoviesPlugin/install
         $db = self::getDb();
-        $this->testPlugin = new Plugin('MoviesPlugin', MoviesPlugin::class);
+        $plugin = new Plugin('MoviesPlugin', MoviesPlugin::class);
         $m = new ContentTypeMigrator($db);
-        $m->setOrigin($this->testPlugin);
-        $moviesPluginImpl = $this->testPlugin->instantiate();
-        if ($initialData) $moviesPluginImpl->setTestInitalData($initialData);
-        $moviesPluginImpl->install($m);
+        $m->setOrigin($plugin);
+        $this->moviesPlugin = $plugin->instantiate();
+        if ($initialData) $this->moviesPlugin->setTestInitalData($initialData);
+        $this->moviesPlugin->install($m);
         AppTest::markPluginAsInstalled('MoviesPlugin', $db);
         //
-        $ctx = new \stdClass;
+        $ctx = (object) ['db' => '@auto', 'auth' => '@auto'];
         $ctx->fs = $this->getMockBuilder(FileSystem::class)
             ->setMethods(['readDir'])
             ->getMock();
         $ctx->fs->method('readDir')
             ->with($this->stringEndsWith('plugins'))
-            ->willReturn([dirname(RAD_SITE_PATH) . '/_test-plugins/MoviesPlugin']);
+            ->willReturn([dirname(RAD_PUBLIC_PATH) . '/_test-plugins/MoviesPlugin']);
         $this->app = $this->makeApp('\RadCms\App::create', $this->getAppConfig(),
             $ctx);
     }
-    public function tearDown() {
+    public function tearDown(): void {
         parent::tearDown();
-        if ($this->testPlugin) {
+        if ($this->moviesPlugin) {
             // Tekee suunnilleen saman kuin PUT /api/plugins/MoviesPlugin/uninstall
-            $this->testPlugin->impl->uninstall(new ContentTypeMigrator(self::$db));
+            $this->moviesPlugin->uninstall(new ContentTypeMigrator(self::$db));
             AppTest::markPluginAsUninstalled('MoviesPlugin', self::$db);
         }
     }
-    public static function tearDownAfterClass() {
+    public static function tearDownAfterClass(): void {
         parent::tearDownAfterClass();
-        self::clearInstalledContentTypesFromDb();
+        self::clearInstalledContentTypesFromDb(false);
     }
     public function testPluginCanInstallContentType() {
         $initialMovies = [['Movies', [(object)['title' => 'Initial movie',
@@ -83,7 +85,7 @@ final class PluginAPIIntegrationTest extends DbTestCase {
         $this->insertTestMovie();
         $this->sendListMoviesRequest($s);
         $this->verifyResponseBodyEquals('[{"id":"1"' .
-                                        ',"isPublished":true' .
+                                        ',"status":' . DAO::STATUS_PUBLISHED .
                                         ',"title":"Fus"' .
                                         ',"releaseYear":"2020"' .
                                         ',"contentType":"Movies"' .
@@ -93,8 +95,10 @@ final class PluginAPIIntegrationTest extends DbTestCase {
     private function setupReadTest() {
         return $this->setupInstallCtypeTest();
     }
-    private function insertTestMovie($id = '1') {
-        $this->insertContent('Movies', [['Fus', 2020], [$id]]);
+    private function insertTestMovie($id = 1) {
+        $this->insertContent('Movies', ['id' => $id,
+                                        'title' => 'Fus',
+                                        'releaseYear' => 2020]);
     }
     private function sendListMoviesRequest($s) {
         $res = $this->createMock(Response::class);
@@ -168,31 +172,31 @@ final class PluginAPIIntegrationTest extends DbTestCase {
     ////////////////////////////////////////////////////////////////////////////
 
 
-    public function testPluginCanRegisterJsFilesAndAdminPanels() {
+    public function testPluginCanEnqueuAdminJsFilesAndAdminPanels() {
         $this->setupFileRegTest();
         $res = $this->createMock(MutedResponse::class);
         $req = new Request('/noop', 'GET');
         $this->sendRequest($req, $res, $this->app);
-        $apiConfigs = $this->app->getAppCtx()->cmsState->getApiConfigs();
-        $this->verifyJsFilesWereRegistered($apiConfigs);
-        $this->verifyAdminPanelsWereRegistered($apiConfigs);
+        $storage = $this->app->getAppCtx()->cmsState->getApiConfigs();
+        $this->verifyAdminJsFilesWereEnqueued($storage);
+        $this->verifyAdminPanelsWereEnqueued($storage);
     }
     private function setupFileRegTest() {
         return $this->setupReadTest();
     }
-    private function verifyJsFilesWereRegistered(APIConfigsStorage $configs) {
-        $actual = $configs->getRegisteredPluginJsFiles();
+    private function verifyAdminJsFilesWereEnqueued(APIConfigsStorage $configs) {
+        $actual = $configs->getEnqueuedJsFiles(BaseAPI::TARGET_CONTROL_PANEL_LAYOUT);
         $this->assertEquals(2, count($actual));
         $this->assertEquals([(object)[
-            'fileName' => 'file1.js',
+            'url' => 'file1.js',
             'attrs' => []
         ], (object)[
-            'fileName' => 'file2.js',
+            'url' => 'file2.js',
             'attrs' => ['id' => 'file2']
         ]], $actual);
     }
-    private function verifyAdminPanelsWereRegistered(APIConfigsStorage $configs) {
-        $actual = $configs->getRegisteredAdminPanels();
+    private function verifyAdminPanelsWereEnqueued(APIConfigsStorage $configs) {
+        $actual = $configs->getEnqueuedAdminPanels();
         $this->assertEquals(1, count($actual));
         $this->assertEquals((object)[
             'impl' => 'MoviesAdmin',

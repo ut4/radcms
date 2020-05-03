@@ -3,7 +3,7 @@
 namespace RadPlugins\ValidPlugin;
 
 use RadCms\Plugin\PluginInterface;
-use RadCms\Plugin\API;
+use RadCms\Plugin\PluginAPI;
 use RadCms\ContentType\ContentTypeMigrator;
 
 class ValidPlugin implements PluginInterface {
@@ -13,7 +13,7 @@ class ValidPlugin implements PluginInterface {
     public function __construct() {
         self::$instantiated = true;
     }
-    public function init(API $api) {
+    public function init(PluginAPI $api) {
         self::$initialized = true;
     }
     public function install(ContentTypeMigrator $migrator) {

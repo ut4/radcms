@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RadCms\Website;
 
 use Pike\FileSystemInterface;
@@ -9,7 +11,11 @@ use Pike\PikeException;
  * Lukee, ja pitää sisällään site.json -tiedostoon conffatut tiedot.
  */
 class SiteConfig {
-    public const ASSET_TYPES = ['local-stylesheet', 'local-script'];
+    public const ASSET_TYPES = ['localStylesheet', 'localScript'];
+    public const DOCUMENT_WEBSITE = 'site';
+    public const DOCUMENT_CONTROL_PANEL = 'controlPanel';
+    private const ASSET_TARGET_DOCUMENTS = [self::DOCUMENT_WEBSITE,
+                                            self::DOCUMENT_CONTROL_PANEL];
     public $urlMatchers;
     private $assets;
     private $fs;
@@ -25,7 +31,7 @@ class SiteConfig {
      * @return bool
      * @throws \Pike\PikeException
      */
-    public function selfLoad($filePath, $autoSelfValidate = true) {
+    public function selfLoad(string $filePath, bool $autoSelfValidate = true): bool {
         if (!($str = $this->fs->read($filePath)))
             throw new PikeException("Failed to read `{$filePath}`",
                                     PikeException::FAILED_FS_OP);
@@ -34,7 +40,7 @@ class SiteConfig {
                                     PikeException::BAD_INPUT);
         //
         return (!$autoSelfValidate ||
-                $this->selfValidate($parsed, dirname($filePath) . '/theme/')) &&
+                $this->selfValidate($parsed, dirname($filePath) . '/site/')) &&
                 $this->collectAll($parsed);
     }
     /**
@@ -42,7 +48,7 @@ class SiteConfig {
      * @return bool
      * @throws \Pike\PikeException
      */
-    private function collectAll($input) {
+    private function collectAll(\stdClass $input): bool {
         $this->urlMatchers = $this->collectUrlMatchers($input->urlMatchers);
         $this->assets = $this->collectAssets($input->assetFiles ?? []);
         return true;
@@ -51,7 +57,7 @@ class SiteConfig {
      * @param array $inputUrlMatchers
      * @return array
      */
-    private function collectUrlMatchers($inputUrlMatchers) {
+    private function collectUrlMatchers(array $inputUrlMatchers): array {
         $out = [];
         foreach ($inputUrlMatchers as $definition)
             $out[] = new UrlMatcher(...$definition);
@@ -59,26 +65,27 @@ class SiteConfig {
     }
     /**
      * @param array $inputAssetFiles
-     * @return array array<{url: string, type: string, attrs: array}>
+     * @return array array<{url: string, type: 'localStylesheet'|'localScript', targetDocument: 'site'|'controlPanel', attrs: array}>
      */
-    private function collectAssets($inputAssetFiles) {
+    private function collectAssets(array $inputAssetFiles): array {
         $out = [];
         foreach ($inputAssetFiles as $definition) {
             $out[] = (object)['url' => $definition[0] ?? '',
                               'type' => $definition[1] ?? '',
-                              'attrs' => count($definition) < 3
+                              'targetDocument' => $definition[2] ?? self::DOCUMENT_WEBSITE,
+                              'attrs' => count($definition) < 4
                                   ? []
-                                  : (array)$definition[2]];
+                                  : (array)$definition[3]];
         }
         return $out;
     }
     /**
      * @param \stdClass $input
-     * @param string $sitePath i.e. RAD_SITE_PATH
+     * @param string $sitePath i.e. RAD_PUBLIC_PATH
      * @return bool
      * @throws \Pike\PikeException
      */
-    private function selfValidate($input, $sitePath) {
+    private function selfValidate(\stdClass $input, string $sitePath): bool {
         if (!($errors = array_merge($this->validateUrlMatchers($input->urlMatchers ?? [],
                                                                $sitePath),
                                     $this->validateAssets($input->assetFiles ?? [])))) {
@@ -91,16 +98,20 @@ class SiteConfig {
     /**
      * @return string[]
      */
-    public function __get($name) {
-        if ($name === 'cssAssets')
-            return array_filter($this->assets, function ($f) {
-                return $f->type === 'local-stylesheet';
-            });
-        if ($name === 'jsAssets')
-            return array_filter($this->assets, function ($f) {
-                return $f->type === 'local-script';
-            });
-        throw new PikeException("What's {$name}?", PikeException::BAD_INPUT);
+    public function getCssAssets(): array {
+        return array_filter($this->assets, function ($f) {
+            return $f->type === self::ASSET_TYPES[0];
+        });
+    }
+    /**
+     * @param string $targetDocument 'site'|'controlPanel'
+     * @return string[]
+     */
+    public function getJsAssets(string $targetDocument): array {
+        return array_filter($this->assets, function ($f) use ($targetDocument) {
+            return $f->type === self::ASSET_TYPES[1] &&
+                   $f->targetDocument === $targetDocument;
+        });
     }
     /**
      * @return string[]
@@ -117,7 +128,7 @@ class SiteConfig {
             [$pattern, $layout] = $definition;
             if (!is_string($pattern) || !strlen($pattern))
                 $errors[] = 'urlMatcher['.$i.'].pattern must be a string';
-            elseif (@preg_match(UrlMatcher::completeRegexp($pattern), null) === false)
+            elseif (@preg_match(UrlMatcher::completeRegexp($pattern), '') === false)
                 $errors[] = "{$pattern} is not valid regexp";
             if (!$this->fs->isFile($sitePath . $layout))
                 $errors[] = 'Failed to locate UrlMatcher layout file `' .
@@ -130,7 +141,7 @@ class SiteConfig {
      */
     private function validateAssets($inputAssetFiles) {
         if ($inputAssetFiles && !is_array($inputAssetFiles))
-            return ['{..."assetFiles": [["file.ext", "asset-type", {"html-attr": "value"}?]]...} must be an array'];
+            return ['{..."assetFiles": [["file.ext", "assetType", "targetDocument", {"html-attr": "value"}?]]...} must be an array'];
         $errors = [];
         foreach ($inputAssetFiles as $i => $definition) {
             if (!is_array($definition) || count($definition) < 2) {
@@ -143,7 +154,10 @@ class SiteConfig {
             if (!in_array($type, self::ASSET_TYPES, true))
                 $errors[] = 'assetFile[' . $i . '][1] (file type) must be ' .
                             implode('|', self::ASSET_TYPES);
-            $attrs = $definition[2] ?? null;
+            $targetDoc = $definition[2] ?? null;
+            if ($targetDoc && !in_array($targetDoc, self::ASSET_TARGET_DOCUMENTS))
+                $errors[] = "asdasd";
+            $attrs = $definition[3] ?? null;
             if ($attrs && !($attrs instanceof \stdClass))
                 $errors[] = "assetFile[{$i}][2] (attrs) must be a \stdClass";
         }

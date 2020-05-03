@@ -1,29 +1,22 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RadCms\Installer;
 
 use Pike\Request;
 use Pike\Response;
 use Pike\Template;
 use Pike\Validation;
-use Pike\Auth\Crypto;
-use RadCms\Packager\PlainTextPackageStream;
 use Pike\FileSystem;
 
 class InstallerControllers {
-    private $installer;
-    /**
-     * @param \RadCms\Installer\Installer $installer
-     */
-    public function __construct(Installer $installer) {
-        $this->installer = $installer;
-    }
     /**
      * GET /.
      *
      * @param \Pike\Response $res
      */
-    public function renderHomeView(Response $res) {
+    public function renderHomeView(Response $res): void {
         if (!defined('INDEX_DIR_PATH')) {
             $res->status(400)->html('Corrupt install.php (INDEX_DIR_PATH missing).');
             return;
@@ -35,43 +28,41 @@ class InstallerControllers {
     /**
      * POST /.
      */
-    public function handleInstallRequest(Request $req, Response $res) {
-        //
+    public function handleInstallRequest(Request $req,
+                                         Response $res,
+                                         Installer $installer): void {
         if (($errors = $this->validateInstallInput($req->body))) {
             $res->status(400)->json(json_encode($errors));
             return;
         }
         // @allow \Pike\PikeException
-        $this->installer->doInstall($req->body);
+        $installer->doInstall($req->body);
         $res->json(json_encode(['ok' => 'ok',
-                                'warnings' => $this->installer->getWarnings()]));
+                                'warnings' => $installer->getWarnings()]));
     }
     /**
      * POST /from-package.
      */
     public function handleInstallFromPackageRequest(Request $req,
                                                     Response $res,
-                                                    PlainTextPackageStream $stream,
-                                                    Crypto $crypto) {
+                                                    PackageInstaller $installer): void {
         if (($errors = $this->validateInstallFromPackageInput($req))) {
             $res->status(400)->json($errors);
             return;
         }
         // @allow \Pike\PikeException
-        $this->installer
-            ->doInstallFromPackage($stream,
-                                   $req->files->packageFile['tmp_name'],
-                                   $req->body->unlockKey,
-                                   $crypto);
-        $res->json(json_encode(['ok' => 'ok']));
+        $installer->doInstall($req->files->packageFile['tmp_name'],
+                              $req->body);
+        $res->json(json_encode(['ok' => 'ok',
+                                'warnings' => $installer->getWarnings()]));
     }
     /**
      * @return string[]
      */
-    private function validateInstallInput($input) {
+    private function validateInstallInput(\stdClass $input): array {
         $errors = (Validation::makeObjectValidator())
             ->rule('siteName', 'type', 'string')
-            ->rule('siteLang', 'in', ['en_US', 'fi_FI'])
+            ->rule('siteLang', 'in', ['en', 'fi'])
             ->rule('sampleContent', 'in', ['minimal', 'blog', 'test-content'])
             ->rule('mainQueryVar?', 'identifier')
             ->rule('useDevMode', 'type', 'bool')
@@ -99,17 +90,15 @@ class InstallerControllers {
     /**
      * @return string[]
      */
-    private function validateInstallFromPackageInput($req) {
-        $errors = [];
-        if (!$req->files->packageFile) {
-            $errors[] = 'packageFile is required';
-        }
-        if (!$req->body->unlockKey) {
-            $errors[] = 'unlockKey is required';
-        } elseif (!is_string($req->body->unlockKey) ||
-                  strlen($req->body->unlockKey) < 12) {
-            $errors[] = 'unlockKey must be >= 12 characters long';
-        }
-        return $errors;
+    private function validateInstallFromPackageInput(Request $req): array {
+        return array_merge(
+            (Validation::makeObjectValidator())
+                ->rule('unlockKey', 'type', 'string')
+                ->rule('unlockKey', 'minLength', 12)
+                ->validate($req->body),
+            (Validation::makeObjectValidator())
+                ->rule('packageFile', 'type', 'array')
+                ->validate($req->files)
+        );
     }
 }

@@ -1,4 +1,14 @@
-{
-    "SomeType": ["Friendly name", {"name": "text"}],
-    "AnotherType": ["Friendly eman", {"title": "text"}]
-}
+[
+    {
+        "name": "SomeType",
+        "friendlyName": "Friendly name",
+        "isInternal": false,
+        "fields": [{"name": "name", "dataType": "text"}]
+    },
+    {
+        "name": "AnotherType",
+        "friendlyName": "Friendly eman",
+        "isInternal": false,
+        "fields": [{"name": "title", "dataType": "text"}]
+    }
+]

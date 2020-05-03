@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RadCms\Auth;
 
 use Pike\Request;
@@ -24,7 +26,7 @@ class AuthControllers {
      *
      * @param \Pike\Response $res
      */
-    public function renderLoginView(Response $res) {
+    public function renderLoginView(Response $res): void {
         $res->html((new MagicTemplate(__DIR__ . '/base-view.tmpl.php'))
             ->render(['title' => 'Kirjautuminen',
                       'reactAppName' => 'LoginApp']));
@@ -35,7 +37,7 @@ class AuthControllers {
      * @param \Pike\Request $req
      * @param \Pike\Response $res
      */
-    public function handleLoginFormSubmit(Request $req, Response $res) {
+    public function handleLoginFormSubmit(Request $req, Response $res): void {
         if (($errors = $this->validateLoginFormInput($req->body))) {
             $res->status(400)->json($errors);
             return;
@@ -45,7 +47,7 @@ class AuthControllers {
                                $req->body->password,
                                function ($user) {
                                    return (object)['id' => $user->id,
-                                                   'role' => $user->role];
+                                                   'role' => (int) $user->role];
                                });
             $res->json(['ok' => 'ok']);
         } catch (PikeException $e) {
@@ -57,7 +59,7 @@ class AuthControllers {
      *
      * @param \Pike\Response $res
      */
-    public function handleLogoutRequest(Response $res) {
+    public function handleLogoutRequest(Response $res): void {
         $this->auth->logout();
         $res->json(['ok' => 'ok']);
     }
@@ -66,7 +68,7 @@ class AuthControllers {
      *
      * @param \Pike\Response $res
      */
-    public function renderRequestPassResetView(Response $res) {
+    public function renderRequestPassResetView(Response $res): void {
         $res->html((new MagicTemplate(__DIR__ . '/base-view.tmpl.php'))
             ->render(['title' => 'Uusi salasanan palautus',
                       'reactAppName' => 'RequestPassResetApp']));
@@ -82,29 +84,29 @@ class AuthControllers {
     public function handleRequestPassResetFormSubmit(Request $req,
                                                      Response $res,
                                                      CmsState $cmsState,
-                                                     AppConfig $appConfig) {
+                                                     AppConfig $appConfig): void {
         if (($errors = $this->validateRequestPassResetFormInput($req->body))) {
             $res->status(400)->json($errors);
             return;
         }
         try {
-        $this->auth->requestPasswordReset($req->body->usernameOrEmail,
-            function ($user, $resetKey, $settings) use ($cmsState, $appConfig) {
-                $siteName = $cmsState->getSiteInfo()->name;
-                $siteUrl = $_SERVER['SERVER_NAME'];
-                $settings->useSMTP = $appConfig->get('mail.transport') === 'SMTP';
-                $settings->fromAddress = "root@{$siteUrl}";
-                $settings->fromName = $siteName;
-                $settings->subject = "[{$siteName}] salasanan palautus";
-                $expirationHours = intval(Authenticator::RESET_KEY_EXPIRATION_SECS / 60 / 60);
-                $settings->body =
-                    "Seuraavalle tilille on pyydetty salasanan palautus:\r\n\r\n" .
-                    "Sivusto: {$siteName} ({$siteUrl})\r\n" .
-                    "Käyttäjä: {$user->username}\r\n\r\n" .
-                    "Mikäli et ole pyytänyt uutta salasanaa, voit jättää tämän viestin huomiotta ja poistaa sen jos et halua tehdä mitään. Vaihtaaksesi salasanan, vieraile seuraavassa osoittessa: " .
-                    $siteUrl . MagicTemplate::makeUrl("/finalize-password-reset/{$resetKey}") .
-                    ". Linkki on voimassa {$expirationHours} tuntia.\r\n";
-            });
+            $this->auth->requestPasswordReset($req->body->usernameOrEmail,
+                function ($user, $resetKey, $settings) use ($cmsState, $appConfig) {
+                    $siteName = $cmsState->getSiteInfo()->name;
+                    $siteUrl = $_SERVER['SERVER_NAME'];
+                    $settings->useSMTP = $appConfig->get('mail.transport') === 'SMTP';
+                    $settings->fromAddress = "root@{$siteUrl}";
+                    $settings->fromName = $siteName;
+                    $settings->subject = "[{$siteName}] salasanan palautus";
+                    $expirationHours = intval(Authenticator::RESET_KEY_EXPIRATION_SECS / 60 / 60);
+                    $settings->body =
+                        "Seuraavalle tilille on pyydetty salasanan palautus:\r\n\r\n" .
+                        "Käyttäjä: {$user->username}\r\n\r\n" .
+                        "Sivusto: {$siteName} ({$siteUrl})\r\n" .
+                        "Mikäli et ole pyytänyt uutta salasanaa, voit jättää tämän viestin huomiotta ja poistaa sen jos et halua tehdä mitään. Vaihtaaksesi salasanan, vieraile seuraavassa osoittessa: " .
+                        $siteUrl . MagicTemplate::makeUrl("/finalize-password-reset/{$resetKey}") .
+                        ". Linkki on voimassa {$expirationHours} tuntia.\r\n";
+                });
             $res->json(['ok' => 'ok']);
         } catch (PikeException $e) {
             if ($e->getCode() === Authenticator::INVALID_CREDENTIAL) {
@@ -119,7 +121,7 @@ class AuthControllers {
      *
      * @param \Pike\Response $res
      */
-    public function renderFinalizePassResetView(Response $res) {
+    public function renderFinalizePassResetView(Response $res): void {
         $res->html((new MagicTemplate(__DIR__ . '/base-view.tmpl.php'))
             ->render(['title' => 'Salasanan palautus',
                       'reactAppName' => 'FinalizePassResetApp']));
@@ -130,7 +132,8 @@ class AuthControllers {
      * @param \Pike\Request $req
      * @param \Pike\Response $res
      */
-    public function handleFinalizePassResetFormSubmit(Request $req, Response $res) {
+    public function handleFinalizePassResetFormSubmit(Request $req,
+                                                      Response $res): void {
         if (($errors = $this->validateFinalizePassResetFormInput($req->body))) {
             $res->status(400)->json($errors);
             return;
@@ -149,9 +152,26 @@ class AuthControllers {
         }
     }
     /**
+     * POST /update-password.
+     *
+     * @param \Pike\Request $req
+     * @param \Pike\Response $res
+     */
+    public function handleUpdatePasswordRequest(Request $req,
+                                                Response $res): void {
+        if (($errors = $this->validateUpdatePasswordInput($req->body))) {
+            $res->status(400)->json($errors);
+            return;
+        }
+        // @allow \Pike\PikeException
+        $this->auth->updatePassword($req->body->userId,
+                                    $req->body->newPassword);
+        $res->json(['ok' => 'ok']);
+    }
+    /**
      * @return string[]
      */
-    private function validateLoginFormInput($input) {
+    private function validateLoginFormInput(\stdClass $input): array {
         return (Validation::makeObjectValidator())
             ->rule('username', 'minLength', 1)
             ->rule('password', 'minLength', 1)
@@ -160,7 +180,7 @@ class AuthControllers {
     /**
      * @return string[]
      */
-    private function validateRequestPassResetFormInput($input) {
+    private function validateRequestPassResetFormInput(\stdClass $input): array {
         return (Validation::makeObjectValidator())
             ->rule('usernameOrEmail', 'minLength', 1)
             ->validate($input);
@@ -168,11 +188,20 @@ class AuthControllers {
     /**
      * @return string[]
      */
-    private function validateFinalizePassResetFormInput($input) {
+    private function validateFinalizePassResetFormInput(\stdClass $input): array {
         return (Validation::makeObjectValidator())
             ->rule('email', 'minLength', 1)
             ->rule('newPassword', 'minLength', 1)
             ->rule('key', 'minLength', 1)
+            ->validate($input);
+    }
+    /**
+     * @return string[]
+     */
+    private function validateUpdatePasswordInput(\stdClass $input): array {
+        return (Validation::makeObjectValidator())
+            ->rule('userId', 'minLength', 36)
+            ->rule('newPassword', 'minLength', 1)
             ->validate($input);
     }
 }

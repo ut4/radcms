@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RadCms\ContentType;
 
 class FieldDef {
@@ -13,16 +15,16 @@ class FieldDef {
      * @param string $name
      * @param string $friendlyName
      * @param string $dataType
-     * @param \RadCms\ContentType\FieldSetting $widget
+     * @param \stdClass $widget
      * @param string $defaultValue
      * @param int $visibility
      */
-    public function __construct($name,
-                                $friendlyName,
-                                $dataType,
-                                $widget,
-                                $defaultValue,
-                                $visibility) {
+    public function __construct(string $name,
+                                string $friendlyName,
+                                string $dataType,
+                                \stdClass $widget,
+                                string $defaultValue,
+                                int $visibility) {
         $this->name = $name;
         $this->friendlyName = $friendlyName;
         $this->dataType = $dataType;
@@ -34,7 +36,7 @@ class FieldDef {
      * @param \Closure $formatterFn = null fn(\RadCms\ContentType\FieldDef $field): string
      * @return string '`name`, `name2`'
      */
-    public function toSqlCol($formatterFn = null) {
+    public function toSqlCol(\Closure $formatterFn = null): string {
         if (!$formatterFn)
             return "`{$this->name}`";
         return $formatterFn($this);
@@ -42,7 +44,7 @@ class FieldDef {
     /**
      * @return string '`name` TEXT'
      */
-    public function toSqlTableField() {
+    public function toSqlTableField(): string {
         return "`{$this->name}` " . [
             'text' => 'TEXT',
             'json' => 'JSON',
@@ -57,14 +59,14 @@ class FieldDef {
      * @param object $input array<{name: string, friendlyName: string, dataType: string, widget: {name: string, args?: object}, defaultValue: string, visibility: int}> Olettaa että on validi
      * @return \RadCms\ContentType\FieldDef
      */
-    public static function fromObject($input) {
+    public static function fromObject(\stdClass $input): FieldDef {
         return new FieldDef($input->name,
                             $input->friendlyName,
                             $input->dataType,
-                            new FieldSetting(
-                                $input->widget->name,
-                                $input->widget->args ?? null
-                            ),
+                            (object) [
+                                'name' => $input->widget->name,
+                                'args' => $input->widget->args ?? null
+                            ],
                             $input->defaultValue ?? '',
                             $input->visibility ?? 0);
     }

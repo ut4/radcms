@@ -1,4 +1,4 @@
-import {http, toasters, urlUtils, Form, FeatherSvg} from '@rad-commons';
+import {http, toasters, config, urlUtils, Confirmation, FeatherSvg} from '@rad-commons';
 import popupDialog from '../Common/PopupDialog.jsx';
 import ContentEditable from '../Common/ContentEditable.jsx';
 
@@ -65,7 +65,7 @@ class FreelyEditableFieldList extends preact.Component {
      */
     render() {
         return <div class="list fields"><table>
-            <tr>
+            <thead><tr>
                 <th>#</th>
                 <th>Nimi</th>
                 <th>Datatyyppi</th>
@@ -73,8 +73,8 @@ class FreelyEditableFieldList extends preact.Component {
                 <th>Näkyvyys</th>
                 <th>Widgetti</th>
                 <th class="buttons"></th>
-            </tr>
-            { this.state.fields.map(f => <tr key={ f.key.toString() }>
+            </tr></thead>
+            <tbody>{ this.state.fields.map(f => <tr key={ f.key.toString() }>
                 <td><ContentEditable onChange={ val => this.fields.setFieldProps(f, {name: val}) }
                                      value={ f.name }/></td>
                 <td><ContentEditable onChange={ val => this.fields.setFieldProps(f, {friendlyName: val}) }
@@ -93,17 +93,16 @@ class FreelyEditableFieldList extends preact.Component {
                             title="Poista kenttä"
                             class="nice-button small"
                             disabled={ this.props.disallowEditing || this.state.fields.length < 2 }>
-                        Poista
+                        <FeatherSvg iconId="x" className="small"/>
                     </button>
                 </td>
-            </tr>) }
-            <tr><td colSpan="6">
+            </tr>).concat(<tr><td colSpan="6">
                 <button onClick={ () => this.fields.addField() }
                         title="Lisää kenttä"
                         class="nice-button small">
                     Lisää kenttä
                 </button>
-            </td></tr>
+            </td></tr>) }</tbody>
         </table></div>;
     }
 }
@@ -139,7 +138,7 @@ class OneByOneEditableFieldList extends preact.Component {
                 <FeatherSvg iconId="check"/>
             </button>
             <table>
-                <tr>
+                <thead><tr>
                     <th>#</th>
                     <th>Nimi</th>
                     <th>Datatyyppi</th>
@@ -147,8 +146,8 @@ class OneByOneEditableFieldList extends preact.Component {
                     <th>Näkyvyys</th>
                     <th>Widgetti</th>
                     <th class="buttons"></th>
-                </tr>
-                { this.state.fields.map((f, i) => {
+                </tr></thead>
+                <tbody>{ this.state.fields.map((f, i) => {
                     const isNew = this.state.newFieldIsAppended && i === this.state.fields.length - 1;
                     if (!isNew && this.state.fieldIdxCurrentlyBeingEdited !== i) {
                         return <DefaultOneByOneFieldRow
@@ -174,8 +173,7 @@ class OneByOneEditableFieldList extends preact.Component {
                             </td>
                         </tr>
                     ];
-                }) }
-                { !this.state.newFieldIsAppended && this.state.fieldIdxCurrentlyBeingEdited < 0
+                }).concat(!this.state.newFieldIsAppended && this.state.fieldIdxCurrentlyBeingEdited < 0
                     ? <tr><td colSpan="6">
                         <button onClick={ () => this.fields.addField() }
                                 title="Lisää kenttä"
@@ -183,8 +181,7 @@ class OneByOneEditableFieldList extends preact.Component {
                             Lisää kenttä
                         </button>
                     </td></tr>
-                    : null
-                }
+                    : null) }</tbody>
             </table>
         </div>;
     }
@@ -264,28 +261,26 @@ class DeleteFieldDialog extends preact.Component {
      */
     render() {
         return <div class="popup-dialog"><div class="box">
-            <Form onConfirm={ () => this.handleConfirm() }
-                usePseudoFormTag={ true }
+            <Confirmation onConfirm={ () => this.handleConfirm() }
                 confirmButtonText="Poista kenttä"
-                onCancel={ e => this.handleCancel(e) }>
+                onCancel={ () => this.handleCancel() }>
             <h2>Poista sisältötyyppi</h2>
             <div class="main">
                 <p>Poista kenttä &quot;{ this.props.field.friendlyName }&quot; ({ this.props.field.name }) sisältötyypistä &quot;{ this.props.contentTypeFriendlyName }&quot; pysyvästi?</p>
             </div>
-        </Form></div></div>;
+        </Confirmation></div></div>;
     }
     /**
      * @access private
      */
     handleConfirm() {
         this.props.onConfirm();
-        this.handleCancel(null);
+        this.handleCancel();
     }
     /**
      * @access private
      */
-    handleCancel(e) {
-        if (e) e.preventDefault();
+    handleCancel() {
         popupDialog.close();
     }
 }
@@ -308,7 +303,6 @@ class DefaultOneByOneFieldRow extends preact.Component {
                         onClick={ () => this.props.onEditRequested() }>
                     <FeatherSvg iconId="edit-2" className="small"/>
                 </button>
-                <span> </span>
                 <button class="icon-button"
                         disabled={ this.props.blur }
                         onClick={ () => this.props.onDeleteRequested() }>
@@ -345,4 +339,13 @@ class EditableOneByOneFieldRow extends preact.Component {
     }
 }
 
+/**
+ * @param {Array<ContentTypeField>} fields
+ */
+const filterByUserRole = fields =>
+    fields.filter(f =>
+        f.visibility === 0 || f.visibility & config.user.role
+    );
+
 export default FieldList;
+export {filterByUserRole};

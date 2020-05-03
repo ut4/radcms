@@ -1,165 +1,264 @@
-class Form extends preact.Component {
+const validatorImplFactories = {
+    'required':
+        [(value) => !!value, '{field} vaaditaan']
+    ,
+    'minLength':
+        [(value, min) => value.length >= min, '{field} tulee ole vähintään {arg0} merkkiä pitkä']
+    ,
+    'min':
+        [(value, min) => value >= min, '{field} tulee olla vähintään {arg0}']
+    ,
+};
+function expandRules(rules) {
+    return rules.map(([ruleNameOrCustomImpl, ...args]) => {
+        // ['ruleName', ...args]
+        if (typeof ruleNameOrCustomImpl === 'string') {
+            const ruleImpl = validatorImplFactories[ruleNameOrCustomImpl];
+            if (!ruleImpl)
+                throw new Error(`Rule ${ruleNameOrCustomImpl} not implemented`);
+            return {ruleImpl, args};
+        }
+        // [[<customFn>, <errorTmpl>], ...args]
+        if (typeof ruleNameOrCustomImpl[0] !== 'function' ||
+            typeof ruleNameOrCustomImpl[1] !== 'string')
+            throw new Error('One-time-rule must be [myCheckFn, \'Error template\']');
+        return {ruleImpl: ruleNameOrCustomImpl, args};
+    });
+}
+class Validator {
     /**
-     * @param {FormProps} props
+     * @param {{getValue: () => string; getLabel: () => string;}} myInput
+     * @param {Array<[string, ...any]>} ruleSettings
      */
-    constructor(props) {
-        super(props);
-        if (!props.onConfirm) throw new TypeError('props.onConfirm() is required.');
+    constructor(myInput, ruleSettings) {
+        this.myInput = myInput;
+        this.ruleImpls = expandRules(ruleSettings);
     }
     /**
-     * @access protected
-     */
-    render() {
-        return !this.props.usePseudoFormTag
-            ? <form onSubmit={ e => this.handleSubmit(e) }>
-                { this.props.children }
-                <div class="form-buttons">
-                    <button class="nice-button primary"
-                            disabled={ this.doDisableConfirmButton() }
-                            type="submit">
-                        { this.props.confirmButtonText || 'Ok' }
-                    </button>
-                    <a href={ `#${this.props.returnTo || '/'}` }
-                        onClick={ e => this.cancel(e) } >
-                        { this.props.cancelButtonText || 'Peruuta' }
-                    </a>
-                </div>
-            </form>
-            : <div>
-                { this.props.children }
-                <div class="form-buttons">
-                    <button class="nice-button primary"
-                            onClick={ e => this.handleSubmit(e) }
-                            disabled={ this.doDisableConfirmButton() }
-                            type="button">
-                        { this.props.confirmButtonText || 'Ok' }
-                    </button>
-                    <a href={ `#${this.props.returnTo || '/'}` }
-                        onClick={ e => this.cancel(e) }>
-                        { this.props.cancelButtonText || 'Peruuta' }
-                    </a>
-                </div>
-            </div>;
-    }
-    /**
-     * @access private
-     */
-    handleSubmit(e) {
-        e.preventDefault();
-        this.props.onConfirm(e);
-    }
-    /**
+     * @returns {string|null}
      * @access public
      */
-    static receiveInputValue(e, dhis, name) {
-        dhis.setState({[name || e.target.name || e.target.id]: e.target.value});
+    checkValidity() {
+        const value = this.myInput.getValue();
+        for (const {ruleImpl, args} of this.ruleImpls) {
+            const [validationFn, errorTmpl] = ruleImpl;
+            if (!validationFn(value, ...args))
+                return this.formatError(errorTmpl, args);
+        }
+        return null;
     }
     /**
      * @access private
      */
-    cancel(e) {
-        if (this.props.onCancel) this.props.onCancel(e);
-    }
-    /**
-     * @access private
-     */
-    doDisableConfirmButton() {
-        return typeof this.props.doDisableConfirmButton === 'function'
-            ? this.props.doDisableConfirmButton()
-            : false;
+    formatError(errorTmpl, args) {
+        return args.reduce((error, arg, i) =>
+            error.replace(`{arg${i}}`, arg)
+        , errorTmpl.replace('{field}', this.myInput.getLabel()));
     }
 }
-
-/**
- * @param {{label: string|function?; id?: string; className?: string; inline?: boolean;}} props
- */
-function InputGroup(props) {
-    const children = Array.isArray(props.children) ? props.children : [props.children];
-    const label = props.label;
-    return <div class={ (!props.inline ? 'input-group' : 'input-group-inline') +
-                        (!props.className ? '' : ` ${props.className}`) }>
-        { children.concat(
-            label !== undefined && label !== null
-                ? preact.createElement('label', makeLabelAttrs(children, props),
-                    typeof label === 'string' ? label : preact.createElement(label)
-                )
-                : null
-        ) }
-    </div>;
-}
-
-function makeLabelAttrs(children, props) {
-    const input = children.find(el => el &&
-                                      (el.type === 'input' ||
-                                       el.type === 'textarea' ||
-                                       el.type === 'select'));
-    const id = props.id || (input && input.props.id);
-    return id ? {htmlFor: id} : null;
-}
-
-class BaseInput extends preact.Component {
+class ValidatorRunner {
     /**
-     * @param {{patternError?: string; maxError?: string; minError?: string; stepError?: string; maxLengthError?: string; minLengthError?: string; typeError?: string; requiredError?: string; [key: string]: any;}} props
+     * @param {{[key: string]: Validator}=} initialValidators
      */
-    constructor(props) {
-        super(props);
-        this.touched = false;
-        this.hookValidationListeners(props);
-    }
-    /**
-     * @access private
-     */
-    hookValidationListeners(props) {
-        if (props.pattern || props.min || props.max || props.required ||
-            props.step || props.minLength || props.maxLength) {
-            const origOnInvalid = props.onInvalid;
-            props.onInvalid = e => {
-                const v = e.target.validity;
-                if (!v.valid) {
-                    let message = [];
-                    if (v.patternMismatch && props.patternError) message.push(props.patternError);
-                    if (v.rangeOverflow && props.maxError) message.push(props.maxError);
-                    if (v.rangeUnderflow && props.minError) message.push(props.minError);
-                    if (v.stepMismatch && props.stepError) message.push(props.stepError);
-                    if (v.tooLong && props.maxLengthError) message.push(props.maxLengthError);
-                    if (v.tooShort && props.minLengthError) message.push(props.minLengthError);
-                    if (v.typeMismatch && props.typeError) message.push(props.typeError);
-                    if (v.valueMissing && props.requiredError) message.push(props.requiredError);
-                    //
-                    if (message.length)
-                        e.target.setCustomValidity(message.join('\n'));
-                }
-                if (origOnInvalid) origOnInvalid(e);
-            };
-            const origOnInput = props.onInput;
-            props.onInput = e => {
-                e.target.classList.remove('pristine');
-                e.target.checkValidity();
-                if (origOnInput) origOnInput(e);
-            };
-            const origRefFn = props.ref;
-            props.ref = el => {
-                if (!el || !el.classList) return;
-                if (!this.touched) el.classList.add('pristine');
-                if (origRefFn) origRefFn(el);
-            };
-            const origOnBlur = props.onBlur;
-            props.onBlur = e => {
-                e.target.classList.remove('pristine');
-                if (origOnBlur) origOnBlur(e);
-            };
-            const origOnFocus = props.onFocus;
-            props.onFocus = e => {
-                this.touched = true;
-                if (origOnFocus) origOnFocus(e);
-            };
+    constructor(initialValidators) {
+        this.validators = {};
+        if (initialValidators) {
+            for (const name in initialValidators)
+                this.setValidatorForInput(name, initialValidators[name]);
         }
     }
     /**
-     * @access protected
+     * @param {string} inputName
+     * @param {Validator} validator
+     * @access public
      */
-    componentWillReceiveProps(props) {
-        if (this.props.onInput) this.hookValidationListeners(props);
+    setValidatorForInput(inputName, validator) {
+        if (inputName === '__proto__' || inputName === 'constructor')
+            throw new Error(`Invalid inputName ${inputName}`);
+        this.validators[inputName] = validator;
+    }
+    /**
+     * @param {string} inputName
+     * @returns {boolean}
+     * @access public
+     */
+    hasValidatorForInput(inputName) {
+        return !!this.validators[inputName];
+    }
+    /**
+     * @param {string} inputName
+     * @returns {string|null}
+     * @access public
+     */
+    validateInput(inputName) {
+        return this.validators[inputName].checkValidity();
+    }
+    /**
+     * @param {(validator: Validator, inputName: string) => false|any} fn
+     */
+    each(fn) {
+        for (const inputName in this.validators) {
+            if (fn(this.validators[inputName], inputName) === false)
+                return false;
+        }
+        return true;
+    }
+}
+class Form {
+    /**
+     * @param {preact.Component} vm
+     * @param {ValidatorRunner} validatorRunner
+     */
+    constructor(vm, validatorRunner) {
+        this.vm = vm;
+        this.validatorRunner = validatorRunner;
+        this.isSubmitting = false;
+    }
+    /**
+     * @param {InputEvent} e
+     * @access public
+     */
+    handleChange(e, myAlterStateFn = null) {
+        const name = e.target.name;
+        const {values, errors, classes} = this.vm.state;
+        values[name] = e.target.type !== 'checkbox' ? e.target.value : e.target.checked;
+        errors[name] = this.validatorRunner.hasValidatorForInput(name)
+            ? this.validatorRunner.validateInput(name)
+            : '';
+        classes[name].invalid = !!errors[name];
+        classes[name].focused = true;
+        this.applyState({values, errors, classes}, myAlterStateFn);
+    }
+    /**
+     * @param {string} value
+     * @param {string} inputName
+     * @param {string} inputType 'text'|'checkbox' etc.
+     * @access public
+     */
+    triggerChange(value, inputName, inputType = 'text') {
+        this.handleChange({target: {
+            name: inputName,
+            type: inputType,
+            value,
+            checked: value,
+        }});
+    }
+    /**
+     * @param {InputEvent} e
+     * @param {(state: Object) => Object} myAlterStateFn = null
+     * @access public
+     */
+    handleFocus(e, myAlterStateFn = null) {
+        const classes = this.vm.state.classes;
+        classes[e.target.name].focused = true;
+        this.applyState({classes}, myAlterStateFn);
+    }
+    /**
+     * @param {InputEvent} e
+     * @param {(state: Object) => Object} myAlterStateFn = null
+     * @access public
+     */
+    handleBlur(e, myAlterStateFn = null) {
+        if (this.isSubmitting) return;
+        const name = e.target.name;
+        const {errors, classes} = this.vm.state;
+        errors[name] = this.validatorRunner.hasValidatorForInput(name)
+            ? this.validatorRunner.validateInput(name)
+            : '';
+        classes[name].invalid = !!errors[name];
+        classes[name].blurredAtLeastOnce = true;
+        classes[name].focused = false;
+        this.applyState({errors, classes}, myAlterStateFn);
+    }
+    /**
+     * @param {InputEvent} e
+     * @param {(state: Object) => Object} myAlterStateFn = null
+     * @access public
+     */
+    triggerBlur(inputName, myAlterStateFn = null) {
+        this.handleBlur({target: {
+            name: inputName,
+        }}, myAlterStateFn);
+    }
+    /**
+     * @param {InputEvent=} e
+     * @param {(state: Object) => Object} myAlterStateFn = null
+     * @returns {bool|null} true = valid, false = invalid, null = alreadySubmitting
+     * @access public
+     */
+    handleSubmit(e, myAlterStateFn = null) {
+        if (e) e.preventDefault();
+        if (this.isSubmitting) return null;
+        this.setIsSubmitting();
+        const {errors, classes} = this.vm.state;
+        let overall = true;
+        this.validatorRunner.each((validator, inputName) => {
+            const error = validator.checkValidity();
+            errors[inputName] = error;
+            classes[inputName].invalid = !!error;
+            if (error) overall = false;
+            if (!overall && error && !classes[inputName].blurredAtLeastOnce)
+                classes[inputName].blurredAtLeastOnce = true;
+        });
+        this.applyState({errors, classes}, myAlterStateFn);
+        return overall;
+    }
+    /**
+     * @access private
+     */
+    applyState(newState, alterFn) {
+        this.vm.setState(!alterFn ? newState : alterFn(newState));
+    }
+    /**
+     * @access private
+     */
+    setIsSubmitting() {
+        this.isSubmitting = true;
+        setTimeout(() => {
+            this.isSubmitting = false;
+        }, 800);
+    }
+}
+
+const hookForm = (vm, values, validators = null) => {
+    const state = {
+        values,
+        errors: Object.keys(values).reduce((obj, key) =>
+            Object.assign(obj, {[key]: null})
+        , {}),
+        classes: Object.keys(values).reduce((obj, key) =>
+            Object.assign(obj, {[key]: {invalid: false,
+                                        blurredAtLeastOnce: false,
+                                        focused: false}})
+        , {}),
+    };
+    Object.assign(vm, {form: new Form(vm, new ValidatorRunner(validators))});
+    return state;
+};
+
+class AbstractInput extends preact.Component {
+    /**
+     * @param {{vm: preact.Component; myOnChange?: (state: Object) => Object; validations?: Array<[string, ...any]>; errorLabel?: string; [key: string]: any;}} props
+     */
+    constructor(props) {
+        super(props);
+        props.vm.form.validatorRunner.setValidatorForInput(props.name,
+            new Validator(this, props.validations || []));
+        this.inputEl = null;
+    }
+    /**
+     * @returns {string}
+     * @access public
+     */
+    getValue() {
+        return this.inputEl.value;
+    }
+    /**
+     * @returns {string}
+     * @access public
+     */
+    getLabel() {
+        return (this.props.errorLabel || this.props.name) || '<name>';
     }
     /**
      * @returns {string} 'input'|'select' etc.
@@ -172,21 +271,110 @@ class BaseInput extends preact.Component {
      * @access protected
      */
     render() {
-        return preact.createElement(this.getTagName(), this.props, this.props.children);
+        const {state, form} = this.props.vm;
+        const name = this.props.name;
+        const tagName = this.getTagName();
+        const inputType = this.props.type || 'text';
+        return preact.createElement(tagName, Object.assign({}, this.props, {
+            name,
+            value: state.values[name],
+            [!(tagName === 'select' ||
+               inputType === 'checkbox' ||
+               inputType === 'radio') ? 'onInput' : 'onChange']:
+                e => form.handleChange(e, this.props.myOnChange),
+            onFocus: e => form.handleFocus(e, this.props.onFocus),
+            onBlur: e => form.handleBlur(e, this.props.onBlur),
+            ref: el => { this.inputEl = el; },
+        }));
     }
 }
 
-class Input extends BaseInput {
+class Input extends AbstractInput {
     getTagName() { return 'input'; }
 }
 
-class Select extends BaseInput {
-    getTagName() { return 'select'; }
-}
-
-class Textarea extends BaseInput {
+class Textarea extends AbstractInput {
     getTagName() { return 'textarea'; }
 }
 
-export default Form;
-export {InputGroup, Input, Select, Textarea};
+class Select extends AbstractInput {
+    getTagName() { return 'select'; }
+}
+
+/**
+ * @param {{invalid: boolean; focused: boolean; blurredAtLeastOnce: boolean;}}
+ * @returns {string}
+ */
+function formatCssClasses(classes) {
+    return (classes.invalid ? ' invalid' : '') +
+            (classes.focused ? ' focused' : '') +
+            (classes.blurredAtLeastOnce ? ' blurred-at-least-once' : '');
+}
+
+class InputGroup extends preact.Component {
+    /**
+     * @param {{classes?: {invalid: boolean; focused: boolean; blurredAtLeastOnce: boolean;}; className?: string; inline?: boolean;}} props
+     */
+    constructor(props) {
+        super(props);
+        this.staticCssClassString = 'input-group' +
+                                    (this.props.className || '') +
+                                    (!this.props.inline ? '' : ' inline');
+    }
+    /**
+     * @access protected
+     */
+    render() {
+        const className = this.staticCssClassString + (this.props.classes
+            ? formatCssClasses(this.props.classes)
+            : '');
+        return preact.createElement('div', {className}, this.props.children);
+    }
+}
+
+class InputError extends preact.Component {
+    /**
+     * @param {{error?: string;}} props
+     */
+    constructor(props) {
+        super(props);
+    }
+    /**
+     * @access protected
+     */
+    render() {
+        const error = this.props.error;
+        return !error ? null : <p class="error">{ error }</p>;
+    }
+}
+
+class FormButtons extends preact.Component {
+    /**
+     * @access protected
+     */
+    render() {
+        return <div class="form-buttons">
+            { (this.props.buttons || ['submit', 'cancel']).map(candidate => {
+                if (candidate === 'submit')
+                    return <button class="nice-button primary" type="submit">
+                        { this.props.submitButtonText || 'Ok' }
+                    </button>;
+                if (candidate === 'cancel')
+                    return <a href={ `#${this.props.returnTo || '/'}` }
+                                onClick={ e => this.handleCancel(e) }>
+                        { this.props.cancelButtonText || 'Peruuta' }
+                    </a>;
+                return candidate;
+            }) }
+        </div>;
+    }
+    /**
+     * @access protected
+     */
+    handleCancel(e) {
+        if (this.props.onCancel) this.props.onCancel(e);
+    }
+}
+
+export default hookForm;
+export {InputGroup, Input, Textarea, Select, InputError, FormButtons, Validator};

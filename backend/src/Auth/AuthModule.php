@@ -10,7 +10,7 @@ abstract class AuthModule {
      *
      * @param \stdClass $ctx {\Pike\Router router, \Pike\Db db, \RadCms\Auth\Authenticator auth, \RadCms\Auth\ACL acl, \RadCms\CmsState cmsState, \Pike\Translator translator}
      */
-    public static function init($ctx) {
+    public static function init(\stdClass $ctx): void {
         $ctx->router->map('GET', '/login',
             [AuthControllers::class, 'renderLoginView', ACL::NO_NAME]
         );
@@ -19,9 +19,6 @@ abstract class AuthModule {
         );
         $ctx->router->map('POST', '/api/logout',
             [AuthControllers::class, 'handleLogoutRequest', 'logout:auth']
-        );
-        $ctx->router->map('POST', '/api/logout',
-            [AuthControllers::class, 'handleLogoutRequest', true]
         );
         $ctx->router->map('GET', '/request-password-reset',
             [AuthControllers::class, 'renderRequestPassResetView', ACL::NO_NAME]
@@ -34,6 +31,9 @@ abstract class AuthModule {
         );
         $ctx->router->map('POST', '/api/finalize-password-reset',
             [AuthControllers::class, 'handleFinalizePassResetFormSubmit', ACL::NO_NAME]
+        );
+        $ctx->router->map('POST', '/api/update-password',
+            [AuthControllers::class, 'handleUpdatePasswordRequest', 'updatePass:auth']
         );
     }
 }

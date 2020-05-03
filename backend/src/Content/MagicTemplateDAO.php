@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RadCms\Content;
 
 use Pike\Db;
@@ -22,7 +24,7 @@ class MagicTemplateDAO extends DAO {
      * @param string $contentTypeName
      * @return \RadCms\Content\MagicTemplateQuery
      */
-    public function fetchOne($contentTypeName) {
+    public function fetchOne(string $contentTypeName): MagicTemplateQuery {
         [$contentTypeName, $alias] = parent::parseContentTypeNameAndAlias($contentTypeName);
         // @allow \Pike\PikeException
         $type = $this->getContentType($contentTypeName);
@@ -33,7 +35,7 @@ class MagicTemplateDAO extends DAO {
      * @param string $contentTypeName eg. 'Article', 'Product', 'Movie', 'Employee'
      * @return \RadCms\Content\MagicTemplateQuery
      */
-    public function fetchAll($contentTypeName) {
+    public function fetchAll(string $contentTypeName): MagicTemplateQuery {
         [$contentTypeName, $alias] = parent::parseContentTypeNameAndAlias($contentTypeName);
         // @allow \Pike\PikeException
         $type = $this->getContentType($contentTypeName);
@@ -43,11 +45,11 @@ class MagicTemplateDAO extends DAO {
     /**
      * @return array array<{impl: string, title: string ...}>
      */
-    public function getFrontendPanelInfos() {
+    public function getFrontendPanels(): array {
         $out = [];
         foreach ($this->queries as $q) {
-            if (($info = $q->getFrontendPanelInfo()))
-                $out[] = $info;
+            if (($panels = $q->getFrontendPanels()))
+                $out = array_merge($out, $panels);
         }
         return $out;
     }
@@ -55,24 +57,24 @@ class MagicTemplateDAO extends DAO {
      * @param string $sql
      * @param bool $isFetchOne
      * @param array $bindVals = null
-     * @param \stdClass $join = null {contentType: string, alias: string, collector: [\Closure, string]}
-     * @param \stdClass $frontendPanelInfo = null
+     * @param \stdClass[] $joins = [] {contentTypeName: string, alias: string, expr: string, bindVals: array, isLeft: bool, collectFn: \Closure, targetFieldName: string|null}[]
+     * @param \stdClass[] $frontendPanels = []
      * @return array|\stdClass|null
      */
-    public function doExec($sql,
-                           $isFetchOne,
-                           $bindVals = null,
-                           $join = null,
-                           $frontendPanelInfo = null) {
-        $res = parent::doExec($sql, $isFetchOne, $bindVals, $join);
-        if ($frontendPanelInfo) $frontendPanelInfo->contentNodes = $res;
+    public function doExec(string $sql,
+                           bool $isFetchOne,
+                           array $bindVals = null,
+                           array $joins = [],
+                           array $frontendPanels = []) {
+        $res = parent::doExec($sql, $isFetchOne, $bindVals, $joins);
+        foreach ($frontendPanels as $def) $def->contentNodes = $res;
         if (!$res) return $res;
         //
         $res = $isFetchOne ? [$res] : $res;
         $out = [];
         if (!$this->fetchRevisions) {
             foreach ($res as $node) {
-                if ($node->isPublished) $out[] = $node;
+                if ($node->status === self::STATUS_PUBLISHED) $out[] = $node;
             }
         } else {
             foreach ($res as $node) {
@@ -80,7 +82,7 @@ class MagicTemplateDAO extends DAO {
                 $latestDraft = $node->revisions[0]->snapshot;
                 $latestDraft->id = $node->id;
                 $latestDraft->contentType = $node->contentType;
-                $latestDraft->isPublished = true;
+                $latestDraft->status = self::STATUS_PUBLISHED;
                 $latestDraft->isRevision = true;
                 $out[] = $latestDraft;
             }

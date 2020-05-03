@@ -1,4 +1,4 @@
-import {urlUtils, InputGroup, Input, http} from '@rad-commons';
+import {http, services, urlUtils, hookForm, InputGroup, Input, InputError, FormButtons} from '@rad-commons';
 import {translateError} from './commons.js';
 
 class LoginApp extends preact.Component {
@@ -7,40 +7,39 @@ class LoginApp extends preact.Component {
      */
     constructor(props) {
         super(props);
-        this.state = {
-            username: '',
-            password: '',
-            message: location.search !== '?from-logout'
+        this.state = Object.assign(
+            hookForm(this, {username: '', password: ''}),
+            {message: !location.search.endsWith('?from-logout')
                 ? null
-                : {text: 'Olet nyt kirjautunut ulos.', level: 'info'}
-        };
+                : {text: 'Olet nyt kirjautunut ulos.', level: 'info'}}
+        );
     }
     /**
      * @access protected
      */
     render() {
+        const {errors, classes, message} = this.state;
         return <form onSubmit={ e => this.handleSubmit(e) }>
             <img src={ urlUtils.makeAssetUrl('frontend/assets/logo.png') }/>
-            { !this.state.message
+            { !message
                 ? null
-                : <div class={ `container box ${this.state.message.level}` }>{ this.state.message.text }</div>
+                : <div class={ `container box ${message.level}` }>{ message.text }</div>
             }
-            <InputGroup label="Käyttäjänimi">
-                <Input onInput={ e => this.setState({username: e.target.value}) }
-                       value={ this.state.username }
-                       id="username"
-                       required/>
+            <InputGroup classes={ classes.username }>
+                <label htmlFor="username">Käyttäjänimi</label>
+                <Input vm={ this } name="username" id="username" errorLabel="Käyttäjänimi"
+                    validations={ [['required']] }/>
+                <InputError error={ errors.username }/>
             </InputGroup>
-            <InputGroup label="Salasana">
-                <Input onInput={ e => this.setState({password: e.target.value}) }
-                       value={ this.state.password }
-                       type="password"
-                       id="password"
-                       required/>
+            <InputGroup classes={ classes.password }>
+                <label htmlFor="password">Salasana</label>
+                <Input vm={ this } name="password" id="password" errorLabel="Salasana"
+                       validations={ [['required']] } type="password"/>
+                <InputError error={ errors.password }/>
             </InputGroup>
-            <div class="form-buttons">
-                <button class="nice-button" type="submit">Kirjaudu</button>
-            </div>
+            <FormButtons
+                buttons={ ['submit'] }
+                submitButtonText="Kirjaudu"/>
             <div>
                 <a href={ urlUtils.makeUrl('/request-password-reset') }>Unohtuiko salasana?</a>
             </div>
@@ -50,13 +49,19 @@ class LoginApp extends preact.Component {
      * @access private
      */
     handleSubmit(e) {
-        e.preventDefault();
-        http.post('/api/login', {username: this.state.username,
-                                 password: this.state.password})
+        if (!this.form.handleSubmit(e))
+            return;
+        http.post('/api/login', {username: this.state.values.username,
+                                 password: this.state.values.password})
             .then(info => {
-                if (info.ok) window.location.href = urlUtils.makeUrl('/edit');
+                if (info.ok) {
+                    services.sessionStorage.radMessage = JSON.stringify([
+                        'Olet nyt kirjautunut sisään.', 'success'
+                    ]);
+                    window.location.href = urlUtils.makeUrl('/edit');
+                }
                 else if (info.err) this.setState({message: {text: translateError(info.err),
-                                                  level: 'error'}});
+                                                            level: 'error'}});
                 else throw new Error('wut?');
             })
             .catch(() => {

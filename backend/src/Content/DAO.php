@@ -1,17 +1,23 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RadCms\Content;
 
 use Pike\Db;
 use RadCms\ContentType\ContentTypeCollection;
 use Pike\PikeException;
 use Pike\ArrayUtils;
+use RadCms\ContentType\ContentTypeDef;
 
 /**
  * Luokka jonka DAO->fetchOne|All() instansoi ja palauttaa. Ei tarkoitettu
  * käytettäväksi manuaalisesti.
  */
 class DAO {
+    public const STATUS_PUBLISHED = 0;
+    public const STATUS_DRAFT = 1;
+    public const STATUS_DELETED = 2;
     public $fetchRevisions;
     protected $db;
     protected $contentTypes;
@@ -31,7 +37,7 @@ class DAO {
      * @param string $contentTypeName
      * @return \RadCms\Content\Query
      */
-    public function fetchOne($contentTypeName) {
+    public function fetchOne(string $contentTypeName): Query {
         [$contentTypeName, $alias] = self::parseContentTypeNameAndAlias($contentTypeName);
         // @allow \Pike\PikeException
         $type = $this->getContentType($contentTypeName);
@@ -41,7 +47,7 @@ class DAO {
      * @param string $contentTypeName eg. 'Article', 'Product', 'Movie', 'Employee'
      * @return \RadCms\Content\Query
      */
-    public function fetchAll($contentTypeName) {
+    public function fetchAll(string $contentTypeName): Query {
         [$contentTypeName, $alias] = self::parseContentTypeNameAndAlias($contentTypeName);
         // @allow \Pike\PikeException
         $type = $this->getContentType($contentTypeName);
@@ -51,15 +57,15 @@ class DAO {
      * @param string $sql
      * @param bool $isFetchOne
      * @param array $bindVals = null
-     * @param \stdClass $join = null {contentType: string, alias: string, collector: [\Closure, string]}
+     * @param \stdClass[] $joins = [] {contentTypeName: string, alias: string, expr: string, bindVals: array, isLeft: bool, collectFn: \Closure, targetFieldName: string|null}[]
      * @return array|\stdClass|null
      */
-    public function doExec($sql,
-                           $isFetchOne,
-                           $bindVals = null,
-                           $join = null) {
+    public function doExec(string $sql,
+                           bool $isFetchOne,
+                           array $bindVals = null,
+                           array $joins = []) {
         $out = null;
-        // @allow \PDOException
+        // @allow \Pike\PikeException
         $rows = $this->db->fetchAll($sql, $bindVals);
         if ($isFetchOne) {
             $out = $rows ? $this->makeContentNode($rows[0], $rows) : null;
@@ -69,9 +75,10 @@ class DAO {
             }, $rows) : [];
         }
         //
-        if ($out && $join) {
-            $out = $this->runUserDefinedJoinCollector($join,
-				$rows, $isFetchOne, $out);
+        if ($out && $joins) {
+            foreach ($joins as $join)
+                $out = $this->runUserDefinedJoinCollector($join,
+				    $rows, $isFetchOne, $out);
 		}
         //
         return $out;
@@ -80,7 +87,7 @@ class DAO {
      * @return \RadCms\ContentType\ContentTypeDef
      * @throws \Pike\PikeException
      */
-    public function getContentType($name) {
+    public function getContentType(string $name): ContentTypeDef {
         if (!($type = ArrayUtils::findByKey($this->contentTypes, $name, 'name')))
             throw new PikeException("Content type `{$name}` not registered",
                                     PikeException::BAD_INPUT);
@@ -89,10 +96,10 @@ class DAO {
     /**
      * @return \stdClass
      */
-    private function makeContentNode($row, $rows) {
-        $out = (object)$row;
+    private function makeContentNode(array $row, array $rows): \stdClass {
+        $out = (object) $row;
         unset($out->revisionSnapshot);
-        $out->isPublished = (bool)$out->isPublished;
+        $out->status = (int) $out->status;
         $out->isRevision = false;
         $out->revisions = [];
         if (!$this->fetchRevisions) return $out;
@@ -112,21 +119,35 @@ class DAO {
         });
         return $out;
     }
-    private function runUserDefinedJoinCollector($join, $rows, $isFetchOne, &$out) {
-        $joinContentTypeName = $join->contentType;
+    private function runUserDefinedJoinCollector(\stdClass $join,
+                                                 array $rows,
+                                                 bool $isFetchOne,
+                                                 $out) {
+        if (!$join->collectFn)
+            return $out;
+        $nodes = $isFetchOne ? [$out] : $out;
+        // one <-> one
+        if (!$join->targetFieldName) {
+            $fn = $join->collectFn;
+            foreach ($nodes as $node) {
+                foreach ($rows as $row)
+                    $fn($node, $row);
+            }
+            return $out;
+        }
+        // one <-> many
         $joinIdKey = $join->alias . 'Id';
-        $joinContentTypeKey = $join->alias . 'ContentType';
-        [$fn, $fieldName] = $join->collector;
-        //
+        $joinContentTypeNameKey = $join->alias . 'ContentType';
+        $fn = $join->collectFn;
         $processed = [];
-        foreach (($isFetchOne ? [$out] : $out) as $node) {
+        foreach ($nodes as $node) {
             if (!array_key_exists($node->id, $processed)) {
-                $node->$fieldName = [];
+                $node->{$join->targetFieldName} = [];
                 foreach ($rows as $row) {
                     if (
                         $row[$joinIdKey] &&
                         $row['id'] === $node->id &&
-                        $row[$joinContentTypeKey] === $joinContentTypeName
+                        $row[$joinContentTypeNameKey] === $join->contentTypeName
                     ) $fn($node, $row);
                 }
                 $processed[$node->id] = $node;
@@ -139,9 +160,10 @@ class DAO {
      * 'Foo f' -> ['foo', 'f'] tai 'Foo' -> ['Foo', <defaultAlias>]
      *
      * @param string $expr
-     * @param string $defaultAlias = 'a'
+     * @param string $defaultAlias = '_a'
      */
-    public static function parseContentTypeNameAndAlias($expr, $defaultAlias = 'a') {
+    public static function parseContentTypeNameAndAlias(string $expr,
+                                                        string $defaultAlias = '_a'): array {
         $pcs = explode(' ', $expr);
         return [$pcs[0], $pcs[1] ?? $defaultAlias];
     }
