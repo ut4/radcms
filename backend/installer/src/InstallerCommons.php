@@ -132,7 +132,7 @@ class InstallerCommons {
      * @throws \Pike\PikeException
      */
     public function createSiteDirectories(): void {
-        foreach (["{$this->siteDirPath}site",
+        foreach (["{$this->siteDirPath}site/templates",
                   "{$this->siteDirPath}uploads"] as $path) {
             if (!$this->fs->isDir($path) && !$this->fs->mkDir($path))
                 throw new PikeException("Failed to create `{$path}`",

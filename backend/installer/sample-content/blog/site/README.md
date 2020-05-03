@@ -4,7 +4,7 @@
 
 ## Layoutit
 
-Layout-templaatit, jotka tämä paketti sisältää. Pike valitsee layoutin sivupyynnölle urlin perusteella dynaamisesti. Url-sääntöjä voi muokata `site.json` -tiedostoa.
+Layout-templaatit, jotka tämä paketti sisältää. Pike valitsee layoutin sivupyynnölle urlin perusteella dynaamisesti. Url-sääntöjä voi muokata `site/Site.php` -tiedostossa.
 
 ### layout.home.tmpl.php
 

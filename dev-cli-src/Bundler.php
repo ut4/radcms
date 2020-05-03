@@ -59,8 +59,8 @@ class Bundler {
                            "{$this->targetDirPath}frontend"];
         foreach ($targetDirPaths as $p) {
             if ($this->fs->isDir($p)) {
-                $alradyContainsEntries = (new \FilesystemIterator($p))->valid();
-                if (!$alradyContainsEntries) continue;
+                $alreadyContainsEntries = (new \FilesystemIterator($p))->valid();
+                if (!$alreadyContainsEntries) continue;
                 throw new PikeException("`{$p}` already exists and is not empty",
                                         PikeException::BAD_INPUT);
             }

@@ -215,24 +215,24 @@ final class InstallerTest extends BaseInstallerTest {
             $s->mockFs->expects($this->atLeastOnce())
                 ->method('mkDir')
                 ->withConsecutive(
-                    ["{$s->siteDirPath}site"],
+                    ["{$s->siteDirPath}site/templates"],
                     ["{$s->siteDirPath}uploads"]
                 )
                 ->willReturn(true);
             return;
         }
         if ($expectation === 'clonesTemplateFilesAndSiteCfgFile') {
-            $from = $s->sampleContentDirPath;
-            $to = $s->siteDirPath;
+            $from = "{$s->sampleContentDirPath}site/";
+            $to = "{$s->siteDirPath}site/";
             $s->mockFs->expects($this->exactly(6))
                 ->method('copy')
                 ->withConsecutive(
-                    ["{$from}site.json", "{$to}site.json"],
-                    ["{$from}site/README.md", "{$to}site/README.md"],
-                    ["{$from}site/templates/dir/main.tmpl.php", "{$to}site/templates/dir/main.tmpl.php"],
-                    ["{$from}site/templates/Another.tmpl.php", "{$to}site/templates/Another.tmpl.php"],
-                    ["{$from}site/foo.css", "{$to}site/foo.css"],
-                    ["{$from}site/dir/bar.js", "{$to}site/dir/bar.js"])
+                    ["{$from}Site.php", "{$to}Site.php"],
+                    ["{$from}README.md", "{$to}README.md"],
+                    ["{$from}templates/dir/main.tmpl.php", "{$to}templates/dir/main.tmpl.php"],
+                    ["{$from}templates/Another.tmpl.php", "{$to}templates/Another.tmpl.php"],
+                    ["{$from}foo.css", "{$to}foo.css"],
+                    ["{$from}dir/bar.js", "{$to}dir/bar.js"])
                 ->willReturn(true);
             return;
         }

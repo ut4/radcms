@@ -100,19 +100,16 @@ class Installer {
         // @allow \Pike\PikeException
         $this->commons->createSiteDirectories();
         //
-        $base = "{$this->backendPath}installer/sample-content/{$s->sampleContent}/";
+        $base = "{$this->backendPath}installer/sample-content/{$s->sampleContent}/site/";
         // @allow \Pike\PikeException
-        $tmplFileNames = $this->readDirRelPaths("{$base}site/", '/^.*\.tmpl\.php$/');
-        $assetFileNames = $this->readDirRelPaths("{$base}site/", '/^.*\.(css|js)$/');
+        $tmplFileNames = $this->readDirRelPaths($base, '/^.*\.tmpl\.php$/');
+        $assetFileNames = $this->readDirRelPaths($base, '/^.*\.(css|js)$/');
         //
         $toBeCopied = [];
-        foreach (['site.json'] as $fileName)
-            $toBeCopied[] = ["{$base}{$fileName}",
-                             "{$this->siteDirPath}{$fileName}"];
-        foreach (array_merge(['README.md'],
+        foreach (array_merge(['Site.php', 'README.md'],
                              $tmplFileNames,
                              $assetFileNames) as $relativePath)
-            $toBeCopied[] = ["{$base}site/{$relativePath}",
+            $toBeCopied[] = ["{$base}{$relativePath}",
                              "{$this->siteDirPath}site/{$relativePath}"];
         //
         foreach ($toBeCopied as [$from, $to]) {

@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace RadCms\ContentType;
 
 /**
- * Parsii ja serialisoi site.json-tiedostossa käytettäviä merkkijonoja, esim:
- * 'int(11)' tulee {name: 'int', args: {v0: '11'}} ja 'color(initial=#000000)' tulee
+ * Parsii ja serialisoi kompaktoituja merkkijonoja, esim: 'int(11)' tulee
+ * {name: 'int', args: {v0: '11'}} ja 'color(initial=#000000)' tulee
  * {name: color, args: {initial: '#000000'}}.
  */
 class FieldSetting {
