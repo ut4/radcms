@@ -10,8 +10,11 @@ CREATE TABLE ${p}users (
     `email` VARCHAR(191) NOT NULL UNIQUE, -- 191 * 4 = 767 bytes = max key length
     `passwordHash` VARCHAR(255) NOT NULL,
     `role` MEDIUMINT(8) UNSIGNED NOT NULL DEFAULT 8388608, -- 1 << 23
+    `activationKey` VARCHAR(512) DEFAULT NULL,
+    `accountCreatedAt` INT(10) UNSIGNED DEFAULT 0,
     `resetKey` VARCHAR(512) DEFAULT NULL,
     `resetRequestedAt` INT(10) UNSIGNED DEFAULT NULL,
+    `accountStatus` TINYINT(1) UNSIGNED DEFAULT 1, -- 0=activated, 1=unactivated, 2=banned
     PRIMARY KEY (`id`)
 ) DEFAULT CHARSET = utf8mb4;
 

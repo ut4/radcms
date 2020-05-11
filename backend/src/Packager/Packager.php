@@ -171,7 +171,8 @@ class Packager {
     private function generateUserZero($userIdentity) {
         // @allow \Pike\PikeException
         if (($row = $this->db->fetchOne('SELECT `id`,`username`,`email`' .
-                                        ',`passwordHash`,`role` FROM ${p}users' .
+                                        ',`passwordHash`,`role`,`accountCreatedAt`' .
+                                        ' FROM ${p}users' .
                                         ' WHERE `id` = ?',
                                         [$userIdentity->id]))) {
             return (object) [
@@ -180,6 +181,7 @@ class Packager {
                 'email' => $row['email'] ?? '',
                 'passwordHash' => $row['passwordHash'],
                 'role' => (int) $row['role'],
+                'accountCreatedAt' => (int) $row['accountCreatedAt'],
             ];
         }
         throw new PikeException('Failed to fetch user from db',

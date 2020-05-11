@@ -15,6 +15,5 @@ return [
     'db.pass'        => 'pass',
     'db.tablePrefix' => 'rad_',
     'db.charset'     => 'utf8',
-    'mail.transport' => 'phpsMailFunction',
     'db.schemaInitFilePath' => __DIR__ . '/testSuiteDbInit.mariadb.sql',
 ];

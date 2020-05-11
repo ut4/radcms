@@ -94,7 +94,6 @@ class AuthControllers {
                 function ($user, $resetKey, $settings) use ($cmsState, $appConfig) {
                     $siteName = $cmsState->getSiteInfo()->name;
                     $siteUrl = $_SERVER['SERVER_NAME'];
-                    $settings->useSMTP = $appConfig->get('mail.transport') === 'SMTP';
                     $settings->fromAddress = "root@{$siteUrl}";
                     $settings->fromName = $siteName;
                     $settings->subject = "[{$siteName}] salasanan palautus";
@@ -109,7 +108,8 @@ class AuthControllers {
                 });
             $res->json(['ok' => 'ok']);
         } catch (PikeException $e) {
-            if ($e->getCode() === Authenticator::INVALID_CREDENTIAL) {
+            if ($e->getCode() === Authenticator::INVALID_CREDENTIAL ||
+                $e->getCode() === Authenticator::UNEXPECTED_ACCOUNT_STATUS) {
                 $res->status(401)->json(['err' => $e->getMessage()]);
             } else {
                 throw $e;
@@ -192,7 +192,7 @@ class AuthControllers {
         return (Validation::makeObjectValidator())
             ->rule('email', 'minLength', 1)
             ->rule('newPassword', 'minLength', 1)
-            ->rule('key', 'minLength', 1)
+            ->rule('key', 'minLength', 32)
             ->validate($input);
     }
     /**

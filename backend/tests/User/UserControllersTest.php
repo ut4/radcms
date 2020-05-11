@@ -51,7 +51,8 @@ final class UserControllersTest extends DbTestCase {
                 'username' => 'foo',
                 'email' => 'e@mail.com',
                 'passwordHash' => MockCrypto::mockHashPass('pass'),
-                'role' => ACL::ROLE_SUPER_ADMIN];
+                'role' => ACL::ROLE_SUPER_ADMIN,
+                'accountCreatedAt' => time()];
         [$qs, $vals, $cols] = DbUtils::makeInsertBinders($out);
         self::$db->exec("INSERT INTO \${p}users ({$cols}) VALUES ({$qs})", $vals);
         return (object) $out;

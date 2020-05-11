@@ -3,6 +3,7 @@
 namespace RadCms\Installer\Tests;
 
 use Pike\App;
+use Pike\Auth\Authenticator;
 use Pike\TestUtils\DbTestCase;
 use RadCms\Installer\Module;
 
@@ -47,8 +48,12 @@ abstract class BaseInstallerTest extends DbTestCase {
         $this->assertEquals($userName, $row['username']);
         $this->assertEquals($userEmail, $row['email']);
         $this->assertEquals($userRole, $row['role']);
+        $this->assertEquals(null, $row['activationKey']);
+        $this->assertTrue($row['accountCreatedAt'] > time() - 10);
         $this->assertEquals(null, $row['resetKey']);
         $this->assertEquals(null, $row['resetRequestedAt']);
+        $this->assertEquals(Authenticator::ACCOUNT_STATUS_ACTIVATED,
+                            $row['accountStatus']);
     }
     protected static function setCurrentDatabase($database, $tablePrefix) {
         self::$db->exec("USE {$database}");

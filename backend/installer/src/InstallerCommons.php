@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace RadCms\Installer;
 
+use Pike\Auth\Authenticator;
 use Pike\Db;
 use Pike\Auth\Crypto;
 use Pike\FileSystem;
@@ -109,20 +110,25 @@ class InstallerCommons {
     public function createUserZero(\stdClass $s, \stdClass $user = null): bool {
         // @allow \Pike\PikeException
         if ($this->db->exec('INSERT INTO ${p}users'.
-                            ' (`id`,`username`,`email`,`passwordHash`,`role`)' .
-                            ' VALUES (?,?,?,?,?)',
+                            ' (`id`,`username`,`email`,`passwordHash`,`role`' .
+                              ',`accountCreatedAt`,`accountStatus`)' .
+                            ' VALUES (?,?,?,?,?,?,?)',
                             !$user ? [
                                 $this->crypto->guidv4(),
                                 $s->firstUserName,
                                 $s->firstUserEmail ?? '',
                                 $this->crypto->hashPass($s->firstUserPass),
-                                ACL::ROLE_SUPER_ADMIN
+                                ACL::ROLE_SUPER_ADMIN,
+                                time(),
+                                Authenticator::ACCOUNT_STATUS_ACTIVATED,
                             ] : [
                                 $user->id,
                                 $user->username,
                                 $user->email,
                                 $user->passwordHash,
                                 $user->role,
+                                $user->accountCreatedAt,
+                                Authenticator::ACCOUNT_STATUS_ACTIVATED,
                             ]) !== 1)
             throw new PikeException('Failed to insert user zero',
                                     PikeException::INEFFECTUAL_DB_OP);
