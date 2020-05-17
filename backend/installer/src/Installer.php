@@ -106,7 +106,7 @@ class Installer {
         $assetFileNames = $this->readDirRelPaths($base, '/^.*\.(css|js)$/');
         //
         $toBeCopied = [];
-        foreach (array_merge(['Site.php', 'README.md'],
+        foreach (array_merge(['README.md', 'Site.php', 'Theme.php'],
                              $tmplFileNames,
                              $assetFileNames) as $relativePath)
             $toBeCopied[] = ["{$base}{$relativePath}",

@@ -78,7 +78,8 @@ class ContentAddView extends preact.Component {
     /**
      * @access private
      */
-    handleFormSubmit(_e) {
+    handleFormSubmit(e) {
+        e.preventDefault();
         const revisionSettings = this.state.values.createRevision ? '/with-revision' : '';
         return http.post(`/api/content/${this.state.contentType.name}${revisionSettings}`,
             Object.assign(this.newContentNode,

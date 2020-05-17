@@ -62,11 +62,11 @@ trait ContentTestUtils {
         $qGroups = [];
         $allVals = [];
         foreach ($nodes as $data) {
-            [$qs, $vals, ] = DbUtils::makeInsertBinders(array_merge([
+            [$qList, $vals, ] = self::$db->makeInsertQParts(array_merge([
                 'id' => $data['id'],
                 'status' => $data['status'] ?? DAO::STATUS_PUBLISHED,
             ], $data));
-            $qGroups[] = "({$qs})";
+            $qGroups[] = "({$qList})";
             $allVals = array_merge($allVals, $vals);
         }
         if (self::$db->exec('INSERT INTO ${p}' . $contentTypeName .

@@ -9,10 +9,9 @@ namespace RadCms\Website;
  */
 interface WebsiteInterface {
     /**
-     * Metodi joka ajetaan jokaisella "/.", ja "edit/." -sivunlatauksella.
+     * Metodi joka ajetaan jokaisen pyynnön yhteydessä, heti lisäosien jälkeen.
      *
      * @param \RadCms\Website\WebsiteAPI $api
-     * @param bool $isControlPanelPageLoad
      */
-    public function init(WebsiteAPI $api, bool $isControlPanelPageLoad): void;
+    public function init(WebsiteAPI $api): void;
 }

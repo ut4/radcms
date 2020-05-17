@@ -13,13 +13,13 @@ class ValidAndInstalledPlugin implements PluginInterface {
     public function __construct() {
         self::$instantiated = true;
     }
-    public function init(PluginAPI $api) {
+    public function init(PluginAPI $api): void {
         self::$initialized = true;
     }
-    public function install(ContentTypeMigrator $migrator) {
+    public function install(ContentTypeMigrator $migrator): void {
         //
     }
-    public function uninstall(ContentTypeMigrator $migrator) {
+    public function uninstall(ContentTypeMigrator $migrator): void {
         self::$installed = false;
     }
 }

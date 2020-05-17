@@ -8,6 +8,8 @@ use Pike\Router;
 use Pike\PikeException;
 use RadCms\Plugin\PluginAPI;
 use RadCms\Plugin\Plugin;
+use RadCms\Website\WebsiteAPI;
+use RadCms\Website\WebsiteInterface;
 
 /**
  * Rutiinit jotka ajetaan jokaisen App->handleRequest()-kutsun yhteydessä.
@@ -27,7 +29,9 @@ class CmsStateLoader {
         //
         $plugins = $out->getPlugins();
         self::scanPluginsFromDisk($plugins, $fs);
-        $pluginAPI = new PluginAPI($out->getApiConfigs(), $router);
+        $pluginAPI = new PluginAPI($out->getApiConfigs(),
+                                   $out->getPlugins(),
+                                   $router);
         foreach ($plugins as $plugin) {
             if (($plugin->isInstalled = property_exists($raw->installedPluginNames,
                                                         $plugin->name))) {
@@ -36,6 +40,10 @@ class CmsStateLoader {
                 $instance->init($pluginAPI);
             }
         }
+        //
+        $site = self::instantiateWebsite();
+        $site->init(new WebsiteAPI($out->getApiConfigs(), $plugins));
+        //
         return $out;
     }
     /**
@@ -80,5 +88,18 @@ class CmsStateLoader {
             $clsName = substr($path, strrpos($path, '/') + 1);
             $to->append(new Plugin($clsName));
         }
+    }
+    /**
+     * @throws \Pike\PikeException
+     */
+    private static function instantiateWebsite() {
+        $clsPath = 'RadSite\\Site';
+        if (!class_exists($clsPath))
+            throw new PikeException("\"{$clsPath}\" missing",
+                                    PikeException::BAD_INPUT);
+        if (!array_key_exists(WebsiteInterface::class, class_implements($clsPath, false)))
+            throw new PikeException("Site.php (\"{$clsPath}\") must implement RadCms\Website\WebsiteInterface",
+                                    PikeException::BAD_INPUT);
+        return new $clsPath();
     }
 }

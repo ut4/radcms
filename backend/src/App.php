@@ -65,9 +65,9 @@ class App {
             $aclActionAndResource = $req->routeInfo->myCtx;
             if (!$aclActionAndResource)
                 throw new PikeException('A route context must be a non-empty ' .
-                                        'string or \RadCms\Auth\ACL::NO_NAME',
+                                        'string or \RadCms\Auth\ACL::NO_IDENTITY',
                                         PikeException::BAD_INPUT);
-            if ($aclActionAndResource === ACL::NO_NAME)
+            if ($aclActionAndResource === ACL::NO_IDENTITY)
                 $next();
             elseif (!$req->user)
                 $res->status(401)->json(['err' => 'Login required']);

@@ -31,10 +31,10 @@ class DMO extends DAO {
         if (($errors = ContentTypeValidator::validateInsertData($type, $data)))
             throw new PikeException(implode(PHP_EOL, $errors),
                                     PikeException::BAD_INPUT);
-        $q = (object) ['cols' => [], 'qs' => [], 'vals' => []];
+        $q = (object) ['cols' => [], 'qList' => [], 'vals' => []];
         $appendVal = function ($name) use ($q, $data) {
             $q->cols[] = "`{$name}`";
-            $q->qs[] = '?';
+            $q->qList[] = '?';
             $q->vals[] = $data->$name;
         };
         foreach (['id', 'status'] as $optional) {
@@ -56,7 +56,7 @@ class DMO extends DAO {
         // @allow \Pike\PikeException
         $numRows = $this->db->exec('INSERT INTO `${p}' . $contentTypeName . '`' .
                                    ' (' . implode(', ', $q->cols) . ')' .
-                                   ' VALUES (' . implode(', ', $q->qs) . ')',
+                                   ' VALUES (' . implode(', ', $q->qList) . ')',
                                    $q->vals);
         $this->lastInsertId = $numRows ? (int) $this->db->lastInsertId() : 0;
         return $numRows;

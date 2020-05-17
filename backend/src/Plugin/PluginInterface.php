@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RadCms\Plugin;
 
 use RadCms\ContentType\ContentTypeMigrator;
@@ -12,13 +14,13 @@ interface PluginInterface {
     /**
      * @param \RadCms\Plugin\PluginAPI $api
      */
-    public function init(PluginAPI $api);
+    public function init(PluginAPI $api): void;
     /**
      * @param \RadCms\ContentType\ContentTypeMigrator $migrator
      */
-    public function install(ContentTypeMigrator $migrator);
+    public function install(ContentTypeMigrator $migrator): void;
     /**
      * @param \RadCms\ContentType\ContentTypeMigrator $migrator
      */
-    public function uninstall(ContentTypeMigrator $migrator);
+    public function uninstall(ContentTypeMigrator $migrator): void;
 }

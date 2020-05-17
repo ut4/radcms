@@ -53,8 +53,8 @@ final class UserControllersTest extends DbTestCase {
                 'passwordHash' => MockCrypto::mockHashPass('pass'),
                 'role' => ACL::ROLE_SUPER_ADMIN,
                 'accountCreatedAt' => time()];
-        [$qs, $vals, $cols] = DbUtils::makeInsertBinders($out);
-        self::$db->exec("INSERT INTO \${p}users ({$cols}) VALUES ({$qs})", $vals);
+        [$qList, $vals, $cols] = self::$db->makeInsertQParts($out);
+        self::$db->exec("INSERT INTO \${p}users ({$cols}) VALUES ({$qList})", $vals);
         return (object) $out;
     }
     public static function deleteTestUsers() {

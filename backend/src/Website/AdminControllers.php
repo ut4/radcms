@@ -21,14 +21,12 @@ class AdminControllers {
     public function handleEditViewRequest(Request $req,
                                           Response $res,
                                           CmsState $cmsState): void {
-        // @allow \Pike\PikeException
-        $theSite = WebsiteControllers::instantiateWebsite();
-        $storage = $cmsState->getApiConfigs();
-        $theSite->init(new WebsiteAPI($storage), true);
-        //
+        $apiState = $cmsState->getApiConfigs();
+        // @allow \Exception
+        $apiState->triggerEvent(BaseAPI::ON_PAGE_LOADED, true, $req);
         $res->html((new MagicTemplate(RAD_BASE_PATH . 'src/Website/cpanel.tmpl.php'))
             ->render(['q' => $req->params->q ?? '/',
-                      'adminJsFiles' => $storage->getEnqueuedJsFiles(
+                      'adminJsFiles' => $apiState->getEnqueuedJsFiles(
                             BaseAPI::TARGET_CONTROL_PANEL_LAYOUT)]));
     }
 }

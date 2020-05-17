@@ -224,11 +224,12 @@ final class InstallerTest extends BaseInstallerTest {
         if ($expectation === 'clonesTemplateFilesAndSiteCfgFile') {
             $from = "{$s->sampleContentDirPath}site/";
             $to = "{$s->siteDirPath}site/";
-            $s->mockFs->expects($this->exactly(6))
+            $s->mockFs->expects($this->atLeastOnce())
                 ->method('copy')
                 ->withConsecutive(
-                    ["{$from}Site.php", "{$to}Site.php"],
                     ["{$from}README.md", "{$to}README.md"],
+                    ["{$from}Site.php", "{$to}Site.php"],
+                    ["{$from}Theme.php", "{$to}Theme.php"],
                     ["{$from}templates/dir/main.tmpl.php", "{$to}templates/dir/main.tmpl.php"],
                     ["{$from}templates/Another.tmpl.php", "{$to}templates/Another.tmpl.php"],
                     ["{$from}foo.css", "{$to}foo.css"],

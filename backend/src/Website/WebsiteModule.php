@@ -15,7 +15,7 @@ abstract class WebsiteModule {
             [AdminControllers::class, 'handleEditViewRequest', 'access:editMode']
         );
         $ctx->router->map('GET', '*',
-            [WebsiteControllers::class, 'handlePageRequest', ACL::NO_NAME]
+            [WebsiteControllers::class, 'handlePageRequest', ACL::NO_IDENTITY]
         );
     }
 }

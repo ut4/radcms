@@ -9,8 +9,9 @@ use RadCms\Website\UrlMatcher;
 
 /**
  * Varastoi \RadCms\BaseAPI & \RadCms\Plugin\API -wräppereissä configuroidut tiedot.
- * Mahdollistaa sen, että api-luokista voi luoda useita instansseja, ja että
- * rekisteröity tieto pysyy niiden ulottumattomissa.
+ * Mahdollistaa sen, että api-luokista voi luoda useita instansseja (koska tieto
+ * varastoituu yhteen, tästä luokasta luotuun instanssiin), ja että rekisteröity
+ * tieto pysyy niiden ulottumattomissa.
  */
 class APIConfigsStorage {
     private $templateAliases;
@@ -19,6 +20,7 @@ class APIConfigsStorage {
     private $cssFiles;
     private $frontendAdminPanels;
     private $urlMatchers;
+    private $eventListeners;
     private $fs;
     /**
      * @param \Pike\FileSystemInterface $fs
@@ -31,6 +33,8 @@ class APIConfigsStorage {
         $this->cssFiles = [BaseAPI::TARGET_WEBSITE_LAYOUT => [],
                            BaseAPI::TARGET_CONTROL_PANEL_LAYOUT => []];
         $this->frontendAdminPanels = [];
+        $this->urlMatchers = [];
+        $this->eventListeners = [];
         $this->fs = $fs;
     }
     /**
@@ -134,6 +138,23 @@ class APIConfigsStorage {
      */
     public function getRegisteredUrlLayouts() {
         return $this->urlMatchers;
+    }
+    /**
+     * @param string $eventName
+     * @param callable $fn
+     * @return int listener id
+     */
+    public function addEventListener(string $eventName, callable $fn) {
+        $this->eventListeners[$eventName][] = $fn;
+        return count($this->eventListeners[$eventName]) - 1;
+    }
+    /**
+     * @param string $eventName
+     * @param mixed[] $args
+     */
+    public function triggerEvent(string $eventName, ...$args) {
+        foreach ($this->eventListeners[$eventName] ?? [] as $fn)
+            call_user_func_array($fn, $args);
     }
     /**
      * @return array[] array<[string, string]>

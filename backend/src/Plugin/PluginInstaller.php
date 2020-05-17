@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RadCms\Plugin;
 
 use Pike\Db;
@@ -22,7 +24,7 @@ class PluginInstaller {
      * @return bool
      * @throws \Pike\PikeException
      */
-    public function install(Plugin $plugin) {
+    public function install(Plugin $plugin): bool {
         if ($plugin->isInstalled) {
             return 'Plugin is already installed.';
         }
@@ -41,7 +43,7 @@ class PluginInstaller {
      * @return bool
      * @throws \Pike\PikeException
      */
-    public function uninstall(Plugin $plugin) {
+    public function uninstall(Plugin $plugin): bool {
         if (!$plugin->isInstalled) {
             return 'Plugin is already uninstalled.';
         }
@@ -60,7 +62,8 @@ class PluginInstaller {
      * @return bool
      * @throws \Pike\PikeException
      */
-    private function updateInstalledPlugins($sql, $pluginName) {
+    private function updateInstalledPlugins(string $sql,
+                                            string $pluginName): bool {
         // @allow \Pike\PikeException
         if ($this->db->exec($sql, ['$."' . $pluginName . '"']) === 1) {
             return true;

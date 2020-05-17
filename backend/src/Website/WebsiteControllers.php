@@ -28,17 +28,14 @@ class WebsiteControllers {
      * @param \RadCms\CmsState $cmsState
      */
     public function __construct(CmsState $cmsState) {
-        $storage = $cmsState->getApiConfigs();
-        // @allow \Pike\PikeException
-        $theSite = self::instantiateWebsite();
-        $theSite->init(new WebsiteAPI($storage), false);
+        $apiState = $cmsState->getApiConfigs();
         // @allow \Pike\PikeException
         if (($theme = self::instantiateTheme())) {
-            $themeApi = new ThemeAPI($storage);
+            $themeApi = new ThemeAPI($apiState, $cmsState->getPlugins());
             $theme->init($themeApi);
         }
         // @allow \Pike\PikeException
-        $this->initStockContentTypes(new BaseAPI($storage));
+        $this->initStockContentTypes(new BaseAPI($apiState, $cmsState->getPlugins()));
         $this->cmsState = $cmsState;
     }
     /**
@@ -56,8 +53,10 @@ class WebsiteControllers {
                                       MagicTemplateContentDAO $dao,
                                       FileSystem $fs,
                                       ACL $acl): void {
-        $storage = $this->cmsState->getApiConfigs();
-        $layoutFileName = self::findLayout($storage->getRegisteredUrlLayouts(),
+        $apiState = $this->cmsState->getApiConfigs();
+        // @allow \Exception
+        $apiState->triggerEvent(BaseAPI::ON_PAGE_LOADED, false, $req);
+        $layoutFileName = self::findLayout($apiState->getRegisteredUrlLayouts(),
                                            $req->path);
         if (!$layoutFileName) {
             $res->html('404');
@@ -65,13 +64,13 @@ class WebsiteControllers {
         }
         $dao->fetchRevisions = isset($req->user);
         $template = new MagicTemplate(RAD_PUBLIC_PATH . "site/{$layoutFileName}",
-                                      ['_cssFiles' => $storage->getEnqueuedCssFiles(
+                                      ['_cssFiles' => $apiState->getEnqueuedCssFiles(
                                           BaseAPI::TARGET_WEBSITE_LAYOUT),
-                                       '_jsFiles' => $storage->getEnqueuedJsFiles(
+                                       '_jsFiles' => $apiState->getEnqueuedJsFiles(
                                            BaseAPI::TARGET_WEBSITE_LAYOUT)],
                                       $dao,
                                       $fs);
-        $storage->applyRegisteredTemplateStuff($template, BaseAPI::TARGET_WEBSITE_LAYOUT);
+        $apiState->applyRegisteredTemplateStuff($template, BaseAPI::TARGET_WEBSITE_LAYOUT);
         $url = $req->path ? explode('/', ltrim($req->path, '/')) : [''];
         $html = $template->render(['url' => $url,
                                    'urlStr' => $req->path,
@@ -136,24 +135,6 @@ class WebsiteControllers {
 
     ////////////////////////////////////////////////////////////////////////////
 
-    /**
-     * Palauttaa uuden instanssin luokasta RAD_PUBLIC_PATH . 'site/Site.php'.
-     *
-     * @return \RadCms\Website\WebsiteInterface
-     * @throws \Pike\PikeException
-     */
-    public static function instantiateWebsite(): WebsiteInterface {
-        $clsPath = 'RadSite\\Site';
-        if (!class_exists($clsPath))
-            throw new PikeException("\"{$clsPath}\" missing",
-                                    PikeException::BAD_INPUT);
-        if (class_exists($clsPath)) {
-            if (!array_key_exists(WebsiteInterface::class, class_implements($clsPath, false)))
-                throw new PikeException("Site.php (\"{$clsPath}\") must implement RadCms\Website\WebsiteInterface",
-                                        PikeException::BAD_INPUT);
-            return new $clsPath();
-        }
-    }
     /**
      * Palauttaa uuden instanssin luokasta RAD_PUBLIC_PATH . 'site/Theme.php', tai
      * null mikäli sitä ei ole olemassa.

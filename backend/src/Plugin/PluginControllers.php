@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RadCms\Plugin;
 
 use Pike\Request;
@@ -25,7 +27,7 @@ class PluginControllers {
      * @param \Pike\Request $request
      * @param \Pike\Response $response
      */
-    public function handleGetPluginsRequest(Response $res) {
+    public function handleGetPluginsRequest(Response $res): void {
         $res->json(array_map(function ($plugin) {
             return ['name' => $plugin->name, 'isInstalled' => $plugin->isInstalled];
         }, $this->plugins->getArrayCopy()));
@@ -39,7 +41,7 @@ class PluginControllers {
      */
     public function handleInstallPluginRequest(Request $req,
                                                Response $res,
-                                               PluginInstaller $installer) {
+                                               PluginInstaller $installer): void {
         if (($plugin = ArrayUtils::findByKey($this->plugins, $req->params->name, 'name'))) {
             // @allow \Pike\PikeException
             $installer->install($plugin);
@@ -58,7 +60,7 @@ class PluginControllers {
      */
     public function handleUninstallPluginRequest(Request $req,
                                                  Response $res,
-                                                 PluginInstaller $installer) {
+                                                 PluginInstaller $installer): void {
         if (($plugin = ArrayUtils::findByKey($this->plugins, $req->params->name, 'name'))) {
             // @allow \Pike\PikeException
             $installer->uninstall($plugin);

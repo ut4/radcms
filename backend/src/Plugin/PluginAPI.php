@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RadCms\Plugin;
 
 use Pike\Router;
@@ -17,8 +19,9 @@ class PluginAPI extends BaseAPI {
      * @param \Pike\Router $router = null
      */
     public function __construct(APIConfigsStorage $configs,
+                                \ArrayObject $plugins,
                                 Router $router = null) {
-        parent::__construct($configs);
+        parent::__construct($configs, $plugins);
         $this->router = $router;
     }
     /**
@@ -35,13 +38,13 @@ class PluginAPI extends BaseAPI {
      * @param string $url
      * @param string $ctrlCassPath
      * @param string $ctrlMethodNme
-     * @param string $linkedAclActionAndResource = ACL::NO_NAME
+     * @param string $linkedAclActionAndResource = ACL::NO_IDENTITY
      */
-    public function registerRoute($method,
-                                  $url,
-                                  $ctrlCassPath,
-                                  $ctrlMethodName,
-                                  $linkedAclActionAndResource = ACL::NO_NAME) {
+    public function registerRoute(string $method,
+                                  string $url,
+                                  string $ctrlCassPath,
+                                  string $ctrlMethodName,
+                                  string $linkedAclActionAndResource = ACL::NO_IDENTITY): void {
         $this->router->map($method, $url,
             [$ctrlCassPath, $ctrlMethodName, $linkedAclActionAndResource]
         );
@@ -54,7 +57,8 @@ class PluginAPI extends BaseAPI {
      * @param string $panelImplName
      * @param string $title
      */
-    public function enqueueFrontendAdminPanel($panelImplName, $title) {
+    public function enqueueFrontendAdminPanel(string $panelImplName,
+                                              string $title): void {
         $this->configsStorage->putAdminPanel((object)[
             'impl' => $panelImplName,
             'title' => $title,

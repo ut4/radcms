@@ -177,9 +177,9 @@ final class PluginAPIIntegrationTest extends DbTestCase {
         $res = $this->createMock(MutedResponse::class);
         $req = new Request('/noop', 'GET');
         $this->sendRequest($req, $res, $this->app);
-        $storage = $this->app->getAppCtx()->cmsState->getApiConfigs();
-        $this->verifyAdminJsFilesWereEnqueued($storage);
-        $this->verifyAdminPanelsWereEnqueued($storage);
+        $apiState = $this->app->getAppCtx()->cmsState->getApiConfigs();
+        $this->verifyAdminJsFilesWereEnqueued($apiState);
+        $this->verifyAdminPanelsWereEnqueued($apiState);
     }
     private function setupFileRegTest() {
         return $this->setupReadTest();
