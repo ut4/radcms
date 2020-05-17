@@ -7,14 +7,15 @@ namespace RadCms\Installer;
 use Auryn\Injector;
 use RadCms\Packager\PackageStreamInterface;
 use RadCms\Packager\ZipPackageStream;
+use RadCms\AppContext;
 
 abstract class Module {
     /**
      * Rekisteröi install.php?q=* http-reitit.
      *
-     * @param \stdClass $ctx
+     * @param \RadCms\AppContext $ctx
      */
-    public static function init(\stdClass $ctx): void {
+    public static function init(AppContext $ctx): void {
         $ctx->router->map('GET', '/',
             [InstallerControllers::class, 'renderHomeView', false]
         );

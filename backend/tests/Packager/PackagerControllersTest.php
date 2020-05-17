@@ -7,6 +7,7 @@ use Pike\Request;
 use Pike\TestUtils\DbTestCase;
 use Pike\TestUtils\HttpTestUtils;
 use Pike\TestUtils\MockCrypto;
+use RadCms\AppContext;
 use RadCms\Installer\Tests\BaseInstallerTest;
 use RadCms\Packager\Packager;
 use RadCms\Packager\ZipPackageStream;
@@ -56,8 +57,10 @@ final class PackagerControllersTest extends DbTestCase {
         $auth->method('getIdentity')
              ->willReturn((object)['id' => $s->testUserZero->id,
                                    'role' => $s->testUserZero->role]);
-        $app = $this->makeApp('\RadCms\App::create', $this->getAppConfig(),
-            ['db' => '@auto', 'crypto' => new MockCrypto(), 'auth' => $auth],
+        $ctx = new AppContext(['db' => '@auto']);
+        $ctx->auth = $auth;
+        $ctx->crypto = new MockCrypto;
+        $app = $this->makeApp('\RadCms\App::create', $this->getAppConfig(), $ctx,
             function ($injector) {
                 $injector->delegate(ZipPackageStream::class, function () {
                     return $this->mockPackageStream;

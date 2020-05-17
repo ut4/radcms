@@ -14,6 +14,7 @@ use Pike\TestUtils\MutedResponse;
 use RadPlugins\MoviesPlugin\MoviesPlugin;
 use RadCms\Plugin\Plugin;
 use RadCms\APIConfigsStorage;
+use RadCms\AppContext;
 use RadCms\BaseAPI;
 use RadCms\Content\DAO;
 
@@ -33,7 +34,7 @@ final class PluginAPIIntegrationTest extends DbTestCase {
         $this->moviesPlugin->install($m);
         AppTest::markPluginAsInstalled('MoviesPlugin', $db);
         //
-        $ctx = (object) ['db' => '@auto', 'auth' => '@auto'];
+        $ctx = new AppContext(['db' => '@auto', 'auth' => '@auto']);
         $ctx->fs = $this->getMockBuilder(FileSystem::class)
             ->setMethods(['readDir'])
             ->getMock();
@@ -184,8 +185,8 @@ final class PluginAPIIntegrationTest extends DbTestCase {
     private function setupFileRegTest() {
         return $this->setupReadTest();
     }
-    private function verifyAdminJsFilesWereEnqueued(APIConfigsStorage $configs) {
-        $actual = $configs->getEnqueuedJsFiles(BaseAPI::TARGET_CONTROL_PANEL_LAYOUT);
+    private function verifyAdminJsFilesWereEnqueued(APIConfigsStorage $apiState) {
+        $actual = $apiState->getEnqueuedJsFiles(BaseAPI::TARGET_CONTROL_PANEL_LAYOUT);
         $this->assertEquals(2, count($actual));
         $this->assertEquals([(object)[
             'url' => 'file1.js',
@@ -195,8 +196,8 @@ final class PluginAPIIntegrationTest extends DbTestCase {
             'attrs' => ['id' => 'file2']
         ]], $actual);
     }
-    private function verifyAdminPanelsWereEnqueued(APIConfigsStorage $configs) {
-        $actual = $configs->getEnqueuedAdminPanels();
+    private function verifyAdminPanelsWereEnqueued(APIConfigsStorage $apiState) {
+        $actual = $apiState->getEnqueuedAdminPanels();
         $this->assertEquals(1, count($actual));
         $this->assertEquals((object)[
             'impl' => 'MoviesAdmin',

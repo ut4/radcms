@@ -2,6 +2,7 @@
 
 namespace RadCms;
 
+use RadCms\AppContext;
 use Auryn\Injector;
 use Pike\Translator;
 use Pike\FileSystem;
@@ -22,12 +23,14 @@ class App {
     private static $fs;
     /**
      * @param array $config
-     * @param \stdClass $ctx = null
+     * @param \Pike\AppContext $ctx
      * @param callable $makeInjector = null fn(): \Auryn\Injector
      * @return \Pike\App
      * @throws \Pike\PikeException
      */
-    public static function create($config, $ctx = null, $makeInjector = null) {
+    public static function create($config,
+                                  AppContext $ctx,
+                                  callable $makeInjector = null) {
         return PikeApp::create([
             self::class,
             AuthModule::class,
@@ -41,10 +44,10 @@ class App {
         ], $config, $ctx, $makeInjector);
     }
     /**
-     * @param \stdClass $ctx
+     * @param \RadCms\AppContext $ctx
      * @throws \Pike\PikeException
      */
-    public static function init(\stdClass $ctx) {
+    public static function init(AppContext $ctx) {
         self::$fs = $ctx->fs ?? new FileSystem(); // translaattorille
         // @allow \Pike\PikeException
         $ctx->db->open();
@@ -54,7 +57,7 @@ class App {
                                                                $ctx->router);
         $ctx->acl = new ACL((bool)(RAD_FLAGS & RAD_DEVMODE));
         $ctx->acl->setRules($ctx->cmsState->getAclRules());
-        if (!isset($ctx->translator))
+        if (!$ctx->translator)
             $ctx->translator = new Translator(function () use ($ctx) {
                 $mainLangFilePath = RAD_PUBLIC_PATH . 'translations/' .
                     $ctx->cmsState->getSiteInfo()->lang . '.php';

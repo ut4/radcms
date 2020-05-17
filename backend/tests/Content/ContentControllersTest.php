@@ -39,7 +39,9 @@ final class ContentControllersTest extends DbTestCase {
     }
     protected function setUp(): void {
         parent::setUp();
-        $this->app = $this->makeApp('\RadCms\App::create', $this->getAppConfig());
+        $this->app = $this->makeApp('\RadCms\App::create',
+                                    $this->getAppConfig(),
+                                    '\RadCms\AppContext');
     }
     public function tearDown(): void {
         $this->deleteAllTestProducts();

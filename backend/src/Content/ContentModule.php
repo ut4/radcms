@@ -4,13 +4,15 @@ declare(strict_types=1);
 
 namespace RadCms\Content;
 
+use RadCms\AppContext;
+
 abstract class ContentModule {
     /**
      * Rekisteröi /api/content -alkuiset http-reitit.
      *
-     * @param \stdClass $ctx {\Pike\Router router, \Pike\Db db, \RadCms\Auth\Authenticator auth, \RadCms\Auth\ACL acl, \RadCms\CmsState cmsState, \Pike\Translator translator}
+     * @param \RadCms\AppContext $ctx
      */
-    public static function init(\stdClass $ctx): void {
+    public static function init(AppContext $ctx): void {
         $ctx->router->map('POST', '/api/content/[w:contentTypeName]/[with-revision:revisionSettings]?',
             [ContentControllers::class, 'handleCreateContentNode', 'create:content']
         );

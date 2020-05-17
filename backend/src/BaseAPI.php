@@ -15,15 +15,15 @@ class BaseAPI {
     protected $configsStorage;
     protected $plugins;
     /**
-     * @param \RadCms\APIConfigsStorage $configs
+     * @param \RadCms\APIConfigsStorage $apiState
      */
-    public function __construct(APIConfigsStorage $configs, \ArrayObject $plugins) {
-        $this->configsStorage = $configs;
+    public function __construct(APIConfigsStorage $apiState, \ArrayObject $plugins) {
+        $this->configsStorage = $apiState;
         $this->plugins = $plugins;
     }
     /**
      * Rekisteröi <?= $this->DirectiveName(...) ?> käytettäväksi templaatteista.
-     * Esimerkki: registerDirective('Movies', RAD_PUBLIC_PATH . 'plugins/foo/movies.inc');
+     * Esimerkki: registerDirective('Movies', RAD_PUBLIC_PATH . 'plugins/Foo/movies.inc');
      *
      * @param string $directiveName
      * @param string $fullFilePath
@@ -68,10 +68,13 @@ class BaseAPI {
     }
     /**
      * @param string $name
+     * @param bool $onlyInstalled = true
      * @return \RadCms\Plugin\Plugin|null
      */
-    public function getPlugin($name) {
-        return ArrayUtils::findByKey($this->plugins, $name, 'name');
+    public function getPlugin($name, $onlyInstalled = true) {
+        $plugin = ArrayUtils::findByKey($this->plugins, $name, 'name');
+        if (!$plugin) return null;
+        return !$onlyInstalled || $plugin->isInstalled ? $plugin : null;
     }
     /**
      * @param string $eventName

@@ -6,6 +6,7 @@ use Pike\TestUtils\HttpTestUtils;
 use RadCms\Tests\_Internal\ContentTestUtils;
 use Pike\Request;
 use Pike\FileSystem;
+use RadCms\AppContext;
 use RadCms\Auth\ACL;
 use RadCms\Installer\Installer;
 
@@ -43,7 +44,9 @@ final class InstallerTest extends BaseInstallerTest {
             'firstUserPass must be string',
             'The length of baseUrl must be at least 1',
         ]), 400);
-        $app = $this->makeApp([$this,'createInstallerApp'], $this->getAppConfig());
+        $app = $this->makeApp([$this,'createInstallerApp'],
+                              $this->getAppConfig(),
+                              '\RadCms\AppContext');
         $this->sendRequest(new Request('/', 'POST', $input), $res, $app);
     }
     public function testInstallerValidatesInvalidValues() {
@@ -85,7 +88,9 @@ final class InstallerTest extends BaseInstallerTest {
             'firstUserPass must be string',
             'The length of baseUrl must be at least 1'
         ]), 400);
-        $app = $this->makeApp([$this,'createInstallerApp'], $this->getAppConfig());
+        $app = $this->makeApp([$this,'createInstallerApp'],
+                              $this->getAppConfig(),
+                              '\RadCms\AppContext');
         $this->sendRequest(new Request('/', 'POST', $input), $res, $app);
     }
     public function testInstallerFillsDefaultValues() {
@@ -108,7 +113,7 @@ final class InstallerTest extends BaseInstallerTest {
         ];
         $res = $this->createMockResponse($this->anything());
         $app = $this->makeApp([$this,'createInstallerApp'], $this->getAppConfig(),
-            null, function ($injector) {
+            '\RadCms\AppContext', function ($injector) {
                 $injector->delegate(Installer::class, function() {
                     $m = $this->createMock(Installer::class);
                     $m->method('doInstall')->willReturn(true);
@@ -288,8 +293,9 @@ return [
     }
     private function sendInstallRequest($s) {
         $res = $this->createMockResponse('{"ok":"ok","warnings":[]}', 200);
-        $app = $this->makeApp([$this,'createInstallerApp'], $this->getAppConfig(),
-            (object) ['db' => '@auto', 'auth' => '@auto', 'fs' => $s->mockFs]);
+        $ctx = new AppContext(['db' => '@auto', 'auth' => '@auto']);
+        $ctx->fs = $s->mockFs;
+        $app = $this->makeApp([$this,'createInstallerApp'], $this->getAppConfig(), $ctx);
         $this->sendRequest(new Request('/', 'POST', $s->input), $res, $app);
     }
     private function verifyInsertedSampleContent($s) {

@@ -4,15 +4,16 @@ declare(strict_types=1);
 
 namespace RadCms\Cli;
 
+use RadCms\AppContext;
 use RadCms\Auth\ACL;
 
 abstract class Module {
     /**
      * Rekisteröi dev-cli.php komentoriviohjelman "reitit".
      *
-     * @param \stdClass $ctx
+     * @param \RadCms\AppContext $ctx
      */
-    public static function init(\stdClass $ctx): void {
+    public static function init(AppContext $ctx): void {
         $ctx->router->map('PSEUDO', '/make-release/[**:dirPath]',
             [MainController::class, 'makeRelease', ACL::NO_IDENTITY]
         );

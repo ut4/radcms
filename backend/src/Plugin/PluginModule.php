@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace RadCms\Plugin;
 
+use RadCms\AppContext;
+
 abstract class PluginModule {
     /**
-     * @param \stdClass $ctx {\Pike\Router router, \Pike\Db db, \RadCms\Auth\Authenticator auth, \RadCms\Auth\ACL acl, \RadCms\CmsState cmsState, \Pike\Translator translator}
+     * @param \RadCms\AppContext
      */
-    public static function init(\stdClass $ctx): void {
+    public static function init(AppContext $ctx): void {
         $ctx->router->map('GET', '/api/plugins',
             [PluginControllers::class, 'handleGetPluginsRequest', 'view:plugins']
         );

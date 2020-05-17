@@ -4,13 +4,15 @@ declare(strict_types=1);
 
 namespace RadCms\ContentType;
 
+use RadCms\AppContext;
+
 abstract class ContentTypeModule {
     /**
      * Rekisteröi /api/content-types -alkuiset http-reitit.
      *
-     * @param \stdClass $ctx {\Pike\Router router, \Pike\Db db, \RadCms\Auth\Authenticator auth, \RadCms\Auth\ACL acl, \RadCms\CmsState cmsState, \Pike\Translator translator}
+     * @param \RadCms\AppContext $ctx
      */
-    public static function init(\stdClass $ctx): void {
+    public static function init(AppContext $ctx): void {
         $ctx->router->map('POST', '/api/content-types/field/[w:contentTypeName]',
             [ContentTypeControllers::class, 'handleAddFieldToContentType', 'addField:contentTypes']
         );

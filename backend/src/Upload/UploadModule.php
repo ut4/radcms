@@ -2,13 +2,15 @@
 
 namespace RadCms\Upload;
 
+use RadCms\AppContext;
+
 abstract class UploadModule {
     /**
      * Rekisteröi /api/uploads -alkuiset http-reitit.
      *
-     * @param \stdClass $ctx {\Pike\Router router, \Pike\Db db, \RadCms\Auth\Authenticator auth, \RadCms\Auth\ACL acl, \RadCms\CmsState cmsState, \Pike\Translator translator}
+     * @param \RadCms\AppContext $ctx
      */
-    public static function init($ctx) {
+    public static function init(AppContext $ctx) {
         $ctx->router->map('GET', '/api/uploads',
             [UploadControllers::class, 'handleGetUploads', 'view:uploads']
         );

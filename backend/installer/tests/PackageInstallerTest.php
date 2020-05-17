@@ -11,6 +11,7 @@ use Pike\FileSystem;
 use Pike\TestUtils\MockCrypto;
 use RadCms\Auth\ACL;
 use RadCms\APIConfigsStorage;
+use RadCms\AppContext;
 use RadCms\Packager\Packager;
 use RadCms\CmsState;
 use RadCms\ContentType\ContentTypeCollection;
@@ -129,9 +130,10 @@ final class PackageInstallerTest extends BaseInstallerTest {
     }
     private function sendInstallFromPackageRequest($s) {
         $res = $this->createMockResponse('{"ok":"ok","warnings":[]}', 200);
+        $ctx = new AppContext(['db' => '@auto', 'auth' => '@auto']);
+        $ctx->crypto = new MockCrypto;
         $app = $this->makeApp([$this,'createInstallerApp'], $this->getAppConfig(),
-            (object) ['db' => '@auto', 'auth' => '@auto', 'crypto' => new MockCrypto],
-            function ($injector) {
+            $ctx, function ($injector) {
                 $injector->delegate(InstallerCommons::class, function () {
                     $partiallyMocked = $this->getMockBuilder(InstallerCommons::class)
                         ->setConstructorArgs([self::$db, new FileSystem, new MockCrypto,

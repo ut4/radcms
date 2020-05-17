@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace RadCms\Tests\_Internal;
 
 use Pike\ArrayUtils;
-use Pike\DbUtils;
 use RadCms\Content\DAO;
 
 trait ContentTestUtils {

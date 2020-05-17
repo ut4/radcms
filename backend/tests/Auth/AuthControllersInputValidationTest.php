@@ -11,7 +11,9 @@ final class AuthControllersInputValidationTest extends ConfigProvidingTestCase {
     private $app;
     protected function setUp(): void {
         parent::setUp();
-        $this->app = $this->makeApp('\RadCms\App::create', $this->getAppConfig());
+        $this->app = $this->makeApp('\RadCms\App::create',
+                                    $this->getAppConfig(),
+                                    '\RadCms\AppContext');
     }
     public function testPOSTLoginRejectsEmptyInput() {
         $req = new Request('/api/login', 'POST', new \stdClass);

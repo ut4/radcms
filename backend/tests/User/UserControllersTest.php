@@ -10,6 +10,7 @@ use Pike\DbUtils;
 use Pike\Response;
 use RadCms\Auth\ACL;
 use Pike\TestUtils\MockCrypto;
+use RadCms\AppContext;
 
 final class UserControllersTest extends DbTestCase {
     use HttpTestUtils; // makeApp(), sendRequest()
@@ -25,7 +26,7 @@ final class UserControllersTest extends DbTestCase {
     private function setupGetCurrentUserTest() {
         $out = new \stdClass;
         $out->testUser = self::makeAndInsertTestUser();
-        $out->ctx = (object) ['db' => '@auto', 'auth' => null];
+        $out->ctx = new AppContext(['db' => '@auto']);
         $out->ctx->auth = $this->createMock(Authenticator::class);
         $out->ctx->auth->method('getIdentity')
             ->willReturn((object)['id' => $out->testUser->id,

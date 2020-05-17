@@ -15,13 +15,14 @@ use RadCms\Auth\ACL;
 class PluginAPI extends BaseAPI {
     private $router;
     /**
-     * @param \Pike\Router $ctx
+     * @param \RadCms\APIConfigsStorage $apiState
+     * @param \ArrayObject $plugins
      * @param \Pike\Router $router = null
      */
-    public function __construct(APIConfigsStorage $configs,
+    public function __construct(APIConfigsStorage $apiState,
                                 \ArrayObject $plugins,
                                 Router $router = null) {
-        parent::__construct($configs, $plugins);
+        parent::__construct($apiState, $plugins);
         $this->router = $router;
     }
     /**

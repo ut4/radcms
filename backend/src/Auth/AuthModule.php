@@ -2,15 +2,16 @@
 
 namespace RadCms\Auth;
 
+use RadCms\AppContext;
 use RadCms\Auth\AuthControllers;
 
 abstract class AuthModule {
     /**
      * Rekisteröi autentikointiin liittyvät http-reitit.
      *
-     * @param \stdClass $ctx {\Pike\Router router, \Pike\Db db, \RadCms\Auth\Authenticator auth, \RadCms\Auth\ACL acl, \RadCms\CmsState cmsState, \Pike\Translator translator}
+     * @param \RadCms\AppContext $ctx
      */
-    public static function init(\stdClass $ctx): void {
+    public static function init(AppContext $ctx): void {
         $ctx->router->map('GET', '/login',
             [AuthControllers::class, 'renderLoginView', ACL::NO_IDENTITY]
         );

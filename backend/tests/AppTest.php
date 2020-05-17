@@ -7,10 +7,13 @@ use Pike\FileSystem;
 use Pike\TestUtils\DbTestCase;
 use RadPlugins\ValidAndInstalledPlugin\ValidAndInstalledPlugin;
 use RadPlugins\ValidPlugin\ValidPlugin;
+use RadCms\AppContext;
 
 final class AppTest extends DbTestCase {
     public function testCreateAppScansPluginsFromDisk() {
-        $ctx = (object)['db' => self::$db, 'fs' => $this->createMock(FileSystem::class)];
+        $ctx = new AppContext;
+        $ctx->db = self::$db;
+        $ctx->fs = $this->createMock(FileSystem::class);
         $ctx->fs->expects($this->once())
             ->method('readDir')
             ->with(RAD_PUBLIC_PATH . 'plugins')
@@ -20,7 +23,9 @@ final class AppTest extends DbTestCase {
     public function testCreateAppValidatesFoundPlugins() {
         $runInvalid = function ($invalidClsPath, $expectedError) {
             try {
-                $ctx = (object)['db' => self::$db, 'fs' => $this->createMock(FileSystem::class)];
+                $ctx = new AppContext;
+                $ctx->db = self::$db;
+                $ctx->fs = $this->createMock(FileSystem::class);
                 $ctx->fs->expects($this->once())
                     ->method('readDir')
                     ->willReturn(["foo/bar/baz/plugins/{$invalidClsPath}"]);
@@ -39,7 +44,9 @@ final class AppTest extends DbTestCase {
     }
     public function testCreateAppInitializesValidAndInstalledPlugins() {
         $pluginDirPath = RAD_PUBLIC_PATH . 'plugins';
-        $ctx = (object)['db' => self::$db, 'fs' => $this->createMock(FileSystem::class)];
+        $ctx = new AppContext;
+        $ctx->db = self::$db;
+        $ctx->fs = $this->createMock(FileSystem::class);
         $ctx->fs->expects($this->once())
             ->method('readDir')
             ->with($pluginDirPath)

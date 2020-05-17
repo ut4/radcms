@@ -69,7 +69,7 @@ final class ContentTypeControllersTest extends DbTestCase {
     private function sendCreateContentTypeRequest($s) {
         $req = new Request('/api/content-types', 'POST', $s->reqBody);
         $res = $this->createMockResponse(null, 400);
-        $app = $this->makeApp('\RadCms\App::create', $this->getAppConfig());
+        $app = $this->makeTestApp();
         $this->sendResponseBodyCapturingRequest($req, $res, $app, $s);
     }
 
@@ -106,7 +106,7 @@ final class ContentTypeControllersTest extends DbTestCase {
     private function sendGetContentTypeRequest($s, $url = null) {
         $req = new Request($url ?? "/api/content-types/{$s->contentTypeName}", 'GET');
         $res = $this->createMock(Response::class);
-        $app = $this->makeApp('\RadCms\App::create', $this->getAppConfig());
+        $app = $this->makeTestApp();
         $this->sendResponseBodyCapturingRequest($req, $res, $app, $s);
     }
     private function verifyResponseBodyEquals($expected, $s) {
@@ -178,7 +178,7 @@ final class ContentTypeControllersTest extends DbTestCase {
                            'PUT',
                            $s->reqBody);
         $res = $this->createMockResponse(['ok' => 'ok']);
-        $app = $this->makeApp('\RadCms\App::create', $this->getAppConfig());
+        $app = $this->makeTestApp();
         $this->sendResponseBodyCapturingRequest($req, $res, $app, $s);
     }
     private function verifyUpdatedBasicInfoToInternalTable($s) {
@@ -235,7 +235,7 @@ final class ContentTypeControllersTest extends DbTestCase {
     private function sendDeleteContentTypeRequest($s) {
         $req = new Request("/api/content-types/{$s->contentTypeName}", 'DELETE');
         $res = $this->createMockResponse(['ok' => 'ok']);
-        $app = $this->makeApp('\RadCms\App::create', $this->getAppConfig());
+        $app = $this->makeTestApp();
         $this->sendResponseBodyCapturingRequest($req, $res, $app, $s);
     }
     private function verifyDeletedContentTypeTable($s) {
@@ -281,7 +281,7 @@ final class ContentTypeControllersTest extends DbTestCase {
                            'POST',
                            $s->reqBody);
         $res = $this->createMockResponse(['ok' => 'ok']);
-        $app = $this->makeApp('\RadCms\App::create', $this->getAppConfig());
+        $app = $this->makeTestApp();
         $this->sendRequest($req, $res, $app);
     }
     private function verifyContentTypeFieldExist($s, $expectedField, $shouldExist) {
@@ -344,7 +344,7 @@ final class ContentTypeControllersTest extends DbTestCase {
         $req = new Request("/api/content-types/field/{$s->contentTypeName}/{$s->fieldName}",
                            'DELETE');
         $res = $this->createMockResponse(['ok' => 'ok']);
-        $app = $this->makeApp('\RadCms\App::create', $this->getAppConfig());
+        $app = $this->makeTestApp();
         $this->sendResponseBodyCapturingRequest($req, $res, $app, $s);
     }
     private function verifyDeletedFieldFromContentTypeTable($s) {
@@ -383,5 +383,10 @@ final class ContentTypeControllersTest extends DbTestCase {
     }
     private function findEntryFromInternalContentTypes($name, $internal) {
         return ArrayUtils::findByKey($internal, $name, 'name');
+    }
+    private function makeTestApp() {
+        return $this->makeApp('\RadCms\App::create',
+                              $this->getAppConfig(),
+                              '\RadCms\AppContext');
     }
 }

@@ -11,7 +11,9 @@ final class PackagerControllersInputValidationTest extends ConfigProvidingTestCa
     private $app;
     protected function setUp(): void {
         parent::setUp();
-        $this->app = $this->makeApp('\RadCms\App::create', $this->getAppConfig());
+        $this->app = $this->makeApp('\RadCms\App::create',
+                                    $this->getAppConfig(),
+                                    '\RadCms\AppContext');
     }
     public function testPOSTPackagerRejectsNonRelativeFilePaths() {
         $req = new Request('/api/packager', 'POST', (object) [

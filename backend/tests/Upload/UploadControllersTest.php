@@ -20,7 +20,9 @@ final class UploadControllersTest extends DbTestCase {
     private function setupListUploadsTest() {
         return (object)[
             'actualResponseBody' => null,
-            'app' => $this->makeApp('\RadCms\App::create', $this->getAppConfig())
+            'app' => $this->makeApp('\RadCms\App::create',
+                                    $this->getAppConfig(),
+                                    '\RadCms\AppContext')
         ];
     }
     private function sendGetUploadsRequest($s) {
@@ -52,8 +54,8 @@ final class UploadControllersTest extends DbTestCase {
             $s->actuallyMovedFileTo = $targetFilePath;
             return true;
         };
-        $s->app = $this->makeApp('\RadCms\App::create', $this->getAppConfig(), null,
-            function ($injector) use ($s) {
+        $s->app = $this->makeApp('\RadCms\App::create', $this->getAppConfig(),
+            '\RadCms\AppContext', function ($injector) use ($s) {
                 $injector->delegate(Uploader::class, function () use ($s) {
                     return new Uploader($s->mockMoveUploadedFileFn);
                 });

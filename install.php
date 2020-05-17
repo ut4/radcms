@@ -18,5 +18,5 @@ $loader->addPsr4('RadCms\\Installer\\', RAD_BACKEND_PATH . 'installer/src');
 
 \Pike\App::create([\RadCms\Installer\Module::class],
                   [],
-                  [\Pike\App::SERVICE_DB => \Pike\App::MAKE_AUTOMATICALLY])
+                  new \RadCms\AppContext(['db' => \Pike\App::MAKE_AUTOMATICALLY]))
     ->handleRequest('', $_GET['q'] ?? '/');
