@@ -1,9 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RadCms;
 
 use Pike\Db;
 use Pike\FileSystem;
+use Pike\FileSystemInterface;
 use Pike\Router;
 use Pike\PikeException;
 use RadCms\Plugin\PluginAPI;
@@ -23,7 +26,7 @@ class CmsStateLoader {
      */
     public static function getAndInitStateFromDb(Db $db,
                                                  FileSystem $fs,
-                                                 Router $router) {
+                                                 Router $router): CmsState {
         $raw = self::getStateFromDb($db);
         $out = new CmsState($raw, new APIConfigsStorage($fs));
         //
@@ -49,7 +52,7 @@ class CmsStateLoader {
     /**
      * @throws \Pike\PikeException
      */
-    private static function getStateFromDb($db) {
+    private static function getStateFromDb(Db $db): \stdClass {
         // @allow \Pike\PikeException
         if (!($row = $db->fetchOne(
             'SELECT `name`, `lang`, `installedContentTypes`' .
@@ -72,7 +75,7 @@ class CmsStateLoader {
     /**
      * @throws \Pike\PikeException
      */
-    private static function parseJsonOrThrow($row, $columnName) {
+    private static function parseJsonOrThrow(array $row, string $columnName) {
         $out = json_decode($row[$columnName]);
         if ($out !== null) return $out;
         throw new PikeException("Failed to parse {$columnName}",
@@ -81,7 +84,8 @@ class CmsStateLoader {
     /**
      * @throws \Pike\PikeException
      */
-    private static function scanPluginsFromDisk($to, $fs) {
+    private static function scanPluginsFromDisk(\ArrayObject $to,
+                                                FileSystemInterface $fs): void {
         // @allow \Pike\PikeException
         $paths = $fs->readDir(RAD_PUBLIC_PATH . 'plugins', '*', GLOB_ONLYDIR);
         foreach ($paths as $path) {
@@ -92,7 +96,7 @@ class CmsStateLoader {
     /**
      * @throws \Pike\PikeException
      */
-    private static function instantiateWebsite() {
+    private static function instantiateWebsite(): WebsiteInterface {
         $clsPath = 'RadSite\\Site';
         if (!class_exists($clsPath))
             throw new PikeException("\"{$clsPath}\" missing",

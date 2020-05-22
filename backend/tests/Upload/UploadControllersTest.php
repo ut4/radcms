@@ -27,8 +27,8 @@ final class UploadControllersTest extends DbTestCase {
     }
     private function sendGetUploadsRequest($s) {
         $req = new Request('/api/uploads', 'GET');
-        $res = $this->createMock(Response::class);
-        $this->sendResponseBodyCapturingRequest($req, $res, $s->app, $s);
+        $res = $this->createBodyCapturingMockResponse($s);
+        $this->sendRequest($req, $res, $s->app);
     }
     private function verifyResponseBodyEquals($expected, $s) {
         $this->assertEquals(json_encode($expected),

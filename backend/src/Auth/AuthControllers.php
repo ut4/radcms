@@ -11,6 +11,7 @@ use Pike\Validation;
 use Pike\Auth\Authenticator;
 use RadCms\Templating\MagicTemplate;
 use Pike\PikeException;
+use Pike\Translator;
 use RadCms\CmsState;
 
 class AuthControllers {
@@ -25,9 +26,12 @@ class AuthControllers {
      * GET /login.
      *
      * @param \Pike\Response $res
+     * @param \Pike\Translator $translator
      */
-    public function renderLoginView(Response $res): void {
-        $res->html((new MagicTemplate(__DIR__ . '/base-view.tmpl.php'))
+    public function renderLoginView(Response $res, Translator $translator): void {
+        $res->html((new MagicTemplate(__DIR__ . '/base-view.tmpl.php',
+                                      null,
+                                      $translator))
             ->render(['title' => 'Kirjautuminen',
                       'reactAppName' => 'LoginApp']));
     }
@@ -67,9 +71,13 @@ class AuthControllers {
      * GET /request-password-reset.
      *
      * @param \Pike\Response $res
+     * @param \Pike\Translator $translator
      */
-    public function renderRequestPassResetView(Response $res): void {
-        $res->html((new MagicTemplate(__DIR__ . '/base-view.tmpl.php'))
+    public function renderRequestPassResetView(Response $res,
+                                               Translator $translator): void {
+        $res->html((new MagicTemplate(__DIR__ . '/base-view.tmpl.php',
+                                      null,
+                                      $translator))
             ->render(['title' => 'Uusi salasanan palautus',
                       'reactAppName' => 'RequestPassResetApp']));
     }
@@ -120,9 +128,13 @@ class AuthControllers {
      * GET /finalize-password-reset/[**:key].
      *
      * @param \Pike\Response $res
+     * @param \Pike\Translator $translator
      */
-    public function renderFinalizePassResetView(Response $res): void {
-        $res->html((new MagicTemplate(__DIR__ . '/base-view.tmpl.php'))
+    public function renderFinalizePassResetView(Response $res,
+                                                Translator $translator): void {
+        $res->html((new MagicTemplate(__DIR__ . '/base-view.tmpl.php',
+                                      null,
+                                      $translator))
             ->render(['title' => 'Salasanan palautus',
                       'reactAppName' => 'FinalizePassResetApp']));
     }

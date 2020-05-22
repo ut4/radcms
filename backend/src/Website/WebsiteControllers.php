@@ -11,6 +11,7 @@ use RadCms\Content\MagicTemplateDAO as MagicTemplateContentDAO;
 use RadCms\CmsState;
 use Pike\FileSystem;
 use Pike\PikeException;
+use Pike\Translator;
 use RadCms\StockContentTypes\MultiFieldBlobs\MultiFieldBlobs;
 use RadCms\BaseAPI;
 use RadCms\Auth\ACL;
@@ -46,13 +47,15 @@ class WebsiteControllers {
      * @param \RadCms\Templating\MagicTemplateDAO $dao
      * @param \Pike\FileSystem $fs
      * @param \RadCms\Auth\ACL $acl
+     * @param \Pike\Translator $translator
      * @throws \Pike\PikeException
      */
     public function handlePageRequest(Request $req,
                                       Response $res,
                                       MagicTemplateContentDAO $dao,
                                       FileSystem $fs,
-                                      ACL $acl): void {
+                                      ACL $acl,
+                                      Translator $translator): void {
         $apiState = $this->cmsState->getApiConfigs();
         // @allow \Exception
         $apiState->triggerEvent(BaseAPI::ON_PAGE_LOADED, false, $req);
@@ -68,6 +71,7 @@ class WebsiteControllers {
                                           BaseAPI::TARGET_WEBSITE_LAYOUT),
                                        '_jsFiles' => $apiState->getEnqueuedJsFiles(
                                            BaseAPI::TARGET_WEBSITE_LAYOUT)],
+                                      $translator,
                                       $dao,
                                       $fs);
         $apiState->applyRegisteredTemplateStuff($template, BaseAPI::TARGET_WEBSITE_LAYOUT);

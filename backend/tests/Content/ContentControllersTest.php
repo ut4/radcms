@@ -8,7 +8,6 @@ use RadCms\Tests\_Internal\ContentTestUtils;
 use Pike\Request;
 use RadCms\ContentType\ContentTypeCollection;
 use RadCms\ContentType\ContentTypeMigrator;
-use Pike\Response;
 use RadCms\Content\DAO;
 
 final class ContentControllersTest extends DbTestCase {
@@ -64,8 +63,8 @@ final class ContentControllersTest extends DbTestCase {
         $req = new Request("/api/content/Products{$urlTail}",
                            'POST',
                            $s->newProduct);
-        $res = $this->createMock(Response::class);
-        $this->sendResponseBodyCapturingRequest($req, $res, $this->app, $s);
+        $res = $this->createBodyCapturingMockResponse($s);
+        $this->sendRequest($req, $res, $this->app);
         $s->actualResponseParsed = json_decode($s->actualResponseBody);
     }
     private function verifyPOSTContentReturnedLastInsertId($s, $expectedNumAffected = '1') {
@@ -133,8 +132,8 @@ final class ContentControllersTest extends DbTestCase {
     }
     private function sendGetContentNodeRequest($s) {
         $req = new Request('/api/content/' . self::PRODUCT_ID . '/Products', 'GET');
-        $res = $this->createMock(Response::class);
-        $this->sendResponseBodyCapturingRequest($req, $res, $this->app, $s);
+        $res = $this->createBodyCapturingMockResponse($s);
+        $this->sendRequest($req, $res, $this->app);
     }
 
 
@@ -156,8 +155,8 @@ final class ContentControllersTest extends DbTestCase {
     }
     private function sendGetContentNodesByTypeRequest($s) {
         $req = new Request('/api/content/Brands', 'GET');
-        $res = $this->createMock(Response::class);
-        $this->sendResponseBodyCapturingRequest($req, $res, $this->app, $s);
+        $res = $this->createBodyCapturingMockResponse($s);
+        $this->sendRequest($req, $res, $this->app);
     }
 
 
@@ -181,8 +180,8 @@ final class ContentControllersTest extends DbTestCase {
         $req = new Request("/api/content/" . self::PRODUCT_ID . "/Products{$urlTail}",
                            'PUT',
                            $s->newData);
-        $res = $this->createMock(Response::class);
-        $this->sendResponseBodyCapturingRequest($req, $res, $this->app, $s);
+        $res = $this->createBodyCapturingMockResponse($s);
+        $this->sendRequest($req, $res, $this->app);
     }
     private function verifyContentNodeWasUpdatedToDb($s) {
         $this->verifyContentNodeFromDbEquals((object) array_merge(
@@ -274,8 +273,8 @@ final class ContentControllersTest extends DbTestCase {
     }
     private function sendDeleteContentNodeRequest($s) {
         $req = new Request('/api/content/' . self::PRODUCT_ID . '/Products', 'DELETE');
-        $res = $this->createMock(Response::class);
-        $this->sendResponseBodyCapturingRequest($req, $res, $this->app, $s);
+        $res = $this->createBodyCapturingMockResponse($s);
+        $this->sendRequest($req, $res, $this->app);
     }
     private function verifyContentNodeWasMarkedAsDeletedToDb($s) {
         $this->verifyContentNodeFromDbEquals((object) ['title' => 'Tuotteen nimi',

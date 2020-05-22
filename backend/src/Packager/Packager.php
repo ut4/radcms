@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RadCms\Packager;
 
 use Pike\Db;
@@ -10,6 +12,7 @@ use Pike\FileSystemInterface;
 use Pike\PikeException;
 use RadCms\CmsState;
 use RadCms\Content\DAO;
+use RadCms\ContentType\ContentTypeCollection;
 
 class Packager {
     public const LOCAL_NAMES_MAIN_DATA = 'main-data.data';
@@ -48,7 +51,7 @@ class Packager {
      * @return \stdClass {templates: string[], assets: string[]}
      * @throws \Pike\PikeException
      */
-    public function preRun() {
+    public function preRun(): \stdClass {
         $dirPath = RAD_PUBLIC_PATH . 'site/';
         $len = mb_strlen($dirPath);
         $fullPathToRelPath = function ($fullFilePath) use ($len) {
@@ -74,7 +77,7 @@ class Packager {
      */
     public function packSite(PackageStreamInterface $package,
                              \stdClass $config,
-                             \stdClass $userIdentity) {
+                             \stdClass $userIdentity): string {
         // @allow \Pike\PikeException
         $package->open('', true);
         // @allow \Pike\PikeException
@@ -93,7 +96,9 @@ class Packager {
     /**
      * @throws \Pike\PikeException
      */
-    private function addMainData($package, $config, $userIdentity) {
+    private function addMainData(PackageStreamInterface $package,
+                                 \stdClass $config,
+                                 \stdClass $userIdentity): void {
         $themeContentTypes = ArrayUtils::filterByKey($this->cmsState->getContentTypes(),
                                                      'Website',
                                                      'origin');
@@ -114,7 +119,7 @@ class Packager {
     /**
      * @throws \Pike\PikeException
      */
-    private function addDbSchema($package) {
+    private function addDbSchema(PackageStreamInterface $package): void {
         // @allow \Pike\PikeException
         $package->addFile(RAD_BASE_PATH . 'assets/schema.mariadb.sql',
                           self::LOCAL_NAMES_DB_SCHEMA);
@@ -122,7 +127,9 @@ class Packager {
     /**
      * @throws \Pike\PikeException
      */
-    private function addThemeFiles($package, $files, $localNameOfFileMapFile) {
+    private function addThemeFiles(PackageStreamInterface $package,
+                                   array $files,
+                                   string $localNameOfFileMapFile): void {
         $package->addFromString($localNameOfFileMapFile,
                                 json_encode($files, JSON_UNESCAPED_UNICODE));
         $base = RAD_PUBLIC_PATH . 'site/';
@@ -134,7 +141,7 @@ class Packager {
     /**
      * @return \stdClass
      */
-    private function generateSettings() {
+    private function generateSettings(): \stdClass {
         return (object) [
             'dbHost' => $this->appConfig->get('db.host'),
             'dbDatabase' => $this->appConfig->get('db.database'),
@@ -154,7 +161,7 @@ class Packager {
     /**
      * @return array [["Articles", ContentNode[]], ...]
      */
-    private function generateThemeContentData($themeContentTypes) {
+    private function generateThemeContentData(ContentTypeCollection $themeContentTypes): array {
         $cNodeDAO = new DAO($this->db, $themeContentTypes);
         $out = [];
         foreach ($themeContentTypes as $ctype) {
@@ -168,7 +175,7 @@ class Packager {
     /**
      * @return \stdClass
      */
-    private function generateUserZero($userIdentity) {
+    private function generateUserZero(\stdClass $userIdentity): \stdClass {
         // @allow \Pike\PikeException
         if (($row = $this->db->fetchOne('SELECT `id`,`username`,`email`' .
                                         ',`passwordHash`,`role`,`accountCreatedAt`' .

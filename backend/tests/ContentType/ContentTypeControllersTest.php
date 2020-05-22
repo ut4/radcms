@@ -7,7 +7,6 @@ use Pike\TestUtils\DbTestCase;
 use Pike\TestUtils\HttpTestUtils;
 use RadCms\Tests\_Internal\ContentTestUtils;
 use Pike\Request;
-use Pike\Response;
 use RadCms\ContentType\ContentTypeCollection;
 use RadCms\ContentType\ContentTypeMigrator;
 use RadCms\ContentType\ContentTypeValidator;
@@ -68,9 +67,9 @@ final class ContentTypeControllersTest extends DbTestCase {
     }
     private function sendCreateContentTypeRequest($s) {
         $req = new Request('/api/content-types', 'POST', $s->reqBody);
-        $res = $this->createMockResponse(null, 400);
+        $res = $this->createBodyCapturingMockResponse($s, 400);
         $app = $this->makeTestApp();
-        $this->sendResponseBodyCapturingRequest($req, $res, $app, $s);
+        $this->sendRequest($req, $res, $app);
     }
 
 
@@ -105,9 +104,9 @@ final class ContentTypeControllersTest extends DbTestCase {
     }
     private function sendGetContentTypeRequest($s, $url = null) {
         $req = new Request($url ?? "/api/content-types/{$s->contentTypeName}", 'GET');
-        $res = $this->createMock(Response::class);
+        $res = $this->createBodyCapturingMockResponse($s);
         $app = $this->makeTestApp();
-        $this->sendResponseBodyCapturingRequest($req, $res, $app, $s);
+        $this->sendRequest($req, $res, $app, $s);
     }
     private function verifyResponseBodyEquals($expected, $s) {
         $this->assertEquals(json_encode($expected), $s->actualResponseBody);
@@ -179,7 +178,7 @@ final class ContentTypeControllersTest extends DbTestCase {
                            $s->reqBody);
         $res = $this->createMockResponse(['ok' => 'ok']);
         $app = $this->makeTestApp();
-        $this->sendResponseBodyCapturingRequest($req, $res, $app, $s);
+        $this->sendRequest($req, $res, $app);
     }
     private function verifyUpdatedBasicInfoToInternalTable($s) {
         $parsed = $this->getInternalInstalledContentTypesFromDb();
@@ -236,7 +235,7 @@ final class ContentTypeControllersTest extends DbTestCase {
         $req = new Request("/api/content-types/{$s->contentTypeName}", 'DELETE');
         $res = $this->createMockResponse(['ok' => 'ok']);
         $app = $this->makeTestApp();
-        $this->sendResponseBodyCapturingRequest($req, $res, $app, $s);
+        $this->sendRequest($req, $res, $app);
     }
     private function verifyDeletedContentTypeTable($s) {
         $this->verifyContentTypeTableExists($s->contentTypeName, false);
@@ -345,7 +344,7 @@ final class ContentTypeControllersTest extends DbTestCase {
                            'DELETE');
         $res = $this->createMockResponse(['ok' => 'ok']);
         $app = $this->makeTestApp();
-        $this->sendResponseBodyCapturingRequest($req, $res, $app, $s);
+        $this->sendRequest($req, $res, $app, $s);
     }
     private function verifyDeletedFieldFromContentTypeTable($s) {
         $this->verifyContentTypeFieldExist($s,

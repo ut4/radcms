@@ -102,9 +102,8 @@ final class PluginAPIIntegrationTest extends DbTestCase {
                                         'releaseYear' => 2020]);
     }
     private function sendListMoviesRequest($s) {
-        $res = $this->createMock(Response::class);
-        $this->sendResponseBodyCapturingRequest(new Request('/movies', 'GET'),
-                                                $res, $this->app, $s);
+        $res = $this->createBodyCapturingMockResponse($s);
+        $this->sendRequest(new Request('/movies', 'GET'), $res, $this->app);
     }
     private function verifyResponseBodyEquals($expectedJson, $s) {
         $this->assertEquals($expectedJson, $s->actualResponseBody);
@@ -126,8 +125,8 @@ final class PluginAPIIntegrationTest extends DbTestCase {
     private function sendInsertMovieRequest($s) {
         $req = new Request('/movies', 'POST', (object) ['title' => 'A movie',
                                                         'releaseYear' => 2021]);
-        $res = $this->createMock(Response::class);
-        $this->sendResponseBodyCapturingRequest($req, $res, $this->app, $s);
+        $res = $this->createBodyCapturingMockResponse($s);
+        $this->sendRequest($req, $res, $this->app);
     }
     private function verifyMovieWasInsertedToDb($title) {
         $this->assertEquals(1, count(self::$db->fetchAll(
@@ -159,8 +158,8 @@ final class PluginAPIIntegrationTest extends DbTestCase {
                             (object)['title' => $newData->title,
                                      'releaseYear' => $newData->releaseYear,
                                      'isRevision' => false]);
-        $res = $this->createMock(Response::class);
-        $this->sendResponseBodyCapturingRequest($req, $res, $this->app, $s);
+        $res = $this->createBodyCapturingMockResponse($s);
+        $this->sendRequest($req, $res, $this->app);
     }
     private function verifyMovieWasUpdatedToDb($newData) {
         $this->assertEquals(1, count(self::$db->fetchAll(

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RadCms\Upload;
 
 use Pike\FileSystemInterface;
@@ -23,7 +25,7 @@ class UploadFileScanner {
      * @return array array<{fileName: string, basePath: string, mime: string}>
      * @throws \Pike\PikeException
      */
-    public function scanAll($dirPath) {
+    public function scanAll(string $dirPath): array {
         if (($fullPaths = $this->fs->readDir($dirPath)) === false)
             throw new PikeException("Failed to read {$dirPath}", PikeException::FAILED_FS_OP);
         $out = [];
@@ -41,7 +43,8 @@ class UploadFileScanner {
      * @return string
      * @throws \Pike\PikeException
      */
-    public static function getMime($filePath, $fallback = '?') {
+    public static function getMime(string $filePath,
+                                   string $fallback = '?'): string {
         static $finfo;
         if (!$finfo && ($finfo = finfo_open(FILEINFO_MIME_TYPE)) === false)
             throw new PikeException('finfo_open() failed', PikeException::FAILED_FS_OP);

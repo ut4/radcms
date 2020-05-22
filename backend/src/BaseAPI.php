@@ -1,8 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RadCms;
 
 use Pike\ArrayUtils;
+use RadCms\Plugin\Plugin;
 
 /**
  * Site.php-luokissa, teemoissa ja lisäosissa käytettävä luokka.
@@ -30,7 +33,9 @@ class BaseAPI {
      * @param string $for = '*' '*'|'WebsiteLayout'|'path-of-the-file.tmpl.php'
      * @throws \Pike\PikeException
      */
-    public function registerDirective($directiveName, $fullFilePath, $for = '*') {
+    public function registerDirective(string $directiveName,
+                                      string $fullFilePath,
+                                      string $for = '*'): void {
         // @allow \Pike\PikeException
         $this->configsStorage->putTemplateAlias($directiveName, $fullFilePath, $for);
     }
@@ -43,10 +48,10 @@ class BaseAPI {
      * @param bool $bindToDirectiveScope = false
      * @throws \Pike\PikeException
      */
-    public function registerDirectiveMethod($methodName,
+    public function registerDirectiveMethod(string $methodName,
                                             callable $fn,
-                                            $for = '*',
-                                            $bindToDirectiveScope = false) {
+                                            string $for = '*',
+                                            bool $bindToDirectiveScope = false): void {
         // @allow \Pike\PikeException
         $this->configsStorage->putTemplateMethod($methodName,
                                                  $fn,
@@ -60,7 +65,8 @@ class BaseAPI {
      * @param string $scriptFileName
      * @param array $attrs = array
      */
-    public function enqueueAdminJsFile($scriptFileName, array $attrs = []) {
+    public function enqueueAdminJsFile(string $scriptFileName,
+                                       array $attrs = []): void {
         $this->configsStorage->putJsFile((object)[
             'url' => $scriptFileName,
             'attrs' => $attrs,
@@ -71,7 +77,8 @@ class BaseAPI {
      * @param bool $onlyInstalled = true
      * @return \RadCms\Plugin\Plugin|null
      */
-    public function getPlugin($name, $onlyInstalled = true) {
+    public function getPlugin(string $name,
+                              bool $onlyInstalled = true): ?Plugin {
         $plugin = ArrayUtils::findByKey($this->plugins, $name, 'name');
         if (!$plugin) return null;
         return !$onlyInstalled || $plugin->isInstalled ? $plugin : null;
@@ -81,7 +88,7 @@ class BaseAPI {
      * @param callable $fn
      * @return int listener id
      */
-    public function on(string $eventName, callable $fn) {
+    public function on(string $eventName, callable $fn): int {
         return $this->configsStorage->addEventListener($eventName, $fn);
     }
 }

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RadCms\Upload;
 
 use RadCms\AppContext;
@@ -10,7 +12,7 @@ abstract class UploadModule {
      *
      * @param \RadCms\AppContext $ctx
      */
-    public static function init(AppContext $ctx) {
+    public static function init(AppContext $ctx): void {
         $ctx->router->map('GET', '/api/uploads',
             [UploadControllers::class, 'handleGetUploads', 'view:uploads']
         );

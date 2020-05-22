@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RadCms\Theme;
 
 use RadCms\BaseAPI;
@@ -19,7 +21,8 @@ class ThemeAPI extends BaseAPI {
      * @param string $layoutFilePath
      * @param string $urlPattern
      */
-    public function registerLayoutForUrlPattern($layoutFilePath, $urlPattern): void {
+    public function registerLayoutForUrlPattern(string $layoutFilePath,
+                                                string $urlPattern): void {
         $this->configsStorage->putUrlLayout($urlPattern, $layoutFilePath);
     }
     /**
@@ -30,7 +33,7 @@ class ThemeAPI extends BaseAPI {
      * @param string $url
      * @param array $attrs = array
      */
-    public function enqueueJsFile($url, array $attrs = []) {
+    public function enqueueJsFile(string $url, array $attrs = []): void {
         $this->configsStorage->putJsFile((object)[
             'url' => $url,
             'attrs' => $attrs,
@@ -44,7 +47,7 @@ class ThemeAPI extends BaseAPI {
      * @param string $url
      * @param array $attrs = array
      */
-    public function enqueueCssFile($url, array $attrs = []) {
+    public function enqueueCssFile(string $url, array $attrs = []): void {
         $this->configsStorage->putCssFile((object)[
             'url' => $url,
             'attrs' => $attrs,

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RadCms\Theme;
 
 /**
@@ -12,5 +14,5 @@ interface ThemeInterface {
      *
      * @param \RadCms\Theme\ThemeAPI $api
      */
-    public function init(ThemeAPI $api);
+    public function init(ThemeAPI $api): void;
 }

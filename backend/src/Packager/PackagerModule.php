@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RadCms\Packager;
 
+use Auryn\Injector;
 use RadCms\AppContext;
 
 abstract class PackagerModule {
@@ -10,7 +13,7 @@ abstract class PackagerModule {
      *
      * @param \RadCms\AppContext $ctx
      */
-    public static function init(AppContext $ctx) {
+    public static function init(AppContext $ctx): void {
         $ctx->router->map('POST', '/api/packager',
             [PackagerControllers::class, 'handleCreatePackage', 'pack:websites']
         );
@@ -21,7 +24,7 @@ abstract class PackagerModule {
     /**
      * @param \Auryn\Injector $container
      */
-    public static function alterIOC($container) {
+    public static function alterIOC(Injector $container): void {
         $container->alias(PackageStreamInterface::class, ZipPackageStream::class);
     }
 }

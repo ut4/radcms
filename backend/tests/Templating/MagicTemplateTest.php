@@ -16,7 +16,7 @@ final class MagicTemplateTest extends TestCase {
         $ctypes->add('Generics', '', [
             (object) ['name' => 'content', 'dataType' => 'text']
         ]);
-        $this->template = new MagicTemplate('', null,
+        $this->template = new MagicTemplate('', null, null,
             new MagicTemplateDAO($this->createMock(Db::class), $ctypes, false));
     }
     public function testFetchOneGeneratesSql() {

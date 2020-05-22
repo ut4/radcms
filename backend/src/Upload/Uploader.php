@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RadCms\Upload;
 
 use Pike\FileSystem;
@@ -21,11 +23,14 @@ class Uploader {
         $this->moveUploadedFileFn = $moveUploadedFileFn ?? '\move_uploaded_file';
     }
     /**
-     * @param array $file ['size' => int, 'tmp_name' => string, 'name' => string]
+     * @param array<string, mixed> $file ['size' => int, 'tmp_name' => string, 'name' => string]
      * @param string $toDir Absoluuttinen polku kohdekansioon, tulisi olla olemassa
+     * @param int $maxSize Tiedoston koko maksimissaan, tavua
      * @throws \Pike\PikeException
      */
-    public function upload($file, $toDir, $maxSize = self::DEFAULT_MAX_SIZE_B) {
+    public function upload(array $file,
+                           string $toDir,
+                           int $maxSize = self::DEFAULT_MAX_SIZE_B): void {
         if (($file['size'] ?? -1) < 0 ||
             !strlen($file['tmp_name'] ?? '') ||
             preg_match('/\/|\.\./', $file['name'] ?? '/')) // mitä tahansa paitsi "/" tai ".."
@@ -50,7 +55,7 @@ class Uploader {
      * @param string $mime 'image/jpg' etc.
      * @return bool
      */
-    public function isValidMime($mime) {
+    public function isValidMime(string $mime): bool {
         return substr($mime, 0, strlen('image/')) === 'image/';
     }
 }

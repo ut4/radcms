@@ -36,9 +36,9 @@ final class UserControllersTest extends DbTestCase {
     }
     private function sendHandleGetCurrentUserRequest($s) {
         $req = new Request('/api/users/me', 'GET');
-        $res = $this->createMock(Response::class);
+        $res = $this->createBodyCapturingMockResponse($s);
         $app = $this->makeApp('\RadCms\App::create', [], $s->ctx);
-        $this->sendResponseBodyCapturingRequest($req, $res, $app, $s);
+        $this->sendRequest($req, $res, $app);
     }
     private function verifyReturnedCurrentUserDetails($s) {
         $user = json_decode($s->actualResponseBody);

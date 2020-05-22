@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RadCms\Packager;
 
 use Pike\Request;
@@ -24,7 +26,7 @@ class PackagerControllers {
      *
      * @param \Pike\Response $res
      */
-    public function handlePreRunCreatePackage(Response $res) {
+    public function handlePreRunCreatePackage(Response $res): void {
         $res->json($this->packager->preRun());
     }
     /**
@@ -38,7 +40,7 @@ class PackagerControllers {
     public function handleCreatePackage(Request $req,
                                         Response $res,
                                         PackageStreamInterface $package,
-                                        Authenticator $auth) {
+                                        Authenticator $auth): void {
         if (($errors = $this->validatePackSiteInput($req->body))) {
             $res->status(400)->json($errors);
             return;
@@ -50,7 +52,7 @@ class PackagerControllers {
     /**
      * @return string[]
      */
-    private function validatePackSiteInput($input) {
+    private function validatePackSiteInput(\stdClass $input): array {
         $customErrors = [];
         $v = Validation::makeObjectValidator()
             ->addRuleImpl('nonRelativePath', function ($value) {
@@ -71,7 +73,7 @@ class PackagerControllers {
     /**
      * @return array|null
      */
-    private static function jsonDecodeSafe($input, $key) {
+    private static function jsonDecodeSafe(\stdClass $input, string $key): ?array {
         $candidate = $input->$key ?? null;
         if (!is_string($candidate)) return null;
         return json_decode($candidate);
