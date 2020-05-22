@@ -1,5 +1,4 @@
 import ContentNodeUtils from './ContentNodeUtils.js';
-import {ContentFormImpl} from './content-form-impls.jsx';
 
 /**
  * @param {{contentNodes: Array<ContentNode>; createLinkText: string; contentType?: string; noContentNodesContent: preact.VNode;}} props
@@ -7,7 +6,7 @@ import {ContentFormImpl} from './content-form-impls.jsx';
 function ContentNodeList(props) {
     return <div>{
         (props.contentNodes.length ? props.contentNodes.map(c =>
-            <a href={ `#/edit-content/${c.id}/${props.contentType}/${ContentFormImpl.Default}` }>
+            <a href={ `#/edit-content/${c.id}/${props.contentType}` }>
                 <span>{ ContentNodeUtils.makeTitle(c) }: </span>
                 Muokkaa
             </a>

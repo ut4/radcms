@@ -16,7 +16,6 @@ use RadCms\ContentType\ContentTypeCollection;
 
 class Packager {
     public const LOCAL_NAMES_MAIN_DATA = 'main-data.data';
-    public const LOCAL_NAMES_DB_SCHEMA = 'schema.mariadb.sql';
     public const LOCAL_NAMES_TEMPLATES_FILEMAP = 'template-file-paths.json';
     public const LOCAL_NAMES_ASSETS_FILEMAP = 'theme-asset-file-paths.json';
     /** @var \Pike\Db */
@@ -83,8 +82,6 @@ class Packager {
         // @allow \Pike\PikeException
         $this->addMainData($package, $config, $userIdentity);
         // @allow \Pike\PikeException
-        $this->addDbSchema($package);
-        // @allow \Pike\PikeException
         $this->addThemeFiles($package, $config->templates,
             self::LOCAL_NAMES_TEMPLATES_FILEMAP);
         // @allow \Pike\PikeException
@@ -115,14 +112,6 @@ class Packager {
         $encrypted = $this->crypto->encrypt($data, $key);
         // @allow \Pike\PikeException
         $package->addFromString(self::LOCAL_NAMES_MAIN_DATA, $encrypted);
-    }
-    /**
-     * @throws \Pike\PikeException
-     */
-    private function addDbSchema(PackageStreamInterface $package): void {
-        // @allow \Pike\PikeException
-        $package->addFile(RAD_BASE_PATH . 'assets/schema.mariadb.sql',
-                          self::LOCAL_NAMES_DB_SCHEMA);
     }
     /**
      * @throws \Pike\PikeException

@@ -42,9 +42,7 @@ class Installer {
     public function doInstall(\stdClass $settings): bool {
         // @allow \Pike\PikeException
         return $this->commons->createOrOpenDb($settings) &&
-               $this->commons->createMainSchema($settings,
-                                                $this->fs,
-                                                "{$this->backendPath}assets/schema.mariadb.sql") &&
+               $this->commons->createMainSchema($settings) &&
                $this->commons->insertMainSchemaData($settings) &&
                $this->commons->createUserZero($settings) &&
                $this->createContentTypesAndInsertInitialData($settings) &&

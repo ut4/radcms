@@ -9,6 +9,7 @@ define('TEST_SITE_DIRNAME', '_test-site');
 define('TEST_CONFIG_DIR_PATH', str_replace('\\', '/', __DIR__) . '/' .
                                TEST_SITE_DIRNAME . '/');
 define('TEST_SITE_PUBLIC_PATH', TEST_CONFIG_DIR_PATH);
+define('RAD_BACKEND_PATH', dirname(__DIR__) . '/');
 
 require TEST_CONFIG_DIR_PATH . 'config.php';
 $loader = require RAD_BASE_PATH . 'vendor/autoload.php';

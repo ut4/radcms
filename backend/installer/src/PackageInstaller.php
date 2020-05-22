@@ -50,9 +50,7 @@ class PackageInstaller {
         $settings->baseUrl = $input->baseUrl;
         // @allow \Pike\PikeException
         return $this->commons->createOrOpenDb($settings) &&
-               $this->commons->createMainSchema($settings,
-                                                $this->package,
-                                                Packager::LOCAL_NAMES_DB_SCHEMA) &&
+               $this->commons->createMainSchema($settings) &&
                $this->commons->insertMainSchemaData($settings) &&
                $this->commons->createUserZero($settings, $mainData->user) &&
                $this->createContentTypesAndInsertData($mainData->contentTypes,

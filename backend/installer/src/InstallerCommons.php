@@ -35,7 +35,7 @@ class InstallerCommons {
         $this->db = $db;
         $this->fs = $fs;
         $this->crypto = $crypto;
-        $this->backendPath = FileSystem::normalizePath(dirname(__DIR__, 2)) . '/';
+        $this->backendPath = RAD_BACKEND_PATH;
         $this->siteDirPath = FileSystem::normalizePath($siteDirPath) . '/';
         $this->warnings = [];
     }
@@ -64,17 +64,13 @@ class InstallerCommons {
     }
     /**
      * @param \stdClass $s settings
-     * @param \Pike\FileSystemInterface|\RadCms\Packager\PackageStreamInterface $fsOrPackage
-     * @param string $filePathOrLocalName
      * @return bool
      * @throws \Pike\PikeException
      */
-    public function createMainSchema(\stdClass $s,
-                                     $fsOrPackage,
-                                     string $filePathOrLocalName): bool {
-        $sql = $fsOrPackage->read($filePathOrLocalName);
+    public function createMainSchema(\stdClass $s): bool {
+        $sql = $this->fs->read("{$this->backendPath}assets/schema.mariadb.sql");
         if (!$sql)
-            throw new PikeException("Failed to read `{$filePathOrLocalName}`",
+            throw new PikeException("Failed to read `{$this->backendPath}assets/schema.mariadb.sql`",
                                     PikeException::FAILED_FS_OP);
         // @allow \Pike\PikeException
         $this->db->exec(str_replace('${database}', $s->dbDatabase, $sql));

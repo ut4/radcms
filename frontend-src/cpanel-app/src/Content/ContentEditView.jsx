@@ -1,16 +1,16 @@
 import {http, config, toasters, urlUtils, View, FeatherSvg, InputGroup, FormButtons} from '@rad-commons';
-import {contentFormRegister} from '@rad-cpanel-commons';
+import {contentFormRegister, ContentFormImpl} from '@rad-cpanel-commons';
 import openDeleteContentDialog from './ContentDeleteDialog.jsx';
 import getWidgetImpl from './FieldWidgets/all-with-multi.js';
 import {filterByUserRole} from '../ContentType/FieldList.jsx';
 import {Status} from './ContentAddView.jsx';
 
 /**
- * #/edit-content/:id/:contentTypeName/:formImpl/:publish?
+ * #/edit-content/:id/:contentTypeName/:formImpl?/:publish?
  */
 class ContentEditView extends preact.Component {
     /**
-     * @param {{id: string; contentTypeName: string; publish?: string;}} props
+     * @param {{id: string; contentTypeName: string; formImpl?: string; publish?: string;}} props
      */
     constructor(props) {
         super(props);
@@ -65,7 +65,7 @@ class ContentEditView extends preact.Component {
      */
     render() {
         if (!this.state.contentNodeFetched || !this.state.contentTypeFetched) return null;
-        const FormImpl = contentFormRegister.getImpl(this.props.formImpl);
+        const FormImpl = contentFormRegister.getImpl(this.props.formImpl || ContentFormImpl.Default);
         return <View><form onSubmit={ e => this.handleFormSubmit(e) }>
             <h2>{ [
                 this.title,
