@@ -10,7 +10,7 @@ namespace RadCms\Theme;
  */
 interface ThemeInterface {
     /**
-     * Metodi joka ajetaan jokaisella "/." -sivunlatauksella.
+     * Metodi joka ajetaan jokaisella "/.*" -sivunlatauksella.
      *
      * @param \RadCms\Theme\ThemeAPI $api
      */

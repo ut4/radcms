@@ -12,7 +12,7 @@ abstract class WebsiteModule {
      * @param \RadCms\AppContext $ctx
      */
     public static function init(AppContext $ctx): void {
-        $ctx->router->map('GET', '/edit/[**:q]?',
+        $ctx->router->map('GET', '/_edit/[**:url]?',
             [AdminControllers::class, 'handleEditViewRequest', 'access:editMode']
         );
         $ctx->router->map('GET', '*',

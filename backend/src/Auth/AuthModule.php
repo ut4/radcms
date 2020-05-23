@@ -2,6 +2,7 @@
 
 namespace RadCms\Auth;
 
+use Pike\PikeException;
 use RadCms\AppContext;
 use RadCms\Auth\AuthControllers;
 
@@ -37,5 +38,22 @@ abstract class AuthModule {
         $ctx->router->map('POST', '/api/update-password',
             [AuthControllers::class, 'handleUpdatePasswordRequest', 'updatePass:auth']
         );
+        $ctx->router->on('*', function ($req, $res, $next) use ($ctx) {
+            $aclActionAndResource = $req->routeInfo->myCtx;
+            if (!$aclActionAndResource)
+                throw new PikeException('A route context must be a non-empty ' .
+                                        'string or \RadCms\Auth\ACL::NO_IDENTITY',
+                                        PikeException::BAD_INPUT);
+            if ($aclActionAndResource === ACL::NO_IDENTITY) {
+                $next();
+                return;
+            }
+            $req->user = $ctx->auth->getIdentity();
+            if (!$req->user)
+                $res->status(401)->json(['err' => 'Login required']);
+            elseif (!$ctx->acl->can($req->user->role,
+                                    ...explode(':', $aclActionAndResource)))
+                $res->status(403)->json(['err' => 'Not permitted']);
+        });
     }
 }

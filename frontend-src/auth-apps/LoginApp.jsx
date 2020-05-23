@@ -58,7 +58,7 @@ class LoginApp extends preact.Component {
                     services.sessionStorage.radMessage = JSON.stringify([
                         'Olet nyt kirjautunut sisään.', 'success'
                     ]);
-                    window.location.href = urlUtils.makeUrl('/edit');
+                    window.location.href = urlUtils.makeUrl('/_edit');
                 }
                 else if (info.err) this.setState({message: {text: translateError(info.err),
                                                             level: 'error'}});

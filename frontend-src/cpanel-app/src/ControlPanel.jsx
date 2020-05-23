@@ -4,78 +4,63 @@ import {genRandomString} from './Website/WebsitePackView.jsx';
 
 class ControlPanel extends preact.Component {
     /**
-     * @param {dataFromBackend: ControlPanelAppProps || {}; onUpdate: () => any;} props
+     * @param {{adminPanelBundles: Array<{ImplClass: any; panel: FrontendPanelConfig; id?: string;}>; dataFromAdminBackend: ControlPanelLoadArgs; onIsCollapsedToggled: () => any;}} props
      */
     constructor(props) {
         super(props);
-        this.siteInfo = null;
-        this.siteIframe = null;
+        this.dataFromAdminBackend = props.dataFromAdminBackend;
+        this.siteIframe = document.getElementById('rad-site-iframe');
+        this.siteInfo = {baseUrl: props.dataFromAdminBackend.baseUrl,
+                         assetBaseUrl: props.dataFromAdminBackend.assetBaseUrl};
         this.cpanelScroller = null;
-        this.state = this.makeState(props.dataFromBackend);
-        if (this.state.collapsed) props.onIsCollapsedToggled();
+        this.state = {contentPanels: [],
+                      collapsed: localStorage.radNavIsCollapsed === 'true',
+                      websiteIframeHasLoadedAtLeastOnce: false};
+        if (this.state.collapsed)
+            props.onIsCollapsedToggled();
     }
     /**
-     * @param {ControlPanelAppProps} dataFromBackend
+     * @param {FrontendPanelConfig} panel
+     * @param {string=} id
+     * @returns {{ImplClass: any; panel: FrontendPanelConfig; id?: string;}}
+     */
+    static makePanelBundle(panel, id) {
+        const Cls = contentPanelRegister.getImpl(panel.impl);
+        if (!Cls) return window.console.error(`UI panel ${panel.impl} not implemented.`);
+        return {ImplClass: Cls, panel, id};
+    }
+    /**
+     * @param {PageLoadArgs} dataFromWebpageIframe
      * @access public
      */
-    setup(dataFromBackend) {
-        this.setState(this.makeState(dataFromBackend));
+    handleWebpageLoaded(dataFromWebpageIframe) {
+        config.currentPagePath = dataFromWebpageIframe.currentPagePath;
+        const newState = {contentPanels: [], websiteIframeHasLoadedAtLeastOnce: true};
+        const uniqueHighlighSelectors = {};
+        newState.contentPanels = dataFromWebpageIframe.contentPanels.map(p => {
+            if (!Array.isArray(p.contentNodes)) p.contentNodes = [p.contentNodes];
+            if (!p.contentNodes[0]) p.contentNodes = [];
+            if (p.highlightSelector) {
+                const s = p.highlightSelector;
+                if (uniqueHighlighSelectors[s] === undefined)
+                    uniqueHighlighSelectors[s] = -1;
+                p.selectorIndex = ++uniqueHighlighSelectors[s];
+            }
+            return ControlPanel.makePanelBundle(p, genRandomString(16));
+        });
+        this.setState(newState);
         if (this.cpanelScroller)
             this.cpanelScroller.updateMinHeight();
-    }
-    /**
-     * @access private
-     */
-    makeState(dataFromBackend) {
-        const newState = {contentPanels: [],
-                          adminPanels: !this.state ? [] : this.state.adminPanels,
-                          collapsed: !this.state ? this.getIsCollapsed() : this.state.collapsed};
-        if (dataFromBackend.baseUrl) {
-            const onEachMakePanel = this.makeContentPanelBundleCreateVisitor(newState);
-            const makePanelBundle = (panel, isAdminPanel) => {
-                const Cls = contentPanelRegister.getImpl(panel.impl);
-                if (!Cls) return window.console.error(`UI panel ${panel.impl} not implemented.`);
-                onEachMakePanel(Cls, panel, isAdminPanel);
-                return {ImplClass: Cls, panel, id: null};
-            };
-            //
-            config.currentPagePath = dataFromBackend.currentPagePath;
-            if (!this.siteInfo) {
-                config.baseUrl = dataFromBackend.baseUrl;
-                config.assetBaseUrl = dataFromBackend.assetBaseUrl;
-                config.userPermissions = dataFromBackend.userPermissions;
-                config.user = dataFromBackend.user;
-                this.siteInfo = {baseUrl: dataFromBackend.baseUrl,
-                                 assetBaseUrl: dataFromBackend.assetBaseUrl};
-                this.siteIframe = document.getElementById('rad-site-iframe');
-                newState.userDefinedRoutes = [];
-                newState.adminPanels = dataFromBackend.adminPanels.map(p =>
-                    makePanelBundle(p, true)
-                );
-                newState.routesUpdated = true;
-                newState.userRole = dataFromBackend.user.role;
-                newState.userPermissions = dataFromBackend.userPermissions;
-            }
-            //
-            newState.contentPanels = dataFromBackend.contentPanels.map(p => {
-                if (!Array.isArray(p.contentNodes)) p.contentNodes = [p.contentNodes];
-                if (!p.contentNodes[0]) p.contentNodes = [];
-                return makePanelBundle(p, false);
-            }).map(contentPanel => Object.assign(contentPanel, {
-                id: genRandomString(16)
-            }));
-        }
-        if (newState.routesUpdated && (!this.state || !this.state.routesUpdated))
-            this.props.onRoutesLoaded(newState.userDefinedRoutes);
-        return newState;
     }
     /**
      * @access protected
      */
     render() {
-        return <div id="cpanel" ref={ el => { if (el && !this.cpanelScroller && this.siteIframe) {
-                                        this.cpanelScroller = makeCpanelScroller(el, this.siteIframe);
-                                    } } }>
+        return <div
+            id="cpanel"
+            ref={ el => { if (el && !this.cpanelScroller) {
+                this.cpanelScroller = makeCpanelScroller(el, this.siteIframe);
+            } } }>
             <header class="top-row">
                 <button onClick={ () => this.toggleIsCollapsed() } class="icon-button">
                     <FeatherSvg iconId={ `chevron-${!this.state.collapsed?'left':'right'}` }/>
@@ -83,41 +68,19 @@ class ControlPanel extends preact.Component {
                 <a id="logo" href="#/">RAD<span>CMS</span></a>
             </header>
             <QuickLinksControlPanelSection
-                userCanCreateContent={ (this.state.userPermissions || {}).canCreateContent }/>
+                userCanCreateContent={ this.dataFromAdminBackend.userPermissions.canCreateContent }/>
             <OnThisPageControlPanelSection
                 contentPanels={ this.state.contentPanels }
                 siteIframe={ this.siteIframe }
-                siteInfo={ this.siteInfo }/>
+                siteInfo={ this.siteInfo }
+                websiteIframeHasLoadedAtLeastOnce={ this.state.websiteIframeHasLoadedAtLeastOnce }/>
             <AdminAndUserControlPanelSection
-                adminPanels={ this.state.adminPanels }
+                adminPanels={ this.props.adminPanelBundles }
                 siteInfo={ this.siteInfo }/>
             <ForDevsControlPanelSectionction
-                userRole={ this.state.userRole }/>
+                userRole={ this.dataFromAdminBackend.user.role }/>
             <footer>&nbsp;</footer>
         </div>;
-    }
-    /**
-     * @access private
-     */
-    makeContentPanelBundleCreateVisitor(state) {
-        const uniqueImpls = {};
-        const uniqueHighlighSelectors = {};
-        return (PanelCls, panel, isAdminPanel) => {
-            const implName = panel.impl;
-            if (!uniqueImpls[implName]) {
-                uniqueImpls[implName] = 1;
-                if (typeof PanelCls.getRoutes === 'function' && state.userDefinedRoutes) {
-                    const routes = PanelCls.getRoutes();
-                    if (routes) state.userDefinedRoutes = state.userDefinedRoutes.concat(routes);
-                }
-            }
-            if (!isAdminPanel && panel.highlightSelector) {
-                const s = panel.highlightSelector;
-                if (uniqueHighlighSelectors[s] === undefined)
-                    uniqueHighlighSelectors[s] = -1;
-                panel.selectorIndex = ++uniqueHighlighSelectors[s];
-            }
-        };
     }
     /**
      * @access private
@@ -128,13 +91,6 @@ class ControlPanel extends preact.Component {
         localStorage.radNavIsCollapsed = collapsed;
         this.props.onIsCollapsedToggled();
         this.cpanelScroller.updateMinHeight();
-    }
-    /**
-     * @access private
-     */
-    getIsCollapsed() {
-        const val = localStorage.radNavIsCollapsed || 'false';
-        return val === 'true';
     }
 }
 
@@ -163,7 +119,7 @@ class QuickLinksControlPanelSection extends preact.Component {
 
 class OnThisPageControlPanelSection extends preact.Component {
     /**
-     * @param {{contentPanels: Array<{ImplClass: Object; panel: Object; id: string;}>; siteIframe: HTMLIFrameElement|null; siteInfo: Object;}} props
+     * @param {{contentPanels: Array<{ImplClass: Object; panel: Object; id: string;}>; siteIframe: HTMLIFrameElement|null; siteInfo: Object; websiteIframeHasLoadedAtLeastOnce: boolean;}} props
      */
     constructor(props) {
         super(props);
@@ -172,7 +128,7 @@ class OnThisPageControlPanelSection extends preact.Component {
      * @access protected
      */
     render() {
-        if (!this.props.siteIframe) return null;
+        if (!this.props.websiteIframeHasLoadedAtLeastOnce) return null;
         return <section class="on-this-page"><div>
             <h2>Tällä sivulla</h2>
             { this.props.contentPanels.length
@@ -185,14 +141,14 @@ class OnThisPageControlPanelSection extends preact.Component {
                         siteIframe={ this.props.siteIframe }
                         key={ panelBundle.id }/>
                 )
-                : this.props.siteIframe ? 'Ei muokattavaa sisältöä tällä sivulla' : null }
+                : this.props.websiteIframeHasLoadedAtLeastOnce ? 'Ei muokattavaa sisältöä tällä sivulla': null }
         </div></section>;
     }
 }
 
 class AdminAndUserControlPanelSection extends preact.Component {
     /**
-     * @param {{adminPanels: Array<{ImplClass: Object; panel: Object; id: string;}>; siteInfo: Object;}} props
+     * @param {{adminPanels: Array<{ImplClass: any; panel: FrontendPanelConfig; id?: string;}>; siteInfo: Object;}} props
      */
     constructor(props) {
         super(props);
@@ -248,18 +204,22 @@ class ForDevsControlPanelSectionction extends preact.Component {
     render() {
         if (this.props.userRole !== 1) return null;
         return <section class="for-devs"><div>
-            <h2>Devaajalle</h2>
-            <AdminControlPanelPanel Renderer={ null } title="Kaikki sisältö" icon="database" mainUrl="/manage-content">
+            <h2>Devaajille</h2>
+            <AdminControlPanelPanel Renderer={ null } title="Kaikki sisältö"
+                                    icon="database" mainUrl="/manage-content">
                 <a href="#/manage-content">Selaa</a>
                 <a href="#/add-content">Luo</a>
             </AdminControlPanelPanel>
-            <AdminControlPanelPanel Renderer={ null } title="Sisältötyypit" icon="type" mainUrl="/manage-content-types">
+            <AdminControlPanelPanel Renderer={ null } title="Sisältötyypit"
+                                    icon="type" mainUrl="/manage-content-types">
                 <a href="#/manage-content-types">Selaa</a>
             </AdminControlPanelPanel>
-            <AdminControlPanelPanel Renderer={ null } title="Lisäosat" icon="box" mainUrl="/manage-plugins">
+            <AdminControlPanelPanel Renderer={ null } title="Lisäosat"
+                                    icon="box" mainUrl="/manage-plugins">
                 <a href="#/manage-plugins">Selaa</a>
             </AdminControlPanelPanel>
-            <AdminControlPanelPanel Renderer={ null } title="Sivusto" icon="tool" mainUrl="/pack-website">
+            <AdminControlPanelPanel Renderer={ null } title="Sivusto"
+                                    icon="tool" mainUrl="/pack-website">
                 <a href="#/pack-website">Paketoi</a>
             </AdminControlPanelPanel>
         </div></section>;

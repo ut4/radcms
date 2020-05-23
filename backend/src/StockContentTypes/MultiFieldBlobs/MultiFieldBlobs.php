@@ -7,7 +7,6 @@ namespace RadCms\StockContentTypes\MultiFieldBlobs;
 use RadCms\BaseAPI;
 use RadCms\Templating\StockFrontendPanelImpls;
 use RadCms\Auth\ACL;
-use RadCms\Templating\MagicTemplate;
 
 class MultiFieldBlobs {
     /**
@@ -46,22 +45,18 @@ class MultiFieldBlobs {
     }
     /**
      * @param string $name
-     * @param string|null $frontendPanelTitle
-     * @param string|null $highlight
-     * @param \RadCms\Templating\MagicTemplate $tmpl
+     * @param array $args [?string $frontendPanelTitle, ?string $highlight, \RadCms\Templating\MagicTemplate $tmpl]
      * @return \stdClass|null
      */
-    public function fetchMultiField(string $name,
-                                    ?string $frontendPanelTitle,
-                                    ?string $highlight,
-                                    MagicTemplate $tmpl): ?\stdClass {
+    public function fetchMultiField(string $name, ...$args): ?\stdClass {
+        $tmpl = array_pop($args);
         $node = $tmpl
             ->fetchOne('MultiFieldBlobs')
             ->addFrontendPanel([
                 'impl' => StockFrontendPanelImpls::DEFAULT_SINGLE,
-                'title' => $frontendPanelTitle ?? 'Sisältö',
+                'title' => $args[0] ?? 'Sisältö',
                 'subtitle' => $name,
-                'highlight' => $highlight
+                'highlight' => $args[1] ?? null
             ])
             ->where('name = ?', $name)
             ->exec();

@@ -53,7 +53,8 @@ class AuthControllers {
                                    return (object)['id' => $user->id,
                                                    'role' => (int) $user->role];
                                });
-            $res->json(['ok' => 'ok']);
+            $res->header('Set-Cookie', 'radUserIsMaybeLoggedIn=yes')
+                ->json(['ok' => 'ok']);
         } catch (PikeException $e) {
             $res->status(401)->json(['err' => $e->getMessage()]);
         }
@@ -65,7 +66,8 @@ class AuthControllers {
      */
     public function handleLogoutRequest(Response $res): void {
         $this->auth->logout();
-        $res->json(['ok' => 'ok']);
+        $res->header('Set-Cookie', 'radUserIsMaybeLoggedIn=no')
+            ->json(['ok' => 'ok']);
     }
     /**
      * GET /request-password-reset.

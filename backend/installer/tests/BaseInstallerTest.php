@@ -51,7 +51,7 @@ abstract class BaseInstallerTest extends DbTestCase {
         $this->assertEquals(null, $row['activationKey']);
         $this->assertTrue($row['accountCreatedAt'] > time() - 10);
         $this->assertEquals(null, $row['resetKey']);
-        $this->assertEquals(null, $row['resetRequestedAt']);
+        $this->assertEquals('0', $row['resetRequestedAt']);
         $this->assertEquals(Authenticator::ACCOUNT_STATUS_ACTIVATED,
                             $row['accountStatus']);
     }

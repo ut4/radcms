@@ -9,14 +9,14 @@
     <body>
         <div id="root">
             <div id="cpanel-app"></div>
-            <iframe src="<?= $this->url($q) ?>" id="rad-site-iframe"></iframe>
+            <iframe src="<?= $this->url($url) ?>" id="rad-site-iframe"></iframe>
         </div>
         <script>(function() {
             document.getElementById('rad-site-iframe').addEventListener('load', e => {
                 const baseUrlWithTrailingSlash = '<?= $this->url('/') ?>';
                 const baseUrl = baseUrlWithTrailingSlash.substr(0, baseUrlWithTrailingSlash.length - 1);
-                const c = e.target.contentWindow.location.href.split('#')[0].replace(baseUrl, `${baseUrl}/edit`);
-                const p = (!c.endsWith('edit/') ? c : c.substr(0, c.length - 1)) + window.location.hash;
+                const c = e.target.contentWindow.location.href.split('#')[0].replace(baseUrl, `${baseUrl}/_edit`);
+                const p = (!c.endsWith('_edit/') ? c : c.substr(0, c.length - 1)) + window.location.hash;
                 if (window.location.href !== p)
                     history.replaceState(null, null, p.replace(window.location.origin, ''));
             });
@@ -25,6 +25,7 @@
         <script src="<?= $this->assetUrl('frontend/rad-commons.js') ?>"></script>
         <script src="<?= $this->assetUrl('frontend/rad-cpanel-commons.js') ?>"></script>
         <?= $this->jsBundle($adminJsFiles) ?>
+        <script>window.dataFromAdminBackend = <?= $dataToFrontend ?>;</script>
         <script src="<?= $this->assetUrl('frontend/rad-cpanel-app.js') ?>"></script>
     </body>
 </html>

@@ -33,7 +33,7 @@ const urlUtils = {
             if (to === '@current')
                 to = config.currentPagePath;
             window.location.href = window.location.origin + config.baseUrl +
-                                   'edit' +
+                                   '_edit' +
                                    (to !== '/' ? `/${this.normalizeUrl(to)}` : '');
         }
     },

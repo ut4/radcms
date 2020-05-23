@@ -8,7 +8,6 @@ use RadCms\AppContext;
 use Auryn\Injector;
 use Pike\Translator;
 use Pike\FileSystem;
-use Pike\PikeException;
 use Pike\App as PikeApp;
 use RadCms\Auth\AuthModule;
 use RadCms\Content\ContentModule;
@@ -62,21 +61,6 @@ class App {
         $ctx->acl = new ACL((bool)(RAD_FLAGS & RAD_DEVMODE));
         $ctx->acl->setRules($ctx->cmsState->getAclRules());
         if (!$ctx->translator) $ctx->translator = new Translator;
-        $ctx->router->on('*', function ($req, $res, $next) use ($ctx) {
-            $req->user = $ctx->auth->getIdentity();
-            $aclActionAndResource = $req->routeInfo->myCtx;
-            if (!$aclActionAndResource)
-                throw new PikeException('A route context must be a non-empty ' .
-                                        'string or \RadCms\Auth\ACL::NO_IDENTITY',
-                                        PikeException::BAD_INPUT);
-            if ($aclActionAndResource === ACL::NO_IDENTITY)
-                $next();
-            elseif (!$req->user)
-                $res->status(401)->json(['err' => 'Login required']);
-            elseif (!$ctx->acl->can($req->user->role,
-                                    ...explode(':', $aclActionAndResource)))
-                $res->status(403)->json(['err' => 'Not permitted']);
-        });
         self::$ctx = $ctx;
     }
     /**

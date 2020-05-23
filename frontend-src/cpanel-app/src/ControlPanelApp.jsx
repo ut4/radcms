@@ -12,11 +12,23 @@ const PreactRouter = preactRouter;
 
 class ControlPanelApp extends preact.Component {
     /**
-     * @param {dataFromBackend: ControlPanelAppProps || {};} props
+     * @param {{dataFromAdminBackend: ControlPanelLoadArgs; onIsCollapsedToggled: () => any;}} props
      */
     constructor(props) {
         super(props);
-        this.state = {userDefinedRoutes: false};
+        const uniqueImpls = {};
+        this.userDefinedRoutes = [];
+        this.adminPanelBundles = props.dataFromAdminBackend.adminPanels.map(p => {
+            const bundle = ControlPanel.makePanelBundle(p);
+            if (!uniqueImpls[p.impl]) {
+                uniqueImpls[p.impl] = 1;
+                if (typeof bundle.ImplClass.getRoutes === 'function') {
+                    const routes = bundle.ImplClass.getRoutes();
+                    if (routes) this.userDefinedRoutes = this.userDefinedRoutes.concat(routes);
+                }
+            }
+            return bundle;
+        });
     }
     /**
      * @access protected
@@ -29,15 +41,16 @@ class ControlPanelApp extends preact.Component {
                     delete services.sessionStorage.radMessage;
                 }
             } }/>
-            <ControlPanel dataFromBackend={ this.props.dataFromBackend }
-                          onIsCollapsedToggled={ () => this.props.onIsCollapsedToggled() }
-                          onRoutesLoaded={ userDefinedRoutes => this.setState({userDefinedRoutes}) }
-                          ref={ cmp => {
-                              if (cmp && !window.radCpanelApp) {
-                                  window.radCpanelApp = {setup(data) { cmp.setup(data); }};
-                              }
-                          } }/>
-            { this.state.userDefinedRoutes ? <PreactRouter history={ History.createHashHistory() }>
+            <ControlPanel
+                dataFromAdminBackend={ this.props.dataFromAdminBackend }
+                adminPanelBundles={ this.adminPanelBundles }
+                onIsCollapsedToggled={ () => this.props.onIsCollapsedToggled() }
+                ref={ cmp => { if (cmp && !window.radCpanelApp) {
+                    window.radCpanelApp = {
+                        handleWebpageLoaded(data) { cmp.handleWebpageLoaded(data); }
+                    };
+                } } }/>
+            <PreactRouter history={ History.createHashHistory() }>
                 <ContentAddView path="/add-content/:initialContentTypeName?"/>
                 <ContentManageView path="/manage-content/:initialContentTypeName?"/>
                 <ContentEditView path="/edit-content/:id/:contentTypeName/:formImpl?/:publish?"/>
@@ -45,8 +58,8 @@ class ControlPanelApp extends preact.Component {
                 <WebsitePackView path="/pack-website"/>
                 <UserProfileView path="/me"/>
                 <ContentTypesManageView path="/manage-content-types"/>
-                { this.state.userDefinedRoutes }
-            </PreactRouter> : null }
+                { this.userDefinedRoutes }
+            </PreactRouter>
             <PopupDialog/>
         </div>;
     }

@@ -15,7 +15,7 @@ declare module "@rad-commons" {
             };
             user: {
                 role: number;
-            }
+            };
         }
         export const http: {
             get(url: string): Promise<Object>;
@@ -142,7 +142,15 @@ interface SiteInfo {
     currentPagePath: string; // /
 }
 
-interface ControlPanelAppProps extends SiteInfo {
-    contentPanels: Array<FrontendPanelConfig>;
+interface ControlPanelLoadArgs {
     adminPanels: Array<FrontendPanelConfig>;
+    baseUrl: string;
+    assetBaseUrl: string;
+    user: Object;
+    userPermissions: Object;
+}
+
+interface PageLoadArgs {
+    contentPanels: Array<FrontendPanelConfig>;
+    currentPagePath: string;
 }
