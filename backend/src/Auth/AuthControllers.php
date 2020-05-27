@@ -53,7 +53,7 @@ class AuthControllers {
                                    return (object)['id' => $user->id,
                                                    'role' => (int) $user->role];
                                });
-            $res->header('Set-Cookie', 'radUserIsMaybeLoggedIn=yes')
+            $res->header('Set-Cookie', 'radUserIsMaybeLoggedIn=yes', false)
                 ->json(['ok' => 'ok']);
         } catch (PikeException $e) {
             $res->status(401)->json(['err' => $e->getMessage()]);

@@ -16,8 +16,9 @@ use RadCms\ContentType\ContentTypeCollection;
 
 class Packager {
     public const LOCAL_NAMES_MAIN_DATA = 'main-data.data';
-    public const LOCAL_NAMES_TEMPLATES_FILEMAP = 'template-file-paths.json';
-    public const LOCAL_NAMES_ASSETS_FILEMAP = 'theme-asset-file-paths.json';
+    public const LOCAL_NAMES_PHP_FILES_FILE_LIST = 'php-files-list.json';
+    public const LOCAL_NAMES_ASSETS_FILE_LIST = 'theme-asset-files-list.json';
+    public const LOCAL_NAMES_UPLOADS_FILE_LIST = 'theme-upload-files-list.json';
     /** @var \Pike\Db */
     private $db;
     /** @var \Pike\FileSystemInterface */
@@ -47,24 +48,31 @@ class Packager {
         $this->appConfig = $appConfig;
     }
     /**
-     * @return \stdClass {templates: string[], assets: string[]}
+     * @return \stdClass {templates: string[], assets: string[], uploads: string[]}
      * @throws \Pike\PikeException
      */
     public function preRun(): \stdClass {
-        $dirPath = RAD_PUBLIC_PATH . 'site/';
-        $len = mb_strlen($dirPath);
-        $fullPathToRelPath = function ($fullFilePath) use ($len) {
-            return substr($fullFilePath, $len);
+        $siteDirPath = RAD_PUBLIC_PATH . 'site/';
+        $len1 = mb_strlen($siteDirPath);
+        $fullPathToRelPath = function ($fullFilePath) use ($len1) {
+            return substr($fullFilePath, $len1);
         };
+        $uploadsDirPath = RAD_PUBLIC_PATH . 'uploads/';
+        $len2 = mb_strlen($uploadsDirPath);
+        $flags = \FilesystemIterator::CURRENT_AS_PATHNAME|\FilesystemIterator::SKIP_DOTS;
         // @allow \Pike\PikeException
         $out = (object) [
             'templates' => array_map($fullPathToRelPath,
-                $this->fs->readDirRecursive($dirPath, '/^.*\.tmpl\.php$/')),
+                $this->fs->readDirRecursive($siteDirPath, '/^.*\.tmpl\.php$/')),
             'assets' => array_map($fullPathToRelPath,
-                $this->fs->readDirRecursive($dirPath, '/^.*\.(css|js)$/'))
+                $this->fs->readDirRecursive($siteDirPath, '/^.*\.(css|js)$/')),
+            'uploads' => array_map(function ($fullFilePath) use ($len2) {
+                return substr($fullFilePath, $len2);
+            }, $this->fs->readDirRecursive($uploadsDirPath, '/.*/', $flags))
         ];
         sort($out->templates);
         sort($out->assets);
+        sort($out->uploads);
         return $out;
     }
     /**
@@ -82,11 +90,11 @@ class Packager {
         // @allow \Pike\PikeException
         $this->addMainData($package, $config, $userIdentity);
         // @allow \Pike\PikeException
-        $this->addThemeFiles($package, $config->templates,
-            self::LOCAL_NAMES_TEMPLATES_FILEMAP);
+        $this->addPhpFiles($package, $config);
         // @allow \Pike\PikeException
-        $this->addThemeFiles($package, $config->assets,
-            self::LOCAL_NAMES_ASSETS_FILEMAP);
+        $this->addAssetFiles($package, $config);
+        // @allow \Pike\PikeException
+        $this->addUploadFiles($package, $config);
         // @allow \Pike\PikeException
         return $package->getResult();
     }
@@ -116,13 +124,40 @@ class Packager {
     /**
      * @throws \Pike\PikeException
      */
-    private function addThemeFiles(PackageStreamInterface $package,
-                                   array $files,
-                                   string $localNameOfFileMapFile): void {
-        $package->addFromString($localNameOfFileMapFile,
-                                json_encode($files, JSON_UNESCAPED_UNICODE));
+    private function addPhpFiles(PackageStreamInterface $package,
+                                 \stdClass $config): void {
+        $fileList = ['Site.php'];
+        if (class_exists('RadSite\\Theme', false))
+            $fileList[] = 'Theme.php';
+        $fileList = array_merge($fileList, $config->templatesParsed);
+        $package->addFromString(self::LOCAL_NAMES_PHP_FILES_FILE_LIST,
+                                json_encode($fileList, JSON_UNESCAPED_UNICODE));
         $base = RAD_PUBLIC_PATH . 'site/';
-        foreach ($files as $relativePath) {
+        foreach ($fileList as $relativePath) {
+            // @allow \Pike\PikeException
+            $package->addFile("{$base}{$relativePath}", $relativePath);
+        }
+    }
+    /**
+     * @throws \Pike\PikeException
+     */
+    private function addAssetFiles(PackageStreamInterface $package,
+                                   \stdClass $config): void {
+        $package->addFromString(self::LOCAL_NAMES_ASSETS_FILE_LIST, $config->assets);
+        $base = RAD_PUBLIC_PATH . 'site/';
+        foreach ($config->assetsParsed as $relativePath) {
+            // @allow \Pike\PikeException
+            $package->addFile("{$base}{$relativePath}", $relativePath);
+        }
+    }
+    /**
+     * @throws \Pike\PikeException
+     */
+    private function addUploadFiles(PackageStreamInterface $package,
+                                    \stdClass $config): void {
+        $package->addFromString(self::LOCAL_NAMES_UPLOADS_FILE_LIST, $config->uploads);
+        $base = RAD_PUBLIC_PATH . 'uploads/';
+        foreach ($config->uploadsParsed as $relativePath) {
             // @allow \Pike\PikeException
             $package->addFile("{$base}{$relativePath}", $relativePath);
         }

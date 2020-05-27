@@ -56,7 +56,7 @@ final class PackageInstallerTest extends BaseInstallerTest {
         @unlink(self::$tmpTestPackageFilePath);
         $r = self::$testSitePublicPath;
         @unlink("{$r}config.php");
-        foreach (array_merge(TestSite::TEMPLATES, TestSite::ASSETS) as $relPath)
+        foreach (array_merge(['Site.php'], TestSite::TEMPLATES, TestSite::ASSETS) as $relPath)
             @unlink("{$r}site/{$relPath}");
         foreach (TestSite::DIRS as $relPath)
             @rmdir("{$r}site/{$relPath}");
@@ -157,6 +157,7 @@ final class PackageInstallerTest extends BaseInstallerTest {
     }
     private function verifyWroteFiles($s) {
         $base = self::$testSitePublicPath . 'site/';
+        $this->assertFileExists("{$base}Site.php");
         $this->assertFileExists("{$base}{$s->templates[0]}");
         $this->assertFileExists("{$base}{$s->templates[1]}");
         $this->assertFileExists("{$base}{$s->assets[0]}");

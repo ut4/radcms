@@ -41,7 +41,7 @@ class PackagerControllers {
                                         Response $res,
                                         PackageStreamInterface $package,
                                         Authenticator $auth): void {
-        if (($errors = $this->validatePackSiteInput($req->body))) {
+        if (($errors = $this->validateAndPrepareSiteInput($req->body))) {
             $res->status(400)->json($errors);
             return;
         }
@@ -52,7 +52,7 @@ class PackagerControllers {
     /**
      * @return string[]
      */
-    private function validatePackSiteInput(\stdClass $input): array {
+    private function validateAndPrepareSiteInput(\stdClass $input): array {
         $customErrors = [];
         $v = Validation::makeObjectValidator()
             ->addRuleImpl('nonRelativePath', function ($value) {
@@ -60,22 +60,20 @@ class PackagerControllers {
             }, '%s is not valid path')
             ->rule('signingKey', 'type', 'string')
             ->rule('signingKey', 'minLength', 12);
-        if (is_array($input->templates = self::jsonDecodeSafe($input, 'templates')))
-            $v->rule('templates.*', 'nonRelativePath');
-        else
-            $customErrors[] = 'templates must be json';
-        if (is_array($input->assets = self::jsonDecodeSafe($input, 'assets')))
-            $v->rule('assets.*', 'nonRelativePath');
-        else
-            $customErrors[] = 'assets must be json';
+        foreach (['templates', 'assets', 'uploads'] as $fileGroup) {
+            $key = "{$fileGroup}Parsed";
+            if (is_array($input->{$key} = self::jsonDecodeSafe($input, $fileGroup)))
+                $v->rule("{$key}.*", 'nonRelativePath');
+            else
+                $customErrors[] = "{$fileGroup} must be an array";
+        }
         return array_merge($customErrors, $v->validate($input));
     }
     /**
-     * @return array|null
+     * @return mixed
      */
-    private static function jsonDecodeSafe(\stdClass $input, string $key): ?array {
+    private static function jsonDecodeSafe(\stdClass $input, string $key) {
         $candidate = $input->$key ?? null;
-        if (!is_string($candidate)) return null;
-        return json_decode($candidate);
+        return is_string($candidate) ? json_decode($candidate) : null;
     }
 }

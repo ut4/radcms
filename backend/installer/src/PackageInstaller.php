@@ -102,8 +102,8 @@ class PackageInstaller {
         $this->commons->createSiteDirectories();
         $siteDirPath = $this->commons->getSiteDirPath();
         //
-        foreach ([Packager::LOCAL_NAMES_TEMPLATES_FILEMAP,
-                  Packager::LOCAL_NAMES_ASSETS_FILEMAP] as $localName) {
+        foreach ([Packager::LOCAL_NAMES_PHP_FILES_FILE_LIST,
+                  Packager::LOCAL_NAMES_ASSETS_FILE_LIST] as $localName) {
             // @allow \Pike\PikeException
             $json = $this->package->read($localName);
             if (!is_array($relativeFilePaths = json_decode($json)))

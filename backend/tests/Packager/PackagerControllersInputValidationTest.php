@@ -32,15 +32,17 @@ final class PackagerControllersInputValidationTest extends ConfigProvidingTestCa
     ////////////////////////////////////////////////////////////////////////////
 
 
-    public function testPOSTPackagerRejectsNonJsonFileMaps() {
+    public function testPOSTPackagerRejectsNonJsonFileLists() {
         $req = new Request('/api/packager', 'POST', (object) [
             'signingKey' => str_repeat('-', 32),
-            'templates' => new \stdClass,
-            'assets' => '["not-valid"%&]',
+            'templates' => 'not-json',
+            'assets' => '["not-valid-json"%&]',
+            'uploads' => ['not-even-a-string'],
         ]);
         $res = $this->createMockResponse(
             ['templates must be json',
-             'assets must be json'], 400);
+             'assets must be json',
+             'uploads must be json'], 400);
         $this->sendRequest($req, $res, $this->app);
     }
 }

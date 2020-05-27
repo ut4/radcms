@@ -32,19 +32,28 @@ final class PackagerControllersTest extends DbTestCase {
         $s = $this->setupCreatePackageTest();
         $this->sendCreatePackageRequest($s);
         $this->verifyPackageWasReturned($s);
+        //
         $this->verifyEncryptedMainDataWasIncluded($s);
         $this->verifyDbAndSiteSettingsWereIncludedToMainData($s);
         $this->verifyContentTypesWereIncludedToMainData($s);
         $this->verifyAllContentWasIncludedToMainData($s);
         $this->verifyUserZeroWasIncludedToMainData($s);
-        $this->verifyTemplateFilesWereIncluded($s);
+        //
+        $this->verifyPhpFilesFileListWasIncluded($s);
+        $this->verifyThemeAssetsFileListWasIncluded($s);
+        $this->verifyUploadsFileListWasIncluded($s);
+        //
+        $this->verifyPhpFilesWereIncluded($s);
+        $this->verifyThemeAssetsWereIncluded($s);
+        $this->verifyUploadsWereIncluded($s);
     }
     private function setupCreatePackageTest() {
         return (object) [
             'reqBody' => (object) [
                 'templates' => json_encode(TestSite::TEMPLATES),
                 'assets' => json_encode(TestSite::ASSETS),
-                'signingKey' => 'my-encrypt-key'
+                'uploads' => json_encode(TestSite::UPLOADS),
+                'signingKey' => 'my-encrypt-key',
             ],
             'actualAttachmentBody' => '',
             'packageCreatedFromResponse' => null,
@@ -123,16 +132,46 @@ final class PackagerControllersTest extends DbTestCase {
         $this->assertEquals($s->testUserZero,
                             $s->parsedMainDataFromPackage->user);
     }
-    private function verifyTemplateFilesWereIncluded($s) {
+    private function verifyPhpFilesFileListWasIncluded($s) {
         $fileListFileContents = $s->packageCreatedFromResponse
-            ->read(Packager::LOCAL_NAMES_TEMPLATES_FILEMAP);
-        $this->assertEquals(json_encode(TestSite::TEMPLATES),
+            ->read(Packager::LOCAL_NAMES_PHP_FILES_FILE_LIST);
+        $this->assertEquals(json_encode(array_merge(['Site.php'],
+                                                    TestSite::TEMPLATES)),
                             $fileListFileContents);
     }
-    private function verifyIncludedThemeAssetFiles($s) {
+    private function verifyThemeAssetsFileListWasIncluded($s) {
         $fileListFileContents = $s->packageCreatedFromResponse
-            ->read(Packager::LOCAL_NAMES_ASSETS_FILEMAP);
+            ->read(Packager::LOCAL_NAMES_ASSETS_FILE_LIST);
         $this->assertEquals(json_encode(TestSite::ASSETS),
                             $fileListFileContents);
+    }
+    private function verifyUploadsFileListWasIncluded($s) {
+        $fileListFileContents = $s->packageCreatedFromResponse
+            ->read(Packager::LOCAL_NAMES_UPLOADS_FILE_LIST);
+        $this->assertEquals(json_encode(TestSite::UPLOADS),
+                            $fileListFileContents);
+    }
+    private function verifyPhpFilesWereIncluded($s) {
+        $base = RAD_PUBLIC_PATH . 'site/';
+        $this->assertEquals($this->mockPackageStream->mockReadFile("{$base}Site.php"),
+            $s->packageCreatedFromResponse->read('Site.php'));
+        foreach (TestSite::TEMPLATES as $relativePath) {
+            $this->assertEquals($this->mockPackageStream->mockReadFile("{$base}{$relativePath}"),
+                $s->packageCreatedFromResponse->read($relativePath));
+        }
+    }
+    private function verifyThemeAssetsWereIncluded($s) {
+        $base = RAD_PUBLIC_PATH . 'site/';
+        foreach (TestSite::ASSETS as $relativePath) {
+            $this->assertEquals($this->mockPackageStream->mockReadFile("{$base}{$relativePath}"),
+                $s->packageCreatedFromResponse->read($relativePath));
+        }
+    }
+    private function verifyUploadsWereIncluded($s) {
+        $base = RAD_PUBLIC_PATH . 'uploads/';
+        foreach (TestSite::UPLOADS as $relativePath) {
+            $this->assertEquals($this->mockPackageStream->mockReadFile("{$base}{$relativePath}"),
+                $s->packageCreatedFromResponse->read($relativePath));
+        }
     }
 }
