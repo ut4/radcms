@@ -10,7 +10,7 @@
         <div id="install-app"></div>
         <script src="frontend/vendor/vendor.bundle.min.js"></script>
         <script src="frontend/rad-commons.js"></script>
-        <script>window.siteDirPath = '<?= $siteDirPath ?>'</script>
+        <script>window.packageExists = <?= $packageExists ? 'true' : 'false' ?></script>
         <script src="frontend/rad-install-app.js"></script>
     </body>
 </html>

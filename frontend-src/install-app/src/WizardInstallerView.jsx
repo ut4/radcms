@@ -2,7 +2,7 @@ import {http, toasters, InputGroup, Input, Select, InputError, FeatherSvg, hookF
 
 class WizardInstallerView extends preact.Component {
     /**
-     * @param {{siteDirPath: string; baseUrl: string;}} props
+     * @param {{baseUrl: string;}} props
      */
     constructor(props) {
         super(props);
@@ -10,7 +10,8 @@ class WizardInstallerView extends preact.Component {
         this.lastTyped = l ? JSON.parse(l) : {};
         this.state = {tabs: [{isCurrent: true, isOk: false},
                              {isCurrent: false, isOk: false},
-                             {isCurrent: false, isOk: false}]};
+                             {isCurrent: false, isOk: false}],
+                      installDetails: null};
         this.tabRefs = [preact.createRef(),
                         preact.createRef(),
                         preact.createRef()];
@@ -21,6 +22,10 @@ class WizardInstallerView extends preact.Component {
     render() {
         return <div>
             <h2>Asenna RadCMS</h2>
+            { this.state.installDetails
+                ? <p class="info-box success">Sivusto asennettiin kansioon <span style="font-weight: bold">{ this.state.installDetails.siteWasInstalledTo }</span>. Aloita lukemalla site/README.md, siirry <a href={ this.props.makeUrl('', this.state.installDetails) }>sivustolle</a>, tai hallintanäkymän <a href={ this.props.makeUrl('login', this.state.installDetails) }>kirjautumissivulle</a>.</p>
+                : null
+            }
             <nav class="step-indicators">
                 <div class={ this.state.tabs[0].isCurrent ? 'current' : '' +
                                 (this.state.tabs[0].isOk ? ' checked' : '' ) }>Sivusto
@@ -65,25 +70,22 @@ class WizardInstallerView extends preact.Component {
             this.setState({tabs});
             return;
         }
-        const data = Object.assign({},
+        const data = Object.assign(
+            {baseUrl: this.props.baseUrl},
             this.tabRefs[0].current.getValues(),
             this.tabRefs[1].current.getValues(),
-            this.tabRefs[2].current.getValues()
+            this.tabRefs[2].current.getValues(),
         );
         sessionStorage.lastTyped = JSON.stringify(Object.assign({}, data, {
             dbPass: '',
             firstUserPass: '',
         }));
-        data.baseUrl = this.props.baseUrl;
-        const makeUrl = url => data.baseUrl + (!this.state.mainQueryVar
-            ? url
-            : `index.php?${this.state.mainQueryVar}=/${url}`);
         http.post('', data)
-            .then(() => {
-                toasters.main(() => <p>Sivusto asennettiin kansioon <span style="font-weight: bold">{ this.props.siteDirPath }</span>. Aloita lukemalla site/README.md, siirry <a href={ makeUrl('') }>sivustolle</a>, tai hallintanäkymän <a href={ makeUrl('login') }>kirjautumissivulle</a>.</p>, 'success');
+            .then(details => {
                 const tabs = this.state.tabs;
                 tabs[2].isOk = true;
-                this.setState({tabs});
+                this.setState({tabs, installDetails: {siteWasInstalledTo: details.siteWasInstalledTo,
+                                                      mainQueryVar: data.mainQueryVar}});
                 window.scrollTo(0, 0);
             })
             .catch(err => {

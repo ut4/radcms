@@ -4,7 +4,7 @@ import WizardInstallerView from './WizardInstallerView.jsx';
 
 class InstallApp extends preact.Component {
     /**
-     * @param {{siteDirPath: string;}} props
+     * @param {{packageExists: string;}} props
      */
     constructor(props) {
         super(props);
@@ -32,12 +32,24 @@ class InstallApp extends preact.Component {
                     </div>
                 </div>
                 : this.state.installMode === 'fromPackage'
-                    ? <FromPackageInstallerView siteDirPath={ this.props.siteDirPath }
-                                                baseUrl={ this.baseUrl }/>
-                    : <WizardInstallerView siteDirPath={ this.props.siteDirPath }
-                                                baseUrl={ this.baseUrl }/>
+                    ? <FromPackageInstallerView
+                        baseUrl={ this.baseUrl }
+                        packageExists={ this.props.packageExists }
+                        makeUrl={ this.makeUrl.bind(this) }/>
+                    : <WizardInstallerView
+                        baseUrl={ this.baseUrl }
+                        makeUrl={ this.makeUrl.bind(this) }/>
             }
         </div>;
+    }
+    /**
+     * @access private
+     */
+    makeUrl(url, installDetails) {
+        const {mainQueryVar} = installDetails;
+        return this.baseUrl + (!mainQueryVar
+            ? url
+            : `index.php?${mainQueryVar}=/${url}`);
     }
 }
 

@@ -88,22 +88,19 @@ class Packager {
         // @allow \Pike\PikeException
         $package->open('', true);
         // @allow \Pike\PikeException
-        $this->addMainData($package, $config, $userIdentity);
+        $ok = $this->addMainData($package, $config, $userIdentity) &&
+            $this->addPhpFiles($package, $config) &&
+            $this->addAssetFiles($package, $config) &&
+            $this->addUploadFiles($package, $config);
         // @allow \Pike\PikeException
-        $this->addPhpFiles($package, $config);
-        // @allow \Pike\PikeException
-        $this->addAssetFiles($package, $config);
-        // @allow \Pike\PikeException
-        $this->addUploadFiles($package, $config);
-        // @allow \Pike\PikeException
-        return $package->getResult();
+        return $ok ? $package->getResult() : '';
     }
     /**
      * @throws \Pike\PikeException
      */
     private function addMainData(PackageStreamInterface $package,
                                  \stdClass $config,
-                                 \stdClass $userIdentity): void {
+                                 \stdClass $userIdentity): bool {
         $themeContentTypes = ArrayUtils::filterByKey($this->cmsState->getContentTypes(),
                                                      'Website',
                                                      'origin');
@@ -120,12 +117,13 @@ class Packager {
         $encrypted = $this->crypto->encrypt($data, $key);
         // @allow \Pike\PikeException
         $package->addFromString(self::LOCAL_NAMES_MAIN_DATA, $encrypted);
+        return true;
     }
     /**
      * @throws \Pike\PikeException
      */
     private function addPhpFiles(PackageStreamInterface $package,
-                                 \stdClass $config): void {
+                                 \stdClass $config): bool {
         $fileList = ['Site.php'];
         if (class_exists('RadSite\\Theme', false))
             $fileList[] = 'Theme.php';
@@ -133,34 +131,34 @@ class Packager {
         $package->addFromString(self::LOCAL_NAMES_PHP_FILES_FILE_LIST,
                                 json_encode($fileList, JSON_UNESCAPED_UNICODE));
         $base = RAD_PUBLIC_PATH . 'site/';
-        foreach ($fileList as $relativePath) {
+        foreach ($fileList as $relativePath)
             // @allow \Pike\PikeException
             $package->addFile("{$base}{$relativePath}", $relativePath);
-        }
+        return true;
     }
     /**
      * @throws \Pike\PikeException
      */
     private function addAssetFiles(PackageStreamInterface $package,
-                                   \stdClass $config): void {
+                                   \stdClass $config): bool {
         $package->addFromString(self::LOCAL_NAMES_ASSETS_FILE_LIST, $config->assets);
         $base = RAD_PUBLIC_PATH . 'site/';
-        foreach ($config->assetsParsed as $relativePath) {
+        foreach ($config->assetsParsed as $relativePath)
             // @allow \Pike\PikeException
             $package->addFile("{$base}{$relativePath}", $relativePath);
-        }
+        return true;
     }
     /**
      * @throws \Pike\PikeException
      */
     private function addUploadFiles(PackageStreamInterface $package,
-                                    \stdClass $config): void {
+                                    \stdClass $config): bool {
         $package->addFromString(self::LOCAL_NAMES_UPLOADS_FILE_LIST, $config->uploads);
         $base = RAD_PUBLIC_PATH . 'uploads/';
-        foreach ($config->uploadsParsed as $relativePath) {
+        foreach ($config->uploadsParsed as $relativePath)
             // @allow \Pike\PikeException
             $package->addFile("{$base}{$relativePath}", $relativePath);
-        }
+        return true;
     }
     /**
      * @return \stdClass

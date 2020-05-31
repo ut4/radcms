@@ -20,11 +20,13 @@ final class PackagerControllersInputValidationTest extends ConfigProvidingTestCa
             'signingKey' => '',
             'templates' => json_encode(['../..././foo.php']),
             'assets' => json_encode(['....//bar.css']),
+            'uploads' => json_encode(['../file.jpg']),
         ]);
         $res = $this->createMockResponse(
             ['The length of signingKey must be at least 12',
-             'templates.0 is not valid path',
-             'assets.0 is not valid path'], 400);
+             'templatesParsed.0 is not valid path',
+             'assetsParsed.0 is not valid path',
+             'uploadsParsed.0 is not valid path'], 400);
         $this->sendRequest($req, $res, $this->app);
     }
 
@@ -40,9 +42,9 @@ final class PackagerControllersInputValidationTest extends ConfigProvidingTestCa
             'uploads' => ['not-even-a-string'],
         ]);
         $res = $this->createMockResponse(
-            ['templates must be json',
-             'assets must be json',
-             'uploads must be json'], 400);
+            ['templates must be an array',
+             'assets must be an array',
+             'uploads must be an array'], 400);
         $this->sendRequest($req, $res, $this->app);
     }
 }

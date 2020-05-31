@@ -17,6 +17,20 @@ h2 {
     margin: 10px 0 25px 0;
 }
 
+p.info-box {
+    padding: 1.4rem;
+    border-left: 2px solid rgb(177, 177, 179);
+    background-color: rgba(177, 177, 177, 0.078);
+}
+p.info-box.error {
+    border-color: rgb(254, 90, 120);
+    background-color: rgba(254, 90, 120, 0.031);
+}
+p.info-box.success {
+    border-color: rgb(47, 200, 139);
+    background-color: rgba(47, 200, 139, 0.06);
+}
+
 #install-app {
     max-width: 800px;
     margin: 20px auto;

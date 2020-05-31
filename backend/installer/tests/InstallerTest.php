@@ -79,14 +79,12 @@ final class InstallerTest extends BaseInstallerTest {
             'dbPass must be string',
             'The length of dbDatabase must be at least 1',
             'doCreateDb must be bool',
-            'dbTablePrefix must be string',
             'The length of dbTablePrefix must be at least 1',
             'The value of dbCharset was not in the list',
             'The length of firstUserName must be at least 1',
-            'firstUserEmail must be string',
             'The length of firstUserEmail must be at least 3',
             'firstUserPass must be string',
-            'The length of baseUrl must be at least 1'
+            'The length of baseUrl must be at least 1',
         ]), 400);
         $app = $this->makeApp([$this,'createInstallerApp'],
                               $this->getAppConfig(),
@@ -263,7 +261,6 @@ return [
     'db.pass'        => '{$s->input->dbPass}',
     'db.tablePrefix' => '{$s->input->dbTablePrefix}',
     'db.charset'     => 'utf8',
-    'mail.transport' => 'phpsMailFunction',
 ];
 "
 )
@@ -292,7 +289,11 @@ return [
         throw new \Exception('Shouldn\'t happen');
     }
     private function sendInstallRequest($s) {
-        $res = $this->createMockResponse('{"ok":"ok","warnings":[]}', 200);
+        $res = $this->createMockResponse(json_encode([
+            'ok' => 'ok',
+            'warnings' => [],
+            'siteWasInstalledTo' => $s->siteDirPath,
+        ]), 200);
         $ctx = new AppContext(['db' => '@auto', 'auth' => '@auto']);
         $ctx->fs = $s->mockFs;
         $app = $this->makeApp([$this,'createInstallerApp'], $this->getAppConfig(), $ctx);

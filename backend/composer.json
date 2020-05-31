@@ -16,7 +16,7 @@
         "ext-fileinfo": "*",
         "psr/log": "^1.1",
         "monolog/monolog": "^1.25",
-        "ut4/pike": "0.6.0-dev",
+        "ut4/pike": "0.7.0-dev",
         "phpmailer/phpmailer": "~6.1"
     },
     "minimum-stability": "dev",

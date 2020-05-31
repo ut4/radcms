@@ -21,7 +21,7 @@ abstract class ContentTypeValidator {
     public static function validate(ContentTypeDef $contentType): array {
         static $validator = null;
         if (!$validator) $validator = Validation::makeObjectValidator()
-            ->rule('fields', 'minLength', 1)
+            ->rule('fields', 'minLength', 1, 'array')
             ->rule('fields.*.name', 'identifier')
             ->rule('fields.*.dataType', 'in', self::FIELD_DATA_TYPES)
             ->rule('fields.*.widget.name', 'in', self::FIELD_WIDGETS);

@@ -7,6 +7,7 @@ namespace RadCms\Installer;
 use Pike\Db;
 use Pike\PikeException;
 use Pike\Auth\Crypto;
+use Pike\FileSystemInterface;
 use RadCms\ContentType\ContentTypeCollection;
 use RadCms\ContentType\ContentTypeMigrator;
 use RadCms\Packager\Packager;
@@ -17,31 +18,35 @@ use RadCms\Packager\PackageStreamInterface;
  */
 class PackageInstaller {
     private $db;
+    private $fs;
     private $crypto;
     private $commons;
     private $package;
     /**
      * @param \Pike\Db $db
+     * @param \Pike\FileSystemInterface $fs
      * @param \Pike\Auth\Crypto $crypto
      * @param \RadCms\Installer\InstallerCommons $commons
      * @param \RadCms\Packager\PackageStreamInterface $package
      */
     public function __construct(Db $db,
+                                FileSystemInterface $fs,
                                 Crypto $crypto,
                                 InstallerCommons $commons,
                                 PackageStreamInterface $package) {
         $this->db = $db;
+        $this->fs = $fs;
         $this->crypto = $crypto;
         $this->commons = $commons;
         $this->package = $package;
     }
     /**
-     * @param string $packageFilePath '/path/to/tmp/uploaded-package-file.radsite'
+     * @param string $packageFilePath '/path/to/htdocs/packed.radsite'
      * @param \stdClass $input {unlockKey: string, baseUrl: string}
-     * @return bool
+     * @return \stdClass|null
      * @throws \Pike\PikeException
      */
-    public function doInstall(string $packageFilePath, \stdClass $input): bool {
+    public function doInstall(string $packageFilePath, \stdClass $input): ?\stdClass {
         // @allow \Pike\PikeException
         $this->package->open($packageFilePath);
         // @allow \Pike\PikeException
@@ -49,7 +54,7 @@ class PackageInstaller {
         $settings = $mainData->settings;
         $settings->baseUrl = $input->baseUrl;
         // @allow \Pike\PikeException
-        return $this->commons->createOrOpenDb($settings) &&
+        $ok = $this->commons->createOrOpenDb($settings) &&
                $this->commons->createMainSchema($settings) &&
                $this->commons->insertMainSchemaData($settings) &&
                $this->commons->createUserZero($settings, $mainData->user) &&
@@ -57,7 +62,9 @@ class PackageInstaller {
                                                       $mainData->content) &&
                $this->writeFiles() &&
                $this->commons->generateConfigFile($settings) &&
-               $this->commons->selfDestruct();
+               $this->commons->selfDestruct() &&
+               $this->selfDestruct($packageFilePath);
+        return $ok ? $settings : null;
     }
     /**
      * @return string[]
@@ -102,16 +109,28 @@ class PackageInstaller {
         $this->commons->createSiteDirectories();
         $siteDirPath = $this->commons->getSiteDirPath();
         //
-        foreach ([Packager::LOCAL_NAMES_PHP_FILES_FILE_LIST,
-                  Packager::LOCAL_NAMES_ASSETS_FILE_LIST] as $localName) {
+        foreach ([
+            [Packager::LOCAL_NAMES_PHP_FILES_FILE_LIST, 'site'],
+            [Packager::LOCAL_NAMES_ASSETS_FILE_LIST, 'site'],
+            [Packager::LOCAL_NAMES_UPLOADS_FILE_LIST, 'uploads'],
+        ] as [$fileListLocalName, $targetDirName]) {
             // @allow \Pike\PikeException
-            $json = $this->package->read($localName);
+            $json = $this->package->read($fileListLocalName);
             if (!is_array($relativeFilePaths = json_decode($json)))
-                throw new PikeException("Failed to parse `{$localName}`",
+                throw new PikeException("Failed to parse `{$fileListLocalName}`",
                                         PikeException::BAD_INPUT);
             // @allow \Pike\PikeException
-            $this->package->extractMany("{$siteDirPath}site", $relativeFilePaths);
+            $this->package->extractMany("{$siteDirPath}{$targetDirName}",
+                                        $relativeFilePaths);
         }
         return true;
+    }
+    /**
+     * @param string $packageFilePath
+     * @return bool
+     * @throws \Pike\PikeException
+     */
+    private function selfDestruct(string $packageFilePath): bool {
+        return $this->fs->unlink($packageFilePath);
     }
 }
