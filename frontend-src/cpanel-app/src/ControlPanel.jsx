@@ -1,6 +1,7 @@
-import {config, http, toasters, urlUtils, FeatherSvg} from '@rad-commons';
+import {http, toasters, urlUtils, FeatherSvg} from '@rad-commons';
 import {contentPanelRegister} from '@rad-cpanel-commons';
 import {genRandomString} from './Website/WebsitePackView.jsx';
+import webPageState from './webPageState.js';
 
 class ControlPanel extends preact.Component {
     /**
@@ -34,7 +35,7 @@ class ControlPanel extends preact.Component {
      * @access public
      */
     handleWebpageLoaded(dataFromWebpageIframe) {
-        config.currentPagePath = dataFromWebpageIframe.currentPagePath;
+        webPageState.update(dataFromWebpageIframe);
         const newState = {contentPanels: [], websiteIframeHasLoadedAtLeastOnce: true};
         const uniqueHighlighSelectors = {};
         newState.contentPanels = dataFromWebpageIframe.contentPanels.map(p => {

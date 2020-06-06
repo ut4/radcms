@@ -4,7 +4,7 @@ const ContentFormImpl = Object.freeze({
 
 class DefaultImpl extends preact.Component {
     /**
-     * @param {{fields: Array<ContentTypeField>; contentNode: ContentNode; getWidgetImpl: (name: string) => {ImplClass: Object; props: ?Object;}|null; setContentNodeValue: (value: string, fieldName: string) => any;}} props
+     * @param {{fields: Array<ContentTypeField>; contentNode: ContentNode; getWidgetImpl: (name: string) => {ImplClass: Object; props: ?Object;}|null; setContentNodeValue: (value: string, fieldName: string) => any; settings: Object;}} props
      */
     constructor(props) {
         super(props);
@@ -13,14 +13,17 @@ class DefaultImpl extends preact.Component {
      * @access protected
      */
     render() {
-        const {fields, getWidgetImpl, contentNode, setContentNodeValue} = this.props;
+        const {fields, settings, getWidgetImpl, contentNode, setContentNodeValue} = this.props;
         return <div>{ fields.map(f => {
             // TextFieldFieldWidget, TextAreaFieldWidget etc...
             const {ImplClass, props} = getWidgetImpl(f.widget.name);
             return <ImplClass
                 field={ f }
                 initialValue={ contentNode[f.name] }
-                settings={ props }
+                settings={ Object.assign({},
+                    settings[`${f.widget.name}Props`] || {},
+                    props
+                ) }
                 onValueChange={ value => {
                     setContentNodeValue(value, f.name);
                 }}/>;

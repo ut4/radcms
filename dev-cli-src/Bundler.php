@@ -176,7 +176,7 @@ class Bundler {
                             (!$files ? '' : ' /xf ' . implode(' ', $files));
             } else {
                 $excludes = implode(' ', array_map(function ($path) {
-                    return "--exclude \'{$path}\'";
+                    return "--exclude " . (PHP_OS === 'Darwin' ? $path : "\'{$path}\'");
                 }, $exclude)) . ' ';
             }
         }

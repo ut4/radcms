@@ -14,7 +14,11 @@ html, body {
     flex: 1;
     border: none;
 }
-
+.note {
+    font-size: 10px;
+    margin-left: 2px;
+    vertical-align: top;
+}
 
 /* == Cpanel ================================================================ */
 #cpanel-app > div {
@@ -144,11 +148,6 @@ section.quick-links .icon-button .feather {
     margin-top: -1px;
     padding-right: 10px;
     stroke: rgba(255,255,255,0.5);
-}
-.section-row > div .note {
-    font-size: 10px;
-    margin-left: 2px;
-    vertical-align: top;
 }
 .section-row > div .subtitle {
     font-size: 11px;

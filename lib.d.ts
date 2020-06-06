@@ -4,9 +4,6 @@ import 'cpanel-commons.d.ts';
 declare module "@rad-commons" {
     namespace radCommons {
         export const config: {
-            baseUrl: string;
-            assetBaseUrl: string;
-            currentPagePath: string;
             userPermissions: {
                 canCreateContent: boolean;
                 canConfigureContent: boolean;
@@ -126,6 +123,9 @@ declare module "@rad-commons" {
             getLocaleTimeString(date: Date): string;
         };
         export const urlUtils: {
+            baseUrl: string;
+            assetBaseUrl: string;
+            currentPagePath: string;
             redirect(to: string, full?: boolean);
             reload();
             makeUrl(url: string): string;

@@ -17,14 +17,14 @@ class ControlPanelApp extends preact.Component {
     constructor(props) {
         super(props);
         const uniqueImpls = {};
-        this.userDefinedRoutes = [];
+        this.adminPanelRoutes = [];
         this.adminPanelBundles = props.dataFromAdminBackend.adminPanels.map(p => {
             const bundle = ControlPanel.makePanelBundle(p);
             if (!uniqueImpls[p.impl]) {
                 uniqueImpls[p.impl] = 1;
                 if (typeof bundle.ImplClass.getRoutes === 'function') {
                     const routes = bundle.ImplClass.getRoutes();
-                    if (routes) this.userDefinedRoutes = this.userDefinedRoutes.concat(routes);
+                    if (routes) this.adminPanelRoutes = this.adminPanelRoutes.concat(routes);
                 }
             }
             return bundle;
@@ -53,12 +53,12 @@ class ControlPanelApp extends preact.Component {
             <PreactRouter history={ History.createHashHistory() }>
                 <ContentAddView path="/add-content/:initialContentTypeName?"/>
                 <ContentManageView path="/manage-content/:initialContentTypeName?"/>
-                <ContentEditView path="/edit-content/:id/:contentTypeName/:formImpl?/:publish?"/>
+                <ContentEditView path="/edit-content/:id/:contentTypeName/:panelIdx?/:publish?"/>
                 <PluginsManageView path="/manage-plugins"/>
                 <WebsitePackView path="/pack-website"/>
                 <UserProfileView path="/me"/>
                 <ContentTypesManageView path="/manage-content-types"/>
-                { this.userDefinedRoutes }
+                { this.adminPanelRoutes }
             </PreactRouter>
             <PopupDialog/>
         </div>;

@@ -1,6 +1,6 @@
 class BaseFieldWidget extends preact.Component {
     /**
-     * @param {{field: ContentTypeField|MultiFieldField; initialValue: any; onValueChange: (newValue: any) => any; settings?: Object;}} props
+     * @param {{field: ContentTypeField|MultiFieldField; initialValue: any; onValueChange: (newValue: any) => any; settings?: Object; labelHint?: string;}} props
      */
     constructor(props) {
         super(props);
@@ -8,7 +8,8 @@ class BaseFieldWidget extends preact.Component {
             throw new Error('props.field is required');
         if (typeof props.onValueChange !== 'function')
             throw new Error('props.onValueChange is required');
-        this.label = props.field.friendlyName || props.field.name;
+        this.label = [props.field.friendlyName || props.field.name,
+                      !props.labelHint ? null : <span class="note">{ props.labelHint }</span>];
         this.fixedInitialValue = props.initialValue;
         if (this.fixedInitialValue === undefined) {
             this.fixedInitialValue = this.getInitialValue();

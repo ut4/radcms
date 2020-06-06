@@ -1,16 +1,17 @@
 import {http, config, toasters, urlUtils, View, FeatherSvg, InputGroup, FormButtons} from '@rad-commons';
-import {contentFormRegister, ContentFormImpl} from '@rad-cpanel-commons';
+import {contentFormRegister} from '@rad-cpanel-commons';
 import openDeleteContentDialog from './ContentDeleteDialog.jsx';
 import getWidgetImpl from './FieldWidgets/all-with-multi.js';
 import {filterByUserRole} from '../ContentType/FieldList.jsx';
 import {Status} from './ContentAddView.jsx';
+import webPageState from '../webPageState.js';
 
 /**
- * #/edit-content/:id/:contentTypeName/:formImpl?/:publish?
+ * #/edit-content/:id/:contentTypeName/:panelIdx?/:publish?
  */
 class ContentEditView extends preact.Component {
     /**
-     * @param {{id: string; contentTypeName: string; formImpl?: string; publish?: string;}} props
+     * @param {{id: string; contentTypeName: string; panelIdx?: string; publish?: string;}} props
      */
     constructor(props) {
         super(props);
@@ -65,7 +66,9 @@ class ContentEditView extends preact.Component {
      */
     render() {
         if (!this.state.contentNodeFetched || !this.state.contentTypeFetched) return null;
-        const FormImpl = contentFormRegister.getImpl(this.props.formImpl || ContentFormImpl.Default);
+        const panelConfig = (this.props.panelIdx || 'none') !== 'none' ?
+            webPageState.currentContentPanels[this.props.panelIdx] : null;
+        const FormImpl = contentFormRegister.getImpl((panelConfig || {}).editFormImpl);
         return <View><form onSubmit={ e => this.handleFormSubmit(e) }>
             <h2>{ [
                 this.title,
@@ -81,11 +84,13 @@ class ContentEditView extends preact.Component {
             ] }</h2>
             <FormImpl
                 fields={ filterByUserRole(this.contentType.fields) }
+                settings={ panelConfig ? panelConfig.editFormImplProps : {} }
                 contentNode={ this.contentNode }
                 setContentNodeValue={ (value, fieldName) => {
                     this.contentNode[fieldName] = value;
                 } }
-                getWidgetImpl={ getWidgetImpl }/>
+                getWidgetImpl={ getWidgetImpl }
+                key={ this.contentNode.id }/>
             { this.contentNode.isRevision && !this.props.publish
                 ? <InputGroup inline>
                     <label htmlFor="doPublish">Julkaise</label>

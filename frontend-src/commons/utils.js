@@ -1,5 +1,3 @@
-import config from './config.js';
-
 const dateUtils = {
     /**
      * @param {Date} date
@@ -22,6 +20,9 @@ const dateUtils = {
 };
 
 const urlUtils = {
+    baseUrl: '',
+    assetBaseUrl: '',
+    currentPagePath: '',
     /**
      * @param {string} to
      * @param {string?} type "hard"
@@ -31,8 +32,8 @@ const urlUtils = {
             window.location.hash = `#/${this.normalizeUrl(to)}`;
         } else {
             if (to === '@current')
-                to = config.currentPagePath;
-            window.location.href = window.location.origin + config.baseUrl +
+                to = this.currentPagePath;
+            window.location.href = window.location.origin + this.baseUrl +
                                    '_edit' +
                                    (to !== '/' ? `/${this.normalizeUrl(to)}` : '');
         }
@@ -47,13 +48,13 @@ const urlUtils = {
      * @param {string} url
      */
     makeUrl(url) {
-        return config.baseUrl + this.normalizeUrl(url);
+        return this.baseUrl + this.normalizeUrl(url);
     },
     /**
      * @param {string} url
      */
     makeAssetUrl(url) {
-        return config.assetBaseUrl + this.normalizeUrl(url);
+        return this.assetBaseUrl + this.normalizeUrl(url);
     },
     /**
      * @param {string} url '/foo' -> 'foo', 'bar' -> 'bar'

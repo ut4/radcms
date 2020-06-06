@@ -124,13 +124,14 @@ class Packager {
      */
     private function addPhpFiles(PackageStreamInterface $package,
                                  \stdClass $config): bool {
+        $base = RAD_PUBLIC_PATH . 'site/';
+        //
         $fileList = ['Site.php'];
-        if (class_exists('RadSite\\Theme', false))
+        if ($this->fs->isFile("{$base}Theme.php"))
             $fileList[] = 'Theme.php';
         $fileList = array_merge($fileList, $config->templatesParsed);
         $package->addFromString(self::LOCAL_NAMES_PHP_FILES_FILE_LIST,
                                 json_encode($fileList, JSON_UNESCAPED_UNICODE));
-        $base = RAD_PUBLIC_PATH . 'site/';
         foreach ($fileList as $relativePath)
             // @allow \Pike\PikeException
             $package->addFile("{$base}{$relativePath}", $relativePath);

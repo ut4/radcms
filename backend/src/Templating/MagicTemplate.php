@@ -62,7 +62,7 @@ class MagicTemplate extends Template {
                 ? "{$this->__dir}{$name}.tmpl.php"
                 : $this->__aliases[$name];
             if (!$this->__fileExists->__invoke($directiveFilePath)) {
-                return "Did you forget to \$api->registerDirective('{$name}', '/file.php')?";
+                return "Did you forget to \$api->registerDirective('{$name}', '/file.tmpl.php')?";
             }
             return $this->doRender($directiveFilePath,
                 $this->__locals + ['props' => $args ? $args[0] : []]);

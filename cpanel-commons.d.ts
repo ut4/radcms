@@ -67,7 +67,9 @@ interface ContentNode {
 interface FrontendPanelConfig {
     id?: string;
     impl: string; // 'DefaultSingle' | 'DefaultCollection' | 'NameOfMyImpl'
-    implProps?: Object;
+    implProps: Object;
+    editFormImpl: string;
+    editFormImplProps?: Object;
     title: string;
     subtitle?: string;
     highlightSelector?: string;

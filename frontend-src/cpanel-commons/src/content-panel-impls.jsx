@@ -1,6 +1,5 @@
 import {config} from '@rad-commons';
 import ContentNodeList from './ContentNodeList.jsx';
-import {ContentFormImpl} from './content-form-impls.jsx';
 
 const ContentPanelImpl = Object.freeze({
     DefaultSingle: 'DefaultSingle',
@@ -20,7 +19,6 @@ class DefaultImplForFetchOne extends preact.Component {
         super(props);
         this.newNodeContentType = props.panel.contentTypeName;
         this.node = props.panel.contentNodes[0] || null;
-        this.editFormImpl = props.settings.editFormImpl || ContentFormImpl.Default;
     }
     getName() {
         return ContentPanelImpl.DefaultSingle;
@@ -30,7 +28,7 @@ class DefaultImplForFetchOne extends preact.Component {
      */
     getMainUrl() {
         return this.node
-            ? `/edit-content/${this.node.id}/${this.node.contentType}/${this.editFormImpl}`
+            ? `/edit-content/${this.node.id}/${this.node.contentType}/${this.props.panel.idx}`
             : `/add-content/${this.newNodeContentType}`;
     }
     getTitle() {

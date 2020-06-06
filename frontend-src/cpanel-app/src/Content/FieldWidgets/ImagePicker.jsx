@@ -1,4 +1,4 @@
-import {http, config, urlUtils, hookForm, InputGroup, Input} from '@rad-commons';
+import {http, urlUtils, hookForm, InputGroup, Input} from '@rad-commons';
 import popupDialog from '../../Common/PopupDialog.jsx';
 import BaseFieldWidget from './Base.jsx';
 
@@ -34,7 +34,7 @@ class ImagePickerFieldWidget extends BaseFieldWidget {
                              this.form.triggerChange(img.fileName, this.fieldName);
                              this.props.onValueChange(img.fileName);
                          },
-                         assetBaseUrl: config.assetBaseUrl}
+                         assetBaseUrl: urlUtils.assetBaseUrl}
                     ) }/>
         </InputGroup>;
     }
