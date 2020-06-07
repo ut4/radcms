@@ -5,6 +5,30 @@
         <link rel="stylesheet" href="<?= RAD_BASE_URL ?>frontend/common.css">
         <link rel="stylesheet" href="<?= RAD_BASE_URL ?>frontend/vendor/vendor.bundle.css">
         <link rel="stylesheet" href="<?= RAD_BASE_URL ?>frontend/cpanel-app.css">
+        <script>window.dataBridge = {
+            controlPanel: null,
+            waitingData: null,
+            /**
+             * @returns {boolean}
+             */
+            hasControlPanelLoaded() {
+                return this.controlPanel !== null;
+            },
+            /**
+             * @param {ControlPanel} reactComponentInstance
+             */
+            handleControlPanelLoaded(reactComponentInstance) {
+                this.controlPanel = reactComponentInstance;
+                if (this.waitingData) this.controlPanel.handleWebpageLoaded(this.waitingData);
+            },
+            /**
+             * @param {PageLoadArgs} dataFromWebpageIframe
+             */
+            handleWebpageLoaded(dataFromWebpageIframe) {
+                if (this.controlPanel) this.controlPanel.handleWebpageLoaded(dataFromWebpageIframe);
+                else this.waitingData = dataFromWebpageIframe;
+            }
+        }</script>
     </head>
     <body>
         <div id="root">

@@ -429,6 +429,11 @@ table.pika-time {
 
 
 /* -- Components: MultiFieldConfigurer ---- */
+.with-configurable-fields .input-group,
+.with-configurable-fields .form-buttons {
+    opacity: 0.3;
+    pointer-events: none;
+}
 .multi-fields.configurable {
     border-left: 2px solid #2dccc3;
     padding-left: 10px;

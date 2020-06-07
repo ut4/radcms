@@ -45,10 +45,8 @@ class ControlPanelApp extends preact.Component {
                 dataFromAdminBackend={ this.props.dataFromAdminBackend }
                 adminPanelBundles={ this.adminPanelBundles }
                 onIsCollapsedToggled={ () => this.props.onIsCollapsedToggled() }
-                ref={ cmp => { if (cmp && !window.radCpanelApp) {
-                    window.radCpanelApp = {
-                        handleWebpageLoaded(data) { cmp.handleWebpageLoaded(data); }
-                    };
+                ref={ cmp => { if (cmp && !window.dataBridge.hasControlPanelLoaded()) {
+                    window.dataBridge.handleControlPanelLoaded(cmp);
                 } } }/>
             <PreactRouter history={ History.createHashHistory() }>
                 <ContentAddView path="/add-content/:initialContentTypeName?"/>

@@ -107,8 +107,8 @@ class WebsiteControllers {
                 s.innerHTML = '@keyframes radblink{from{background-color:rgba(0,90,255,0.18);}to{background-color:rgba(0,90,255,0.08);}}#rad-highlight-overlay{position:absolute;background-color:rgba(0,90,255,0.18);z-index:0;animation: .18s infinite alternate radblink;}';
                 document.head.appendChild(s);
                 //
-                var api = (window.parent || {}).radCpanelApp;
-                if (api) api.handleWebpageLoaded({$dataToFrontendApp});
+                var bridge = (window.parent || {}).dataBridge;
+                if (bridge) bridge.handleWebpageLoaded({$dataToFrontendApp});
             }())</script>" .
         substr($html, $bodyEnd);
     }

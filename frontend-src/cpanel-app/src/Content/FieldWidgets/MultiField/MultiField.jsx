@@ -44,32 +44,31 @@ class MultiFieldFieldWidget extends BaseFieldWidget {
     render() {
         if (this.state.configModeIsOn)
             return <div class="multi-fields configurable">
-                <button onClick={ () => {
-                            const fields = this.multiFieldFields.getFields();
-                            this.setState({fields, visibleFields: this.makeVisibleFields(fields),
-                                configModeIsOn: false});
-                            this.props.onValueChange(JSON.stringify(fields));
-                        } }
+                <button onClick={ () => this.endConfigMode() }
                         class="icon-button"
-                        title="Lopeta muokkaus"
-                        type="button"><FeatherSvg iconId="check"/></button>
+                        title="Tallenna rakenne"
+                        type="button">
+                            <FeatherSvg iconId="check"/>
+                           <span>Tallenna rakenne</span>
+                    </button>
                 <MultiFieldConfigurer fields={ this.multiFieldFields }/>
             </div>;
         //
         return <div class={ 'multi-fields' + (this.isConfigurable ? ' configurable' : '') }>
             { this.isConfigurable
-                ? <button onClick={ () => this.setState({configModeIsOn: true}) }
+                ? <button onClick={ () => this.beginConfigMode() }
                         class="icon-button"
-                        title="Muokkaa kenttiä"
+                        title="Muokkaa rakennetta"
                         type="button">
                     <FeatherSvg iconId="settings"/>
+                    <span>Muokkaa rakennetta</span>
                 </button>
                 : null
             }
             { this.state.visibleFields.map(f => {
                 // @allow Error
                 const {ImplClass, props} = getWidgetImpl(f.widget.name);
-                const hint = !this.isConfigurable || !this.fieldShouldBeOmitted(f) ? null : ' Ei näytetä';
+                const hint = !this.isConfigurable || this.fieldShouldBeShown(f) ? null : '  Ei näytetä';
                 return <ImplClass
                     key={ `${f.id}-${hint || '-'}` }
                     field={ f }
@@ -86,6 +85,24 @@ class MultiFieldFieldWidget extends BaseFieldWidget {
     /**
      * @access private
      */
+    beginConfigMode() {
+        this.setState({configModeIsOn: true});
+        this.props.setFormClasses('with-configurable-fields');
+    }
+    /**
+     * @access private
+     */
+    endConfigMode() {
+        const fields = this.multiFieldFields.getFields();
+        this.setState({fields,
+                       visibleFields: this.makeVisibleFields(fields),
+                       configModeIsOn: false});
+        this.props.onValueChange(JSON.stringify(fields));
+        this.props.setFormClasses('');
+    }
+    /**
+     * @access private
+     */
     makeVisibleFields(fields) {
         if (this.isConfigurable || !this.fieldsToDisplay.length) return fields;
         // validate
@@ -94,13 +111,13 @@ class MultiFieldFieldWidget extends BaseFieldWidget {
                 console.warn(`No multifield "${name}" found.`);
         });
         // filter
-        return fields.filter(this.fieldShouldBeOmitted.bind(this));
+        return fields.filter(this.fieldShouldBeShown.bind(this));
     }
     /**
      * @access private
      */
-    fieldShouldBeOmitted(field) {
-        return this.fieldsToDisplay.indexOf(field.name) > -1;
+    fieldShouldBeShown(field) {
+        return !this.fieldsToDisplay.length || this.fieldsToDisplay.indexOf(field.name) > -1;
     }
 }
 

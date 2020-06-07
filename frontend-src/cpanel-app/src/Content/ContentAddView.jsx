@@ -46,7 +46,7 @@ class ContentAddView extends preact.Component {
      */
     render() {
         if (!this.state.contentType) return null;
-        return <View><form onSubmit={ e => this.handleFormSubmit(e) }>
+        return <View><form onSubmit={ e => this.handleFormSubmit(e) } class={ this.state.formClasses }>
             <h2>Lisää sisältöä</h2>
             <InputGroup classes={ this.state.classes.contentTypeName }>
                 <label><span data-help-text="Dev note: Voit luoda uusia sisältötyyppejä hallintapaneelin devaaja-osiosta (ks. https://todo).">Sisältötyyppi</span></label>
@@ -66,7 +66,10 @@ class ContentAddView extends preact.Component {
                     settings={ props }
                     onValueChange={ value => {
                         this.newContentNode[f.name] = value;
-                    }}/>;
+                    }}
+                    setFormClasses={ str => {
+                        this.setState({formClasses: str.toString()});
+                    } }/>;
             }) }
             <InputGroup classes={ {} } inline>
                 <label htmlFor="createRevision">Lisää luonnoksena</label>
