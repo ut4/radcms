@@ -1,3 +1,5 @@
+import FieldsFilter from './FieldsFilter.js';
+
 const ContentFormImpl = Object.freeze({
     Default: 'Default',
 });
@@ -8,13 +10,21 @@ class DefaultImpl extends preact.Component {
      */
     constructor(props) {
         super(props);
+        this.componentWillReceiveProps(props);
+    }
+    /**
+     * @access protected
+     */
+    componentWillReceiveProps(props) {
+        this.visibleFields = (new FieldsFilter(props.settings.fieldsToDisplay))
+            .doFilter(props.fields);
     }
     /**
      * @access protected
      */
     render() {
-        const {fields, settings, getWidgetImpl, editForm, setContentNodeValue} = this.props;
-        return <div>{ fields.map(f => {
+        const {settings, getWidgetImpl, editForm, setContentNodeValue} = this.props;
+        return <div>{ this.visibleFields.map(f => {
             // TextFieldFieldWidget, TextAreaFieldWidget etc...
             const {ImplClass, props} = getWidgetImpl(f.widget.name);
             return <ImplClass
@@ -34,4 +44,4 @@ class DefaultImpl extends preact.Component {
     }
 }
 
-export {ContentFormImpl, DefaultImpl};
+export {ContentFormImpl, DefaultImpl, FieldsFilter};

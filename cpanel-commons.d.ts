@@ -19,6 +19,12 @@ declare module "@rad-cpanel-commons" {
         export class ContentNodeUtils {
             static makeTitle(contentNode: any): string;
         }
+        export class FieldsFilter {
+            constructor(fieldsToDisplay: Array<string>): FieldsFilter;
+            doFilter(fields: Array<{name: string; [key: any]: any;}>): Array<{name: string; [key: any]: any;}>;
+            fieldShouldBeShown(field: {name: string; [key: any]: any;}): boolean;
+            getFieldsToDisplay(): Array<string>;
+        }
     }
     export = radCpanelCommons;
 }

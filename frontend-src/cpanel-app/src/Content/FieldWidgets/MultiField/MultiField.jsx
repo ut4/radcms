@@ -1,4 +1,5 @@
 import {FeatherSvg} from '@rad-commons';
+import {FieldsFilter} from '@rad-cpanel-commons';
 import BaseFieldWidget from '../Base.jsx';
 import MultiFieldConfigurer from './MultiFieldConfigurer.jsx';
 import MultiFieldFieldsStore from './MultiFieldFieldsStore.js';
@@ -16,8 +17,8 @@ class MultiFieldFieldWidget extends BaseFieldWidget {
             if (this.state.configModeIsOn) return;
             this.setState({fields});
         });
+        this.fieldsFilter = new FieldsFilter(props.settings.fieldsToDisplay);
         const fields = this.multiFieldFields.getFields();
-        this.fieldsToDisplay = props.settings.fieldsToDisplay || [];
         this.setState({fields, visibleFields: this.makeVisibleFields(fields),
                        configModeIsOn: false});
     }
@@ -26,8 +27,8 @@ class MultiFieldFieldWidget extends BaseFieldWidget {
      */
     componentWillReceiveProps(props) {
         const fieldsToDisplay = props.settings.fieldsToDisplay || [];
-        if (fieldsToDisplay.join() !== this.fieldsToDisplay.join()) {
-            this.fieldsToDisplay = fieldsToDisplay;
+        if (fieldsToDisplay.join() !== this.fieldsFilter.getFieldsToDisplay().join()) {
+            this.fieldsFilter = new FieldsFilter(fieldsToDisplay);
             this.setState({visibleFields: this.makeVisibleFields(this.state.fields)});
         }
     }
@@ -68,7 +69,7 @@ class MultiFieldFieldWidget extends BaseFieldWidget {
             { this.state.visibleFields.map(f => {
                 // @allow Error
                 const {ImplClass, props} = getWidgetImpl(f.widget.name);
-                const hint = !this.isConfigurable || this.fieldShouldBeShown(f) ? null : '  Ei näytetä';
+                const hint = !this.isConfigurable || this.fieldsFilter.fieldShouldBeShown(f) ? null : '  Ei näytetä';
                 return <ImplClass
                     key={ `${f.id}-${hint || '-'}` }
                     field={ f }
@@ -104,20 +105,7 @@ class MultiFieldFieldWidget extends BaseFieldWidget {
      * @access private
      */
     makeVisibleFields(fields) {
-        if (this.isConfigurable || !this.fieldsToDisplay.length) return fields;
-        // validate
-        this.fieldsToDisplay.forEach(name => {
-            if (!fields.some(f => f.name === name))
-                console.warn(`No multifield "${name}" found.`);
-        });
-        // filter
-        return fields.filter(this.fieldShouldBeShown.bind(this));
-    }
-    /**
-     * @access private
-     */
-    fieldShouldBeShown(field) {
-        return !this.fieldsToDisplay.length || this.fieldsToDisplay.indexOf(field.name) > -1;
+        return this.isConfigurable ? fields : this.fieldsFilter.doFilter(fields);
     }
 }
 
