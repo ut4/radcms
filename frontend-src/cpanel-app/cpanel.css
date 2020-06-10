@@ -275,14 +275,14 @@ section.quick-links .icon-button .feather {
 /* == Components ============================================================ */
 
 /* -- Components: Toaster ---- */
-.toaster {
+#toaster-main {
     position: fixed;
     width: calc(100% - 168px);
     margin: 4px;
     z-index: 1;
     left: 160px;
 }
-.collapsed .toaster {
+.collapsed #toaster-main {
     width: calc(100% - 50px);
     left: 42px;
 }

@@ -42,19 +42,18 @@ class UploadControllers {
                                     $req->files->localFile['error'],
                                     PikeException::FAILED_FS_OP);
         } elseif (($errors = $this->validateUploadInput($req))) {
-            $res->html(implode('\n', $errors));
+            $res->status(400)->json(implode('\n', $errors));
             return;
         }
         // @allow \Pike\PikeException
-        $uploader->upload($req->files->localFile, self::UPLOADS_DIR_PATH);
-        $res->redirect($req->body->returnTo);
+        $file = $uploader->upload($req->files->localFile, self::UPLOADS_DIR_PATH);
+        $res->json(['file' => $file]);
     }
     /**
      * @return string[]
      */
     private function validateUploadInput($req): array {
         return (Validation::makeObjectValidator())
-            ->rule('body.returnTo', 'minLength', 1)
             ->rule('files.localFile', 'type', 'array')
             ->validate($req);
     }

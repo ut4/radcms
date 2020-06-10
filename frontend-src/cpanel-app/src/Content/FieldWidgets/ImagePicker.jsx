@@ -1,4 +1,5 @@
-import {http, urlUtils, hookForm, InputGroup, Input} from '@rad-commons';
+import {http, myFetch, services, urlUtils, hookForm, InputGroup, Input,
+        Toaster, toasters} from '@rad-commons';
 import popupDialog from '../../Common/PopupDialog.jsx';
 import BaseFieldWidget from './Base.jsx';
 
@@ -10,6 +11,7 @@ class ImagePickerFieldWidget extends BaseFieldWidget {
         super(props);
         this.fieldName = props.field.name;
         this.state = hookForm(this, {[this.fieldName]: this.fixedInitialValue});
+        this.inputElWrap = preact.createRef();
     }
     /**
      * @returns {string}
@@ -24,18 +26,23 @@ class ImagePickerFieldWidget extends BaseFieldWidget {
     render() {
         return <InputGroup classes={ this.state.classes[this.fieldName] }>
             <label htmlFor={ this.fieldName }>{ this.label }</label>
-            <Input vm={ this }
-                    name={ this.fieldName }
-                    id={ this.fieldName }
-                    onClick={ () => popupDialog.open(
+            <Input
+                vm={ this }
+                name={ this.fieldName }
+                id={ this.fieldName }
+                ref={ this.inputElWrap }
+                onClick={ () => {
+                    popupDialog.open(
                         PickImageDialog,
                         {selectedImageName: this.state.values[this.fieldName],
                          onSelected: img => {
-                             this.form.triggerChange(img.fileName, this.fieldName);
-                             this.props.onValueChange(img.fileName);
+                              this.form.triggerChange(img.fileName, this.fieldName);
+                              this.props.onValueChange(img.fileName);
                          },
                          assetBaseUrl: urlUtils.assetBaseUrl}
-                    ) }/>
+                    );
+                    this.inputElWrap.current.inputEl.blur();
+                } }/>
         </InputGroup>;
     }
 }
@@ -50,9 +57,11 @@ class PickImageDialog extends preact.Component {
         http.get('/api/uploads')
             .then(list => {
                 const images = list.filter(f => f.mime.startsWith('image'));
+                images.sort();
                 this.setState({images, message: images.length ? null : 'Ei kuvia.'});
             })
-            .catch(() => {
+            .catch(err => {
+                services.console.error(err);
                 this.setState({message: 'Jokin meni pieleen.'});
             });
     }
@@ -63,17 +72,17 @@ class PickImageDialog extends preact.Component {
         return <div class="popup-dialog"><div class="box">
             <h2>Valitse kuva</h2>
             <div class="main">
-                <UploadButton/>
+                <UploadButton onFileLoaded={ image => this.addImage(image) }/>
                 <div class="item-grid image-grid container">{ !this.state.message
-                    ? this.state.images.map(i => <button onClick={ () => {
-                                    this.props.onSelected(i);
+                    ? this.state.images.map(image => <button onClick={ () => {
+                                    this.props.onSelected(image);
                                     popupDialog.close();
                                 } }
-                                className={ this.props.selectedImageName !== i.fileName ? '' : 'selected' }
+                                className={ this.props.selectedImageName !== image.fileName ? '' : 'selected' }
                                 type="button">
-                            <img src={ `${this.props.assetBaseUrl}uploads/${i.fileName}` }/>
-                            <span class="caption">{ i.fileName }</span>
-                        </button> )
+                            <img src={ `${this.props.assetBaseUrl}uploads/${image.fileName}` }/>
+                            <span class="caption">{ image.fileName }</span>
+                        </button>)
                     : <div>
                         <span>{ this.state.message }</span>
                         <button onClick={ () => popupDialog.close() }
@@ -87,53 +96,51 @@ class PickImageDialog extends preact.Component {
             </div>
         </div></div>;
     }
+    /**
+     * @access private
+     */
+    addImage(image) {
+        const images = this.state.images;
+        images.push(image);
+        images.sort((a, b) => a.fileName.localeCompare(b.fileName));
+        this.setState({images});
+    }
 }
 
 class UploadButton extends preact.Component {
-    /**
-     * @param {Object} props
-     */
-    constructor(props) {
-        super(props);
-        this.hiddenForm = document.getElementById(this.hiddenFormId);
-        this.hiddenFormId = 'hidden-upload-form';
-        this.initHiddenUploadForm();
-    }
     /**
      * @access protected
      */
     render() {
         return <div>
+            <Toaster id="fileUpload"/>
             <InputGroup>
                 <input onChange={ e => { this.handleFileInputChange(e); } }
                        name="localFile"
                        type="file"
-                       accept="image/*"
-                       form={ this.hiddenFormId }/>
+                       accept="image/*"/>
             </InputGroup>
-            <input value={ window.location.href }
-                   name="returnTo"
-                   type="hidden"
-                   form={ this.hiddenFormId }/>
         </div>;
     }
     /**
      * @access private
      */
-    initHiddenUploadForm() {
-        if (this.hiddenForm) return;
-        this.hiddenForm = document.createElement('form');
-        this.hiddenForm.action = urlUtils.makeUrl('/api/uploads');
-        this.hiddenForm.method = 'post';
-        this.hiddenForm.enctype = 'multipart/form-data';
-        this.hiddenForm.id = this.hiddenFormId;
-        document.body.appendChild(this.hiddenForm);
-    }
-    /**
-     * @access private
-     */
     handleFileInputChange(e) {
-        if (e.target.value) this.hiddenForm.submit();
+        if (!e.target.value) return;
+        //
+        const data = new FormData();
+        data.append('localFile', e.target.files[0]);
+        //
+        myFetch('/api/uploads', {method: 'POST', data: data})
+            .then(res => JSON.parse(res.responseText))
+            .then(info => {
+                if (info.file) this.props.onFileLoaded(info.file);
+                else throw new Error('Unexpected response');
+            })
+            .catch(err => {
+                services.console.error(err);
+                toasters.fileUpload('Kuvan lataus epäonnistui', 'error');
+            });
     }
 }
 

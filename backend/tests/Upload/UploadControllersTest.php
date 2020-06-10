@@ -5,7 +5,6 @@ namespace RadCms\Tests\Upload;
 use Pike\TestUtils\DbTestCase;
 use Pike\TestUtils\HttpTestUtils;
 use Pike\Request;
-use Pike\Response;
 use RadCms\Upload\Uploader;
 
 final class UploadControllersTest extends DbTestCase {
@@ -43,9 +42,15 @@ final class UploadControllersTest extends DbTestCase {
         $s = $this->setupUploadFileTest();
         $this->sendUploadFileRequest($s);
         $this->verifyMovedUploadedFileTo(RAD_PUBLIC_PATH . 'uploads/', $s);
+        $this->verifyResponseBodyEquals((object) [
+            'file' => (object)['fileName' => $s->uploadFileName,
+                               'basePath' => TEST_SITE_PUBLIC_PATH . 'uploads/',
+                               'mime' => 'image/png']
+        ], $s);
     }
     private function setupUploadFileTest() {
         $s = (object)[
+            'actualResponseBody' => null,
             'uploadFileName' => 'file.jpg',
             'actuallyMovedFileTo' => '',
             'mockMoveUploadedFileFn' => null,
@@ -63,16 +68,15 @@ final class UploadControllersTest extends DbTestCase {
         return $s;
     }
     private function sendUploadFileRequest($s) {
-        $reqBody = (object)['returnTo' => 'http://localhost/foo'];
         $req = new Request('/api/uploads', 'POST',
-                           $reqBody,
+                           null,
                            (object)['localFile' => [
                                'name' => $s->uploadFileName,
                                'tmp_name' => dirname(__DIR__) . '/_Internal/upload-sample.png',
                                'error' => UPLOAD_ERR_OK,
                                'size' => 1
                            ]]);
-        $res = $this->createMockResponse($reqBody->returnTo, 200, 'redirect');
+        $res = $this->createBodyCapturingMockResponse($s);
         $this->sendRequest($req, $res, $s->app);
     }
     private function verifyMovedUploadedFileTo($expectedDir, $s) {

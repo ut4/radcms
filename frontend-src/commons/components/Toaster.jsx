@@ -10,11 +10,11 @@ class Toaster extends preact.Component {
      */
     constructor(props) {
         super(props);
-        const id = props.id || 'unnamed';
-        if (id === '__proto__' || id === 'constructor')
-            throw new Error(`Invalid toasterId ${id}`);
-        toasters[id] = this.addMessage.bind(this);
-        this.autoCloseTimeoutMillis = props.autoCloseTimeoutMillis || 8000;
+        this.id = props.id || 'unnamed';
+        if (this.id === '__proto__' || this.id === 'constructor')
+            throw new Error(`Invalid toasterId ${this.id}`);
+        toasters[this.id] = this.addMessage.bind(this);
+        this.autoCloseTimeoutMillis = props.autoCloseTimeoutMillis || 98000;
         this.state = {messages: []};
     }
     /**
@@ -45,7 +45,7 @@ class Toaster extends preact.Component {
      */
     render() {
         if (!this.state.messages.length) return;
-        return <div class="toaster">{
+        return <div class="toaster" id={ `toaster-${this.id}` }>{
             this.state.messages.map(message => {
                 let iconId = 'check';
                 if (message.level === 'error') iconId = 'alert-triangle';
