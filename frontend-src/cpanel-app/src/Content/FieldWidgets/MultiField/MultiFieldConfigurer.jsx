@@ -1,7 +1,11 @@
 import {hookForm, InputGroup, Input, Select, InputError, FormConfirmation, Confirmation, FeatherSvg} from '@rad-commons';
 import popupDialog from '../../../Common/PopupDialog.jsx';
-import {widgetTypes} from '../all.js';
+import {widgetTypes, getSettingsEditForm} from '../all.js';
 
+/**
+ * Komponentti, jolla devaaja voi rakentaa multiField-sisällön rakenteen i.e.
+ * sisällön sisältämät kentät, ja niiden järjestyksen.
+ */
 class MultiFieldConfigurer extends preact.Component {
     /**
      * @param {{fields: MultiFieldFieldsStore;}} props
@@ -22,49 +26,64 @@ class MultiFieldConfigurer extends preact.Component {
                 <thead><tr>
                     <th>Nimi</th>
                     <th>Widgetti</th>
+                    <th>Widgetin asetukset</th>
                     <th class="buttons"></th>
                 </tr></thead>
-                <tbody></tbody>{ this.state.fields.map(f => <tr key={ f.id }>
+                <tbody>{ this.state.fields.map(f => <tr key={ f.id }>
                     <td>{ f.name }</td>
                     <td>{ widgetTypes.find(w => w.name === f.widget.name).friendlyName }</td>
+                    <td>{ formatWidgetArgs(f.widget.args) }</td>
                     <td class="buttons">
-                        <button class="icon-button"
-                                disabled={ this.props.blur }
-                                onClick={ () => popupDialog.open(MultiFieldFieldEditDialog, {
-                                    field: f,
-                                    onConfirm: newData => {
-                                        this.props.fields.setFieldProps(f.id, newData);
-                                    }
-                                }) }
-                                type="button">
+                        <button
+                            class="icon-button"
+                            disabled={ this.props.blur }
+                            onClick={ () => popupDialog.open(MultiFieldFieldEditDialog, {
+                                field: f,
+                                onConfirm: newData => {
+                                    this.props.fields.setFieldProps(f.id, newData);
+                                }
+                            }) }
+                            type="button">
                             <FeatherSvg iconId="edit-2" className="small"/>
                         </button>
-                        <button class="icon-button"
-                                disabled={ this.props.blur }
-                                onClick={ () => popupDialog.open(MultiFieldFieldDeleteDialog, {
-                                    fieldName: f.name,
-                                    onConfirm: () => {
-                                        this.props.fields.removeField(f.id);
-                                    }
-                                }) }
-                                type="button">
+                        <button
+                            class="icon-button"
+                            disabled={ this.props.blur }
+                            onClick={ () => popupDialog.open(MultiFieldFieldDeleteDialog, {
+                                fieldName: f.name,
+                                onConfirm: () => {
+                                    this.props.fields.removeField(f.id);
+                                }
+                            }) }
+                            type="button">
                             <FeatherSvg iconId="x" className="small"/>
                         </button>
                     </td>
-                </tr>) }</table>
-            <button onClick={ () => this.props.fields.addField(widgetTypes[0]) }
-                    class="nice-button small"
-                    type="button">Lisää kenttä</button>
+                </tr>) }</tbody>
+            </table>
+            <button
+                onClick={ () => this.props.fields.addField(widgetTypes[0]) }
+                class="nice-button small"
+                type="button">Lisää kenttä</button>
         </div>;
     }
 }
 
+function formatWidgetArgs(args) {
+    const out = [];
+    for (const key in args)
+        out.push(`${key} = ${args[key]}`);
+    const truncated = out.join(',').substr(0, 32);
+    return `${truncated}${truncated.length < 32 ? '' : '...'}`;
+}
+
 class MultiFieldFieldEditDialog extends preact.Component {
     /**
-     * @param {{field: MultiFieldField;}} props
+     * @param {{field: MultiFieldField; onConfirm: (newData: Object) => any;}} props
      */
     constructor(props) {
         super(props);
+        this.settingEditForm = preact.createRef();
         this.state = hookForm(this, {
             fieldName: props.field.name,
             widgetName: props.field.widget.name,
@@ -75,6 +94,7 @@ class MultiFieldFieldEditDialog extends preact.Component {
      */
     render() {
         const {classes, errors} = this.state;
+        const WidgetSettingsForm = getSettingsEditForm(this.state.values.widgetName);
         return <div class="popup-dialog"><div class="box">
             <FormConfirmation
                 onConfirm={ e => this.handleConfirm(e) }
@@ -95,6 +115,12 @@ class MultiFieldFieldEditDialog extends preact.Component {
                         <option value={ w.name }>{ w.friendlyName }</option>
                     ) }</Select>
                 </InputGroup>
+                { !WidgetSettingsForm ? null : <WidgetSettingsForm
+                    settings={ this.state.values.widgetName !== this.props.field.widget.name
+                        ? null // Käytä oletuksia
+                        : this.props.field.widget.args }
+                    ref={ this.settingEditForm }/>
+                }
             </div>
             </FormConfirmation>
         </div></div>;
@@ -109,7 +135,8 @@ class MultiFieldFieldEditDialog extends preact.Component {
             name: this.state.values.fieldName,
             widget: {
                 name: this.state.values.widgetName,
-                args: this.props.field.widget.args,
+                args: !this.settingEditForm.current ? this.props.field.widget.args
+                    : this.settingEditForm.current.getResult(),
             },
         });
         popupDialog.close();

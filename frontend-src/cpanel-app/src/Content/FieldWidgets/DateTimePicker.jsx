@@ -2,6 +2,9 @@ import {InputGroup} from '@rad-commons';
 import BaseFieldWidget from './Base.jsx';
 import DateTimePicker from '../../Common/DateTimePicker.jsx';
 
+/**
+ * Widgetti, jolla voi valita päivämäärän tai päivämäärän sekä ajan.
+ */
 class DateTimePickerFieldWidget extends BaseFieldWidget {
     /**
      * @returns {string}

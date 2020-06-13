@@ -1,6 +1,9 @@
 import {hookForm, InputGroup, Input} from '@rad-commons';
 import BaseFieldWidget from './Base.jsx';
 
+/**
+ * Lyhyt tekstikenttä i.e. <input type="text"> -widgetti.
+ */
 class TextFieldFieldWidget extends BaseFieldWidget {
     /**
      * @inheritdoc

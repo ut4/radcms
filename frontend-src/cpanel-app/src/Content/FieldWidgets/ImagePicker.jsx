@@ -3,6 +3,10 @@ import {http, myFetch, services, urlUtils, hookForm, InputGroup, Input,
 import popupDialog from '../../Common/PopupDialog.jsx';
 import BaseFieldWidget from './Base.jsx';
 
+/**
+ * Widgetti, jolla voi valita uploads-kansioon ladattuja kuvia, ja ladata niitä
+ * sinne lisää.
+ */
 class ImagePickerFieldWidget extends BaseFieldWidget {
     /**
      * @inheritdoc

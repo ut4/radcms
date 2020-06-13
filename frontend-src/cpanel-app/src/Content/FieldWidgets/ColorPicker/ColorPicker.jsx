@@ -1,6 +1,9 @@
 import {hookForm, InputGroup, Input} from '@rad-commons';
-import BaseFieldWidget from './Base.jsx';
+import BaseFieldWidget from '../Base.jsx';
 
+/**
+ * Widgetti, jolla voi voi valita värin i.e. <input type="color">.
+ */
 class ColorPickerFieldWidget extends BaseFieldWidget {
     /**
      * @inheritdoc

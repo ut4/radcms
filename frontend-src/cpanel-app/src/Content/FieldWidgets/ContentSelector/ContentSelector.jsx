@@ -1,6 +1,12 @@
 import {http, hookForm, InputGroup, Select} from '@rad-commons';
-import BaseFieldWidget from './Base.jsx';
+import BaseFieldWidget from '../Base.jsx';
 
+/**
+ * Widgetti, jolla voi valita muuta CMS:ään luotua sisältöä alasvetovalikosta.
+ * Argumenttien "contentType" määrittelee widgettiin listattavan sisällön tyypin,
+ * "labelField" kentän, joka näytetään alasvetovalikossa käyttäjälle, ja "valueField"
+ * kentän, jota käytetään valinnan arvona.
+ */
 class ContentSelectorFieldWidget extends BaseFieldWidget {
     /**
      * @inheritdoc

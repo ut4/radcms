@@ -3,8 +3,10 @@ import TextAreaFieldFieldWidget from './TextArea.jsx';
 import RichTextFieldWidget from './RichText.jsx';
 import ImagePickerFieldWidget from './ImagePicker.jsx';
 import DateTimePickerFieldWidget from './DateTimePicker.jsx';
-import ColorPickerFieldWidget from './ColorPicker.jsx';
-import ContentSelectorFieldWidget from './ContentSelector.jsx';
+import ColorPickerFieldWidget from './ColorPicker/ColorPicker.jsx';
+import ContentSelectorFieldWidget from './ContentSelector/ContentSelector.jsx';
+import ColorPickerSettingsEditForm from './ColorPicker/ColorPickerSettingsEditForm.jsx';
+import ContentSelectorSettingsEditForm from './ContentSelector/ContentSelectorSettingsEditForm.jsx';
 
 const impls = {
     textField: TextFieldFieldWidget,
@@ -17,6 +19,17 @@ const impls = {
     hidden: () => null,
 };
 
+const settingFormImpls = {
+    textField: null,
+    textArea: null,
+    richText: null,
+    imagePicker: null,
+    dateTimePicker: null,
+    colorPicker: ColorPickerSettingsEditForm,
+    contentSelector: ContentSelectorSettingsEditForm,
+    hidden: () => null,
+};
+
 const widgetTypes = [
     {name: 'textField', friendlyName: 'Lyhyt tekstikenttä', description: 'Lyhyt tekstikenttä'},
     {name: 'textArea', friendlyName: 'Pitkä tekstikenttä', description: 'Pitkä tekstikenttä'},
@@ -25,7 +38,7 @@ const widgetTypes = [
     {name: 'datePicker', friendlyName: 'Päivämäärä', description: 'Päivämäärä'},
     {name: 'dateTimePicker', friendlyName: 'Päivämäärä ja aika', description: 'Päivämäärä ja aika'},
     {name: 'colorPicker', friendlyName: 'Väri', description: 'Väri'},
-    {name: 'contentSelector', friendlyName: 'Sisällön valitsin', description: 'Sisällön valitsin'},
+    {name: 'contentSelector', friendlyName: 'Sisältövalitsin', description: 'Sisällön valitsin'},
     {name: 'hidden', friendlyName: 'Piilotettu kenttä', description: 'Piilotettu kenttä'},
 ];
 
@@ -47,4 +60,12 @@ export default widgetName => {
     throw new Error(`Widget ${widgetName} not implemented.`);
 };
 
-export {widgetTypes};
+/**
+ * @param {'textField'|'textArea'|'richText'|'imagePicker'|'datePicker'|'dateTimePicker'|'colorPicker'|'contentSelector'|'hidden'} widgetName
+ * @returns {preact.ComponentClass|null}
+ */
+function getSettingsEditForm(widgetName) {
+    return settingFormImpls[widgetName] || null;
+}
+
+export {widgetTypes, getSettingsEditForm};

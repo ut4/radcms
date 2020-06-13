@@ -5,6 +5,11 @@ import MultiFieldConfigurer from './MultiFieldConfigurer.jsx';
 import MultiFieldFieldsStore from './MultiFieldFieldsStore.js';
 import getWidgetImpl, {widgetTypes} from '../all.js';
 
+/**
+ * Widgetti, jolla voi rakentaa kustomoitua sisältöä, jossa useita erityyppisiä
+ * kenttiä. Widgetin arvo serialisoidaan ja tallennetaan tietokantaan yhtenä
+ * JSON-merkkijonona.
+ */
 class MultiFieldFieldWidget extends BaseFieldWidget {
     /**
      * @inheritdoc

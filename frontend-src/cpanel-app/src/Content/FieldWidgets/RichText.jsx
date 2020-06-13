@@ -3,6 +3,9 @@ import BaseFieldWidget from './Base.jsx';
 import QuillEditor from '../../Common/QuillEditor.jsx';
 let counter = 0;
 
+/**
+ * Rikastetekstiwidgetti, käyttää Quill-editoria.
+ */
 class RichTextFieldWidget extends BaseFieldWidget {
     /**
      * @inheritdoc
