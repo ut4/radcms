@@ -1,8 +1,0 @@
-{
-    "urlMatchers": [
-        [".*", "templates/layout.generic.tmpl.php"]
-    ],
-    "assetFiles": [
-        ["main.css", "localStylesheet"]
-    ]
-}

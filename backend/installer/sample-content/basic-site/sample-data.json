@@ -1,0 +1,8 @@
+[
+    ["MultiFieldBlobs", [
+        {"name":"sisältö-etusivu","fields":"[{\"id\": 1, \"name\": \"Otsikko\", \"value\": \"Perussivustoesimerkki\", \"widget\": {\"args\": {}, \"name\": \"textField\"}}, {\"id\": 2, \"name\": \"Teksti\", \"value\": \"Esimerkkisivusto, joka havainnollistaa monikenttäsisällön, ja php-tagien käyttöä.\", \"widget\": {\"args\": {}, \"name\": \"textArea\"}}]"},
+        {"name":"sisältö-yritys","fields":"[{\"id\": \"1\", \"name\": \"Kuva\", \"value\": \"\", \"widget\": {\"args\": {}, \"name\": \"imagePicker\"}}, {\"id\": \"2\", \"name\": \"Otsikko\", \"value\": \"Yritys\", \"widget\": {\"args\": {}, \"name\": \"textField\"}}, {\"id\": \"3\", \"name\": \"Teksti\", \"value\": \"Yrityssivun introteksti.\", \"widget\": {\"args\": {}, \"name\": \"textArea\"}}]"},
+        {"name":"sisältö-palvelut","fields":"[{\"id\": \"1\", \"name\": \"Otsikko\", \"value\": \"Palvelut\", \"widget\": {\"args\": {}, \"name\": \"textField\"}}, {\"id\": \"2\", \"name\": \"Jotain1\", \"value\": \"Palvelut-sivulle kustomoitu kenttä 1\", \"widget\": {\"args\": {}, \"name\": \"textArea\"}}, {\"id\": \"3\", \"name\": \"Jotain2\", \"value\": \"<blockquote>Palvelut-sivulle kustomoitu kenttä 2</blockquote>\", \"widget\": {\"args\": {}, \"name\": \"richText\"}}]"},
+        {"name":"sisältö-yhteys","fields":"[{\"id\": \"4\", \"name\": \"Otsikko\", \"value\": \"Yhteys\", \"widget\": {\"args\": {}, \"name\": \"textField\"}}, {\"id\": \"5\", \"name\": \"Teksti\", \"value\": \"Yhteyssivun introteksti.\", \"widget\": {\"args\": {}, \"name\": \"textArea\"}}]"}
+    ]]
+]

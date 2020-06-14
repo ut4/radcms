@@ -24,7 +24,7 @@
             {
                 "name": "body",
                 "dataType": "text",
-                "friendlyName": "Slug (url)",
+                "friendlyName": "Sisältö",
                 "widget": {"name": "richText"},
                 "defaultValue": "",
                 "visibility": 0

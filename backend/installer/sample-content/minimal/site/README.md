@@ -14,6 +14,8 @@ Renderöi kaikki urlit.
 
 Tagit, jotka tämä paketti sisältää. Tageja voi kutsua layout-templaateista (kuten `layout.generic.tmpl.php`).
 
+### Oletustagit
+
 ks. https://todo/stock-content-types.
 
 ## Sisältötyypit

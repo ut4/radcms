@@ -8,7 +8,7 @@ html, body {
 }
 #root #cpanel-app {
     flex: initial;
-    width: 160px;
+    width: 192px;
 }
 #root iframe {
     flex: 1;
@@ -27,7 +27,7 @@ html, body {
 }
 #cpanel {
     background-color: #33393e/* #373644*/;
-    width: 160px;
+    width: 192px;
     color: #ffffff;
     height: 100%;
 }
@@ -177,7 +177,7 @@ section.quick-links .icon-button .feather {
 .section-row .sub-nav {
     position: absolute;
     top: 0;
-    left: 157px;
+    left: 189px;
     z-index: 1;
     display: none;
 }
@@ -252,8 +252,8 @@ section.quick-links .icon-button .feather {
 
 /* == View ================================================================== */
 #view, .popup-dialog {
-    left: 160px;
-    width: calc(100% - 160px);
+    left: 192px;
+    width: calc(100% - 192px);
     background-color: rgba(0,0,0,0.5);
     color: #282828;
     height: 100%;
@@ -280,7 +280,7 @@ section.quick-links .icon-button .feather {
     width: calc(100% - 168px);
     margin: 4px;
     z-index: 1;
-    left: 160px;
+    left: 192px;
 }
 .collapsed #toaster-main {
     width: calc(100% - 50px);

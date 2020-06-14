@@ -146,7 +146,8 @@ class SiteSettingsTab extends Tab {
                 <label htmlFor="sampleContent" data-help-text="Sisältö, jolla sivusto alustetaan.">Esimerkkisisältö</label>
                 <Select vm={ this } name="sampleContent" id="sampleContent">
                     { [{name: 'minimal', friendlyName: 'Minimaalinen'},
-                        {name: 'blog', friendlyName: 'Blogi'}].map(opt =>
+                       {name: 'blog', friendlyName: 'Blogi'},
+                       {name: 'basic-site', friendlyName: 'Perussivusto'}].map(opt =>
                         <option value={ opt.name }>{ opt.friendlyName }</option>
                     ) }
                 </Select>

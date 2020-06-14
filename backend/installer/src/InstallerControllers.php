@@ -83,7 +83,7 @@ class InstallerControllers {
         $errors = (Validation::makeObjectValidator())
             ->rule('siteName', 'type', 'string')
             ->rule('siteLang', 'in', ['en', 'fi'])
-            ->rule('sampleContent', 'in', ['minimal', 'blog', 'test-content'])
+            ->rule('sampleContent', 'in', ['minimal', 'blog', 'basic-site', 'test-content'])
             ->rule('mainQueryVar?', 'identifier')
             ->rule('useDevMode', 'type', 'bool')
             ->rule('dbHost', 'minLength', 1)
