@@ -23,16 +23,15 @@ class UserProfileView extends preact.Component {
      * @access protected
      */
     render() {
-        return <View><div>
+        return <View>
             <h2>Profiili</h2>
-            <div>
             { this.state.user
-                ? <p>Moi <b>{ this.state.user.username }</b>.</p>
+                ? <div>Moi <b>{ this.state.user.username }</b>.</div>
                 : !this.state.message
                     ? null
-                    : <p>{ this.state.message}</p>
-            }</div>
-        </div></View>;
+                    : <div>{ this.state.message}</div>
+            }
+        </View>;
     }
 }
 

@@ -1,19 +1,27 @@
+const validationStrings = {
+    required: '{field} vaaditaan',
+    minLength: '{field} tulee ole vähintään {arg0} merkkiä pitkä',
+    min: '{field} tulee olla vähintään {arg0}',
+};
 const validatorImplFactories = {
-    'required':
-        [(value) => !!value, '{field} vaaditaan']
+    'required': messages =>
+        [(value) => !!value, messages.required]
     ,
-    'minLength':
-        [(value, min) => value.length >= min, '{field} tulee ole vähintään {arg0} merkkiä pitkä']
+    'minLength': messages =>
+        [(value, min) => value.length >= min, messages.minLength]
     ,
-    'min':
-        [(value, min) => value >= min, '{field} tulee olla vähintään {arg0}']
+    'min': messages =>
+        [(value, min) => value >= min, messages.min]
+    ,
+    'regexp': () =>
+        [(value, pattern) => (new RegExp(pattern)).test(value), '{field}']
     ,
 };
 function expandRules(rules) {
     return rules.map(([ruleNameOrCustomImpl, ...args]) => {
         // ['ruleName', ...args]
         if (typeof ruleNameOrCustomImpl === 'string') {
-            const ruleImpl = validatorImplFactories[ruleNameOrCustomImpl];
+            const ruleImpl = validatorImplFactories[ruleNameOrCustomImpl](validationStrings);
             if (!ruleImpl)
                 throw new Error(`Rule ${ruleNameOrCustomImpl} not implemented`);
             return {ruleImpl, args};
@@ -54,6 +62,13 @@ class Validator {
         return args.reduce((error, arg, i) =>
             error.replace(`{arg${i}}`, arg)
         , errorTmpl.replace('{field}', this.myInput.getLabel()));
+    }
+    /**
+     * @param {{[key: string]: string;}} strings
+     * @access public
+     */
+    static setValidationStrings(strings) {
+        Object.assign(validationStrings, strings);
     }
 }
 class ValidatorRunner {
@@ -196,9 +211,9 @@ class Form {
             const error = validator.checkValidity();
             errors[inputName] = error;
             classes[inputName].invalid = !!error;
-            if (error) overall = false;
-            if (!overall && error && !classes[inputName].blurredAtLeastOnce)
+            if (overall && error && !classes[inputName].blurredAtLeastOnce)
                 classes[inputName].blurredAtLeastOnce = true;
+            if (error) overall = false;
         });
         this.applyState({errors, classes}, myAlterStateFn);
         return overall;
@@ -251,7 +266,7 @@ class AbstractInput extends preact.Component {
      * @access public
      */
     getValue() {
-        return this.inputEl.value;
+        return this.props.vm.state.values[this.props.name];
     }
     /**
      * @returns {string}
@@ -275,10 +290,14 @@ class AbstractInput extends preact.Component {
         const name = this.props.name;
         const tagName = this.getTagName();
         const inputType = this.props.type || 'text';
+        const isSelect = tagName === 'select';
         return preact.createElement(tagName, Object.assign({}, this.props, {
             name,
+            className: 'form-input ' +
+                        (!this.props.className ? '' : ` ${this.props.className}`) +
+                        (!isSelect ? '' : ' form-select'),
             value: state.values[name],
-            [!(tagName === 'select' ||
+            [!(isSelect ||
                inputType === 'checkbox' ||
                inputType === 'radio') ? 'onInput' : 'onChange']:
                 e => form.handleChange(e, this.props.myOnChange),
@@ -306,7 +325,7 @@ class Select extends AbstractInput {
  * @returns {string}
  */
 function formatCssClasses(classes) {
-    return (classes.invalid ? ' invalid' : '') +
+    return (classes.invalid ? ' has-error' : '') +
             (classes.focused ? ' focused' : '') +
             (classes.blurredAtLeastOnce ? ' blurred-at-least-once' : '');
 }
@@ -317,7 +336,7 @@ class InputGroup extends preact.Component {
      */
     constructor(props) {
         super(props);
-        this.staticCssClassString = 'input-group' +
+        this.staticCssClassString = 'form-group' +
                                     (this.props.className || '') +
                                     (!this.props.inline ? '' : ' inline');
     }
@@ -344,7 +363,7 @@ class InputError extends preact.Component {
      */
     render() {
         const error = this.props.error;
-        return !error ? null : <p class="error">{ error }</p>;
+        return !error ? null : <p class="form-input-hint">{ error }</p>;
     }
 }
 
@@ -352,17 +371,19 @@ class FormButtons extends preact.Component {
     /**
      * @access protected
      */
-    render() {
-        return <div class="form-buttons">
-            { (this.props.buttons || ['submit', 'cancel']).map(candidate => {
+    render(props) {
+        return <div class={ `form-buttons${!props.className ? '' : ` ${props.className}`}` }>
+            { (props.buttons || ['submit', 'cancel']).map(candidate => {
                 if (candidate === 'submit')
-                    return <button class="nice-button primary" type="submit">
-                        { this.props.submitButtonText || 'Ok' }
+                    return <button class="btn btn-primary" type="submit">
+                        { props.submitButtonText || 'Ok' }
                     </button>;
                 if (candidate === 'cancel')
-                    return <a href={ `#${this.props.returnTo || '/'}` }
-                                onClick={ e => this.handleCancel(e) }>
-                        { this.props.cancelButtonText || 'Peruuta' }
+                    return <a
+                        href={ `#${props.returnTo || '/'}` }
+                        onClick={ e => this.handleCancel(e) }
+                        class="ml-2">
+                        { props.cancelButtonText || 'Peruuta' }
                     </a>;
                 return candidate;
             }) }
@@ -376,5 +397,4 @@ class FormButtons extends preact.Component {
     }
 }
 
-export default hookForm;
-export {InputGroup, Input, Textarea, Select, InputError, FormButtons, Validator};
+export {hookForm, InputGroup, Input, Textarea, Select, InputError, FormButtons, Validator as FormInputValidator};

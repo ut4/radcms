@@ -16,7 +16,8 @@ class ContentTypeDropdown extends preact.Component {
             onChange={ e => {
                 this.props.onSelected(contentTypes.find(t => t.name === e.target.value));
                 this.setState({selectedContentTypeName: e.target.value});
-            } }>{ contentTypes.map(type =>
+            } }
+            class="form-select col-auto">{ contentTypes.map(type =>
             <option value={ type.name }>{ type.friendlyName }</option>
         ) }</select>;
     }

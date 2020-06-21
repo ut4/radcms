@@ -71,14 +71,14 @@ class ContentEditView extends preact.Component {
             webPageState.currentContentPanels[this.props.panelIdx] : null;
         const FormImpl = contentFormRegister.getImpl(panelConfig ? panelConfig.editFormImpl : ContentFormImpl.Default);
         return <View><form onSubmit={ e => this.handleFormSubmit(e) } class={ this.state.formClasses }>
-            <h2>{ [
+            <h2 class="columns col-auto">{ [
                 this.title,
                 this.contentNode.isRevision && !this.props.publish
-                    ? <sup> (Luonnos)</sup>
+                    ? <sup class="color-alt"> (Luonnos)</sup>
                     : null,
                 config.userPermissions.canDeleteContent
                     ? <button onClick={ () => openDeleteContentDialog(this.contentNode) }
-                            class="icon-button" title="Poista" type="button">
+                            class="btn btn-icon ml-1" title="Poista" type="button">
                         <FeatherSvg iconId="trash-2" className="medium"/>
                     </button>
                     : null
@@ -93,10 +93,12 @@ class ContentEditView extends preact.Component {
                 getWidgetImpl={ getWidgetImpl }
                 editForm={ this }/>
             { this.contentNode.isRevision && !this.props.publish
-                ? <InputGroup inline>
-                    <label htmlFor="doPublish">Julkaise</label>
-                    <input id="doPublish" type="checkbox" defaultChecked={ this.state.doPublish }
-                           onChange={ e => this.setState({doPublish: e.target.checked}) }/>
+                ? <InputGroup className="mt-2">
+                    <label class="form-checkbox">
+                        <input id="doPublish" type="checkbox" defaultChecked={ this.state.doPublish }
+                            onChange={ e => this.setState({doPublish: e.target.checked}) }/>
+                        <i class="form-icon"></i> Julkaise
+                    </label>
                 </InputGroup>
                 : null }
             <FormButtons
@@ -104,7 +106,7 @@ class ContentEditView extends preact.Component {
                 buttons={ [
                     'submit',
                     !this.contentNode.isRevision
-                        ? <button onClick={ e => this.switchToDraft(e) } class="nice-button" type="button">
+                        ? <button onClick={ e => this.switchToDraft(e) } class="btn ml-2" type="button">
                             Vaihda luonnokseen
                         </button>
                         : null,

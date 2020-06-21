@@ -1,0 +1,163 @@
+/* -- Cpanel: commons ---- */
+#cpanel2 h2 {
+    color: rgba(255,255,255,0.22);
+    font-size: .6rem;
+    margin: .4rem .5rem;
+    text-transform: uppercase;
+    letter-spacing: .08rem;
+}
+#cpanel2 a {
+    color: inherit;
+    font-size: .7rem;
+    line-height: .7rem;
+}
+#cpanel2 i.subtitle {
+    display: block;
+}
+
+/* -- Cpanel: layout ---- */
+#cpanel-app {
+    width: 192px;
+    position: fixed;
+    height: 100%;
+    background-color: #343940;
+    z-index: 1;
+    overflow-y: auto;
+}
+#cpanel2 {
+    color: rgba(255,255,255,0.8);
+    position: relative;
+    z-index: 1;
+}
+#cpanel2 > section h2, #cpanel2 .entry > a {
+    padding-left: .2rem;
+}
+
+#cpanel2 header {
+    padding: .8rem 0 .2rem .8rem;
+    margin-bottom: -.2rem;
+}
+#cpanel2 header img {
+    width: 34px;
+}
+
+#cpanel2 > section {
+    padding: .01rem 0;
+    border-left: 3px solid #8fdec4;
+    margin: 1rem 0;
+}
+#cpanel2 > section.site-admin {
+    border-color: #f5ddb6;
+}
+#cpanel2 > section.for-devs {
+    border-color: #f1acac;
+}
+#cpanel2 .entry {
+    position: relative;
+    margin: .4rem 0;
+    padding-left: .6rem;
+    padding-right: .6rem;
+}
+.entry a button {
+    background: none;
+    border: none;
+    padding: 0 .2rem;
+    display: flex;
+    height: 1.3rem;
+}
+.entry a .locate .feather {
+    width: .7rem;
+    height: .7rem;
+}
+#cpanel2 .sub-nav {
+    border-left: 1px dotted rgba(255,255,255,0.3);
+    overflow: hidden;
+    padding: 0 .6rem 0 .4rem;
+    margin: .4rem 0;
+    color: rgba(255,255,255,0.5);
+    display: none;
+    font-size: .6rem;
+}
+#cpanel2 .sub-nav.visible {
+    display: block;
+}
+#cpanel2 .sub-nav a {
+    font-size: .6rem;
+    display: block;
+    margin: .25rem 0;
+}
+
+/* -- View: commons ---- */
+#view h2 {
+    font: normal 1.4rem/1.4rem "Fira sans heavy";
+    margin: -.2rem 0 1rem 0;
+}
+#view .form-input {
+    width: 20rem;
+}
+
+/* View: layout */
+#view, .popup-dialog {
+    position: fixed;
+    left: 192px;
+    top: 0;
+    width: calc(100% - 192px);
+    background-color: rgba(0,0,0,0.5);
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+#view {
+    z-index: 0;
+}
+#view.open {
+    display: block;
+}
+#view > div {
+    margin: 15px;
+    max-width: 1280px;
+}
+#view .close {
+    position: absolute;
+    top: 1.4rem;
+    right: 1.4rem;
+}
+
+/* -- Website ---- */
+#rad-site-iframe {
+    position: absolute;
+    width: calc(100% - 192px);
+    left: 192px;
+    height: 100%;
+    border: none;
+}
+
+/* -- Components: Popup overlay ---- */
+.popup-dialog {
+    width: 100%;
+    min-width: 200px;
+    min-height: 200px;
+}
+.popup-dialog > div {
+    margin: 20px auto;
+    max-width: 600px;
+    width: 100%;
+}
+
+/* -- Components: MultiFieldConfigurer ---- */
+.with-configurable-fields .form-group,
+.with-configurable-fields .form-buttons {
+    opacity: 0.3;
+    pointer-events: none;
+}
+.multi-fields.configurable {
+    border-left: 2px solid #c4ccd6;
+    padding: 0 0 .6rem .6rem;
+}
+.multi-field-configurer {
+    background-color: #fbfbff;
+    padding: .8rem;
+    border: 1px dashed #ccc;
+    border-radius: 2px;
+    margin-top: .4rem;
+}

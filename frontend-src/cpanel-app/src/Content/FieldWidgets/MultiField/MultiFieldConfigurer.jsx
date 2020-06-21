@@ -22,7 +22,7 @@ class MultiFieldConfigurer extends preact.Component {
      */
     render() {
         return <div class="multi-field-configurer">
-            <table>
+            <table class="table mb-2">
                 <thead><tr>
                     <th>Nimi</th>
                     <th>Widgetti</th>
@@ -35,7 +35,7 @@ class MultiFieldConfigurer extends preact.Component {
                     <td>{ formatWidgetArgs(f.widget.args) }</td>
                     <td class="buttons">
                         <button
-                            class="icon-button"
+                            class="btn btn-icon"
                             disabled={ this.props.blur }
                             onClick={ () => popupDialog.open(MultiFieldFieldEditDialog, {
                                 field: f,
@@ -44,10 +44,10 @@ class MultiFieldConfigurer extends preact.Component {
                                 }
                             }) }
                             type="button">
-                            <FeatherSvg iconId="edit-2" className="small"/>
+                            <FeatherSvg iconId="edit-2" className="feather-small"/>
                         </button>
                         <button
-                            class="icon-button"
+                            class="btn btn-icon"
                             disabled={ this.props.blur }
                             onClick={ () => popupDialog.open(MultiFieldFieldDeleteDialog, {
                                 fieldName: f.name,
@@ -56,14 +56,14 @@ class MultiFieldConfigurer extends preact.Component {
                                 }
                             }) }
                             type="button">
-                            <FeatherSvg iconId="x" className="small"/>
+                            <FeatherSvg iconId="x" className="feather-small"/>
                         </button>
                     </td>
                 </tr>) }</tbody>
             </table>
             <button
                 onClick={ () => this.props.fields.addField(widgetTypes[0]) }
-                class="nice-button small"
+                class="btn btn-sm mt-2"
                 type="button">Lisää kenttä</button>
         </div>;
     }

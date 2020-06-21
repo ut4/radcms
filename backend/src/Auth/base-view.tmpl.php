@@ -4,11 +4,11 @@
     <title>RadCMS - <?= $title ?></title>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <meta name="robots" content="noindex,nofollow,noarchive,nosnippet">
-    <link rel="stylesheet" href="<?= $this->assetUrl('frontend/common.css') ?>">
+    <link rel="stylesheet" href="<?= $this->assetUrl('frontend/vendor/vendor.bundle.css') ?>">
+    <link rel="stylesheet" href="<?= $this->assetUrl('frontend2/commons.css') ?>">
     <style>
-        form { text-align: center; max-width: 200px; margin: 0 auto; }
-        img { width: 100px; margin: 20px 0; }
-        .container { margin-bottom: 24px }
+        form { max-width: 240px; margin: 0 auto; }
+        img { width: 72px; margin: 1rem 0 .4rem; }
     </style>
 </head>
 <body class="light">

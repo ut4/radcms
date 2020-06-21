@@ -80,7 +80,8 @@ class FreelyEditableFieldList extends preact.Component {
                 <td><ContentEditable onChange={ val => this.fields.setFieldProps(f, {friendlyName: val}) }
                                      value={ f.friendlyName }/></td>
                 <td><select onChange={ e => this.fields.setFieldProps(f, {dataType: e.target.value}) }
-                            value={ f.dataType }>{ dataTypes.map(dt =>
+                            value={ f.dataType }
+                            class="form-select">{ dataTypes.map(dt =>
                     <option value={ dt.name }>{ dt.friendlyName }</option>
                 ) }</select></td>
                 <td><ContentEditable onChange={ val => this.fields.setFieldProps(f, {defaultValue: val}) }
@@ -326,7 +327,8 @@ class EditableOneByOneFieldRow extends preact.Component {
             <td><ContentEditable onChange={ val => fieldsState.setFieldProps(f, {friendlyName: val}) }
                                  value={ f.friendlyName }/></td>
             <td><select onChange={ e => fieldsState.setFieldProps(f, {dataType: e.target.value}) }
-                        value={ f.dataType }>{ dataTypes.map(dt =>
+                        value={ f.dataType }
+                        class="form-select">{ dataTypes.map(dt =>
                 <option value={ dt.name }>{ dt.friendlyName }</option>
             ) }</select></td>
             <td><ContentEditable onChange={ val => fieldsState.setFieldProps(f, {defaultValue: val}) }

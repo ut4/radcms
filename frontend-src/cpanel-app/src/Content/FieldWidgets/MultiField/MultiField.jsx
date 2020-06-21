@@ -51,11 +51,11 @@ class MultiFieldFieldWidget extends BaseFieldWidget {
         if (this.state.configModeIsOn)
             return <div class="multi-fields configurable">
                 <button onClick={ () => this.endConfigMode() }
-                        class="icon-button"
+                        class="btn btn-icon btn-sm columns col-centered ml-0"
                         title="Tallenna rakenne"
                         type="button">
-                            <FeatherSvg iconId="check"/>
-                           <span>Tallenna rakenne</span>
+                            <FeatherSvg iconId="check" className="feather-small"/>
+                           <span class="ml-2">Tallenna rakenne</span>
                     </button>
                 <MultiFieldConfigurer fields={ this.multiFieldFields }/>
             </div>;
@@ -63,11 +63,11 @@ class MultiFieldFieldWidget extends BaseFieldWidget {
         return <div class={ 'multi-fields' + (this.isConfigurable ? ' configurable' : '') }>
             { this.isConfigurable
                 ? <button onClick={ () => this.beginConfigMode() }
-                        class="icon-button"
+                        class="btn btn-icon btn-sm columns col-centered ml-0"
                         title="Muokkaa rakennetta"
                         type="button">
-                    <FeatherSvg iconId="settings"/>
-                    <span>Muokkaa rakennetta</span>
+                    <FeatherSvg iconId="settings" className="feather-small"/>
+                    <span class="ml-2">Muokkaa rakennetta</span>
                 </button>
                 : null
             }

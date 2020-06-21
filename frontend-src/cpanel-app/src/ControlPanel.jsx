@@ -13,7 +13,6 @@ class ControlPanel extends preact.Component {
         this.siteIframe = document.getElementById('rad-site-iframe');
         this.siteInfo = {baseUrl: props.dataFromAdminBackend.baseUrl,
                          assetBaseUrl: props.dataFromAdminBackend.assetBaseUrl};
-        this.cpanelScroller = null;
         this.state = {contentPanels: [],
                       collapsed: localStorage.radNavIsCollapsed === 'true',
                       websiteIframeHasLoadedAtLeastOnce: false};
@@ -50,26 +49,15 @@ class ControlPanel extends preact.Component {
             return ControlPanel.makePanelBundle(p, genRandomString(16));
         });
         this.setState(newState);
-        if (this.cpanelScroller)
-            this.cpanelScroller.updateMinHeight();
     }
     /**
      * @access protected
      */
     render() {
-        return <div
-            id="cpanel"
-            ref={ el => { if (el && !this.cpanelScroller) {
-                this.cpanelScroller = makeCpanelScroller(el, this.siteIframe);
-            } } }>
-            <header class="top-row">
-                <button onClick={ () => this.toggleIsCollapsed() } class="icon-button">
-                    <FeatherSvg iconId={ `chevron-${!this.state.collapsed?'left':'right'}` }/>
-                </button>
-                <a id="logo" href="#/">RAD<span>CMS</span></a>
+        return <div id="cpanel2">
+            <header class="container">
+                <img src={ urlUtils.makeAssetUrl('frontend/assets/rad-logo-light.svg') }/>
             </header>
-            <QuickLinksControlPanelSection
-                userCanCreateContent={ this.dataFromAdminBackend.userPermissions.canCreateContent }/>
             <OnThisPageControlPanelSection
                 contentPanels={ this.state.contentPanels }
                 siteIframe={ this.siteIframe }
@@ -91,30 +79,6 @@ class ControlPanel extends preact.Component {
         this.setState({collapsed});
         localStorage.radNavIsCollapsed = collapsed;
         this.props.onIsCollapsedToggled();
-        this.cpanelScroller.updateMinHeight();
-    }
-}
-
-class QuickLinksControlPanelSection extends preact.Component {
-    /**
-     * @param {{userCanCreateContent?: boolean}} props
-     */
-    constructor(props) {
-        super(props);
-    }
-    /**
-     * @access protected
-     */
-    render() {
-        if (!this.props.userCanCreateContent) return null;
-        return <section class="quick-links"><div>
-            <h2>Pikalinkit</h2>
-            <button onClick={ () => { urlUtils.redirect('/add-content'); } }
-                    class="icon-button">
-                <FeatherSvg iconId="edit-2"/>
-                <span>Luo sisältöä</span>
-            </button>
-        </div></section>;
     }
 }
 
@@ -130,7 +94,7 @@ class OnThisPageControlPanelSection extends preact.Component {
      */
     render() {
         if (!this.props.websiteIframeHasLoadedAtLeastOnce) return null;
-        return <section class="on-this-page"><div>
+        return <section>
             <h2>Tällä sivulla</h2>
             { this.props.contentPanels.length
                 ? this.props.contentPanels.map(panelBundle =>
@@ -143,7 +107,7 @@ class OnThisPageControlPanelSection extends preact.Component {
                         key={ panelBundle.id }/>
                 )
                 : this.props.websiteIframeHasLoadedAtLeastOnce ? 'Ei muokattavaa sisältöä tällä sivulla': null }
-        </div></section>;
+        </section>;
     }
 }
 
@@ -169,7 +133,7 @@ class AdminAndUserControlPanelSection extends preact.Component {
                                      siteInfo: this.props.siteInfo} }
                     isPlugin={ true }/>
             ).concat(
-                <AdminControlPanelPanel Renderer={ null } title="Käyttäjä" icon="user" mainUrl="/me">
+                <AdminControlPanelPanel Renderer={ null } title="Käyttäjä" mainUrl="/me">
                     <a href="#/me">Profiili</a>
                     <a href={ urlUtils.makeUrl('/logout') }
                     onClick={ e => this.logout(e) }>Kirjaudu ulos</a>
@@ -207,20 +171,20 @@ class ForDevsControlPanelSectionction extends preact.Component {
         return <section class="for-devs"><div>
             <h2>Devaajille</h2>
             <AdminControlPanelPanel Renderer={ null } title="Kaikki sisältö"
-                                    icon="database" mainUrl="/manage-content">
+                                    mainUrl="/manage-content">
                 <a href="#/manage-content">Selaa</a>
                 <a href="#/add-content">Luo</a>
             </AdminControlPanelPanel>
             <AdminControlPanelPanel Renderer={ null } title="Sisältötyypit"
-                                    icon="type" mainUrl="/manage-content-types">
+                                    mainUrl="/manage-content-types">
                 <a href="#/manage-content-types">Selaa</a>
             </AdminControlPanelPanel>
             <AdminControlPanelPanel Renderer={ null } title="Lisäosat"
-                                    icon="box" mainUrl="/manage-plugins">
+                                    mainUrl="/manage-plugins">
                 <a href="#/manage-plugins">Selaa</a>
             </AdminControlPanelPanel>
             <AdminControlPanelPanel Renderer={ null } title="Sivusto"
-                                    icon="tool" mainUrl="/pack-website">
+                                    mainUrl="/pack-website">
                 <a href="#/pack-website">Paketoi</a>
             </AdminControlPanelPanel>
         </div></section>;
@@ -229,7 +193,7 @@ class ForDevsControlPanelSectionction extends preact.Component {
 
 class AdminControlPanelPanel extends preact.Component {
     /**
-     * @param {{Renderer: any; rendererProps?: any; title?: string; icon?: string; mainUrl?: string;}} props
+     * @param {{Renderer: any; rendererProps?: any; title?: string; mainUrl?: string;}} props
      */
     constructor(props) {
         super(props);
@@ -239,43 +203,54 @@ class AdminControlPanelPanel extends preact.Component {
             this.Renderer = props.Renderer;
             this.rendererProps = Object.assign({}, props.rendererProps || {},
                 {ref: cmp => {
-                    if (cmp && !this.state.title) this.setState({
-                        title: cmp.getTitle() || '-',
-                        icon: cmp.getIcon() || 'feather',
-                        mainUrl: cmp.getMainUrl ? urlUtils.normalizeUrl(cmp.getMainUrl()) : null
-                    });
+                    if (cmp && !this.state.title.length) {
+                        const title = cmp.getTitle();
+                        this.setState({
+                            title: !Array.isArray(title) ? [title] : title,
+                            mainUrl: cmp.getMainUrl ? urlUtils.normalizeUrl(cmp.getMainUrl()) : null
+                        });
+                    }
                 }});
         }
-        this.state = {title: props.title || '',
-                      icon: props.icon || '',
+        this.state = {title: props.title ? [this.props.title] : [],
                       mainUrl: !props.mainUrl ? '' : urlUtils.normalizeUrl(props.mainUrl),
-                      highlight: false};
+                      highlight: null,
+                      isCollapsed: true};
     }
     /**
      * @access protected
      */
     render() {
-        return <div class="section-row">
-            <div>
-                <a href={ `#/${this.state.mainUrl}` }>{ [
-                    this.state.icon ? <FeatherSvg iconId={ this.state.icon }/> : null,
-                    this.state.title,
-                    !this.props.isPlugin !== false ? null : <i class="note">(Lisäosa)</i>,
-                ] }</a>
-            { this.state.highlight
-                ? <button onClick={ () => this.state.highlight() } class="icon-button">
-                    <FeatherSvg iconId="target"/></button>
-                : null }
-            </div>
-            <div class="sub-nav"><div>
-                <h3>{ this.state.title }</h3>
-                {
-                    this.Renderer
-                        ? preact.createElement(this.Renderer, this.rendererProps)
-                        : this.props.children
+        const title = this.state.title[0];
+        const subtitle = this.state.title[1] || (!this.props.isPlugin ? null : '(Lisäosa)');
+        return <div class="entry container">
+            <a class="columns col-centered" href={ `#/${this.state.mainUrl}` }>
+                <span class="column text-ellipsis">{ [
+                    title,
+                    !subtitle ? null : <i class="subtitle color-alt-light">{ subtitle }</i>
+                ] }</span>
+                { !this.state.highlight
+                    ? null
+                    : <button onClick={ e => this.state.highlight(e) } class="btn btn-icon column col-auto locate color-alt-light"><FeatherSvg iconId="target" className="feather-small"/></button>
                 }
-            </div></div>
+                <button onClick={ e => this.showOrHideSubNav(e) } class="btn btn-icon toggle color-alt-light">
+                    <FeatherSvg iconId={ `chevron-${this.state.isCollapsed ? 'down' : 'up'}` }
+                                className="feather-small"/>
+                </button>
+            </a>
+            <div class={ `sub-nav${this.state.isCollapsed ? '' : ' visible'}` }>{
+                this.Renderer
+                    ? preact.createElement(this.Renderer, this.rendererProps)
+                    : this.props.children
+            }</div>
         </div>;
+    }
+    /**
+     * @access private
+     */
+    showOrHideSubNav(e) {
+        e.preventDefault();
+        this.setState({isCollapsed: !this.state.isCollapsed});
     }
 }
 
@@ -318,7 +293,8 @@ function makeHighlightToggler(selector, selectorIndex, siteIframe) {
         let timeout = null;
         const elTop = el.getBoundingClientRect().top - 20;
         const top = elTop >= 0 ? elTop : 0;
-        return () => {
+        return e => {
+            e.preventDefault();
             clearTimeout(timeout);
             let overlay = siteIframeDoc.getElementById('rad-highlight-overlay');
             if (!overlay) {
@@ -332,58 +308,6 @@ function makeHighlightToggler(selector, selectorIndex, siteIframe) {
         };
     }
     return null;
-}
-
-/**
- * @param {HTMLElement} cpanelEl
- * @param {HTMLIFrameElement} siteIframe
- */
-function makeCpanelScroller(cpanelEl, siteIframe) {
-    let cpanelHeight = 0;
-    let cpanelIsTallerThanWindow = false;
-    let totalScroll = 0;
-    let totalScrollLast = 0;
-    let cpanelScroll = 0;
-    let currentSiteIframe = null;
-    //
-    const updateMinHeight = () => {
-        setTimeout(() => {
-            cpanelHeight = cpanelEl.querySelector('footer').getBoundingClientRect().top;
-            if (cpanelHeight) {
-                cpanelIsTallerThanWindow = cpanelHeight > window.innerHeight;
-                if (cpanelIsTallerThanWindow)
-                    siteIframe.contentDocument.body.style.minHeight = `${cpanelHeight+20}px`;
-                if (siteIframe !== currentSiteIframe) {
-                    siteIframe.contentDocument.addEventListener('scroll', handleScroll, true);
-                    currentSiteIframe = siteIframe;
-                }
-                handleScroll();
-            }
-        }, 20);
-    };
-    const handleScroll = () => {
-        if (cpanelIsTallerThanWindow) {
-            const delta = siteIframe.contentWindow.scrollY - totalScrollLast;
-            totalScroll += delta;
-            totalScrollLast = totalScroll;
-            //
-            cpanelScroll += delta;
-            const translateMax = cpanelHeight - window.innerHeight;
-            if (cpanelScroll <= 0) cpanelScroll = 0;
-            else if (cpanelScroll > translateMax) cpanelScroll = translateMax;
-            cpanelEl.style.transform = `translateY(-${cpanelScroll}px)`;
-        }
-    };
-    //
-    window.addEventListener('resize', () => {
-        const newIsTaller = cpanelHeight > window.innerHeight;
-        if (!newIsTaller && cpanelIsTallerThanWindow)
-            cpanelEl.style.transform = '';
-        cpanelIsTallerThanWindow = newIsTaller;
-    }, true);
-    updateMinHeight();
-    //
-    return {updateMinHeight};
 }
 
 export default ControlPanel;

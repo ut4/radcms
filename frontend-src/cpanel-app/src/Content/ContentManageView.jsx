@@ -37,20 +37,20 @@ class ContentManageView extends preact.Component {
             return null;
         return <View>
             <h2>Selaa sisältöä</h2>
-            <InputGroup>
+            <div class="col-centered columns container">
                 <ContentTypeDropdown
                     initialValue={ this.state.contentTypeName }
                     contentTypes={ this.contentTypes }
                     onSelected={ type => this.reFetchContent(type.name) }/>
-                <a href={ `#/add-content/${this.state.contentTypeName}` } title="Luo uusi" class="icon-only">
+                <a href={ `#/add-content/${this.state.contentTypeName}` } title="Luo uusi" class="column">
                     <FeatherSvg iconId="plus-circle" className="medium"/>
                 </a>
-            </InputGroup>
-            { this.state.content.length ? <table class="striped">
+            </div>
+            { this.state.content.length ? <table class="table">
                 <thead><tr>
                     <th>#</th>
                     <th>Julkaistu</th>
-                    <th></th>
+                    <th class="buttons"></th>
                 </tr></thead>
                 <tbody>{ this.state.content.map(cnode => {
                     const href = `#/edit-content/${cnode.id}/${cnode.contentType}/none`;
@@ -60,12 +60,12 @@ class ContentManageView extends preact.Component {
                             ? 'Kyllä'
                             : ['Ei ', <a href={ `${href}/publish` }>Julkaise</a>]
                         }</td>
-                        <td>
-                            <a href={ href } class="icon-only" title="Muokkaa">
-                                <FeatherSvg iconId="edit-2" className="medium"/>
-                            </a> | <a onClick={ e => this.openDeleteDialog(e, cnode) }
-                                    href={ `#/delete-content/${cnode.id}` } class="icon-only" title="Poista">
-                                <FeatherSvg iconId="trash-2" className="medium"/>
+                        <td class="buttons">
+                            <a href={ href } title="Muokkaa">
+                                <FeatherSvg iconId="edit-2" className="feather-medium"/>
+                            </a> <a onClick={ e => this.openDeleteDialog(e, cnode) }
+                                    href={ `#/delete-content/${cnode.id}` } class="m-2" title="Poista">
+                                <FeatherSvg iconId="trash-2" className="feather-medium"/>
                             </a>
                         </td>
                     </tr>;

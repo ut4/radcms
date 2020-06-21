@@ -32,20 +32,11 @@ class DefaultImplForFetchOne extends preact.Component {
             : `/add-content/${this.newNodeContentType}`;
     }
     getTitle() {
-        const {title, subtitle} = this.props.panel;
         const isDraft = this.node && this.node.isRevision;
-        return <span title={
-            title +
-            (subtitle ? ` (${subtitle})` : '') +
-            (isDraft ? ` (Luonnos)` : '')
-        }>{ [
-            title,
-            isDraft ? <i class="note">(Luonnos)</i> : null,
-            subtitle ? <i class="subtitle">{ subtitle }</i> : null,
-        ] }</span>;
-    }
-    getIcon() {
-        return 'file-text';
+        return [
+            `${this.props.panel.title}${!isDraft ? '' : '*'}`,
+            this.props.panel.subtitle,
+        ];
     }
     render() {
         const url = `#${this.getMainUrl()}`;
@@ -86,9 +77,6 @@ class DefaultImplForFetchAll extends preact.Component {
     }
     getTitle() {
         return this.props.panel.title;
-    }
-    getIcon() {
-        return 'layers';
     }
     render() {
         return <ContentNodeList

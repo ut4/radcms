@@ -49,7 +49,7 @@ class ContentAddView extends preact.Component {
         return <View><form onSubmit={ e => this.handleFormSubmit(e) } class={ this.state.formClasses }>
             <h2>Lisää sisältöä</h2>
             <InputGroup classes={ this.state.classes.contentTypeName }>
-                <label><span data-help-text="Dev note: Voit luoda uusia sisältötyyppejä hallintapaneelin devaaja-osiosta (ks. https://todo).">Sisältötyyppi</span></label>
+                <label class="form-label"><span data-help-text="Dev note: Voit luoda uusia sisältötyyppejä hallintapaneelin devaaja-osiosta (ks. https://todo).">Sisältötyyppi</span></label>
                 <Select vm={ this } myOnChange={ newState => this.receiveContentTypeSelection(newState) } name="contentTypeName">
                     { this.contentTypes.map(type =>
                         <option value={ type.name }>{ type.friendlyName }</option>
@@ -72,8 +72,10 @@ class ContentAddView extends preact.Component {
                     } }/>;
             }) }
             <InputGroup classes={ {} } inline>
-                <label htmlFor="createRevision">Lisää luonnoksena</label>
-                <Input vm={ this } type="checkbox" name="createRevision" id="createRevision"/>
+                <label class="form-checkbox">
+                    <Input vm={ this } type="checkbox" name="createRevision" id="createRevision"/>
+                    <i class="form-icon"></i> Lisää luonnoksena
+                </label>
             </InputGroup>
             <FormButtons submitButtonText="Lisää"/>
         </form></View>;

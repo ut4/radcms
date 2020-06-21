@@ -158,9 +158,11 @@ class SiteSettingsTab extends Tab {
                     <label htmlFor="mainQueryVar" data-help-text="Url-parametri (index.php?parametrinNimi=/) mikäli url-rewrite -säännöt ei ole käytössä.">Url-parametri</label>
                     <Input vm={ this } name="mainQueryVar" id="mainQueryVar"/>
                 </InputGroup>
-                <InputGroup classes={ classes.useDevMode } inline="true">
-                    <label htmlFor="useDevMode" data-help-text="Ruksaa mikäli sivusto on vielä kehitysvaiheessa.">Käytä dev-modea</label>
-                    <Input vm={ this } type="checkbox" name="useDevMode" id="useDevMode" defaultChecked={ this.state.values.useDevMode }/>
+                <InputGroup classes={ classes.useDevMode }>
+                    <label class="form-checkbox" data-help-text="Ruksaa mikäli sivusto on vielä kehitysvaiheessa.">
+                        <Input vm={ this } type="checkbox" name="useDevMode" id="useDevMode" defaultChecked={ this.state.values.useDevMode }/>
+                        <i class="form-icon"></i> Käytä dev-modea
+                    </label>
                 </InputGroup>
             </div>
             <br/>

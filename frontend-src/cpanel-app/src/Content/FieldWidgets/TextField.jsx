@@ -32,7 +32,7 @@ class TextFieldFieldWidget extends BaseFieldWidget {
     render() {
         const InputImplClass = this.getInputImplClass();
         return <InputGroup classes={ this.state.classes[this.inputName] }>
-            <label htmlFor={ this.inputName }>{ this.label }</label>
+            <label htmlFor={ this.inputName } class="form-label">{ this.label }</label>
             <InputImplClass vm={ this }
                             myOnChange={ newState => this.emitValueChange(newState) }
                             name={ this.inputName }

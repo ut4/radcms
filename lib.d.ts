@@ -86,13 +86,18 @@ declare module "@rad-commons" {
                 getLabel(): string;
             };
             checkValidity(): string|null;
+            static setValidationStrings(strings: {[key: string]: string;}): void;
         }
         export class Toaster extends preact.Component<
             {id?: string; autoCloseTimeoutMillis?: number;},
             {}>
         {
         }
-        export function View(props: any): preact.VNode;
+        export class View extends preact.Component<
+            {},
+            {}>
+        {
+        }
         export class Confirmation extends preact.Component<
             {
                 onConfirm: () => any;

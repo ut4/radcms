@@ -44,7 +44,7 @@ class ContentTypesManageView extends preact.Component {
      * @access protected
      */
     render() {
-        return <View><div>
+        return <View>
             <h2>Sisältötyypit
                 <button onClick={ () => this.prependNewContentType() }
                         class={ `icon-button${!this.state.fieldsCurrentlyBeingEdited ? '' : ' disabled'}` }
@@ -83,7 +83,7 @@ class ContentTypesManageView extends preact.Component {
                     ? null
                     : <p>{ this.state.message}</p>
             }
-        </div></View>;
+        </View>;
     }
     /**
      * @access private
