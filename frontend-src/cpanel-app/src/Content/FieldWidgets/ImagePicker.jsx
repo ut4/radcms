@@ -29,7 +29,7 @@ class ImagePickerFieldWidget extends BaseFieldWidget {
      */
     render() {
         return <InputGroup classes={ this.state.classes[this.fieldName] }>
-            <label htmlFor={ this.fieldName }>{ this.label }</label>
+            <label htmlFor={ this.fieldName } class="form-label">{ this.label }</label>
             <Input
                 vm={ this }
                 name={ this.fieldName }
@@ -77,25 +77,23 @@ class PickImageDialog extends preact.Component {
             <h2>Valitse kuva</h2>
             <div class="main">
                 <UploadButton onFileLoaded={ image => this.addImage(image) }/>
-                <div class="item-grid image-grid container">{ !this.state.message
-                    ? this.state.images.map(image => <button onClick={ () => {
-                                    this.props.onSelected(image);
-                                    popupDialog.close();
-                                } }
-                                className={ this.props.selectedImageName !== image.fileName ? '' : 'selected' }
-                                type="button">
+                { !this.state.message
+                    ? <div class="item-grid image-grid img-auto mt-10">{ this.state.images.map(image =>
+                        <button
+                            onClick={ () => {
+                                this.props.onSelected(image);
+                                popupDialog.close();
+                            } }
+                            className={ `btn btn-icon ${this.props.selectedImageName !== image.fileName ? '' : ' selected'}` }
+                            type="button">
                             <img src={ `${this.props.assetBaseUrl}uploads/${image.fileName}` }/>
-                            <span class="caption">{ image.fileName }</span>
-                        </button>)
-                    : <div>
-                        <span>{ this.state.message }</span>
-                        <button onClick={ () => popupDialog.close() }
-                                class="nice-button small"
-                                type="button">Ok</button>
-                    </div>
-                }</div>
+                            <span class="caption text-ellipsis">{ image.fileName }</span>
+                        </button>
+                    ) }</div>
+                    : <p>{ this.state.message }</p>
+                }
                 <button onClick={ () => popupDialog.close() }
-                        class="nice-button small"
+                        class="btn mt-8"
                         type="button">Peruuta</button>
             </div>
         </div></div>;

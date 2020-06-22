@@ -35,7 +35,7 @@ class StaticFieldList extends preact.Component {
         return <div class={ `list fields no-thead${!this.props.blur ? '' : ' blurred'}` }>
             <button onClick={ () => this.props.fieldsState.setEditMode('edit') }
                     title="Muokkaa kenttiä"
-                    class="icon-button configure"
+                    class="btn btn-icon configure"
                     disabled={ this.props.blur }>
                 <FeatherSvg iconId="settings"/>
             </button>
@@ -92,7 +92,7 @@ class FreelyEditableFieldList extends preact.Component {
                 <td class="buttons">
                     <button onClick={ () => this.fields.removeField(f) }
                             title="Poista kenttä"
-                            class="nice-button small"
+                            class="btn btn-sm"
                             disabled={ this.props.disallowEditing || this.state.fields.length < 2 }>
                         <FeatherSvg iconId="x" className="small"/>
                     </button>
@@ -100,7 +100,7 @@ class FreelyEditableFieldList extends preact.Component {
             </tr>).concat(<tr><td colSpan="6">
                 <button onClick={ () => this.fields.addField() }
                         title="Lisää kenttä"
-                        class="nice-button small">
+                        class="btn btn-sm">
                     Lisää kenttä
                 </button>
             </td></tr>) }</tbody>
@@ -135,7 +135,7 @@ class OneByOneEditableFieldList extends preact.Component {
         return <div class="list fields">
             <button onClick={ () => this.props.fieldsState.setEditMode('none') }
                     title="Lopeta muokkaus"
-                    class="icon-button configure">
+                    class="btn btn-icon configure">
                 <FeatherSvg iconId="check"/>
             </button>
             <table>
@@ -167,10 +167,10 @@ class OneByOneEditableFieldList extends preact.Component {
                         <tr>
                             <td colSpan="6">
                             <button onClick={ () => this.confirmFieldChanges(i, !isNew ? 'edit' : 'create') }
-                                    class="nice-button primary small">{ !isNew ? 'Tallenna muutokset' : 'Luo kenttä' }</button>
+                                    class="btn primary btn-sm">{ !isNew ? 'Tallenna muutokset' : 'Luo kenttä' }</button>
                             <span> </span>
                             <button onClick={ () => this.discardFieldChanges(i, !isNew ? 'edit' : 'create') }
-                                    class="nice-button small">Peruuta</button>
+                                    class="btn small">Peruuta</button>
                             </td>
                         </tr>
                     ];
@@ -178,7 +178,7 @@ class OneByOneEditableFieldList extends preact.Component {
                     ? <tr><td colSpan="6">
                         <button onClick={ () => this.fields.addField() }
                                 title="Lisää kenttä"
-                                class="nice-button small">
+                                class="btn btn-sm">
                             Lisää kenttä
                         </button>
                     </td></tr>
@@ -299,15 +299,15 @@ class DefaultOneByOneFieldRow extends preact.Component {
             <td>todo</td>
             <td>{ JSON.stringify(this.props.field.widget) }</td>
             <td class="buttons">
-                <button class="icon-button"
+                <button class="btn btn-icon"
                         disabled={ this.props.blur }
                         onClick={ () => this.props.onEditRequested() }>
-                    <FeatherSvg iconId="edit-2" className="small"/>
+                    <FeatherSvg iconId="edit-2" className="feather-medium"/>
                 </button>
-                <button class="icon-button"
+                <button class="btn btn-icon"
                         disabled={ this.props.blur }
                         onClick={ () => this.props.onDeleteRequested() }>
-                    <FeatherSvg iconId="x" className="small"/>
+                    <FeatherSvg iconId="x" className="feather-medium"/>
                 </button>
             </td>
         </tr>;

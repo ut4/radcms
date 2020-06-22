@@ -25,10 +25,9 @@ class ColorPickerFieldWidget extends BaseFieldWidget {
      */
     render() {
         return <InputGroup classes={ this.state.classes[this.fieldName] }>
-            <label htmlFor={ this.fieldName }>{ this.label }</label>
+            <label htmlFor={ this.fieldName } class="form-label">{ this.label }</label>
             <Input vm={ this } type="color" name={ this.fieldName } id={ this.fieldName }
                 myOnChange={ newState => this.emitValueChange(newState) }/>
-            <span style={ `background-color:${this.state.values[this.fieldName]}` }>&nbsp;&nbsp;&nbsp;&nbsp;</span>
         </InputGroup>;
     }
     /**

@@ -1,6 +1,10 @@
 body {
     padding: 0 20px;
 }
+.btn-huge {
+    height: 2.8rem;
+    padding: 0.25rem 1.6rem;
+}
 
 h2 {
     font: normal 26px/26px "Fira sans heavy";
@@ -9,26 +13,11 @@ h2 {
 .toaster {
     margin-top: 20px;
 }
-.fieldset {
-    margin: 26px 0 0 0;
-    opacity: 0.7;
+.optionals {
+    color: rgba(56,65,76,0.76);
 }
-.fieldset .legend {
-    margin: 10px 0 25px 0;
-}
-
-p.info-box {
-    padding: 1.4rem;
-    border-left: 2px solid rgb(177, 177, 179);
-    background-color: rgba(177, 177, 177, 0.078);
-}
-p.info-box.error {
-    border-color: rgb(254, 90, 120);
-    background-color: rgba(254, 90, 120, 0.031);
-}
-p.info-box.success {
-    border-color: rgb(47, 200, 139);
-    background-color: rgba(47, 200, 139, 0.06);
+.optionals .content {
+    padding: 0 0 .2rem 1rem;
 }
 
 #install-app {
@@ -40,14 +29,14 @@ p.info-box.success {
 }
 
 .step-indicators {
-    margin: 42px 0 14px;
+    margin: 2rem 0 .2rem;
     display: flex;
 }
 .step-indicators div {
     flex: 1;
     text-align: center;
     position: relative;
-    border-top: 2px solid #ddd;
+    border-top: 2px solid rgb(209,213,219);
     padding: 14px 15px;
     margin: 0 6px;
 }
@@ -60,26 +49,26 @@ p.info-box.success {
     margin-right: 0;
 }
 .step-indicators div.current {
-    border-color: #33ccc5;
-    color: #33ccc5;
+    border-color: #9eaec3;
+    color: #828fa0;
 }
 .step-indicators div:not(.current) {
-    color: #c9c9cc;
+    color: #d1d5db;
 }
 .step-indicators div:before {
     content: "";
     position: absolute;
-    width: 10px;
-    height: 10px;
+    width: .75rem;
+    height: .75rem;
     border-radius: 50%;
-    background-color: #ddd;
+    background-color: #d1d5db;
     left: 50%;
-    margin-left: -10px;
-    border: 2px solid #fff;
-    top: -8px;
+    margin-left: -.375rem;
+    border: .2rem solid #fff;
+    top: -.4rem;
 }
 .step-indicators div.current:before {
-    background-color: #33ccc5;
+    background-color: #8ea2bd;
 }
 .step-indicators .feather {
     opacity: 0;

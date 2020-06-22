@@ -103,23 +103,23 @@ class MultiFieldFieldEditDialog extends preact.Component {
             <h2>Muokkaa kenttää</h2>
             <div class="main">
                 <InputGroup classes={ classes.fieldName }>
-                    <label htmlFor="fieldName">Nimi</label>
+                    <label htmlFor="fieldName" class="form-label">Nimi</label>
                     <Input vm={ this } name="fieldName" id="fieldName"
                         validations={ [['required']] }
                         errorLabel="Nimi"/>
                     <InputError error={ errors.fieldName }/>
                 </InputGroup>
                 <InputGroup>
-                    <label>Widgetti</label>
+                    <label class="form-label">Widgetti</label>
                     <Select vm={ this } name="widgetName">{ widgetTypes.map(w =>
                         <option value={ w.name }>{ w.friendlyName }</option>
                     ) }</Select>
                 </InputGroup>
-                { !WidgetSettingsForm ? null : <WidgetSettingsForm
+                { !WidgetSettingsForm ? null : <div class="indented-content mt-8"><WidgetSettingsForm
                     settings={ this.state.values.widgetName !== this.props.field.widget.name
                         ? null // Käytä oletuksia
                         : this.props.field.widget.args }
-                    ref={ this.settingEditForm }/>
+                    ref={ this.settingEditForm }/></div>
                 }
             </div>
             </FormConfirmation>

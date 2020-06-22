@@ -38,7 +38,6 @@ declare module "@rad-commons" {
             {
                 classes?: {invalid: boolean; focused: boolean; blurredAtLeastOnce: boolean;};
                 className?: string;
-                inline?: boolean;
             },
             {}>
         {

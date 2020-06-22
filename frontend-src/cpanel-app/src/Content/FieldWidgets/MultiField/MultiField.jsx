@@ -49,7 +49,7 @@ class MultiFieldFieldWidget extends BaseFieldWidget {
      */
     render() {
         if (this.state.configModeIsOn)
-            return <div class="multi-fields configurable">
+            return <div class="multi-fields indented-content configurable">
                 <button onClick={ () => this.endConfigMode() }
                         class="btn btn-icon btn-sm columns col-centered ml-0"
                         title="Tallenna rakenne"
@@ -60,7 +60,7 @@ class MultiFieldFieldWidget extends BaseFieldWidget {
                 <MultiFieldConfigurer fields={ this.multiFieldFields }/>
             </div>;
         //
-        return <div class={ 'multi-fields' + (this.isConfigurable ? ' configurable' : '') }>
+        return <div class={ 'multi-fields indented-content' + (this.isConfigurable ? ' configurable' : '') }>
             { this.isConfigurable
                 ? <button onClick={ () => this.beginConfigMode() }
                         class="btn btn-icon btn-sm columns col-centered ml-0"

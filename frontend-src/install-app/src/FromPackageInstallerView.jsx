@@ -24,7 +24,7 @@ class FromPackageInstallerView extends preact.Component {
             { this.props.packageExists
                 ? <form onSubmit={ e => this.handleSubmit(e) }>
                     <InputGroup classes={ this.state.classes.unlockKey }>
-                        <label htmlFor="unlockKey">Avausavain</label>
+                        <label htmlFor="unlockKey" class="form-label">Avausavain</label>
                         <Input
                             vm={ this }
                             name="unlockKey"
@@ -34,7 +34,7 @@ class FromPackageInstallerView extends preact.Component {
                         <InputError error={ this.state.errors.unlockKey }/>
                     </InputGroup>
                     <input type="hidden" name="baseUrl" value={ this.props.baseUrl }/>
-                    <button class="nice-button primary" type="submit">Asenna</button>
+                    <button class="btn btn-primary mt-2" type="submit">Asenna</button>
                 </form>
                 : <p class="info-box error">Pakettitiedostoa &quot;tiedostonimi.radsite&quot; ei löytynyt serveriltä. Tiedosto tulisi sijaita samassa kansiossa kuin install.php.</p> }
         </div>;

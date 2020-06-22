@@ -1,3 +1,66 @@
+:root {
+    --bg-dark: #343940;
+    --bg-light: #fbfbff;
+}
+
+/* -- Components: Grids ---- */
+.item-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: .4rem;
+}
+.item-grid.two {
+    grid-template-columns: repeat(2, 1fr);
+}
+.image-grid button, .image-grid img {
+    border-radius: 2px;
+}
+.image-grid button {
+    background-color: var(--bg-light);
+    padding: 0;
+    height: initial;
+    position: relative;
+    padding-bottom: 2rem;
+}
+.image-grid .caption {
+    position: absolute;
+    left: 0;
+    width: 100%;
+    bottom: 0;
+    padding: .34rem;
+}
+
+/* -- Components: Popup overlay ---- */
+.popup-dialog {
+    display: flex;
+    justify-content: center;
+    padding: 1rem;
+    align-items: flex-start;
+}
+.popup-dialog > div {
+    min-width: 600px;
+    max-width: 1280px;
+    overflow-y: auto;
+}
+.popup-dialog h2 {
+    margin-top: 0;
+    font-size: 1.1rem;
+}
+
+/* -- Components: MultiFieldConfigurer ---- */
+.with-configurable-fields .form-group,
+.with-configurable-fields .form-buttons {
+    opacity: 0.3;
+    pointer-events: none;
+}
+.multi-field-configurer {
+    background-color: var(--bg-light);
+    padding: .8rem;
+    border: 1px dashed #ccc;
+    border-radius: 2px;
+    margin-top: .4rem;
+}
+
 /* -- Cpanel: commons ---- */
 #cpanel2 h2 {
     color: rgba(255,255,255,0.22);
@@ -15,12 +78,12 @@
     display: block;
 }
 
-/* -- Cpanel: layout ---- */
+/* -- Cpanel: elements ---- */
 #cpanel-app {
     width: 192px;
     position: fixed;
     height: 100%;
-    background-color: #343940;
+    background-color: var(--bg-dark);
     z-index: 1;
     overflow-y: auto;
 }
@@ -95,8 +158,12 @@
 #view .form-input {
     width: 20rem;
 }
+#view textarea.form-input {
+    width: 28rem;
+    height: 6rem;
+}
 
-/* View: layout */
+/* View: elements */
 #view, .popup-dialog {
     position: fixed;
     left: 192px;
@@ -122,6 +189,12 @@
     top: 1.4rem;
     right: 1.4rem;
 }
+#toaster-main {
+    position: fixed;
+    top: 0;
+    left: 192px;
+    margin: 1rem;
+}
 
 /* -- Website ---- */
 #rad-site-iframe {
@@ -132,32 +205,52 @@
     border: none;
 }
 
-/* -- Components: Popup overlay ---- */
-.popup-dialog {
-    width: 100%;
-    min-width: 200px;
-    min-height: 200px;
+/* TODO */
+.list {
+    position: relative;
 }
-.popup-dialog > div {
-    margin: 20px auto;
-    max-width: 600px;
-    width: 100%;
+.row {
+    display: flex;
 }
-
-/* -- Components: MultiFieldConfigurer ---- */
-.with-configurable-fields .form-group,
-.with-configurable-fields .form-buttons {
-    opacity: 0.3;
-    pointer-events: none;
+.row > * {
+    flex: 1;
 }
-.multi-fields.configurable {
-    border-left: 2px solid #c4ccd6;
-    padding: 0 0 .6rem .6rem;
+.list .row {
+    padding: 8px;
 }
-.multi-field-configurer {
-    background-color: #fbfbff;
-    padding: .8rem;
-    border: 1px dashed #ccc;
+.list.left-aligned .row {
+    padding-left: 0;
+}
+.item-grid .full-width {
+    grid-column: 1 / -1;
+}
+.list.fields {
+    background-color: rgba(0,0,0,0.04);
     border-radius: 2px;
-    margin-top: .4rem;
+    padding: 18px 12px 8px 12px;
+    margin-top: 8px;
+}
+.fields.no-thead {
+    padding-top: 8px;
+}
+.fields .row {
+    align-items: center;
+}
+.list .configure {
+    position: absolute;
+    top: 7px;
+    right: 8px;
+    color: rgba(0,0,0,0.4);
+}
+.disallow-edit {
+    opacity: 0.3;
+}
+.content-type-card .blurred header,
+.content-type-card .blurred .list,
+.content-type-card .list.blurred,
+.content-type-card tr.blurred {
+    opacity: 0.3;
+}
+.disallow-edit .fields .buttons {
+    display: none;
 }

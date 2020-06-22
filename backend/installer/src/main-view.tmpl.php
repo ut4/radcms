@@ -3,7 +3,8 @@
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
         <title>Asennusvelho - RadCMS</title>
-        <link rel="stylesheet" href="frontend/common.css">
+        <link rel="stylesheet" href="frontend/vendor/vendor.bundle.css">
+        <link rel="stylesheet" href="frontend2/commons.css">
         <link rel="stylesheet" href="frontend/install-app.css">
     </head>
     <body class="light">

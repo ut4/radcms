@@ -15,7 +15,7 @@ class Confirmation extends preact.Component {
             { this.props.children }
             <div class="form-buttons">
                 <button onClick={ () => this.props.onConfirm() }
-                        class="nice-button primary" type="button">
+                        class="btn btn-primary mr-2" type="button">
                     { this.props.confirmButtonText || 'Ok' }
                 </button>
                 <a onClick={ e => this.handleCancel(e) } href="">

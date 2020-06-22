@@ -18,7 +18,7 @@ class DateTimePickerFieldWidget extends BaseFieldWidget {
      */
     render() {
         return <InputGroup>
-            <label htmlFor={ this.props.field.name }>{ this.label }</label>
+            <label htmlFor={ this.props.field.name } class="form-label">{ this.label }</label>
             <DateTimePicker
                 inputName={ this.props.field.name }
                 defaultDate={ this.fixedInitialValue ? new Date(this.fixedInitialValue * 1000) : null }

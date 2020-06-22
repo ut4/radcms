@@ -52,7 +52,7 @@ class ContentSelectorSettingsEditForm extends AbstractSettingEditForm {
         const contentTypeFields = this.state.contentTypes.find(t => t.name === contentTypeName).fields;
         return <>
             <InputGroup>
-                <label htmlFor={ this.inputIds.contentType }>Sisältötyyppi</label>
+                <label htmlFor={ this.inputIds.contentType } class="form-label">Sisältötyyppi</label>
                 <ContentTypeDropdown
                     initialValue={ contentTypeName }
                     contentTypes={ this.state.contentTypes }
@@ -64,8 +64,8 @@ class ContentSelectorSettingsEditForm extends AbstractSettingEditForm {
                     } }/>
             </InputGroup>
             <InputGroup>
-                <label htmlFor={ this.inputIds.labelField }>Nimikekenttä
-                    <span class="note">Kenttä joka näytetään alasvetovalikossa käyttäjälle</span>
+                <label htmlFor={ this.inputIds.labelField } class="form-label">Nimikekenttä
+                    <div class="note">Kenttä joka näytetään alasvetovalikossa käyttäjälle</div>
                 </label>
                 <Select vm={ this } name={ this.inputIds.labelField }
                     id={ this.inputIds.labelField }>{ contentTypeFields.map(f =>
@@ -73,8 +73,8 @@ class ContentSelectorSettingsEditForm extends AbstractSettingEditForm {
                 ) }</Select>
             </InputGroup>
             <InputGroup>
-                <label htmlFor={ this.inputIds.valueField }>Arvokenttä
-                    <span class="note">Kenttä jota käytetään valinnan arvona</span>
+                <label htmlFor={ this.inputIds.valueField } class="form-label">Arvokenttä
+                    <div class="note">Kenttä jota käytetään valinnan arvona</div>
                 </label>
                 <Select vm={ this } name={ this.inputIds.valueField }
                     id={ this.inputIds.valueField }>{ [{name: 'id', friendlyName: 'ID'}].concat(contentTypeFields).map(f =>

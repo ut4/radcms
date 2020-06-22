@@ -139,11 +139,11 @@ class SiteSettingsTab extends Tab {
         const {classes} = this.state;
         return <form onSubmit={ e => this.props.parent.handleSubmit(e, 0) }>
             <InputGroup classes={ classes.siteName }>
-                <label htmlFor="siteName" data-help-text="Sivustoprojektin nimi, ei pakollinen.">Sivuston nimi</label>
+                <label htmlFor="siteName" data-help-text="Sivustoprojektin nimi, ei pakollinen." class="form-label">Sivuston nimi</label>
                 <Input vm={ this } name="siteName" id="siteName"/>
             </InputGroup>
             <InputGroup classes={ classes.sampleContent }>
-                <label htmlFor="sampleContent" data-help-text="Sisältö, jolla sivusto alustetaan.">Esimerkkisisältö</label>
+                <label htmlFor="sampleContent" data-help-text="Sisältö, jolla sivusto alustetaan." class="form-label">Esimerkkisisältö</label>
                 <Select vm={ this } name="sampleContent" id="sampleContent">
                     { [{name: 'minimal', friendlyName: 'Minimaalinen'},
                        {name: 'blog', friendlyName: 'Blogi'},
@@ -152,10 +152,11 @@ class SiteSettingsTab extends Tab {
                     ) }
                 </Select>
             </InputGroup>
-            <div class="fieldset">
-                <div class="legend">Lisäasetukset</div>
+            <div class="optionals mt-10">
+                <div class="mb-10">Lisäasetukset</div>
+                <div class="content indented-content">
                 <InputGroup classes={ classes.mainQueryVar }>
-                    <label htmlFor="mainQueryVar" data-help-text="Url-parametri (index.php?parametrinNimi=/) mikäli url-rewrite -säännöt ei ole käytössä.">Url-parametri</label>
+                    <label htmlFor="mainQueryVar" data-help-text="Url-parametri (index.php?parametrinNimi=/) mikäli url-rewrite -säännöt ei ole käytössä." class="form-label">Url-parametri</label>
                     <Input vm={ this } name="mainQueryVar" id="mainQueryVar"/>
                 </InputGroup>
                 <InputGroup classes={ classes.useDevMode }>
@@ -164,9 +165,10 @@ class SiteSettingsTab extends Tab {
                         <i class="form-icon"></i> Käytä dev-modea
                     </label>
                 </InputGroup>
+                </div>
             </div>
             <br/>
-            <button class="text-button"
+            <button class="btn btn-link"
                     type="submit">Seuraava &gt;</button>
         </form>;
     }
@@ -196,56 +198,57 @@ class DatabaseSettingsTab extends Tab {
         const {errors, classes} = this.state;
         return <form onSubmit={ e => this.props.parent.handleSubmit(e, 1) }>
             <InputGroup classes={ classes.dbHost }>
-                <label htmlFor="dbHost" data-help-text="Tietokantaserverin osoite (host).">Tietokannan osoite</label>
+                <label htmlFor="dbHost" data-help-text="Tietokantaserverin osoite (host)." class="form-label">Tietokannan osoite</label>
                 <Input vm={ this } name="dbHost" id="dbHost"
                         validations={ [['required']] }
                         errorLabel="Tietokannan osoite"/>
                 <InputError error={ errors.dbHost }/>
             </InputGroup>
             <InputGroup classes={ classes.dbUser }>
-                <label htmlFor="dbUser" data-help-text="Tietokantakäyttäjän nimi, jota RadCMS käyttää luodessaan tietokantayhteyden.">Tietokantakäyttäjä</label>
+                <label htmlFor="dbUser" data-help-text="Tietokantakäyttäjän nimi, jota RadCMS käyttää luodessaan tietokantayhteyden." class="form-label">Tietokantakäyttäjä</label>
                 <Input vm={ this } name="dbUser" id="dbUser"
                         validations={ [['required']] }
                         errorLabel="Tietokantakäyttäjä"/>
                 <InputError error={ errors.dbUser }/>
             </InputGroup>
             <InputGroup classes={ classes.dbPass }>
-                <label htmlFor="dbPass" data-help-text="Tietokantakäyttäjän salasana, jota RadCMS käyttää luodessaan tietokantayhteyden.">Tietokantakäyttäjän salasana</label>
+                <label htmlFor="dbPass" data-help-text="Tietokantakäyttäjän salasana, jota RadCMS käyttää luodessaan tietokantayhteyden." class="form-label">Tietokantakäyttäjän salasana</label>
                 <Input vm={ this } name="dbPass" id="dbPass" type="password"/>
             </InputGroup>
             <div class="grouped">
             <InputGroup classes={ classes.dbDatabase }>
-                <label htmlFor="dbDatabase" data-help-text="Käytettävän, tai luotavan RadCMS-tietokannan nimi.">Tietokannan nimi</label>
+                <label htmlFor="dbDatabase" data-help-text="Käytettävän, tai luotavan RadCMS-tietokannan nimi." class="form-label">Tietokannan nimi</label>
                 <Input vm={ this } name="dbDatabase" id="dbDatabase"
                         validations={ [['required']] }
                         errorLabel="Tietokannan nimi"/>
                 <InputError error={ errors.dbDatabase }/>
             </InputGroup>
             <InputGroup classes={ classes.doCreateDb }>
-                <label htmlFor="doCreateDb" data-help-text="Luo tietokanta mikäli sitä ei ole vielä olemassa.">Luo tietokanta</label>
+                <label htmlFor="doCreateDb" data-help-text="Luo tietokanta mikäli sitä ei ole vielä olemassa." class="form-label">Luo tietokanta</label>
                 <Input vm={ this } type="checkbox" id="doCreateDb" name="doCreateDb" defaultChecked={ this.state.values.doCreateDb }/>
             </InputGroup>
             </div>
-            <div class="fieldset">
-                <div class="legend">Lisäasetukset</div>
-                <InputGroup classes={ classes.dbTablePrefix }>
-                    <label htmlFor="dbTablePrefix" data-help-text="Prefix, jota käytetään RadCMS:n tietokantataulujen etuliitteenä.">Tietokantataulujen prefix</label>
-                    <Input vm={ this } name="dbTablePrefix" id="dbTablePrefix"/>
-                </InputGroup>
-                <InputGroup classes={ classes.dbCharset }>
-                    <label htmlFor="dbCharset">Tietokannan charset</label>
-                    <Select vm={ this } name="dbCharset" id="dbCharset">
-                        { ['utf8'].map(opt =>
-                            <option value={ opt }>{ opt }</option>
-                        ) }
-                    </Select>
-                </InputGroup>
+            <div class="optionals mt-10">
+                <div class="mb-10">Lisäasetukset</div>
+                <div class="content indented-content">
+                    <InputGroup classes={ classes.dbTablePrefix }>
+                        <label htmlFor="dbTablePrefix" data-help-text="Prefix, jota käytetään RadCMS:n tietokantataulujen etuliitteenä." class="form-label">Tietokantataulujen prefix</label>
+                        <Input vm={ this } name="dbTablePrefix" id="dbTablePrefix"/>
+                    </InputGroup>
+                    <InputGroup classes={ classes.dbCharset }>
+                        <label htmlFor="dbCharset" class="form-label">Tietokannan charset</label>
+                        <Select vm={ this } name="dbCharset" id="dbCharset">
+                            { ['utf8'].map(opt =>
+                                <option value={ opt }>{ opt }</option>
+                            ) }
+                        </Select>
+                    </InputGroup>
+                </div>
             </div>
             <br/>
-            <button onClick={ () => this.props.parent.goBack(0) } class="text-button"
+            <button onClick={ () => this.props.parent.goBack(0) } class="btn btn-link"
                     type="button">&lt; Edellinen</button>
-            <span> </span>
-            <button class="text-button"
+            <button class="btn btn-link ml-2"
                     type="submit">Seuraava &gt;</button>
         </form>;
     }
@@ -271,31 +274,30 @@ class UserSettingsTab extends Tab {
         const {errors, classes} = this.state;
         return <form onSubmit={ e => this.props.parent.handleSubmit(e, 2) }>
             <InputGroup classes={ classes.firstUserName }>
-                <label htmlFor="firstUserName">Käyttäjä</label>
+                <label htmlFor="firstUserName" class="form-label">Käyttäjä</label>
                 <Input vm={ this } name="firstUserName" id="firstUserName"
                         errorLabel="Käyttäjä"
                         validations={ [['required']] }/>
                 <InputError error={ errors.firstUserName }/>
             </InputGroup>
             <InputGroup classes={ classes.firstUserEmail }>
-                <label htmlFor="firstUserEmail">E-mail</label>
+                <label htmlFor="firstUserEmail" class="form-label">E-mail</label>
                 <Input vm={ this } name="firstUserEmail" id="firstUserEmail"
                         errorLabel="E-mail"
                         validations={ [['required']] }/>
                 <InputError error={ errors.firstUserName }/>
             </InputGroup>
             <InputGroup classes={ classes.firstUserPass }>
-                <label htmlFor="firstUserPass">Salasana</label>
+                <label htmlFor="firstUserPass" class="form-label">Salasana</label>
                 <Input vm={ this } name="firstUserPass" id="firstUserPass" type="password"
                         errorLabel="Salasana"
                         validations={ [['required']] }/>
                 <InputError error={ errors.firstUserPass }/>
             </InputGroup>
             <br/>
-            <button onClick={ () => this.props.parent.goBack(1) } class="text-button"
+            <button onClick={ () => this.props.parent.goBack(1) } class="btn btn-link"
                     type="button">&lt; Edellinen</button>
-            <span> </span>
-            <button class="nice-button primary"
+            <button class="btn btn-primary ml-2"
                     type="submit">Asenna</button>
         </form>;
     }

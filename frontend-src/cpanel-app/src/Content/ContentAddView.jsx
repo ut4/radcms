@@ -71,7 +71,7 @@ class ContentAddView extends preact.Component {
                         this.setState({formClasses: str.toString()});
                     } }/>;
             }) }
-            <InputGroup classes={ {} } inline>
+            <InputGroup>
                 <label class="form-checkbox">
                     <Input vm={ this } type="checkbox" name="createRevision" id="createRevision"/>
                     <i class="form-icon"></i> Lisää luonnoksena

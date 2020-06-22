@@ -47,13 +47,13 @@ class ContentTypesManageView extends preact.Component {
         return <View>
             <h2>Sisältötyypit
                 <button onClick={ () => this.prependNewContentType() }
-                        class={ `icon-button${!this.state.fieldsCurrentlyBeingEdited ? '' : ' disabled'}` }
+                        class={ `btn btn-icon${!this.state.fieldsCurrentlyBeingEdited ? '' : ' disabled'}` }
                         title="Luo uusi sisältötyyppi">
                     <FeatherSvg iconId="plus-circle" className="medium"/>
                 </button>
             </h2>
             { this.state.contentTypes
-                ? <div class="item-grid">{ this.state.contentTypes.map((t, i) => {
+                ? <div class="item-grid two">{ this.state.contentTypes.map((t, i) => {
                     const useNormalWidth = this.state.basicInfoEditModes[i] === 'none' &&
                                            this.fieldStates[i].getEditMode() === 'none';
                     return <div class={ `box content-type-card${useNormalWidth ? '' : ' full-width'}` }
@@ -164,20 +164,20 @@ class BasicInfo extends preact.Component {
      */
     render() {
         if (this.props.editMode === 'none') return <div class={ !this.props.blur ? '' : 'blurred' }>
-            <header>
-                <h3>{ this.state.name }</h3>
+            <header class="columns col-centered mb-2">
+                <h3 class="column m-0">{ this.state.name }</h3>
                 <div>
                     <button onClick={ () => this.props.onEditStarted() }
                             disabled={ this.props.blur }
                             title="Muokkaa sisältötyyppiä"
-                            class="icon-button">
-                        <FeatherSvg iconId="edit"/>
+                            class="btn btn-icon">
+                        <FeatherSvg iconId="edit" className="feather-medium"/>
                     </button>
                     <button onClick={ () => this.openDeleteDialog() }
                             disabled={ this.props.blur }
                             title="Poista sisältötyyppi"
-                            class="icon-button">
-                        <FeatherSvg iconId="x"/>
+                            class="btn btn-icon">
+                        <FeatherSvg iconId="x" className="feather-medium"/>
                     </button>
                 </div>
             </header>
@@ -197,7 +197,7 @@ class BasicInfo extends preact.Component {
                 <div>
                     <button onClick={ () => this.endEdit() }
                             title={ `${this.props.editMode === 'edit' ? 'Tallenna' : 'Luo'} sisältötyyppi` }
-                            class="icon-button">
+                            class="btn btn-icon">
                         <FeatherSvg iconId="save"/>
                     </button>
                     <button onClick={ () => this.endEdit(true) }

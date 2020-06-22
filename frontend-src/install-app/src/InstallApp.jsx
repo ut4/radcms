@@ -20,13 +20,13 @@ class InstallApp extends preact.Component {
             { !this.state.installMode
                 ? <div>
                     <h2>Asenna RadCMS</h2>
-                    <div class="grid">
+                    <div>
                         <button onClick={ () => this.setState({installMode: 'fromPackage'}) }
-                                class="nice-button primary huge">
+                                class="btn btn-primary btn-huge mr-2">
                             Asenna paketista
                         </button>
                         <button onClick={ () => this.setState({installMode: 'wizard'}) }
-                                class="nice-button primary huge">
+                                class="btn btn-primary btn-huge">
                             Asenna asennusvelholla
                         </button>
                     </div>

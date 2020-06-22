@@ -27,7 +27,7 @@ class RichTextFieldWidget extends BaseFieldWidget {
      */
     render() {
         return <InputGroup classes={ this.state.classes[this.fieldName] }>
-            <label>{ this.label }</label>
+            <label class="form-label">{ this.label }</label>
             <QuillEditor
                 name={ this.fieldName }
                 value={ this.fixedInitialValue }

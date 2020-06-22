@@ -53,7 +53,7 @@ class ContentSelectorFieldWidget extends BaseFieldWidget {
      */
     render() {
         return <InputGroup classes={ this.state.classes[this.fieldName] }>
-            <label htmlFor={ this.fieldName }>{ this.label }</label>
+            <label htmlFor={ this.fieldName } class="form-label">{ this.label }</label>
             <Select vm={ this } name={ this.fieldName } id={ this.fieldName }
                      myOnChange={ newState => this.receiveSelection(newState) }>
                 <option value=""> - </option>

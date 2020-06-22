@@ -27,7 +27,7 @@ const settingFormImpls = {
     dateTimePicker: null,
     colorPicker: ColorPickerSettingsEditForm,
     contentSelector: ContentSelectorSettingsEditForm,
-    hidden: () => null,
+    hidden: null,
 };
 
 const widgetTypes = [

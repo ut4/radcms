@@ -11,7 +11,7 @@ class ColorPickerSettingsEditForm extends AbstractSettingEditForm {
     constructor(props) {
         super(props);
         this.fieldId = 'colorPickerSetting-defaultColor';
-        this.color = props.settings ? props.settings.defaultColor : '#2dccc3';
+        this.color = props.settings ? props.settings.defaultColor : '#637286';
     }
     /**
      * @returns {{defaultColor: string;}}
@@ -27,7 +27,7 @@ class ColorPickerSettingsEditForm extends AbstractSettingEditForm {
         return <>
             <ColorPickerFieldWidget
                 field={ {name: this.fieldId, friendlyName: 'Oletusväri'} }
-                initialValue={ this.props.settings.defaultColor }
+                initialValue={ this.color }
                 onValueChange={ color => { this.color = color; } }/>
         </>;
     }

@@ -332,13 +332,12 @@ function formatCssClasses(classes) {
 
 class InputGroup extends preact.Component {
     /**
-     * @param {{classes?: {invalid: boolean; focused: boolean; blurredAtLeastOnce: boolean;}; className?: string; inline?: boolean;}} props
+     * @param {{classes?: {invalid: boolean; focused: boolean; blurredAtLeastOnce: boolean;}; className?: string;}} props
      */
     constructor(props) {
         super(props);
         this.staticCssClassString = 'form-group' +
-                                    (this.props.className || '') +
-                                    (!this.props.inline ? '' : ' inline');
+                                    (this.props.className || '');
     }
     /**
      * @access protected
