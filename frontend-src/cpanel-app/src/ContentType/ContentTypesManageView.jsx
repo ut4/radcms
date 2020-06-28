@@ -1,12 +1,12 @@
-import {http, toasters, urlUtils, View, Confirmation, FeatherSvg} from '@rad-commons';
-import FieldList from './FieldList.jsx';
-import FieldsStore from './FieldsStore.js';
+import {http, toasters, services, urlUtils, View, Confirmation, FeatherSvg} from '@rad-commons';
+import getFieldListImplForEditMode, {makeField} from './FieldLists.jsx';
 import ContentEditable from '../Common/ContentEditable.jsx';
 import popupDialog from '../Common/PopupDialog.jsx';
 let counter = 0;
 
 /**
- * #/manage-content-types
+ * #/manage-content-types: Näkymä, jossa devaaja voi selata/lisätä/muokata si-
+ * vuston sisältötyyppejä.
  */
 class ContentTypesManageView extends preact.Component {
     /**
@@ -18,25 +18,25 @@ class ContentTypesManageView extends preact.Component {
                       contentTypeCurrentlyBeingEdited: null, // or created
                       fieldsCurrentlyBeingEdited: null,
                       message: ''};
-        this.fieldStates = [];
+        this.basicInfoEditModes = [];
+        this.fieldEditModes = [];
+        this.fieldLists = [];
         http.get('/api/content-types')
             .then(contentTypes => {
                 if (contentTypes.length) {
                     this.setState({contentTypes: contentTypes.map(t => {
-                                        this.fieldStates.push(new FieldsStore(t.fields));
-                                        t.key = ++counter;
-                                        return t;
-                                    }),
-                                   basicInfoEditModes: contentTypes.map(() => 'none')});
-                    this.fieldStates.forEach((state, i) => {
-                        state.listen('editMode', isOn => {
-                            this.setState({fieldsCurrentlyBeingEdited:
-                                isOn !== 'none' ? this.state.contentTypes[i] : null});
+                        this.basicInfoEditModes.push('none');
+                        this.fieldEditModes.push('none');
+                        this.fieldLists.push(preact.createRef());
+                        return Object.assign(t, {
+                            key: ++counter,
+                            fields: t.fields.map(f => Object.assign(f, {key: makeField().key}))
                         });
-                    });
+                    })});
                 } else this.setState({message: 'Sisältötyyppejä ei löytynyt'});
             })
-            .catch(() => {
+            .catch(err => {
+                services.console.error(err);
                 this.setState({message: 'Jokin meni pieleen'});
             });
     }
@@ -54,28 +54,34 @@ class ContentTypesManageView extends preact.Component {
             </h2>
             { this.state.contentTypes
                 ? <div class="item-grid two">{ this.state.contentTypes.map((t, i) => {
-                    const useNormalWidth = this.state.basicInfoEditModes[i] === 'none' &&
-                                           this.fieldStates[i].getEditMode() === 'none';
-                    return <div class={ `box content-type-card${useNormalWidth ? '' : ' full-width'}` }
+                    const useNormalWidth = this.basicInfoEditModes[i] === 'none' &&
+                                           this.fieldEditModes[i] === 'none';
+                    const ListCmp = getFieldListImplForEditMode(this.fieldEditModes[i]);
+                    const blur = (this.state.contentTypeCurrentlyBeingEdited &&
+                                  this.state.contentTypeCurrentlyBeingEdited !== t) ||
+                                  this.state.fieldsCurrentlyBeingEdited !== null;
+                    return <div class={ `panel bg-light${useNormalWidth ? '' : ' full-width'}${!blur ? '' : ' blurred'}` }
                                 style={ useNormalWidth ? '' : `grid-row:${Math.floor(i / 2 + 1)}` }>
                         <BasicInfo
                             contentType={ t }
-                            editMode={ this.state.basicInfoEditModes[i] }
-                            blur={ (this.state.contentTypeCurrentlyBeingEdited &&
-                                    this.state.contentTypeCurrentlyBeingEdited !== t) ||
-                                    this.state.fieldsCurrentlyBeingEdited !== null }
+                            editMode={ this.basicInfoEditModes[i] }
+                            blur={ blur }
                             onEditStarted={ () => this.setBasicInfoEditModeOn(t, i) }
-                            onEditEnded={ (mode, data) => this.endBasicInfoEdit(mode, data, i) }
+                            onEditEnded={ (mode, data) => this.confirmBasicInfoEdit(mode, data, i) }
                             onEditDiscarded={ mode => this.discardBasicInfoEdit(mode) }
                             key={ t.key }/>
-                        <FieldList
-                            fieldsState={ this.fieldStates[i] }
-                            editMode={ this.fieldStates[i].getEditMode() }
+                        <ListCmp
+                            fields={ t.fields }
                             blur={ (this.state.contentTypeCurrentlyBeingEdited &&
-                                    this.state.basicInfoEditModes[i] !== 'create') ||
+                                    this.fieldEditModes[i] !== 'create') ||
                                     (this.state.fieldsCurrentlyBeingEdited &&
                                     this.state.fieldsCurrentlyBeingEdited !== t) }
                             contentType={ t }
+                            setEditMode={ to => {
+                                this.fieldEditModes = this.fieldEditModes.map((_, i2) => i2 !== i ? 'none' : to);
+                                this.setState({fieldsCurrentlyBeingEdited: to !== 'none' ? t : null});
+                            } }
+                            ref={ this.fieldLists[i] }
                             key={ t.key }/>
                     </div>;
                 }) }</div>
@@ -89,44 +95,40 @@ class ContentTypesManageView extends preact.Component {
      * @access private
      */
     setBasicInfoEditModeOn(contentType, idx) {
-        const modes = this.state.basicInfoEditModes;
-        this.setState({basicInfoEditModes: modes.map((m, i) => i !== idx ? m : 'edit'),
-                       contentTypeCurrentlyBeingEdited: contentType});
+        this.basicInfoEditModes[idx] = 'edit';
+        this.setState({contentTypeCurrentlyBeingEdited: contentType});
     }
     /**
      * @access private
      */
-    endBasicInfoEdit(mode, data, idx) {
-        if (mode === 'create')
-            http.post('/api/content-types', Object.assign(data,
-                {fields: this.fieldStates[idx].getFields()}
+    confirmBasicInfoEdit(mode, data, idx) {
+        (mode === 'create'
+            ? http.post('/api/content-types', Object.assign(data,
+                {fields: this.fieldLists[idx].current.getFields()}
             ))
-            .then(() => {
-                urlUtils.reload();
-            })
-            .catch(() => {
-                toasters.main('Sisältötyypin luonti epäonnistui.', 'error');
-            });
-        else
-            http.put(`/api/content-types/${this.state.contentTypes[idx].name}`, data)
-            .then(() => {
-                urlUtils.reload();
-            })
-            .catch(() => {
-                toasters.main('Sisältötyypin päivitys epäonnistui.', 'error');
-            });
+            : http.put(`/api/content-types/${this.state.contentTypes[idx].name}`, data)
+        )
+        .then(() => {
+            urlUtils.reload();
+        })
+        .catch(err => {
+            services.console.error(err);
+            toasters.main('Sisältötyypin ' + (mode === 'create' ? 'luonti' : 'päivitys') +
+                        ' epäonnistui.', 'error');
+        });
     }
     /**
      * @access private
      */
     discardBasicInfoEdit(mode) {
-        const newState = {basicInfoEditModes: this.state.basicInfoEditModes.map(() => 'none'),
-                          contentTypeCurrentlyBeingEdited: null,
+        this.basicInfoEditModes = this.basicInfoEditModes.map(() => 'none');
+        this.fieldEditModes = this.fieldEditModes.map(() => 'none');
+        const newState = {contentTypeCurrentlyBeingEdited: null,
                           fieldsCurrentlyBeingEdited: null};
         if (mode === 'create') {
             newState.contentTypes = this.state.contentTypes.slice(1);
-            newState.basicInfoEditModes.shift();
-            this.fieldStates.shift();
+            this.basicInfoEditModes.shift();
+            this.fieldLists.shift();
         }
         this.setState(newState);
     }
@@ -139,13 +141,15 @@ class ContentTypesManageView extends preact.Component {
             name: 'Name',
             friendlyName: 'Nimi',
             isInternal: false,
-            fields: [FieldsStore.makeField()],
+            fields: [makeField()],
             key: ++counter
         });
-        this.fieldStates.unshift(new FieldsStore(contentTypes[0].fields, 'create'));
+        this.basicInfoEditModes = ['create'].concat(this.basicInfoEditModes.map(() => 'none'));
+        this.fieldEditModes = ['create'].concat(this.fieldEditModes.map(() => 'none'));
+        this.fieldLists.unshift(preact.createRef());
         this.setState({contentTypes,
-                       basicInfoEditModes: ['create'].concat(this.state.basicInfoEditModes.map(() => 'none')),
-                       contentTypeCurrentlyBeingEdited: contentTypes[0]});
+                       contentTypeCurrentlyBeingEdited: contentTypes[0],
+                       fieldsCurrentlyBeingEdited: contentTypes[0]});
     }
 }
 
@@ -171,25 +175,25 @@ class BasicInfo extends preact.Component {
                             disabled={ this.props.blur }
                             title="Muokkaa sisältötyyppiä"
                             class="btn btn-icon">
-                        <FeatherSvg iconId="edit" className="feather-medium"/>
+                        <FeatherSvg iconId="edit" className="feather-md"/>
                     </button>
                     <button onClick={ () => this.openDeleteDialog() }
                             disabled={ this.props.blur }
                             title="Poista sisältötyyppi"
                             class="btn btn-icon">
-                        <FeatherSvg iconId="x" className="feather-medium"/>
+                        <FeatherSvg iconId="x" className="feather-md"/>
                     </button>
                 </div>
             </header>
-            <div class="list left-aligned">
-                <div class="row">Selkonimi: { this.state.friendlyName }</div>
-                <div class="row" data-help-text="Sisäiset sisältötyypit ei näy &quot;Luo sisältöä&quot;-, ja &quot;Kaikki sisältö&quot; -näkymissä.">Sisäinen: { !this.state.isInternal ? 'ei' : 'kyllä' }</div>
+            <div class="mb-8">
+                <div>Selkonimi: { this.state.friendlyName }</div>
+                <div data-help-text="Sisäiset sisältötyypit ei näy &quot;Luo sisältöä&quot;-, ja &quot;Kaikki sisältö&quot; -näkymissä.">Piilotettu: { !this.state.isInternal ? 'ei' : 'kyllä' }</div>
             </div>
         </div>;
         // edit or create
         return <div>
-            <header>
-                <h3>
+            <header class="columns col-centered pr-2 mb-2">
+                <h3 class="column m-0">
                     <ContentEditable
                         value={ this.state.name }
                         onChange={ val => this.setState({name: val}) }/>
@@ -202,23 +206,26 @@ class BasicInfo extends preact.Component {
                     </button>
                     <button onClick={ () => this.endEdit(true) }
                             title="Peruuta"
-                            class="text-button">
+                            class="btn btn-link">
                         Peruuta
                     </button>
                 </div>
             </header>
-            <div class="list left-aligned">
-                <div class="row">Selkonimi:
-                    <div><ContentEditable
+            <div class="container mb-8">
+                <div class="columns">Selkonimi:
+                    <div class="ml-2"><ContentEditable
                         value={ this.state.friendlyName }
                         onChange={ val => this.setState({friendlyName: val}) }/></div>
                 </div>
-                <div class="row">Sisäinen:
-                    <div><input
-                        type="checkbox"
-                        defaultChecked={ this.state.isInternal }
-                        onChange={ e => this.setState({isInternal: e.target.checked}) }/></div>
-                </div>
+                <label class="columns col-centered">Piilotettu:
+                    <div class="form-checkbox ml-2">
+                        <input
+                            type="checkbox"
+                            defaultChecked={ this.state.isInternal }
+                            onChange={ e => this.setState({isInternal: e.target.checked}) }/>
+                        <i class="form-icon"></i>
+                    </div>
+                </label>
             </div>
         </div>;
     }
@@ -245,10 +252,9 @@ class BasicInfo extends preact.Component {
             contentType: this.props.contentType,
             onConfirm: () => {
                 http.delete('/api/content-types/' + this.props.contentType.name)
-                    .then(() => {
-                        urlUtils.reload();
-                    })
-                    .catch(() => {
+                    .then(() => { urlUtils.reload(); })
+                    .catch(err => {
+                        services.console.error(err);
                         toasters.main('Sisältötyypin poisto epäonnistui.', 'error');
                     });
             }

@@ -1,6 +1,7 @@
-import {hookForm, InputGroup, Input, Select, InputError, FormConfirmation, Confirmation, FeatherSvg} from '@rad-commons';
+import {hookForm, InputGroup, Input, InputError, FormConfirmation, Confirmation, FeatherSvg} from '@rad-commons';
 import popupDialog from '../../../Common/PopupDialog.jsx';
-import {widgetTypes, getSettingsEditForm} from '../all.js';
+import {widgetTypes} from '../all.js';
+import WidgetSelector from '../../WidgetSelector.jsx';
 
 /**
  * Komponentti, jolla devaaja voi rakentaa multiField-sisällön rakenteen i.e.
@@ -44,7 +45,7 @@ class MultiFieldConfigurer extends preact.Component {
                                 }
                             }) }
                             type="button">
-                            <FeatherSvg iconId="edit-2" className="feather-small"/>
+                            <FeatherSvg iconId="edit-2" className="feather-sm"/>
                         </button>
                         <button
                             class="btn btn-icon"
@@ -56,7 +57,7 @@ class MultiFieldConfigurer extends preact.Component {
                                 }
                             }) }
                             type="button">
-                            <FeatherSvg iconId="x" className="feather-small"/>
+                            <FeatherSvg iconId="x" className="feather-sm"/>
                         </button>
                     </td>
                 </tr>) }</tbody>
@@ -83,18 +84,14 @@ class MultiFieldFieldEditDialog extends preact.Component {
      */
     constructor(props) {
         super(props);
-        this.settingEditForm = preact.createRef();
-        this.state = hookForm(this, {
-            fieldName: props.field.name,
-            widgetName: props.field.widget.name,
-        });
+        this.widgetSelector = preact.createRef();
+        this.state = hookForm(this, {fieldName: props.field.name});
     }
     /**
      * @access protected
      */
-    render() {
+    render({field}) {
         const {classes, errors} = this.state;
-        const WidgetSettingsForm = getSettingsEditForm(this.state.values.widgetName);
         return <div class="popup-dialog"><div class="box">
             <FormConfirmation
                 onConfirm={ e => this.handleConfirm(e) }
@@ -109,18 +106,7 @@ class MultiFieldFieldEditDialog extends preact.Component {
                         errorLabel="Nimi"/>
                     <InputError error={ errors.fieldName }/>
                 </InputGroup>
-                <InputGroup>
-                    <label class="form-label">Widgetti</label>
-                    <Select vm={ this } name="widgetName">{ widgetTypes.map(w =>
-                        <option value={ w.name }>{ w.friendlyName }</option>
-                    ) }</Select>
-                </InputGroup>
-                { !WidgetSettingsForm ? null : <div class="indented-content mt-8"><WidgetSettingsForm
-                    settings={ this.state.values.widgetName !== this.props.field.widget.name
-                        ? null // Käytä oletuksia
-                        : this.props.field.widget.args }
-                    ref={ this.settingEditForm }/></div>
-                }
+                <WidgetSelector widget={ field.widget } ref={ this.widgetSelector }/>
             </div>
             </FormConfirmation>
         </div></div>;
@@ -133,11 +119,7 @@ class MultiFieldFieldEditDialog extends preact.Component {
             return;
         this.props.onConfirm({
             name: this.state.values.fieldName,
-            widget: {
-                name: this.state.values.widgetName,
-                args: !this.settingEditForm.current ? this.props.field.widget.args
-                    : this.settingEditForm.current.getResult(),
-            },
+            widget: this.widgetSelector.current.getResult(),
         });
         popupDialog.close();
     }

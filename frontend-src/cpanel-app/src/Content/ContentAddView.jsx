@@ -1,5 +1,5 @@
 import {http, toasters, urlUtils, View, Select, hookForm, InputGroup, Input, FormButtons} from '@rad-commons';
-import {filterByUserRole} from '../ContentType/FieldList.jsx';
+import {filterByUserRole} from '../ContentType/FieldLists.jsx';
 import getWidgetImpl from './FieldWidgets/all-with-multi.js';
 import {genRandomString} from '../Website/WebsitePackView.jsx';
 const Status = Object.freeze({PUBLISHED: 0, DRAFT: 1, DELETED: 2});

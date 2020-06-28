@@ -29,22 +29,24 @@ declare module "@rad-cpanel-commons" {
     export = radCpanelCommons;
 }
 
+interface FieldWidget {
+    name: string;
+    args: Object;
+}
+
 interface ContentTypeField {
     name: string;
     friendlyName: string;
     dataType: string;
     defaultValue: string;
     visibility: number;
-    widget: {
-        name: string;
-        args: Object;
-    };
+    widget: FieldWidget;
 }
 
 interface MultiFieldField {
     id: string;
     name: string;
-    widget: {name: string, args: Object|null};
+    widget: FieldWidget;
     value: any;
 }
 
