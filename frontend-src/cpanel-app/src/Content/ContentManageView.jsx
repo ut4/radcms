@@ -62,10 +62,10 @@ class ContentManageView extends preact.Component {
                         }</td>
                         <td class="buttons">
                             <a href={ href } title="Muokkaa">
-                                <FeatherSvg iconId="edit-2" className="feather-medium"/>
+                                <FeatherSvg iconId="edit-2" className="feather-md"/>
                             </a> <a onClick={ e => this.openDeleteDialog(e, cnode) }
                                     href={ `#/delete-content/${cnode.id}` } class="m-2" title="Poista">
-                                <FeatherSvg iconId="trash-2" className="feather-medium"/>
+                                <FeatherSvg iconId="trash-2" className="feather-md"/>
                             </a>
                         </td>
                     </tr>;

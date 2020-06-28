@@ -231,11 +231,11 @@ class AdminControlPanelPanel extends preact.Component {
                 ] }</span>
                 { !this.state.highlight
                     ? null
-                    : <button onClick={ e => this.state.highlight(e) } class="btn btn-icon column col-auto locate color-alt-light"><FeatherSvg iconId="target" className="feather-small"/></button>
+                    : <button onClick={ e => this.state.highlight(e) } class="btn btn-icon column col-auto locate color-alt-light"><FeatherSvg iconId="target" className="feather-sm"/></button>
                 }
                 <button onClick={ e => this.showOrHideSubNav(e) } class="btn btn-icon toggle color-alt-light">
                     <FeatherSvg iconId={ `chevron-${this.state.isCollapsed ? 'down' : 'up'}` }
-                                className="feather-small"/>
+                                className="feather-sm"/>
                 </button>
             </a>
             <div class={ `sub-nav${this.state.isCollapsed ? '' : ' visible'}` }>{
