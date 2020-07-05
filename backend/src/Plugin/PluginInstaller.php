@@ -4,11 +4,10 @@ declare(strict_types=1);
 
 namespace RadCms\Plugin;
 
-use Pike\Db;
+use Pike\{Db, PikeException};
 use RadCms\ContentType\ContentTypeMigrator;
-use Pike\PikeException;
 
-class PluginInstaller {
+final class PluginInstaller {
     private $db;
     private $contentTypeMigrator;
     /**
@@ -21,10 +20,11 @@ class PluginInstaller {
     }
     /**
      * @param \RadCms\Plugin\Plugin $plugin
+     * @param array[mixed[]] $initialContent = [] [['ContentTypeName', [(object)['key' => 'value']...]]...]
      * @return bool
      * @throws \Pike\PikeException
      */
-    public function install(Plugin $plugin): bool {
+    public function install(Plugin $plugin, array $initialContent = []): bool {
         if ($plugin->isInstalled) {
             return 'Plugin is already installed.';
         }
@@ -32,7 +32,7 @@ class PluginInstaller {
         $instance = $plugin->instantiate();
         $this->contentTypeMigrator->setOrigin($plugin);
         // @allow \Pike\PikeException
-        $instance->install($this->contentTypeMigrator);
+        $instance->install($this->contentTypeMigrator, $initialContent);
         // @allow \Pike\PikeException
         return $this->updateInstalledPlugins('UPDATE ${p}cmsState SET `installedPlugins`' .
                                              ' = JSON_SET(`installedPlugins`, ?, 1)',

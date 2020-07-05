@@ -2,36 +2,29 @@
 
 namespace RadCms\Tests\Plugin;
 
-use Pike\TestUtils\DbTestCase;
-use Pike\TestUtils\HttpTestUtils;
-use RadCms\Tests\_Internal\ContentTestUtils;
-use RadCms\ContentType\ContentTypeMigrator;
-use Pike\FileSystem;
-use RadCms\Tests\AppTest;
-use Pike\Request;
-use Pike\Response;
-use Pike\TestUtils\MutedResponse;
-use RadPlugins\MoviesPlugin\MoviesPlugin;
-use RadCms\Plugin\Plugin;
-use RadCms\APIConfigsStorage;
-use RadCms\AppContext;
-use RadCms\BaseAPI;
+use Pike\{FileSystem, Request};
+use Pike\TestUtils\{DbTestCase, HttpTestUtils, MutedResponse};
+use RadCms\{APIConfigsStorage, AppContext, BaseAPI};
 use RadCms\Content\DAO;
+use RadCms\ContentType\ContentTypeMigrator;
+use RadCms\Plugin\Plugin;
+use RadCms\Tests\AppTest;
+use RadCms\Tests\_Internal\ContentTestUtils;
+use RadPlugins\MoviesPlugin\MoviesPlugin;
 
 final class PluginAPIIntegrationTest extends DbTestCase {
     use HttpTestUtils;
     use ContentTestUtils;
     private $moviesPlugin;
     private $app;
-    public function setupTestPlugin($initialData = null) {
+    public function setupTestPlugin($initialData) {
         // Tekee suunnilleen saman kuin PUT /api/plugins/MoviesPlugin/install
         $db = self::getDb();
         $plugin = new Plugin('MoviesPlugin', MoviesPlugin::class);
         $m = new ContentTypeMigrator($db);
         $m->setOrigin($plugin);
         $this->moviesPlugin = $plugin->instantiate();
-        if ($initialData) $this->moviesPlugin->setTestInitalData($initialData);
-        $this->moviesPlugin->install($m);
+        $this->moviesPlugin->install($m, $initialData);
         AppTest::markPluginAsInstalled('MoviesPlugin', $db);
         //
         $ctx = new AppContext(['db' => '@auto', 'auth' => '@auto']);
@@ -63,7 +56,7 @@ final class PluginAPIIntegrationTest extends DbTestCase {
         $this->verifyContentTypeWasInstalledToDb();
         $this->verifyInitialDataWasInsertedToDb();
     }
-    private function setupInstallCtypeTest($initialMovies = null) {
+    private function setupInstallCtypeTest($initialMovies = []) {
         $this->setupTestPlugin($initialMovies);
         return (object) [
             'actualResponseBody' => null,

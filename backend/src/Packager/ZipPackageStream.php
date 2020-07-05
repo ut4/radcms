@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace RadCms\Packager;
 
-use Pike\PikeException;
-use Pike\FileSystemInterface;
+use Pike\{PikeException, FileSystemInterface};
 
 class ZipPackageStream implements PackageStreamInterface {
     /** @var \ZipArchive */

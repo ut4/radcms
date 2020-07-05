@@ -40,7 +40,7 @@ class ContentTypeMigrator {
     /**
      * @param \RadCms\ContentType\ContentTypeCollection $contentTypes
      * @param string $size = 'medium' 'tiny' | 'small' | 'medium' | '' | 'big'
-     * @param array $initialData = null [['ContentTypeName', [(object)['key' => 'value']]]]
+     * @param array $initialData = null [['ContentTypeName', [(object)['key' => 'value']...]]...]
      * @return bool
      * @throws \Pike\PikeException
      */
@@ -54,7 +54,7 @@ class ContentTypeMigrator {
         }
         // @allow \Pike\PikeException
         return $this->validateContentTypes($contentTypes) &&
-               $this->validateInitialData($initialData) &&
+               self::validateInitialData($initialData) &&
                $this->createContentTypes($contentTypes, $size) &&
                $this->addToInstalledContentTypes($contentTypes) &&
                $this->insertInitialData($initialData, $contentTypes);
@@ -85,7 +85,7 @@ class ContentTypeMigrator {
                 'UPDATE ${p}cmsState SET'.
                 ' `installedContentTypes` = JSON_UNQUOTE(?)' .
                 ', `installedContentTypesLastUpdated` = UNIX_TIMESTAMP()',
-                [json_encode($currentContentTypes->toCompactForm($this->origin))]) !== 1)
+                [json_encode($currentContentTypes->toCompactForm())]) !== 1)
                 throw new PikeException('Failed to rewrite cmsState.`installedContentTypes`',
                                         PikeException::INEFFECTUAL_DB_OP);
         }
@@ -190,6 +190,26 @@ class ContentTypeMigrator {
         $this->origin = $plugin->name;
     }
     /**
+     * @param array[mixed[]]|null $data [['ContentTypeName', [(object)['key' => 'value']...]]...]
+     * @return bool
+     * @throws \Pike\PikeException
+     */
+    public static function validateInitialData(?array $data): bool {
+        if (!$data)
+            return true;
+        foreach ($data as $item) {
+            if (!is_array($item) ||
+                count($item) !== 2 ||
+                !is_string($item[0]) ||
+                !is_array($item[1]) ||
+                (count($item[1]) && !($item[1][0] instanceof \stdClass)))
+                    throw new PikeException(
+                        'initialData entry must be [["ContentTypeName", [{"key":"value"}]]]',
+                        PikeException::BAD_INPUT);
+        }
+        return true;
+    }
+    /**
      * @param \RadCms\ContentType\ContentTypeCollection $contentTypes
      * @return bool
      * @throws \Pike\PikeException
@@ -210,28 +230,6 @@ class ContentTypeMigrator {
             return true;
         throw new PikeException('Got invalid content type: '. implode(',', $errors),
                                 PikeException::BAD_INPUT);
-    }
-    /**
-     * @param array|null $data
-     * @return bool
-     * @throws \Pike\PikeException
-     */
-    private function validateInitialData($data): bool {
-        if (!$data)
-            return true;
-        if (!is_array($data))
-            throw new PikeException('initialData must be an array', PikeException::BAD_INPUT);
-        foreach ($data as $item) {
-            if (!is_array($item) ||
-                count($item) !== 2 ||
-                !is_string($item[0]) ||
-                !is_array($item[1]) ||
-                !(($item[1][0] ?? null) instanceof \stdClass))
-                    throw new PikeException(
-                        'initialData entry must be [["ContentTypeName", [{"key":"value"}]]]',
-                        PikeException::BAD_INPUT);
-        }
-        return true;
     }
     /**
      * @param \RadCms\ContentType\ContentTypeCollection $contentTypes
@@ -299,7 +297,7 @@ class ContentTypeMigrator {
      * @throws \Pike\PikeException
      */
     private function updateInstalledContenType(ContentTypeDef $contentType): void {
-        $compacted = $contentType->toCompactForm($this->origin);
+        $compacted = $contentType->toCompactForm();
         // @allow \Pike\PikeException
         if ($this->db->exec(
             'UPDATE ${p}cmsState SET' .

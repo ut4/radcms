@@ -146,3 +146,62 @@ p.info-box.success, .toaster-message.success {
     display: flex;
     align-items: center;
 }
+
+/* Components: Steps */
+.step-indicators {
+    margin: 2rem 0 .2rem;
+    display: flex;
+}
+.step-indicators div {
+    flex: 1;
+    text-align: center;
+    position: relative;
+    border-top: 2px solid rgb(209,213,219);
+    padding: 14px 15px;
+    margin: 0 6px;
+}
+.step-indicators div:first-child {
+    margin-right: 12px;
+    margin-left: 0;
+}
+.step-indicators div:last-child {
+    margin-left: 12px;
+    margin-right: 0;
+}
+.step-indicators div.current {
+    border-color: #9eaec3;
+    color: #828fa0;
+}
+.step-indicators div:not(.current) {
+    color: #d1d5db;
+}
+.step-indicators div:before {
+    content: "";
+    position: absolute;
+    width: .75rem;
+    height: .75rem;
+    border-radius: 50%;
+    background-color: #d1d5db;
+    left: 50%;
+    margin-left: -.375rem;
+    border: .2rem solid #fff;
+    top: -.4rem;
+}
+.step-indicators div.current:before {
+    background-color: #8ea2bd;
+}
+.step-indicators .feather {
+    opacity: 0;
+    background-color: #fff;
+    color: inherit;
+    width: 19px;
+    height: 19px;
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    margin-left: -10.5px;
+    padding: 2px 1px 2px 2px;
+}
+.step-indicators div.checked .feather {
+    opacity: 1;
+}

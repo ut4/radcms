@@ -4,17 +4,14 @@ namespace RadCms\Tests\Packager;
 
 use Pike\Auth\Authenticator;
 use Pike\Request;
-use Pike\TestUtils\DbTestCase;
-use Pike\TestUtils\HttpTestUtils;
-use Pike\TestUtils\MockCrypto;
+use Pike\TestUtils\{DbTestCase, HttpTestUtils, MockCrypto};
 use RadCms\AppContext;
+use RadCms\Entities\PluginPackData;
 use RadCms\Installer\Tests\BaseInstallerTest;
-use RadCms\Packager\Packager;
-use RadCms\Packager\ZipPackageStream;
-use RadCms\Tests\_Internal\ContentTestUtils;
-use RadCms\Tests\_Internal\MockPackageStream;
-use RadCms\Tests\_Internal\TestSite;
+use RadCms\Packager\{Packager, ZipPackageStream};
+use RadCms\Tests\_Internal\{ContentTestUtils, MockPackageStream, TestSite};
 use RadCms\Tests\User\UserControllersTest;
+use RadPlugins\MoviesPlugin\MoviesPlugin;
 
 final class PackagerControllersTest extends DbTestCase {
     use HttpTestUtils;
@@ -26,10 +23,12 @@ final class PackagerControllersTest extends DbTestCase {
     }
     protected function tearDown(): void {
         parent::tearDown();
+        MoviesPlugin::setMockPackData(null);
         UserControllersTest::deleteTestUsers();
     }
     public function testPOSTPackagerPacksWebsiteAndReturnsItAsAttachment() {
         $s = $this->setupCreatePackageTest();
+        MoviesPlugin::setMockPackData($s->mockPluginPackData);
         $this->sendCreatePackageRequest($s);
         $this->verifyPackageWasReturned($s);
         //
@@ -46,20 +45,32 @@ final class PackagerControllersTest extends DbTestCase {
         $this->verifyPhpFilesWereIncluded($s);
         $this->verifyThemeAssetsWereIncluded($s);
         $this->verifyUploadsWereIncluded($s);
+        //
+        $this->verifyPluginsWereIncluded($s);
     }
     private function setupCreatePackageTest() {
         return (object) [
             'reqBody' => (object) [
-                'templates' => json_encode(TestSite::TEMPLATES),
-                'assets' => json_encode(TestSite::ASSETS),
-                'uploads' => json_encode(TestSite::UPLOADS),
+                'templates' => TestSite::TEMPLATES,
+                'assets' => TestSite::ASSETS,
+                'uploads' => TestSite::UPLOADS,
+                'plugins' => TestSite::PLUGINS,
                 'signingKey' => 'my-encrypt-key',
             ],
             'actualAttachmentBody' => '',
             'packageCreatedFromResponse' => null,
             'parsedMainDataFromPackage' => null,
             'testUserZero' => UserControllersTest::makeAndInsertTestUser(),
+            'mockPluginPackData' => self::makeMockPluginPackData(),
         ];
+    }
+    private static function makeMockPluginPackData() {
+        $out = new PluginPackData;
+        $out->initialContent = [['MoviesPlugin', [
+            (object) ['title' => 'Movie1', 'releaseYear' => '2019'],
+            (object) ['title' => 'Movie2', 'releaseYear' => '2020'],
+        ]]];
+        return $out;
     }
     private function sendCreatePackageRequest($s) {
         $auth = $this->createMock(Authenticator::class);
@@ -86,7 +97,7 @@ final class PackagerControllersTest extends DbTestCase {
     }
     private function verifyPackageWasReturned($s) {
         $s->packageCreatedFromResponse = new MockPackageStream();
-        $s->packageCreatedFromResponse->open('json://'. $s->actualAttachmentBody);
+        $s->packageCreatedFromResponse->open("json://{$s->actualAttachmentBody}");
         $this->assertIsObject($s->packageCreatedFromResponse->getVirtualFiles());
     }
     private function verifyEncryptedMainDataWasIncluded($s) {
@@ -173,5 +184,20 @@ final class PackagerControllersTest extends DbTestCase {
             $this->assertEquals($this->mockPackageStream->mockReadFile("{$base}{$relativePath}"),
                 $s->packageCreatedFromResponse->read($relativePath));
         }
+    }
+    private function verifyPluginsWereIncluded($s) {
+        $encodedJson = $s->packageCreatedFromResponse
+            ->read(Packager::LOCAL_NAMES_PLUGINS);
+        $decodedJson = MockCrypto::mockDecrypt($encodedJson);
+        $parsed = json_decode($decodedJson);
+        $this->assertIsObject($parsed);
+        //
+        $actualPluginNames = array_keys(get_object_vars($parsed));
+        $this->assertEquals(TestSite::PLUGINS, $actualPluginNames);
+        //
+        $actualPluginData = $parsed->{TestSite::PLUGINS[0]};
+        $this->assertIsObject($actualPluginData);
+        $this->assertEquals($s->mockPluginPackData->initialContent,
+                            $actualPluginData->initialContent);
     }
 }

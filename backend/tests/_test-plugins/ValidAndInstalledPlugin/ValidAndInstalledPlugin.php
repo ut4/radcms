@@ -16,10 +16,13 @@ class ValidAndInstalledPlugin implements PluginInterface {
     public function init(PluginAPI $api): void {
         self::$initialized = true;
     }
-    public function install(ContentTypeMigrator $migrator): void {
+    public function install(ContentTypeMigrator $migrator, array $initialContent): void {
         //
     }
     public function uninstall(ContentTypeMigrator $migrator): void {
         self::$installed = false;
+    }
+    public function pack(\RadCms\Content\DAO $dao, \RadCms\Entities\PluginPackData $to): void {
+        //
     }
 }

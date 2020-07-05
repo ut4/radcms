@@ -13,5 +13,6 @@ abstract class TestSite {
     public const TEMPLATES = [self::TMPL_1_PATH, self::TMPL_2_PATH];
     public const ASSETS = [self::ASSET_1_PATH, self::ASSET_2_PATH];
     public const UPLOADS = [self::UPLOAD_ITEM_1_PATH];
+    public const PLUGINS = ['MoviesPlugin'];
     public const DIRS = ['templates/my-tags', 'templates', 'my-js'];
 }

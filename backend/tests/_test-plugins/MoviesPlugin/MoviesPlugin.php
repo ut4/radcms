@@ -2,14 +2,13 @@
 
 namespace RadPlugins\MoviesPlugin;
 
-use RadCms\Plugin\PluginInterface;
-use RadCms\Plugin\PluginAPI;
-use RadCms\ContentType\ContentTypeCollection;
-use RadCms\ContentType\ContentTypeMigrator;
 use RadCms\Auth\ACL;
+use RadCms\ContentType\{ContentTypeCollection, ContentTypeMigrator};
+use RadCms\Entities\PluginPackData;
+use RadCms\Plugin\{PluginInterface, PluginAPI};
 
 class MoviesPlugin implements PluginInterface {
-    private $initialDataToInstall;
+    private static $mockPackData;
     public function __construct() {
         $this->myContentTypes = new ContentTypeCollection();
         $this->myContentTypes->add('Movies', 'Elokuvat', [
@@ -31,18 +30,23 @@ class MoviesPlugin implements PluginInterface {
         $api->registerRoute('GET', '/noop', MoviesControllers::class,
                             'handleNoopRequest', ACL::NO_IDENTITY);
     }
-    public function install(ContentTypeMigrator $contentTypeMigrator): void {
-        $contentTypeMigrator->installMany($this->myContentTypes,
-                                          $this->initialDataToInstall);
+    public function install(ContentTypeMigrator $contentTypeMigrator, array $initialContent): void {
+        $contentTypeMigrator->installMany($this->myContentTypes, $initialContent);
     }
     public function uninstall(ContentTypeMigrator $contentTypeMigrator): void {
         $contentTypeMigrator->uninstallMany($this->myContentTypes);
     }
-    //
-    public function setTestInitalData($dataToInstall) {
-        $this->initialDataToInstall = $dataToInstall;
+    public function pack(\RadCms\Content\DAO $dao, PluginPackData $to): void {
+        if (!self::$mockPackData)
+            return;
+        foreach (get_object_vars(self::$mockPackData) as $key => $val)
+            $to->{$key} = $val;
     }
+    //
     public function getTestContentTypes() {
         return $this->myContentTypes;
+    }
+    public static function setMockPackData(?PluginPackData $data) {
+        self::$mockPackData = $data;
     }
 }

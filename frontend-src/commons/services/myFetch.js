@@ -12,6 +12,7 @@ function myFetch(url, options = {}) {
                 options.progress(e.target, e.lengthComputable ? e.loaded / e.total * 100 : -1);
             };
         }
+        req.responseType = options.responseType || '';
         req.open(options.method || 'GET', urlUtils.makeUrl(url), true);
         Object.keys(options.headers || {}).forEach(key => {
             req.setRequestHeader(key, options.headers[key]);

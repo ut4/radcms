@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 namespace RadCms\Packager;
 
-use Pike\Request;
-use Pike\Response;
-use Pike\Validation;
+use Pike\{Request, Response, Validation};
 use Pike\Auth\Authenticator;
+use RadCms\Content\DAO;
 
 /**
  * Handlaa /api/packager -alkuiset pyynnöt.
@@ -36,17 +35,20 @@ class PackagerControllers {
      * @param \Pike\Response $res
      * @param \RadCms\Packager\PackageStreamInterface $package
      * @param \Pike\Auth\Authenticator $auth
+     * @param \RadCms\Content\DAO $dao
      */
     public function handleCreatePackage(Request $req,
                                         Response $res,
                                         PackageStreamInterface $package,
-                                        Authenticator $auth): void {
+                                        Authenticator $auth,
+                                        DAO $dao): void {
         if (($errors = $this->validateAndPrepareSiteInput($req->body))) {
             $res->status(400)->json($errors);
             return;
         }
         // @allow \Pike\PikeException
-        $data = $this->packager->packSite($package, $req->body, $auth->getIdentity());
+        $data = $this->packager->packSite($package, $req->body, $auth->getIdentity(),
+                                          $dao);
         $res->attachment($data, 'packed.radsite', 'application/octet-stream');
     }
     /**
@@ -59,21 +61,13 @@ class PackagerControllers {
                 return is_string($value) && strpos($value, './') === false;
             }, '%s is not valid path')
             ->rule('signingKey', 'type', 'string')
-            ->rule('signingKey', 'minLength', 12);
-        foreach (['templates', 'assets', 'uploads'] as $fileGroup) {
-            $key = "{$fileGroup}Parsed";
-            if (is_array($input->{$key} = self::jsonDecodeSafe($input, $fileGroup)))
-                $v->rule("{$key}.*", 'nonRelativePath');
-            else
-                $customErrors[] = "{$fileGroup} must be an array";
-        }
+            ->rule('signingKey', 'minLength', Packager::MIN_SIGNING_KEY_LEN);
+        //
+        foreach (['templates', 'assets', 'uploads'] as $fileGroup)
+            $v->rule("{$fileGroup}.*", 'nonRelativePath');
+        //
+        $v->rule("plugins.*", 'identifier');
+        //
         return array_merge($customErrors, $v->validate($input));
-    }
-    /**
-     * @return mixed
-     */
-    private static function jsonDecodeSafe(\stdClass $input, string $key) {
-        $candidate = $input->$key ?? null;
-        return is_string($candidate) ? json_decode($candidate) : null;
     }
 }

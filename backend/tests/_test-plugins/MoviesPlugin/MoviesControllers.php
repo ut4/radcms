@@ -2,14 +2,10 @@
 
 namespace RadPlugins\MoviesPlugin;
 
-use Pike\Response;
-use RadCms\Content\DAO;
-use RadCms\Content\DMO;
-use Pike\Request;
-use RadCms\ContentType\ContentTypeCollection;
-use Pike\PikeException;
+use Pike\{ArrayUtils, PikeException, Request, Response};
 use RadCms\Common\LoggerAccess;
-use Pike\ArrayUtils;
+use RadCms\Content\{DAO, DMO};
+use RadCms\ContentType\ContentTypeCollection;
 
 class MoviesControllers {
     /**

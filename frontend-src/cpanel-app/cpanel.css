@@ -203,8 +203,18 @@
     border: none;
 }
 
-/* View-specific */
+/* -- View-specific ---- */
+/* #/manage-content-types */
 .blurred:not(.full-width) {
     opacity: 0.3;
     pointer-events: none;
+}
+/* #/pack-website */
+.checkbox-list .form-checkbox {
+    margin: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+}
+.checkbox-list .form-group {
+    margin: 0;
 }
