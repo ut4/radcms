@@ -9,7 +9,7 @@ use RadCms\ContentType\ContentTypeMigrator;
 use RadCms\Entities\PluginPackData;
 
 /**
- * Rajapinta, jonka lisäosien "main"-luokkien (RAD_PUBLIC_PATH .
+ * Rajapinta, jonka lisäosien "main"-luokkien (RAD_WORKSPACE_PATH .
  * 'plugins/PluginName/PluginName.php') tulee implementoida.
  */
 interface PluginInterface {

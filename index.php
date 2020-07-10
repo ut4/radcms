@@ -3,9 +3,9 @@
 define('RAD_VERSION', '0.3.0-preview');
 
 $config = require 'config.php';
-$loader = require RAD_BASE_PATH . 'vendor/autoload.php';
-$loader->addPsr4('RadSite\\', RAD_PUBLIC_PATH . 'site');
-$loader->addPsr4('RadPlugins\\', RAD_PUBLIC_PATH . 'plugins');
+$loader = require RAD_BACKEND_PATH . 'vendor/autoload.php';
+$loader->addPsr4('RadSite\\', RAD_WORKSPACE_PATH . 'site');
+$loader->addPsr4('RadPlugins\\', RAD_WORKSPACE_PATH . 'plugins');
 
 ////////////////////////////////////////////////////////////////////////////////
 $logger = new \Monolog\Logger('mainLogger');

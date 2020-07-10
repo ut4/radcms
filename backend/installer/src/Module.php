@@ -5,9 +5,8 @@ declare(strict_types=1);
 namespace RadCms\Installer;
 
 use Auryn\Injector;
-use RadCms\Packager\PackageStreamInterface;
-use RadCms\Packager\ZipPackageStream;
 use RadCms\AppContext;
+use RadCms\Packager\{PackageStreamInterface, ZipPackageStream};
 
 abstract class Module {
     /**

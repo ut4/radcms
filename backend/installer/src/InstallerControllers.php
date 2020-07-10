@@ -4,27 +4,22 @@ declare(strict_types=1);
 
 namespace RadCms\Installer;
 
-use Pike\Request;
-use Pike\Response;
-use Pike\Template;
-use Pike\Validation;
-use Pike\FileSystem;
-use Pike\FileSystemInterface;
-use Pike\PikeException;
+use Pike\{FileSystemInterface, PikeException, Request, Response, Template, Validation};
+use RadCms\Packager\Packager;
 
 class InstallerControllers {
-    /** @var string $siteDirPath */
-    private $siteDirPath;
-    /** @var \Pike\FileSystemInterface $fs */
+    /** @var \Pike\FileSystemInterface */
     private $fs;
+    /** @var string */
+    private $packageLocationPath;
     /**
      * @param \Pike\FileSystemInterface $fs
-     * @param string $indexDirPath = INDEX_DIR_PATH
+     * @param string $packageLocationPath
      */
     public function __construct(FileSystemInterface $fs,
-                                string $indexDirPath = INDEX_DIR_PATH) {
-        $this->siteDirPath = FileSystem::normalizePath($indexDirPath) . '/';
+                                string $packageLocationPath = RAD_PUBLIC_PATH) {
         $this->fs = $fs;
+        $this->packageLocationPath = $packageLocationPath;
     }
     /**
      * GET /.
@@ -32,10 +27,6 @@ class InstallerControllers {
      * @param \Pike\Response $res
      */
     public function renderHomeView(Response $res): void {
-        if (!defined('INDEX_DIR_PATH')) {
-            $res->status(400)->html('Corrupt install.php (INDEX_DIR_PATH missing).');
-            return;
-        }
         $tmpl = new Template(__DIR__ . '/main-view.tmpl.php');
         $res->html($tmpl->render([
             'packageExists' => $this->findPackageFile() !== null
@@ -52,10 +43,10 @@ class InstallerControllers {
             return;
         }
         // @allow \Pike\PikeException
-        $installer->doInstall($req->body);
+        $workspaceDirPath = $installer->doInstall($req->body);
         $res->json(json_encode(['ok' => 'ok',
-                                'warnings' => $installer->getWarnings(),
-                                'siteWasInstalledTo' => $this->siteDirPath]));
+                                'siteWasInstalledTo' => $workspaceDirPath,
+                                'warnings' => $installer->getWarnings()]));
     }
     /**
      * POST /from-package.
@@ -72,9 +63,8 @@ class InstallerControllers {
         // @allow \Pike\PikeException
         $settings = $installer->doInstall($filePath, $req->body);
         $res->json(json_encode(['ok' => 'ok',
-                                'warnings' => $installer->getWarnings(),
-                                'siteWasInstalledTo' => $this->siteDirPath,
-                                'mainQueryVar' => $settings->mainQueryVar]));
+                                'mainQueryVar' => $settings->mainQueryVar,
+                                'warnings' => $installer->getWarnings()]));
     }
     /**
      * @return string[]
@@ -110,7 +100,7 @@ class InstallerControllers {
      */
     private function validateInstallFromPackageInput(Request $req): array {
         return Validation::makeObjectValidator()
-            ->rule('unlockKey', 'minLength', 12)
+            ->rule('unlockKey', 'minLength', Packager::MIN_SIGNING_KEY_LEN)
             ->rule('baseUrl', 'minLength', 1)
             ->validate($req->body);
     }
@@ -118,7 +108,7 @@ class InstallerControllers {
      * @return string Ensimmäisen serverin rootista löytyneen .radsite-tiedoston absoluuttinen polku, tai null
      */
     private function findPackageFile(): ?string {
-        $files = $this->fs->readDir($this->siteDirPath, '*.radsite');
+        $files = $this->fs->readDir($this->packageLocationPath, '*.radsite');
         return $files ? $files[0] : null;
     }
 }

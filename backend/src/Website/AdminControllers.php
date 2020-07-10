@@ -30,7 +30,7 @@ class AdminControllers {
         $apiState = $cmsState->getApiConfigs();
         // @allow \Exception
         $apiState->triggerEvent(BaseAPI::ON_PAGE_LOADED, true, $req);
-        $tmpl = new MagicTemplate(RAD_BASE_PATH . 'src/Website/cpanel.tmpl.php',
+        $tmpl = new MagicTemplate(RAD_BACKEND_PATH . 'src/Website/cpanel.tmpl.php',
                                   null,
                                   $translator);
         $role = $req->user->role;

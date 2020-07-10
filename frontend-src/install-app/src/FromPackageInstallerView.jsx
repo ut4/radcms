@@ -48,8 +48,7 @@ class FromPackageInstallerView extends preact.Component {
         http.post('?q=/from-package', {unlockKey: this.state.values.unlockKey,
                                        baseUrl: this.props.baseUrl})
             .then(details => {
-                this.setState({installDetails: {siteWasInstalledTo: details.siteWasInstalledTo,
-                                                mainQueryVar: details.mainQueryVar}});
+                this.setState({installDetails: {mainQueryVar: details.mainQueryVar}});
             })
             .catch(() => {
                 toasters.main('Asennus epäonnistui', 'error');

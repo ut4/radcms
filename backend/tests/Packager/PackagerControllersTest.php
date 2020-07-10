@@ -64,14 +64,6 @@ final class PackagerControllersTest extends DbTestCase {
             'mockPluginPackData' => self::makeMockPluginPackData(),
         ];
     }
-    private static function makeMockPluginPackData() {
-        $out = new PluginPackData;
-        $out->initialContent = [['MoviesPlugin', [
-            (object) ['title' => 'Movie1', 'releaseYear' => '2019'],
-            (object) ['title' => 'Movie2', 'releaseYear' => '2020'],
-        ]]];
-        return $out;
-    }
     private function sendCreatePackageRequest($s) {
         $auth = $this->createMock(Authenticator::class);
         $auth->method('getIdentity')
@@ -163,7 +155,7 @@ final class PackagerControllersTest extends DbTestCase {
                             $fileListFileContents);
     }
     private function verifyPhpFilesWereIncluded($s) {
-        $base = RAD_PUBLIC_PATH . 'site/';
+        $base = RAD_WORKSPACE_PATH . 'site/';
         $this->assertEquals($this->mockPackageStream->mockReadFile("{$base}Site.php"),
             $s->packageCreatedFromResponse->read('Site.php'));
         foreach (TestSite::TEMPLATES as $relativePath) {
@@ -172,7 +164,7 @@ final class PackagerControllersTest extends DbTestCase {
         }
     }
     private function verifyThemeAssetsWereIncluded($s) {
-        $base = RAD_PUBLIC_PATH . 'site/';
+        $base = RAD_PUBLIC_PATH . 'frontend/';
         foreach (TestSite::ASSETS as $relativePath) {
             $this->assertEquals($this->mockPackageStream->mockReadFile("{$base}{$relativePath}"),
                 $s->packageCreatedFromResponse->read($relativePath));
@@ -199,5 +191,13 @@ final class PackagerControllersTest extends DbTestCase {
         $this->assertIsObject($actualPluginData);
         $this->assertEquals($s->mockPluginPackData->initialContent,
                             $actualPluginData->initialContent);
+    }
+    public static function makeMockPluginPackData() {
+        $out = new PluginPackData;
+        $out->initialContent = [['Movies', [
+            (object) ['title' => 'Movie1', 'releaseYear' => 2019],
+            (object) ['title' => 'Movie2', 'releaseYear' => 2020],
+        ]]];
+        return $out;
     }
 }

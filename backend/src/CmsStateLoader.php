@@ -87,7 +87,7 @@ class CmsStateLoader {
     private static function scanPluginsFromDisk(\ArrayObject $to,
                                                 FileSystemInterface $fs): void {
         // @allow \Pike\PikeException
-        $paths = $fs->readDir(RAD_PUBLIC_PATH . 'plugins', '*', GLOB_ONLYDIR);
+        $paths = $fs->readDir(RAD_WORKSPACE_PATH . 'plugins', '*', GLOB_ONLYDIR);
         foreach ($paths as $path) {
             $clsName = substr($path, strrpos($path, '/') + 1);
             $to->append(new Plugin($clsName));

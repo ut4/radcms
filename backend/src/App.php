@@ -74,7 +74,7 @@ class App {
         $container->delegate(Translator::class, function () {
             $t = self::$ctx->translator;
             if (!$t->hasKey('__loaded')) {
-                $mainLangFilePath = RAD_PUBLIC_PATH . 'translations/' .
+                $mainLangFilePath = RAD_WORKSPACE_PATH . 'translations/' .
                     self::$ctx->cmsState->getSiteInfo()->lang . '.php';
                 if (self::$fs->isFile($mainLangFilePath))
                     $t->addStrings(require $mainLangFilePath);

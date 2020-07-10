@@ -2,9 +2,9 @@
 <html>
     <head>
         <meta charset="utf-8">
-        <link rel="stylesheet" href="<?= RAD_BASE_URL ?>frontend/vendor/vendor.bundle.css">
-        <link rel="stylesheet" href="<?= RAD_BASE_URL ?>frontend/common.css">
-        <link rel="stylesheet" href="<?= RAD_BASE_URL ?>frontend/cpanel-app.css">
+        <link rel="stylesheet" href="<?= RAD_BASE_URL ?>frontend/rad/vendor/vendor.bundle.css">
+        <link rel="stylesheet" href="<?= RAD_BASE_URL ?>frontend/rad/common.css">
+        <link rel="stylesheet" href="<?= RAD_BASE_URL ?>frontend/rad/cpanel-app.css">
         <script>window.dataBridge = {
             controlPanel: null,
             waitingData: null,
@@ -45,11 +45,11 @@
                     history.replaceState(null, null, p.replace(window.location.origin, ''));
             });
         }());</script>
-        <script src="<?= $this->assetUrl('frontend/vendor/vendor.bundle.min.js') ?>"></script>
-        <script src="<?= $this->assetUrl('frontend/rad-commons.js') ?>"></script>
-        <script src="<?= $this->assetUrl('frontend/rad-cpanel-commons.js') ?>"></script>
+        <script src="<?= $this->assetUrl('frontend/rad/vendor/vendor.bundle.min.js') ?>"></script>
+        <script src="<?= $this->assetUrl('frontend/rad/rad-commons.js') ?>"></script>
+        <script src="<?= $this->assetUrl('frontend/rad/rad-cpanel-commons.js') ?>"></script>
         <?= $this->jsBundle($adminJsFiles) ?>
         <script>window.dataFromAdminBackend = <?= $dataToFrontend ?>;</script>
-        <script src="<?= $this->assetUrl('frontend/rad-cpanel-app.js') ?>?v=<?= time() ?>"></script>
+        <script src="<?= $this->assetUrl('frontend/rad/rad-cpanel-app.js') ?>?v=<?= time() ?>"></script>
     </body>
 </html>

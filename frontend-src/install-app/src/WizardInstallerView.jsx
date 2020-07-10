@@ -23,7 +23,7 @@ class WizardInstallerView extends preact.Component {
         return <div>
             <h2>Asenna RadCMS</h2>
             { this.state.installDetails
-                ? <p class="info-box success">Sivusto asennettiin kansioon <span style="font-weight: bold">{ this.state.installDetails.siteWasInstalledTo }</span>. Aloita lukemalla site/README.md, siirry <a href={ this.props.makeUrl('', this.state.installDetails) }>sivustolle</a>, tai hallintanäkymän <a href={ this.props.makeUrl('login', this.state.installDetails) }>kirjautumissivulle</a>.</p>
+                ? <p class="info-box success">Sivusto asennettiin kansioon <span style="font-weight: bold">{ this.state.installDetails.siteWasInstalledTo }site</span>. Aloita lukemalla site/README.md, siirry <a href={ this.props.makeUrl('', this.state.installDetails) }>sivustolle</a>, tai hallintanäkymän <a href={ this.props.makeUrl('login', this.state.installDetails) }>kirjautumissivulle</a>.</p>
                 : null
             }
             <nav class="step-indicators">
@@ -223,9 +223,11 @@ class DatabaseSettingsTab extends Tab {
                         errorLabel="Tietokannan nimi"/>
                 <InputError error={ errors.dbDatabase }/>
             </InputGroup>
-            <InputGroup classes={ classes.doCreateDb }>
-                <label htmlFor="doCreateDb" data-help-text="Luo tietokanta mikäli sitä ei ole vielä olemassa." class="form-label">Luo tietokanta</label>
-                <Input vm={ this } type="checkbox" id="doCreateDb" name="doCreateDb" defaultChecked={ this.state.values.doCreateDb }/>
+            <InputGroup>
+                <label class="form-checkbox" data-help-text="Luo tietokanta mikäli sitä ei ole vielä olemassa.">
+                    <Input vm={ this } type="checkbox" name="doCreateDb" id="doCreateDb" defaultChecked={ this.state.values.doCreateDb }/>
+                    <i class="form-icon"></i> Luo tietokanta
+                </label>
             </InputGroup>
             </div>
             <div class="optionals mt-10">

@@ -4,12 +4,8 @@ declare(strict_types=1);
 
 namespace RadCms\Installer;
 
-use Pike\Auth\Authenticator;
-use Pike\Db;
-use Pike\Auth\Crypto;
-use Pike\FileSystem;
-use Pike\FileSystemInterface;
-use Pike\PikeException;
+use Pike\Auth\{Authenticator, Crypto};
+use Pike\{Db, FileSystem, FileSystemInterface, PikeException};
 use RadCms\Auth\ACL;
 
 /**
@@ -19,24 +15,28 @@ class InstallerCommons {
     private $db;
     private $fs;
     private $crypto;
-    private $backendPath;
-    private $siteDirPath;
+    private $backendDirPath;
+    private $workspaceDirPath;
+    private $publicDirPath;
     private $warnings;
     /**
      * @param \Pike\Db $db
      * @param \Pike\FileSystemInterface $fs
      * @param \Pike\Auth\Crypto
-     * @param string $siteDirPath
+     * @param string $workspaceDirPath = RAD_WORKSPACE_PATH
+     * @param string $publicDirPath = RAD_PUBLIC_PATH
      */
     public function __construct(Db $db,
                                 FileSystemInterface $fs,
                                 Crypto $crypto,
-                                string $siteDirPath = INDEX_DIR_PATH) {
+                                string $workspaceDirPath = RAD_WORKSPACE_PATH,
+                                string $publicDirPath = RAD_PUBLIC_PATH) {
         $this->db = $db;
         $this->fs = $fs;
         $this->crypto = $crypto;
-        $this->backendPath = RAD_BACKEND_PATH;
-        $this->siteDirPath = FileSystem::normalizePath($siteDirPath) . '/';
+        $this->backendDirPath = FileSystem::normalizePath(RAD_BACKEND_PATH) . '/';
+        $this->workspaceDirPath = FileSystem::normalizePath($workspaceDirPath) . '/';
+        $this->publicDirPath = FileSystem::normalizePath($publicDirPath) . '/';
         $this->warnings = [];
     }
     /**
@@ -68,9 +68,9 @@ class InstallerCommons {
      * @throws \Pike\PikeException
      */
     public function createMainSchema(\stdClass $s): bool {
-        $sql = $this->fs->read("{$this->backendPath}assets/schema.mariadb.sql");
+        $sql = $this->fs->read("{$this->backendDirPath}assets/schema.mariadb.sql");
         if (!$sql)
-            throw new PikeException("Failed to read `{$this->backendPath}assets/schema.mariadb.sql`",
+            throw new PikeException("Failed to read `{$this->backendDirPath}assets/schema.mariadb.sql`",
                                     PikeException::FAILED_FS_OP);
         // @allow \Pike\PikeException
         $this->db->exec(str_replace('${database}', $s->dbDatabase, $sql));
@@ -131,22 +131,24 @@ class InstallerCommons {
         return true;
     }
     /**
+     * @return string[] [$workspaceDirPath, $publicDirPath]
      * @throws \Pike\PikeException
      */
-    public function createSiteDirectories(): void {
-        foreach (["{$this->siteDirPath}site/templates",
-                  "{$this->siteDirPath}uploads"] as $path) {
+    public function createPublicAndWorkspaceDirs(): array {
+        foreach (["{$this->workspaceDirPath}site/templates",
+                  "{$this->publicDirPath}uploads"] as $path) {
             if (!$this->fs->isDir($path) && !$this->fs->mkDir($path))
                 throw new PikeException("Failed to create `{$path}`",
                                         PikeException::FAILED_FS_OP);
         }
+        return [$this->workspaceDirPath, $this->publicDirPath];
     }
     /**
      * @return \stdClass
      * @throws \Pike\PikeException
      */
     public function makeDefaultAclRules(): \stdClass {
-        $fn = include "{$this->backendPath}installer/default-acl-rules.php";
+        $fn = include "{$this->backendDirPath}installer/default-acl-rules.php";
         return $fn();
     }
     /**
@@ -157,13 +159,14 @@ class InstallerCommons {
     public function generateConfigFile(\stdClass $s): bool {
         $flags = $s->useDevMode ? 'RAD_DEVMODE' : '0';
         if ($this->fs->write(
-            "{$this->siteDirPath}config.php",
+            "{$this->publicDirPath}config.php",
 "<?php
-if (!defined('RAD_BASE_PATH')) {
+if (!defined('RAD_BASE_URL')) {
     define('RAD_BASE_URL',       '{$s->baseUrl}');
     define('RAD_QUERY_VAR',      '{$s->mainQueryVar}');
-    define('RAD_BASE_PATH',      '{$this->backendPath}');
-    define('RAD_PUBLIC_PATH',    '{$this->siteDirPath}');
+    define('RAD_BACKEND_PATH',   '{$this->backendDirPath}');
+    define('RAD_WORKSPACE_PATH', '{$this->workspaceDirPath}');
+    define('RAD_PUBLIC_PATH',    '{$this->publicDirPath}');
     define('RAD_DEVMODE',        1 << 1);
     define('RAD_USE_JS_MODULES', 1 << 2);
     define('RAD_FLAGS',          {$flags});
@@ -178,7 +181,7 @@ return [
 ];
 "
         )) return true;
-        throw new PikeException("Failed to generate `{$this->siteDirPath}config.php`",
+        throw new PikeException("Failed to generate `{$this->publicDirPath}config.php`",
                                 PikeException::FAILED_FS_OP);
     }
     /**
@@ -191,14 +194,14 @@ return [
             return true;
         foreach ([
             'install.php',
-            'frontend/install-app.css',
-            'frontend/rad-install-app.js'
+            'frontend/rad/install-app.css',
+            'frontend/rad/rad-install-app.js'
         ] as $p) {
-            if (!$this->fs->unlink("{$this->siteDirPath}${p}"))
-                $this->warnings[] = "Failed to remove `{$this->siteDirPath}${p}`";
+            if (!$this->fs->unlink("{$this->publicDirPath}{$p}"))
+                $this->warnings[] = "Failed to remove `{$this->publicDirPath}{$p}`";
         }
         //
-        $installerDirPath = "{$this->backendPath}installer";
+        $installerDirPath = "{$this->backendDirPath}installer";
         if (($failedEntry = $this->deleteFilesRecursive($installerDirPath)) ||
             $this->fs->isDir($installerDirPath)) {
             $this->warnings[] = 'Failed to remove installer-files `' .
@@ -223,14 +226,20 @@ return [
     /**
      * @return string
      */
-    public function getBackendPath(): string {
-        return $this->backendPath;
+    public function getBackendDirPath(): string {
+        return $this->backendDirPath;
     }
     /**
      * @return string
      */
-    public function getSiteDirPath(): string {
-        return $this->siteDirPath;
+    public function getPublicDirPath(): string {
+        return $this->publicDirPath;
+    }
+    /**
+     * @param string $path
+     */
+    public function setPublicDirPath(string $path): void {
+        $this->publicDirPath = FileSystem::normalizePath($path) . '/';
     }
     /**
      * @return string[]

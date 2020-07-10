@@ -38,7 +38,7 @@ module.exports = args => {
             input: 'frontend-src/commons/main.js',
             output: makeOutputCfg({
                 name: 'radCommons',
-                file: 'frontend/rad-commons.js'
+                file: 'frontend/rad/rad-commons.js'
             }),
             plugins: [makeJsxPlugin()],
             watch: {clearScreen: false}
@@ -46,7 +46,7 @@ module.exports = args => {
             input: 'frontend-src/cpanel-commons/main.js',
             output: makeOutputCfg({
                 name: 'radCpanelCommons',
-                file: 'frontend/rad-cpanel-commons.js',
+                file: 'frontend/rad/rad-cpanel-commons.js',
                 globals: {[commonsPath]: 'radCommons'},
             }),
             external: [commonsPath],
@@ -58,7 +58,7 @@ module.exports = args => {
             input: 'frontend-src/cpanel-app/main.js',
             output: makeOutputCfg({
                 name: 'radCpanelApp',
-                file: 'frontend/rad-cpanel-app.js',
+                file: 'frontend/rad/rad-cpanel-app.js',
                 globals: allGlobals,
             }),
             external: allExternals,
@@ -75,7 +75,7 @@ module.exports = args => {
         return [{
             input: 'frontend-src/install-app/main.js',
             output: makeOutputCfg({
-                file: 'frontend/rad-install-app.js',
+                file: 'frontend/rad/rad-install-app.js',
                 globals: {[commonsPath]: 'radCommons'},
             }),
             external: [commonsPath],
@@ -90,7 +90,7 @@ module.exports = args => {
             input: 'frontend-src/auth-apps/main.js',
             output: makeOutputCfg({
                 name: 'radAuthApps',
-                file: 'frontend/rad-auth-apps.js',
+                file: 'frontend/rad/rad-auth-apps.js',
                 globals: {[commonsPath]: 'radCommons'},
             }),
             external: [commonsPath],

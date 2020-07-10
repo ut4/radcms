@@ -14,5 +14,6 @@ abstract class TestSite {
     public const ASSETS = [self::ASSET_1_PATH, self::ASSET_2_PATH];
     public const UPLOADS = [self::UPLOAD_ITEM_1_PATH];
     public const PLUGINS = ['MoviesPlugin'];
-    public const DIRS = ['templates/my-tags', 'templates', 'my-js'];
+    public const WORKSPACE_DIRS = ['templates/my-tags', 'templates'];
+    public const PUBLIC_DIRS = ['my-js'];
 }

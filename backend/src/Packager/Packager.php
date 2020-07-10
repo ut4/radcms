@@ -4,11 +4,8 @@ declare(strict_types=1);
 
 namespace RadCms\Packager;
 
-use Pike\{AppConfig, ArrayUtils, Db};
-use Pike\Auth\Crypto;
-use Pike\{FileSystemInterface, PikeException};
-use RadCms\CmsState;
-use RadCms\Content\DAO;
+use Pike\{AppConfig, ArrayUtils, Auth\Crypto, Db, FileSystemInterface, PikeException};
+use RadCms\{CmsState, Content\DAO};
 use RadCms\ContentType\{ContentTypeCollection, ContentTypeMigrator};
 use RadCms\Entities\PluginPackData;
 use RadCms\Plugin\Plugin;
@@ -18,7 +15,7 @@ class Packager {
     public const LOCAL_NAMES_PHP_FILES_FILE_LIST = 'php-files-list.json';
     public const LOCAL_NAMES_ASSETS_FILE_LIST = 'theme-asset-files-list.json';
     public const LOCAL_NAMES_UPLOADS_FILE_LIST = 'theme-upload-files-list.json';
-    public const LOCAL_NAMES_PLUGINS = 'theme-plugins.json';
+    public const LOCAL_NAMES_PLUGINS = 'theme-plugins.data';
     public const MIN_SIGNING_KEY_LEN = 12;
     /** @var \Pike\Db */
     private $db;
@@ -53,28 +50,28 @@ class Packager {
      * @throws \Pike\PikeException
      */
     public function preRun(): \stdClass {
-        $siteDirPath = RAD_PUBLIC_PATH . 'site/';
-        $len1 = mb_strlen($siteDirPath);
-        $fullPathToRelPath = function ($fullFilePath) use ($len1) {
-            return substr($fullFilePath, $len1);
-        };
+        $workspaceDirPath = RAD_WORKSPACE_PATH . 'site/';
         $uploadsDirPath = RAD_PUBLIC_PATH . 'uploads/';
-        $len2 = mb_strlen($uploadsDirPath);
+        $frontendDirPath = RAD_PUBLIC_PATH . 'frontend/';
+        $makeRelatifier = function ($len) { return function ($fullFilePath) use ($len) {
+            return substr($fullFilePath, $len);
+        }; };
         $flags = \FilesystemIterator::CURRENT_AS_PATHNAME|\FilesystemIterator::SKIP_DOTS;
+        $f = str_replace('/', '\\/', $frontendDirPath);
         // @allow \Pike\PikeException
         $out = (object) [
-            'templates' => array_map($fullPathToRelPath,
-                $this->fs->readDirRecursive($siteDirPath, '/^.*\.tmpl\.php$/')),
-            'assets' => array_map($fullPathToRelPath,
-                $this->fs->readDirRecursive($siteDirPath, '/^.*\.(css|js)$/')),
-            'uploads' => array_map(function ($fullFilePath) use ($len2) {
-                return substr($fullFilePath, $len2);
-            }, $this->fs->readDirRecursive($uploadsDirPath, '/.*/', $flags)),
+            'templates' => array_map($makeRelatifier(mb_strlen($workspaceDirPath)),
+                $this->fs->readDirRecursive($workspaceDirPath, '/^.*\.tmpl\.php$/')),
+            'assets' => array_map($makeRelatifier(mb_strlen($frontendDirPath)),
+                $this->fs->readDirRecursive($frontendDirPath, "/^(?!{$f}rad\/).*\.(css|js)$/")),
+            'uploads' => array_map($makeRelatifier(mb_strlen($uploadsDirPath)),
+                $this->fs->readDirRecursive($uploadsDirPath, '/.*/', $flags)),
             'plugins' => $this->getInstalledPluginNames(),
         ];
         sort($out->templates);
         sort($out->assets);
         sort($out->uploads);
+        sort($out->plugins);
         return $out;
     }
     /**
@@ -142,7 +139,7 @@ class Packager {
      */
     private function addPhpFiles(PackageStreamInterface $package,
                                  \stdClass $input): bool {
-        $base = RAD_PUBLIC_PATH . 'site/';
+        $base = RAD_WORKSPACE_PATH . 'site/';
         //
         $fileList = ['Site.php'];
         if ($this->fs->isFile("{$base}Theme.php"))
@@ -162,7 +159,7 @@ class Packager {
                                    \stdClass $input): bool {
         $package->addFromString(self::LOCAL_NAMES_ASSETS_FILE_LIST,
                                 json_encode($input->assets));
-        $base = RAD_PUBLIC_PATH . 'site/';
+        $base = RAD_PUBLIC_PATH . 'frontend/';
         foreach ($input->assets as $relativePath)
             // @allow \Pike\PikeException
             $package->addFile("{$base}{$relativePath}", $relativePath);
@@ -192,14 +189,14 @@ class Packager {
             // @allow \Pike\PikeException
             $pluginImpl = (new Plugin($pluginName))->instantiate();
             //
-            $data = new PluginPackData;
-            $pluginImpl->pack($dao, $data);
+            $fillThisPlease = new PluginPackData;
+            $pluginImpl->pack($dao, $fillThisPlease);
             // @allow \Pike\PikeException
-            ContentTypeMigrator::validateInitialData($data->initialContent);
+            ContentTypeMigrator::validateInitialData($fillThisPlease->initialContent);
             // todo data->assets
             // todo sorsat
             //
-            $plugins->{$pluginName} = $data;
+            $plugins->{$pluginName} = $fillThisPlease;
         }
         // @allow \Pike\PikeException
         $data = $this->encryptData($input->signingKey, $plugins);

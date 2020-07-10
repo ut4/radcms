@@ -139,7 +139,7 @@ class MagicTemplate extends Template {
         return implode(' ', array_map(function ($f) {
             $attrsMap = $f->attrs;
             if (!array_key_exists('rel', $attrsMap)) $attrsMap['rel'] = 'stylesheet';
-            return '<link href="' . $this->assetUrl('site/' . $this->e($f->url)) .
+            return '<link href="' . $this->assetUrl("frontend/{$this->e($f->url)}") .
                    '"' . self::attrMapToStr($attrsMap) . '>';
         }, $this->_cssFiles));
     }
@@ -148,7 +148,7 @@ class MagicTemplate extends Template {
      */
     public function jsFiles(): string {
         return implode(' ', array_map(function ($f) {
-            return '<script src="' . $this->assetUrl('site/' . $this->e($f->url)) .
+            return '<script src="' . $this->assetUrl("frontend/{$this->e($f->url)}") .
                    '"' . ($f->attrs ? '' : self::attrMapToStr($f->attrs)) .
                    '></script>';
         }, $this->_jsFiles));
@@ -162,13 +162,13 @@ class MagicTemplate extends Template {
     public function jsBundle(array $files, bool $includeVendor = true): string {
         $baseAttrs = !(RAD_FLAGS & RAD_USE_JS_MODULES) ? [] : ['type' => 'module'];
         return ($includeVendor
-            ? '<script src="'. $this->assetUrl('frontend/vendor/vendor.bundle.min.js') . '"></script>'
+            ? '<script src="'. $this->assetUrl('frontend/rad/vendor/vendor.bundle.min.js') . '"></script>'
             : '') .
         implode('', array_map(function ($f) use ($baseAttrs) {
             [$url, $attrs] = is_string($f)
                 ? [$f, $baseAttrs]
                 : [$f->url, array_merge($f->attrs, $baseAttrs)];
-            return '<script src="' . $this->assetUrl($this->e($url)) . '"' .
+            return '<script src="' . $this->assetUrl("frontend/{$this->e($url)}") . '"' .
                    self::attrMapToStr($attrs) . '></script>' . PHP_EOL;
         }, $files));
     }

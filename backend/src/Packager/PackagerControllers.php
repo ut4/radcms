@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace RadCms\Packager;
 
-use Pike\{Request, Response, Validation};
-use Pike\Auth\Authenticator;
+use Pike\{Auth\Authenticator, Request, Response, Validation};
 use RadCms\Content\DAO;
 
 /**

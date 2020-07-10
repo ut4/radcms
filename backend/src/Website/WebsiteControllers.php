@@ -66,7 +66,7 @@ class WebsiteControllers {
         }
         $isMaybeLoggedIn = $req->cookie('radUserIsMaybeLoggedIn') === 'yes';
         $this->dao->fetchRevisions = $isMaybeLoggedIn;
-        $tmpl = new MagicTemplate(RAD_PUBLIC_PATH . "site/{$layoutFileName}",
+        $tmpl = new MagicTemplate(RAD_WORKSPACE_PATH . "site/{$layoutFileName}",
                                   ['_cssFiles' => $apiState->getEnqueuedCssFiles(
                                       BaseAPI::TARGET_WEBSITE_LAYOUT),
                                    '_jsFiles' => $apiState->getEnqueuedJsFiles(
@@ -127,7 +127,7 @@ class WebsiteControllers {
         return '';
     }
     /**
-     * Palauttaa uuden instanssin luokasta RAD_PUBLIC_PATH . 'site/Theme.php', tai
+     * Palauttaa uuden instanssin luokasta RAD_WORKSPACE_PATH . 'site/Theme.php', tai
      * null mikäli sitä ei ole olemassa.
      *
      * @return \RadCms\Theme\ThemeInterface

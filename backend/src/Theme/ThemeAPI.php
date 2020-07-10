@@ -14,9 +14,9 @@ class ThemeAPI extends BaseAPI {
      * registerLayoutForUrlPattern('layout.a.tmpl.php', '/foo/.*');
      * registerLayoutForUrlPattern('layout.b.tmpl.php', '.*');
      * ```
-     * Url '/foo/bar/' ja '/foo/a/b' renderöidään layoutilla RAD_PUBLIC_PATH .\
+     * Url '/foo/bar/' ja '/foo/a/b' renderöidään layoutilla RAD_WORKSPACE_PATH .\
      * "site/layout.a.tmpl.php", mutta 'bar' ja 'mita-tahansa-muuta' layoutilla
-     * RAD_PUBLIC_PATH . "site/layout.b.tmpl.php".
+     * RAD_WORKSPACE_PATH . "site/layout.b.tmpl.php".
      *
      * @param string $layoutFilePath
      * @param string $urlPattern

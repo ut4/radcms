@@ -141,7 +141,7 @@ class APIConfigsStorage {
                 throw new PikeException("{$urlMatcher->pattern} is not valid regexp",
                                         PikeException::BAD_INPUT);
             }
-            $filePath = RAD_PUBLIC_PATH . "site/{$urlMatcher->layoutFileName}";
+            $filePath = RAD_WORKSPACE_PATH . "site/{$urlMatcher->layoutFileName}";
             if (!$this->fs->isFile($filePath))
                 throw new PikeException("Failed to locate layout file `{$filePath}`",
                                         PikeException::BAD_INPUT);

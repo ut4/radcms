@@ -23,13 +23,13 @@ sup {
 /* -- Globals --- */
 @font-face {
     font-family: "Fira sans light";
-    src: url("../../frontend/assets/fira-sans-light.woff2") format("woff2");
+    src: url("../../frontend/rad/assets/fira-sans-light.woff2") format("woff2");
     font-weight: normal;
     font-style: normal;
 }
 @font-face {
     font-family: "Fira sans heavy";
-    src: url("../../frontend/assets/fira-sans-heavy.woff2") format("woff2");
+    src: url("../../frontend/rad/assets/fira-sans-heavy.woff2") format("woff2");
     font-weight: normal;
     font-style: normal;
 }

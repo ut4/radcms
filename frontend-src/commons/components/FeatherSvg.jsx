@@ -7,7 +7,7 @@ class FeatherSvg extends preact.Component {
      */
     render({iconId, className}) {
         return <svg class={ `feather${!className ? '' : ` ${className}`}` }>
-            <use xlinkHref={ `${urlUtils.assetBaseUrl}frontend/assets/feather-sprite.svg#${iconId}` }/>
+            <use xlinkHref={ `${urlUtils.assetBaseUrl}frontend/rad/assets/feather-sprite.svg#${iconId}` }/>
         </svg>;
     }
 }

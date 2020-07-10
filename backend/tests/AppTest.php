@@ -16,7 +16,7 @@ final class AppTest extends DbTestCase {
         $ctx->fs = $this->createMock(FileSystem::class);
         $ctx->fs->expects($this->once())
             ->method('readDir')
-            ->with(RAD_PUBLIC_PATH . 'plugins')
+            ->with(RAD_WORKSPACE_PATH . 'plugins')
             ->willReturn([]);
         App::create([], $ctx);
     }
@@ -43,7 +43,7 @@ final class AppTest extends DbTestCase {
         );
     }
     public function testCreateAppInitializesValidAndInstalledPlugins() {
-        $pluginDirPath = RAD_PUBLIC_PATH . 'plugins';
+        $pluginDirPath = RAD_WORKSPACE_PATH . 'plugins';
         $ctx = new AppContext;
         $ctx->db = self::$db;
         $ctx->fs = $this->createMock(FileSystem::class);

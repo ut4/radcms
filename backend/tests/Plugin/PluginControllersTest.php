@@ -31,7 +31,7 @@ final class PluginControllersTest extends DbTestCase {
         $s->ctx = new AppContext(['db' => '@auto', 'auth' => '@auto']);
         $s->ctx->fs = $this->createMock(FileSystem::class);
         $s->ctx->fs->expects($this->once())->method('readDir')->willReturn(
-            [dirname(RAD_PUBLIC_PATH) . '/_test-plugins/' . $s->testPluginName]);
+            [RAD_BACKEND_PATH . "_test-plugins/{$s->testPluginName}"]);
         $this->afterTest = function () {
             ValidPlugin::$instantiated = false;
             ValidPlugin::$initialized = false;
