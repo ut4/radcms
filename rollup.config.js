@@ -103,7 +103,7 @@ module.exports = args => {
     const cfg = require(path.resolve(__dirname, args.configInput));
     const out = {
         input: cfg.input,
-        output: makeOutputCfg({globals: allGlobals}, cfg.output),
+        output: makeOutputCfg({globals: allGlobals, banner: ''}, cfg.output),
         external: allExternals,
         plugins: [
             makeJsxPlugin([

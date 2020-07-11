@@ -1,4 +1,5 @@
-import {http, View, hookForm, InputGroup, Input, InputError, FeatherSvg, myFetch, Toaster, toasters} from '@rad-commons';
+import {http, View, hookForm, InputGroup, Input, InputError, FeatherSvg, myFetch,
+        Toaster, toasters} from '@rad-commons';
 
 /**
  * #/pack-website
@@ -11,22 +12,20 @@ class WebsitePackView extends preact.Component {
             assets: [],
             uploads: [],
             plugins: [],
-            tabs: [{isCurrent: true, cleared: false, title: 'Templaatit'},
-                   {isCurrent: false, cleared: false, title: 'Css/Js'},
-                   {isCurrent: false, cleared: false, title: 'Lataukset'},
-                   {isCurrent: false, cleared: false, title: 'Lisäosat'},
-                   {isCurrent: false, cleared: false, title: 'Yhteenveto'}],
+            tabs: [{isCurrent: true,  cleared: false},
+                   {isCurrent: false, cleared: false},
+                   {isCurrent: false, cleared: false},
+                   {isCurrent: false, cleared: false},
+                   {isCurrent: false, cleared: false}],
         });
-        http.get('/api/packager/pre-run')
-            .then(preview => {
-                const toSelectable = value => ({value, selected: true});
-                this.setState({
-                    templates: preview.templates.map(toSelectable),
-                    assets: preview.assets.map(toSelectable),
-                    uploads: preview.uploads.map(toSelectable),
-                    plugins: preview.plugins.map(toSelectable),
-                });
-            });
+        this.tabInfo = [
+            {groupName: 'templates', title: 'Templaatit', dataFetched: false, noItemsLabel: 'Templaatteja'},
+            {groupName: 'assets', title: 'Css/Js', dataFetched: false, noItemsLabel: 'Tiedostoja'},
+            {groupName: 'uploads', title: 'Lataukset', dataFetched: false, noItemsLabel: 'Latauksia'},
+            {groupName: 'plugins', title: 'Lisäosat', dataFetched: false, noItemsLabel: 'Lisäosia'},
+            {groupName: 'overview', title: 'Yhteenveto', dataFetched: false, noItemsLabel: ''},
+        ];
+        this.fetchIncludables(0);
     }
     /**
      * @access public
@@ -37,6 +36,7 @@ class WebsitePackView extends preact.Component {
             tabs[tabIdx].isCurrent = false;
             tabs[tabIdx].cleared = true;
             tabs[tabIdx + 1].isCurrent = true;
+            this.fetchIncludables(tabIdx + 1);
             this.setState({tabs});
             return;
         }
@@ -50,6 +50,7 @@ class WebsitePackView extends preact.Component {
         tabs[toIdx].isCurrent = true;
         tabs[toIdx + 1].cleared = false;
         tabs[toIdx + 1].isCurrent = false;
+        this.fetchIncludables(toIdx);
         this.setState(tabs);
     }
     /**
@@ -80,16 +81,16 @@ class WebsitePackView extends preact.Component {
                     onClick={ () => this.selectTab(i) }
                     class={ tab.isCurrent ? 'current' : '' +
                             (tab.cleared ? ' checked' : '' ) }
-                    key={ tab.title }>{ tab.title }
+                    key={ this.tabInfo[i].groupName }>{ this.tabInfo[i].title }
                     <FeatherSvg iconId="check"/>
                 </div>
             ) }</nav>
-            { ['templates', 'assets', 'uploads', 'plugins'].map((groupName, i) =>
+            { this.tabInfo.slice(0, this.tabInfo.length - 1).map((tabInfo, i) =>
                 <CheckboxListTab
-                    selectablesGroupName={ groupName }
+                    tabInfo={ tabInfo }
                     className={ `checkbox-list${!this.state.tabs[i].isCurrent ? ' hidden' : ''}` }
                     parent={ this }
-                    key={ groupName }
+                    key={ tabInfo.groupName }
                     tabIdx={ i }/>
             ) }
             <form
@@ -107,7 +108,7 @@ class WebsitePackView extends preact.Component {
                 <Toaster id="packSite"/>
                 <button onClick={ () => this.goBack(3) } class="btn btn-link mt-8"
                         type="button">&lt; Edellinen</button>
-                <button onClick={ () => this.handleSubmit() }class="btn btn-primary mt-8"
+                <button class="btn btn-primary mt-8"
                         type="submit">Paketoi</button>
             </form>
         </View>;
@@ -115,11 +116,28 @@ class WebsitePackView extends preact.Component {
     /**
      * @access private
      */
+    fetchIncludables(forTab) {
+        if (forTab >= this.tabInfo.length - 1 || this.tabInfo[forTab].dataFetched)
+            return;
+        http.get(`/api/packager/includables/${this.tabInfo[forTab].groupName}`)
+            .then(items => {
+                this.tabInfo[forTab].dataFetched = true;
+                const toSelectable = value => ({value, selected: true});
+                this.setState({
+                    [this.tabInfo[forTab].groupName]: items.map(toSelectable),
+                });
+            });
+    }
+    /**
+     * @access private
+     */
     selectTab(tabIdx) {
-        if (!this.state.tabs[tabIdx].isCurrent)
+        if (!this.state.tabs[tabIdx].isCurrent) {
+            this.fetchIncludables(tabIdx);
             this.setState({tabs: this.state.tabs.map((t, i) =>
                 Object.assign(t, {isCurrent: i === tabIdx})
             )});
+        }
     }
     /**
      * @access private
@@ -142,7 +160,7 @@ class WebsitePackView extends preact.Component {
         })
         .then(res => {
             if (res.status === 200)
-                window.saveAs(res.response, 'packed.radsite');
+                window.saveAs(res.response, `${genRandomString(32)}.radsite`);
             else
                 toasters.packSite('Jokin meni pieleen.', 'error');
         });
@@ -151,29 +169,35 @@ class WebsitePackView extends preact.Component {
 
 class CheckboxListTab extends preact.Component {
     /**
-     * @param {{selectablesGroupName: string; parent: WebsitePackView; tabIdx: number; className: string;}} props
+     * @param {{tabInfo: Object; parent: WebsitePackView; tabIdx: number; className: string;}} props
      */
-    render({selectablesGroupName, parent, tabIdx, className}) {
+    render({tabInfo, parent, tabIdx, className}) {
+        const items = parent.state[tabInfo.groupName];
         return <div class={ className }>
-            <InputGroup>
-                <label class="form-checkbox color-alt">
-                    <input onChange={ e => this.props.parent.toggleAll(e, selectablesGroupName) }
-                        type="checkbox"
-                        defaultChecked/>
-                    <i class="form-icon"></i> (Kaikki)
-                </label>
-            </InputGroup>
-            <div class="mb-8">{ parent.state[selectablesGroupName].map((s, i) =>
-                <InputGroup key={ i }>
-                <label class="form-checkbox">
-                    <input onChange={ e => this.props.parent.toggleIsSelected(s, e, selectablesGroupName) }
-                        value={ s.selected }
-                        type="checkbox"
-                        checked={ s.selected }/>
-                    <i class="form-icon"></i> { s.value }
-                </label>
-                </InputGroup>
-            ) }</div>
+            { items.length
+                ? [
+                    <InputGroup>
+                        <label class="form-checkbox color-alt">
+                            <input onChange={ e => this.props.parent.toggleAll(e, tabInfo.groupName) }
+                                type="checkbox"
+                                defaultChecked/>
+                            <i class="form-icon"></i> (Kaikki)
+                        </label>
+                    </InputGroup>,
+                    <div class="mb-8">{ items.map((s, i) =>
+                        <InputGroup key={ i }>
+                        <label class="form-checkbox">
+                            <input onChange={ e => this.props.parent.toggleIsSelected(s, e, tabInfo.groupName) }
+                                value={ s.selected }
+                                type="checkbox"
+                                checked={ s.selected }/>
+                            <i class="form-icon"></i> { s.value }
+                        </label>
+                        </InputGroup>
+                    ) }</div>
+                ]
+                : <div class="mb-8">{ !tabInfo.dataFetched ? 'Ladataan' : `${tabInfo.noItemsLabel} ei löytynyt` }.</div>
+            }
             { tabIdx > 0
                 ? <button onClick={ () => this.props.parent.goBack(tabIdx - 1) } class="btn btn-link"
                         type="button">&lt; Edellinen</button>

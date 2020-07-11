@@ -46,32 +46,41 @@ class Packager {
         $this->appConfig = $appConfig;
     }
     /**
-     * @return \stdClass {templates: string[], assets: string[], uploads: string[]}
-     * @throws \Pike\PikeException
+     * @param string $groupName
+     * @return string[]
      */
-    public function preRun(): \stdClass {
-        $workspaceDirPath = RAD_WORKSPACE_PATH . 'site/';
-        $uploadsDirPath = RAD_PUBLIC_PATH . 'uploads/';
-        $frontendDirPath = RAD_PUBLIC_PATH . 'frontend/';
+    public function getIncludables(string $groupName): array {
         $makeRelatifier = function ($len) { return function ($fullFilePath) use ($len) {
             return substr($fullFilePath, $len);
         }; };
-        $flags = \FilesystemIterator::CURRENT_AS_PATHNAME|\FilesystemIterator::SKIP_DOTS;
-        $f = str_replace('/', '\\/', $frontendDirPath);
-        // @allow \Pike\PikeException
-        $out = (object) [
-            'templates' => array_map($makeRelatifier(mb_strlen($workspaceDirPath)),
-                $this->fs->readDirRecursive($workspaceDirPath, '/^.*\.tmpl\.php$/')),
-            'assets' => array_map($makeRelatifier(mb_strlen($frontendDirPath)),
-                $this->fs->readDirRecursive($frontendDirPath, "/^(?!{$f}rad\/).*\.(css|js)$/")),
-            'uploads' => array_map($makeRelatifier(mb_strlen($uploadsDirPath)),
-                $this->fs->readDirRecursive($uploadsDirPath, '/.*/', $flags)),
-            'plugins' => $this->getInstalledPluginNames(),
-        ];
-        sort($out->templates);
-        sort($out->assets);
-        sort($out->uploads);
-        sort($out->plugins);
+        //
+        switch ($groupName) {
+        case 'templates';
+            $workspaceDirPath = RAD_WORKSPACE_PATH . 'site/';
+            $out = array_map($makeRelatifier(mb_strlen($workspaceDirPath)),
+                $this->fs->readDirRecursive($workspaceDirPath, '/^.*\.tmpl\.php$/'));
+            break;
+        case 'assets':
+            $frontendDirPath = RAD_PUBLIC_PATH . 'frontend/';
+            $f = str_replace('/', '\\/', $frontendDirPath);
+            $out = array_map($makeRelatifier(mb_strlen($frontendDirPath)),
+                $this->fs->readDirRecursive($frontendDirPath, "/^(?!{$f}rad\/).*\.(css|js)$/"));
+            break;
+        case 'uploads':
+            $uploadsDirPath = RAD_PUBLIC_PATH . 'uploads/';
+            $flags = \FilesystemIterator::CURRENT_AS_PATHNAME|\FilesystemIterator::SKIP_DOTS;
+            $out = array_map($makeRelatifier(mb_strlen($uploadsDirPath)),
+                $this->fs->readDirRecursive($uploadsDirPath, '/.*/', $flags));
+            break;
+        case 'plugins':
+            $out = $this->getInstalledPluginNames();
+            break;
+        default:
+            throw new PikeException('Unexpected groupName',
+                                    PikeException::BAD_INPUT);
+        }
+        //
+        sort($out);
         return $out;
     }
     /**

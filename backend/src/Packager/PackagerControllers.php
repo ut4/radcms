@@ -20,12 +20,15 @@ class PackagerControllers {
         $this->packager = $packager;
     }
     /**
-     * GET /api/packager/pre-run.
+     * GET /api/packager/includables/:groupName
      *
+     * @param \Pike\Request $req
      * @param \Pike\Response $res
      */
-    public function handlePreRunCreatePackage(Response $res): void {
-        $res->json($this->packager->preRun());
+    public function handleGetIncludables(Request $req, Response $res): void {
+        // @allow \Pike\PikeException
+        $items = $this->packager->getIncludables($req->params->groupName);
+        $res->json($items);
     }
     /**
      * POST /api/packager.

@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace RadCms\Cli;
 
-use RadCms\AppContext;
-use RadCms\Auth\ACL;
+use RadCms\{AppContext, Auth\ACL};
 
 abstract class Module {
     /**

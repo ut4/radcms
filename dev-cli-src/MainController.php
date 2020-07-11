@@ -6,7 +6,7 @@ namespace RadCms\Cli;
 
 use Pike\Request;
 
-class MainController {
+final class MainController {
     /**
      * `php dev-cli.php make-release <kohdeKansio>`: bundlaa RadCMS:n kokonai-
      * suudessaan github.com/ut4/radcms/releases/<vers> varten kansioon <kohdeKansio>.

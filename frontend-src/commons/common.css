@@ -142,6 +142,10 @@ p.info-box.success, .toaster-message.success {
     border-color: rgb(47,200,139);
     background-color: rgba(47,200,139,0.06);
 }
+p.info-box, .toaster-message {
+    border-left: 2px solid rgb(147, 188, 243);
+    background-color: rgba(147, 188, 243, 0.07);
+}
 .toaster-message {
     display: flex;
     align-items: center;

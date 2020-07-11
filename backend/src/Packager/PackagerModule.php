@@ -17,8 +17,8 @@ abstract class PackagerModule {
         $ctx->router->map('POST', '/api/packager',
             [PackagerControllers::class, 'handleCreatePackage', 'pack:websites']
         );
-        $ctx->router->map('GET', '/api/packager/pre-run',
-            [PackagerControllers::class, 'handlePreRunCreatePackage', 'prePack:websites']
+        $ctx->router->map('GET', '/api/packager/includables/[templates|assets|uploads|plugins:groupName]',
+            [PackagerControllers::class, 'handleGetIncludables', 'prePack:websites']
         );
     }
     /**
