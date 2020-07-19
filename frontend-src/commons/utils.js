@@ -46,18 +46,21 @@ const urlUtils = {
     },
     /**
      * @param {string} url
+     * @returns {string}
      */
     makeUrl(url) {
         return this.baseUrl + this.normalizeUrl(url);
     },
     /**
      * @param {string} url
+     * @returns {string}
      */
     makeAssetUrl(url) {
         return this.assetBaseUrl + this.normalizeUrl(url);
     },
     /**
      * @param {string} url '/foo' -> 'foo', 'bar' -> 'bar'
+     * @returns {string}
      */
     normalizeUrl(url) {
         return url[0] !== '/' ? url : url.substr(1);

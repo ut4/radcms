@@ -114,7 +114,7 @@ class ContentTypesManageView extends preact.Component {
         .catch(err => {
             services.console.error(err);
             toasters.main('Sisältötyypin ' + (mode === 'create' ? 'luonti' : 'päivitys') +
-                        ' epäonnistui.', 'error');
+                          ' epäonnistui.', 'error');
         });
     }
     /**

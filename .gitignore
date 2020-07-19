@@ -15,6 +15,7 @@ frontend/*
 !frontend/rad/cpanel-app.css
 !frontend/rad/install-app.css
 internal/
+!backend/**/Internal
 plugins/
 site/
 translations/

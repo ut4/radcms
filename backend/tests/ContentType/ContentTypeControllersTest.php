@@ -2,14 +2,10 @@
 
 namespace RadCms\Tests\ContentType;
 
-use Pike\ArrayUtils;
-use Pike\TestUtils\DbTestCase;
-use Pike\TestUtils\HttpTestUtils;
-use RadCms\Tests\_Internal\ContentTestUtils;
-use Pike\Request;
-use RadCms\ContentType\ContentTypeCollection;
-use RadCms\ContentType\ContentTypeMigrator;
-use RadCms\ContentType\ContentTypeValidator;
+use Pike\{ArrayUtils, Request};
+use Pike\TestUtils\{DbTestCase, HttpTestUtils};
+use RadCms\ContentType\{ContentTypeCollection, ContentTypeMigrator, ContentTypeValidator};
+use RadCms\Tests\_Internal\{ContentTestUtils};
 
 final class ContentTypeControllersTest extends DbTestCase {
     use HttpTestUtils;
@@ -151,13 +147,45 @@ final class ContentTypeControllersTest extends DbTestCase {
     ////////////////////////////////////////////////////////////////////////////
 
 
+    public function testPUTReorderFieldsSavesNewOrderOfContentTypeFields() {
+        $s = $this->setupReorderFieldsTest();
+        $this->installTestContentType($s);
+        //
+        $this->sendUpdateRequest($s, '/reorder-fields');
+        $this->verifyUpdatedContentTypeFieldsOrder($s);
+        //
+        $this->uninstallTestContentType($s);
+    }
+    private function setupReorderFieldsTest() {
+        return (object) [
+            'contentTypeName' => 'Another',
+            'reqBody' => (object) ['fields' => [
+                (object) ['name' => 'field2',],
+                (object) ['name' => 'field1',],
+            ]],
+            'testContentTypes' => new ContentTypeCollection()
+        ];
+    }
+    private function verifyUpdatedContentTypeFieldsOrder($s) {
+        $parsed = $this->getInternalInstalledContentTypes();
+        $actualCompactCtype = $this->findEntryFromInternalContentTypes($s->contentTypeName,
+                                                                       $parsed);
+        $this->assertNotNull($actualCompactCtype);
+        $this->assertEquals($s->reqBody->fields[0]->name, $actualCompactCtype->fields[0]->name);
+        $this->assertEquals($s->reqBody->fields[1]->name, $actualCompactCtype->fields[1]->name);
+        $this->verifyContentTypeTableExists($s->contentTypeName, true);
+    }
+
+
+    ////////////////////////////////////////////////////////////////////////////
+
+
     public function testPUTContentTypesUpdatesBasicInfoOfContentType() {
         $s = $this->setupUpdateTest();
         $this->installTestContentType($s);
         //
-        $this->sendUpdateContentTypeRequest($s);
-        $this->verifyUpdatedBasicInfoToInternalTable($s);
-        $this->verifyDidNotRenameContentTypeTable($s);
+        $this->sendUpdateRequest($s);
+        $this->verifyUpdatedContentType($s);
         //
         $this->uninstallTestContentType($s);
     }
@@ -172,23 +200,26 @@ final class ContentTypeControllersTest extends DbTestCase {
             'testContentTypes' => new ContentTypeCollection()
         ];
     }
-    private function sendUpdateContentTypeRequest($s) {
-        $req = new Request("/api/content-types/{$s->contentTypeName}",
+    private function sendUpdateRequest($s, $url = '') {
+        $req = new Request("/api/content-types/{$s->contentTypeName}{$url}",
                            'PUT',
                            $s->reqBody);
         $res = $this->createMockResponse(['ok' => 'ok']);
         $app = $this->makeTestApp();
         $this->sendRequest($req, $res, $app);
     }
-    private function verifyUpdatedBasicInfoToInternalTable($s) {
-        $parsed = $this->getInternalInstalledContentTypesFromDb();
+    private function verifyUpdatedContentType($s, $newName = null) {
+        $parsed = $this->getInternalInstalledContentTypes();
         $actualCompactCtype = $this->findEntryFromInternalContentTypes($s->reqBody->name,
                                                                        $parsed);
         $this->assertNotNull($actualCompactCtype);
         $this->assertEquals($s->reqBody->friendlyName, $actualCompactCtype->friendlyName);
-    }
-    private function verifyDidNotRenameContentTypeTable($s) {
-        $this->verifyContentTypeTableExists($s->contentTypeName, true);
+        if (!$newName)
+            $this->verifyContentTypeTableExists($s->contentTypeName, true);
+        else {
+            $this->verifyContentTypeTableExists($s->contentTypeName, false);
+            $this->verifyContentTypeTableExists($newName, true);
+        }
     }
 
 
@@ -200,16 +231,11 @@ final class ContentTypeControllersTest extends DbTestCase {
         $this->installTestContentType($s);
         //
         $s->reqBody->name = "Updated{$s->contentTypeName}";
-        $this->sendUpdateContentTypeRequest($s);
-        $this->verifyUpdatedBasicInfoToInternalTable($s);
-        $this->verifyRenamedContentTypeTable($s);
+        $this->sendUpdateRequest($s);
+        $this->verifyUpdatedContentType($s, $s->reqBody->name);
         //
         $s->testContentTypes[0]->name = $s->reqBody->name;
         $this->uninstallTestContentType($s);
-    }
-    private function verifyRenamedContentTypeTable($s) {
-        $this->verifyContentTypeTableExists($s->contentTypeName, false);
-        $this->verifyContentTypeTableExists($s->reqBody->name, true);
     }
 
 
@@ -222,8 +248,7 @@ final class ContentTypeControllersTest extends DbTestCase {
         $this->verifyContentTypeTableExists($s->contentTypeName, true);
         //
         $this->sendDeleteContentTypeRequest($s);
-        $this->verifyDeletedContentTypeTable($s);
-        $this->verifyDeletedContentTypeFromInternalTable($s);
+        $this->verifyDeletedContentType($s);
     }
     private function setupDeleteTest() {
         return (object) [
@@ -237,13 +262,11 @@ final class ContentTypeControllersTest extends DbTestCase {
         $app = $this->makeTestApp();
         $this->sendRequest($req, $res, $app);
     }
-    private function verifyDeletedContentTypeTable($s) {
-        $this->verifyContentTypeTableExists($s->contentTypeName, false);
-    }
-    private function verifyDeletedContentTypeFromInternalTable($s) {
-        $compactCtypes = $this->getInternalInstalledContentTypesFromDb();
+    private function verifyDeletedContentType($s) {
+        $compactCtypes = $this->getInternalInstalledContentTypes();
         $this->assertNull($this->findEntryFromInternalContentTypes($s->contentTypeName,
                                                                    $compactCtypes));
+        $this->verifyContentTypeTableExists($s->contentTypeName, false);
     }
 
 
@@ -303,7 +326,7 @@ final class ContentTypeControllersTest extends DbTestCase {
     }
     private function verifyAddedFieldToInternalTable($s) {
         $fieldData = $s->reqBody;
-        $parsed = $this->getInternalInstalledContentTypesFromDb();
+        $parsed = $this->getInternalInstalledContentTypes();
         $actualCompactCtype = $this->findEntryFromInternalContentTypes($s->contentTypeName,
                                                                        $parsed);
         $this->assertNotNull($actualCompactCtype);
@@ -352,7 +375,7 @@ final class ContentTypeControllersTest extends DbTestCase {
                                            false);
     }
     private function verifyDeletedFieldFromInternalTable($s) {
-        $parsed = $this->getInternalInstalledContentTypesFromDb();
+        $parsed = $this->getInternalInstalledContentTypes();
         $actualCompactCtype = $this->findEntryFromInternalContentTypes($s->contentTypeName,
                                                                        $parsed);
         $this->assertNotNull($actualCompactCtype);
@@ -373,7 +396,7 @@ final class ContentTypeControllersTest extends DbTestCase {
         // @allow \Pike\PikeException
         self::$migrator->uninstallMany($s->testContentTypes);
     }
-    private function getInternalInstalledContentTypesFromDb() {
+    private function getInternalInstalledContentTypes() {
         $row = self::$db->fetchOne('SELECT `installedContentTypes` FROM ${p}cmsState');
         $this->assertNotNull($row);
         $parsed = json_decode($row['installedContentTypes']);

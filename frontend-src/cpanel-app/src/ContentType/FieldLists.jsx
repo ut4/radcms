@@ -1,5 +1,6 @@
 import {http, toasters, config, urlUtils, FeatherSvg, services} from '@rad-commons';
 import popupDialog from '../Common/PopupDialog.jsx';
+import Sortable from '../Common/Sortable.js';
 import {widgetTypes} from '../Content/FieldWidgets/all-with-multi.js';
 import {CreateFieldDialog, EditFieldDialog, DeleteFieldDialog} from './FieldDialogs.jsx';
 
@@ -19,7 +20,8 @@ class StaticFieldList extends preact.Component {
                 <div class="columns panel bg-alt-light mt-2">{ fields.map(f => [
                     <div class="col-3 text-ellipsis">{ f.name }</div>,
                     <div class="col-4 text-ellipsis">{ f.friendlyName }</div>,
-                    <div class="col-5 text-ellipsis">{ widgetTypes.find(t => t.name === f.widget.name).friendlyName }</div>
+                    <div class="col-5 text-ellipsis">{ widgetTypes.find(t =>
+                        t.name === f.widget.name).friendlyName }</div>
                 ]) }</div>
             </div>
         </div>;
@@ -55,6 +57,7 @@ class FreelyEditableFieldList extends preact.Component {
                 }
             }) }
             onRemoveButtonClicked={ f => this.removeField(f) }
+            onFieldsReordered={ sorted => this.setState({fields: sorted}) }
             blur={ blur }/>;
     }
     /**
@@ -82,15 +85,16 @@ class FreelyEditableFieldList extends preact.Component {
 
 class OneByOneEditableFieldList extends preact.Component {
     /**
-     * @param {{fields: Array<ContentTypeField>; blur: boolean;}} props
+     * @param {{fields: Array<ContentTypeField>; contentType: ContentType; blur: boolean;}} props
      */
     constructor(props) {
         super(props);
+        this.state = {fields: props.fields.slice(0)};
     }
     /**
      * @access protected
      */
-    render({blur, fields}) {
+    render({blur}, {fields}) {
         return <div class="mt-8">
             <button onClick={ () => this.props.setEditMode('none') }
                     title="Lopeta muokkaus"
@@ -99,9 +103,10 @@ class OneByOneEditableFieldList extends preact.Component {
             </button>
             <FieldsTable
                 fields={ fields }
-                onAddButtonClicked={ () => this.openCreateFieldDialog() }
-                onEditButtonClicked={ f => this.openEditFieldDilaog(f) }
-                onRemoveButtonClicked={ f => this.openDeleteFieldDialog(f) }
+                onAddButtonClicked={ this.openCreateFieldDialog.bind(this) }
+                onEditButtonClicked={ this.openEditFieldDialog.bind(this) }
+                onRemoveButtonClicked={ this.openDeleteFieldDialog.bind(this) }
+                onFieldsReordered={ this.saveNewFieldsOrderToBackend.bind(this) }
                 blur={ blur }/>
         </div>;
     }
@@ -138,7 +143,7 @@ class OneByOneEditableFieldList extends preact.Component {
     /**
      * @access private
      */
-    openEditFieldDilaog(field) {
+    openEditFieldDialog(field) {
         popupDialog.open(EditFieldDialog, {
             field,
             onConfirm: (newData, field) => {
@@ -164,15 +169,42 @@ class OneByOneEditableFieldList extends preact.Component {
             }
         });
     }
+    /**
+     * @access private
+     */
+    saveNewFieldsOrderToBackend(sorted, fieldsTable) {
+        const old = this.state.fields.slice(0);
+        this.setState({fields: sorted});
+        fieldsTable.setState({loading: true});
+        http.put(`/api/content-types/${this.props.contentType.name}/reorder-fields`,
+                 {fields: sorted})
+            .then(() => {
+                toasters.main('Kenttien järjestys tallennettiin', 'success');
+                fieldsTable.setState({loading: false});
+            })
+            .catch(err => {
+                services.console.error(err);
+                this.setState({fields: old});
+            });
+    }
 }
 
 class FieldsTable extends preact.Component {
+    /**
+     * @param {Object} props
+     */
+    constructor(props) {
+        super(props);
+        this.sortable = new Sortable();
+        this.state = {loading: false};
+    }
     /**
      * @access protected
      */
     render({fields, onEditButtonClicked, onRemoveButtonClicked, onAddButtonClicked, blur}) {
         return <><div class="panel bg-alt-light pt-1"><table class="table">
             <thead><tr>
+                <th class="drag-column"></th>
                 <th>#</th>
                 <th>Nimi</th>
                 <th>Datatyyppi</th>
@@ -181,7 +213,19 @@ class FieldsTable extends preact.Component {
                 <th>Widgetti</th>
                 <th class="buttons"></th>
             </tr></thead>
-            <tbody>{ fields.map(f => <tr key={ f.key.toString() }>
+            <tbody
+                class={ !this.state.loading ? '' : ' no-drag' }
+                ref={ this.activateSorting.bind(this) }>{ fields.map(f => <tr key={ f.key } data-id={ f.key }>
+                <td class="drag-column">
+                    <button class="drag-handle"><svg viewBox="0 0 150 150" preserveAspectRatio="xMidYMid slice">
+                        <defs>
+                            <pattern id="circles" patternUnits="userSpaceOnUse" x="0" y="0" width="50" height="50">
+                                <circle cx="25" cy="25" r="6"></circle>
+                            </pattern>
+                        </defs>
+                        <rect fill="url(#circles)" x="0" y="0" width="150" height="150"></rect>
+                    </svg></button>
+                </td>
                 <td>{ f.name }</td>
                 <td>{ f.friendlyName }</td>
                 <td>{ f.dataType }</td>
@@ -211,6 +255,31 @@ class FieldsTable extends preact.Component {
             Lisää kenttä
         </button></>;
     }
+    /**
+     * @access private
+     */
+    activateSorting(tbodyEl) {
+        if (!tbodyEl) return;
+        this.sortable.register(tbodyEl, {
+            handle: '.drag-handle',
+            onEnd: e => {
+                if (e.newIndex === e.oldIndex) return;
+                this.props.onFieldsReordered(this.getReorderedFields(), this);
+            },
+        });
+    }
+    /**
+     * @access private
+     */
+    getReorderedFields() {
+        const orderedKeys = this.sortable.getImpl().toArray();
+        const fields = this.props.fields;
+        const out = new Array(fields.length);
+        orderedKeys.map((key, i) => {
+            out[i] = fields.find(f => f.key === key);
+        });
+        return out;
+    }
 }
 
 let counter = 0;
@@ -230,7 +299,7 @@ function makeField() {
             name: 'textField',
             args: {}
         },
-        key: counter
+        key: counter.toString()
     };
 }
 

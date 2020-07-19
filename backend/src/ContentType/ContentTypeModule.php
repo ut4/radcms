@@ -31,6 +31,9 @@ abstract class ContentTypeModule {
         $ctx->router->map('GET', '/api/content-types/[w:name]',
             [ContentTypeControllers::class, 'handleGetContentType', 'view:contentTypes']
         );
+        $ctx->router->map('PUT', '/api/content-types/[w:contentTypeName]/reorder-fields',
+            [ContentTypeControllers::class, 'handleUpdateOrderOfContentTypeFields', 'updateField:contentTypes']
+        );
         $ctx->router->map('PUT', '/api/content-types/[w:contentTypeName]',
             [ContentTypeControllers::class, 'handleUpdateContentType', 'update:contentTypes']
         );
