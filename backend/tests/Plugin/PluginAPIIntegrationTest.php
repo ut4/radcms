@@ -96,7 +96,7 @@ final class PluginAPIIntegrationTest extends DbTestCase {
     }
     private function sendListMoviesRequest($s) {
         $res = $this->createBodyCapturingMockResponse($s);
-        $this->sendRequest(new Request('/movies', 'GET'), $res, $this->app);
+        $this->sendRequest(new Request('/plugins/movies-plugin', 'GET'), $res, $this->app);
     }
     private function verifyResponseBodyEquals($expectedJson, $s) {
         $this->assertEquals($expectedJson, $s->actualResponseBody);
@@ -116,8 +116,9 @@ final class PluginAPIIntegrationTest extends DbTestCase {
         return $this->setupInstallCtypeTest();
     }
     private function sendInsertMovieRequest($s) {
-        $req = new Request('/movies', 'POST', (object) ['title' => 'A movie',
-                                                        'releaseYear' => 2021]);
+        $req = new Request('/plugins/movies-plugin', 'POST',
+                           (object) ['title' => 'A movie',
+                                     'releaseYear' => 2021]);
         $res = $this->createBodyCapturingMockResponse($s);
         $this->sendRequest($req, $res, $this->app);
     }
@@ -147,7 +148,7 @@ final class PluginAPIIntegrationTest extends DbTestCase {
         return $out;
     }
     private function sendUpdateMovieRequest($s, $newData) {
-        $req = new Request("/movies/{$s->testMovieId}", 'PUT',
+        $req = new Request("/plugins/movies-plugin/{$s->testMovieId}", 'PUT',
                             (object)['title' => $newData->title,
                                      'releaseYear' => $newData->releaseYear,
                                      'isRevision' => false]);

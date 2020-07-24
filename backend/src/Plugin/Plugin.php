@@ -7,8 +7,11 @@ namespace RadCms\Plugin;
 use Pike\PikeException;
 
 class Plugin {
+    /** @var string */
     public $name;
+    /** @var bool */
     public $isInstalled;
+    /** @var ?\RadCms\Plugin\PluginInterface */
     private $instance;
     /**
      * @param string $name "PluginName.php" minus ".php"

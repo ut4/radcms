@@ -21,13 +21,13 @@ class MoviesPlugin implements PluginInterface {
         $api->enqueueAdminJsFile('file2.js', ['id' => 'file2']);
         $api->enqueueFrontendAdminPanel('MoviesAdmin', 'Elokuvat-app');
         //
-        $api->registerRoute('GET', '/movies', MoviesControllers::class,
+        $api->registerRoute('GET', '/plugins/movies-plugin', MoviesControllers::class,
                             'handleGetMoviesRequest', ACL::NO_IDENTITY);
-        $api->registerRoute('POST', '/movies', MoviesControllers::class,
+        $api->registerRoute('POST', '/plugins/movies-plugin', MoviesControllers::class,
                             'handleCreateMovieRequest', ACL::NO_IDENTITY);
-        $api->registerRoute('PUT', '/movies/[i:movieId]', MoviesControllers::class,
+        $api->registerRoute('PUT', '/plugins/movies-plugin/[i:movieId]', MoviesControllers::class,
                             'handleUpdateMovieRequest', ACL::NO_IDENTITY);
-        $api->registerRoute('GET', '/noop', MoviesControllers::class,
+        $api->registerRoute('GET', '/plugins/movies-plugin/noop', MoviesControllers::class,
                             'handleNoopRequest', ACL::NO_IDENTITY);
     }
     public function install(ContentTypeMigrator $contentTypeMigrator, array $initialContent): void {

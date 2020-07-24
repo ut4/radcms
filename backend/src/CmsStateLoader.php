@@ -4,15 +4,9 @@ declare(strict_types=1);
 
 namespace RadCms;
 
-use Pike\Db;
-use Pike\FileSystem;
-use Pike\FileSystemInterface;
-use Pike\Router;
-use Pike\PikeException;
-use RadCms\Plugin\PluginAPI;
-use RadCms\Plugin\Plugin;
-use RadCms\Website\WebsiteAPI;
-use RadCms\Website\WebsiteInterface;
+use Pike\{Db, FileSystem, FileSystemInterface, PikeException, Router};
+use RadCms\Plugin\{Plugin, PluginAPI};
+use RadCms\Website\{WebsiteAPI, WebsiteInterface};
 
 /**
  * Rutiinit jotka ajetaan jokaisen App->handleRequest()-kutsun yhteydessä.
@@ -32,20 +26,21 @@ class CmsStateLoader {
         //
         $plugins = $out->getPlugins();
         self::scanPluginsFromDisk($plugins, $fs);
-        $pluginAPI = new PluginAPI($out->getApiConfigs(),
-                                   $out->getPlugins(),
-                                   $router);
+        $apiState = $out->getApiConfigs();
         foreach ($plugins as $plugin) {
             if (($plugin->isInstalled = property_exists($raw->installedPluginNames,
                                                         $plugin->name))) {
                 // @allow \Pike\PikeException
                 $instance = $plugin->instantiate();
-                $instance->init($pluginAPI);
+                $instance->init(new PluginAPI($apiState,
+                                              $plugins,
+                                              $router,
+                                              $plugin->name));
             }
         }
         //
         $site = self::instantiateWebsite();
-        $site->init(new WebsiteAPI($out->getApiConfigs(), $plugins));
+        $site->init(new WebsiteAPI($apiState, $plugins));
         //
         return $out;
     }

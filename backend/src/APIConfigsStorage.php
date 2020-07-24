@@ -4,10 +4,8 @@ declare(strict_types=1);
 
 namespace RadCms;
 
-use Pike\FileSystemInterface;
-use Pike\PikeException;
-use RadCms\Templating\MagicTemplate;
-use RadCms\Website\UrlMatcher;
+use Pike\{FileSystemInterface, PikeException};
+use RadCms\{Templating\MagicTemplate, Website\UrlMatcher};
 
 /**
  * Varastoi \RadCms\BaseAPI & \RadCms\Plugin\API -wräppereissä configuroidut tiedot.
@@ -135,6 +133,7 @@ class APIConfigsStorage {
      * @see \RadCms\Website\WebsiteAPI->registerLayoutForUrlPattern().
      */
     public function putUrlLayout(string $pattern, string $layoutFilePath): void {
+        ValidationUtils::checkIfValidaPathOrThrow($layoutFilePath);
         $urlMatcher = new UrlMatcher($pattern, $layoutFilePath);
         if (RAD_FLAGS & RAD_DEVMODE) {
             if (preg_match($urlMatcher->pattern, '') === false) {

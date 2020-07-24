@@ -4,13 +4,9 @@ declare(strict_types=1);
 
 namespace RadCms\Templating;
 
-use Pike\Template;
-use RadCms\Content\MagicTemplateDAO;
-use Pike\PikeException;
-use RadCms\Common\LoggerAccess;
-use Pike\FileSystem;
-use Pike\Translator;
-use RadCms\Content\MagicTemplateQuery;
+use Pike\{FileSystem, PikeException, Template, Translator};
+use RadCms\Content\{MagicTemplateDAO, MagicTemplateQuery};
+use RadCms\{Common\LoggerAccess, ValidationUtils};
 
 /**
  * Sisältää magikaalisen <?= $this->TemplateName(..) ?>-kutsujen mahdollistavan
@@ -58,12 +54,16 @@ class MagicTemplate extends Template {
             if (array_key_exists($name, $this->__funcs))
                 return call_user_func_array($this->__funcs[$name],
                                             array_merge($args, [$this]));
-            $directiveFilePath = !array_key_exists($name, $this->__aliases)
-                ? "{$this->__dir}{$name}.tmpl.php"
-                : $this->__aliases[$name];
-            if (!$this->__fileExists->__invoke($directiveFilePath)) {
-                return "Did you forget to \$api->registerDirective('{$name}', '/file.tmpl.php')?";
+            $alias = $this->__aliases[$name] ?? '';
+            if (!$alias) {
+                ValidationUtils::checkIfValidaPathOrThrow($name);
+                $directiveFilePath = "{$this->__dir}{$name}.tmpl.php";
+            } else {
+                $directiveFilePath = $alias;
             }
+            if (!$this->__fileExists->__invoke($directiveFilePath))
+                return "Did you forget to \$api->registerDirective(" .
+                                        "'{$name}', '/file.tmpl.php')?";
             return $this->doRender($directiveFilePath,
                 $this->__locals + ['props' => $args ? $args[0] : []]);
         } catch (PikeException $e) {
@@ -105,7 +105,7 @@ class MagicTemplate extends Template {
      * @param string $str
      * @return string
      */
-    public function e(string $str): string {
+    public static function e(string $str): string {
         return htmlspecialchars($str);
     }
     /**
@@ -130,7 +130,7 @@ class MagicTemplate extends Template {
      */
     public static function makeUrl(string $url, bool $withIndexFile = true): string {
         static $indexFile = !RAD_QUERY_VAR ? '' : 'index.php?' . RAD_QUERY_VAR . '=/';
-        return RAD_BASE_URL . ($withIndexFile ? $indexFile : '') . ltrim($url, '/');
+        return RAD_BASE_URL . ($withIndexFile ? $indexFile : '') . self::e(ltrim($url, '/'));
     }
     /**
      * @return string
@@ -148,6 +148,7 @@ class MagicTemplate extends Template {
      */
     public function jsFiles(): string {
         return implode(' ', array_map(function ($f) {
+            ValidationUtils::checkIfValidaPathOrThrow($f->url);
             return '<script src="' . $this->assetUrl("frontend/{$this->e($f->url)}") .
                    '"' . ($f->attrs ? '' : self::attrMapToStr($f->attrs)) .
                    '></script>';
@@ -168,6 +169,7 @@ class MagicTemplate extends Template {
             [$url, $attrs] = is_string($f)
                 ? [$f, $baseAttrs]
                 : [$f->url, array_merge($f->attrs, $baseAttrs)];
+            ValidationUtils::checkIfValidaPathOrThrow($f->url);
             return '<script src="' . $this->assetUrl("frontend/{$this->e($url)}") . '"' .
                    self::attrMapToStr($attrs) . '></script>' . PHP_EOL;
         }, $files));
