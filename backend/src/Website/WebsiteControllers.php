@@ -75,9 +75,9 @@ class WebsiteControllers {
                                   $this->dao,
                                   $this->fs);
         $apiState->applyRegisteredTemplateStuff($tmpl, BaseAPI::TARGET_WEBSITE_LAYOUT);
-        $url = $req->path ? explode('/', ltrim($req->path, '/')) : [''];
-        $html = $tmpl->render(['url' => $url,
-                               'urlStr' => $req->path,
+        $url = $req->params->url;
+        $html = $tmpl->render(['url' => explode('/', substr($url, 1)),
+                               'urlStr' => $url,
                                'site' => $this->cmsState->getSiteInfo()]);
         $res->html(!$isMaybeLoggedIn || ($bodyEnd = strpos($html, '</body>')) === false
             ? $html

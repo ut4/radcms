@@ -1,5 +1,5 @@
 import {http, myFetch, services, urlUtils, hookForm, InputGroup, Input,
-        Toaster, toasters} from '@rad-commons';
+        Toaster, toasters, FeatherSvg} from '@rad-commons';
 import popupDialog from '../../Common/PopupDialog.jsx';
 import BaseFieldWidget from './Base.jsx';
 
@@ -57,7 +57,8 @@ class PickImageDialog extends preact.Component {
      */
     constructor(props) {
         super(props);
-        this.state = {images: [], message: null};
+        this.state = {images: [], message: null, currentTabIdx: 0};
+        this.tabs = preact.createRef();
         http.get('/api/uploads')
             .then(list => {
                 const images = list.filter(f => f.mime.startsWith('image'));
@@ -76,8 +77,9 @@ class PickImageDialog extends preact.Component {
         return <div class="popup-dialog"><div class="box">
             <h2>Valitse kuva</h2>
             <div class="main">
-                <UploadButton onFileLoaded={ image => this.addImage(image) }/>
-                { !this.state.message
+                <Tabs links={ ['Kuvat', 'Lataa'] } onTabChanged={ idx => this.setState({currentTabIdx: idx}) }
+                    ref={ this.tabs }/>
+                <div class={ this.state.currentTabIdx === 0 ? '' : 'hidden' }>{ !this.state.message
                     ? <div class="item-grid image-grid img-auto mt-10">{ this.state.images.map(image =>
                         <button
                             onClick={ () => {
@@ -90,8 +92,11 @@ class PickImageDialog extends preact.Component {
                             <span class="caption text-ellipsis">{ image.fileName }</span>
                         </button>
                     ) }</div>
-                    : <p>{ this.state.message }</p>
-                }
+                    : <div class="mt-8">{ this.state.message }</div>
+                }</div>
+                <div class={ this.state.currentTabIdx !== 1 ? 'hidden' : '' }>
+                    <UploadButton onFileUploaded={ this.addImage.bind(this) }/>
+                </div>
                 <button onClick={ () => popupDialog.close() }
                         class="btn mt-8"
                         type="button">Peruuta</button>
@@ -105,7 +110,37 @@ class PickImageDialog extends preact.Component {
         const images = this.state.images;
         images.push(image);
         images.sort((a, b) => a.fileName.localeCompare(b.fileName));
-        this.setState({images});
+        this.setState({images, message: null});
+        this.tabs.current.changeTab(0);
+    }
+}
+
+class Tabs extends preact.Component {
+    /**
+     * @param {{links: Array<string>; onTabChanged: (idx: number) => any;}} props
+     */
+    constructor(props) {
+        super(props);
+        this.state = {currentIdx: 0};
+    }
+    /**
+     * @access protected
+     */
+    render({links}, {currentIdx}) {
+        return <ul class="pl-0 tab">{ links.map((text, i) =>
+            <li class={ `tab-item${i !== currentIdx ? '' : ' active'}` }>
+                <a onClick={ e => { e.preventDefault(); this.changeTab(i); } }
+                    href="#" class="px-2">{ text }</a>
+            </li>
+        ) }</ul>;
+    }
+    /**
+     * @param {number} toIdx
+     * @access public
+     */
+    changeTab(toIdx) {
+        this.setState({currentIdx: toIdx});
+        this.props.onTabChanged(toIdx);
     }
 }
 
@@ -114,14 +149,18 @@ class UploadButton extends preact.Component {
      * @access protected
      */
     render() {
-        return <div>
+        return <div class="container mt-8">
             <Toaster id="fileUpload"/>
-            <InputGroup>
-                <input onChange={ e => { this.handleFileInputChange(e); } }
-                       name="localFile"
-                       type="file"
-                       accept="image/*"/>
-            </InputGroup>
+            <input onChange={ this.handleFileInputChange.bind(this) }
+                id="image-input"
+                name="localFile"
+                type="file"
+                accept="image/*"
+                style="position:absolute;opacity:0;z-index:-1"/>
+            <label class="columns col-centered" htmlFor="image-input">
+                <FeatherSvg iconId="image"/>
+                <span class="column">Valitse kuva</span>
+            </label>
         </div>;
     }
     /**
@@ -136,7 +175,7 @@ class UploadButton extends preact.Component {
         myFetch('/api/uploads', {method: 'POST', data: data})
             .then(res => JSON.parse(res.responseText))
             .then(info => {
-                if (info.file) this.props.onFileLoaded(info.file);
+                if (info.file) this.props.onFileUploaded(info.file);
                 else throw new Error('Unexpected response');
             })
             .catch(err => {

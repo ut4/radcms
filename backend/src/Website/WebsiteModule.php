@@ -15,8 +15,16 @@ abstract class WebsiteModule {
         $ctx->router->map('GET', '/_edit/[**:url]?',
             [AdminControllers::class, 'handleEditViewRequest', 'access:editMode']
         );
-        $ctx->router->map('GET', '*',
+        $ctx->router->map('GET', '[*:url]',
             [WebsiteControllers::class, 'handlePageRequest', ACL::NO_IDENTITY]
         );
+        if (RAD_QUERY_VAR === '') {
+            $ctx->router->on('*', function ($req, $res, $next) {
+                if (strpos($req->path, '.') === false)
+                    $next();
+                else
+                    $res->status(404)->plain('Not found.');
+            });
+        }
     }
 }
