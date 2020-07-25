@@ -1,12 +1,7 @@
-import {Confirmation, InputGroup, Input, hookForm, Select} from '@rad-commons';
+import {Confirmation, InputGroup, Input, hookForm, Select, InputError} from '@rad-commons';
 import popupDialog from '../Common/PopupDialog.jsx';
 import {widgetTypes} from '../Content/FieldWidgets/all-with-multi.js';
 import WidgetSelector from '../Content/WidgetSelector.jsx';
-
-const dataTypes = [{name: 'text', friendlyName: 'Text'},
-                   {name: 'json', friendlyName: 'Json'},
-                   {name: 'int',  friendlyName: 'Integer (signed)'},
-                   {name: 'uint', friendlyName: 'Integer (unsigned)'},];
 
 /**
  * Popup-dialog, jolla devaaja voi konfiguroida uuden sisältötyyppikentän tiedot.
@@ -74,7 +69,10 @@ class EditFieldDialog extends preact.Component {
      * @access private
      */
     handleConfirm() {
-        this.props.onConfirm(this.fieldInputs.current.getValues(),
+        const values = this.fieldInputs.current.getValues();
+        if (!values) // invalid
+            return;
+        this.props.onConfirm(values,
                              this.props.field);
         this.handleCancel();
     }
@@ -126,33 +124,73 @@ class DeleteFieldDialog extends preact.Component {
     }
 }
 
+const dataTypes = [{name: 'text', friendlyName: 'Text'},
+                   {name: 'json', friendlyName: 'Json'},
+                   {name: 'int',  friendlyName: 'Integer (signed)'},
+                   {name: 'uint', friendlyName: 'Integer (unsigned)'},];
+
+const roles = [{name: 'Super-admin', flag: 1 << 0},
+               {name: 'Editor',      flag: 1 << 1},
+               {name: 'Author',      flag: 1 << 2},
+               {name: 'Contributor', flag: 1 << 3}];
+const VISIBILITY_ALL = roles.reduce((mask, role) => mask | role.flag, 0);
+
 class FieldInputs extends preact.Component {
     /**
      * @param {{field: ContentTypeField;}} props
      */
     constructor(props) {
         super(props);
-        this.state = hookForm(this, {
+        const isVisibleForAll = props.field.visibility < 1;
+        this.state = Object.assign({
+            visibility: isVisibleForAll ? VISIBILITY_ALL : props.field.visibility,
+            allVisibilitiesChecked: isVisibleForAll,
+            showVisibilityError: false,
+        }, hookForm(this, {
             name: props.field.name,
             friendlyName: props.field.friendlyName,
             dataType: props.field.dataType,
             defaultValue: props.field.defaultValue,
-            visibility: props.field.visibility,
-        });
+        }));
         this.widgetSelector = preact.createRef();
+    }
+    /**
+     * @returns {Object|null}
+     * @access public
+     */
+    getValues() {
+        if (!this.form.handleSubmit() || this.state.visibility < 1) {
+            this.setState({showVisibilityError: true});
+            return null;
+        }
+        const values = this.state.values;
+        const {visibility} = this.state;
+        return {
+            name: values.name,
+            friendlyName: values.friendlyName,
+            dataType: values.dataType,
+            defaultValue: values.defaultValue,
+            visibility: visibility !== VISIBILITY_ALL ? visibility : 0,
+            widget: this.widgetSelector.current.getResult()
+        };
     }
     /**
      * @access protected
      */
     render() {
+        const {classes, errors} = this.state;
         return <div class="main">
-            <InputGroup>
+            <InputGroup classes={ classes.name }>
                 <label htmlFor="name" class="form-label">Nimi</label>
-                <Input vm={ this } name="name" id="name"/>
+                <Input vm={ this } name="name" id="name" validations={ [['required']] }
+                    errorLabel="Nimi"/>
+                <InputError error={ errors.name }/>
             </InputGroup>
-            <InputGroup>
+            <InputGroup classes={ classes.friendlyName }>
                 <label htmlFor="friendlyName" class="form-label">Selkonimi</label>
-                <Input vm={ this } name="friendlyName" id="friendlyName"/>
+                <Input vm={ this } name="friendlyName" id="friendlyName" validations={ [['required']] }
+                    errorLabel="Selkonimi"/>
+                <InputError error={ errors.friendlyName }/>
             </InputGroup>
             <InputGroup>
                 <label htmlFor="dataType" class="form-label">Datatyyppi</label>
@@ -164,14 +202,28 @@ class FieldInputs extends preact.Component {
                 <label htmlFor="defaultValue" class="form-label">Oletusarvo</label>
                 <Input vm={ this } name="defaultValue" id="defaultValue"/>
             </InputGroup>
-            <InputGroup>
-                <label htmlFor="visibility" class="form-label">Näkyvyys
+            <div class="indented-content mt-8">
+                <div class="form-label">Näkyvyys
                     <div class="note">Käyttäjäroolit joille kenttä näytetään</div>
-                </label>
-                <Select vm={ this } name="visibility" id="visibility">
-                    <option value={ 0 }>Kaikki</option>
-                </Select>
-            </InputGroup>
+                </div>
+                <div class="item-grid checkbox-grid">
+                    <div class="bg-light" style="grid-column: 1/2"><label class="form-checkbox">
+                        <input type="checkbox" checked={ this.state.allVisibilitiesChecked }
+                            onChange={ e => this.toggleIsVisibleForAll(e) }/>
+                        <i class="form-icon"></i> Kaikki
+                    </label></div>
+                    <div style="grid-column: 2/5"></div>
+                    { roles.map(role => <div class="bg-light"><label class="form-checkbox">
+                        <input type="checkbox"
+                            checked={ this.state.visibility & role.flag }
+                            onChange={ e => this.toggleIsVisibleForRole(e, role) }/>
+                        <i class="form-icon"></i> { role.name }
+                    </label></div>) }
+                </div>
+                { !this.state.showVisibilityError || this.state.visibility ? null : <div class="has-error mt-2">
+                    <InputError error="Ainakin yksi rooli vaaditaan"/>
+                </div> }
+            </div>
             <WidgetSelector
                 widget={ this.props.field.widget }
                 widgetTypes={ widgetTypes }
@@ -180,18 +232,22 @@ class FieldInputs extends preact.Component {
         </div>;
     }
     /**
-     * @access public
+     * @access private
      */
-    getValues() {
-        const values = this.state.values;
-        return {
-            name: values.name,
-            friendlyName: values.friendlyName,
-            dataType: values.dataType,
-            defaultValue: values.defaultValue,
-            visibility: values.visibility,
-            widget: this.widgetSelector.current.getResult()
-        };
+    toggleIsVisibleForRole(e, role) {
+        this.setState({showVisibilityError: false,
+                       visibility: e.target.checked
+                           ? this.state.visibility | role.flag
+                           : this.state.visibility & ~role.flag});
+    }
+    /**
+     * @access private
+     */
+    toggleIsVisibleForAll(e) {
+        const allVisibilitiesChecked = e.target.checked;
+        this.setState({allVisibilitiesChecked,
+                       showVisibilityError: false,
+                       visibility: allVisibilitiesChecked ? VISIBILITY_ALL : 0});
     }
 }
 
