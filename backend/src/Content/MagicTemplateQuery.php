@@ -78,6 +78,7 @@ class MagicTemplateQuery extends Query {
         //
         return $this->dao->doExec($this->toSql(), $this->isFetchOne,
                                   $bindVals ?? null, $this->joinDefs,
+                                  $this->orderDef ? $this->orderDef->dir : null,
                                   $this->frontendPanels);
     }
 }

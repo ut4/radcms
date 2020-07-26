@@ -58,18 +58,24 @@ class DAO {
      * @param bool $isFetchOne
      * @param array $bindVals = null
      * @param \stdClass[] $joins = [] {contentTypeName: string, alias: string, expr: string, bindVals: array, isLeft: bool, collectFn: \Closure, targetFieldName: string|null}[]
+     * @param string $orderDir = null
      * @return array|\stdClass|null
      */
     public function doExec(string $sql,
                            bool $isFetchOne,
                            array $bindVals = null,
-                           array $joins = []) {
+                           array $joins = [],
+                           string $orderDir = null) {
         $out = null;
         // @allow \Pike\PikeException
         $rows = $this->db->fetchAll($sql, $bindVals);
         if ($isFetchOne) {
             $out = $rows ? $this->makeContentNode($rows[0], $rows) : null;
         } else {
+            if ($this->fetchRevisions || $joins) {
+                if ($orderDir === Query::DIRECTION_DESC) $rows = array_reverse($rows);
+                elseif ($orderDir === Query::DIRECTION_RAND) shuffle($rows);
+            }
             $out = $rows ? array_map(function ($row) use ($rows) {
                 return $this->makeContentNode($row, $rows);
             }, $rows) : [];

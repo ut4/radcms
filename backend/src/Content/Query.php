@@ -14,12 +14,15 @@ use RadCms\ContentType\ContentTypeValidator;
  * käytettäväksi manuaalisesti.
  */
 class Query {
+    public const DIRECTION_ASC  = 'asc';
+    public const DIRECTION_DESC = 'desc';
+    public const DIRECTION_RAND = 'rand';
     protected $contentType;
     protected $contentTypeAlias;
     protected $isFetchOne;
     protected $dao;
     protected $whereDef;
-    protected $orderByExpr;
+    protected $orderDef;
     protected $limitExpr;
     protected $joinDefs;
     /**
@@ -77,6 +80,15 @@ class Query {
         return $this;
     }
     /**
+     * @param string $field
+     * @param string $dir = self::DIRECTION_ASC
+     * @return $this
+     */
+    public function orderBy(string $field, string $dir = self::DIRECTION_ASC): Query {
+        $this->orderDef = (object)['field' => $field, 'dir' => $dir];
+        return $this;
+    }
+    /**
      * @param int $limit
      * @param int $offset = null
      * @return $this
@@ -96,7 +108,8 @@ class Query {
             if ($d->bindVals) $bindVals = array_merge($bindVals, $d->bindVals);
         //
         return $this->dao->doExec($this->toSql(), $this->isFetchOne,
-                                  $bindVals ?? null, $this->joinDefs);
+                                  $bindVals ?? null, $this->joinDefs,
+                                  $this->orderDef ? $this->orderDef->dir : null);
     }
     /**
      * @return string
@@ -112,7 +125,7 @@ class Query {
                  ', \'' . $this->contentType->name . '\' AS `contentType`' .
                  ' FROM `${p}' . $this->contentType->name . '`' .
                  (!$this->whereDef ? '' : ' WHERE ' . $this->whereDef->expr) .
-                 (!$this->orderByExpr ? '' : ' ORDER BY ' . $this->orderByExpr) .
+                 (!$this->orderDef ? '' : ' ORDER BY ' . $this->makeOrderExpr()) .
                  (!$this->limitExpr ? '' : ' LIMIT ' . $this->limitExpr);
         //
         $joins = [];
@@ -204,11 +217,37 @@ class Query {
             }
             $seenAliases[$d->alias] = 1;
         }
+        //
         if ($this->isFetchOne && !$this->whereDef)
             $errors[] = 'fetchOne(...)->where() is required';
+        //
+        if (($def = $this->orderDef ?? null)) {
+            if (!Validation::isIdentifier(str_replace(['.', '`'], '', $def->field)))
+                $errors[] = "orderBy field ({$def->field}) not valid";
+            if ($def->dir !== self::DIRECTION_ASC &&
+                $def->dir !== self::DIRECTION_DESC &&
+                $def->dir !== self::DIRECTION_RAND)
+                $errors[] = 'orderBy direction (' . $def->dir . ') must be `' . self::DIRECTION_ASC .
+                            '`, `' . self::DIRECTION_DESC . '` or `' . self::DIRECTION_RAND . '`';
+        }
+        //
         if ($this->limitExpr &&
             !ctype_digit(str_replace([',', ' '], '', $this->limitExpr)))
-                $errors[] = "limit expression `{$this->limitExpr}` not valid";
+                $errors[] = "limit expression ({$this->limitExpr}) not valid";
+        //
         return $errors ? implode('\n', $errors) : '';
+    }
+    /**
+     * @access private
+     */
+    private function makeOrderExpr(): string {
+        switch ($this->orderDef->dir) {
+        case self::DIRECTION_DESC:
+            return "{$this->orderDef->field} DESC";
+        case self::DIRECTION_RAND:
+            return "RAND()";
+        default:
+            return "{$this->orderDef->field} ASC";
+        }
     }
 }

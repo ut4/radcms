@@ -118,7 +118,7 @@ class ContentAddView extends preact.Component {
      */
     makeNewContentNode(contentType) {
         return contentType.fields.reduce((out, f) =>
-            Object.assign(out, {[f.name]: f.defaultValue || undefined})
+            Object.assign(out, {[f.name]: f.defaultValue || ''})
         , {});
     }
 }

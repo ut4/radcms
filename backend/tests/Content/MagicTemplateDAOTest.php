@@ -89,12 +89,30 @@ final class MagicTemplateDAOTest extends DbTestCase {
     ////////////////////////////////////////////////////////////////////////////
 
 
+    public function testFetchAllOrdersResult() {
+        $this->insertContent('Products', ['id' => 4, 'title' => 'Tuote4'],
+                                         ['id' => 5, 'title' => 'Tuote5']);
+        $dao = self::makeDao(false);
+        $nodes = $dao->fetchAll('Products')->orderBy('id', 'desc')->exec();
+        $this->assertEquals(5, $nodes[0]->id);
+        $this->assertEquals(4, $nodes[1]->id);
+        //
+        $dao2 = self::makeDao(true);
+        $nodes2 = $dao2->fetchAll('Products')->orderBy('id', 'desc')->exec();
+        $this->assertEquals(5, $nodes2[0]->id);
+        $this->assertEquals(4, $nodes2[1]->id);
+    }
+
+
+    ////////////////////////////////////////////////////////////////////////////
+
+
     public function testFetchOneDoesNotReturnDeletedContent() {
-        $this->insertContent('Products', ['id' => 4,
+        $this->insertContent('Products', ['id' => 6,
                                           'status' => DAO::STATUS_DELETED,
-                                          'title' => 'Tuote4']);
+                                          'title' => 'Tuote6']);
         $dao = self::makeDao(true);
-        $node = $dao->fetchOne('Products')->where('id=?', 4)->exec();
+        $node = $dao->fetchOne('Products')->where('id=?', 6)->exec();
         $this->assertNull($node);
     }
 }
