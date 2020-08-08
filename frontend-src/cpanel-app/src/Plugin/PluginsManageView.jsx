@@ -1,4 +1,4 @@
-import {http, services, toasters, urlUtils, View} from '@rad-commons';
+import {http, env, toasters, urlUtils, View} from '@rad-commons';
 
 /**
  * #/manage-plugins
@@ -76,7 +76,7 @@ class PluginsManageView extends preact.Component {
 function sendInstallOrUninstallRequest(plugin, url) {
     http.put(`/api/plugins/${plugin.name}/${url}`, {dum: 'my'})
         .then(() => {
-            services.sessionStorage.radMessage = url === 'install'
+            env.sessionStorage.radMessage = url === 'install'
                 ? JSON.stringify([`Lisäosa ${plugin.name} asennettu.`, 'success'])
                 : JSON.stringify([`Lisäosan ${plugin.name} asennus poistettu.`, 'success']);
             urlUtils.redirect('@current', 'hard');

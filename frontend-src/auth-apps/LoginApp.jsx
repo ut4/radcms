@@ -1,4 +1,4 @@
-import {http, services, urlUtils, hookForm, InputGroup, Input, InputError, FormButtons} from '@rad-commons';
+import {http, env, urlUtils, hookForm, InputGroup, Input, InputError, FormButtons} from '@rad-commons';
 import {translateError} from './commons.js';
 
 class LoginApp extends preact.Component {
@@ -60,7 +60,7 @@ class LoginApp extends preact.Component {
                                  password: this.state.values.password})
             .then(info => {
                 if (info.ok) {
-                    services.sessionStorage.radMessage = JSON.stringify([
+                    env.sessionStorage.radMessage = JSON.stringify([
                         'Olet nyt kirjautunut sisään.', 'success'
                     ]);
                     window.location.href = urlUtils.makeUrl('/_edit');
@@ -69,7 +69,8 @@ class LoginApp extends preact.Component {
                                                             level: 'error'}});
                 else throw new Error('wut?');
             })
-            .catch(() => {
+            .catch(err => {
+                env.console.error(err);
                 this.setState({message: {text: 'Jokin meni pieleen.',
                                          level: 'error'}});
             });

@@ -1,4 +1,4 @@
-import {http, myFetch, services, urlUtils, hookForm, InputGroup, Input,
+import {http, myFetch, env, urlUtils, hookForm, InputGroup, Input,
         Toaster, toasters, FeatherSvg} from '@rad-commons';
 import popupDialog from '../../Common/PopupDialog.jsx';
 import BaseFieldWidget from './Base.jsx';
@@ -66,7 +66,7 @@ class PickImageDialog extends preact.Component {
                 this.setState({images, message: images.length ? null : 'Ei kuvia.'});
             })
             .catch(err => {
-                services.console.error(err);
+                env.console.error(err);
                 this.setState({message: 'Jokin meni pieleen.'});
             });
     }
@@ -179,7 +179,7 @@ class UploadButton extends preact.Component {
                 else throw new Error('Unexpected response');
             })
             .catch(err => {
-                services.console.error(err);
+                env.console.error(err);
                 toasters.fileUpload('Kuvan lataus epäonnistui', 'error');
             });
     }

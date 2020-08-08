@@ -1,4 +1,4 @@
-import {http, toasters, urlUtils, View, Select, hookForm, InputGroup, Input, FormButtons} from '@rad-commons';
+import {http, toasters, urlUtils, View, Select, hookForm, InputGroup, Input, FormButtons, env} from '@rad-commons';
 import {filterByUserRole} from '../ContentType/FieldLists.jsx';
 import getWidgetImpl from './FieldWidgets/all-with-multi.js';
 import {genRandomString} from '../Website/WebsitePackView.jsx';
@@ -37,7 +37,8 @@ class ContentAddView extends preact.Component {
                     )
                 ));
             })
-            .catch(() => {
+            .catch(err => {
+                env.console.error(err);
                 toasters.main('Jokin meni pieleen.', 'error');
             });
     }

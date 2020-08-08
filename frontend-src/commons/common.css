@@ -209,3 +209,32 @@ p.info-box, .toaster-message {
 .step-indicators div.checked .feather {
     opacity: 1;
 }
+
+/* Components: Drag'n'Drop */
+td.drag-column, th.drag-column {
+    width: 1.4rem;
+}
+.drag-handle {
+    cursor: grab;
+    display: flex;
+    padding: 0;
+    background: transparent;
+    border: none;
+    outline: none;
+}
+.no-drag .drag-handle {
+    cursor: initial;
+    pointer-events: none;
+}
+.drag-handle:active,
+.drag-handle:focus {
+    cursor: resize-ns;
+}
+.sortable-ghost {
+    opacity: 0.4;
+}
+.drag-handle svg {
+    width: 14px;
+    height: 14px;
+    opacity: 0.8;
+}

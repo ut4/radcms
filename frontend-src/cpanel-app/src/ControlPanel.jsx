@@ -49,6 +49,8 @@ class ControlPanel extends preact.Component {
             return ControlPanel.makePanelBundle(p, genRandomString(16));
         });
         this.setState(newState);
+        if (newState.contentPanels.length)
+            this.props.onContentPanelsLoaded(newState.contentPanels);
     }
     /**
      * @access protected

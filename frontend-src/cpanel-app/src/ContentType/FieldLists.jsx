@@ -1,6 +1,5 @@
-import {http, toasters, config, urlUtils, FeatherSvg, services} from '@rad-commons';
+import {http, toasters, config, urlUtils, FeatherSvg, Sortable, env} from '@rad-commons';
 import popupDialog from '../Common/PopupDialog.jsx';
-import Sortable from '../Common/Sortable.js';
 import {widgetTypes} from '../Content/FieldWidgets/all-with-multi.js';
 import {CreateFieldDialog, EditFieldDialog, DeleteFieldDialog} from './FieldDialogs.jsx';
 
@@ -123,7 +122,7 @@ class OneByOneEditableFieldList extends preact.Component {
                 urlUtils.reload();
             })
             .catch(err => {
-                services.console.error(err);
+                env.console.error(err);
                 toasters.main('Kentän ' + (isNewContentType
                     ? 'lisäys sisältötyyppiin'
                     : 'tallennus') + ' epäonnistui.', 'error');
@@ -163,7 +162,7 @@ class OneByOneEditableFieldList extends preact.Component {
                                                 '/' + field.name)
                 .then(() => { urlUtils.reload(); })
                 .catch(err => {
-                    services.console.error(err);
+                    env.console.error(err);
                     toasters.main('Kentän poisto sisältötyypistä epäonnistui.', 'error');
                 });
             }
@@ -183,7 +182,7 @@ class OneByOneEditableFieldList extends preact.Component {
                 fieldsTable.setState({loading: false});
             })
             .catch(err => {
-                services.console.error(err);
+                env.console.error(err);
                 this.setState({fields: old});
             });
     }
@@ -217,14 +216,7 @@ class FieldsTable extends preact.Component {
                 class={ !this.state.loading ? '' : ' no-drag' }
                 ref={ this.activateSorting.bind(this) }>{ fields.map(f => <tr key={ f.key } data-id={ f.key }>
                 <td class="drag-column">
-                    <button class="drag-handle"><svg viewBox="0 0 150 150" preserveAspectRatio="xMidYMid slice">
-                        <defs>
-                            <pattern id="circles" patternUnits="userSpaceOnUse" x="0" y="0" width="50" height="50">
-                                <circle cx="25" cy="25" r="6"></circle>
-                            </pattern>
-                        </defs>
-                        <rect fill="url(#circles)" x="0" y="0" width="150" height="150"></rect>
-                    </svg></button>
+                    <button class="drag-handle"><FeatherSvg iconId="grid-dots"/></button>
                 </td>
                 <td>{ f.name }</td>
                 <td>{ f.friendlyName }</td>

@@ -214,32 +214,6 @@
     opacity: 0.3;
     pointer-events: none;
 }
-td.drag-column, th.drag-column {
-    padding-right: .2rem;
-}
-.drag-handle {
-    cursor: grab;
-    display: flex;
-    padding: 0;
-    background: transparent;
-    border: none;
-    outline: none;
-}
-.no-drag .drag-handle {
-    cursor: initial;
-    pointer-events: none;
-}
-.drag-handle:active,
-.drag-handle:focus {
-    cursor: resize-ns;
-}
-.sortable-ghost {
-    opacity: 0.4;
-}
-.drag-handle svg {
-    width: 12px;
-    height: 12px;
-}
 /* #/pack-website */
 .checkbox-list .form-checkbox {
     margin: 0;

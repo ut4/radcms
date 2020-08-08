@@ -1,4 +1,4 @@
-import {http, toasters, services, urlUtils, View, Confirmation, FeatherSvg} from '@rad-commons';
+import {http, toasters, env, urlUtils, View, Confirmation, FeatherSvg} from '@rad-commons';
 import getFieldListImplForEditMode, {makeField} from './FieldLists.jsx';
 import ContentEditable from '../Common/ContentEditable.jsx';
 import popupDialog from '../Common/PopupDialog.jsx';
@@ -36,7 +36,7 @@ class ContentTypesManageView extends preact.Component {
                 } else this.setState({message: 'Sisältötyyppejä ei löytynyt'});
             })
             .catch(err => {
-                services.console.error(err);
+                env.console.error(err);
                 this.setState({message: 'Jokin meni pieleen'});
             });
     }
@@ -112,7 +112,7 @@ class ContentTypesManageView extends preact.Component {
             urlUtils.reload();
         })
         .catch(err => {
-            services.console.error(err);
+            env.console.error(err);
             toasters.main('Sisältötyypin ' + (mode === 'create' ? 'luonti' : 'päivitys') +
                           ' epäonnistui.', 'error');
         });
@@ -254,7 +254,7 @@ class BasicInfo extends preact.Component {
                 http.delete('/api/content-types/' + this.props.contentType.name)
                     .then(() => { urlUtils.reload(); })
                     .catch(err => {
-                        services.console.error(err);
+                        env.console.error(err);
                         toasters.main('Sisältötyypin poisto epäonnistui.', 'error');
                     });
             }

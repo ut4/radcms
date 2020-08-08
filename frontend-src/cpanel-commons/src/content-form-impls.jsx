@@ -22,8 +22,7 @@ class DefaultImpl extends preact.Component {
     /**
      * @access protected
      */
-    render() {
-        const {settings, getWidgetImpl, editForm, setContentNodeValue} = this.props;
+    render({settings, getWidgetImpl, editForm, setContentNodeValue}) {
         return <div>{ this.visibleFields.map(f => {
             // TextFieldFieldWidget, TextAreaFieldWidget etc...
             const {ImplClass, props} = getWidgetImpl(f.widget.name);

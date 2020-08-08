@@ -1,4 +1,4 @@
-import {http, services, toasters, View, FeatherSvg, InputGroup} from '@rad-commons';
+import {http, env, toasters, View, FeatherSvg} from '@rad-commons';
 import {ContentNodeUtils} from '@rad-cpanel-commons';
 import openDeleteContentDialog from './ContentDeleteDialog.jsx';
 import ContentTypeDropdown from '../ContentType/ContentTypeDropdown.jsx';
@@ -26,7 +26,7 @@ class ContentManageView extends preact.Component {
             })
             .catch(err => {
                 toasters.main('Jokin meni pieleen', 'error');
-                services.console.error(err);
+                env.console.error(err);
             });
     }
     /**
@@ -80,7 +80,7 @@ class ContentManageView extends preact.Component {
         return http.get(`/api/content/${contentTypeName}`)
             .catch(err => {
                 toasters.main('Jokin meni pieleen', 'error');
-                services.console.error(err);
+                env.console.error(err);
                 return null;
             });
     }

@@ -1,4 +1,4 @@
-import {Toaster, services} from '@rad-commons';
+import {Toaster, env} from '@rad-commons';
 import ControlPanel from './ControlPanel.jsx';
 import {PopupDialog} from './Common/PopupDialog.jsx';
 import ContentAddView from './Content/ContentAddView.jsx';
@@ -9,6 +9,7 @@ import PluginsManageView from './Plugin/PluginsManageView.jsx';
 import WebsitePackView from './Website/WebsitePackView.jsx';
 import UserProfileView from './User/UserProfileView.jsx';
 const PreactRouter = preactRouter;
+const processedPanel = new Map;
 
 class ControlPanelApp extends preact.Component {
     /**
@@ -16,19 +17,8 @@ class ControlPanelApp extends preact.Component {
      */
     constructor(props) {
         super(props);
-        const uniqueImpls = {};
-        this.adminPanelRoutes = [];
-        this.adminPanelBundles = props.dataFromAdminBackend.adminPanels.map(p => {
-            const bundle = ControlPanel.makePanelBundle(p);
-            if (!uniqueImpls[p.impl]) {
-                uniqueImpls[p.impl] = 1;
-                if (typeof bundle.ImplClass.getRoutes === 'function') {
-                    const routes = bundle.ImplClass.getRoutes();
-                    if (routes) this.adminPanelRoutes = this.adminPanelRoutes.concat(routes);
-                }
-            }
-            return bundle;
-        });
+        this.adminPanelBundles = props.dataFromAdminBackend.adminPanels.map(ControlPanel.makePanelBundle);
+        this.state = {devDefinedRoutes: this.collectRoutes(this.adminPanelBundles)};
     }
     /**
      * @access protected
@@ -36,15 +26,20 @@ class ControlPanelApp extends preact.Component {
     render() {
         return <div>
             <Toaster id="main" ref={ cmp => {
-                if (cmp && services.sessionStorage.radMessage) {
-                    cmp.addMessage(...JSON.parse(services.sessionStorage.radMessage));
-                    delete services.sessionStorage.radMessage;
+                if (cmp && env.sessionStorage.radMessage) {
+                    cmp.addMessage(...JSON.parse(env.sessionStorage.radMessage));
+                    delete env.sessionStorage.radMessage;
                 }
             } }/>
             <ControlPanel
                 dataFromAdminBackend={ this.props.dataFromAdminBackend }
                 adminPanelBundles={ this.adminPanelBundles }
                 onIsCollapsedToggled={ () => this.props.onIsCollapsedToggled() }
+                onContentPanelsLoaded={ panelBundles => {
+                    const newRoutes = this.collectRoutes(panelBundles);
+                    if (newRoutes)
+                        this.setState({devDefinedRoutes: this.state.devDefinedRoutes.concat(newRoutes)});
+                } }
                 ref={ cmp => { if (cmp && !window.dataBridge.hasControlPanelLoaded()) {
                     window.dataBridge.handleControlPanelLoaded(cmp);
                 } } }/>
@@ -56,10 +51,25 @@ class ControlPanelApp extends preact.Component {
                 <WebsitePackView path="/pack-website"/>
                 <UserProfileView path="/me"/>
                 <ContentTypesManageView path="/manage-content-types"/>
-                { this.adminPanelRoutes }
+                { this.state.devDefinedRoutes }
             </PreactRouter>
             <PopupDialog/>
         </div>;
+    }
+    /**
+     * @param {Array<{ImplClass: any; panel: FrontendPanelConfig; id?: string;}>} panelBundles
+     * @access private
+     */
+    collectRoutes(panelBundles) {
+        const newRoutes = [];
+        panelBundles.forEach(bundle => {
+            if (typeof bundle.ImplClass.getRoutes === 'function' &&
+                !processedPanel.has(bundle.ImplClass)) {
+                newRoutes.push(...bundle.ImplClass.getRoutes());
+                processedPanel.set(bundle.ImplClass, 1);
+            }
+        });
+        return newRoutes;
     }
 }
 

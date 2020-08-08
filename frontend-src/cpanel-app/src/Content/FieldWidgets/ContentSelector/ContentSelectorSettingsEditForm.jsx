@@ -1,4 +1,4 @@
-import {http, services, hookForm, InputGroup, Select} from '@rad-commons';
+import {http, env, hookForm, InputGroup, Select} from '@rad-commons';
 import AbstractSettingEditForm from '../AbstractSettingEditForm.jsx';
 import ContentTypeDropdown from '../../../ContentType/ContentTypeDropdown.jsx';
 
@@ -29,7 +29,7 @@ class ContentSelectorSettingsEditForm extends AbstractSettingEditForm {
                 })));
             })
             .catch(err => {
-                services.console.error(err);
+                env.console.error(err);
             });
     }
     /**
