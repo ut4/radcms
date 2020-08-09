@@ -1,4 +1,5 @@
-import {hookForm, InputGroup, Input, InputError, FormConfirmation, Confirmation, FeatherSvg} from '@rad-commons';
+import {hookForm, InputGroup, Input, InputError, FormConfirmation, Confirmation,
+        Sortable, FeatherSvg} from '@rad-commons';
 import popupDialog from '../../../Common/PopupDialog.jsx';
 import {widgetTypes} from '../all.js';
 import WidgetSelector from '../../WidgetSelector.jsx';
@@ -14,9 +15,8 @@ class MultiFieldConfigurer extends preact.Component {
     constructor(props) {
         super(props);
         this.state = {fields: props.fields.getFields()};
-        props.fields.listen(fields => {
-            this.setState({fields});
-        });
+        props.fields.listen(fields => this.setState({fields}));
+        this.sortable = new Sortable();
     }
     /**
      * @access protected
@@ -25,12 +25,16 @@ class MultiFieldConfigurer extends preact.Component {
         return <div class="multi-field-configurer">
             <table class="table mb-2">
                 <thead><tr>
+                    <th class="drag-column"></th>
                     <th>Nimi</th>
                     <th>Widgetti</th>
                     <th>Widgetin asetukset</th>
                     <th class="buttons"></th>
                 </tr></thead>
-                <tbody>{ this.state.fields.map(f => <tr key={ f.id }>
+                <tbody ref={ this.activateSorting.bind(this) }>{ this.state.fields.map(f => <tr key={ f.id } data-id={ f.id }>
+                    <td class="drag-column">
+                        <button class="drag-handle" type="button"><FeatherSvg iconId="grid-dots"/></button>
+                    </td>
                     <td>{ f.name }</td>
                     <td>{ widgetTypes.find(w => w.name === f.widget.name).friendlyName }</td>
                     <td>{ formatWidgetArgs(f.widget.args) }</td>
@@ -67,6 +71,15 @@ class MultiFieldConfigurer extends preact.Component {
                 class="btn btn-sm mt-2"
                 type="button">Lisää kenttä</button>
         </div>;
+    }
+    /**
+     * @access private
+     */
+    activateSorting(tbodyEl) {
+        this.sortable.register(tbodyEl, {
+            handle: '.drag-handle',
+            onReorder: orderedIds => this.props.fields.reorder(orderedIds),
+        });
     }
 }
 

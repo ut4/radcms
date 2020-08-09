@@ -30,6 +30,10 @@ class Sortable {
         if (!el || this.el === el)
             return;
         this.el = el;
+        if (options.onReorder && !options.onEnd) options.onEnd = e => {
+            if (e.newIndex === e.oldIndex) return;
+            options.onReorder(this.instance.toArray());
+        };
         this.instance = window.Sortable.create(el, Object.assign({
             group: `instance-${++counter}`,
             animation: 100,

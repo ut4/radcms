@@ -18,6 +18,8 @@ class MultiFieldFieldsStore {
                     ? Object.assign({}, field, action.props)
                     : field);
             }
+            if (action.type === 'REORDER')
+                return action.orderedIds.map(fieldId => state.find(f => f.id === fieldId));
             return state;
         }, initialFields);
         if (initialFields)
@@ -53,6 +55,13 @@ class MultiFieldFieldsStore {
      */
     removeField(fieldId) {
         this.store.dispatch({type: 'REMOVE_FIELD', fieldId});
+    }
+    /**
+     * @param {Array<string>} orderedIds
+     * @access public
+     */
+    reorder(orderedIds) {
+        this.store.dispatch({type: 'REORDER', orderedIds});
     }
     /**
      * @param {(fields: Array<MultiFieldField>) => any} fn

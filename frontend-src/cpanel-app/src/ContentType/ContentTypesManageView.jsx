@@ -78,6 +78,8 @@ class ContentTypesManageView extends preact.Component {
                                     this.state.fieldsCurrentlyBeingEdited !== t) }
                             contentType={ t }
                             setEditMode={ to => {
+                                if (this.fieldEditModes[i] === 'edit' && to === 'none')
+                                    t.fields = this.fieldLists[i].current.getFields();
                                 this.fieldEditModes = this.fieldEditModes.map((_, i2) => i2 !== i ? 'none' : to);
                                 this.setState({fieldsCurrentlyBeingEdited: to !== 'none' ? t : null});
                             } }

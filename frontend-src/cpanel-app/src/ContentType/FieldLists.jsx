@@ -91,6 +91,13 @@ class OneByOneEditableFieldList extends preact.Component {
         this.state = {fields: props.fields.slice(0)};
     }
     /**
+     * @returns {Array<ContentTypeField>}
+     * @access public
+     */
+    getFields() {
+        return this.state.fields;
+    }
+    /**
      * @access protected
      */
     render({blur}, {fields}) {
@@ -216,7 +223,7 @@ class FieldsTable extends preact.Component {
                 class={ !this.state.loading ? '' : ' no-drag' }
                 ref={ this.activateSorting.bind(this) }>{ fields.map(f => <tr key={ f.key } data-id={ f.key }>
                 <td class="drag-column">
-                    <button class="drag-handle"><FeatherSvg iconId="grid-dots"/></button>
+                    <button class="drag-handle" type="button"><FeatherSvg iconId="grid-dots"/></button>
                 </td>
                 <td>{ f.name }</td>
                 <td>{ f.friendlyName }</td>
@@ -251,26 +258,14 @@ class FieldsTable extends preact.Component {
      * @access private
      */
     activateSorting(tbodyEl) {
-        if (!tbodyEl) return;
         this.sortable.register(tbodyEl, {
             handle: '.drag-handle',
-            onEnd: e => {
-                if (e.newIndex === e.oldIndex) return;
-                this.props.onFieldsReordered(this.getReorderedFields(), this);
+            onReorder: orderedIds => {
+                this.props.onFieldsReordered(orderedIds.map(key =>
+                    this.props.fields.find(f => f.key === key)
+                ), this);
             },
         });
-    }
-    /**
-     * @access private
-     */
-    getReorderedFields() {
-        const orderedKeys = this.sortable.getImpl().toArray();
-        const fields = this.props.fields;
-        const out = new Array(fields.length);
-        orderedKeys.map((key, i) => {
-            out[i] = fields.find(f => f.key === key);
-        });
-        return out;
     }
 }
 
