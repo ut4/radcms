@@ -257,6 +257,8 @@ class AbstractInput extends preact.Component {
      */
     constructor(props) {
         super(props);
+        if (props.type === 'radio')
+            throw new Error('type="radio" not supported');
         props.vm.form.validatorRunner.setValidatorForInput(props.name,
             new Validator(this, props.validations || []));
         this.inputEl = null;

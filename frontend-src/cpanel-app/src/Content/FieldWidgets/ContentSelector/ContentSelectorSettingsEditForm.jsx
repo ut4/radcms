@@ -3,7 +3,8 @@ import AbstractSettingEditForm from '../AbstractSettingEditForm.jsx';
 import ContentTypeDropdown from '../../../ContentType/ContentTypeDropdown.jsx';
 
 /**
- * Komponentti, jolla devaaja voi konfiguroida sisältövalitsimen asetukset.
+ * Komponentti, jolla devaaja voi konfiguroida sisältövalitsimen asetukset (eli
+ * minkä sisältötyypin sisältöä sillä halutaan valita).
  */
 class ContentSelectorSettingsEditForm extends AbstractSettingEditForm {
     /**
@@ -11,7 +12,7 @@ class ContentSelectorSettingsEditForm extends AbstractSettingEditForm {
      */
     constructor(props) {
         super(props);
-        this.state = {contentTypes: null};
+        this.state = {contentTypes: null, enableMultipleSelections: null};
         this.inputIds = {
             contentType: 'contentSelectorSetting-contentType',
             labelField: 'contentSelectorSetting-labelField',
@@ -22,7 +23,10 @@ class ContentSelectorSettingsEditForm extends AbstractSettingEditForm {
                 const settings = props.settings
                     ? props.settings
                     : makeDefaultSettings(contentTypes[0]);
-                this.setState(Object.assign({contentTypes}, hookForm(this, {
+                this.setState(Object.assign({
+                    contentTypes,
+                    enableMultipleSelections: !settings.enableMultipleSelections ? 'no' : 'yes'
+                }, hookForm(this, {
                     [this.inputIds.contentType]: settings.contentType,
                     [this.inputIds.labelField]: settings.labelField,
                     [this.inputIds.valueField]: settings.valueField,
@@ -33,12 +37,13 @@ class ContentSelectorSettingsEditForm extends AbstractSettingEditForm {
             });
     }
     /**
-     * @returns {{contentType: string; labelField: string; valueField: string;}}
+     * @returns {{contentType: string; enableMultipleSelections: boolean; labelField: string; valueField: string;}}
      * @access public
      */
     getResult() {
         const {values} = this.state;
         return {contentType: values[this.inputIds.contentType],
+                enableMultipleSelections: this.state.enableMultipleSelections === 'yes',
                 labelField: values[this.inputIds.labelField],
                 valueField: values[this.inputIds.valueField]};
     }
@@ -64,6 +69,17 @@ class ContentSelectorSettingsEditForm extends AbstractSettingEditForm {
                     } }/>
             </InputGroup>
             <InputGroup>
+                <label class="form-label">Käytä monivalintaa</label>
+                <label class="form-radio">
+                    <input onChange={ e => this.setState({enableMultipleSelections: e.target.value}) } checked={ this.state.enableMultipleSelections === 'no' } value="no" type="radio"/>
+                    <i class="form-icon"></i>Ei <span class="note">(esim. kategoria)</span>
+                </label>
+                <label class="form-radio">
+                    <input onChange={ e => this.setState({enableMultipleSelections: e.target.value}) } checked={ this.state.enableMultipleSelections === 'yes' } value="yes" type="radio"/>
+                    <i class="form-icon"></i>Kyllä <span class="note">(esim. tagit)</span>
+                </label>
+            </InputGroup>
+            <InputGroup>
                 <label htmlFor={ this.inputIds.labelField } class="form-label">Nimikekenttä
                     <div class="note">Kenttä joka näytetään alasvetovalikossa käyttäjälle</div>
                 </label>
@@ -87,6 +103,7 @@ class ContentSelectorSettingsEditForm extends AbstractSettingEditForm {
 
 function makeDefaultSettings(contentType) {
     return {contentType: contentType.name,
+            enableMultipleSelections: false,
             labelField: contentType.fields[0].name,
             valueField: 'id'};
 }

@@ -117,12 +117,27 @@ class MultiFieldFieldEditDialog extends preact.Component {
     handleConfirm(e) {
         if (!this.form.handleSubmit(e))
             return;
+        const current = this.props.field.widget;
+        const widget = this.widgetSelector.current.getResult();
         this.props.onConfirm({
             name: this.state.values.fieldName,
-            widget: this.widgetSelector.current.getResult(),
+            widget,
+            value: widget.name !== current.name ||
+                (widget.name === 'contentSelector' &&
+                 !objectsEquals(widget.args, current.args))
+                ? ''
+                : this.props.field.value,
         });
         popupDialog.close();
     }
+}
+
+function objectsEquals(a, b) {
+    const sortBeKey = o => Object.keys(o).sort().reduce((s, key) => {
+        s[key] = o[key];
+        return s;
+    }, {});
+    return JSON.stringify(sortBeKey(a)) === JSON.stringify(sortBeKey(b));
 }
 
 class MultiFieldFieldDeleteDialog extends preact.Component {

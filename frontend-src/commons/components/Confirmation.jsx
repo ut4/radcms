@@ -3,23 +3,18 @@ import {FormButtons} from './Form.jsx';
 class Confirmation extends preact.Component {
     /**
      * @param {{onConfirm: () => any; onCancel: () => any; confirmButtonText?: string; cancelButtonText?: string; }} props
-     */
-    constructor(props) {
-        super(props);
-    }
-    /**
      * @access protected
      */
-    render() {
+    render({children, onConfirm, confirmButtonText, cancelButtonText}) {
         return <div>
-            { this.props.children }
+            { children }
             <div class="form-buttons">
-                <button onClick={ () => this.props.onConfirm() }
+                <button onClick={ () => onConfirm() }
                         class="btn btn-primary mr-2" type="button">
-                    { this.props.confirmButtonText || 'Ok' }
+                    { confirmButtonText || 'Ok' }
                 </button>
                 <a onClick={ e => this.handleCancel(e) } href="">
-                    { this.props.cancelButtonText || 'Peruuta' }
+                    { cancelButtonText || 'Peruuta' }
                 </a>
             </div>
         </div>;
@@ -36,20 +31,15 @@ class Confirmation extends preact.Component {
 class FormConfirmation extends Confirmation {
     /**
      * @param {{onConfirm: (e: UIEvent) => any; onCancel: () => any; confirmButtonText?: string; cancelButtonText?: string; }} props
-     */
-    constructor(props) {
-        super(props);
-    }
-    /**
      * @access protected
      */
-    render() {
-        return <form onSubmit={ e => this.props.onConfirm(e) }>
-            { this.props.children }
+    render({onConfirm, children, confirmButtonText, cancelButtonText}) {
+        return <form onSubmit={ e => onConfirm(e) }>
+            { children }
             <FormButtons
                 onCancel={ e => this.handleCancel(e) }
-                submitButtonText={ this.props.confirmButtonText }
-                cancelButtonText={ this.props.cancelButtonText }/>
+                submitButtonText={ confirmButtonText }
+                cancelButtonText={ cancelButtonText }/>
         </form>;
     }
 }

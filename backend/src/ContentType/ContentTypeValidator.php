@@ -66,8 +66,8 @@ abstract class ContentTypeValidator {
             $rules = [
                 'text' => [['type', 'string']],
                 'json' => [['type', 'string']],
-                'int' => [['type', 'int']],
-                'uint' => [['type', 'int'], ['min', 0]],
+                'int' => [['type', 'number']],
+                'uint' => [['type', 'number'], ['min', 0]],
             ][$f->dataType] ?? null;
             if (!$rules)
                 throw new \RuntimeException('Shouldn\'t happen');

@@ -65,13 +65,17 @@ body {
     stroke-linejoin: round;
     fill: none;
 }
+.feather-md {
+    width: 1rem;
+    height: 1rem;
+}
 .feather-sm {
     width: .9rem;
     height: .9rem;
 }
-.feather-md {
-    width: 1rem;
-    height: 1rem;
+.feather-xs {
+    width: .8rem;
+    height: .8rem;
 }
 .subtitle, .note {
     font-size: .55rem;

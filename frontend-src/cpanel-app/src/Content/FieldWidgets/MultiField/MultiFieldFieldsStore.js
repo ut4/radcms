@@ -73,7 +73,7 @@ class MultiFieldFieldsStore {
         return {id: (++counter).toString(),
                 name: `field${(numFields || 0) + 1}`,
                 widget: {name: widgetType.name, args: {}},
-                value: undefined};
+                value: ''};
     }
 }
 
