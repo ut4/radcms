@@ -35,7 +35,7 @@ abstract class ContentTypeModule {
             [ContentTypeControllers::class, 'handleUpdateOrderOfContentTypeFields', 'updateField:contentTypes']
         );
         $ctx->router->map('PUT', '/api/content-types/[w:contentTypeName]',
-            [ContentTypeControllers::class, 'handleUpdateContentType', 'update:contentTypes']
+            [ContentTypeControllers::class, 'handleUpdateBasicInfoOfContentType', 'update:contentTypes']
         );
         $ctx->router->map('DELETE', '/api/content-types/[w:contentTypeName]',
             [ContentTypeControllers::class, 'handleDeleteContentType', 'delete:contentTypes']

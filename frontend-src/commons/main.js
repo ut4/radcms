@@ -9,6 +9,6 @@ import Sortable from './services/Sortable.js';
 const env = {sessionStorage: window.sessionStorage, console: window.console};
 
 export * from './components/Form.jsx';
-export {config, http, myFetch, env, toasters,
+export {config, http, myFetch, toasters, env,
         Toaster, View, Confirmation, FormConfirmation, FeatherSvg, Sortable};
 export * from './utils.js';

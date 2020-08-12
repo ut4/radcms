@@ -24,6 +24,10 @@ declare module "@rad-commons" {
         export const toasters: {
             [key: string]: (message: string|function, level: keyof {info: 1; error: 1; message: 1;}) => any;
         };
+        export const env: {
+            sessionStorage: WindowSessionStorage;
+            console: WindowConsole;
+        };
 
         ////////////////////////////////////////////////////////////////////////
 
@@ -135,6 +139,10 @@ declare module "@rad-commons" {
             makeUrl(url: string): string;
             makeAssetUrl(url: string): string;
             normalizeUrl(url: string): string;
+        }
+        export class Sortable {
+            register(el: HTMLElement, options: Object): void;
+            getImpl(): Object;
         }
     }
     export = radCommons;

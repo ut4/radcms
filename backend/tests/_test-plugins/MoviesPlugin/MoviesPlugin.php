@@ -11,7 +11,7 @@ class MoviesPlugin implements PluginInterface {
     private static $mockPackData;
     public function __construct() {
         $this->myContentTypes = new ContentTypeCollection();
-        $this->myContentTypes->add('Movies', 'Elokuvat', [
+        $this->myContentTypes->add('Movies', 'Elokuvat', 'Kuvaus', [
             (object) ['name' => 'title', 'dataType' => 'text'],
             (object) ['name' => 'releaseYear', 'dataType' => 'int'],
         ]);

@@ -20,10 +20,10 @@ final class ContentControllersTest extends DbTestCase {
     private $app;
     public static function setUpBeforeClass(): void {
         self::$testContentTypes = new ContentTypeCollection();
-        self::$testContentTypes->add('Products', 'Tuotteet', [
+        self::$testContentTypes->add('Products', 'Tuotteet', 'Kuvaus', [
             (object) ['name' => 'title', 'dataType' => 'text']
         ]);
-        self::$testContentTypes->add('Brands', 'Tuotemerkit', [
+        self::$testContentTypes->add('Brands', 'Tuotemerkit', 'Kuvaus', [
             (object) ['name' => 'name', 'dataType' => 'text']
         ]);
         self::$migrator = new ContentTypeMigrator(self::getDb());

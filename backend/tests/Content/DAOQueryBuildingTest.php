@@ -11,10 +11,10 @@ use Pike\PikeException;
 final class DAOQueryBuildingTest extends TestCase {
     private function makeDao($useRevisions = false, $alterContentTypesFn = null) {
         $ctypes = new ContentTypeCollection();
-        $ctypes->add('Games', 'Pelit', [
+        $ctypes->add('Games', 'Pelit', 'Kuvaus', [
             (object) ['name' => 'title', 'dataType' => 'text']
         ]);
-        $ctypes->add('Platforms', 'Alustat', [
+        $ctypes->add('Platforms', 'Alustat', 'Kuvaus', [
             (object) ['name' => 'name', 'dataType' => 'text'],
             (object) ['name' => 'gameTitle', 'dataType' => 'text'],
         ]);
@@ -148,7 +148,7 @@ final class DAOQueryBuildingTest extends TestCase {
                 $A_LONG_STRING = str_repeat('-', 65);
                 //
                 return $this->makeDao(false, function ($ctypes) use ($A_LONG_STRING) {
-                    $ctypes->add($A_LONG_STRING, '', [
+                    $ctypes->add($A_LONG_STRING, '', 'Kuvaus', [
                         (object) ['name' => 'field', 'dataType' => 'text']
                     ]);
                 })->fetchOne($A_LONG_STRING)->where('1=1');

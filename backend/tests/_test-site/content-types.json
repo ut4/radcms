@@ -2,12 +2,14 @@
     {
         "name": "SomeType",
         "friendlyName": "Friendly name",
+        "description": "A description",
         "isInternal": false,
         "fields": [{"name": "name", "dataType": "text"}]
     },
     {
         "name": "AnotherType",
         "friendlyName": "Friendly eman",
+        "description": "A description",
         "isInternal": false,
         "fields": [{"name": "title", "dataType": "text"}]
     }

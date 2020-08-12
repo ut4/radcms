@@ -3,6 +3,7 @@
     {
         "name": "Articles",
         "friendlyName": "Artikkelit",
+        "description": "Artikkelit",
         "isInternal": false,
         "fields": [
             {

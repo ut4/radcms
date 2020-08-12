@@ -53,6 +53,7 @@ interface MultiFieldField {
 interface ContentType {
     name: string;
     friendlyName: string;
+    description: string;
     isInternal: boolean;
     fields: Array<ContentTypeField>;
 }

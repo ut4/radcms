@@ -29,6 +29,7 @@ class ContentTypeMigrator {
         $contentTypes = new ContentTypeCollection;
         $contentTypes->add($data->name,
                            $data->friendlyName,
+                           $data->description,
                            $data->fields,
                            $data->isInternal);
         // @allow \Pike\PikeException

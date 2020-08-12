@@ -15,12 +15,12 @@ final class ContentTypeControllersTest extends DbTestCase {
     private const DEFAULT_WIDGET = ContentTypeValidator::FIELD_WIDGETS[0];
     public static function setUpBeforeClass(): void {
         self::$testContentTypes = new ContentTypeCollection();
-        self::$testContentTypes->add('Events', 'Tapahtumat', [
+        self::$testContentTypes->add('Events', 'Tapahtumat', 'Kuvaus1', [
             (object) ['name' => 'name', 'dataType' => 'text'],
             (object) ['name' => 'pic', 'dataType' => 'text', 'friendlyName' => 'Kuva',
                       'widget' => 'imagePicker', 'defaultValue' => 'default.jpg'],
         ]);
-        self::$testContentTypes->add('Locations', 'Paikat', [
+        self::$testContentTypes->add('Locations', 'Paikat', 'Kuvaus2', [
             (object) ['name' => 'name', 'dataType' => 'text', 'friendlyName' => 'Tapahtumapaikka',
                       'widget' => 'textField', 'defaultValue' => '', 'visibility' => 1]
         ]);
@@ -44,13 +44,16 @@ final class ContentTypeControllersTest extends DbTestCase {
         $this->sendCreateContentTypeRequest($s);
         $this->verifyResponseBodyEquals([
             'name must contain only [a-zA-Z0-9_] and start with [a-zA-Z_]',
-            'friendlyName must be string',
             'The length of friendlyName must be at least 1',
+            'The length of friendlyName must be 128 or less',
+            'The length of description must be 512 or less',
             'isInternal must be bool',
             'fields.*.name must contain only [a-zA-Z0-9_] and start with [a-zA-Z_]',
+            'The length of fields.*.name must be 64 or less',
             'The length of fields.*.friendlyName must be at least 1',
+            'The length of fields.*.friendlyName must be 128 or less',
             'The value of fields.*.dataType was not in the list',
-            'fields.*.defaultValue must be string',
+            'The length of fields.*.defaultValue must be 2048 or less',
             'fields.*.visibility must be int',
             'The value of fields.*.widget.name was not in the list',
         ], $s);
@@ -75,9 +78,11 @@ final class ContentTypeControllersTest extends DbTestCase {
     public function testGETContentTypeReturnsContentType() {
         $s = $this->setupGetContentTypeTest();
         $this->sendGetContentTypeRequest($s);
+        $expected = self::$testContentTypes[0];
         $this->verifyResponseBodyEquals(
-            ['name' => 'Events',
-             'friendlyName' => 'Tapahtumat',
+            ['name' => $expected->name,
+             'friendlyName' => $expected->friendlyName,
+             'description' => $expected->description,
              'isInternal' => false,
              'index' => 0,
              'origin' => 'Website',
@@ -104,9 +109,6 @@ final class ContentTypeControllersTest extends DbTestCase {
         $app = $this->makeTestApp();
         $this->sendRequest($req, $res, $app, $s);
     }
-    private function verifyResponseBodyEquals($expected, $s) {
-        $this->assertEquals(json_encode($expected), $s->actualResponseBody);
-    }
 
 
     ////////////////////////////////////////////////////////////////////////////
@@ -116,7 +118,9 @@ final class ContentTypeControllersTest extends DbTestCase {
         $s = $this->setupGetContentTypesTest();
         $this->sendGetContentTypesRequest($s);
         $this->verifyResponseBodyEquals(
-            [['name' => 'Events', 'friendlyName' => 'Tapahtumat',
+            [['name' => self::$testContentTypes[0]->name,
+              'friendlyName' => self::$testContentTypes[0]->friendlyName,
+              'description' => self::$testContentTypes[0]->description,
               'isInternal' => false, 'index' => 0, 'origin' => 'Website', 'fields' => [
                 ['name' => 'name', 'friendlyName' => 'name', 'dataType' => 'text',
                  'widget' => (object) ['name' => self::DEFAULT_WIDGET, 'args' => null],
@@ -125,7 +129,9 @@ final class ContentTypeControllersTest extends DbTestCase {
                  'widget' => (object) ['name' => 'imagePicker', 'args' => null],
                  'defaultValue' => 'default.jpg', 'visibility' => 0],
             ]],
-            ['name' => 'Locations', 'friendlyName' => 'Paikat',
+            ['name' => self::$testContentTypes[1]->name,
+             'friendlyName' => self::$testContentTypes[1]->friendlyName,
+             'description' => self::$testContentTypes[1]->description,
              'isInternal' => false, 'index' => 1, 'origin' => 'Website', 'fields' => [
                 ['name' => 'name', 'friendlyName' => 'Tapahtumapaikka', 'dataType' => 'text',
                  'widget' => (object) ['name' => self::DEFAULT_WIDGET, 'args' => null],
@@ -195,6 +201,7 @@ final class ContentTypeControllersTest extends DbTestCase {
             'reqBody' => (object) [
                 'name' => 'Another',
                 'friendlyName' => 'Päivitetty selkonimi',
+                'description' => 'Päivitetty kuvaus',
                 'isInternal' => true,
             ],
             'testContentTypes' => new ContentTypeCollection()
@@ -214,6 +221,7 @@ final class ContentTypeControllersTest extends DbTestCase {
                                                                        $parsed);
         $this->assertNotNull($actualCompactCtype);
         $this->assertEquals($s->reqBody->friendlyName, $actualCompactCtype->friendlyName);
+        $this->assertEquals($s->reqBody->description, $actualCompactCtype->description);
         if (!$newName)
             $this->verifyContentTypeTableExists($s->contentTypeName, true);
         else {
@@ -385,7 +393,9 @@ final class ContentTypeControllersTest extends DbTestCase {
     }
     private function installTestContentType($s) {
         $s->testContentTypes->add($s->contentTypeName,
-                                  "Friendly name of {$s->contentTypeName}", [
+                                  "Friendly name of {$s->contentTypeName}",
+                                  'Kuvaus',
+                                  [
                                       (object) ['name' => 'field1', 'dataType' => 'text'],
                                       (object) ['name' => 'field2', 'dataType' => 'int'],
                                   ]);

@@ -7,7 +7,7 @@ $article = $this
         'impl' => StockFrontendPanelImpls::DEFAULT_SINGLE,
         'title' => $props['frontendPanelTitle'] ?? 'Artikkeli',
         'subtitle' => $props['slug'],
-        'highligh' => 'article'
+        'highlight' => 'article'
     ])
     ->exec();
 if (array_key_exists('bindTo', $props))

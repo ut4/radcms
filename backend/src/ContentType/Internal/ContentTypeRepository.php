@@ -14,7 +14,7 @@ use RadCms\ContentType\{ContentTypeCollection, ContentTypeDef, ContentTypeMigrat
  */
 class ContentTypeRepository extends ContentTypeMigrator {
     /**
-     * @param \stdClass $data {name: string, friendlyName: string, isInternal: bool} Olettaa että on validi
+     * @param \stdClass $data {name: string, friendlyName: string, description: string, isInternal: bool} Olettaa että on validi
      * @param \RadCms\ContentType\ContentTypeDef $contentType
      * @param \RadCms\ContentType\ContentTypeCollection $currentContentTypes
      * @throws \Pike\PikeException
@@ -29,10 +29,12 @@ class ContentTypeRepository extends ContentTypeMigrator {
         }
         if ($data->name !== $contentType->name ||
             $data->friendlyName !== $contentType->friendlyName ||
+            $data->description !== $contentType->description ||
             $data->isInternal !== $contentType->isInternal) {
             $idx = $contentType->index;
             $currentContentTypes[$idx]->name = $data->name;
             $currentContentTypes[$idx]->friendlyName = $data->friendlyName;
+            $currentContentTypes[$idx]->description = $data->description;
             $currentContentTypes[$idx]->isInternal = $data->isInternal;
             // @allow \Pike\PikeException
             if ($this->db->exec(

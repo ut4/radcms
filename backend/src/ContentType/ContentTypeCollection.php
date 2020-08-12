@@ -10,17 +10,20 @@ class ContentTypeCollection extends \ArrayObject {
     /**
      * @param string $name
      * @param string $friendlyName
+     * @param string $description
      * @param array|\RadCms\ContentType\FieldCollection $fields
      * @param bool $isInternal = false
      * @param string $origin = null 'Website' | 'SomePlugin'
      */
     public function add(string $name,
                         string $friendlyName,
+                        string $description,
                         $fields,
                         bool $isInternal = false,
                         string $origin = null): void {
         $this[] = new ContentTypeDef($name,
                                      $friendlyName,
+                                     $description,
                                      $fields,
                                      count($this),
                                      $isInternal,
@@ -50,6 +53,7 @@ class ContentTypeCollection extends \ArrayObject {
         foreach ($input as $i => $def)
             $out[] = new ContentTypeDef($def->name,
                                         $def->friendlyName,
+                                        $def->description,
                                         $def->fields,
                                         $i,
                                         $def->isInternal ?? false,

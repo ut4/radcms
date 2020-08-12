@@ -178,7 +178,8 @@ final class InstallerTest extends BaseInstallerTest {
                     file_get_contents("{$s->backendPath}assets/schema.mariadb.sql"),
                     //
                     '[' .
-                        '{"name":"Movies","friendlyName":"Elokuvat","isInternal":false' .
+                        '{"name":"Movies","friendlyName":"Elokuvat"' .
+                        ',"description":"Elokuvat","isInternal":false' .
                         ',"fields":[{"name":"title","dataType":"text"}]}' .
                     ']',
                     //

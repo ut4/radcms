@@ -31,7 +31,7 @@ final class PackageInstallerTest extends BaseInstallerTest {
                                             ['db.database' => self::TEST_DB_NAME1,
                                              'db.tablePrefix' => 'pkg_']);
         self::$testContentTypes = new ContentTypeCollection();
-        self::$testContentTypes->add('Books', 'Kirjat', [
+        self::$testContentTypes->add('Books', 'Kirjat', 'Kuvaus', [
             (object) ['name' => 'title', 'dataType' => 'text']
         ]);
         self::$testContent = [

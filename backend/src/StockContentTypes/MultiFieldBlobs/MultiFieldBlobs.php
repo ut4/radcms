@@ -16,6 +16,7 @@ class MultiFieldBlobs {
         return (object) [
             'name' => 'MultiFieldBlobs',
             'friendlyName' => 'Monikenttäsisältö',
+            'description' => 'Joustava sisältö, jolla ei ole ennalta määriteltyä rakennetta.',
             'fields' => [
                 (object) [
                     'name' => 'name',

@@ -142,6 +142,7 @@ class ContentTypesManageView extends preact.Component {
         contentTypes.unshift({
             name: 'Name',
             friendlyName: 'Nimi',
+            description: 'Kuvaus',
             isInternal: false,
             fields: [makeField()],
             key: ++counter
@@ -157,12 +158,13 @@ class ContentTypesManageView extends preact.Component {
 
 class BasicInfo extends preact.Component {
     /**
-     * @param {{contentType: Object; editMode: string; blur: boolean; onEditStarted: () => any; onEditEnded: (mode: string, data: Object) => any; onEditDiscarded: (mode: string) => any;}} props
+     * @param {{contentType: ContentType; editMode: string; blur: boolean; onEditStarted: () => any; onEditEnded: (mode: string, data: Object) => any; onEditDiscarded: (mode: string) => any;}} props
      */
     constructor(props) {
         super(props);
         this.state = {name: props.contentType.name,
                       friendlyName: props.contentType.friendlyName,
+                      description: props.contentType.description,
                       isInternal: props.contentType.isInternal};
     }
     /**
@@ -188,7 +190,8 @@ class BasicInfo extends preact.Component {
                 </div>
             </header>
             <div class="mb-8">
-                <div>Selkonimi: { this.state.friendlyName }</div>
+                <div class="my-1 text-ellipsis">Selkonimi: { this.state.friendlyName }</div>
+                <div class="mb-1 text-ellipsis">Kuvaus: { this.state.description }</div>
                 <div data-help-text="Sisäiset sisältötyypit ei näy &quot;Luo sisältöä&quot;-, ja &quot;Kaikki sisältö&quot; -näkymissä.">Piilotettu: { !this.state.isInternal ? 'ei' : 'kyllä' }</div>
             </div>
         </div>;
@@ -214,10 +217,15 @@ class BasicInfo extends preact.Component {
                 </div>
             </header>
             <div class="container mb-8">
-                <div class="columns">Selkonimi:
+                <div class="columns mb-2">Selkonimi:
                     <div class="ml-2"><ContentEditable
                         value={ this.state.friendlyName }
                         onChange={ val => this.setState({friendlyName: val}) }/></div>
+                </div>
+                <div class="columns mb-1">Kuvaus:
+                    <div class="ml-2"><ContentEditable
+                        value={ this.state.description }
+                        onChange={ val => this.setState({description: val}) }/></div>
                 </div>
                 <label class="columns col-centered">Piilotettu:
                     <div class="form-checkbox ml-2">
@@ -243,6 +251,7 @@ class BasicInfo extends preact.Component {
         this.props.onEditEnded(this.props.editMode, {
             name: this.state.name,
             friendlyName: this.state.friendlyName,
+            description: this.state.description,
             isInternal: this.state.isInternal
         });
     }
