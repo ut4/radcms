@@ -19,9 +19,9 @@ class ContentEditView extends preact.Component {
         this.contentType = null;
         this.state = {
             doPublish: false,
-            contentNodeFetched: false,
-            contentTypeFetched: false,
             formClasses: null,
+            panelConfig: null,
+            FormImpl: null,
         };
         this.fetchContentAndUpdateState(this.props);
     }
@@ -36,9 +36,7 @@ class ContentEditView extends preact.Component {
      * @access private
      */
     fetchContentAndUpdateState(props) {
-        const newState = {contentNodeFetched: false,
-                          contentTypeFetched: false,
-                          doPublish: !!props.publish};
+        const newState = {doPublish: !!props.publish};
         this.title = 'Muokkaa sisältöä';
         this.submitButtonText = 'Tallenna';
         if (newState.doPublish) {
@@ -48,31 +46,29 @@ class ContentEditView extends preact.Component {
         http.get(`/api/content/${props.id}/${props.contentTypeName}`)
             .then(cnode => {
                 this.contentNode = cnode;
-                newState.contentNodeFetched = true;
                 return http.get('/api/content-types/' + props.contentTypeName);
             })
             .then(ctype => {
                 this.contentType = ctype;
-                newState.contentTypeFetched = true;
             })
             .catch(() => {
                 toasters.main('Jokin meni pieleen', 'error');
             })
             .finally(() => {
+                newState.panelConfig = (props.panelIdx || 'none') !== 'none' ?
+                    webPageState.currentContentPanels[props.panelIdx] : null;
+                newState.FormImpl = contentFormRegister.getImpl(newState.panelConfig ?
+                    newState.panelConfig.editFormImpl : ContentFormImpl.Default);
                 this.setState(newState);
             });
     }
     /**
      * @access protected
      */
-    render() {
-        if (!this.state.contentNodeFetched || !this.state.contentTypeFetched) return null;
-        const panelConfig = (this.props.panelIdx || 'none') !== 'none' ?
-            webPageState.currentContentPanels[this.props.panelIdx] : null;
-        const FormImpl = contentFormRegister.getImpl(panelConfig ? panelConfig.editFormImpl : ContentFormImpl.Default);
+    render(_, {FormImpl}) {
+        if (!FormImpl) return null;
         return <View><form onSubmit={ e => this.handleFormSubmit(e) } class={ this.state.formClasses }>
-            <h2 class="columns col-auto">{ [
-                this.title,
+            <h2 class="columns col-auto">{ [this.title].concat(this.contentNode ? [
                 this.contentNode.isRevision && !this.props.publish
                     ? <sup class="color-alt"> (Luonnos)</sup>
                     : null,
@@ -82,17 +78,18 @@ class ContentEditView extends preact.Component {
                         <FeatherSvg iconId="trash-2" className="medium"/>
                     </button>
                     : null
-            ] }</h2>
+            ] : []) }</h2>
+            { this.contentNode ? [
             <FormImpl
                 key={ this.contentNode.id }
                 fields={ filterByUserRole(this.contentType.fields) }
-                settings={ panelConfig ? panelConfig.editFormImplProps : {} }
+                settings={ this.state.panelConfig ? this.state.panelConfig.editFormImplProps : {} }
                 setContentNodeValue={ (value, fieldName) => {
                     this.contentNode[fieldName] = value;
                 } }
                 getWidgetImpl={ getWidgetImpl }
-                editForm={ this }/>
-            { this.contentNode.isRevision && !this.props.publish
+                editForm={ this }/>,
+            this.contentNode.isRevision && !this.props.publish
                 ? <InputGroup className="mt-2">
                     <label class="form-checkbox">
                         <input id="doPublish" type="checkbox" defaultChecked={ this.state.doPublish }
@@ -100,7 +97,7 @@ class ContentEditView extends preact.Component {
                         <i class="form-icon"></i> Julkaise
                     </label>
                 </InputGroup>
-                : null }
+                : null,
             <FormButtons
                 submitButtonText={ this.submitButtonText }
                 altSubmitButtonText="Tallenna ja palaa"
@@ -112,7 +109,7 @@ class ContentEditView extends preact.Component {
                         </button>
                         : null,
                     'cancel'
-                ] }/>
+                ] }/> ] : <p>Sisältöä ei löytynyt.</p> }
         </form></View>;
     }
     /**

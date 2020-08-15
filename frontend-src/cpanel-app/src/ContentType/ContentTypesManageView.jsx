@@ -5,8 +5,8 @@ import popupDialog from '../Common/PopupDialog.jsx';
 let counter = 0;
 
 /**
- * #/manage-content-types: Näkymä, jossa devaaja voi selata/lisätä/muokata si-
- * vuston sisältötyyppejä.
+ * #/manage-content-types[?auto-open-create-form=any]: Näkymä, jossa devaaja voi
+ * selata/lisätä/muokata sivuston sisältötyyppejä.
  */
 class ContentTypesManageView extends preact.Component {
     /**
@@ -24,15 +24,20 @@ class ContentTypesManageView extends preact.Component {
         http.get('/api/content-types')
             .then(contentTypes => {
                 if (contentTypes.length) {
-                    this.setState({contentTypes: contentTypes.map(t => {
+                    contentTypes.forEach(t => {
                         this.basicInfoEditModes.push('none');
                         this.fieldEditModes.push('none');
                         this.fieldLists.push(preact.createRef());
-                        return Object.assign(t, {
+                        Object.assign(t, {
                             key: ++counter,
                             fields: t.fields.map(f => Object.assign(f, {key: makeField().key}))
                         });
-                    })});
+                    });
+                    this.setState({contentTypes});
+                    if (props.matches['auto-open-create-form'] !== undefined) {
+                        window.history.replaceState(null, null, window.location.hash.split('?')[0]);
+                        this.prependNewContentType(contentTypes);
+                    }
                 } else this.setState({message: 'Sisältötyyppejä ei löytynyt'});
             })
             .catch(err => {
@@ -137,8 +142,7 @@ class ContentTypesManageView extends preact.Component {
     /**
      * @access private
      */
-    prependNewContentType() {
-        const contentTypes = this.state.contentTypes;
+    prependNewContentType(contentTypes = this.state.contentTypes) {
         contentTypes.unshift({
             name: 'Name',
             friendlyName: 'Nimi',

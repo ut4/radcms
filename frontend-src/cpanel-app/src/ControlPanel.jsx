@@ -180,6 +180,7 @@ class ForDevsControlPanelSectionction extends preact.Component {
             <AdminControlPanelPanel Renderer={ null } title="Sisältötyypit"
                                     mainUrl="/manage-content-types">
                 <a href="#/manage-content-types">Selaa</a>
+                <a href="#/manage-content-types?auto-open-create-form">Luo uusi</a>
             </AdminControlPanelPanel>
             <AdminControlPanelPanel Renderer={ null } title="Lisäosat"
                                     mainUrl="/manage-plugins">
