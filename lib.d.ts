@@ -75,10 +75,12 @@ declare module "@rad-commons" {
         }
         export class FormButtons extends preact.Component<
             {
-                buttons?: Array<string|preact.VNode>;
+                buttons?: Array<'submit'|'submitWithAlt'|'cancel'|preact.VNode>;
                 submitButtonText?: string;
+                altSubmitButtonText?: string;
                 cancelButtonText?: string;
                 returnTo?: string;
+                className?: string;
             },
             {}>
         {

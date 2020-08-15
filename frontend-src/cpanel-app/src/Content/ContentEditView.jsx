@@ -103,8 +103,9 @@ class ContentEditView extends preact.Component {
                 : null }
             <FormButtons
                 submitButtonText={ this.submitButtonText }
+                altSubmitButtonText="Tallenna ja palaa"
                 buttons={ [
-                    'submit',
+                    'submitWithAlt',
                     !this.contentNode.isRevision
                         ? <button onClick={ e => this.switchToDraft(e) } class="btn ml-2" type="button">
                             Vaihda luonnokseen
@@ -130,7 +131,8 @@ class ContentEditView extends preact.Component {
             Object.assign(this.contentNode, {status})
         )
         .then(() => {
-            urlUtils.redirect('@current', 'hard');
+            if (e.altSubmitLinkIndex !== 0) urlUtils.redirect('@current', 'hard');
+            else urlUtils.reload();
         })
         .catch(() => {
             toasters.main('Sisällön tallennus epäonnistui.', 'error');

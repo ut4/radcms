@@ -72,6 +72,32 @@
     padding-top: 0.13rem;
 }
 
+/* -- Components: Menus ---- */
+.popup-menu {
+    display: none;
+    position: absolute;
+    top: 32px;
+}
+.close-overlay {
+    display: none;
+    position: fixed;
+    height: 100%;
+    width: 100%;
+    left: 0;
+    top: 0;
+}
+.open .popup-menu {
+    display: block;
+}
+.open .close-overlay {
+    display: block;
+}
+
+/* -- Components: Buttons groups ---- */
+.btn-group [type="button"] {
+    padding: .4rem .2rem;
+}
+
 /* -- Cpanel: commons ---- */
 #cpanel2 h2 {
     color: rgba(255,255,255,0.22);

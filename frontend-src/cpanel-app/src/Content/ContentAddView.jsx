@@ -78,7 +78,9 @@ class ContentAddView extends preact.Component {
                     <i class="form-icon"></i> Lisää luonnoksena
                 </label>
             </InputGroup>
-            <FormButtons submitButtonText="Lisää"/>
+            <FormButtons buttons={ ['submitWithAlt', 'cancel'] }
+                submitButtonText="Lisää"
+                altSubmitButtonText="Lisää ja palaa"/>
         </form></View>;
     }
     /**
@@ -91,7 +93,8 @@ class ContentAddView extends preact.Component {
             Object.assign(this.newContentNode,
                           {status: revisionSettings === '' ? Status.PUBLISHED : Status.DRAFT}))
             .then(() => {
-                urlUtils.redirect('@current', 'hard');
+                if (e.altSubmitLinkIndex !== 0) urlUtils.redirect('@current', 'hard');
+                else urlUtils.reload();
             })
             .catch(() => {
                 toasters.main('Sisällön luonti epäonnistui.', 'error');

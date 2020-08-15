@@ -42,7 +42,7 @@ class ContentManageView extends preact.Component {
                     initialValue={ this.state.contentTypeName }
                     contentTypes={ this.contentTypes }
                     onSelected={ type => this.reFetchContent(type.name) }/>
-                <a href={ `#/add-content/${this.state.contentTypeName}` } title="Luo uusi" class="column">
+                <a href={ `#/add-content/${this.state.contentTypeName}` } title="Luo uusi" class="px-2 col-mr-auto">
                     <FeatherSvg iconId="plus-circle" className="medium"/>
                 </a>
             </div>

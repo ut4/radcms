@@ -1,3 +1,5 @@
+import FeatherSvg from './FeatherSvg.jsx';
+
 const validationStrings = {
     required: '{field} vaaditaan',
     minLength: '{field} tulee ole vähintään {arg0} merkkiä pitkä',
@@ -370,6 +372,13 @@ class InputError extends preact.Component {
 
 class FormButtons extends preact.Component {
     /**
+     * @param {{buttons?: Array<'submit'|'submitWithAlt'|'cancel'|preact.AnyComponent>; submitButtonText?: string; altSubmitButtonText?: string; cancelButtonText?: string; returnTo?: string; className?: string;}} props
+     */
+    constructor(props) {
+        super(props);
+        this.state = {altMenuIsOpen: false};
+    }
+    /**
      * @access protected
      */
     render(props) {
@@ -379,6 +388,22 @@ class FormButtons extends preact.Component {
                     return <button class="btn btn-primary" type="submit">
                         { props.submitButtonText || 'Ok' }
                     </button>;
+                if (candidate === 'submitWithAlt')
+                    return <div class={ `btn-group p-relative${!this.state.altMenuIsOpen ? '' : ' open'}` }>
+                        <button class="btn btn-primary" type="submit">
+                            { props.submitButtonText || 'Ok' }
+                        </button>
+                        <button
+                            onClick={ () => this.setState({altMenuIsOpen: !this.state.altMenuIsOpen}) }
+                            class="btn btn-primary"
+                            type="button">
+                            <FeatherSvg iconId="chevron-down" className=" feather-xs"/>
+                        </button>
+                        <a href="#close" onClick={ e => this.closeAltMenu(e) } class="close-overlay"></a>
+                        <ul class="popup-menu menu">
+                            <li class="menu-item"><a onClick={ e => this.triggerOnSubmit(e) } href="">{ props.altSubmitButtonText || 'Alt' }</a></li>
+                        </ul>
+                    </div>;
                 if (candidate === 'cancel')
                     return <a
                         href={ `#${props.returnTo || '/'}` }
@@ -395,6 +420,24 @@ class FormButtons extends preact.Component {
      */
     handleCancel(e) {
         if (this.props.onCancel) this.props.onCancel(e);
+    }
+    /**
+     * @access private
+     */
+    triggerOnSubmit(e) {
+        this.closeAltMenu(e);
+        const form = e.target.closest('form');
+        if (!form) throw new Error('Expected <FormButtons/> to be a child of <form>');
+        const myEvent = new Event('submit', {'bubbles': true, 'cancelable': true});
+        myEvent.altSubmitLinkIndex = 0;
+        form.dispatchEvent(myEvent);
+    }
+    /**
+     * @access private
+     */
+    closeAltMenu(e) {
+        e.preventDefault();
+        this.setState({altMenuIsOpen: false});
     }
 }
 
