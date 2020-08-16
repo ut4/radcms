@@ -1,7 +1,6 @@
-import {http, toasters, env, urlUtils, View, Confirmation, FeatherSvg} from '@rad-commons';
+import {http, toasters, env, urlUtils, View, FeatherSvg} from '@rad-commons';
 import getFieldListImplForEditMode, {makeField} from './FieldLists.jsx';
-import ContentEditable from '../Common/ContentEditable.jsx';
-import popupDialog from '../Common/PopupDialog.jsx';
+import BasicInfoInputs from './BasicInfoInputs.jsx';
 let counter = 0;
 
 /**
@@ -67,7 +66,7 @@ class ContentTypesManageView extends preact.Component {
                                   this.state.fieldsCurrentlyBeingEdited !== null;
                     return <div class={ `panel bg-light${useNormalWidth ? '' : ' full-width'}${!blur ? '' : ' blurred'}` }
                                 style={ useNormalWidth ? '' : `grid-row:${Math.floor(i / 2 + 1)}` }>
-                        <BasicInfo
+                        <BasicInfoInputs
                             contentType={ t }
                             editMode={ this.basicInfoEditModes[i] }
                             blur={ blur }
@@ -157,159 +156,6 @@ class ContentTypesManageView extends preact.Component {
         this.setState({contentTypes,
                        contentTypeCurrentlyBeingEdited: contentTypes[0],
                        fieldsCurrentlyBeingEdited: contentTypes[0]});
-    }
-}
-
-class BasicInfo extends preact.Component {
-    /**
-     * @param {{contentType: ContentType; editMode: string; blur: boolean; onEditStarted: () => any; onEditEnded: (mode: string, data: Object) => any; onEditDiscarded: (mode: string) => any;}} props
-     */
-    constructor(props) {
-        super(props);
-        this.state = {name: props.contentType.name,
-                      friendlyName: props.contentType.friendlyName,
-                      description: props.contentType.description,
-                      isInternal: props.contentType.isInternal};
-    }
-    /**
-     * @access protected
-     */
-    render() {
-        if (this.props.editMode === 'none') return <div class={ !this.props.blur ? '' : 'blurred' }>
-            <header class="columns col-centered mb-2">
-                <h3 class="column m-0">{ this.state.name }</h3>
-                <div>
-                    <button onClick={ () => this.props.onEditStarted() }
-                            disabled={ this.props.blur }
-                            title="Muokkaa sisältötyyppiä"
-                            class="btn btn-icon">
-                        <FeatherSvg iconId="edit" className="feather-md"/>
-                    </button>
-                    <button onClick={ () => this.openDeleteDialog() }
-                            disabled={ this.props.blur }
-                            title="Poista sisältötyyppi"
-                            class="btn btn-icon">
-                        <FeatherSvg iconId="x" className="feather-md"/>
-                    </button>
-                </div>
-            </header>
-            <div class="mb-8">
-                <div class="my-1 text-ellipsis">Selkonimi: { this.state.friendlyName }</div>
-                <div class="mb-1 text-ellipsis">Kuvaus: { this.state.description }</div>
-                <div data-help-text="Sisäiset sisältötyypit ei näy &quot;Luo sisältöä&quot;-, ja &quot;Kaikki sisältö&quot; -näkymissä.">Piilotettu: { !this.state.isInternal ? 'ei' : 'kyllä' }</div>
-            </div>
-        </div>;
-        // edit or create
-        return <div>
-            <header class="columns col-centered pr-2 mb-2">
-                <h3 class="column m-0">
-                    <ContentEditable
-                        value={ this.state.name }
-                        onChange={ val => this.setState({name: val}) }/>
-                </h3>
-                <div>
-                    <button onClick={ () => this.endEdit() }
-                            title={ `${this.props.editMode === 'edit' ? 'Tallenna' : 'Luo'} sisältötyyppi` }
-                            class="btn btn-icon">
-                        <FeatherSvg iconId="save"/>
-                    </button>
-                    <button onClick={ () => this.endEdit(true) }
-                            title="Peruuta"
-                            class="btn btn-link">
-                        Peruuta
-                    </button>
-                </div>
-            </header>
-            <div class="container mb-8">
-                <div class="columns mb-2">Selkonimi:
-                    <div class="ml-2"><ContentEditable
-                        value={ this.state.friendlyName }
-                        onChange={ val => this.setState({friendlyName: val}) }/></div>
-                </div>
-                <div class="columns mb-1">Kuvaus:
-                    <div class="ml-2"><ContentEditable
-                        value={ this.state.description }
-                        onChange={ val => this.setState({description: val}) }/></div>
-                </div>
-                <label class="columns col-centered">Piilotettu:
-                    <div class="form-checkbox ml-2">
-                        <input
-                            type="checkbox"
-                            defaultChecked={ this.state.isInternal }
-                            onChange={ e => this.setState({isInternal: e.target.checked}) }/>
-                        <i class="form-icon"></i>
-                    </div>
-                </label>
-            </div>
-        </div>;
-    }
-    /**
-     * @param {boolean} wasCancelled
-     * @access private
-     */
-    endEdit(wasCancelled) {
-        if (wasCancelled) {
-            this.props.onEditDiscarded(this.props.editMode);
-            return;
-        }
-        this.props.onEditEnded(this.props.editMode, {
-            name: this.state.name,
-            friendlyName: this.state.friendlyName,
-            description: this.state.description,
-            isInternal: this.state.isInternal
-        });
-    }
-    /**
-     * @access private
-     */
-    openDeleteDialog() {
-        popupDialog.open(DeleteDialog, {
-            contentType: this.props.contentType,
-            onConfirm: () => {
-                http.delete('/api/content-types/' + this.props.contentType.name)
-                    .then(() => { urlUtils.reload(); })
-                    .catch(err => {
-                        env.console.error(err);
-                        toasters.main('Sisältötyypin poisto epäonnistui.', 'error');
-                    });
-            }
-        });
-    }
-}
-
-class DeleteDialog extends preact.Component {
-    /**
-     * @param {{contentType: ContentType;}} props
-     */
-    constructor(props) {
-        super(props);
-    }
-    /**
-     * @access protected
-     */
-    render() {
-        return <div class="popup-dialog"><div class="box">
-            <Confirmation onConfirm={ () => this.handleConfirm() }
-                confirmButtonText="Poista sisältötyyppi"
-                onCancel={ () => this.handleCancel() }>
-            <h2>Poista sisältötyyppi</h2>
-            <div class="main">
-                <p>Poista sisältötyyppi &quot;{ this.props.contentType.friendlyName }&quot; ({ this.props.contentType.name }) ja siihen liittyvä data pysyvästi?</p>
-            </div>
-        </Confirmation></div></div>;
-    }
-    /**
-     * @access private
-     */
-    handleConfirm() {
-        this.props.onConfirm();
-        this.handleCancel();
-    }
-    /**
-     * @access private
-     */
-    handleCancel() {
-        popupDialog.close();
     }
 }
 

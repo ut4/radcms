@@ -45,8 +45,7 @@ class ContentTypeControllers {
                                          CmsState $cmsState): void {
         // @allow \Pike\PikeException
         $contentType = self::getContentTypeOrThrow($req->params->name, $cmsState);
-        if ($contentType) $res->json($contentType);
-        else $res->status(404)->json(['got' => 'nothing']);
+        $res->json($contentType);
     }
     /**
      * GET /api/content-types/:filter.

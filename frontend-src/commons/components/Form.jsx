@@ -3,6 +3,7 @@ import FeatherSvg from './FeatherSvg.jsx';
 const validationStrings = {
     required: '{field} vaaditaan',
     minLength: '{field} tulee ole vähintään {arg0} merkkiä pitkä',
+    maxLength: '{field} tulee ole enintään {arg0} merkkiä pitkä',
     min: '{field} tulee olla vähintään {arg0}',
 };
 const validatorImplFactories = {
@@ -12,18 +13,22 @@ const validatorImplFactories = {
     'minLength': messages =>
         [(value, min) => value.length >= min, messages.minLength]
     ,
+    'maxLength': messages =>
+        [(value, max) => value.length <= max, messages.maxLength]
+    ,
     'min': messages =>
         [(value, min) => value >= min, messages.min]
     ,
-    'regexp': () =>
-        [(value, pattern) => (new RegExp(pattern)).test(value), '{field}']
+    'regexp': (_, args) =>
+        [(value, pattern) => (new RegExp(pattern)).test(value),
+         `{field}${args.length < 2 ? ' ei kelpaa' : '{arg1}'}`]
     ,
 };
 function expandRules(rules) {
     return rules.map(([ruleNameOrCustomImpl, ...args]) => {
         // ['ruleName', ...args]
         if (typeof ruleNameOrCustomImpl === 'string') {
-            const ruleImpl = validatorImplFactories[ruleNameOrCustomImpl](validationStrings);
+            const ruleImpl = validatorImplFactories[ruleNameOrCustomImpl](validationStrings, args);
             if (!ruleImpl)
                 throw new Error(`Rule ${ruleNameOrCustomImpl} not implemented`);
             return {ruleImpl, args};
@@ -37,19 +42,19 @@ function expandRules(rules) {
 }
 class Validator {
     /**
-     * @param {{getValue: () => string; getLabel: () => string;}} myInput
-     * @param {Array<[string, ...any]>} ruleSettings
+     * @param {string} errorLabel
+     * @param {Array<[string, ...any]|[[function, string], ...any]>} ruleSettings
      */
-    constructor(myInput, ruleSettings) {
-        this.myInput = myInput;
+    constructor(errorLabel, ruleSettings) {
+        this.errorLabel = errorLabel;
         this.ruleImpls = expandRules(ruleSettings);
     }
     /**
+     * @param {any} value
      * @returns {string|null}
      * @access public
      */
-    checkValidity() {
-        const value = this.myInput.getValue();
+    checkValidity(value) {
         for (const {ruleImpl, args} of this.ruleImpls) {
             const [validationFn, errorTmpl] = ruleImpl;
             if (!validationFn(value, ...args))
@@ -63,7 +68,7 @@ class Validator {
     formatError(errorTmpl, args) {
         return args.reduce((error, arg, i) =>
             error.replace(`{arg${i}}`, arg)
-        , errorTmpl.replace('{field}', this.myInput.getLabel()));
+        , errorTmpl.replace('{field}', this.errorLabel));
     }
     /**
      * @param {{[key: string]: string;}} strings
@@ -75,13 +80,19 @@ class Validator {
 }
 class ValidatorRunner {
     /**
-     * @param {{[key: string]: Validator}=} initialValidators
+     * @param {Object} inputs = {}
      */
-    constructor(initialValidators) {
+    constructor(inputs = {}) {
         this.validators = {};
-        if (initialValidators) {
-            for (const name in initialValidators)
-                this.setValidatorForInput(name, initialValidators[name]);
+        for (const name in inputs) {
+            const {validations} = inputs[name];
+            if (!validations)
+                continue;
+            if (!Array.isArray(validations) ||
+                !Array.isArray(validations[0]))
+                throw new TypeError('validations must be an array of arrays');
+            this.setValidatorForInput(name,
+                new Validator(inputs[name].label || name, validations));
         }
     }
     /**
@@ -104,11 +115,12 @@ class ValidatorRunner {
     }
     /**
      * @param {string} inputName
+     * @param {any} value
      * @returns {string|null}
      * @access public
      */
-    validateInput(inputName) {
-        return this.validators[inputName].checkValidity();
+    validateInput(inputName, value) {
+        return this.validators[inputName].checkValidity(value);
     }
     /**
      * @param {(validator: Validator, inputName: string) => false|any} fn
@@ -140,7 +152,7 @@ class Form {
         const {values, errors, classes} = this.vm.state;
         values[name] = e.target.type !== 'checkbox' ? e.target.value : e.target.checked;
         errors[name] = this.validatorRunner.hasValidatorForInput(name)
-            ? this.validatorRunner.validateInput(name)
+            ? this.validatorRunner.validateInput(name, values[name])
             : '';
         classes[name].invalid = !!errors[name];
         classes[name].focused = true;
@@ -180,7 +192,7 @@ class Form {
         const name = e.target.name;
         const {errors, classes} = this.vm.state;
         errors[name] = this.validatorRunner.hasValidatorForInput(name)
-            ? this.validatorRunner.validateInput(name)
+            ? this.validatorRunner.validateInput(name, this.vm.state.values[name])
             : '';
         classes[name].invalid = !!errors[name];
         classes[name].blurredAtLeastOnce = true;
@@ -207,10 +219,10 @@ class Form {
         if (e) e.preventDefault();
         if (this.isSubmitting) return null;
         this.setIsSubmitting();
-        const {errors, classes} = this.vm.state;
+        const {values, errors, classes} = this.vm.state;
         let overall = true;
         this.validatorRunner.each((validator, inputName) => {
-            const error = validator.checkValidity();
+            const error = validator.checkValidity(values[inputName]);
             errors[inputName] = error;
             classes[inputName].invalid = !!error;
             if (overall && error && !classes[inputName].blurredAtLeastOnce)
@@ -237,7 +249,11 @@ class Form {
     }
 }
 
-const hookForm = (vm, values, validators = null) => {
+const hookForm = (vm, values = null, inputs = null) => {
+    if (!values) values = Object.keys(inputs).reduce((out, key) => {
+            out[key] = inputs[key].value;
+            return out;
+        }, {});
     const state = {
         values,
         errors: Object.keys(values).reduce((obj, key) =>
@@ -249,7 +265,7 @@ const hookForm = (vm, values, validators = null) => {
                                         focused: false}})
         , {}),
     };
-    Object.assign(vm, {form: new Form(vm, new ValidatorRunner(validators))});
+    Object.assign(vm, {form: new Form(vm, new ValidatorRunner(inputs))});
     return state;
 };
 
@@ -262,22 +278,9 @@ class AbstractInput extends preact.Component {
         if (props.type === 'radio')
             throw new Error('type="radio" not supported');
         props.vm.form.validatorRunner.setValidatorForInput(props.name,
-            new Validator(this, props.validations || []));
+            new Validator((props.errorLabel || props.name) || '<name>',
+                          props.validations || []));
         this.inputEl = null;
-    }
-    /**
-     * @returns {string}
-     * @access public
-     */
-    getValue() {
-        return this.props.vm.state.values[this.props.name];
-    }
-    /**
-     * @returns {string}
-     * @access public
-     */
-    getLabel() {
-        return (this.props.errorLabel || this.props.name) || '<name>';
     }
     /**
      * @returns {string} 'input'|'select' etc.
@@ -356,17 +359,11 @@ class InputGroup extends preact.Component {
 
 class InputError extends preact.Component {
     /**
-     * @param {{error?: string;}} props
-     */
-    constructor(props) {
-        super(props);
-    }
-    /**
+     * @param {{error?: string; className?: string;}} props
      * @access protected
      */
-    render() {
-        const error = this.props.error;
-        return !error ? null : <p class="form-input-hint">{ error }</p>;
+    render({error, className}) {
+        return !error ? null : <p class={ 'form-input-hint' + (!className ? '' : ` ${className}`) }>{ error }</p>;
     }
 }
 
@@ -397,7 +394,7 @@ class FormButtons extends preact.Component {
                             onClick={ () => this.setState({altMenuIsOpen: !this.state.altMenuIsOpen}) }
                             class="btn btn-primary"
                             type="button">
-                            <FeatherSvg iconId="chevron-down" className=" feather-xs"/>
+                            <FeatherSvg iconId="chevron-down" className="feather-xs"/>
                         </button>
                         <a href="#close" onClick={ e => this.closeAltMenu(e) } class="close-overlay"></a>
                         <ul class="popup-menu menu">
@@ -441,4 +438,4 @@ class FormButtons extends preact.Component {
     }
 }
 
-export {hookForm, InputGroup, Input, Textarea, Select, InputError, FormButtons, Validator as FormInputValidator};
+export {hookForm, InputGroup, Input, Textarea, Select, InputError, FormButtons};

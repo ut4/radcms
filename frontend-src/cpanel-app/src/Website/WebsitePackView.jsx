@@ -102,7 +102,8 @@ class WebsitePackView extends preact.Component {
                         vm={ this }
                         name="signingKey"
                         id="signingKey"
-                        validations={ [['minLength', 12]] }/>
+                        validations={ [['minLength', 12]] }
+                        errorLabel="Salausavain"/>
                     <InputError error={ this.state.errors.signingKey }/>
                 </InputGroup>
                 <Toaster id="packSite"/>

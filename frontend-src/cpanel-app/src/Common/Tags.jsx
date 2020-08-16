@@ -29,7 +29,7 @@ class Tags extends preact.Component {
                 </span>
             ) }
             <button class="chip btn" onClick={ () => this.props.onAddTagButtonClicked() } type="button">
-                <FeatherSvg iconId="plus" className=" feather-xs"/>
+                <FeatherSvg iconId="plus" className="feather-xs"/>
                 Lisää
             </button>
         </div>;

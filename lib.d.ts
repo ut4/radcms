@@ -32,8 +32,12 @@ declare module "@rad-commons" {
         ////////////////////////////////////////////////////////////////////////
 
         export function hookForm(vm: preact.Component,
-                                 values: Object,
-                                 validators?: Array<FormInputValidator>): {
+                                 values?: {[key: string]: any},
+                                 inputs?: {[key: string]: {
+                                     value: any;
+                                     validations: Array<[string, ...any]|[[function, string], ...any]>;
+                                     label?: string;
+                                }}): {
             values: Object;
             errors: Object;
             classes: Object;
@@ -84,14 +88,6 @@ declare module "@rad-commons" {
             },
             {}>
         {
-        }
-        export class FormInputValidator {
-            myInput: {
-                getValue(): string;
-                getLabel(): string;
-            };
-            checkValidity(): string|null;
-            static setValidationStrings(strings: {[key: string]: string;}): void;
         }
         export class Toaster extends preact.Component<
             {id?: string; autoCloseTimeoutMillis?: number;},
