@@ -27,11 +27,7 @@ class ContentTypeMigrator {
      */
     public function installSingle(\stdClass $data): bool {
         $contentTypes = new ContentTypeCollection;
-        $contentTypes->add($data->name,
-                           $data->friendlyName,
-                           $data->description,
-                           $data->fields,
-                           $data->isInternal);
+        $contentTypes[] = ContentTypeDef::fromObject($data);
         // @allow \Pike\PikeException
         return $this->installMany($contentTypes);
     }
@@ -106,11 +102,14 @@ class ContentTypeMigrator {
     }
     /**
      * @param \RadCms\ContentType\ContentTypeDef $contentType
+     * @param bool $doValidateFields = true
      * @return bool
      * @throws \Pike\PikeException
      */
-    protected function validateContentType(ContentTypeDef $contentType): bool {
-        if (!($errors = ContentTypeValidator::validate($contentType)))
+    protected function validateContentType(ContentTypeDef $contentType,
+                                           bool $doValidateFields = true): bool {
+        if (!($errors = ContentTypeValidator::validate($contentType,
+                                                       $doValidateFields)))
             return true;
         throw new PikeException('Got invalid content type: '. implode(',', $errors),
                                 PikeException::BAD_INPUT);
@@ -123,7 +122,7 @@ class ContentTypeMigrator {
     private function validateContentTypes(ContentTypeCollection $contentTypes): bool {
         if (!($errors = ContentTypeValidator::validateAll($contentTypes)))
             return true;
-        throw new PikeException('Got invalid content types: '. implode(',', $errors),
+        throw new PikeException('Got invalid content types: ' . implode(',', $errors),
                                 PikeException::BAD_INPUT);
     }
     /**

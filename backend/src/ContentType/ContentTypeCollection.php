@@ -51,13 +51,13 @@ class ContentTypeCollection extends \ArrayObject {
     public static function fromCompactForm(array $input): ContentTypeCollection {
         $out = new ContentTypeCollection;
         foreach ($input as $i => $def)
-            $out[] = new ContentTypeDef($def->name,
-                                        $def->friendlyName,
-                                        $def->description,
-                                        $def->fields,
-                                        $i,
-                                        $def->isInternal ?? false,
-                                        $def->origin ?? null);
+            $out[] = ContentTypeDef::fromObject($def, $i);
         return $out;
+    }
+    /**
+     * @return \RadCms\ContentType\ContentTypeCollectionBuilder
+     */
+    public static function build(): ContentTypeCollectionBuilder {
+        return new ContentTypeCollectionBuilder;
     }
 }

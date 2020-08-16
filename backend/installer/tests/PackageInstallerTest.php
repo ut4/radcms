@@ -30,10 +30,10 @@ final class PackageInstallerTest extends BaseInstallerTest {
         self::$testSiteConfig = array_merge(include TestSite::PUBLIC_PATH . 'config.php',
                                             ['db.database' => self::TEST_DB_NAME1,
                                              'db.tablePrefix' => 'pkg_']);
-        self::$testContentTypes = new ContentTypeCollection();
-        self::$testContentTypes->add('Books', 'Kirjat', 'Kuvaus', [
-            (object) ['name' => 'title', 'dataType' => 'text']
-        ]);
+        self::$testContentTypes = ContentTypeCollection::build()
+        ->add('Books', 'Kirjat')
+            ->field('title')
+        ->done();
         self::$testContent = [
             (object) ['title' => 'The Lusty Argonian Maid, v1'],
             (object) ['title' => 'The Lusty Argonian Maid, v2']

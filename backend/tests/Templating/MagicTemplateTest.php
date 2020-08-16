@@ -12,10 +12,10 @@ final class MagicTemplateTest extends TestCase {
     private $template;
     public function setUp(): void {
         $this->A_LONG_STRING = str_repeat('-', 65);
-        $ctypes = new ContentTypeCollection();
-        $ctypes->add('Generics', '', 'Kuvaus', [
-            (object) ['name' => 'content', 'dataType' => 'text']
-        ]);
+        $ctypes = ContentTypeCollection::build()
+        ->add('Generics', 'Test type')
+            ->field('content')
+        ->done();
         $this->template = new MagicTemplate('', null, null,
             new MagicTemplateDAO($this->createMock(Db::class), $ctypes, false));
     }

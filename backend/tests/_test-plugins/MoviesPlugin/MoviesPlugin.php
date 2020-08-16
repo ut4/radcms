@@ -10,11 +10,11 @@ use RadCms\Plugin\{PluginInterface, PluginAPI};
 class MoviesPlugin implements PluginInterface {
     private static $mockPackData;
     public function __construct() {
-        $this->myContentTypes = new ContentTypeCollection();
-        $this->myContentTypes->add('Movies', 'Elokuvat', 'Kuvaus', [
-            (object) ['name' => 'title', 'dataType' => 'text'],
-            (object) ['name' => 'releaseYear', 'dataType' => 'int'],
-        ]);
+        $this->myContentTypes = ContentTypeCollection::build()
+        ->add('Movies', 'Elokuvat')->description('Kuvaus')
+            ->field('title')
+            ->field('releaseYear')->dataType('int')
+        ->done();
     }
     public function init(PluginAPI $api): void {
         $api->enqueueAdminJsFile('file1.js');

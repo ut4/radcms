@@ -4,6 +4,7 @@ namespace RadCms\Tests\ContentType;
 
 use Pike\{ArrayUtils, Request};
 use Pike\TestUtils\{DbTestCase, HttpTestUtils};
+use RadCms\Auth\ACL;
 use RadCms\ContentType\{ContentTypeCollection, ContentTypeMigrator, ContentTypeValidator};
 use RadCms\Tests\_Internal\{ContentTestUtils};
 
@@ -14,16 +15,14 @@ final class ContentTypeControllersTest extends DbTestCase {
     private static $migrator;
     private const DEFAULT_WIDGET = ContentTypeValidator::FIELD_WIDGETS[0];
     public static function setUpBeforeClass(): void {
-        self::$testContentTypes = new ContentTypeCollection();
-        self::$testContentTypes->add('Events', 'Tapahtumat', 'Kuvaus1', [
-            (object) ['name' => 'name', 'dataType' => 'text'],
-            (object) ['name' => 'pic', 'dataType' => 'text', 'friendlyName' => 'Kuva',
-                      'widget' => 'imagePicker', 'defaultValue' => 'default.jpg'],
-        ]);
-        self::$testContentTypes->add('Locations', 'Paikat', 'Kuvaus2', [
-            (object) ['name' => 'name', 'dataType' => 'text', 'friendlyName' => 'Tapahtumapaikka',
-                      'widget' => 'textField', 'defaultValue' => '', 'visibility' => 1]
-        ]);
+        self::$testContentTypes = ContentTypeCollection::build()
+        ->add('Events', 'Tapahtumat')->description('Kuvaus1')
+            ->field('name')
+            ->field('pic', 'Kuva')->widget('imagePicker')->defaultValue('default.jpg')
+        ->add('Locations', 'Paikat')->description('Kuvaus2')
+            ->field('name', 'Tapahtumapaikka')
+            ->visibility(ACL::ROLE_SUPER_ADMIN)
+        ->done();
         self::$migrator = new ContentTypeMigrator(self::getDb());
         // @allow \Pike\PikeException
         self::$migrator->installMany(self::$testContentTypes);
@@ -34,47 +33,6 @@ final class ContentTypeControllersTest extends DbTestCase {
         self::$migrator->uninstallMany(self::$testContentTypes);
         self::clearInstalledContentTypesFromDb(false);
     }
-    public function testPOSTContentTypeValidatesInputData() {
-        $s = $this->setupValidationTest((object)[
-            'name' => 'not-valid-identifier%&#',
-            'friendlyName' => new \stdClass,
-            'isInternal' => new \stdClass,
-            // ei kenttiä
-        ]);
-        $this->sendCreateContentTypeRequest($s);
-        $this->verifyResponseBodyEquals([
-            'name must contain only [a-zA-Z0-9_] and start with [a-zA-Z_]',
-            'The length of friendlyName must be at least 1',
-            'The length of friendlyName must be 128 or less',
-            'The length of description must be 512 or less',
-            'isInternal must be bool',
-            'fields.*.name must contain only [a-zA-Z0-9_] and start with [a-zA-Z_]',
-            'The length of fields.*.name must be 64 or less',
-            'The length of fields.*.friendlyName must be at least 1',
-            'The length of fields.*.friendlyName must be 128 or less',
-            'The value of fields.*.dataType was not in the list',
-            'The length of fields.*.defaultValue must be 2048 or less',
-            'fields.*.visibility must be int',
-            'The value of fields.*.widget.name was not in the list',
-        ], $s);
-    }
-    private function setupValidationTest($reqBody) {
-        return (object)[
-            'reqBody' => $reqBody,
-            'actualResponseBody' => null
-        ];
-    }
-    private function sendCreateContentTypeRequest($s) {
-        $req = new Request('/api/content-types', 'POST', $s->reqBody);
-        $res = $this->createBodyCapturingMockResponse($s, 400);
-        $app = $this->makeTestApp();
-        $this->sendRequest($req, $res, $app);
-    }
-
-
-    ////////////////////////////////////////////////////////////////////////////
-
-
     public function testGETContentTypeReturnsContentType() {
         $s = $this->setupGetContentTypeTest();
         $this->sendGetContentTypeRequest($s);
@@ -260,7 +218,7 @@ final class ContentTypeControllersTest extends DbTestCase {
     }
     private function setupDeleteTest() {
         return (object) [
-            'contentTypeName' => 'AnotherC',
+            'contentTypeName' => 'Another',
             'testContentTypes' => new ContentTypeCollection()
         ];
     }
@@ -293,7 +251,7 @@ final class ContentTypeControllersTest extends DbTestCase {
     }
     private function setupAddFieldTest() {
         return (object) [
-            'contentTypeName' => 'ATest',
+            'contentTypeName' => 'Another',
             'reqBody' => (object) [
                 'name' => 'newField',
                 'dataType' => 'text',
@@ -365,7 +323,7 @@ final class ContentTypeControllersTest extends DbTestCase {
     }
     private function setupDeleteFieldTest() {
         return (object) [
-            'contentTypeName' => 'AnotherB',
+            'contentTypeName' => 'Another',
             'fieldName' => 'field1',
             'testContentTypes' => new ContentTypeCollection()
         ];

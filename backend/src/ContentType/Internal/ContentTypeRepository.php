@@ -14,28 +14,32 @@ use RadCms\ContentType\{ContentTypeCollection, ContentTypeDef, ContentTypeMigrat
  */
 class ContentTypeRepository extends ContentTypeMigrator {
     /**
-     * @param \stdClass $data {name: string, friendlyName: string, description: string, isInternal: bool} Olettaa että on validi
+     * @param \RadCms\ContentType\ContentTypeDef $new
      * @param \RadCms\ContentType\ContentTypeDef $contentType
      * @param \RadCms\ContentType\ContentTypeCollection $currentContentTypes
      * @throws \Pike\PikeException
      */
-    public function updateSingle(\stdClass $data,
-                                 ContentTypeDef $contentType,
+    public function updateSingle(ContentTypeDef $new,
+                                 ContentTypeDef $current,
                                  ContentTypeCollection $currentContentTypes): void {
-        if ($data->name !== $contentType->name) {
+        // @allow \Pike\PikeException
+        $this->validateContentType($new, false);
+        $this->validateContentType($current, false);
+        //
+        if ($new->name !== $current->name) {
             // @allow \Pike\PikeException
-            $this->db->exec('RENAME TABLE `${p}' . $contentType->name .
-                            '` TO `${p}' . $data->name . '`');
+            $this->db->exec('RENAME TABLE `${p}' . $current->name .
+                            '` TO `${p}' . $new->name . '`');
         }
-        if ($data->name !== $contentType->name ||
-            $data->friendlyName !== $contentType->friendlyName ||
-            $data->description !== $contentType->description ||
-            $data->isInternal !== $contentType->isInternal) {
-            $idx = $contentType->index;
-            $currentContentTypes[$idx]->name = $data->name;
-            $currentContentTypes[$idx]->friendlyName = $data->friendlyName;
-            $currentContentTypes[$idx]->description = $data->description;
-            $currentContentTypes[$idx]->isInternal = $data->isInternal;
+        if ($new->name !== $current->name ||
+            $new->friendlyName !== $current->friendlyName ||
+            $new->description !== $current->description ||
+            $new->isInternal !== $current->isInternal) {
+            $idx = $current->index;
+            $currentContentTypes[$idx]->name = $new->name;
+            $currentContentTypes[$idx]->friendlyName = $new->friendlyName;
+            $currentContentTypes[$idx]->description = $new->description;
+            $currentContentTypes[$idx]->isInternal = $new->isInternal;
             // @allow \Pike\PikeException
             if ($this->db->exec(
                 'UPDATE ${p}cmsState SET'.

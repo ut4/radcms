@@ -7,12 +7,19 @@ namespace RadCms\ContentType;
 use Pike\Translator;
 
 class ContentTypeDef {
+    /** @var string */
     public $name;
+    /** @var string */
     public $friendlyName;
+    /** @var string */
     public $description;
+    /** @var bool */
     public $isInternal;
+    /** @var int */
     public $index;
+    /** @var string */
     public $origin;
+    /** @var \RadCms\ContentType\FieldCollection */
     public $fields;
     /**
      * @param string $name
@@ -55,5 +62,21 @@ class ContentTypeDef {
             'origin' => $origin ?? $this->origin,
             'fields' => $this->fields->toCompactForm($translator),
         ];
+    }
+    /**
+     * @param \stdClass $input
+     * @param int $index
+     * @return \RadCms\ContentType\ContentTypeDef
+     */
+    public static function fromObject(\stdClass $input, int $index = 0): ContentTypeDef {
+        return new ContentTypeDef($input->name ?? '',
+                                  $input->friendlyName ?? '',
+                                  $input->description ?? '',
+                                  is_array($input->fields ?? null)
+                                      ? $input->fields
+                                      : new FieldCollection,
+                                  $index,
+                                  $input->isInternal ?? false,
+                                  $input->origin ?? null);
     }
 }

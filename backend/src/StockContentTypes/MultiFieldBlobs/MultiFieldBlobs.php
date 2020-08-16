@@ -4,38 +4,22 @@ declare(strict_types=1);
 
 namespace RadCms\StockContentTypes\MultiFieldBlobs;
 
-use RadCms\BaseAPI;
-use RadCms\Templating\StockFrontendPanelImpls;
 use RadCms\Auth\ACL;
+use RadCms\BaseAPI;
+use RadCms\ContentType\ContentTypeCollection;
+use RadCms\Templating\StockFrontendPanelImpls;
 
 class MultiFieldBlobs {
     /**
      * @return \stdClass {name: string, friendlyName: string ...}
      */
     public static function asCompactForm(): \stdClass {
-        return (object) [
-            'name' => 'MultiFieldBlobs',
-            'friendlyName' => 'Monikenttäsisältö',
-            'description' => 'Joustava sisältö, jolla ei ole ennalta määriteltyä rakennetta.',
-            'fields' => [
-                (object) [
-                    'name' => 'name',
-                    'dataType' => 'text',
-                    'friendlyName' => 'Nimi',
-                    'widget' => (object) ['name' => 'textField'],
-                    'defaultValue' > '',
-                    'visibility' => ACL::ROLE_SUPER_ADMIN
-                ],
-                (object) [
-                    'name' => 'fields',
-                    'dataType' => 'json',
-                    'friendlyName' => 'Kentät',
-                    'widget' => (object) ['name' => 'multiField'],
-                    'defaultValue' > '',
-                    'visibility' => 0
-                ]
-            ]
-        ];
+        return ContentTypeCollection::build()
+        ->add('MultiFieldBlobs', 'Monikenttäsisältö')
+        ->description('Joustava sisältö, jolla ei ole ennalta määriteltyä rakennetta.')
+            ->field('name', 'Nimi')->visibility(ACL::ROLE_SUPER_ADMIN)
+            ->field('fields', 'Kentät')->dataType('json')->widget('multiField')
+        ->done()[0]->toCompactForm();
     }
     /**
      * @param \RadCms\BaseAPI $api

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace RadCms\ContentType;
 
-use Pike\{ArrayUtils, ObjectValidator, PikeException, Request, Response, Validation};
+use Pike\{ArrayUtils, PikeException, Request, Response, Validation};
 use RadCms\CmsState;
 use RadCms\ContentType\Internal\ContentTypeRepository;
 
@@ -12,9 +12,6 @@ use RadCms\ContentType\Internal\ContentTypeRepository;
  * Handlaa /api/content-types -alkuiset pyynnöt.
  */
 class ContentTypeControllers {
-    private const MAX_DESCRIPTION_LENGTH = 512;
-    private const MAX_FIELD_DEFAULT_VALUE_LENGTH = 2048;
-    private const MAX_FRIENDLY_NAME_LENGTH = 128;
     /**
      * POST /api/content-types.
      *
@@ -25,10 +22,6 @@ class ContentTypeControllers {
     public function handleCreateContentType(Request $req,
                                             Response $res,
                                             ContentTypeRepository $repo): void {
-        if (($errors = $this->validateInsertInput($req->body))) {
-            $res->status(400)->json($errors);
-            return;
-        }
         // @allow \Pike\PikeException
         $repo->installSingle($req->body);
         $res->json(['ok' => 'ok']);
@@ -77,20 +70,11 @@ class ContentTypeControllers {
                                                        Response $res,
                                                        ContentTypeRepository $repo,
                                                        CmsState $cmsState): void {
-        if (($errors = $this->validateUpdateBasicInfoInput($req->body))) {
-            $res->status(400)->json($errors);
-            return;
-        }
         // @allow \Pike\PikeException
         $contentType = self::getContentTypeOrThrow($req->params->contentTypeName,
                                                    $cmsState);
         // @allow \Pike\PikeException
-        $repo->updateSingle((object) [
-                                'name' => $req->body->name,
-                                'friendlyName' => $req->body->friendlyName,
-                                'description' => $req->body->description,
-                                'isInternal' => $req->body->isInternal,
-                            ],
+        $repo->updateSingle(ContentTypeDef::fromObject($req->body),
                             $contentType,
                             $cmsState->getContentTypes());
         $res->json(['ok' => 'ok']);
@@ -155,10 +139,6 @@ class ContentTypeControllers {
                                                 Response $res,
                                                 ContentTypeRepository $repo,
                                                 CmsState $cmsState): void {
-        if (($errors = $this->validateAddFieldInput($req->body))) {
-            $res->status(400)->json($errors);
-            return;
-        }
         // @allow \Pike\PikeException
         $contentType = self::getContentTypeOrThrow($req->params->contentTypeName,
                                                    $cmsState);
@@ -179,10 +159,6 @@ class ContentTypeControllers {
                                                    Response $res,
                                                    ContentTypeRepository $repo,
                                                    CmsState $cmsState): void {
-        if (($errors = $this->validateAddFieldInput($req->body))) {
-            $res->status(400)->json($errors);
-            return;
-        }
         // @allow \Pike\PikeException
         $contentType = self::getContentTypeOrThrow($req->params->contentTypeName,
                                                    $cmsState);
@@ -219,61 +195,10 @@ class ContentTypeControllers {
     /**
      * @return string[]
      */
-    private static function validateInsertInput(\stdClass $input): array {
-        $v = self::makeValidatorWithCommonRules();
-        $v = self::addFieldsValidatorRules($v, 'fields.*.');
-        return $v->validate($input);
-    }
-    /**
-     * @return string[]
-     */
-    private static function validateUpdateBasicInfoInput(\stdClass $input): array {
-        return self::makeValidatorWithCommonRules()
-            ->validate($input);
-    }
-    /**
-     * @return string[]
-     */
     private static function validateUpdateOrderInput(\stdClass $input): array {
         return (Validation::makeObjectValidator())
             ->rule('fields.*.name', 'identifier')
             ->validate($input);
-    }
-    /**
-     * @return string[]
-     */
-    private static function validateAddFieldInput(\stdClass $input): array {
-        $v = Validation::makeObjectValidator();
-        $v = self::addFieldsValidatorRules($v);
-        return $v->validate($input);
-    }
-    /**
-     * @return \Pike\Validation\ObjectValidator
-     */
-    private static function makeValidatorWithCommonRules(): ObjectValidator {
-        return (Validation::makeObjectValidator())
-            ->rule('name', 'identifier')
-            ->rule('name', 'maxLength', ContentTypeValidator::MAX_NAME_LEN)
-            ->rule('friendlyName', 'minLength', 1)
-            ->rule('friendlyName', 'maxLength', self::MAX_FRIENDLY_NAME_LENGTH)
-            ->rule('description', 'maxLength', self::MAX_DESCRIPTION_LENGTH)
-            ->rule('isInternal', 'type', 'bool');
-    }
-    /**
-     * @return \Pike\ObjectValidator
-     */
-    private static function addFieldsValidatorRules(ObjectValidator $v,
-                                                    string $keyPrefix = ''): ObjectValidator {
-        return $v
-            ->rule("{$keyPrefix}name", 'identifier')
-            ->rule("{$keyPrefix}name", 'maxLength', ContentTypeValidator::MAX_NAME_LEN)
-            ->rule("{$keyPrefix}friendlyName", 'minLength', 1)
-            ->rule("{$keyPrefix}friendlyName", 'maxLength', self::MAX_FRIENDLY_NAME_LENGTH)
-            ->rule("{$keyPrefix}dataType", 'in', ContentTypeValidator::FIELD_DATA_TYPES)
-            ->rule("{$keyPrefix}defaultValue", 'maxLength', self::MAX_FIELD_DEFAULT_VALUE_LENGTH)
-            ->rule("{$keyPrefix}visibility", 'type', 'int')
-            ->rule("{$keyPrefix}widget.name", 'in', ContentTypeValidator::FIELD_WIDGETS)
-            ->rule("{$keyPrefix}widget.args?", 'type', 'object');
     }
     /**
      * @return \RadCms\ContentType\ContentTypeDef

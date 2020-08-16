@@ -40,7 +40,7 @@ class FieldCollection extends \ArrayObject implements \JsonSerializable {
                 'name' => $f->name,
                 'dataType' => $f->dataType,
                 'friendlyName' => !$translator ? $f->friendlyName ?? $f->name : $translator->t($f->name),
-                'widget' => $f->widget ?? null,
+                'widget' => $f->widget,
                 'defaultValue' => $f->defaultValue ?? '',
                 'visibility' => property_exists($f, 'visibility') ? (int) $f->visibility : 0,
             ];
@@ -56,24 +56,14 @@ class FieldCollection extends \ArrayObject implements \JsonSerializable {
     ////////////////////////////////////////////////////////////////////////////
 
     /**
-     * @param array $input
+     * @param \stdClass[] $input
      * @return \RadCms\ContentType\FieldCollection
      */
     public static function fromCompactForm(array $input): FieldCollection {
-        $defaultWidget = (object) ['name' => ContentTypeValidator::FIELD_WIDGETS[0],
-                                   'args' => null];
-        return self::fromArray(array_map(function ($compact) use ($defaultWidget) {
-            return (object) [
-                'name' => $compact->name,
-                'dataType' => $compact->dataType,
-                'friendlyName' => $compact->friendlyName ?? $compact->name,
-                'widget' => property_exists($compact, 'widget')
-                    ? !is_string($compact->widget) ? $compact->widget : (object) ['name' => $compact->widget]
-                    : $defaultWidget,
-                'defaultValue' => $compact->defaultValue ?? '',
-                'visibility' => intval($compact->visibility ?? 0),
-            ];
-        }, $input));
+        $out = new FieldCollection;
+        foreach ($input as $field)
+            $out[] = FieldDef::fromObject($field);
+        return $out;
     }
     /**
      * @param array $input array<{name: string, friendlyName: string, dataType: string, widget: {name: string, args?: object}, defaultValue: string, visibility: int}> Olettaa että on validi
