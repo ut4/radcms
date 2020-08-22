@@ -227,7 +227,7 @@ class FieldsTable extends preact.Component {
                 </td>
                 <td>{ f.name }</td>
                 <td>{ f.friendlyName }</td>
-                <td>{ f.dataType }</td>
+                <td>{ f.dataType.type + (!f.dataType.length ? '' : `(${f.dataType.length})`) }</td>
                 <td>{ f.defaultValue || '(tyhjä)' }</td>
                 <td>{ f.visibility === 0 ? 'Ei rajattu' : 'Rajattu' }</td>
                 <td>{ widgetTypes.find(t => t.name === f.widget.name).friendlyName }</td>
@@ -279,7 +279,7 @@ function makeField() {
     return {
         name: `newField${++counter}`,
         friendlyName: 'Uusi kenttä',
-        dataType: 'text',
+        dataType: {type: 'text', length: null},
         defaultValue: '',
         visibility: 0,
         widget: {

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace RadCms\ContentType;
 
-use Pike\{ObjectValidator, Validation};
+use Pike\Validation;
 use RadCms\Content\DAO;
 
 abstract class ContentTypeValidator {
@@ -40,7 +40,8 @@ abstract class ContentTypeValidator {
             ->rule('fields.*.name', 'maxLength', ContentTypeValidator::MAX_NAME_LEN)
             ->rule('fields.*.friendlyName', 'minLength', 1)
             ->rule('fields.*.friendlyName', 'maxLength', self::MAX_FRIENDLY_NAME_LENGTH)
-            ->rule('fields.*.dataType', 'in', ContentTypeValidator::FIELD_DATA_TYPES)
+            ->rule('fields.*.dataType.type', 'in', ContentTypeValidator::FIELD_DATA_TYPES)
+            ->rule('fields.*.dataType.length?', 'type', 'int')
             ->rule('fields.*.defaultValue', 'maxLength', self::MAX_FIELD_DEFAULT_VALUE_LENGTH)
             ->rule('fields.*.visibility', 'type', 'int')
             ->rule('fields.*.widget.name', 'in', ContentTypeValidator::FIELD_WIDGETS)
@@ -88,7 +89,7 @@ abstract class ContentTypeValidator {
                 'json' => [['type', 'string']],
                 'int' => [['type', 'number']],
                 'uint' => [['type', 'number'], ['min', 0]],
-            ][$f->dataType] ?? null;
+            ][$f->dataType->type] ?? null;
             if (!$rules)
                 throw new \RuntimeException('Shouldn\'t happen');
             foreach ($rules as $ruleArgs)

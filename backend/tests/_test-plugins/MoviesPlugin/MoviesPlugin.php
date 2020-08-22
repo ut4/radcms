@@ -13,7 +13,7 @@ class MoviesPlugin implements PluginInterface {
         $this->myContentTypes = ContentTypeCollection::build()
         ->add('Movies', 'Elokuvat')->description('Kuvaus')
             ->field('title')
-            ->field('releaseYear')->dataType('int')
+            ->field('releaseYear')->dataType('int', 4)
         ->done();
     }
     public function init(PluginAPI $api): void {

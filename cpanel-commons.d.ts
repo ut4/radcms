@@ -37,7 +37,7 @@ interface FieldWidget {
 interface ContentTypeField {
     name: string;
     friendlyName: string;
-    dataType: string;
+    dataType: {type: keyof {"text":1, "json":1, "int":1, "uint":1}; length?: number;};
     defaultValue: string;
     visibility: number;
     widget: FieldWidget;

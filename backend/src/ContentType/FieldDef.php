@@ -9,7 +9,7 @@ class FieldDef {
     public $name;
     /** @var string */
     public $friendlyName;
-    /** @var string ContentTypeValidator::FIELD_DATA_TYPES[*] */
+    /** @var \RadCms\ContentType\DataType */
     public $dataType;
     /** @var \stdClass */
     public $widget;
@@ -20,23 +20,23 @@ class FieldDef {
     /**
      * @param string $name
      * @param string $friendlyName
-     * @param string $dataType ContentTypeValidator::FIELD_DATA_TYPES[*]
-     * @param \stdClass $widget
-     * @param string $defaultValue
-     * @param int $visibility 0
+     * @param ?object $dataTypeObj = null
+     * @param ?\stdClass $widget = null
+     * @param ?string $defaultValue = null
+     * @param ?int $visibility = null
      */
     public function __construct(string $name,
                                 string $friendlyName,
-                                string $dataType = 'text',
-                                \stdClass $widget = null,
-                                string $defaultValue = '',
-                                int $visibility = 0) {
+                                ?object $dataTypeObj = null,
+                                ?\stdClass $widget = null,
+                                ?string $defaultValue = null,
+                                ?int $visibility = null) {
         $this->name = $name;
         $this->friendlyName = strlen($friendlyName) ? $friendlyName : $name;
-        $this->dataType = $dataType;
+        $this->dataType = $dataTypeObj ? DataType::fromObject($dataTypeObj) : new DataType('text');
         $this->widget = $widget ?? (object)['name' => 'textField', 'args' => null];
-        $this->defaultValue = $defaultValue;
-        $this->visibility = $visibility;
+        $this->defaultValue = $defaultValue ?? '';
+        $this->visibility = $visibility ?? 0;
     }
     /**
      * @param \Closure $formatterFn = null fn(\RadCms\ContentType\FieldDef $field): string
@@ -48,15 +48,10 @@ class FieldDef {
         return $formatterFn($this);
     }
     /**
-     * @return string '`name` TEXT'
+     * @return string '`name` TEXT' or '`title` VARCHAR(127)'
      */
     public function toSqlTableField(): string {
-        return "`{$this->name}` " . [
-            'text' => 'TEXT',
-            'json' => 'JSON',
-            'int' => 'INT',
-            'uint' => 'INT UNSIGNED',
-        ][$this->dataType];
+        return "`{$this->name}` {$this->dataType->toSql()}";
     }
 
     ////////////////////////////////////////////////////////////////////////////
@@ -68,12 +63,64 @@ class FieldDef {
     public static function fromObject(\stdClass $input): FieldDef {
         return new FieldDef($input->name ?? '',
                             $input->friendlyName ?? '',
-                            $input->dataType ?? '',
+                            $input->dataType ?? null,
                             is_object($input->widget ?? null) ? (object) [
                                 'name' => $input->widget->name ?? '',
                                 'args' => $input->widget->args ?? null
                             ] : null,
-                            $input->defaultValue ?? '',
-                            $input->visibility ?? 0);
+                            $input->defaultValue ?? null,
+                            $input->visibility ?? null);
+    }
+}
+
+class DataType {
+    /** @var string */
+    public $type;
+    /** @var ?int */
+    public $length;
+    /**
+     * @param string $type
+     * @param ?int $length = null
+     */
+    public function __construct(string $type, ?int $length = null) {
+        $this->type = $type;
+        $this->length = $length;
+    }
+    /**
+     * @return string 'text', 'int64'
+     */
+    public function __toString(): string {
+        return $this->type . ($this->length ?? '');
+    }
+    /**
+     * @return string 'TEXT', 'INT(64)'
+     */
+    public function toSql(): string {
+        $len = $this->length ?? 0;
+        switch ($this->type) {
+        case 'text':
+            $t = (!$len ? 'TEXT' : 'VARCHAR') . '%s';
+            break;
+        case 'json':
+            $t = 'JSON';
+            $len = 0;
+            break;
+        case 'int':
+            $t = 'INT%s';
+            break;
+        case 'uint':
+            $t = 'INT%s UNSIGNED';
+            break;
+        default:
+            $t = 'TEXT%s';
+        }
+        return sprintf($t, !$len ? '' : "({$len})");
+    }
+    /**
+     * @param object $obj {type: string, length?: int}
+     * @return \RadCms\ContentType\DataType
+     */
+    public static function fromObject(object $obj): DataType {
+        return new DataType($obj->type ?? 'text', $obj->length ?? null);
     }
 }

@@ -149,7 +149,7 @@ final class DAOQueryBuildingTest extends TestCase {
                 //
                 return $this->makeDao(false, function ($ctypes) use ($A_LONG_STRING) {
                     $ctypes->add($A_LONG_STRING, '', 'Kuvaus', [
-                        (object) ['name' => 'field', 'dataType' => 'text']
+                        (object) ['name' => 'field', 'dataType' => (object) ['type' => 'text', 'length' => null]]
                     ]);
                 })->fetchOne($A_LONG_STRING)->where('1=1');
             }));

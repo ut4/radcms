@@ -24,7 +24,7 @@ class DateTimePickerFieldWidget extends BaseFieldWidget {
                 defaultDate={ this.fixedInitialValue ? new Date(this.fixedInitialValue * 1000) : null }
                 onSelect={ date => {
                     const unixTime = Math.floor(date.getTime() / 1000);
-                    this.props.onValueChange(!this.props.field.datatype || this.props.field.datatype.endsWith('int')
+                    this.props.onValueChange(!this.props.field.dataType || this.props.field.dataType.type.endsWith('int')
                         ? unixTime
                         : unixTime.toString());
                 } }

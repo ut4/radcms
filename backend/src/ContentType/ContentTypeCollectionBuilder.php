@@ -97,10 +97,11 @@ final class FieldCollectionBuilder {
     }
     /**
      * @param string $dataType 'text'|'json'|'int'|'uint'
+     * @param ?int $length = null
      * @return $this
      */
-    public function dataType(string $dataType): FieldCollectionBuilder {
-        $this->currentField->dataType = $dataType;
+    public function dataType(string $dataType, ?int $length = null): FieldCollectionBuilder {
+        $this->currentField->dataType = new DataType($dataType, $length);
         return $this;
     }
     /**

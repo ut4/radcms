@@ -38,7 +38,7 @@ class FieldCollection extends \ArrayObject implements \JsonSerializable {
         foreach ($this as $f)
             $out[] = (object) [
                 'name' => $f->name,
-                'dataType' => $f->dataType,
+                'dataType' => (object) $f->dataType,
                 'friendlyName' => !$translator ? $f->friendlyName ?? $f->name : $translator->t($f->name),
                 'widget' => $f->widget,
                 'defaultValue' => $f->defaultValue ?? '',
@@ -60,16 +60,6 @@ class FieldCollection extends \ArrayObject implements \JsonSerializable {
      * @return \RadCms\ContentType\FieldCollection
      */
     public static function fromCompactForm(array $input): FieldCollection {
-        $out = new FieldCollection;
-        foreach ($input as $field)
-            $out[] = FieldDef::fromObject($field);
-        return $out;
-    }
-    /**
-     * @param array $input array<{name: string, friendlyName: string, dataType: string, widget: {name: string, args?: object}, defaultValue: string, visibility: int}> Olettaa että on validi
-     * @return \RadCms\ContentType\FieldCollection
-     */
-    public static function fromArray(array $input): FieldCollection {
         $out = new FieldCollection;
         foreach ($input as $field)
             $out[] = FieldDef::fromObject($field);

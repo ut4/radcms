@@ -149,7 +149,8 @@ class FieldInputs extends preact.Component {
         }, hookForm(this, {
             name: props.field.name,
             friendlyName: props.field.friendlyName,
-            dataType: props.field.dataType,
+            dataTypeType: props.field.dataType.type,
+            dataTypeLength: props.field.dataType.length || null,
             defaultValue: props.field.defaultValue,
         }));
         this.widgetSelector = preact.createRef();
@@ -168,7 +169,8 @@ class FieldInputs extends preact.Component {
         return {
             name: values.name,
             friendlyName: values.friendlyName,
-            dataType: values.dataType,
+            dataType: {type: values.dataTypeType,
+                       length: values.dataTypeType !== 'json' ? parseInt(values.dataTypeLength) : null},
             defaultValue: values.defaultValue,
             visibility: visibility !== VISIBILITY_ALL ? visibility : 0,
             widget: this.widgetSelector.current.getResult()
@@ -192,11 +194,17 @@ class FieldInputs extends preact.Component {
                     errorLabel="Selkonimi"/>
                 <InputError error={ errors.friendlyName }/>
             </InputGroup>
-            <InputGroup>
-                <label htmlFor="dataType" class="form-label">Datatyyppi</label>
-                <Select vm={ this } name="dataType" id="dataType">{ dataTypes.map(dt =>
+            <InputGroup classes={ classes.dataTypeLength }>
+                <label htmlFor="dataTypeType" class="form-label">Datatyyppi</label>
+                <div class="input-group">
+                <Select vm={ this } name="dataTypeType" id="dataTypeType">{ dataTypes.map(dt =>
                     <option value={ dt.name }>{ dt.friendlyName }</option>
                 ) }</Select>
+                <Input vm={ this } disabled={ this.state.values.dataTypeType === 'json' }
+                    name="dataTypeLength" id="dataTypeLength" placeholder="Pituus (esim. 64)"
+                    validations={ [['regexp', '^([1-9]([0-9])*)*$']] } errorLabel="Pituus"/>
+                </div>
+                <InputError error={ errors.dataTypeLength }/>
             </InputGroup>
             <InputGroup>
                 <label htmlFor="defaultValue" class="form-label">Oletusarvo</label>

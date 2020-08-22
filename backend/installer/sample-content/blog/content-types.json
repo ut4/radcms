@@ -8,7 +8,7 @@
         "fields": [
             {
                 "name": "slug",
-                "dataType": "text",
+                "dataType": {"type": "text", "length": 64},
                 "friendlyName": "Slug (url)",
                 "widget": {"name": "textField"},
                 "defaultValue": "",
@@ -16,7 +16,7 @@
             },
             {
                 "name": "title",
-                "dataType": "text",
+                "dataType": {"type": "text", "length": 64},
                 "friendlyName": "Otsikko",
                 "widget": {"name": "textField"},
                 "defaultValue": "",
@@ -24,7 +24,7 @@
             },
             {
                 "name": "body",
-                "dataType": "text",
+                "dataType": {"type": "text", "length": null},
                 "friendlyName": "Sisältö",
                 "widget": {"name": "richText"},
                 "defaultValue": "",

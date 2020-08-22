@@ -79,7 +79,7 @@ class ContentTypeRepository extends ContentTypeMigrator {
         $this->validateContentType($contentType);
         // @allow \Pike\PikeException
         if ($newData->name !== $currentField->name ||
-            $newData->dataType !== $currentField->dataType)
+            strval($newData->dataType) !== strval($currentField->dataType))
             $this->db->exec(
                 'ALTER TABLE `${p}' . $contentType->name . '`' .
                 (($newData->name === $currentField->name)

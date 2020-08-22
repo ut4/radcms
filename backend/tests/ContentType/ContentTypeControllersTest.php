@@ -45,10 +45,12 @@ final class ContentTypeControllersTest extends DbTestCase {
              'index' => 0,
              'origin' => 'Website',
              'fields' => [
-                 ['name' => 'name', 'friendlyName' => 'name', 'dataType' => 'text',
+                 ['name' => 'name', 'friendlyName' => 'name',
+                  'dataType' => self::makeDataType('text'),
                   'widget' => (object) ['name' => self::DEFAULT_WIDGET, 'args' => null],
                   'defaultValue' => '', 'visibility' => 0],
-                 ['name' => 'pic', 'friendlyName' => 'Kuva', 'dataType' => 'text',
+                 ['name' => 'pic', 'friendlyName' => 'Kuva',
+                  'dataType' => self::makeDataType('text'),
                   'widget' => (object) ['name' => 'imagePicker', 'args' => null],
                   'defaultValue' => 'default.jpg', 'visibility' => 0],
              ]],
@@ -80,10 +82,12 @@ final class ContentTypeControllersTest extends DbTestCase {
               'friendlyName' => self::$testContentTypes[0]->friendlyName,
               'description' => self::$testContentTypes[0]->description,
               'isInternal' => false, 'index' => 0, 'origin' => 'Website', 'fields' => [
-                ['name' => 'name', 'friendlyName' => 'name', 'dataType' => 'text',
+                ['name' => 'name', 'friendlyName' => 'name',
+                 'dataType' => self::makeDataType('text'),
                  'widget' => (object) ['name' => self::DEFAULT_WIDGET, 'args' => null],
                  'defaultValue' => '', 'visibility' => 0],
-                ['name' => 'pic', 'friendlyName' => 'Kuva', 'dataType' => 'text',
+                ['name' => 'pic', 'friendlyName' => 'Kuva',
+                 'dataType' => self::makeDataType('text'),
                  'widget' => (object) ['name' => 'imagePicker', 'args' => null],
                  'defaultValue' => 'default.jpg', 'visibility' => 0],
             ]],
@@ -91,7 +95,8 @@ final class ContentTypeControllersTest extends DbTestCase {
              'friendlyName' => self::$testContentTypes[1]->friendlyName,
              'description' => self::$testContentTypes[1]->description,
              'isInternal' => false, 'index' => 1, 'origin' => 'Website', 'fields' => [
-                ['name' => 'name', 'friendlyName' => 'Tapahtumapaikka', 'dataType' => 'text',
+                ['name' => 'name', 'friendlyName' => 'Tapahtumapaikka',
+                 'dataType' => self::makeDataType('text'),
                  'widget' => (object) ['name' => self::DEFAULT_WIDGET, 'args' => null],
                  'defaultValue' => '', 'visibility' => 1],
             ]]],
@@ -254,7 +259,7 @@ final class ContentTypeControllersTest extends DbTestCase {
             'contentTypeName' => 'Another',
             'reqBody' => (object) [
                 'name' => 'newField',
-                'dataType' => 'text',
+                'dataType' => self::makeDataType('text'),
                 'friendlyName' => 'Uusi kenttä',
                 'isInternal' => false,
                 'defaultValue' => '',
@@ -282,7 +287,7 @@ final class ContentTypeControllersTest extends DbTestCase {
         );
         if ($shouldExist) {
             $this->assertIsArray($info);
-            $this->assertEquals($expectedField->dataType, $info['COLUMN_TYPE']);
+            $this->assertEquals($expectedField->dataType->type, $info['COLUMN_TYPE']);
         } else {
             $this->assertIsNotArray($info);
         }
@@ -354,8 +359,8 @@ final class ContentTypeControllersTest extends DbTestCase {
                                   "Friendly name of {$s->contentTypeName}",
                                   'Kuvaus',
                                   [
-                                      (object) ['name' => 'field1', 'dataType' => 'text'],
-                                      (object) ['name' => 'field2', 'dataType' => 'int'],
+                                      (object) ['name' => 'field1', 'dataType' => self::makeDataType('text')],
+                                      (object) ['name' => 'field2', 'dataType' => self::makeDataType('int')],
                                   ]);
         // @allow \Pike\PikeException
         self::$migrator->installMany($s->testContentTypes);
@@ -378,5 +383,8 @@ final class ContentTypeControllersTest extends DbTestCase {
         return $this->makeApp('\RadCms\App::create',
                               $this->getAppConfig(),
                               '\RadCms\AppContext');
+    }
+    private static function makeDataType(string $type, ?int $length = null): \stdClass {
+        return (object) ['type' => $type, 'length' => $length];
     }
 }

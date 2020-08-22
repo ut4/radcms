@@ -4,13 +4,13 @@
         "friendlyName": "Friendly name",
         "description": "A description",
         "isInternal": false,
-        "fields": [{"name": "name", "dataType": "text"}]
+        "fields": [{"name": "name", "dataType": {"type": "text", "length": null}}]
     },
     {
         "name": "AnotherType",
         "friendlyName": "Friendly eman",
         "description": "A description",
         "isInternal": false,
-        "fields": [{"name": "title", "dataType": "text"}]
+        "fields": [{"name": "title", "dataType": {"type": "text", "length": null}}]
     }
 ]
