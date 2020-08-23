@@ -1,9 +1,10 @@
 import {FeatherSvg} from '@rad-commons';
-import {FieldsFilter} from '@rad-cpanel-commons';
+import {contentFormRegister, FieldsFilter} from '@rad-cpanel-commons';
 import BaseFieldWidget from '../Base.jsx';
 import MultiFieldConfigurer from './MultiFieldConfigurer.jsx';
 import MultiFieldFieldsStore from './MultiFieldFieldsStore.js';
 import getWidgetImpl, {widgetTypes} from '../all.js';
+const DefaultFormImpl = contentFormRegister.getImpl('Default');
 
 /**
  * Widgetti, jolla voi rakentaa kustomoitua sisältöä, jossa useita erityyppisiä
@@ -24,6 +25,7 @@ class MultiFieldFieldWidget extends BaseFieldWidget {
         });
         this.fieldsFilter = new FieldsFilter(props.settings.fieldsToDisplay);
         const fields = this.multiFieldFields.getFields();
+        this.values = makeVirtualContentNode(fields);
         this.setState({fields, visibleFields: this.makeVisibleFields(fields),
                        configModeIsOn: false});
     }
@@ -71,21 +73,18 @@ class MultiFieldFieldWidget extends BaseFieldWidget {
                 </button>
                 : null
             }
-            { this.state.visibleFields.map(f => {
-                // @allow Error
-                const {ImplClass, props} = getWidgetImpl(f.widget.name);
-                const hint = !this.isConfigurable || this.fieldsFilter.fieldShouldBeShown(f) ? null : '  Ei näytetä';
-                return <ImplClass
-                    key={ `${f.id}-${hint || '-'}` }
-                    field={ f }
-                    initialValue={ f.value }
-                    settings={ props }
-                    labelHint={ hint }
-                    onValueChange={ value => {
-                        this.multiFieldFields.setFieldProps(f.id, {value});
-                        this.props.onValueChange(JSON.stringify(this.multiFieldFields.getFields()));
-                    }}/>;
-            }) }
+            <DefaultFormImpl
+                fields={ this.state.visibleFields }
+                values={ this.values }
+                onValueChange={ (value, f) => {
+                    this.multiFieldFields.setFieldProps(f.id, {value});
+                    this.props.onValueChange(JSON.stringify(this.multiFieldFields.getFields()));
+                } }
+                fieldHints={ this.state.visibleFields.map(f =>
+                    !this.isConfigurable || this.fieldsFilter.fieldShouldBeShown(f) ? null : '  Ei näytetä'
+                ) }
+                getWidgetImpl={ getWidgetImpl }
+                settings={ {} }/>
         </div>;
     }
     /**
@@ -100,6 +99,7 @@ class MultiFieldFieldWidget extends BaseFieldWidget {
      */
     endConfigMode() {
         const fields = this.multiFieldFields.getFields();
+        this.values = makeVirtualContentNode(fields);
         this.setState({fields,
                        visibleFields: this.makeVisibleFields(fields),
                        configModeIsOn: false});
@@ -112,6 +112,13 @@ class MultiFieldFieldWidget extends BaseFieldWidget {
     makeVisibleFields(fields) {
         return this.isConfigurable ? fields : this.fieldsFilter.doFilter(fields);
     }
+}
+
+function makeVirtualContentNode(fields) {
+    return fields.reduce((obj, f) => {
+        obj[f.name] = f.value;
+        return obj;
+    }, {});
 }
 
 export default MultiFieldFieldWidget;

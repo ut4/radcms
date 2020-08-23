@@ -1,7 +1,6 @@
 import Register from './src/ContentPanelOrFormRegister.js';
-import {ContentPanelImpl, DefaultImplForFetchOne,
-        DefaultImplForFetchAll} from './src/content-panel-impls.jsx';
-import {ContentFormImpl, DefaultImpl} from './src/content-form-impls.jsx';
+import {DefaultImplForFetchOne, DefaultImplForFetchAll} from './src/content-panel-impls.jsx';
+import {DefaultImpl} from './src/content-form-impls.jsx';
 import FieldsFilter from './src/FieldsFilter.js';
 import ContentNodeUtils from './src/ContentNodeUtils.js';
 
@@ -12,6 +11,4 @@ contentPanelRegister.registerImpl('DefaultCollection', DefaultImplForFetchAll);
 const contentFormRegister = new Register();
 contentFormRegister.registerImpl('Default', DefaultImpl);
 
-export {contentPanelRegister, contentFormRegister,
-        ContentPanelImpl, ContentFormImpl,
-        ContentNodeUtils, FieldsFilter};
+export {contentPanelRegister, contentFormRegister, ContentNodeUtils, FieldsFilter};

@@ -131,6 +131,14 @@ final class FieldCollectionBuilder {
         return $this;
     }
     /**
+     * @param string $ruleName ContentTypeValidator::VALIDATION_RULES[*]
+     * @return $this
+     */
+    public function validationRule(string $ruleName, ...$args): FieldCollectionBuilder {
+        $this->currentField->validationRules[] = [$ruleName, ...$args];
+        return $this;
+    }
+    /**
      * @param string $contentTypeName
      * @param string $contentTypeFriendlyName
      * @return \RadCms\ContentType\ContentTypeCollectionBuilder

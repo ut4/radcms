@@ -17,6 +17,8 @@ class FieldDef {
     public $defaultValue;
     /** @var int */
     public $visibility;
+    /** @var array[] [ ['required'], ['maxLength', 32] ] */
+    public $validationRules;
     /**
      * @param string $name
      * @param string $friendlyName
@@ -24,19 +26,22 @@ class FieldDef {
      * @param ?\stdClass $widget = null
      * @param ?string $defaultValue = null
      * @param ?int $visibility = null
+     * @param ?array $validationRules = null
      */
     public function __construct(string $name,
                                 string $friendlyName,
                                 ?object $dataTypeObj = null,
                                 ?\stdClass $widget = null,
                                 ?string $defaultValue = null,
-                                ?int $visibility = null) {
+                                ?int $visibility = null,
+                                ?array $validationRules = null) {
         $this->name = $name;
         $this->friendlyName = strlen($friendlyName) ? $friendlyName : $name;
         $this->dataType = $dataTypeObj ? DataType::fromObject($dataTypeObj) : new DataType('text');
         $this->widget = $widget ?? (object)['name' => 'textField', 'args' => null];
         $this->defaultValue = $defaultValue ?? '';
         $this->visibility = $visibility ?? 0;
+        $this->validationRules = $validationRules;
     }
     /**
      * @param \Closure $formatterFn = null fn(\RadCms\ContentType\FieldDef $field): string
@@ -57,7 +62,7 @@ class FieldDef {
     ////////////////////////////////////////////////////////////////////////////
 
     /**
-     * @param object $input array<{name: string, friendlyName: string, dataType: string, widget: {name: string, args?: object}, defaultValue: string, visibility: int}> Olettaa että on validi
+     * @param object $input array<{name: string, friendlyName: string, dataType: string, widget: {name: string, args?: object}, defaultValue: string, visibility: int, validationRules: array[]}>
      * @return \RadCms\ContentType\FieldDef
      */
     public static function fromObject(\stdClass $input): FieldDef {
@@ -69,7 +74,8 @@ class FieldDef {
                                 'args' => $input->widget->args ?? null
                             ] : null,
                             $input->defaultValue ?? null,
-                            $input->visibility ?? null);
+                            $input->visibility ?? null,
+                            $input->validationRules ?? null);
     }
 }
 

@@ -96,17 +96,14 @@ class SingleFieldValueSelector extends preact.Component {
     /**
      * @access protected
      */
-    render({label}) {
-        return <InputGroup classes={ this.state.classes[this.fieldName] }>
-            <label htmlFor={ this.fieldName } class="form-label">{ label }</label>
-            <Select vm={ this } name={ this.fieldName } id={ this.fieldName }
-                    myOnChange={ newState => this.receiveSelection(newState) }>
-                <option value={ NO_SELECTION }> - </option>
-                { this.props.options.map(({value, label}) =>
-                    <option value={ value }>{ label }</option>
-                ) }
-            </Select>
-        </InputGroup>;
+    render({options}) {
+        return <Select vm={ this } name={ this.fieldName } id={ this.fieldName }
+                myOnChange={ newState => this.receiveSelection(newState) }>
+            <option value={ NO_SELECTION }> - </option>
+            { options.map(({value, label}) =>
+                <option value={ value }>{ label }</option>
+            ) }
+        </Select>;
     }
     /**
      * @access private
@@ -145,8 +142,7 @@ class FieldValueListSelector extends preact.Component {
      * @access protected
      */
     render({options}, {addTagModalIsOpen}) {
-        return <InputGroup>
-            <label class="form-label">{ this.label }</label>
+        return <>
             <Tags
                 tags={ this.selectedContent.map(fieldValue => this.getFieldLabelByValue(fieldValue)) }
                 onAddTagButtonClicked={ () => this.setState({addTagModalIsOpen: true}) }
@@ -159,15 +155,17 @@ class FieldValueListSelector extends preact.Component {
                         onCancel={ () => this.closeAddContentDialog() }>
                     <h2>Valitse sisältö</h2>
                     <div class="main">
+                        <InputGroup>
+                        <label class="form-label">Sisältö</label>
                         <SingleFieldValueSelector
                             options={ options }
-                            label="Sisältö"
                             initialValue={ options.length ? options[0].value : NO_SELECTION }
                             ref={ this.singleFieldSelector }/>
+                        </InputGroup>
                     </div>
                 </Confirmation></div></div>
                 : null }
-        </InputGroup>;
+        </>;
     }
     /**
      * @access private

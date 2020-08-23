@@ -1,5 +1,5 @@
 import {http, config, toasters, urlUtils, View, FeatherSvg, InputGroup, FormButtons} from '@rad-commons';
-import {contentFormRegister, ContentFormImpl} from '@rad-cpanel-commons';
+import {contentFormRegister, FieldsFilter} from '@rad-cpanel-commons';
 import openDeleteContentDialog from './ContentDeleteDialog.jsx';
 import getWidgetImpl from './FieldWidgets/all-with-multi.js';
 import {filterByUserRole} from '../ContentType/FieldLists.jsx';
@@ -20,9 +20,10 @@ class ContentEditView extends preact.Component {
         this.state = {
             doPublish: false,
             formClasses: null,
-            panelConfig: null,
             FormImpl: null,
+            formImplProps: null
         };
+        this.contentForm = preact.createRef();
         this.fetchContentAndUpdateState(this.props);
     }
     /**
@@ -31,6 +32,8 @@ class ContentEditView extends preact.Component {
     componentWillReceiveProps(props) {
         if (props.id !== this.props.id)
             this.fetchContentAndUpdateState(props);
+        else if (props.panelIdx !== this.props.panelIdx)
+            this.setState(this.makeFormCfgState(props));
     }
     /**
      * @access private
@@ -55,12 +58,20 @@ class ContentEditView extends preact.Component {
                 toasters.main('Jokin meni pieleen', 'error');
             })
             .finally(() => {
-                newState.panelConfig = (props.panelIdx || 'none') !== 'none' ?
-                    webPageState.currentContentPanels[props.panelIdx] : null;
-                newState.FormImpl = contentFormRegister.getImpl(newState.panelConfig ?
-                    newState.panelConfig.editFormImpl : ContentFormImpl.Default);
-                this.setState(newState);
+                this.setState(Object.assign(newState, this.makeFormCfgState(props)));
             });
+    }
+    /**
+     * @access private
+     */
+    makeFormCfgState(props) {
+        const panelConfig = (props.panelIdx || 'none') !== 'none'
+            ? webPageState.currentContentPanels[props.panelIdx]
+            : {};
+        return {
+            FormImpl: contentFormRegister.getImpl(panelConfig.editFormImpl || 'Default'),
+            formImplProps: panelConfig.editFormImplProps || {},
+        };
     }
     /**
      * @access protected
@@ -80,15 +91,18 @@ class ContentEditView extends preact.Component {
                     : null
             ] : []) }</h2>
             { this.contentNode ? [
-            <FormImpl
-                key={ this.contentNode.id }
-                fields={ filterByUserRole(this.contentType.fields) }
-                settings={ this.state.panelConfig ? this.state.panelConfig.editFormImplProps : {} }
-                setContentNodeValue={ (value, fieldName) => {
-                    this.contentNode[fieldName] = value;
-                } }
-                getWidgetImpl={ getWidgetImpl }
-                editForm={ this }/>,
+                <FormImpl
+                    fields={ (new FieldsFilter(this.state.formImplProps.fieldsToDisplay))
+                        .doFilter(filterByUserRole(this.contentType.fields)) }
+                    values={ this.contentNode }
+                    settings={ this.state.formImplProps }
+                    getWidgetImpl={ getWidgetImpl }
+                    key={ this.contentNode.id }
+                    setFormClasses={ str => {
+                        this.setState({formClasses: str.toString()});
+                    } }
+                    ref={ this.contentForm }
+                    fieldHints={ [] }/>,
             this.contentNode.isRevision && !this.props.publish
                 ? <InputGroup className="mt-2">
                     <label class="form-checkbox">
@@ -116,7 +130,9 @@ class ContentEditView extends preact.Component {
      * @access private
      */
     handleFormSubmit(e, revisionSettings = null) {
-        e.preventDefault();
+        const values = this.contentForm.current.submit(e);
+        if (!values)
+            return;
         let status = this.contentNode.status;
         if (!revisionSettings)
             revisionSettings = !this.state.doPublish ? '' : '/publish';
@@ -125,7 +141,7 @@ class ContentEditView extends preact.Component {
         else if (revisionSettings === '/unpublish')
             status = Status.DRAFT;
         return http.put(`/api/content/${this.props.id}/${this.props.contentTypeName}${revisionSettings}`,
-            Object.assign(this.contentNode, {status})
+            Object.assign(this.contentNode, values, {status})
         )
         .then(() => {
             if (e.altSubmitLinkIndex !== 0) urlUtils.redirect('@current', 'hard');

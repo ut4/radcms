@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace RadCms\ContentType;
 
-use Pike\Validation;
+use Pike\{PikeException, Validation};
 use RadCms\Content\DAO;
 
 abstract class ContentTypeValidator {
@@ -13,6 +13,8 @@ abstract class ContentTypeValidator {
                            'colorPicker', 'contentSelector', 'hidden'];
     const FIELD_DATA_TYPES = ['text', 'json', 'int', 'uint'];
     const COLLECTION_SIZES = ['tiny', 'small', 'medium', '', 'big'];
+    private const VALIDATION_RULES = ['type', 'minLength', 'maxLength', 'min',
+                                      'max', 'in', 'identifier', 'regexp'];
     private const MAX_NAME_LEN = 64;
     private const MAX_DESCRIPTION_LENGTH = 512;
     private const MAX_FIELD_DEFAULT_VALUE_LENGTH = 2048;
@@ -45,7 +47,8 @@ abstract class ContentTypeValidator {
             ->rule('fields.*.defaultValue', 'maxLength', self::MAX_FIELD_DEFAULT_VALUE_LENGTH)
             ->rule('fields.*.visibility', 'type', 'int')
             ->rule('fields.*.widget.name', 'in', ContentTypeValidator::FIELD_WIDGETS)
-            ->rule('fields.*.widget.args?', 'type', 'object');
+            ->rule('fields.*.widget.args?', 'type', 'object')
+            ->rule('fields.*.validationRules?', 'type', 'array');
         return $doValidateFields
             ? array_merge($validator->validate($contentType),
                           $fieldsValidator->validate($contentType))
@@ -92,6 +95,15 @@ abstract class ContentTypeValidator {
             ][$f->dataType->type] ?? null;
             if (!$rules)
                 throw new \RuntimeException('Shouldn\'t happen');
+            $userRules = $f->validationRules ?? [];
+            if ($userRules) { // [ ['required'], ['min', 4] ]
+                foreach ($userRules as $ruleParts) {
+                    if (!is_array($ruleParts) || !in_array($ruleParts[0], self::VALIDATION_RULES, true))
+                        throw new PikeException('Invalid validation rule',
+                                                PikeException::BAD_INPUT);
+                }
+                $rules = array_merge($rules, $userRules);
+            }
             foreach ($rules as $ruleArgs)
                 $v->rule("{$f->name}?", ...$ruleArgs);
         }

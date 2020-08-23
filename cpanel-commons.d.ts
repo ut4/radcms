@@ -9,13 +9,6 @@ declare module "@rad-cpanel-commons" {
             registerImpl(name: string, Impl: any): void;
             getImpl(name: string): Impl?;
         };
-        export const ContentPanelImpl: {
-            DefaultSingle: string;
-            DefaultCollection: string;
-        };
-        export const ContentFormImpl: {
-            Default: string;
-        };
         export class ContentNodeUtils {
             static makeTitle(contentNode: any): string;
         }
@@ -41,6 +34,7 @@ interface ContentTypeField {
     defaultValue: string;
     visibility: number;
     widget: FieldWidget;
+    validationRules?: Array<[string, ...any]>;
 }
 
 interface MultiFieldField {

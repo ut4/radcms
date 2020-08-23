@@ -51,10 +51,14 @@
 }
 
 /* -- Components: MultiFieldConfigurer ---- */
-.with-configurable-fields .form-group,
+.with-configurable-fields .form-group:not(.form-input-multiField),
 .with-configurable-fields .form-buttons {
     opacity: 0.3;
     pointer-events: none;
+}
+.form-input-multiField > label,
+.form-input-hidden {
+    display: none;
 }
 .multi-field-configurer {
     background-color: var(--bg-light);

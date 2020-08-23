@@ -5,11 +5,16 @@ const validationStrings = {
     minLength: '{field} tulee ole vähintään {arg0} merkkiä pitkä',
     maxLength: '{field} tulee ole enintään {arg0} merkkiä pitkä',
     min: '{field} tulee olla vähintään {arg0}',
+    max: '{field} tulee olla enintään {arg0}',
 };
+
 const validatorImplFactories = {
     'required': messages =>
         [(value) => !!value, messages.required]
     ,
+    'type': () => {
+        throw new Error('Not implemented yet.');
+    },
     'minLength': messages =>
         [(value, min) => value.length >= min, messages.minLength]
     ,
@@ -19,6 +24,15 @@ const validatorImplFactories = {
     'min': messages =>
         [(value, min) => value >= min, messages.min]
     ,
+    'max': messages =>
+        [(value, max) => value <= max, messages.max]
+    ,
+    'in': () => {
+        throw new Error('Not implemented yet.');
+    },
+    'identifier': () => {
+        throw new Error('Not implemented yet.');
+    },
     'regexp': (_, args) =>
         [(value, pattern) => (new RegExp(pattern)).test(value),
          `{field}${args.length < 2 ? ' ei kelpaa' : '{arg1}'}`]
@@ -251,9 +265,9 @@ class Form {
 
 const hookForm = (vm, values = null, inputs = null) => {
     if (!values) values = Object.keys(inputs).reduce((out, key) => {
-            out[key] = inputs[key].value;
-            return out;
-        }, {});
+        out[key] = inputs[key].value;
+        return out;
+    }, {});
     const state = {
         values,
         errors: Object.keys(values).reduce((obj, key) =>
@@ -340,20 +354,15 @@ function formatCssClasses(classes) {
 class InputGroup extends preact.Component {
     /**
      * @param {{classes?: {invalid: boolean; focused: boolean; blurredAtLeastOnce: boolean;}; className?: string;}} props
-     */
-    constructor(props) {
-        super(props);
-        this.staticCssClassString = 'form-group' +
-                                    (this.props.className || '');
-    }
-    /**
      * @access protected
      */
-    render() {
-        const className = this.staticCssClassString + (this.props.classes
-            ? formatCssClasses(this.props.classes)
-            : '');
-        return preact.createElement('div', {className}, this.props.children);
+    render({children, classes, className}) {
+        return <div
+            className={ 'form-group' +
+                        (!className ? '' : ` ${className}`) +
+                        (classes ? formatCssClasses(classes) : '') }>
+            { children }
+        </div>;
     }
 }
 

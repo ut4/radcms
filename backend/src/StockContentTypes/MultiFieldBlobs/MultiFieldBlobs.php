@@ -17,8 +17,13 @@ class MultiFieldBlobs {
         return ContentTypeCollection::build()
         ->add('MultiFieldBlobs', 'Monikenttäsisältö')
         ->description('Joustava sisältö, jolla ei ole ennalta määriteltyä rakennetta.')
-            ->field('name', 'Nimi')->dataType('text', 128)->visibility(ACL::ROLE_SUPER_ADMIN)
-            ->field('fields', 'Kentät')->dataType('json')->widget('multiField')
+            ->field('name', 'Nimi')
+                ->dataType('text', 128)
+                ->visibility(ACL::ROLE_SUPER_ADMIN)
+                ->validationRule('maxLength', 128)
+            ->field('fields', 'Kentät')
+                ->dataType('json')
+                ->widget('multiField')
         ->done()[0]->toCompactForm();
     }
     /**

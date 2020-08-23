@@ -1,4 +1,4 @@
-import {http, myFetch, env, urlUtils, hookForm, InputGroup, Input,
+import {http, myFetch, env, urlUtils, hookForm, Input,
         Toaster, toasters, FeatherSvg} from '@rad-commons';
 import popupDialog from '../../Common/PopupDialog.jsx';
 import BaseFieldWidget from './Base.jsx';
@@ -28,26 +28,23 @@ class ImagePickerFieldWidget extends BaseFieldWidget {
      * @access protected
      */
     render() {
-        return <InputGroup classes={ this.state.classes[this.fieldName] }>
-            <label htmlFor={ this.fieldName } class="form-label">{ this.label }</label>
-            <Input
-                vm={ this }
-                name={ this.fieldName }
-                id={ this.fieldName }
-                ref={ this.inputElWrap }
-                onClick={ () => {
-                    popupDialog.open(
-                        PickImageDialog,
-                        {selectedImageName: this.state.values[this.fieldName],
-                         onSelected: img => {
-                              this.form.triggerChange(img.fileName, this.fieldName);
-                              this.props.onValueChange(img.fileName);
-                         },
-                         assetBaseUrl: urlUtils.assetBaseUrl}
-                    );
-                    this.inputElWrap.current.inputEl.blur();
-                } }/>
-        </InputGroup>;
+        return <Input
+            vm={ this }
+            name={ this.fieldName }
+            id={ this.fieldName }
+            ref={ this.inputElWrap }
+            onClick={ () => {
+                popupDialog.open(
+                    PickImageDialog,
+                    {selectedImageName: this.state.values[this.fieldName],
+                        onSelected: img => {
+                            this.form.triggerChange(img.fileName, this.fieldName);
+                            this.props.onValueChange(img.fileName);
+                        },
+                        assetBaseUrl: urlUtils.assetBaseUrl}
+                );
+                this.inputElWrap.current.inputEl.blur();
+            } }/>;
     }
 }
 

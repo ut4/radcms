@@ -1,7 +1,9 @@
 import {http, toasters, urlUtils, View, Select, hookForm, InputGroup, Input, FormButtons, env} from '@rad-commons';
+import {contentFormRegister} from '@rad-cpanel-commons';
 import {filterByUserRole} from '../ContentType/FieldLists.jsx';
 import getWidgetImpl from './FieldWidgets/all-with-multi.js';
 import {genRandomString} from '../Website/WebsitePackView.jsx';
+const DefaultFormImpl = contentFormRegister.getImpl('Default');
 const Status = Object.freeze({PUBLISHED: 0, DRAFT: 1, DELETED: 2});
 
 /**
@@ -19,6 +21,7 @@ class ContentAddView extends preact.Component {
             contentTypeFetched: false,
             contentType: null,
         };
+        this.contentForm = preact.createRef();
         http.get('/api/content-types/no-internals')
             .then(contentTypes => {
                 this.contentTypes = contentTypes.map(t =>
@@ -57,21 +60,16 @@ class ContentAddView extends preact.Component {
                     ) }
                 </Select>
             </InputGroup>
-            { filterByUserRole(this.state.contentType.fields).map(f => {
-                // @allow Error
-                const {ImplClass, props} = getWidgetImpl(f.widget.name);
-                return <ImplClass
-                    key={ f.id }
-                    field={ f }
-                    initialValue={ this.newContentNode[f.name] }
-                    settings={ props }
-                    onValueChange={ value => {
-                        this.newContentNode[f.name] = value;
-                    }}
-                    setFormClasses={ str => {
-                        this.setState({formClasses: str.toString()});
-                    } }/>;
-            }) }
+            <DefaultFormImpl
+                fields={ filterByUserRole(this.state.contentType.fields) }
+                values={ this.newContentNode }
+                settings={ {} }
+                getWidgetImpl={ getWidgetImpl }
+                fieldHints={ [] }
+                setFormClasses={ str => {
+                    this.setState({formClasses: str.toString()});
+                } }
+                ref={ this.contentForm }/>
             <InputGroup>
                 <label class="form-checkbox">
                     <Input vm={ this } type="checkbox" name="createRevision" id="createRevision"/>
@@ -87,10 +85,13 @@ class ContentAddView extends preact.Component {
      * @access private
      */
     handleFormSubmit(e) {
-        e.preventDefault();
+        const values = this.contentForm.current.submit(e);
+        if (!values)
+            return;
         const revisionSettings = this.state.values.createRevision ? '/with-revision' : '';
         return http.post(`/api/content/${this.state.contentType.name}${revisionSettings}`,
             Object.assign(this.newContentNode,
+                          values,
                           {status: revisionSettings === '' ? Status.PUBLISHED : Status.DRAFT}))
             .then(() => {
                 if (e.altSubmitLinkIndex !== 0) urlUtils.redirect('@current', 'hard');

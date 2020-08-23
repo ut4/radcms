@@ -3,7 +3,7 @@
 namespace RadCms\Tests\ContentType;
 
 use PHPUnit\Framework\TestCase;
-use RadCms\ContentType\{ContentTypeDef, ContentTypeValidator};
+use RadCms\ContentType\{ContentTypeCollection, ContentTypeDef, ContentTypeValidator};
 
 final class ContentTypeValidatorsTest extends TestCase {
     public function testValidateReturnsErrorMessages() {
@@ -24,6 +24,23 @@ final class ContentTypeValidatorsTest extends TestCase {
             'The value of fields.0.dataType.type was not in the list',
             'The value of fields.0.widget.name was not in the list',
             'fields.0.widget.args must be object',
+        ], $errors);
+    }
+    public function testValidateInsertDataUsesUserDefinedFieldRules() {
+        $ctype = ContentTypeCollection::build()
+            ->add('Products', 'Tuotteet')
+                ->field('title', 'Otsikko')
+                    ->validationRule('maxLength', 12)
+                ->field('slug', 'Tunniste')
+                    ->validationRule('identifier')
+            ->done()[0];
+        $errors = ContentTypeValidator::validateInsertData($ctype, (object) [
+            'title' => str_repeat('-', 12 + 1),
+            'slug' => 'n0t v@l!d',
+        ]);
+        $this->assertEquals([
+            'The length of title must be 12 or less',
+            'slug must contain only [a-zA-Z0-9_] and start with [a-zA-Z_]',
         ], $errors);
     }
 }

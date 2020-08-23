@@ -1,11 +1,6 @@
 import {config} from '@rad-commons';
 import ContentNodeList from './ContentNodeList.jsx';
 
-const ContentPanelImpl = Object.freeze({
-    DefaultSingle: 'DefaultSingle',
-    DefaultCollection: 'DefaultCollection',
-});
-
 /*
  * Implementoi hallintapaneeliosion <?php $this->fetchOne(...)->addFrontendPanel(
  * ['impl' => 'DefaultSingle'...]) ?> kutsuille, jolla loppukäyttäjä voi muokata
@@ -21,7 +16,7 @@ class DefaultImplForFetchOne extends preact.Component {
         this.node = props.panel.contentNodes[0] || null;
     }
     getName() {
-        return ContentPanelImpl.DefaultSingle;
+        return 'DefaultSingle';
     }
     /**
      * @access public
@@ -70,7 +65,7 @@ class DefaultImplForFetchAll extends preact.Component {
         this.label = '';
     }
     getName() {
-        return ContentPanelImpl.DefaultCollection;
+        return 'DefaultCollection';
     }
     getMainUrl() {
         return `/manage-content/${this.contentTypeName || (this.contentNodes[0] || {}).contentType}`;
@@ -87,4 +82,4 @@ class DefaultImplForFetchAll extends preact.Component {
     }
 }
 
-export {ContentPanelImpl, DefaultImplForFetchOne, DefaultImplForFetchAll};
+export {DefaultImplForFetchOne, DefaultImplForFetchAll};
