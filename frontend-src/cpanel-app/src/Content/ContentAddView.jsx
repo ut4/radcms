@@ -7,7 +7,7 @@ const DefaultFormImpl = contentFormRegister.getImpl('Default');
 const Status = Object.freeze({PUBLISHED: 0, DRAFT: 1, DELETED: 2});
 
 /**
- * #/add-content/:initialComponentTypeName?
+ * #/add-content/:initialComponentTypeName?[?return-to=path]
  */
 class ContentAddView extends preact.Component {
     /**
@@ -94,8 +94,9 @@ class ContentAddView extends preact.Component {
                           values,
                           {status: revisionSettings === '' ? Status.PUBLISHED : Status.DRAFT}))
             .then(() => {
-                if (e.altSubmitLinkIndex !== 0) urlUtils.redirect('@current', 'hard');
-                else urlUtils.reload();
+                if (e.altSubmitLinkIndex === 0) urlUtils.reload();
+                else if (this.props.matches['return-to'] !== undefined) urlUtils.redirect(this.props.matches['return-to']);
+                else urlUtils.redirect('@current', 'hard');
             })
             .catch(() => {
                 toasters.main('Sisällön luonti epäonnistui.', 'error');

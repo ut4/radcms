@@ -34,7 +34,7 @@ class ContentTypesManageView extends preact.Component {
                     });
                     this.setState({contentTypes});
                     if (props.matches['auto-open-create-form'] !== undefined) {
-                        window.history.replaceState(null, null, window.location.hash.split('?')[0]);
+                        urlUtils.replace(window.location.hash.split('?')[0]);
                         this.prependNewContentType(contentTypes);
                     }
                 } else this.setState({message: 'Sisältötyyppejä ei löytynyt'});

@@ -30,19 +30,27 @@ const urlUtils = {
     redirect(to, type) {
         if (type !== 'hard') {
             window.location.hash = `#/${this.normalizeUrl(to)}`;
-        } else {
-            if (to === '@current')
-                to = this.currentPagePath;
-            window.location.href = window.location.origin + this.baseUrl +
-                                   '_edit' +
-                                   (to !== '/' ? `/${this.normalizeUrl(to)}` : '');
+            return;
         }
+        if (to === '@current')
+            to = this.currentPagePath;
+        window.location.href = window.location.origin + this.baseUrl +
+                               '_edit' +
+                               (to !== '/' ? `/${this.normalizeUrl(to)}` : '');
     },
     /**
      * ...
      */
     reload() {
         window.location.reload();
+    },
+    /**
+     * @param {string} hash
+     * @param {any} data = null
+     * @param {string} title = null
+     */
+    replace(hash, data = null, title = null) {
+        window.history.replaceState(data, title, this.normalizeUrl(hash));
     },
     /**
      * @param {string} url

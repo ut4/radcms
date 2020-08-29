@@ -1,4 +1,4 @@
-import {http, env, toasters, View, FeatherSvg} from '@rad-commons';
+import {http, env, toasters, View, FeatherSvg, urlUtils} from '@rad-commons';
 import {ContentNodeUtils} from '@rad-cpanel-commons';
 import openDeleteContentDialog from './ContentDeleteDialog.jsx';
 import ContentTypeDropdown from '../ContentType/ContentTypeDropdown.jsx';
@@ -22,6 +22,8 @@ class ContentManageView extends preact.Component {
                 return this.fetchContent(contentTypeName);
             })
             .then(content => {
+                if (!props.initialContentTypeName)
+                    urlUtils.replace(`#/manage-content/${contentTypeName}`);
                 return this.setState({content, isFetching: false, contentTypeName});
             })
             .catch(err => {
@@ -42,7 +44,7 @@ class ContentManageView extends preact.Component {
                     initialValue={ this.state.contentTypeName }
                     contentTypes={ this.contentTypes }
                     onSelected={ type => this.reFetchContent(type.name) }/>
-                <a href={ `#/add-content/${this.state.contentTypeName}` } title="Luo uusi" class="px-2 col-mr-auto">
+                <a href={ `#/add-content/${this.state.contentTypeName}?return-to=/manage-content/${this.state.contentTypeName}` } title="Luo uusi" class="px-2 col-mr-auto">
                     <FeatherSvg iconId="plus-circle" className="medium"/>
                 </a>
             </div>
@@ -53,15 +55,16 @@ class ContentManageView extends preact.Component {
                     <th class="buttons"></th>
                 </tr></thead>
                 <tbody>{ this.state.content.map(cnode => {
-                    const href = `#/edit-content/${cnode.id}/${cnode.contentType}/none`;
+                    const basePath = `#/edit-content/${cnode.id}/${cnode.contentType}/none`;
+                    const qs = `?return-to=/manage-content/${this.state.contentTypeName}`;
                     return <tr>
                         <td>{ ContentNodeUtils.makeTitle(cnode) }</td>
                         <td>{ !cnode.isRevision
                             ? 'Kyllä'
-                            : ['Ei ', <a href={ `${href}/publish` }>Julkaise</a>]
+                            : ['Ei, ', <a href={ `${basePath}/publish${qs}` }>Julkaise</a>]
                         }</td>
                         <td class="buttons">
-                            <a href={ href } title="Muokkaa">
+                            <a href={ `${basePath}${qs}` } title="Muokkaa">
                                 <FeatherSvg iconId="edit-2" className="feather-md"/>
                             </a> <a onClick={ e => this.openDeleteDialog(e, cnode) }
                                     href={ `#/delete-content/${cnode.id}` } class="m-2" title="Poista">
@@ -91,6 +94,7 @@ class ContentManageView extends preact.Component {
         this.setState({isFetching: true});
         this.fetchContent(contentTypeName).then(content => {
             this.setState({content, isFetching: false, contentTypeName});
+            urlUtils.replace(`#/manage-content/${contentTypeName}`);
         });
     }
     /**

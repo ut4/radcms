@@ -7,7 +7,7 @@ import {Status} from './ContentAddView.jsx';
 import webPageState from '../webPageState.js';
 
 /**
- * #/edit-content/:id/:contentTypeName/:panelIdx?/:publish?
+ * #/edit-content/:id/:contentTypeName/:panelIdx?/:publish?[?return-to=path]
  */
 class ContentEditView extends preact.Component {
     /**
@@ -24,7 +24,7 @@ class ContentEditView extends preact.Component {
             formImplProps: null
         };
         this.contentForm = preact.createRef();
-        this.fetchContentAndUpdateState(this.props);
+        this.fetchContentAndUpdateState(props);
     }
     /**
      * @access protected
@@ -49,7 +49,7 @@ class ContentEditView extends preact.Component {
         http.get(`/api/content/${props.id}/${props.contentTypeName}`)
             .then(cnode => {
                 this.contentNode = cnode;
-                return http.get('/api/content-types/' + props.contentTypeName);
+                return http.get(`/api/content-types/${props.contentTypeName}`);
             })
             .then(ctype => {
                 this.contentType = ctype;
@@ -65,9 +65,7 @@ class ContentEditView extends preact.Component {
      * @access private
      */
     makeFormCfgState(props) {
-        const panelConfig = (props.panelIdx || 'none') !== 'none'
-            ? webPageState.currentContentPanels[props.panelIdx]
-            : {};
+        const panelConfig = webPageState.currentContentPanels[props.panelIdx || -1] || {};
         return {
             FormImpl: contentFormRegister.getImpl(panelConfig.editFormImpl || 'Default'),
             formImplProps: panelConfig.editFormImplProps || {},
@@ -102,7 +100,8 @@ class ContentEditView extends preact.Component {
                         this.setState({formClasses: str.toString()});
                     } }
                     ref={ this.contentForm }
-                    fieldHints={ [] }/>,
+                    fieldHints={ [] }
+                    contentType={ this.contentType }/>,
             this.contentNode.isRevision && !this.props.publish
                 ? <InputGroup className="mt-2">
                     <label class="form-checkbox">
@@ -141,15 +140,15 @@ class ContentEditView extends preact.Component {
         else if (revisionSettings === '/unpublish')
             status = Status.DRAFT;
         return http.put(`/api/content/${this.props.id}/${this.props.contentTypeName}${revisionSettings}`,
-            Object.assign(this.contentNode, values, {status})
-        )
-        .then(() => {
-            if (e.altSubmitLinkIndex !== 0) urlUtils.redirect('@current', 'hard');
-            else urlUtils.reload();
-        })
-        .catch(() => {
-            toasters.main('Sisällön tallennus epäonnistui.', 'error');
-        });
+            Object.assign(this.contentNode, values, {status}))
+            .then(() => {
+                if (e.altSubmitLinkIndex === 0) urlUtils.reload();
+                else if (this.props.matches['return-to'] !== undefined) urlUtils.redirect(this.props.matches['return-to']);
+                else urlUtils.redirect('@current', 'hard');
+            })
+            .catch(() => {
+                toasters.main('Sisällön tallennus epäonnistui.', 'error');
+            });
     }
     /**
      * @access private
