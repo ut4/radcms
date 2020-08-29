@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace RadCms\Content;
 
-use Pike\PikeException;
 use RadCms\ContentType\ContentTypeDef;
 use RadCms\Templating\StockFrontendPanelImpls;
 
@@ -13,6 +12,7 @@ use RadCms\Templating\StockFrontendPanelImpls;
  * palauttaa. Ei tarkoitettu käytettäväksi manuaalisesti.
  */
 class MagicTemplateQuery extends Query {
+    /** @var object[] */
     private $frontendPanels;
     /**
      * $param \RadCms\ContentType\ContentTypeDef $contentType

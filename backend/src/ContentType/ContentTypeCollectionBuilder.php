@@ -105,7 +105,7 @@ final class FieldCollectionBuilder {
         return $this;
     }
     /**
-     * @param string $name
+     * @param string $name 'textField'|'textArea'|'richText'|'imagePicker'|'multiField'|'datePicker'|'dateTimePicker'|'colorPicker'|'contentSelector'|'hidden'
      * @param ?object $args = null
      * @return $this
      */
@@ -131,7 +131,7 @@ final class FieldCollectionBuilder {
         return $this;
     }
     /**
-     * @param string $ruleName ContentTypeValidator::VALIDATION_RULES[*]
+     * @param string $ruleName 'type'|'minLength'|'maxLength'| 'min'|'max'|'in'|'identifier'|'regexp'
      * @return $this
      */
     public function validationRule(string $ruleName, ...$args): FieldCollectionBuilder {

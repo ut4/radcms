@@ -4,10 +4,8 @@ declare(strict_types=1);
 
 namespace RadCms\Content;
 
-use Pike\Validation;
-use Pike\PikeException;
-use RadCms\ContentType\ContentTypeDef;
-use RadCms\ContentType\ContentTypeValidator;
+use Pike\{PikeException, Validation};
+use RadCms\ContentType\{ContentTypeDef, ContentTypeValidator};
 
 /**
  * Luokka jonka DAO->fetchOne|All() instansoi ja palauttaa. Ei tarkoitettu
@@ -17,13 +15,21 @@ class Query {
     public const DIRECTION_ASC  = 'asc';
     public const DIRECTION_DESC = 'desc';
     public const DIRECTION_RAND = 'rand';
+    /** @var \RadCms\ContentType\ContentTypeDef */
     protected $contentType;
+    /** @var string */
     protected $contentTypeAlias;
+    /** @var bool */
     protected $isFetchOne;
+    /** @var \RadCms\Content\DAO */
     protected $dao;
+    /** @var object */
     protected $whereDef;
+    /** @var object */
     protected $orderDef;
+    /** @var string */
     protected $limitExpr;
+    /** @var object[] */
     protected $joinDefs;
     /**
      * $param \RadCms\ContentType\ContentTypeDef $contentType

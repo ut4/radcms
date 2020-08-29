@@ -8,6 +8,7 @@ use Pike\Db;
 use RadCms\ContentType\ContentTypeCollection;
 
 class MagicTemplateDAO extends DAO {
+    /** @var \RadCms\Content\MagicTemplateQuery[] */
     private $queries;
     /**
      * @param \Pike\Db $db

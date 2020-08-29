@@ -9,6 +9,6 @@ namespace RadCms\Entities;
  * pakettiin. Varastoitu data passataan myös lisäosan install() -metodille.
  */
 final class PluginPackData {
-    /** @var array[mixed[]] [['ContentTypeName', [(object)['key' => 'value']...]]...] */
+    /** @var array<int, mixed[]> [['ContentTypeName', [(object)['key' => 'value']...]]...] */
     public $initialContent = [];
 }

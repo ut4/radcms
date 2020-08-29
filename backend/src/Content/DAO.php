@@ -4,11 +4,8 @@ declare(strict_types=1);
 
 namespace RadCms\Content;
 
-use Pike\Db;
-use RadCms\ContentType\ContentTypeCollection;
-use Pike\PikeException;
-use Pike\ArrayUtils;
-use RadCms\ContentType\ContentTypeDef;
+use Pike\{ArrayUtils, Db, PikeException};
+use RadCms\ContentType\{ContentTypeCollection, ContentTypeDef};
 
 /**
  * Luokka jonka DAO->fetchOne|All() instansoi ja palauttaa. Ei tarkoitettu
@@ -18,8 +15,11 @@ class DAO {
     public const STATUS_PUBLISHED = 0;
     public const STATUS_DRAFT = 1;
     public const STATUS_DELETED = 2;
+    /** @var bool */
     public $fetchRevisions;
+    /** @var \Pike\Db */
     protected $db;
+    /** @var \RadCms\ContentType\ContentTypeCollection */
     protected $contentTypes;
     /**
      * @param \Pike\Db $db

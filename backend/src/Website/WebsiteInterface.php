@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace RadCms\Website;
 
 /**
- * Rajapinta, jonka (RAD_WORKSPACE_PATH . 'site/Site.php') tulee implementoida.
+ * Rajapinta, jonka sivustoluokkien (RAD_WORKSPACE_PATH . 'site/Site.php') tulee
+ * implementoida.
  */
 interface WebsiteInterface {
     /**

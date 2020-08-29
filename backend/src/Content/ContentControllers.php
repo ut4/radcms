@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace RadCms\Content;
 
-use Pike\Request;
-use Pike\Response;
+use Pike\{Request, Response};
 
 /**
  * Handlaa /api/content -alkuiset pyynnöt.
@@ -44,8 +43,7 @@ class ContentControllers {
         $node = $dao->fetchOne($req->params->contentTypeName)
                     ->where('`id` = ?', $req->params->id) // aina validi (läpäissyt routerin regexpin)
                     ->exec();
-        if ($node) $res->json($node);
-        else $res->status(404)->json(['got' => 'nothing']);
+        $res->json($node);
     }
     /**
      * GET /api/content/:contentTypeName.
