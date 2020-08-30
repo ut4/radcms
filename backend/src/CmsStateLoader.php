@@ -32,15 +32,15 @@ class CmsStateLoader {
                                                         $plugin->name))) {
                 // @allow \Pike\PikeException
                 $instance = $plugin->instantiate();
-                $instance->init(new PluginAPI($apiState,
+                $instance->init(new PluginAPI("plugins/{$plugin->name}/",
+                                              $apiState,
                                               $plugins,
-                                              $router,
-                                              $plugin->name));
+                                              $router));
             }
         }
         //
         $site = self::instantiateWebsite();
-        $site->init(new WebsiteAPI($apiState, $plugins));
+        $site->init(new WebsiteAPI('site/', $apiState, $plugins));
         //
         return $out;
     }

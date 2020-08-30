@@ -20,7 +20,7 @@ abstract class WebsiteModule {
         );
         if (RAD_QUERY_VAR === '') {
             $ctx->router->on('*', function ($req, $res, $next) {
-                if (strpos($req->path, '.') === false)
+                if ($req->method !== 'GET' || strpos($req->path, '.') === false)
                     $next();
                 else
                     $res->status(404)->plain('Not found.');

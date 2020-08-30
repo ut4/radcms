@@ -39,10 +39,10 @@ class WebsiteControllers {
         $apiState = $cmsState->getApiConfigs();
         // @allow \Pike\PikeException
         if (($theme = self::instantiateTheme())) {
-            $theme->init(new ThemeAPI($apiState, $cmsState->getPlugins()));
+            $theme->init(new ThemeAPI('site/', $apiState, $cmsState->getPlugins()));
         }
         // @allow \Pike\PikeException
-        $this->initStockContentTypes(new BaseAPI($apiState, $cmsState->getPlugins()));
+        $this->initStockContentTypes(new BaseAPI('', $apiState, $cmsState->getPlugins()));
         $this->cmsState = $cmsState;
         $this->dao = $dao;
         $this->fs = $fs;

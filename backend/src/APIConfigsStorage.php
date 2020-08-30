@@ -49,12 +49,14 @@ class APIConfigsStorage {
      * @see \RadCms\BaseAPI->registerDirective().
      */
     public function putTemplateAlias(string $directiveName,
-                                     string $fullFilePath,
+                                     string $relativeFilePath,
                                      string $for): void {
+        ValidationUtils::checkIfValidaPathOrThrow($relativeFilePath);
         if (RAD_FLAGS & RAD_DEVMODE) {
             if (array_key_exists($directiveName, $this->getRegisteredTemplateAliases($for)))
                 throw new PikeException("Alias `{$directiveName}` is already registered.",
                                         PikeException::BAD_INPUT);
+            $fullFilePath = RAD_WORKSPACE_PATH . $relativeFilePath;
             if (!$this->fs->isFile($fullFilePath))
                 throw new PikeException("Failed to locate `{$fullFilePath}`",
                                         PikeException::BAD_INPUT);
@@ -132,9 +134,9 @@ class APIConfigsStorage {
     /**
      * @see \RadCms\Website\WebsiteAPI->registerLayoutForUrlPattern().
      */
-    public function putUrlLayout(string $pattern, string $layoutFilePath): void {
-        ValidationUtils::checkIfValidaPathOrThrow($layoutFilePath);
-        $urlMatcher = new UrlMatcher($pattern, $layoutFilePath);
+    public function putUrlLayout(string $pattern, string $relativeLayoutFilePath): void {
+        ValidationUtils::checkIfValidaPathOrThrow($relativeLayoutFilePath);
+        $urlMatcher = new UrlMatcher($pattern, $relativeLayoutFilePath);
         if (RAD_FLAGS & RAD_DEVMODE) {
             if (preg_match($urlMatcher->pattern, '') === false) {
                 throw new PikeException("{$urlMatcher->pattern} is not valid regexp",

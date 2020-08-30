@@ -19,18 +19,19 @@ class PluginAPI extends BaseAPI {
     /** @var ?string */
     private $routeNamespace;
     /**
+     * @param string $dir
      * @param \RadCms\APIConfigsStorage $apiState
      * @param \ArrayObject $plugins
      * @param \Pike\Router $router = null
-     * @param string $pluginName = null
      */
-    public function __construct(APIConfigsStorage $apiState,
+    public function __construct(string $dir,
+                                APIConfigsStorage $apiState,
                                 \ArrayObject $plugins,
-                                Router $router = null,
-                                string $pluginName = null) {
-        parent::__construct($apiState, $plugins);
+                                Router $router = null) {
+        parent::__construct($dir, $apiState, $plugins);
         $this->router = $router;
-        $this->classNamespace = "RadPlugins\\{$pluginName}";
+        $this->classNamespace = str_replace('plugins/', 'RadPlugins\\',
+            substr($dir, 0, strlen($dir) - 1));
     }
     /**
      * Rekisteröi reitti. Esimerkki: mapRoute(

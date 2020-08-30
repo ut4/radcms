@@ -56,7 +56,7 @@ class MagicTemplate extends Template {
                                             array_merge($args, [$this]));
             $alias = $this->__aliases[$name] ?? '';
             if (!$alias) {
-                ValidationUtils::checkIfValidaPathOrThrow($name);
+                ValidationUtils::checkIfValidaPathOrThrow($name, true);
                 $directiveFilePath = "{$this->__dir}{$name}.tmpl.php";
             } else {
                 $directiveFilePath = $alias;
