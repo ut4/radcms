@@ -3,10 +3,8 @@
 namespace RadPlugins\RadForms\Tests;
 
 use Laminas\Dom\Query;
-use RadCms\PluginTestUtils\PluginTestCase;
-use RadPlugins\RadForms\Tests\Internal\Vars;
 
-final class RadFormsTest extends PluginTestCase {
+final class RenderFormTest extends RadFormsTestCase {
     public function testRadFormTagFetchesFormFromDbAndRendersIt(): void {
         $state = $this->setupRenderTest();
         $this->insertTestFormToDb($state);
@@ -18,12 +16,9 @@ final class RadFormsTest extends PluginTestCase {
         $state->renderedHtml = null;
         return $state;
     }
-    private function insertTestFormToDb(object $state): void {
-        self::$db->exec('INSERT INTO `${p}Forms` (`name`,`behaviours`) VALUES (?,?)',
-                        [Vars::TEST_FORM_NAME, '{}']);
-    }
     private function renderTestPage(object $state): void {
-        $state->renderedHtml = $this->renderTemplate('my-contact-page.tmpl.php');
+        $app = $this->makePluginTestApp();
+        $state->renderedHtml = $this->renderTemplate('my-contact-page.tmpl.php', $app);
     }
     private function verifyRenderedForm(object $state): void {
         $dom = new Query($state->renderedHtml);

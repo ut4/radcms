@@ -14,9 +14,10 @@ frontend/*
 !frontend/rad/common.css
 !frontend/rad/cpanel-app.css
 !frontend/rad/install-app.css
-internal/
-!backend/**/Internal
-plugins/
+/internal/
+!*/**/Internal
+plugins/*
+!plugins/RadForms
 site/
 translations/
 uploads/

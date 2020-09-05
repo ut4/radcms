@@ -17,6 +17,8 @@ final class RadForms implements PluginInterface {
         $api->registerDirectiveMethod('radFormsFetchForm',
             [self::class, 'validatePropsAndFetchForm']);
         $api->registerDirective('RadForm', 'templates/tag.RadForm.tmpl.php');
+        $api->registerRoute('POST', '/plugins/rad-forms/handle-submit/[i:formId]',
+                            Controllers::class, 'processFormSubmit');
     }
     /**
      * @param \RadCms\ContentType\ContentTypeMigrator $migrator
@@ -54,7 +56,6 @@ final class RadForms implements PluginInterface {
         if (($errors = Validation::makeObjectValidator()
             ->rule('name', 'type', 'string')
             ->rule('template', 'type', 'string')
-            ->rule('sendMailHandler', 'type', 'string')
             ->validate($props)))
                 throw new PikeException(implode('<br>', $errors));
         //
