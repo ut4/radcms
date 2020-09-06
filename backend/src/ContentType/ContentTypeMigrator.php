@@ -34,12 +34,12 @@ class ContentTypeMigrator {
     /**
      * @param \RadCms\ContentType\ContentTypeCollection $contentTypes
      * @param string $size = 'medium' 'tiny' | 'small' | 'medium' | '' | 'big'
-     * @param array $initialData = null [['ContentTypeName', [(object)['key' => 'value']...]]...]
+     * @param ?array $initialData = null [['ContentTypeName', [(object)['key' => 'value']...]]...]
      * @return bool
      * @throws \Pike\PikeException
      */
     public function installMany(ContentTypeCollection $contentTypes,
-                                array $initialData = null,
+                                ?array $initialData = null,
                                 string $size = 'medium'): bool {
         if (!in_array($size, ContentTypeValidator::COLLECTION_SIZES)) {
             throw new PikeException('Not valid content type collection size ' .

@@ -1,11 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RadPlugins\MoviesPlugin;
 
 use RadCms\Auth\ACL;
-use RadCms\ContentType\{ContentTypeCollection, ContentTypeMigrator};
+use RadCms\ContentType\ContentTypeCollection;
 use RadCms\Entities\PluginPackData;
-use RadCms\Plugin\{PluginInterface, PluginAPI};
+use RadCms\Plugin\{MigrationAPI, PluginInterface, PluginAPI};
 
 class MoviesPlugin implements PluginInterface {
     private static $mockPackData;
@@ -30,11 +32,11 @@ class MoviesPlugin implements PluginInterface {
         $api->registerRoute('GET', '/plugins/movies-plugin/noop', MoviesControllers::class,
                             'handleNoopRequest', ACL::NO_IDENTITY);
     }
-    public function install(ContentTypeMigrator $contentTypeMigrator, array $initialContent): void {
-        $contentTypeMigrator->installMany($this->myContentTypes, $initialContent);
+    public function install(MigrationAPI $api, array $initialContent): void {
+        $api->installContentTypes($this->myContentTypes, $initialContent);
     }
-    public function uninstall(ContentTypeMigrator $contentTypeMigrator): void {
-        $contentTypeMigrator->uninstallMany($this->myContentTypes);
+    public function uninstall(MigrationAPI $api): void {
+        $api->uninstallContentTypes($this->myContentTypes);
     }
     public function pack(\RadCms\Content\DAO $dao, PluginPackData $to): void {
         if (!self::$mockPackData)

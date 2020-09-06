@@ -1,9 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RadSite;
 
-use RadCms\Website\WebsiteInterface;
-use RadCms\Website\WebsiteAPI;
+use RadCms\Website\{WebsiteAPI, WebsiteInterface};
 
 class Site implements WebsiteInterface {
     public function init(WebsiteAPI $api): void {

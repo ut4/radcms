@@ -132,7 +132,9 @@ class PackageInstaller {
         // @allow Pike\PikeException
         $plugins = $this->readEncryptedData(Packager::LOCAL_NAMES_PLUGINS,
                                             $unlockKey);
-        $installer = new PluginInstaller($this->db, new ContentTypeMigrator($this->db));
+        $installer = new PluginInstaller($this->db,
+                                         $this->fs,
+                                         new ContentTypeMigrator($this->db));
         foreach ($plugins as $name => $packData) {
             $plugin = new Plugin($name);
             // @allow Pike\PikeException

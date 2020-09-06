@@ -6,6 +6,7 @@ namespace RadCms\Installer;
 
 use Pike\{Db, FileSystemInterface, PikeException};
 use RadCms\ContentType\{ContentTypeMigrator, ContentTypeCollection};
+use RadCms\FileMigrator;
 use RadCms\StockContentTypes\MultiFieldBlobs\MultiFieldBlobs;
 
 /**
@@ -91,23 +92,13 @@ class Installer {
     private function copyFiles(\stdClass $s): string {
         // @allow \Pike\PikeException
         [$workspaceDir, $publicDir] = $this->commons->createPublicAndWorkspaceDirs();
-        //
         $base = "{$this->commons->getBackendDirPath()}installer/sample-content/{$s->sampleContent}/";
-        // @allow \Pike\PikeException
-        $workspaceFiles = $this->readDirRelPaths("{$base}site/", '/.*/');
-        $frontendFiles = $this->readDirRelPaths("{$base}frontend/", '/.*/');
-        $toBeCopied = [];
-        foreach ($workspaceFiles as $relativePath)
-            $toBeCopied[] = ["{$base}site/{$relativePath}",
-                             "{$workspaceDir}site/{$relativePath}"];
-        foreach ($frontendFiles as $relativePath)
-            $toBeCopied[] = ["{$base}frontend/{$relativePath}",
-                             "{$publicDir}frontend/{$relativePath}"];
-        foreach ($toBeCopied as [$from, $to]) {
-            if (!$this->fs->copy($from, $to))
-                throw new PikeException("Failed to copy `{$from}` -> `{$to}`",
-                                        PikeException::FAILED_FS_OP);
-        }
+        $fm = new FileMigrator($this->fs, $base, $workspaceDir);
+        $fm2 = new FileMigrator($this->fs, $base, $publicDir);
+        // // @allow \Pike\PikeException
+        $fm->copyFiles($fm->fromTo('site', 'site'));
+        // // @allow \Pike\PikeException
+        $fm2->copyFiles($fm->fromTo('frontend', 'frontend'));
         return $workspaceDir;
     }
     /**

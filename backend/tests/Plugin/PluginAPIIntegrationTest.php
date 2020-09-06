@@ -7,6 +7,7 @@ use Pike\TestUtils\{DbTestCase, HttpTestUtils, MutedResponse};
 use RadCms\{APIConfigsStorage, AppContext, BaseAPI};
 use RadCms\Content\DAO;
 use RadCms\ContentType\ContentTypeMigrator;
+use RadCms\Plugin\MigrationAPI;
 use RadCms\Plugin\Plugin;
 use RadCms\Tests\AppTest;
 use RadCms\Tests\_Internal\ContentTestUtils;
@@ -15,16 +16,19 @@ use RadPlugins\MoviesPlugin\MoviesPlugin;
 final class PluginAPIIntegrationTest extends DbTestCase {
     use HttpTestUtils;
     use ContentTestUtils;
+    private $contentTypeMigrator;
     private $moviesPlugin;
+    private $moviesPluginInstance;
     private $app;
     public function setupTestPlugin($initialData) {
         // Tekee suunnilleen saman kuin PUT /api/plugins/MoviesPlugin/install
         $db = self::getDb();
-        $plugin = new Plugin('MoviesPlugin', MoviesPlugin::class);
-        $m = new ContentTypeMigrator($db);
-        $m->setOrigin($plugin);
-        $this->moviesPlugin = $plugin->instantiate();
-        $this->moviesPlugin->install($m, $initialData);
+        $this->moviesPlugin = new Plugin('MoviesPlugin', MoviesPlugin::class);
+        $this->moviesPluginInstance = $this->moviesPlugin->instantiate();
+        $this->contentTypeMigrator = new ContentTypeMigrator($db);
+        $this->moviesPluginInstance->install(new MigrationAPI($this->moviesPlugin,
+                                            $this->contentTypeMigrator,
+                                            new FileSystem), $initialData);
         AppTest::markPluginAsInstalled('MoviesPlugin', $db);
         //
         $ctx = new AppContext(['db' => '@auto', 'auth' => '@auto']);
@@ -39,9 +43,11 @@ final class PluginAPIIntegrationTest extends DbTestCase {
     }
     public function tearDown(): void {
         parent::tearDown();
-        if ($this->moviesPlugin) {
+        if ($this->moviesPluginInstance) {
             // Tekee suunnilleen saman kuin PUT /api/plugins/MoviesPlugin/uninstall
-            $this->moviesPlugin->uninstall(new ContentTypeMigrator(self::$db));
+            $this->moviesPluginInstance->uninstall(new MigrationAPI($this->moviesPlugin,
+                                           $this->contentTypeMigrator,
+                                           new FileSystem));
             AppTest::markPluginAsUninstalled('MoviesPlugin', self::$db);
         }
     }

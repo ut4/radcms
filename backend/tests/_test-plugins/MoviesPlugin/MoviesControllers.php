@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RadPlugins\MoviesPlugin;
 
 use Pike\{ArrayUtils, PikeException, Request, Response};
@@ -50,7 +52,8 @@ class MoviesControllers {
                                              Response $res,
                                              DMO $dmo) {
         try {
-            $numAffectedRows = $dmo->update($req->params->movieId, 'Movies',
+            $numAffectedRows = $dmo->update((int) $req->params->movieId,
+                                            'Movies',
                                             (object)$req->body);
             $res->json($numAffectedRows > 0
                 ? ['my' => 'response2']
