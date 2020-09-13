@@ -3,6 +3,7 @@
 namespace RadPlugins\RadForms\Tests;
 
 use Pike\{AbstractMailer, PikeException, Request};
+use RadCms\Templating\MagicTemplate;
 use RadPlugins\RadForms\Internal\{DefaultServicesFactory};
 
 final class SendFormTest extends RadFormsTestCase {
@@ -62,6 +63,7 @@ final class SendFormTest extends RadFormsTestCase {
         $this->insertTestFormToDb($state);
         $this->sendProcessFormSubmitRequest($state);
         $this->verifySentMail($state);
+        $this->verifyRedirectedToReturnUrl($state);
     }
     private function setupSendMailTest(): object {
         $state = new \stdClass;
@@ -91,8 +93,8 @@ final class SendFormTest extends RadFormsTestCase {
         $req = new Request("/plugins/rad-forms/handle-submit/{$state->testFormInsertId}",
                            'POST',
                            $state->reqBody);
-        $spyingResponse = $this->makeSpyingResponse();
-        $this->sendRequest($req, $spyingResponse, $app);
+        $state->spyingResponse = $this->makeSpyingResponse();
+        $this->sendRequest($req, $state->spyingResponse, $app);
     }
     public function makeServicesFactoryThatReturnsMockMailer($state) {
         $servicesFactory = $this->getMockBuilder(DefaultServicesFactory::class)
@@ -126,5 +128,12 @@ final class SendFormTest extends RadFormsTestCase {
                                               htmlentities($state->reqBody->message),
                                               $behaviourData->bodyTemplate)),
         ], $state->sendMailCallArgs[0]);
+    }
+    private function verifyRedirectedToReturnUrl(object $state): void {
+        $actual = $state->spyingResponse->getActualHeader('Location');
+        $this->assertNotNull($actual, 'Pitäisi asettaa Location-header');
+        [$_name, $value, $_doReplace, $_isPermanent] = $actual;
+        $this->assertEquals(MagicTemplate::makeUrl($state->reqBody->_returnTo),
+                            $value);
     }
 }

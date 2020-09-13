@@ -4,12 +4,14 @@ namespace RadPlugins\RadForms;
 
 use Pike\{PikeException, Validation};
 use RadCms\Content\DAO;
-use RadCms\ContentType\{ContentTypeCollection, ContentTypeMigrator};
-use RadCms\Plugin\{PluginInterface, PluginAPI};
+use RadCms\ContentType\ContentTypeCollection;
+use RadCms\Plugin\{MigrationAPI, PluginInterface, PluginAPI};
 use RadCms\Entities\PluginPackData;
 use RadCms\Templating\MagicTemplate;
 
 final class RadForms implements PluginInterface {
+    /** @var ?bool */
+    private $isValidationLibIncluded;
     /**
      * @param \RadCms\Plugin\PluginAPI $api
      */
@@ -19,23 +21,30 @@ final class RadForms implements PluginInterface {
         $api->registerDirective('RadForm', 'templates/tag.RadForm.tmpl.php');
         $api->registerRoute('POST', '/plugins/rad-forms/handle-submit/[i:formId]',
                             Controllers::class, 'processFormSubmit');
+        $api->registerDirectiveMethod('radFormsGetSetIsValidationLibLoaded', function () {
+            if ($this->isValidationLibIncluded) return true;
+            $this->isValidationLibIncluded = true;
+            return false;
+        });
     }
     /**
-     * @param \RadCms\ContentType\ContentTypeMigrator $migrator
+     * @param \RadCms\Plugin\MigrationAPI $api
      * @param array $initialContentFromPackage
      */
-    public function install(ContentTypeMigrator $migrator,
+    public function install(MigrationAPI $api,
                             array $initialContentFromPackage): void {
         // @allow \Pike\PikeException
-        $migrator->installMany(self::makeOwnContentTypes(),
-                               $initialContentFromPackage);
+        $api->installContentTypes(self::makeOwnContentTypes(),
+                                  $initialContentFromPackage);
+        // @allow \Pike\PikeException
+        $api->copyPublicAssets('frontend-assets');
     }
     /**
-     * @param \RadCms\ContentType\ContentTypeMigrator $migrator
+     * @param \RadCms\Plugin\MigrationAPI $api
      */
-    public function uninstall(ContentTypeMigrator $migrator): void {
+    public function uninstall(MigrationAPI $api): void {
         // @allow \Pike\PikeException
-        $migrator->uninstallMany(self::makeOwnContentTypes());
+        $api->uninstallContentTypes(self::makeOwnContentTypes());
     }
     /**
      * @param \RadCms\Content\DAO $dao
@@ -77,6 +86,20 @@ final class RadForms implements PluginInterface {
         ->add('Forms', 'Lomakkeet')
             ->field('name', 'Nimi')
             ->field('behaviours')->dataType('json')->widget('hidden')
+                ->defaultValue(json_encode(self::tempHack()))
         ->done();
+    }
+    /**
+     */
+    private static function tempHack() {
+        return [(object) [
+            "name" => "SendMail",
+            "data" => (object) [
+                "subject" => "hello",
+                "toAddress" => "sivuston-omistaja@mail.com",
+                "fromAddress" => "no-reply@sivuston-nimi.com",
+                "bodyTemplate" => "Email: [myFormEmail], Message: [myFormMessage]"
+            ],
+        ]];
     }
 }
