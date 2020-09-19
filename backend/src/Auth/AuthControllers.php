@@ -4,17 +4,13 @@ declare(strict_types=1);
 
 namespace RadCms\Auth;
 
-use Pike\Request;
-use Pike\Response;
-use Pike\AppConfig;
-use Pike\Validation;
 use Pike\Auth\Authenticator;
-use RadCms\Templating\MagicTemplate;
-use Pike\PikeException;
-use Pike\Translator;
+use Pike\{AppConfig, PikeException, Request, Response, Translator, Validation};
 use RadCms\CmsState;
+use RadCms\Templating\MagicTemplate;
 
 class AuthControllers {
+    /** @var \Pike\Auth\Authenticator */
     private $auth;
     /**
      * @param \Pike\Auth\Authenticator $auth
@@ -53,8 +49,7 @@ class AuthControllers {
                                    return (object)['id' => $user->id,
                                                    'role' => (int) $user->role];
                                });
-            $res->header('Set-Cookie', 'radUserIsMaybeLoggedIn=yes', false)
-                ->json(['ok' => 'ok']);
+            $res->json(['ok' => 'ok']);
         } catch (PikeException $e) {
             $res->status(401)->json(['err' => $e->getMessage()]);
         }
@@ -66,8 +61,7 @@ class AuthControllers {
      */
     public function handleLogoutRequest(Response $res): void {
         $this->auth->logout();
-        $res->header('Set-Cookie', 'radUserIsMaybeLoggedIn=no')
-            ->json(['ok' => 'ok']);
+        $res->json(['ok' => 'ok']);
     }
     /**
      * GET /request-password-reset.

@@ -78,7 +78,7 @@ class Bundler {
                   'backend/composer.json',
                   'index.php',
                   'install.php',
-                  'LICENSE.txt'] as $f) {
+                  'LICENSE'] as $f) {
             if (!$this->fs->copy($this->radPath . $f, $this->targetDirPath . $f))
                 throw new PikeException('Failed to copy `' . ($this->radPath . $f) .
                                         '` -> `' . ($this->targetDirPath . $f) . '`');

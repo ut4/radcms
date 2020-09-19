@@ -64,7 +64,7 @@ class WebsiteControllers {
             $res->html('404');
             return;
         }
-        $isMaybeLoggedIn = $req->cookie('radUserIsMaybeLoggedIn') === 'yes';
+        $isMaybeLoggedIn = $req->cookie('maybeLoggedInUserRole', '-1') !== '-1';
         $this->dao->fetchRevisions = $isMaybeLoggedIn;
         $tmpl = new MagicTemplate(RAD_WORKSPACE_PATH . "site/{$layoutFileName}",
                                   ['_cssFiles' => $apiState->getEnqueuedCssFiles(
