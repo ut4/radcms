@@ -58,8 +58,8 @@ class MultiFieldBlobs {
         foreach ($contentPanelCfg as $cfg) {
             $q->addFrontendPanel([
                 'impl' => StockFrontendPanelImpls::DEFAULT_SINGLE,
-                'editFormImpl' => 'Default',
-                'editFormImplProps' => [
+                'formImpl' => 'Default',
+                'formImplProps' => [
                     'multiFieldProps' => ['fieldsToDisplay' => $cfg->fieldsToDisplay ?? []]
                 ],
                 'title' => $cfg->title ?? 'Sisältö',

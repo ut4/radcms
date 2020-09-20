@@ -24,7 +24,7 @@ class DefaultImplForFetchOne extends preact.Component {
     getMainUrl() {
         return this.node
             ? `/edit-content/${this.node.id}/${this.node.contentType}/${this.props.panel.idx}`
-            : `/add-content/${this.newNodeContentType}`;
+            : `/add-content/${this.newNodeContentType}/${this.props.panel.idx}`;
     }
     getTitle() {
         const isDraft = this.node && this.node.isRevision;
@@ -78,7 +78,8 @@ class DefaultImplForFetchAll extends preact.Component {
             contentNodes={ this.contentNodes }
             createLinkText={ `Lisää uusi ${this.label}` }
             contentType={ this.contentTypeName || (this.contentNodes[0] || {}).contentType }
-            noContentNodesContent={ this.contentNodes.length ? null : <div>Ei sisältöä.</div> }/>;
+            noContentNodesContent={ this.contentNodes.length ? null : <div>Ei sisältöä.</div> }
+            panelIdx={ this.props.panel.idx }/>;
     }
 }
 

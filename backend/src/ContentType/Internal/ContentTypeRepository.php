@@ -34,12 +34,14 @@ class ContentTypeRepository extends ContentTypeMigrator {
         if ($new->name !== $current->name ||
             $new->friendlyName !== $current->friendlyName ||
             $new->description !== $current->description ||
-            $new->isInternal !== $current->isInternal) {
+            $new->isInternal !== $current->isInternal ||
+            $new->frontendFormImpl !== $current->frontendFormImpl) {
             $idx = $current->index;
             $currentContentTypes[$idx]->name = $new->name;
             $currentContentTypes[$idx]->friendlyName = $new->friendlyName;
             $currentContentTypes[$idx]->description = $new->description;
             $currentContentTypes[$idx]->isInternal = $new->isInternal;
+            $currentContentTypes[$idx]->frontendFormImpl = $new->frontendFormImpl;
             // @allow \Pike\PikeException
             if ($this->db->exec(
                 'UPDATE ${p}cmsState SET'.

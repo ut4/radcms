@@ -55,6 +55,14 @@ final class ContentTypeCollectionBuilder {
         return $this;
     }
     /**
+     * @param string $implName
+     * @return \RadCms\ContentType\FieldCollectionBuilder
+     */
+    public function frontendFormImpl(string $implName): ContentTypeCollectionBuilder {
+        $this->currentType->frontendFormImpl = $implName;
+        return $this;
+    }
+    /**
      * @return \RadCms\ContentType\ContentTypeCollection
      */
     public function done(): ContentTypeCollection {

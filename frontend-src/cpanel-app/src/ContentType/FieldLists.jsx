@@ -1,4 +1,5 @@
 import {http, toasters, config, urlUtils, FeatherSvg, Sortable, env} from '@rad-commons';
+import {FieldsFilter} from '@rad-cpanel-commons';
 import popupDialog from '../Common/PopupDialog.jsx';
 import {widgetTypes} from '../Content/FieldWidgets/all-with-multi.js';
 import {CreateFieldDialog, EditFieldDialog, DeleteFieldDialog} from './FieldDialogs.jsx';
@@ -292,11 +293,20 @@ function makeField() {
 
 /**
  * @param {Array<ContentTypeField>} fields
+ * @return {Array<ContentTypeField>}
  */
 const filterByUserRole = fields =>
     fields.filter(f =>
         f.visibility === 0 || f.visibility & config.user.role
     );
+
+/**
+ * @param {Array<ContentTypeField>} fields
+ * @param {Array<string>} fieldNames
+ * @return {Array<ContentTypeField>}
+ */
+const filterByUserRoleAndNameList = (fields, fieldNames) =>
+    (new FieldsFilter(fieldNames)).doFilter(fields);
 
 /**
  * @param {'none'|'edit'|'create'} mode
@@ -308,4 +318,4 @@ export default type => ({
     'create': FreelyEditableFieldList,
 }[type] || null);
 
-export {filterByUserRole, makeField};
+export {filterByUserRole, filterByUserRoleAndNameList, makeField};

@@ -1,25 +1,27 @@
 import {http, toasters, urlUtils, View, Select, hookForm, InputGroup, Input, FormButtons, env} from '@rad-commons';
 import {contentFormRegister} from '@rad-cpanel-commons';
-import {filterByUserRole} from '../ContentType/FieldLists.jsx';
+import {filterByUserRoleAndNameList} from '../ContentType/FieldLists.jsx';
 import getWidgetImpl from './FieldWidgets/all-with-multi.js';
 import {genRandomString} from '../Website/WebsitePackView.jsx';
-const DefaultFormImpl = contentFormRegister.getImpl('Default');
 const Status = Object.freeze({PUBLISHED: 0, DRAFT: 1, DELETED: 2});
+import webPageState from '../webPageState.js';
 
 /**
- * #/add-content/:initialComponentTypeName?[?return-to=path]
+ * #/add-content/:initialComponentTypeName?/:panelIdx?[?return-to=path]
  */
 class ContentAddView extends preact.Component {
     /**
-     * @param {{initialContentTypeName: string;}} props
+     * @param {{initialContentTypeName: string; panelIdx?: string;}} props
      */
     constructor(props) {
         super(props);
         this.newContentNode = null;
         this.contentTypes = null;
         this.state = {
-            contentTypeFetched: false,
+            newContentNodeKey: null,
             contentType: null,
+            FormImpl: null,
+            formImplProps: null,
         };
         this.contentForm = preact.createRef();
         http.get('/api/content-types/no-internals')
@@ -33,11 +35,14 @@ class ContentAddView extends preact.Component {
                                                          contentTypes);
                 this.newContentNode = this.makeNewContentNode(contentType);
                 this.setState(Object.assign(
-                    {contentTypeFetched: true, contentType},
+                    {contentType},
                     hookForm(this,
                         {contentTypeName: contentType.name,
                          createRevision: false}
-                    )
+                    ),
+                    !this.state.FormImpl
+                        ? ContentAddView.makeFormCfg(props.panelIdx, contentType)
+                        : null
                 ));
             })
             .catch(err => {
@@ -46,10 +51,33 @@ class ContentAddView extends preact.Component {
             });
     }
     /**
+     * @param {string?} panelIdx
+     * @param {ContentType=} contentType = null
+     * @access public
+     */
+    static makeFormCfg(panelIdx, contentType = null) {
+        const panelConfig = !contentType
+            ? webPageState.currentContentPanels[panelIdx || -1] || {}
+            : {formImpl: contentType.frontendFormImpl};
+        return {
+            FormImpl: contentFormRegister.getImpl(panelConfig.formImpl || 'Default'),
+            formImplProps: panelConfig.formImplProps || {},
+            newContentNodeKey: panelIdx || -1,
+        };
+    }
+    /**
+     * @access protected
+     */
+    componentWillReceiveProps(props) {
+        if (props.panelIdx !== this.props.panelIdx)
+            this.setState(ContentAddView.makeFormCfg(props.panelIdx));
+    }
+    /**
      * @access protected
      */
     render() {
         if (!this.state.contentType) return null;
+        const {FormImpl, formImplProps} = this.state;
         return <View><form onSubmit={ e => this.handleFormSubmit(e) } class={ this.state.formClasses }>
             <h2>Lisää sisältöä</h2>
             <InputGroup classes={ this.state.classes.contentTypeName }>
@@ -60,16 +88,21 @@ class ContentAddView extends preact.Component {
                     ) }
                 </Select>
             </InputGroup>
-            <DefaultFormImpl
-                fields={ filterByUserRole(this.state.contentType.fields) }
-                values={ this.newContentNode }
-                settings={ {} }
-                getWidgetImpl={ getWidgetImpl }
-                fieldHints={ [] }
-                setFormClasses={ str => {
-                    this.setState({formClasses: str.toString()});
-                } }
-                ref={ this.contentForm }/>
+            { FormImpl
+                ? <FormImpl
+                    fields={ filterByUserRoleAndNameList(this.state.contentType.fields,
+                        this.state.formImplProps.fieldsToDisplay) }
+                    values={ this.newContentNode }
+                    settings={ formImplProps }
+                    getWidgetImpl={ getWidgetImpl }
+                    setFormClasses={ str => {
+                        this.setState({formClasses: str.toString()});
+                    } }
+                    contentType={ this.state.contentType }
+                    fieldHints={ [] }
+                    ref={ this.contentForm }
+                    key={ this.state.newContentNodeKey }/>
+                : null }
             <InputGroup>
                 <label class="form-checkbox">
                     <Input vm={ this } type="checkbox" name="createRevision" id="createRevision"/>

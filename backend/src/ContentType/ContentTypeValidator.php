@@ -33,7 +33,9 @@ abstract class ContentTypeValidator {
             ->rule('friendlyName', 'minLength', 1)
             ->rule('friendlyName', 'maxLength', self::MAX_FRIENDLY_NAME_LENGTH)
             ->rule('description', 'maxLength', self::MAX_DESCRIPTION_LENGTH)
-            ->rule('isInternal', 'type', 'bool');
+            ->rule('isInternal', 'type', 'bool')
+            ->rule('frontendFormImpl', 'identifier')
+            ->rule('frontendFormImpl', 'maxLength', self::MAX_NAME_LEN);
         static $fieldsValidator = null;
         if ($doValidateFields &&
             !$fieldsValidator) $fieldsValidator = Validation::makeObjectValidator()

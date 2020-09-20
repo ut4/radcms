@@ -147,6 +147,7 @@ class ContentTypesManageView extends preact.Component {
             friendlyName: 'Nimi',
             description: 'Kuvaus',
             isInternal: false,
+            frontendFormImpl: 'Default',
             fields: [makeField()],
             key: ++counter
         });

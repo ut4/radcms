@@ -15,6 +15,8 @@ class ContentTypeDef {
     public $description;
     /** @var bool */
     public $isInternal;
+    /** @var string */
+    public $frontendFormImpl;
     /** @var int */
     public $index;
     /** @var string */
@@ -27,39 +29,43 @@ class ContentTypeDef {
      * @param string $description
      * @param array|\RadCms\ContentType\FieldCollection $fields
      * @param int $index
-     * @param bool $isInternal = false
-     * @param string $origin = 'Website' 'Website' | 'SomePlugin'
+     * @param ?bool $isInternal = false
+     * @param ?string $frontendFormImpl = null
+     * @param ?string $origin = 'Website' 'Website' | 'SomePlugin'
      */
     public function __construct(string $name,
                                 string $friendlyName,
                                 string $description,
                                 $fields,
                                 int $index,
-                                bool $isInternal = false,
-                                string $origin = null) {
+                                ?bool $isInternal = false,
+                                ?string $frontendFormImpl = null,
+                                ?string $origin = null) {
         $this->name = $name;
         $this->friendlyName = $friendlyName;
         $this->description = $description;
-        $this->isInternal = $isInternal;
+        $this->isInternal = $isInternal ?? false;
+        $this->frontendFormImpl = $frontendFormImpl !== null ? $frontendFormImpl : 'Default';
         $this->index = $index;
-        $this->origin = $origin ?? 'Website';
+        $this->origin = $origin !== null ? $origin : 'Website';
         $this->fields = !($fields instanceof FieldCollection)
             ? FieldCollection::fromCompactForm($fields)
             : $fields;
     }
     /**
-     * @param string $origin = null
-     * @param \Pike\Translator $translator = null
+     * @param ?string $origin = null
+     * @param ?\Pike\Translator $translator = null
      * @return \stdClass {name: string, friendlyName: string ...}
      */
-    public function toCompactForm(string $origin = null,
-                                  Translator $translator = null): \stdClass {
+    public function toCompactForm(?string $origin = null,
+                                  ?Translator $translator = null): \stdClass {
         return (object) [
             'name' => $this->name,
             'friendlyName' => !$translator ? $this->friendlyName : $translator->t($this->name),
             'description' => $this->description,
             'isInternal' => $this->isInternal,
-            'origin' => $origin ?? $this->origin,
+            'frontendFormImpl' => $this->frontendFormImpl,
+            'origin' => $origin !== null ? $origin : $this->origin,
             'fields' => $this->fields->toCompactForm($translator),
         ];
     }
@@ -77,6 +83,7 @@ class ContentTypeDef {
                                       : new FieldCollection,
                                   $index,
                                   $input->isInternal ?? false,
+                                  $input->frontendFormImpl ?? null,
                                   $input->origin ?? null);
     }
 }

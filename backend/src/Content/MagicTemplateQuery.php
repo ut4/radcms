@@ -28,7 +28,7 @@ class MagicTemplateQuery extends Query {
         $this->frontendPanels = [];
     }
     /**
-     * @param array|object $settings {impl?: 'DefaultSingle'|'DefaultCollection'|'NameOfMyImpl', implProps?: array|object, editFormImpl?: 'Default'|'NameOfMyEditFormImpl', editFormImplProps?: array|object, title?: string, subtitle?: string, highlight: string}
+     * @param array|object $settings {impl?: 'DefaultSingle'|'DefaultCollection'|'NameOfMyImpl', implProps?: array|object, formImpl?: 'Default'|'NameOfMyFormImpl', formImplProps?: array|object, title?: string, subtitle?: string, highlight: string}
      * @return $this
      */
     public function addFrontendPanel($settings): MagicTemplateQuery {
@@ -40,8 +40,8 @@ class MagicTemplateQuery extends Query {
             // config
             'impl' => $settings->impl,
             'implProps' => (object) ($settings->implProps ?? new \stdClass),
-            'editFormImpl' => $settings->editFormImpl ?? 'Default',
-            'editFormImplProps' => (object) ($settings->editFormImplProps ?? new \stdClass),
+            'formImpl' => $settings->formImpl ?? 'Default',
+            'formImplProps' => (object) ($settings->formImplProps ?? new \stdClass),
             'title' => $settings->title ?? $this->contentType->name,
             'subtitle' => $settings->subtitle ?? null,
             'highlightSelector' => $settings->highlight ?? null,

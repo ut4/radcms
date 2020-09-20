@@ -13,6 +13,7 @@ class ContentTypeCollection extends \ArrayObject {
      * @param string $description
      * @param array|\RadCms\ContentType\FieldCollection $fields
      * @param bool $isInternal = false
+     * @param string $frontendFormImpl = 'Default'
      * @param string $origin = null 'Website' | 'SomePlugin'
      */
     public function add(string $name,
@@ -20,6 +21,7 @@ class ContentTypeCollection extends \ArrayObject {
                         string $description,
                         $fields,
                         bool $isInternal = false,
+                        string $frontendFormImpl = 'Default',
                         string $origin = null): void {
         $this[] = new ContentTypeDef($name,
                                      $friendlyName,
@@ -27,6 +29,7 @@ class ContentTypeCollection extends \ArrayObject {
                                      $fields,
                                      count($this),
                                      $isInternal,
+                                     $frontendFormImpl,
                                      $origin);
     }
     /**

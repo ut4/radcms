@@ -44,7 +44,7 @@ class ControlPanelApp extends preact.Component {
                     window.dataBridge.handleControlPanelLoaded(cmp);
                 } } }/>
             <PreactRouter history={ History.createHashHistory() }>
-                <ContentAddView path="/add-content/:initialContentTypeName?"/>
+                <ContentAddView path="/add-content/:initialContentTypeName?/:panelIdx?"/>
                 <ContentManageView path="/manage-content/:initialContentTypeName?"/>
                 <ContentEditView path="/edit-content/:id/:contentTypeName/:panelIdx?/:publish?"/>
                 <PluginsManageView path="/manage-plugins"/>

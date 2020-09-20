@@ -5,6 +5,7 @@
         "friendlyName": "Artikkelit",
         "description": "Artikkelit",
         "isInternal": false,
+        "frontendFormImpl": "Default",
         "fields": [
             {
                 "name": "slug",

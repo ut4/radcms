@@ -7,7 +7,7 @@ class ValidatingFormImpl extends preact.Component {
      */
     constructor(props) {
         super(props);
-        this.state = this.componentWillReceiveProps(props);
+        this.state = this.makeFormSettings(props);
         this.onValueChange = props.onValueChange || function () {};
     }
     /**
@@ -24,14 +24,7 @@ class ValidatingFormImpl extends preact.Component {
      * @access protected
      */
     componentWillReceiveProps(props) {
-        return hookForm(this, null, props.fields.reduce((obj, f) => {
-            obj[f.name] = {
-                value: props.values[f.name],
-                validations: f.validationRules,
-                label: f.friendlyName,
-            };
-            return obj;
-        }, {}));
+        this.setState(this.makeFormSettings(props));
     }
     /**
      * @access protected
@@ -68,6 +61,19 @@ class ValidatingFormImpl extends preact.Component {
             </InputGroup>;
         }) }</div>;
     }
+    /**
+     * @access private
+     */
+    makeFormSettings(props) {
+        return hookForm(this, null, props.fields.reduce((obj, f) => {
+            obj[f.name] = {
+                value: props.values[f.name],
+                validations: f.validationRules,
+                label: f.friendlyName,
+            };
+            return obj;
+        }, {}));
+    }
 }
 
-export {ValidatingFormImpl as DefaultImpl, FieldsFilter};
+export {ValidatingFormImpl, FieldsFilter};

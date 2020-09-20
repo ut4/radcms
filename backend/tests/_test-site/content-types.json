@@ -4,6 +4,7 @@
         "friendlyName": "Friendly name",
         "description": "A description",
         "isInternal": false,
+        "frontendFormImpl": "Default",
         "fields": [{"name": "name", "dataType": {"type": "text", "length": null}}]
     },
     {
@@ -11,6 +12,7 @@
         "friendlyName": "Friendly eman",
         "description": "A description",
         "isInternal": false,
+        "frontendFormImpl": "Default",
         "fields": [{"name": "title", "dataType": {"type": "text", "length": null}}]
     }
 ]

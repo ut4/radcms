@@ -42,7 +42,8 @@ class BasicInfoInputs extends preact.Component {
             <div class="mb-8">
                 <div class="my-1 text-ellipsis">Selkonimi: { this.props.contentType.friendlyName }</div>
                 <div class="mb-1 text-ellipsis">Kuvaus: { this.props.contentType.description }</div>
-                <div data-help-text="Sisäiset sisältötyypit ei näy &quot;Luo sisältöä&quot;-, ja &quot;Kaikki sisältö&quot; -näkymissä.">Piilotettu: { !this.state.isInternal ? 'ei' : 'kyllä' }</div>
+                <div class="mb-1" data-help-text="Sisäiset sisältötyypit ei näy &quot;Luo sisältöä&quot;-, ja &quot;Kaikki sisältö&quot; -näkymissä.">Piilotettu: { !this.state.isInternal ? 'ei' : 'kyllä' }</div>
+                <div class="text-ellipsis">Lomake: { this.props.contentType.frontendFormImpl }</div>
             </div>
         </div>;
         const {values, errors} = this.state;
@@ -90,6 +91,12 @@ class BasicInfoInputs extends preact.Component {
                         <i class="form-icon"></i>
                     </div>
                 </label>
+                <div class="columns mb-1 has-error">Lomake:
+                    <div class="ml-2"><ContentEditable
+                        value={ values.frontendFormImpl }
+                        onChange={ val => this.form.triggerChange(val, 'frontendFormImpl') }/></div>
+                    <InputError error={ errors.frontendFormImpl } className="col-12"/>
+                </div>
             </div>
         </div>;
     }
@@ -97,19 +104,22 @@ class BasicInfoInputs extends preact.Component {
      * @access private
      */
     makeState(props) {
+        const identifierValidator = ['regexp', '^[a-zA-Z_][a-zA-Z0-9_]*$', ' ei ole kelvollinen identifier'];
         return Object.assign(
             {isInternal: props.contentType.isInternal},
             props.editMode === 'none' ? {} : hookForm(this, null, {
                 name: {value: props.contentType.name,
-                    validations: [['required'], ['maxLength', 64],
-                                  ['regexp', '^[a-zA-Z_][a-zA-Z0-9_]*$', ' ei ole kelvollinen identifier']],
+                    validations: [['required'], ['maxLength', 64], identifierValidator],
                     label: 'Nimi'},
                 friendlyName: {value: props.contentType.friendlyName,
                     validations: [['required'], ['maxLength', 128]],
                     label: 'Selkonimi'},
                 description: {value: props.contentType.description,
                     validations: [['maxLength', 512]],
-                    label: 'Kuvaus'}
+                    label: 'Kuvaus'},
+                frontendFormImpl: {value: props.contentType.frontendFormImpl,
+                    validations: [['required'], ['maxLength', 64], identifierValidator],
+                    label: 'Lomake'}
             })
         );
     }
@@ -128,7 +138,8 @@ class BasicInfoInputs extends preact.Component {
             name: this.state.values.name,
             friendlyName: this.state.values.friendlyName,
             description: this.state.values.description,
-            isInternal: this.state.isInternal
+            isInternal: this.state.isInternal,
+            frontendFormImpl: this.state.values.frontendFormImpl,
         });
     }
     /**

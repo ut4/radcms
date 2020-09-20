@@ -179,7 +179,7 @@ final class InstallerTest extends BaseInstallerTest {
                     //
                     '[' .
                         '{"name":"Movies","friendlyName":"Elokuvat"' .
-                        ',"description":"Elokuvat","isInternal":false' .
+                        ',"description":"Elokuvat","isInternal":false,"frontendFormImpl":"Default"' .
                         ',"fields":[{"name":"title","dataType":{"type":"text","length":null}}]}' .
                     ']',
                     //

@@ -1,10 +1,8 @@
 import {http, config, toasters, urlUtils, View, FeatherSvg, InputGroup, FormButtons} from '@rad-commons';
-import {contentFormRegister, FieldsFilter} from '@rad-cpanel-commons';
 import openDeleteContentDialog from './ContentDeleteDialog.jsx';
 import getWidgetImpl from './FieldWidgets/all-with-multi.js';
-import {filterByUserRole} from '../ContentType/FieldLists.jsx';
-import {Status} from './ContentAddView.jsx';
-import webPageState from '../webPageState.js';
+import {filterByUserRoleAndNameList} from '../ContentType/FieldLists.jsx';
+import ContentAddView, {Status} from './ContentAddView.jsx';
 
 /**
  * #/edit-content/:id/:contentTypeName/:panelIdx?/:publish?[?return-to=path]
@@ -33,7 +31,8 @@ class ContentEditView extends preact.Component {
         if (props.id !== this.props.id)
             this.fetchContentAndUpdateState(props);
         else if (props.panelIdx !== this.props.panelIdx)
-            this.setState(this.makeFormCfgState(props));
+            this.setState(ContentAddView.makeFormCfg(props.panelIdx,
+                                                     this.contentType));
     }
     /**
      * @access private
@@ -58,18 +57,10 @@ class ContentEditView extends preact.Component {
                 toasters.main('Jokin meni pieleen', 'error');
             })
             .finally(() => {
-                this.setState(Object.assign(newState, this.makeFormCfgState(props)));
+                this.setState(Object.assign(newState,
+                    ContentAddView.makeFormCfg(props.panelIdx,
+                                               this.contentType)));
             });
-    }
-    /**
-     * @access private
-     */
-    makeFormCfgState(props) {
-        const panelConfig = webPageState.currentContentPanels[props.panelIdx || -1] || {};
-        return {
-            FormImpl: contentFormRegister.getImpl(panelConfig.editFormImpl || 'Default'),
-            formImplProps: panelConfig.editFormImplProps || {},
-        };
     }
     /**
      * @access protected
@@ -90,8 +81,8 @@ class ContentEditView extends preact.Component {
             ] : []) }</h2>
             { this.contentNode ? [
                 <FormImpl
-                    fields={ (new FieldsFilter(this.state.formImplProps.fieldsToDisplay))
-                        .doFilter(filterByUserRole(this.contentType.fields)) }
+                    fields={ filterByUserRoleAndNameList(this.contentType.fields,
+                        this.state.formImplProps.fieldsToDisplay) }
                     values={ this.contentNode }
                     settings={ this.state.formImplProps }
                     getWidgetImpl={ getWidgetImpl }
@@ -99,9 +90,9 @@ class ContentEditView extends preact.Component {
                     setFormClasses={ str => {
                         this.setState({formClasses: str.toString()});
                     } }
-                    ref={ this.contentForm }
+                    contentType={ this.contentType }
                     fieldHints={ [] }
-                    contentType={ this.contentType }/>,
+                    ref={ this.contentForm }/>,
             this.contentNode.isRevision && !this.props.publish
                 ? <InputGroup className="mt-2">
                     <label class="form-checkbox">

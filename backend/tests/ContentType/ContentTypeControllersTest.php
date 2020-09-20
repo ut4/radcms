@@ -42,6 +42,7 @@ final class ContentTypeControllersTest extends DbTestCase {
              'friendlyName' => $expected->friendlyName,
              'description' => $expected->description,
              'isInternal' => false,
+             'frontendFormImpl' => 'Default',
              'index' => 0,
              'origin' => 'Website',
              'fields' => [
@@ -83,7 +84,8 @@ final class ContentTypeControllersTest extends DbTestCase {
             [['name' => self::$testContentTypes[0]->name,
               'friendlyName' => self::$testContentTypes[0]->friendlyName,
               'description' => self::$testContentTypes[0]->description,
-              'isInternal' => false, 'index' => 0, 'origin' => 'Website', 'fields' => [
+              'isInternal' => false, 'frontendFormImpl' => 'Default', 'index' => 0,
+              'origin' => 'Website', 'fields' => [
                 ['name' => 'name', 'friendlyName' => 'name',
                  'dataType' => self::makeDataType('text'),
                  'widget' => (object) ['name' => self::DEFAULT_WIDGET, 'args' => null],
@@ -98,7 +100,8 @@ final class ContentTypeControllersTest extends DbTestCase {
             ['name' => self::$testContentTypes[1]->name,
              'friendlyName' => self::$testContentTypes[1]->friendlyName,
              'description' => self::$testContentTypes[1]->description,
-             'isInternal' => false, 'index' => 1, 'origin' => 'Website', 'fields' => [
+             'isInternal' => false, 'frontendFormImpl' => 'Default', 'index' => 1,
+             'origin' => 'Website', 'fields' => [
                 ['name' => 'name', 'friendlyName' => 'Tapahtumapaikka',
                  'dataType' => self::makeDataType('text'),
                  'widget' => (object) ['name' => self::DEFAULT_WIDGET, 'args' => null],
@@ -171,6 +174,7 @@ final class ContentTypeControllersTest extends DbTestCase {
                 'friendlyName' => 'Päivitetty selkonimi',
                 'description' => 'Päivitetty kuvaus',
                 'isInternal' => true,
+                'frontendFormImpl' => 'MyFormImpl',
             ],
             'testContentTypes' => new ContentTypeCollection()
         ];
@@ -190,6 +194,7 @@ final class ContentTypeControllersTest extends DbTestCase {
         $this->assertNotNull($actualCompactCtype);
         $this->assertEquals($s->reqBody->friendlyName, $actualCompactCtype->friendlyName);
         $this->assertEquals($s->reqBody->description, $actualCompactCtype->description);
+        $this->assertEquals($s->reqBody->frontendFormImpl, $actualCompactCtype->frontendFormImpl);
         if (!$newName)
             $this->verifyContentTypeTableExists($s->contentTypeName, true);
         else {

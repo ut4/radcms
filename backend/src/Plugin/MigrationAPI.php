@@ -45,17 +45,19 @@ final class MigrationAPI {
         return $this->contentTypeMigrator->uninstallMany($contentTypes);
     }
     /**
-     * Kopioi kaikki tiedostot <workspacePath>/plugins/PluginName/$fromDir -kansiosta <publicPath>/frontend/plugins/pluginname -kansioon.
+     * Kopioi kaikki tiedostot <workspacePath>/plugins/PluginName/$fromDir -kansiosta
+     * <publicPath>/frontend/plugins/plugin-name -kansioon.
      *
      * @param string $fromDir
      */
     public function copyPublicAssets(string $fromDir): void {
         $fm = new FileMigrator($this->fs,
             RAD_WORKSPACE_PATH . "plugins/{$this->pluginName}/",
-            RAD_PUBLIC_PATH . "frontend/plugins/" . strtolower($this->pluginName) . "/"
+            RAD_PUBLIC_PATH . "frontend/plugins/" . strtolower(
+                substr(preg_replace('/[A-Z]/', '-\\0', $this->pluginName), 1)) . "/"
         );
         // @allow \Pike\PikeException
         $fm->copyFiles($fm::fromTo($fromDir, // <workspacePath>/plugins/PluginName/$fromDir
-                                   ''));     // <publicPath>/frontend/plugins/pluginname
+                                   ''));     // <publicPath>/frontend/plugins/plugin-name
     }
 }

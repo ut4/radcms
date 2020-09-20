@@ -49,6 +49,7 @@ interface ContentType {
     friendlyName: string;
     description: string;
     isInternal: boolean;
+    frontendFormImpl: string;
     fields: Array<ContentTypeField>;
 }
 
@@ -71,8 +72,8 @@ interface FrontendPanelConfig {
     id?: string;
     impl: string; // 'DefaultSingle' | 'DefaultCollection' | 'NameOfMyImpl'
     implProps: Object;
-    editFormImpl: string;
-    editFormImplProps?: Object;
+    formImpl: string;
+    formImplProps?: Object;
     title: string;
     subtitle?: string;
     highlightSelector?: string;
