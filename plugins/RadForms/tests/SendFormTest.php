@@ -27,7 +27,7 @@ final class SendFormTest extends RadFormsTestCase {
     ////////////////////////////////////////////////////////////////////////////
 
 
-    public function testProcessFormSubmitRejectsIfNoFormWasNotFound(): void {
+    public function testProcessFormSubmitRejectsIfNoFormWasFound(): void {
         $state = $this->setupSendMailTest();
         $state->testFormInsertId = '99';
         $this->expectException(PikeException::class);
@@ -70,11 +70,10 @@ final class SendFormTest extends RadFormsTestCase {
         $state->testFormBehaviours = [(object) [
             'name' => 'SendMail',
             'data' => (object) [
-                'handlerClassName' => 'GoodTestFormHandler',
                 'fromAddress' => 'foo@foo.foo',
                 'toAddress' => 'bar@bar.bar',
-                'subject' => 'Viesti sivustolta foo',
-                'bodyTemplate' => '[sender] kirjoitti näin: [message]'
+                'subjectTemplate' => 'Viesti sivustolta [siteName]',
+                'bodyTemplate' => '[sender] sivustolta [siteName] kirjoitti: [message]'
             ],
         ]];
         $state->reqBody = (object) [
@@ -86,24 +85,15 @@ final class SendFormTest extends RadFormsTestCase {
     }
     private function sendProcessFormSubmitRequest(object $state): void {
         $app = $this->makePluginTestApp(function ($injector) use ($state) {
-            $injector->delegate(DefaultServicesFactory::class, function () use ($state) {
-                return $this->makeServicesFactoryThatReturnsMockMailer($state);
-            });
+            $injector->define(DefaultServicesFactory::class, [
+                ':makeMailerFn' => function () use ($state) { return $this->makeSpyingMailer($state); }
+            ]);
         });
         $req = new Request("/plugins/rad-forms/handle-submit/{$state->testFormInsertId}",
                            'POST',
                            $state->reqBody);
         $state->spyingResponse = $this->makeSpyingResponse();
         $this->sendRequest($req, $state->spyingResponse, $app);
-    }
-    public function makeServicesFactoryThatReturnsMockMailer($state) {
-        $servicesFactory = $this->getMockBuilder(DefaultServicesFactory::class)
-            ->setMethods(['makeMailer'])
-            ->getMock();
-        $servicesFactory
-            ->method('makeMailer')
-            ->willReturn($this->makeSpyingMailer($state));
-        return $servicesFactory;
     }
     private function makeSpyingMailer($state) {
         $mailer = $this->createMock(AbstractMailer::class);
@@ -116,17 +106,18 @@ final class SendFormTest extends RadFormsTestCase {
     private function verifySentMail(object $state): void {
         $this->assertCount(1, $state->sendMailCallArgs);
         $behaviourData = $state->testFormBehaviours[0]->data;
+        $actualSiteInfo = $this->getSiteInfo();
+        $expectedTemplateVars = array_merge((array) $state->reqBody,
+                                            ['siteName' => $actualSiteInfo->name]);
         $this->assertEquals((object) [
             'fromAddress' => 'foo@foo.foo',
             'fromName' => '',
             'toAddress' => 'bar@bar.bar',
             'toName' => '',
-            'subject' => $behaviourData->subject,
-            'body' => str_replace('[sender]',
-                                  htmlentities($state->reqBody->sender),
-                                  str_replace('[message]',
-                                              htmlentities($state->reqBody->message),
-                                              $behaviourData->bodyTemplate)),
+            'subject' => self::renderMailTemplate($behaviourData->subjectTemplate,
+                                                  $expectedTemplateVars),
+            'body' => self::renderMailTemplate($behaviourData->bodyTemplate,
+                                               $expectedTemplateVars),
         ], $state->sendMailCallArgs[0]);
     }
     private function verifyRedirectedToReturnUrl(object $state): void {
@@ -135,5 +126,10 @@ final class SendFormTest extends RadFormsTestCase {
         [$_name, $value, $_doReplace, $_isPermanent] = $actual;
         $this->assertEquals(MagicTemplate::makeUrl($state->reqBody->_returnTo),
                             $value);
+    }
+    private static function renderMailTemplate(string $str, array $replacements): string {
+        foreach ($replacements as $from => $to)
+            $str = str_replace("[{$from}]", htmlentities($to), $str);
+        return $str;
     }
 }

@@ -36,7 +36,14 @@ class PluginTestCase extends DbTestCase {
                            'PSEUDO');
         $res = $this->makeSpyingResponse();
         $this->sendRequest($req, $res, $app);
-        // alterInjector ??
         return $res->getActualBody();
+    }
+    /**
+     * @return object {name: string, lang: string}
+     */
+    protected function getSiteInfo(): object {
+        return (object) self::$db->fetchOne('SELECT `name`,`lang` FROM `${p}cmsState`',
+                                            [],
+                                            \PDO::FETCH_ASSOC);
     }
 }

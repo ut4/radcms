@@ -24,7 +24,7 @@ final class Controllers {
         if (($errors = self::validateSubmitInput($req->body)))
             throw new PikeException(implode("\n", $errors), PikeException::BAD_INPUT);
         //
-        $form = $dao->fetchOne('Forms')->where('id = ?', $req->params->formId)->exec();
+        $form = $dao->fetchOne('RadForms')->where('id = ?', $req->params->formId)->exec();
         if (!$form) throw new PikeException("Form #{$req->params->formId} not found",
                                             PikeException::BAD_INPUT);
         elseif (($form->behaviours = json_decode($form->behaviours)) === null)

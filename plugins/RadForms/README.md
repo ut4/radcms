@@ -54,7 +54,12 @@ Huomaa, että inputien name-attribuutit saa sisältää ainoastaan a-zA-Z0-9_ ks
 
 ### 3. Luo ja konfiguroi lomake hallintapaneelista
 
-Lataa sivu selaimessa jonka templaattiin lisäsit `RadForm()`-tagikutsun, ja luo lomake hallintapaneelin valikosta (Tällä sivulla > Lomake, Yhteyslomake) avautuvasta näkymästä. Anna lomakkeen nimeksi stepin 1. tagikutsussa määritelty nimi (esim. `Yhteyslomake`). Lomakkeen Viesti-templaatin tageilla (esim. [myFormMessage]) voit viitata edellisen stepin lomakkeen dataan. Lisäosa sanitoi automaattisesti inputien arvot templaattia renderöidessään.
+Lataa sivu selaimessa jonka templaattiin lisäsit `RadForm()`-tagikutsun, ja luo lomake hallintapaneelin valikosta (Tällä sivulla > Lomake, Yhteyslomake) avautuvasta näkymästä. Anna lomakkeen nimeksi stepin 1. tagikutsussa määritelty nimi (esim. `Yhteyslomake`). Lomakkeen viesti-, ja aihe-templaateissa voit viitata tageilla (esim. [myFormMessage]) edellisen stepin lomakedataan sekä oletusmuuttujiin (ks. [Lomaketemplaattien oletusmuuttujat](#lomaketemplaattien-oletusmuuttujat)). Lisäosa sanitoi automaattisesti inputien arvot (esim. lomakkeesta lähetetty `<img onerror="xss()"/>` renderöityy emailiin lähetettävään templaattiin muodossa `&lt;img onerror=&quot;xss()&quot;&gt;`).
+
+#### Lomaketemplaattien oletusmuuttujat
+
+- [siteName: string]: sivuston nimi
+- [siteLang: string]: sivuston kielitagi
 
 ## Php-tagit
 
@@ -66,15 +71,17 @@ Tagit, jotka tämä lisäosa rekisteröi.
 - template: Lomaketemplaattitiedoston nimi. Templaattiin passautuvat propsit: `['formId' => 'lomake-elementin-id']`
 - returnTo: relatiivinen urli, johon käyttäjä ohjataan lomakkeen lähetyksen päätteeksi
 
-Esimerkki:
-ks. [Mailin lähetys](#tutoriaali---mailin-lähetys)
-
 ## Devaus
 
 ### Testien ajo
 
 - `cd plugins/RadForms/`
 - `"../../backend/vendor/bin/phpunit" --bootstrap ./tests/bootstrap.php ./tests`
+
+### Frontendin buildaus
+
+- `cd plugins/RadForms/`
+- `npm --prefix ../../ start -- --configInput plugins/RadForms/rollup.config.js`
 
 ## Lisenssi
 

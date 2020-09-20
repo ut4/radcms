@@ -16,16 +16,20 @@ final class RadForms implements PluginInterface {
      * @param \RadCms\Plugin\PluginAPI $api
      */
     public function init(PluginAPI $api): void {
+        //
+        $api->registerDirective('RadForm', 'templates/tag.RadForm.tmpl.php');
         $api->registerDirectiveMethod('radFormsFetchForm',
             [self::class, 'validatePropsAndFetchForm']);
-        $api->registerDirective('RadForm', 'templates/tag.RadForm.tmpl.php');
-        $api->registerRoute('POST', '/plugins/rad-forms/handle-submit/[i:formId]',
-                            Controllers::class, 'processFormSubmit');
         $api->registerDirectiveMethod('radFormsGetSetIsValidationLibLoaded', function () {
             if ($this->isValidationLibIncluded) return true;
             $this->isValidationLibIncluded = true;
             return false;
         });
+        //
+        $api->enqueueAdminJsFile('plugins/rad-forms/rad-forms-bundled.js');
+        //
+        $api->registerRoute('POST', '/plugins/rad-forms/handle-submit/[i:formId]',
+                            Controllers::class, 'processFormSubmit');
     }
     /**
      * @param \RadCms\Plugin\MigrationAPI $api
@@ -52,8 +56,8 @@ final class RadForms implements PluginInterface {
      */
     public function pack(DAO $dao, PluginPackData $to): void {
         // @allow \Pike\PikeException
-        $forms = $dao->fetchAll('Forms')->exec();
-        $to->initialContent = [['Forms', $forms]];
+        $forms = $dao->fetchAll('RadForms')->exec();
+        $to->initialContent = [['RadForms', $forms]];
     }
     /**
      * @param object $props
@@ -69,11 +73,12 @@ final class RadForms implements PluginInterface {
                 throw new PikeException(implode('<br>', $errors));
         //
         return $tmpl
-            ->fetchOne('Forms')
+            ->fetchOne('RadForms')
             ->where('name = ?', $props->name)
             ->addFrontendPanel([
                 'title' => $props->frontendPanelTitle ?? 'Lomake',
                 'subtitle' => $props->name,
+                'formImpl' => 'RadFormsForm',
                 'highlight' => 'form'
             ])
             ->exec();
@@ -83,23 +88,29 @@ final class RadForms implements PluginInterface {
      */
     private static function makeOwnContentTypes(): ContentTypeCollection {
         return ContentTypeCollection::build()
-        ->add('Forms', 'Lomakkeet')
+        ->add('RadForms', 'Lomakkeet')
+        ->frontendFormImpl('RadFormsForm')
             ->field('name', 'Nimi')
             ->field('behaviours')->dataType('json')->widget('hidden')
-                ->defaultValue(json_encode(self::tempHack()))
+                ->defaultValue(self::makeNewFormDefaultBehaviours())
         ->done();
     }
     /**
      */
-    private static function tempHack() {
-        return [(object) [
-            "name" => "SendMail",
-            "data" => (object) [
-                "subject" => "hello",
-                "toAddress" => "sivuston-omistaja@mail.com",
-                "fromAddress" => "no-reply@sivuston-nimi.com",
-                "bodyTemplate" => "Email: [myFormEmail], Message: [myFormMessage]"
+    private static function makeNewFormDefaultBehaviours(): string {
+        return json_encode([(object) [
+            'name' => 'SendMail',
+            'data' => (object) [
+                'subjectTemplate' => 'Uusi yhteydenotto sivustolta [siteName]',
+                'toAddress' => 'sivuston-omistaja@mail.com',
+                'fromAddress' => 'no-reply@sivuston-nimi.com',
+                'bodyTemplate' =>
+                    "Yhteydenotto sivustolta [siteName]\n\n" .
+                    "Lyhyt kenttä: [myFormInputName1]\n" .
+                    "Pitkä kenttä:\n[myFormInputName2]\n\n".
+                    "------------\n" .
+                    "(Tämä viesti lähetettiin RadForms-lisäosalla)\n"
             ],
-        ]];
+        ]]);
     }
 }
