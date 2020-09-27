@@ -97,7 +97,7 @@ final class InstallerTest extends BaseInstallerTest {
             'dbDatabase' => 'name',
             'doCreateDb' => false,
             'dbTablePrefix' => 'p_',
-            'dbCharset' => 'utf8',
+            'dbCharset' => 'utf8mb4',
             'firstUserName' => 'user',
             'firstUserPass' => 'pass',
             'baseUrl' => '/',
@@ -152,7 +152,7 @@ final class InstallerTest extends BaseInstallerTest {
                 'dbDatabase' => self::TEST_DB_NAME1,
                 'doCreateDb' => true,
                 'dbTablePrefix' => 'p_',
-                'dbCharset' => 'utf8',
+                'dbCharset' => 'utf8mb4',
                 'firstUserName' => 'user',
                 'firstUserEmail' => 'user@mail.com',
                 'firstUserPass' => 'pass',
@@ -261,7 +261,7 @@ return [
     'db.user'        => '{$s->input->dbUser}',
     'db.pass'        => '{$s->input->dbPass}',
     'db.tablePrefix' => '{$s->input->dbTablePrefix}',
-    'db.charset'     => 'utf8',
+    'db.charset'     => 'utf8mb4',
 ];
 "
 )

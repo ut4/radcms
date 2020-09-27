@@ -182,7 +182,7 @@ return [
     'db.user'        => '{$s->config['db.user']}',
     'db.pass'        => '{$s->config['db.pass']}',
     'db.tablePrefix' => '{$s->config['db.tablePrefix']}',
-    'db.charset'     => 'utf8',
+    'db.charset'     => 'utf8mb4',
 ];
 "
         );

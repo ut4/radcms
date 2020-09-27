@@ -1,6 +1,6 @@
 <?php
 
-define('RAD_VERSION', '0.3.0-preview');
+define('RAD_VERSION', '0.3.0-preview2');
 
 $config = require 'config.php';
 $loader = require RAD_BACKEND_PATH . 'vendor/autoload.php';

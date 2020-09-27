@@ -15,6 +15,6 @@ return [
     'db.user'        => 'user',
     'db.pass'        => 'pass',
     'db.tablePrefix' => 'rad_',
-    'db.charset'     => 'utf8',
+    'db.charset'     => 'utf8mb4',
     'db.schemaInitFilePath' => __DIR__ . '/testSuiteDbInit.mariadb.sql',
 ];

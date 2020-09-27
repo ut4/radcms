@@ -22,6 +22,7 @@ $title = $mainContent ? $mainContent->Otsikko : 'Sisältöä ei löytynyt'; ?>
     <div id="main">
         <?php if ($mainContent): ?>
             <?= $this->{'Content' . ([
+                'yritys' => 'Company',
                 'palvelut' => 'Services',
                 // tähän lisää sivukohtaisia sisältötageja..
             ][$url[0]] ?? 'Default')}(['content' => $mainContent]) ?>

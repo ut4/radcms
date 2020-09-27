@@ -118,9 +118,10 @@ class PackageInstaller {
             if (!is_array($relativeFilePaths = json_decode($json)))
                 throw new PikeException("Failed to parse `{$fileListLocalName}`",
                                         PikeException::BAD_INPUT);
-            // @allow \Pike\PikeException
-            $this->package->extractMany($targetDirPath,
-                                        $relativeFilePaths);
+            if ($relativeFilePaths)
+                // @allow \Pike\PikeException
+                $this->package->extractMany($targetDirPath,
+                                            $relativeFilePaths);
         }
         return true;
     }

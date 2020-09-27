@@ -82,7 +82,7 @@ class InstallerControllers {
             ->rule('dbDatabase', 'minLength', 1)
             ->rule('doCreateDb', 'type', 'bool')
             ->rule('dbTablePrefix?', 'minLength', 1)
-            ->rule('dbCharset', 'in', ['utf8'])
+            ->rule('dbCharset', 'in', ['utf8mb4', 'utf8'])
             ->rule('firstUserName', 'minLength', 1)
             ->rule('firstUserEmail?', 'minLength', 3)
             ->rule('firstUserPass', 'type', 'string')

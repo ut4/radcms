@@ -187,7 +187,7 @@ class DatabaseSettingsTab extends Tab {
             dbUser: prev.dbUser || 'username',
             dbPass: prev.dbPass || '',
             dbTablePrefix: prev.dbTablePrefix || 'rad_',
-            dbCharset: prev.dbCharset || 'utf8',
+            dbCharset: prev.dbCharset || 'utf8mb4',
             doCreateDb: prev.doCreateDb || false,
         });
     }
@@ -240,7 +240,7 @@ class DatabaseSettingsTab extends Tab {
                     <InputGroup classes={ classes.dbCharset }>
                         <label htmlFor="dbCharset" class="form-label">Tietokannan charset</label>
                         <Select vm={ this } name="dbCharset" id="dbCharset">
-                            { ['utf8'].map(opt =>
+                            { ['utf8mb4', 'utf8'].map(opt =>
                                 <option value={ opt }>{ opt }</option>
                             ) }
                         </Select>
