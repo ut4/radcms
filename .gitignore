@@ -6,7 +6,9 @@ package-lock.json
 node_modules
 
 backend/vendor/
-frontend/*
+frontend/*.*
+frontend/plugins/*
+frontend/rad/*
 !frontend/rad/assets/
 !frontend/rad/tests/
 !frontend/rad/tests-vendor/

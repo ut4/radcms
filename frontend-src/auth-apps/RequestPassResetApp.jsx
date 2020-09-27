@@ -16,7 +16,7 @@ class RequestPassResetApp extends preact.Component {
     render() {
         return <form onSubmit={ e => this.handleSubmit(e) }>
             <div class="text-center">
-                <img src={ urlUtils.makeAssetUrl('frontend/rad/assets/rad-logo.svg') }/>
+                <img src={ urlUtils.makeAssetUrl('frontend/rad/assets/rad-logo.png') }/>
             </div>
             <div class="box info mb-10">
                 Täytä sähköpostiosoitteesi tai käyttäjätunnuksesi alle, niin lähetämme salasanan palautuslinkin sähköpostilla.

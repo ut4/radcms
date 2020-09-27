@@ -23,7 +23,7 @@ class BasicInfoInputs extends preact.Component {
     render() {
         if (this.props.editMode === 'none') return <div class={ !this.props.blur ? '' : 'blurred' }>
             <header class="columns col-centered mb-2">
-                <h3 class="column m-0">{ this.props.contentType.name }</h3>
+                <h3 class="column text-break m-0">{ this.props.contentType.name }</h3>
                 <div>
                     <button onClick={ () => this.props.onEditStarted() }
                             disabled={ this.props.blur }

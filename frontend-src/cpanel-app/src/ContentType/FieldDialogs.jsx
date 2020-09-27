@@ -150,7 +150,7 @@ class FieldInputs extends preact.Component {
             name: props.field.name,
             friendlyName: props.field.friendlyName,
             dataTypeType: props.field.dataType.type,
-            dataTypeLength: props.field.dataType.length || null,
+            dataTypeLength: props.field.dataType.length || '',
             defaultValue: props.field.defaultValue,
         }));
         this.widgetSelector = preact.createRef();

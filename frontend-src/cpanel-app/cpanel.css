@@ -102,6 +102,27 @@
     padding: .4rem .2rem;
 }
 
+/* -- Components: Combobox ---- */
+.form-input.combobox {
+    height: auto;
+    padding: 0;
+}
+.form-input.combobox.open {
+    padding: .2rem;
+}
+.combobox .form-input {
+    border: none;
+}
+.combobox.open input.form-input {
+    border-bottom: 1px solid #ccc;
+    margin-bottom: .2rem;
+    box-shadow: none;
+}
+.combobox .form-select {
+    border: none;
+    box-shadow: none;
+}
+
 /* -- Cpanel: commons ---- */
 #cpanel2 h2 {
     color: rgba(255,255,255,0.22);
@@ -138,11 +159,11 @@
 }
 
 #cpanel2 header {
-    padding: .8rem 0 .2rem .8rem;
-    margin-bottom: -.2rem;
+    padding: .6rem 0 0 .6rem;
+    margin-bottom: -.5rem;
 }
 #cpanel2 header img {
-    width: 34px;
+    width: 28px;
 }
 
 #cpanel2 > section {

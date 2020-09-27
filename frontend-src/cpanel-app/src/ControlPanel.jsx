@@ -58,7 +58,7 @@ class ControlPanel extends preact.Component {
     render() {
         return <div id="cpanel2">
             <header class="container">
-                <img src={ urlUtils.makeAssetUrl('frontend/rad/assets/rad-logo-light.svg') }/>
+                <img src={ urlUtils.makeAssetUrl('frontend/rad/assets/rad-logo-light.png') }/>
             </header>
             <OnThisPageControlPanelSection
                 contentPanels={ this.state.contentPanels }
@@ -292,25 +292,23 @@ function makeHighlightToggler(selector, selectorIndex, siteIframe) {
     const el = selector
         ? siteIframeDoc.querySelectorAll(selector)[selectorIndex]
         : null;
-    if (el) {
-        let timeout = null;
-        const elTop = el.getBoundingClientRect().top - 20;
-        const top = elTop >= 0 ? elTop : 0;
-        return e => {
-            e.preventDefault();
-            clearTimeout(timeout);
-            let overlay = siteIframeDoc.getElementById('rad-highlight-overlay');
-            if (!overlay) {
-                overlay = makeOverlay(el);
-                siteIframeDoc.body.appendChild(overlay);
-                siteIframeWin.scroll({top});
-            }
-            timeout = setTimeout(() => {
-                overlay.parentElement.removeChild(overlay);
-            }, 1000);
-        };
-    }
-    return null;
+    if (!el) return null;
+    let timeout = null;
+    const elTop = el.getBoundingClientRect().top - 20;
+    const top = elTop >= 0 ? elTop : 0;
+    return e => {
+        e.preventDefault();
+        clearTimeout(timeout);
+        let overlay = siteIframeDoc.getElementById('rad-highlight-overlay');
+        if (!overlay) {
+            overlay = makeOverlay(el);
+            siteIframeDoc.body.appendChild(overlay);
+            siteIframeWin.scroll({top});
+        }
+        timeout = setTimeout(() => {
+            overlay.parentElement.removeChild(overlay);
+        }, 1000);
+    };
 }
 
 export default ControlPanel;

@@ -18,7 +18,7 @@ class FinalizePassResetApp extends preact.Component {
     render() {
         return <form onSubmit={ e => this.handleSubmit(e) }>
             <div class="text-center">
-                <img src={ urlUtils.makeAssetUrl('frontend/rad/assets/rad-logo.svg') }/>
+                <img src={ urlUtils.makeAssetUrl('frontend/rad/assets/rad-logo.png') }/>
             </div>
             { !this.state.message
                 ? null

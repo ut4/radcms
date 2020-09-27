@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="<?= $this->assetUrl('frontend/rad/common.css') ?>">
     <style>
         form { max-width: 240px; margin: 0 auto; }
-        img { width: 72px; margin: 1rem 0 .4rem; }
+        img { width: 100px; margin: .6rem 0 .2rem; }
     </style>
 </head>
 <body class="light">
