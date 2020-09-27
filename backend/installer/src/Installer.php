@@ -4,11 +4,9 @@ declare(strict_types=1);
 
 namespace RadCms\Installer;
 
-use Pike\Db;
-use Pike\FileSystemInterface;
-use RadCms\ContentType\ContentTypeMigrator;
-use Pike\PikeException;
-use RadCms\ContentType\ContentTypeCollection;
+use Pike\{Db, FileSystemInterface, PikeException};
+use RadCms\ContentType\{ContentTypeMigrator, ContentTypeCollection};
+use RadCms\FileMigrator;
 use RadCms\StockContentTypes\MultiFieldBlobs\MultiFieldBlobs;
 
 /**
@@ -18,8 +16,6 @@ class Installer {
     private $db;
     private $fs;
     private $commons;
-    private $backendPath;
-    private $siteDirPath;
     /**
      * @param \Pike\Db $db
      * @param \Pike\FileSystemInterface $fs
@@ -31,26 +27,23 @@ class Installer {
         $this->db = $db;
         $this->fs = $fs;
         $this->commons = $commons;
-        $this->backendPath = $commons->getBackendPath();
-        $this->siteDirPath = $commons->getSiteDirPath();
     }
     /**
      * @param \stdClass $settings Validoitu ja normalisoitu $req->body.
-     * @return bool
+     * @return string $workspacePathWhereSiteWasInstalledTo tai ''
      * @throws \Pike\PikeException
      */
-    public function doInstall(\stdClass $settings): bool {
+    public function doInstall(\stdClass $settings): string {
         // @allow \Pike\PikeException
-        return $this->commons->createOrOpenDb($settings) &&
-               $this->commons->createMainSchema($settings,
-                                                $this->fs,
-                                                "{$this->backendPath}assets/schema.mariadb.sql") &&
-               $this->commons->insertMainSchemaData($settings) &&
-               $this->commons->createUserZero($settings) &&
-               $this->createContentTypesAndInsertInitialData($settings) &&
-               $this->copyFiles($settings) &&
-               $this->commons->generateConfigFile($settings) &&
-               $this->commons->selfDestruct();
+        $ok = $this->commons->createOrOpenDb($settings) &&
+            $this->commons->createMainSchema($settings) &&
+            $this->commons->insertMainSchemaData($settings) &&
+            $this->commons->createUserZero($settings) &&
+            $this->createContentTypesAndInsertInitialData($settings) &&
+            ($workspaceDir = $this->copyFiles($settings)) &&
+            $this->commons->generateConfigFile($settings) &&
+            $this->commons->selfDestruct();
+        return $ok ? $workspaceDir : '';
     }
     /**
      * @return string[]
@@ -64,7 +57,7 @@ class Installer {
      * @throws \Pike\PikeException
      */
     private function createContentTypesAndInsertInitialData(\stdClass $s): bool {
-        $base = "{$this->backendPath}installer/sample-content/{$s->sampleContent}/";
+        $base = "{$this->commons->getBackendDirPath()}installer/sample-content/{$s->sampleContent}/";
         $contentTypesFilePath = "{$base}content-types.json";
         $dataFilePath = "{$base}sample-data.json";
         $parsed = [null, null];
@@ -93,38 +86,28 @@ class Installer {
     }
     /**
      * @param \stdClass $s settings
-     * @return bool
+     * @return string
      * @throws \Pike\PikeException
      */
-    private function copyFiles(\stdClass $s): bool {
+    private function copyFiles(\stdClass $s): string {
         // @allow \Pike\PikeException
-        $this->commons->createSiteDirectories();
-        //
-        $base = "{$this->backendPath}installer/sample-content/{$s->sampleContent}/site/";
-        // @allow \Pike\PikeException
-        $tmplFileNames = $this->readDirRelPaths($base, '/^.*\.tmpl\.php$/');
-        $assetFileNames = $this->readDirRelPaths($base, '/^.*\.(css|js)$/');
-        //
-        $toBeCopied = [];
-        foreach (array_merge(['Site.php', 'README.md'],
-                             $tmplFileNames,
-                             $assetFileNames) as $relativePath)
-            $toBeCopied[] = ["{$base}{$relativePath}",
-                             "{$this->siteDirPath}site/{$relativePath}"];
-        //
-        foreach ($toBeCopied as [$from, $to]) {
-            if (!$this->fs->copy($from, $to))
-                throw new PikeException("Failed to copy `{$from}` -> `{$to}`",
-                                        PikeException::FAILED_FS_OP);
-        }
-        return true;
+        [$workspaceDir, $publicDir] = $this->commons->createPublicAndWorkspaceDirs();
+        $base = "{$this->commons->getBackendDirPath()}installer/sample-content/{$s->sampleContent}/";
+        $fm = new FileMigrator($this->fs, $base, $workspaceDir);
+        $fm2 = new FileMigrator($this->fs, $base, $publicDir);
+        // // @allow \Pike\PikeException
+        $fm->copyFiles($fm->fromTo('site', 'site'));
+        // // @allow \Pike\PikeException
+        $fm2->copyFiles($fm->fromTo('frontend', 'frontend'));
+        return $workspaceDir;
     }
     /**
      * @return string[] ['file.php', 'dir/another.php']
      * @throws \Pike\PikeException
      */
     private function readDirRelPaths(string $dirPath, string $filterRegexp): array {
-        if (($paths = $this->fs->readDirRecursive($dirPath, $filterRegexp))) {
+        if (($paths = $this->fs->readDirRecursive($dirPath, $filterRegexp,
+            \FilesystemIterator::CURRENT_AS_PATHNAME|\FilesystemIterator::SKIP_DOTS))) {
             return array_map(function ($fullFilePath) use ($dirPath) {
                 return substr($fullFilePath, mb_strlen($dirPath));
             }, $paths);

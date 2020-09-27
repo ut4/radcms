@@ -2,21 +2,21 @@
 
 namespace RadCms\Tests;
 
-use RadCms\Content\MagicTemplateDAO;
 use PHPUnit\Framework\TestCase;
-use RadCms\ContentType\ContentTypeCollection;
 use Pike\Db;
+use RadCms\Content\MagicTemplateDAO;
+use RadCms\ContentType\ContentTypeCollection;
 use RadCms\Templating\MagicTemplate;
 
 final class MagicTemplateTest extends TestCase {
     private $template;
     public function setUp(): void {
         $this->A_LONG_STRING = str_repeat('-', 65);
-        $ctypes = new ContentTypeCollection();
-        $ctypes->add('Generics', '', [
-            (object) ['name' => 'content', 'dataType' => 'text']
-        ]);
-        $this->template = new MagicTemplate('', null,
+        $ctypes = ContentTypeCollection::build()
+        ->add('Generics', 'Test type')
+            ->field('content')
+        ->done();
+        $this->template = new MagicTemplate('', null, null,
             new MagicTemplateDAO($this->createMock(Db::class), $ctypes, false));
     }
     public function testFetchOneGeneratesSql() {

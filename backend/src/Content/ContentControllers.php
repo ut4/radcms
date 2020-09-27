@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace RadCms\Content;
 
-use Pike\Request;
-use Pike\Response;
+use Pike\{PikeException, Request, Response, Validation};
 
 /**
  * Handlaa /api/content -alkuiset pyynnöt.
@@ -44,8 +43,7 @@ class ContentControllers {
         $node = $dao->fetchOne($req->params->contentTypeName)
                     ->where('`id` = ?', $req->params->id) // aina validi (läpäissyt routerin regexpin)
                     ->exec();
-        if ($node) $res->json($node);
-        else $res->status(404)->json(['got' => 'nothing']);
+        $res->json($node);
     }
     /**
      * GET /api/content/:contentTypeName.
@@ -58,7 +56,32 @@ class ContentControllers {
                                                 Response $res,
                                                 MagicTemplateDAO $dao): void {
         // @allow \Pike\PikeException
-        $nodes = $dao->fetchAll($req->params->contentTypeName)->limit(50)->exec();
+        $q = $dao->fetchAll($req->params->contentTypeName);
+        $limitExpr = '50';
+        if (is_string($req->params->filters ?? null) && ($filters = self::parseValidateAndMakeFilters($req))) {
+            $whereSql = [];
+            $whereVals = [];
+            foreach ($filters as [$colNameOrKeyword, $filterType, $value]) {
+                if (!$colNameOrKeyword && $filterType === '$limit') {
+                    $limitExpr = $value;
+                } elseif ($filterType === '$in' && $value) {
+                    $whereSql[] = "`{$colNameOrKeyword}` IN (".implode(',',array_fill(0,count($value),'?')).")";
+                    $whereVals = array_merge($whereVals, $value);
+                } elseif ($filterType === '$startsWith') {
+                    $whereSql[] = "`{$colNameOrKeyword}` LIKE ?";
+                    $whereVals[] = "{$value}%";
+                } elseif ($filterType === '$contains') {
+                    $whereSql[] = "`{$colNameOrKeyword}` LIKE ?";
+                    $whereVals[] = "%{$value}%";
+                } elseif ($filterType === '$gt') {
+                    $whereSql[] = "`{$colNameOrKeyword}` > ?";
+                    $whereVals[] = $value;
+                }
+            }
+            if ($whereSql) $q->where(implode(' ', $whereSql), ...$whereVals);
+        }
+        // @allow \Pike\PikeException
+        $nodes = $q->limitExpr($limitExpr)->exec();
         $res->json($nodes);
     }
     /**
@@ -92,5 +115,39 @@ class ContentControllers {
         $numRows = $dmo->delete((int) $req->params->id,
                                 $req->params->contentTypeName);
         $res->json(['numAffectedRows' => $numRows]);
+    }
+    /**
+     * @param \Pike\Request $req
+     * @return array<int, array<int, string|mixed[]>> [[<colNameOrKeyword>, <filterType>, <value>] ...]
+     */
+    private static function parseValidateAndMakeFilters(Request $req): ?array {
+        $input = json_decode($req->params->filters);
+        if (!is_object($input)) throw new PikeException('Filters must by an object',
+                                                       PikeException::BAD_INPUT);
+        $filters = [];
+        foreach ($input as $colNameOrKeyword => $filter) {
+            if ($colNameOrKeyword === '$limit') {
+                // Note: arvo validoituu \RadCms\Content\Query->selfValidate() metodeissa
+                $filters[] = [null, '$limit', strval($filter)];
+                continue;
+            }
+            if (!is_object($filter))
+                throw new PikeException('Filter must by an object',
+                                        PikeException::BAD_INPUT);
+            if (!Validation::isIdentifier($colNameOrKeyword))
+                throw new PikeException("Filter column name `{$colNameOrKeyword}` is not" .
+                                        " valid identifier",
+                                        PikeException::BAD_INPUT);
+            $filterType = key($filter);
+            if (in_array($filterType, ['$in', '$startsWith', '$contains', '$gt'])) {
+                if ($filterType === '$in' && !is_array($filter->{$filterType}))
+                    throw new PikeException('$in value must be an array',
+                                            PikeException::BAD_INPUT);
+                $filters[] = [$colNameOrKeyword, $filterType, $filter->{$filterType}];
+            } else
+                throw new PikeException("Unsupported filter type `{$filterType}`",
+                                        PikeException::BAD_INPUT);
+        }
+        return $filters;
     }
 }

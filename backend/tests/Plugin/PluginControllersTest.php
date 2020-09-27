@@ -2,13 +2,12 @@
 
 namespace RadCms\Tests\Plugin;
 
-use Pike\TestUtils\DbTestCase;
-use Pike\TestUtils\HttpTestUtils;
-use Pike\FileSystem;
-use RadPlugins\ValidPlugin\ValidPlugin;
-use RadPlugins\ValidAndInstalledPlugin\ValidAndInstalledPlugin;
-use Pike\Request;
+use Pike\{FileSystem, Request};
+use Pike\TestUtils\{DbTestCase, HttpTestUtils};
+use RadCms\AppContext;
 use RadCms\Tests\AppTest;
+use RadPlugins\ValidAndInstalledPlugin\ValidAndInstalledPlugin;
+use RadPlugins\ValidPlugin\ValidPlugin;
 
 final class PluginControllersTest extends DbTestCase {
     use HttpTestUtils;
@@ -29,10 +28,10 @@ final class PluginControllersTest extends DbTestCase {
     private function setupInstallTest($testPluginName = 'ValidPlugin') {
         $s = new \stdClass;
         $s->testPluginName = $testPluginName;
-        $s->ctx = (object) ['db' => '@auto', 'auth' => '@auto',
-                            'fs' => $this->createMock(FileSystem::class)];
+        $s->ctx = new AppContext(['db' => '@auto', 'auth' => '@auto']);
+        $s->ctx->fs = $this->createMock(FileSystem::class);
         $s->ctx->fs->expects($this->once())->method('readDir')->willReturn(
-            [dirname(RAD_PUBLIC_PATH) . '/_test-plugins/' . $s->testPluginName]);
+            [RAD_BACKEND_PATH . "_test-plugins/{$s->testPluginName}"]);
         $this->afterTest = function () {
             ValidPlugin::$instantiated = false;
             ValidPlugin::$initialized = false;

@@ -1,4 +1,4 @@
-import {http, services, urlUtils, hookForm, InputGroup, Input, InputError, FormButtons} from '@rad-commons';
+import {http, env, urlUtils, hookForm, InputGroup, Input, InputError, FormButtons} from '@rad-commons';
 import {translateError} from './commons.js';
 
 class LoginApp extends preact.Component {
@@ -20,27 +20,32 @@ class LoginApp extends preact.Component {
     render() {
         const {errors, classes, message} = this.state;
         return <form onSubmit={ e => this.handleSubmit(e) }>
-            <img src={ urlUtils.makeAssetUrl('frontend/assets/logo.png') }/>
+            <div class="text-center">
+                <img src={ urlUtils.makeAssetUrl('frontend/rad/assets/rad-logo.png') }/>
+            </div>
             { !message
                 ? null
-                : <div class={ `container box ${message.level}` }>{ message.text }</div>
+                : <div class={ `container box ${message.level} mb-2` }>{ message.text }</div>
             }
             <InputGroup classes={ classes.username }>
-                <label htmlFor="username">Käyttäjänimi</label>
+                <label htmlFor="username" class="form-label">Käyttäjänimi</label>
                 <Input vm={ this } name="username" id="username" errorLabel="Käyttäjänimi"
                     validations={ [['required']] }/>
                 <InputError error={ errors.username }/>
             </InputGroup>
             <InputGroup classes={ classes.password }>
-                <label htmlFor="password">Salasana</label>
+                <label htmlFor="password" class="form-label">Salasana</label>
                 <Input vm={ this } name="password" id="password" errorLabel="Salasana"
                        validations={ [['required']] } type="password"/>
                 <InputError error={ errors.password }/>
             </InputGroup>
-            <FormButtons
-                buttons={ ['submit'] }
-                submitButtonText="Kirjaudu"/>
-            <div>
+            <div class="columns col-centered mt-10">
+                <div class="column">
+                    <FormButtons
+                        buttons={ ['submit'] }
+                        submitButtonText="Kirjaudu"
+                        className="mt-0"/>
+                </div>
                 <a href={ urlUtils.makeUrl('/request-password-reset') }>Unohtuiko salasana?</a>
             </div>
         </form>;
@@ -55,16 +60,17 @@ class LoginApp extends preact.Component {
                                  password: this.state.values.password})
             .then(info => {
                 if (info.ok) {
-                    services.sessionStorage.radMessage = JSON.stringify([
+                    env.sessionStorage.radMessage = JSON.stringify([
                         'Olet nyt kirjautunut sisään.', 'success'
                     ]);
-                    window.location.href = urlUtils.makeUrl('/edit');
+                    window.location.href = urlUtils.makeUrl('/_edit');
                 }
                 else if (info.err) this.setState({message: {text: translateError(info.err),
                                                             level: 'error'}});
                 else throw new Error('wut?');
             })
-            .catch(() => {
+            .catch(err => {
+                env.console.error(err);
                 this.setState({message: {text: 'Jokin meni pieleen.',
                                          level: 'error'}});
             });

@@ -4,9 +4,6 @@ import 'cpanel-commons.d.ts';
 declare module "@rad-commons" {
     namespace radCommons {
         export const config: {
-            baseUrl: string;
-            assetBaseUrl: string;
-            currentPagePath: string;
             userPermissions: {
                 canCreateContent: boolean;
                 canConfigureContent: boolean;
@@ -15,7 +12,7 @@ declare module "@rad-commons" {
             };
             user: {
                 role: number;
-            }
+            };
         }
         export const http: {
             get(url: string): Promise<Object>;
@@ -27,12 +24,20 @@ declare module "@rad-commons" {
         export const toasters: {
             [key: string]: (message: string|function, level: keyof {info: 1; error: 1; message: 1;}) => any;
         };
+        export const env: {
+            sessionStorage: WindowSessionStorage;
+            console: WindowConsole;
+        };
 
         ////////////////////////////////////////////////////////////////////////
 
         export function hookForm(vm: preact.Component,
-                                 values: Object,
-                                 validators?: Array<FormInputValidator>): {
+                                 values?: {[key: string]: any},
+                                 inputs?: {[key: string]: {
+                                     value: any;
+                                     validations: Array<[string, ...any]|[[function, string], ...any]>;
+                                     label?: string;
+                                }}): {
             values: Object;
             errors: Object;
             classes: Object;
@@ -41,7 +46,6 @@ declare module "@rad-commons" {
             {
                 classes?: {invalid: boolean; focused: boolean; blurredAtLeastOnce: boolean;};
                 className?: string;
-                inline?: boolean;
             },
             {}>
         {
@@ -75,27 +79,26 @@ declare module "@rad-commons" {
         }
         export class FormButtons extends preact.Component<
             {
-                buttons?: Array<string|preact.VNode>;
+                buttons?: Array<'submit'|'submitWithAlt'|'cancel'|preact.VNode>;
                 submitButtonText?: string;
+                altSubmitButtonText?: string;
                 cancelButtonText?: string;
                 returnTo?: string;
+                className?: string;
             },
             {}>
         {
-        }
-        export class FormInputValidator {
-            myInput: {
-                getValue(): string;
-                getLabel(): string;
-            };
-            checkValidity(): string|null;
         }
         export class Toaster extends preact.Component<
             {id?: string; autoCloseTimeoutMillis?: number;},
             {}>
         {
         }
-        export function View(props: any): preact.VNode;
+        export class View extends preact.Component<
+            {},
+            {}>
+        {
+        }
         export class Confirmation extends preact.Component<
             {
                 onConfirm: () => any;
@@ -126,11 +129,18 @@ declare module "@rad-commons" {
             getLocaleTimeString(date: Date): string;
         };
         export const urlUtils: {
+            baseUrl: string;
+            assetBaseUrl: string;
+            currentPagePath: string;
             redirect(to: string, full?: boolean);
             reload();
             makeUrl(url: string): string;
             makeAssetUrl(url: string): string;
             normalizeUrl(url: string): string;
+        }
+        export class Sortable {
+            register(el: HTMLElement, options: Object): void;
+            getImpl(): Object;
         }
     }
     export = radCommons;
@@ -142,7 +152,15 @@ interface SiteInfo {
     currentPagePath: string; // /
 }
 
-interface ControlPanelAppProps extends SiteInfo {
-    contentPanels: Array<FrontendPanelConfig>;
+interface ControlPanelLoadArgs {
     adminPanels: Array<FrontendPanelConfig>;
+    baseUrl: string;
+    assetBaseUrl: string;
+    user: Object;
+    userPermissions: Object;
+}
+
+interface PageLoadArgs {
+    contentPanels: Array<FrontendPanelConfig>;
+    currentPagePath: string;
 }

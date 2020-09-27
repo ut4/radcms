@@ -10,11 +10,11 @@ class Toaster extends preact.Component {
      */
     constructor(props) {
         super(props);
-        const id = props.id || 'unnamed';
-        if (id === '__proto__' || id === 'constructor')
-            throw new Error(`Invalid toasterId ${id}`);
-        toasters[id] = this.addMessage.bind(this);
-        this.autoCloseTimeoutMillis = props.autoCloseTimeoutMillis || 8000;
+        this.id = props.id || 'unnamed';
+        if (this.id === '__proto__' || this.id === 'constructor')
+            throw new Error(`Invalid toasterId ${this.id}`);
+        toasters[this.id] = this.addMessage.bind(this);
+        this.autoCloseTimeoutMillis = props.autoCloseTimeoutMillis || 12000;
         this.state = {messages: []};
     }
     /**
@@ -45,17 +45,19 @@ class Toaster extends preact.Component {
      */
     render() {
         if (!this.state.messages.length) return;
-        return <div class="toaster">{
+        return <div class="toaster" id={ `toaster-${this.id}` }>{
             this.state.messages.map(message => {
                 let iconId = 'check';
                 if (message.level === 'error') iconId = 'alert-triangle';
                 if (message.level === 'info') iconId = 'info';
-                return <div class={ 'toaster-message ' + message.level }
-                            onClick={ () => this.removeMessage(message) }>
-                    <FeatherSvg iconId={ iconId }/>
-                    { typeof message.message !== 'function'
-                        ? preact.createElement('span', null, message.message)
-                        : preact.createElement(message.message) }
+                return <div class="box p-0 mb-10">
+                    <div class={ 'toaster-message ' + message.level }
+                         onClick={ () => this.removeMessage(message) }>
+                        <FeatherSvg iconId={ iconId } className="mr-10"/>
+                        { typeof message.message !== 'function'
+                            ? preact.createElement('span', null, message.message)
+                            : preact.createElement(message.message) }
+                    </div>
                 </div>;
             })
         }</div>;

@@ -1,21 +1,43 @@
 import {FeatherSvg} from '@rad-commons';
+import {contentFormRegister, FieldsFilter} from '@rad-cpanel-commons';
 import BaseFieldWidget from '../Base.jsx';
 import MultiFieldConfigurer from './MultiFieldConfigurer.jsx';
 import MultiFieldFieldsStore from './MultiFieldFieldsStore.js';
 import getWidgetImpl, {widgetTypes} from '../all.js';
+const DefaultFormImpl = contentFormRegister.getImpl('Default');
 
+/**
+ * Widgetti, jolla voi rakentaa kustomoitua sisältöä, jossa useita erityyppisiä
+ * kenttiä. Widgetin arvo serialisoidaan ja tallennetaan tietokantaan yhtenä
+ * JSON-merkkijonona.
+ */
 class MultiFieldFieldWidget extends BaseFieldWidget {
     /**
      * @inheritdoc
      */
     constructor(props) {
         super(props);
+        this.isConfigurable = props.settings.showConfigureButton;
         this.multiFieldFields = new MultiFieldFieldsStore(JSON.parse(this.fixedInitialValue));
-        this.state = {fields: this.multiFieldFields.getFields(), configModeIsOn: false};
         this.multiFieldFields.listen(fields => {
             if (this.state.configModeIsOn) return;
             this.setState({fields});
         });
+        this.fieldsFilter = new FieldsFilter(props.settings.fieldsToDisplay);
+        const fields = this.multiFieldFields.getFields();
+        this.values = makeVirtualContentNode(fields);
+        this.setState({fields, visibleFields: this.makeVisibleFields(fields),
+                       configModeIsOn: false});
+    }
+    /**
+     * @access protected
+     */
+    componentWillReceiveProps(props) {
+        const fieldsToDisplay = props.settings.fieldsToDisplay || [];
+        if (fieldsToDisplay.join() !== this.fieldsFilter.getFieldsToDisplay().join()) {
+            this.fieldsFilter = new FieldsFilter(fieldsToDisplay);
+            this.setState({visibleFields: this.makeVisibleFields(this.state.fields)});
+        }
     }
     /**
      * @returns {string}
@@ -29,44 +51,74 @@ class MultiFieldFieldWidget extends BaseFieldWidget {
      */
     render() {
         if (this.state.configModeIsOn)
-            return <div class="multi-fields configurable">
-                <button onClick={ () => {
-                            const fields = this.multiFieldFields.getFields();
-                            this.setState({fields, configModeIsOn: false});
-                            this.props.onValueChange(JSON.stringify(fields));
-                        } }
-                        class="icon-button"
-                        title="Lopeta muokkaus"
-                        type="button"><FeatherSvg iconId="check"/></button>
+            return <div class="multi-fields indented-content configurable">
+                <button onClick={ () => this.endConfigMode() }
+                        class="btn btn-icon btn-sm with-icon"
+                        title="Tallenna rakenne"
+                        type="button">
+                            <FeatherSvg iconId="check" className="feather-sm"/>
+                           Tallenna rakenne
+                    </button>
                 <MultiFieldConfigurer fields={ this.multiFieldFields }/>
             </div>;
         //
-        const {showConfigureButton} = this.props.settings;
-        return <div class={ 'multi-fields' + (showConfigureButton ? ' configurable' : '') }>
-            { showConfigureButton
-                ? <button onClick={ () => this.setState({configModeIsOn: true}) }
-                        class="icon-button"
-                        title="Muokkaa kenttiä"
+        return <div class={ 'multi-fields indented-content' + (this.isConfigurable ? ' configurable' : '') }>
+            { this.isConfigurable
+                ? <button onClick={ () => this.beginConfigMode() }
+                        class="btn btn-icon btn-sm with-icon"
+                        title="Muokkaa rakennetta"
                         type="button">
-                    <FeatherSvg iconId="settings"/>
+                    <FeatherSvg iconId="settings" className="feather-sm"/>
+                    Muokkaa rakennetta
                 </button>
                 : null
             }
-            { this.state.fields.map(f => {
-                // @allow Error
-                const {ImplClass, props} = getWidgetImpl(f.widget.name);
-                return <ImplClass
-                    key={ f.id }
-                    field={ f }
-                    initialValue={ f.value }
-                    settings={ props }
-                    onValueChange={ value => {
-                        this.multiFieldFields.setFieldProps(f.id, {value});
-                        this.props.onValueChange(JSON.stringify(this.multiFieldFields.getFields()));
-                    }}/>;
-            }) }
+            <DefaultFormImpl
+                fields={ this.state.visibleFields }
+                values={ this.values }
+                onValueChange={ (value, f) => {
+                    this.multiFieldFields.setFieldProps(f.id, {value});
+                    this.props.onValueChange(JSON.stringify(this.multiFieldFields.getFields()));
+                } }
+                fieldHints={ this.state.visibleFields.map(f =>
+                    !this.isConfigurable || this.fieldsFilter.fieldShouldBeShown(f) ? null : '  Ei näytetä'
+                ) }
+                getWidgetImpl={ getWidgetImpl }
+                settings={ {} }/>
         </div>;
     }
+    /**
+     * @access private
+     */
+    beginConfigMode() {
+        this.setState({configModeIsOn: true});
+        this.props.setFormClasses('with-configurable-fields');
+    }
+    /**
+     * @access private
+     */
+    endConfigMode() {
+        const fields = this.multiFieldFields.getFields();
+        this.values = makeVirtualContentNode(fields);
+        this.setState({fields,
+                       visibleFields: this.makeVisibleFields(fields),
+                       configModeIsOn: false});
+        this.props.onValueChange(JSON.stringify(fields));
+        this.props.setFormClasses('');
+    }
+    /**
+     * @access private
+     */
+    makeVisibleFields(fields) {
+        return this.isConfigurable ? fields : this.fieldsFilter.doFilter(fields);
+    }
+}
+
+function makeVirtualContentNode(fields) {
+    return fields.reduce((obj, f) => {
+        obj[f.name] = f.value;
+        return obj;
+    }, {});
 }
 
 export default MultiFieldFieldWidget;

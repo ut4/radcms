@@ -1,11 +1,5 @@
 import {config} from '@rad-commons';
 import ContentNodeList from './ContentNodeList.jsx';
-import {ContentFormImpl} from './content-form-impls.jsx';
-
-const ContentPanelImpl = Object.freeze({
-    DefaultSingle: 'DefaultSingle',
-    DefaultCollection: 'DefaultCollection',
-});
 
 /*
  * Implementoi hallintapaneeliosion <?php $this->fetchOne(...)->addFrontendPanel(
@@ -20,34 +14,24 @@ class DefaultImplForFetchOne extends preact.Component {
         super(props);
         this.newNodeContentType = props.panel.contentTypeName;
         this.node = props.panel.contentNodes[0] || null;
-        this.editFormImpl = props.settings.editFormImpl || ContentFormImpl.Default;
     }
     getName() {
-        return ContentPanelImpl.DefaultSingle;
+        return 'DefaultSingle';
     }
     /**
      * @access public
      */
     getMainUrl() {
         return this.node
-            ? `/edit-content/${this.node.id}/${this.node.contentType}/${this.editFormImpl}`
-            : `/add-content/${this.newNodeContentType}`;
+            ? `/edit-content/${this.node.id}/${this.node.contentType}/${this.props.panel.idx}`
+            : `/add-content/${this.newNodeContentType}/${this.props.panel.idx}`;
     }
     getTitle() {
-        const {title, subtitle} = this.props.panel;
         const isDraft = this.node && this.node.isRevision;
-        return <span title={
-            title +
-            (subtitle ? ` (${subtitle})` : '') +
-            (isDraft ? ` (Luonnos)` : '')
-        }>{ [
-            title,
-            isDraft ? <i class="note">(Luonnos)</i> : null,
-            subtitle ? <i class="subtitle">{ subtitle }</i> : null,
-        ] }</span>;
-    }
-    getIcon() {
-        return 'file-text';
+        return [
+            `${this.props.panel.title}${!isDraft ? '' : '*'}`,
+            this.props.panel.subtitle,
+        ];
     }
     render() {
         const url = `#${this.getMainUrl()}`;
@@ -81,7 +65,7 @@ class DefaultImplForFetchAll extends preact.Component {
         this.label = '';
     }
     getName() {
-        return ContentPanelImpl.DefaultCollection;
+        return 'DefaultCollection';
     }
     getMainUrl() {
         return `/manage-content/${this.contentTypeName || (this.contentNodes[0] || {}).contentType}`;
@@ -89,16 +73,14 @@ class DefaultImplForFetchAll extends preact.Component {
     getTitle() {
         return this.props.panel.title;
     }
-    getIcon() {
-        return 'layers';
-    }
     render() {
         return <ContentNodeList
             contentNodes={ this.contentNodes }
             createLinkText={ `Lisää uusi ${this.label}` }
             contentType={ this.contentTypeName || (this.contentNodes[0] || {}).contentType }
-            noContentNodesContent={ this.contentNodes.length ? null : <div>Ei sisältöä.</div> }/>;
+            noContentNodesContent={ this.contentNodes.length ? null : <div>Ei sisältöä.</div> }
+            panelIdx={ this.props.panel.idx }/>;
     }
 }
 
-export {ContentPanelImpl, DefaultImplForFetchOne, DefaultImplForFetchAll};
+export {DefaultImplForFetchOne, DefaultImplForFetchAll};

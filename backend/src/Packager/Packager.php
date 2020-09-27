@@ -1,21 +1,22 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RadCms\Packager;
 
-use Pike\Db;
-use Pike\AppConfig;
-use Pike\ArrayUtils;
-use Pike\Auth\Crypto;
-use Pike\FileSystemInterface;
-use Pike\PikeException;
-use RadCms\CmsState;
-use RadCms\Content\DAO;
+use Pike\{AppConfig, ArrayUtils, Auth\Crypto, Db, FileSystemInterface, PikeException};
+use RadCms\{CmsState, Content\DAO};
+use RadCms\ContentType\{ContentTypeCollection, ContentTypeMigrator};
+use RadCms\Entities\PluginPackData;
+use RadCms\Plugin\Plugin;
 
 class Packager {
     public const LOCAL_NAMES_MAIN_DATA = 'main-data.data';
-    public const LOCAL_NAMES_DB_SCHEMA = 'schema.mariadb.sql';
-    public const LOCAL_NAMES_TEMPLATES_FILEMAP = 'template-file-paths.json';
-    public const LOCAL_NAMES_ASSETS_FILEMAP = 'theme-asset-file-paths.json';
+    public const LOCAL_NAMES_PHP_FILES_FILE_LIST = 'php-files-list.json';
+    public const LOCAL_NAMES_ASSETS_FILE_LIST = 'theme-asset-files-list.json';
+    public const LOCAL_NAMES_UPLOADS_FILE_LIST = 'theme-upload-files-list.json';
+    public const LOCAL_NAMES_PLUGINS = 'theme-plugins.data';
+    public const MIN_SIGNING_KEY_LEN = 12;
     /** @var \Pike\Db */
     private $db;
     /** @var \Pike\FileSystemInterface */
@@ -45,96 +46,176 @@ class Packager {
         $this->appConfig = $appConfig;
     }
     /**
-     * @return \stdClass {templates: string[], assets: string[]}
-     * @throws \Pike\PikeException
+     * @param string $groupName
+     * @return string[]
      */
-    public function preRun() {
-        $dirPath = RAD_PUBLIC_PATH . 'site/';
-        $len = mb_strlen($dirPath);
-        $fullPathToRelPath = function ($fullFilePath) use ($len) {
+    public function getIncludables(string $groupName): array {
+        $makeRelatifier = function ($len) { return function ($fullFilePath) use ($len) {
             return substr($fullFilePath, $len);
-        };
-        // @allow \Pike\PikeException
-        $out = (object) [
-            'templates' => array_map($fullPathToRelPath,
-                $this->fs->readDirRecursive($dirPath, '/^.*\.tmpl\.php$/')),
-            'assets' => array_map($fullPathToRelPath,
-                $this->fs->readDirRecursive($dirPath, '/^.*\.(css|js)$/'))
-        ];
-        sort($out->templates);
-        sort($out->assets);
+        }; };
+        //
+        switch ($groupName) {
+        case 'templates';
+            $workspaceDirPath = RAD_WORKSPACE_PATH . 'site/';
+            $out = array_map($makeRelatifier(mb_strlen($workspaceDirPath)),
+                $this->fs->readDirRecursive($workspaceDirPath, '/^.*\.tmpl\.php$/'));
+            break;
+        case 'assets':
+            $frontendDirPath = RAD_PUBLIC_PATH . 'frontend/';
+            $f = str_replace('/', '\\/', $frontendDirPath);
+            $out = array_map($makeRelatifier(mb_strlen($frontendDirPath)),
+                $this->fs->readDirRecursive($frontendDirPath, "/^(?!{$f}rad\/).*\.(css|js)$/"));
+            break;
+        case 'uploads':
+            $uploadsDirPath = RAD_PUBLIC_PATH . 'uploads/';
+            $flags = \FilesystemIterator::CURRENT_AS_PATHNAME|\FilesystemIterator::SKIP_DOTS;
+            $out = array_map($makeRelatifier(mb_strlen($uploadsDirPath)),
+                $this->fs->readDirRecursive($uploadsDirPath, '/.*/', $flags));
+            break;
+        case 'plugins':
+            $out = $this->getInstalledPluginNames();
+            break;
+        default:
+            throw new PikeException('Unexpected groupName',
+                                    PikeException::BAD_INPUT);
+        }
+        //
+        sort($out);
         return $out;
     }
     /**
      * @param \RadCms\Packager\PackageStreamInterface $package
-     * @param \stdClass $config Olettaa että validi
+     * @param \stdClass $input Olettaa että validi
      * @param \stdClass $userIdentity Olettaa että validi
      * @return string
      * @throws \Pike\PikeException
      */
     public function packSite(PackageStreamInterface $package,
-                             \stdClass $config,
-                             \stdClass $userIdentity) {
+                             \stdClass $input,
+                             \stdClass $userIdentity,
+                             DAO $dao): string {
         // @allow \Pike\PikeException
         $package->open('', true);
         // @allow \Pike\PikeException
-        $this->addMainData($package, $config, $userIdentity);
+        $ok = $this->addMainData($package, $input, $userIdentity) &&
+            $this->addPhpFiles($package, $input) &&
+            $this->addAssetFiles($package, $input) &&
+            $this->addUploadFiles($package, $input) &&
+            $this->addPlugins($package, $input, $dao);
         // @allow \Pike\PikeException
-        $this->addDbSchema($package);
+        return $ok ? $package->getResult() : '';
+    }
+    /**
+     * @param string $possiblyShorterOrLongerKey
+     * @return string
+     */
+    public static function makeFixedLengthKey(string $possiblyShorterOrLongerKey): string {
         // @allow \Pike\PikeException
-        $this->addThemeFiles($package, $config->templates,
-            self::LOCAL_NAMES_TEMPLATES_FILEMAP);
-        // @allow \Pike\PikeException
-        $this->addThemeFiles($package, $config->assets,
-            self::LOCAL_NAMES_ASSETS_FILEMAP);
-        // @allow \Pike\PikeException
-        return $package->getResult();
+        $padded = str_pad($possiblyShorterOrLongerKey, Crypto::SECRETBOX_KEYBYTES, '0');
+        return substr($padded, 0, Crypto::SECRETBOX_KEYBYTES);
+    }
+    /**
+     * @access private
+     */
+    private function getInstalledPluginNames(): array {
+        $out = [];
+        foreach ($this->cmsState->getPlugins() as $plugin) {
+            if ($plugin->isInstalled) $out[] = $plugin->name;
+        }
+        return $out;
     }
     /**
      * @throws \Pike\PikeException
      */
-    private function addMainData($package, $config, $userIdentity) {
+    private function addMainData(PackageStreamInterface $package,
+                                 \stdClass $input,
+                                 \stdClass $userIdentity): bool {
         $themeContentTypes = ArrayUtils::filterByKey($this->cmsState->getContentTypes(),
                                                      'Website',
                                                      'origin');
         // @allow \Pike\PikeException
-        $data = json_encode((object) [
+        $data = $this->encryptData($input->signingKey, (object) [
             'settings' => $this->generateSettings(),
             'contentTypes' => $themeContentTypes->toCompactForm('Website'),
             'content' => $this->generateThemeContentData($themeContentTypes),
             'user' => $this->generateUserZero($userIdentity),
-        ], JSON_UNESCAPED_UNICODE);
-        // @allow \Pike\PikeException
-        $padded = str_pad($config->signingKey, Crypto::SECRETBOX_KEYBYTES, '0');
-        $key = substr($padded, 0, Crypto::SECRETBOX_KEYBYTES);
-        $encrypted = $this->crypto->encrypt($data, $key);
-        // @allow \Pike\PikeException
-        $package->addFromString(self::LOCAL_NAMES_MAIN_DATA, $encrypted);
+        ]);
+        $package->addFromString(self::LOCAL_NAMES_MAIN_DATA, $data);
+        return true;
     }
     /**
      * @throws \Pike\PikeException
      */
-    private function addDbSchema($package) {
-        // @allow \Pike\PikeException
-        $package->addFile(RAD_BASE_PATH . 'assets/schema.mariadb.sql',
-                          self::LOCAL_NAMES_DB_SCHEMA);
-    }
-    /**
-     * @throws \Pike\PikeException
-     */
-    private function addThemeFiles($package, $files, $localNameOfFileMapFile) {
-        $package->addFromString($localNameOfFileMapFile,
-                                json_encode($files, JSON_UNESCAPED_UNICODE));
-        $base = RAD_PUBLIC_PATH . 'site/';
-        foreach ($files as $relativePath) {
+    private function addPhpFiles(PackageStreamInterface $package,
+                                 \stdClass $input): bool {
+        $base = RAD_WORKSPACE_PATH . 'site/';
+        //
+        $fileList = ['Site.php'];
+        if ($this->fs->isFile("{$base}Theme.php"))
+            $fileList[] = 'Theme.php';
+        $fileList = array_merge($fileList, $input->templates);
+        $package->addFromString(self::LOCAL_NAMES_PHP_FILES_FILE_LIST,
+                                json_encode($fileList, JSON_UNESCAPED_UNICODE));
+        foreach ($fileList as $relativePath)
             // @allow \Pike\PikeException
             $package->addFile("{$base}{$relativePath}", $relativePath);
+        return true;
+    }
+    /**
+     * @throws \Pike\PikeException
+     */
+    private function addAssetFiles(PackageStreamInterface $package,
+                                   \stdClass $input): bool {
+        $package->addFromString(self::LOCAL_NAMES_ASSETS_FILE_LIST,
+                                json_encode($input->assets));
+        $base = RAD_PUBLIC_PATH . 'frontend/';
+        foreach ($input->assets as $relativePath)
+            // @allow \Pike\PikeException
+            $package->addFile("{$base}{$relativePath}", $relativePath);
+        return true;
+    }
+    /**
+     * @throws \Pike\PikeException
+     */
+    private function addUploadFiles(PackageStreamInterface $package,
+                                    \stdClass $input): bool {
+        $package->addFromString(self::LOCAL_NAMES_UPLOADS_FILE_LIST,
+                                json_encode($input->uploads));
+        $base = RAD_PUBLIC_PATH . 'uploads/';
+        foreach ($input->uploads as $relativePath)
+            // @allow \Pike\PikeException
+            $package->addFile("{$base}{$relativePath}", $relativePath);
+        return true;
+    }
+    /**
+     * @throws \Pike\PikeException
+     */
+    private function addPlugins(PackageStreamInterface $package,
+                                \stdClass $input,
+                                DAO $dao): bool {
+        $plugins = new \stdClass;
+        foreach ($input->plugins as $pluginName) {
+            // @allow \Pike\PikeException
+            $pluginImpl = (new Plugin($pluginName))->instantiate();
+            //
+            $fillThisPlease = new PluginPackData;
+            $pluginImpl->pack($dao, $fillThisPlease);
+            // @allow \Pike\PikeException
+            ContentTypeMigrator::validateInitialData($fillThisPlease->initialContent);
+            // todo data->assets
+            // todo sorsat
+            //
+            $plugins->{$pluginName} = $fillThisPlease;
         }
+        // @allow \Pike\PikeException
+        $data = $this->encryptData($input->signingKey, $plugins);
+        $package->addFromString(self::LOCAL_NAMES_PLUGINS, $data);
+        return true;
     }
     /**
      * @return \stdClass
      */
-    private function generateSettings() {
+    private function generateSettings(): \stdClass {
         return (object) [
             'dbHost' => $this->appConfig->get('db.host'),
             'dbDatabase' => $this->appConfig->get('db.database'),
@@ -152,9 +233,17 @@ class Packager {
         ];
     }
     /**
+     * @throws \Pike\PikeException
+     */
+    private function encryptData(string $key, object $data): string {
+        // @allow \Pike\PikeException
+        return $this->crypto->encrypt(json_encode($data, JSON_UNESCAPED_UNICODE),
+                                      self::makeFixedLengthKey($key));
+    }
+    /**
      * @return array [["Articles", ContentNode[]], ...]
      */
-    private function generateThemeContentData($themeContentTypes) {
+    private function generateThemeContentData(ContentTypeCollection $themeContentTypes): array {
         $cNodeDAO = new DAO($this->db, $themeContentTypes);
         $out = [];
         foreach ($themeContentTypes as $ctype) {
@@ -168,10 +257,11 @@ class Packager {
     /**
      * @return \stdClass
      */
-    private function generateUserZero($userIdentity) {
+    private function generateUserZero(\stdClass $userIdentity): \stdClass {
         // @allow \Pike\PikeException
         if (($row = $this->db->fetchOne('SELECT `id`,`username`,`email`' .
-                                        ',`passwordHash`,`role` FROM ${p}users' .
+                                        ',`passwordHash`,`role`,`accountCreatedAt`' .
+                                        ' FROM ${p}users' .
                                         ' WHERE `id` = ?',
                                         [$userIdentity->id]))) {
             return (object) [
@@ -180,6 +270,7 @@ class Packager {
                 'email' => $row['email'] ?? '',
                 'passwordHash' => $row['passwordHash'],
                 'role' => (int) $row['role'],
+                'accountCreatedAt' => (int) $row['accountCreatedAt'],
             ];
         }
         throw new PikeException('Failed to fetch user from db',

@@ -4,16 +4,13 @@ declare(strict_types=1);
 
 namespace RadCms\Auth;
 
-use Pike\Request;
-use Pike\Response;
-use Pike\AppConfig;
-use Pike\Validation;
 use Pike\Auth\Authenticator;
-use RadCms\Templating\MagicTemplate;
-use Pike\PikeException;
+use Pike\{AppConfig, PikeException, Request, Response, Translator, Validation};
 use RadCms\CmsState;
+use RadCms\Templating\MagicTemplate;
 
 class AuthControllers {
+    /** @var \Pike\Auth\Authenticator */
     private $auth;
     /**
      * @param \Pike\Auth\Authenticator $auth
@@ -25,9 +22,12 @@ class AuthControllers {
      * GET /login.
      *
      * @param \Pike\Response $res
+     * @param \Pike\Translator $translator
      */
-    public function renderLoginView(Response $res): void {
-        $res->html((new MagicTemplate(__DIR__ . '/base-view.tmpl.php'))
+    public function renderLoginView(Response $res, Translator $translator): void {
+        $res->html((new MagicTemplate(__DIR__ . '/base-view.tmpl.php',
+                                      null,
+                                      $translator))
             ->render(['title' => 'Kirjautuminen',
                       'reactAppName' => 'LoginApp']));
     }
@@ -67,9 +67,13 @@ class AuthControllers {
      * GET /request-password-reset.
      *
      * @param \Pike\Response $res
+     * @param \Pike\Translator $translator
      */
-    public function renderRequestPassResetView(Response $res): void {
-        $res->html((new MagicTemplate(__DIR__ . '/base-view.tmpl.php'))
+    public function renderRequestPassResetView(Response $res,
+                                               Translator $translator): void {
+        $res->html((new MagicTemplate(__DIR__ . '/base-view.tmpl.php',
+                                      null,
+                                      $translator))
             ->render(['title' => 'Uusi salasanan palautus',
                       'reactAppName' => 'RequestPassResetApp']));
     }
@@ -94,7 +98,6 @@ class AuthControllers {
                 function ($user, $resetKey, $settings) use ($cmsState, $appConfig) {
                     $siteName = $cmsState->getSiteInfo()->name;
                     $siteUrl = $_SERVER['SERVER_NAME'];
-                    $settings->useSMTP = $appConfig->get('mail.transport') === 'SMTP';
                     $settings->fromAddress = "root@{$siteUrl}";
                     $settings->fromName = $siteName;
                     $settings->subject = "[{$siteName}] salasanan palautus";
@@ -109,7 +112,8 @@ class AuthControllers {
                 });
             $res->json(['ok' => 'ok']);
         } catch (PikeException $e) {
-            if ($e->getCode() === Authenticator::INVALID_CREDENTIAL) {
+            if ($e->getCode() === Authenticator::INVALID_CREDENTIAL ||
+                $e->getCode() === Authenticator::UNEXPECTED_ACCOUNT_STATUS) {
                 $res->status(401)->json(['err' => $e->getMessage()]);
             } else {
                 throw $e;
@@ -120,9 +124,13 @@ class AuthControllers {
      * GET /finalize-password-reset/[**:key].
      *
      * @param \Pike\Response $res
+     * @param \Pike\Translator $translator
      */
-    public function renderFinalizePassResetView(Response $res): void {
-        $res->html((new MagicTemplate(__DIR__ . '/base-view.tmpl.php'))
+    public function renderFinalizePassResetView(Response $res,
+                                                Translator $translator): void {
+        $res->html((new MagicTemplate(__DIR__ . '/base-view.tmpl.php',
+                                      null,
+                                      $translator))
             ->render(['title' => 'Salasanan palautus',
                       'reactAppName' => 'FinalizePassResetApp']));
     }
@@ -192,7 +200,7 @@ class AuthControllers {
         return (Validation::makeObjectValidator())
             ->rule('email', 'minLength', 1)
             ->rule('newPassword', 'minLength', 1)
-            ->rule('key', 'minLength', 1)
+            ->rule('key', 'minLength', 32)
             ->validate($input);
     }
     /**

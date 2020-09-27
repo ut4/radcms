@@ -1,5 +1,3 @@
-import config from './config.js';
-
 const dateUtils = {
     /**
      * @param {Date} date
@@ -22,6 +20,9 @@ const dateUtils = {
 };
 
 const urlUtils = {
+    baseUrl: '',
+    assetBaseUrl: '',
+    currentPagePath: '',
     /**
      * @param {string} to
      * @param {string?} type "hard"
@@ -29,13 +30,13 @@ const urlUtils = {
     redirect(to, type) {
         if (type !== 'hard') {
             window.location.hash = `#/${this.normalizeUrl(to)}`;
-        } else {
-            if (to === '@current')
-                to = config.currentPagePath;
-            window.location.href = window.location.origin + config.baseUrl +
-                                   'edit' +
-                                   (to !== '/' ? `/${this.normalizeUrl(to)}` : '');
+            return;
         }
+        if (to === '@current')
+            to = this.currentPagePath;
+        window.location.href = window.location.origin + this.baseUrl +
+                               '_edit' +
+                               (to !== '/' ? `/${this.normalizeUrl(to)}` : '');
     },
     /**
      * ...
@@ -44,19 +45,30 @@ const urlUtils = {
         window.location.reload();
     },
     /**
-     * @param {string} url
+     * @param {string} hash
+     * @param {any} data = null
+     * @param {string} title = null
      */
-    makeUrl(url) {
-        return config.baseUrl + this.normalizeUrl(url);
+    replace(hash, data = null, title = null) {
+        window.history.replaceState(data, title, this.normalizeUrl(hash));
     },
     /**
      * @param {string} url
+     * @returns {string}
+     */
+    makeUrl(url) {
+        return this.baseUrl + this.normalizeUrl(url);
+    },
+    /**
+     * @param {string} url
+     * @returns {string}
      */
     makeAssetUrl(url) {
-        return config.assetBaseUrl + this.normalizeUrl(url);
+        return this.assetBaseUrl + this.normalizeUrl(url);
     },
     /**
      * @param {string} url '/foo' -> 'foo', 'bar' -> 'bar'
+     * @returns {string}
      */
     normalizeUrl(url) {
         return url[0] !== '/' ? url : url.substr(1);

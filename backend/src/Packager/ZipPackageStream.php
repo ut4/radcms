@@ -1,9 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RadCms\Packager;
 
-use Pike\PikeException;
-use Pike\FileSystemInterface;
+use Pike\{PikeException, FileSystemInterface};
 
 class ZipPackageStream implements PackageStreamInterface {
     /** @var \ZipArchive */
@@ -23,7 +24,7 @@ class ZipPackageStream implements PackageStreamInterface {
      * @param bool $create = false
      * @throws \Pike\PikeException
      */
-    public function open($filePath, $create = false) {
+    public function open(string $filePath, bool $create = false): void {
         $this->zip = new \ZipArchive();
         $flags = \ZipArchive::CHECKCONS;
         if ($create) {
@@ -47,7 +48,10 @@ class ZipPackageStream implements PackageStreamInterface {
      * @return bool
      * @throws \Pike\PikeException
      */
-    public function addFile($filePath, $localName = null, $start = 0, $length = 0) {
+    public function addFile(string $filePath,
+                            string $localName = null,
+                            int $start = 0,
+                            int $length = 0): bool {
         if ($this->zip->addFile($filePath, $localName, $start, $length))
             return true;
         throw new PikeException("Failed to read `{$filePath}` to zip stream",
@@ -59,7 +63,7 @@ class ZipPackageStream implements PackageStreamInterface {
      * @return bool
      * @throws \Pike\PikeException
      */
-    public function addFromString($localName, $contents) {
+    public function addFromString(string $localName, string $contents): bool {
         if ($this->zip->addFromString($localName, $contents))
             return true;
         throw new PikeException("Failed to add `{$localName}` to zip stream",
@@ -70,7 +74,7 @@ class ZipPackageStream implements PackageStreamInterface {
      * @return string
      * @throws \Pike\PikeException
      */
-    public function read($localName) {
+    public function read(string $localName): string {
         if (($str = $this->zip->getFromName($localName)) !== false)
             return $str;
         throw new PikeException("Failed to read `{$localName}` zip stream",
@@ -78,11 +82,12 @@ class ZipPackageStream implements PackageStreamInterface {
     }
     /**
      * @param string $destinationPath
-     * @param mixed $localNames = [] string|string[]
+     * @param string[]|string $localNames = []
      * @return bool
      * @throws \Pike\PikeException
      */
-    public function extractMany($destinationPath, $localNames = []) {
+    public function extractMany(string $destinationPath,
+                                $localNames = []): bool {
         if ($this->zip->extractTo($destinationPath, $localNames))
             return true;
         throw new PikeException("Failed to extract entries to ${destinationPath}",
@@ -92,7 +97,7 @@ class ZipPackageStream implements PackageStreamInterface {
      * @return string
      * @throws \Pike\PikeException
      */
-    public function getResult() {
+    public function getResult(): string {
         if (!$this->zip->close())
             throw new PikeException('Failed to close zip stream',
                                     PikeException::FAILED_FS_OP);

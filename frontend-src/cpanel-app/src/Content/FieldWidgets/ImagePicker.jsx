@@ -1,7 +1,12 @@
-import {http, config, urlUtils, hookForm, InputGroup, Input} from '@rad-commons';
+import {http, myFetch, env, urlUtils, hookForm, Input,
+        Toaster, toasters, FeatherSvg} from '@rad-commons';
 import popupDialog from '../../Common/PopupDialog.jsx';
 import BaseFieldWidget from './Base.jsx';
 
+/**
+ * Widgetti, jolla voi valita uploads-kansioon ladattuja kuvia, ja ladata niitä
+ * sinne lisää.
+ */
 class ImagePickerFieldWidget extends BaseFieldWidget {
     /**
      * @inheritdoc
@@ -10,6 +15,7 @@ class ImagePickerFieldWidget extends BaseFieldWidget {
         super(props);
         this.fieldName = props.field.name;
         this.state = hookForm(this, {[this.fieldName]: this.fixedInitialValue});
+        this.inputElWrap = preact.createRef();
     }
     /**
      * @returns {string}
@@ -22,21 +28,23 @@ class ImagePickerFieldWidget extends BaseFieldWidget {
      * @access protected
      */
     render() {
-        return <InputGroup classes={ this.state.classes[this.fieldName] }>
-            <label htmlFor={ this.fieldName }>{ this.label }</label>
-            <Input vm={ this }
-                    name={ this.fieldName }
-                    id={ this.fieldName }
-                    onClick={ () => popupDialog.open(
-                        PickImageDialog,
-                        {selectedImageName: this.state.values[this.fieldName],
-                         onSelected: img => {
-                             this.form.triggerChange(img.fileName, this.fieldName);
-                             this.props.onValueChange(img.fileName);
-                         },
-                         assetBaseUrl: config.assetBaseUrl}
-                    ) }/>
-        </InputGroup>;
+        return <Input
+            vm={ this }
+            name={ this.fieldName }
+            id={ this.fieldName }
+            ref={ this.inputElWrap }
+            onClick={ () => {
+                popupDialog.open(
+                    PickImageDialog,
+                    {selectedImageName: this.state.values[this.fieldName],
+                        onSelected: img => {
+                            this.form.triggerChange(img.fileName, this.fieldName);
+                            this.props.onValueChange(img.fileName);
+                        },
+                        assetBaseUrl: urlUtils.assetBaseUrl}
+                );
+                this.inputElWrap.current.inputEl.blur();
+            } }/>;
     }
 }
 
@@ -46,13 +54,16 @@ class PickImageDialog extends preact.Component {
      */
     constructor(props) {
         super(props);
-        this.state = {images: [], message: null};
+        this.state = {images: [], message: null, currentTabIdx: 0};
+        this.tabs = preact.createRef();
         http.get('/api/uploads')
             .then(list => {
                 const images = list.filter(f => f.mime.startsWith('image'));
+                images.sort();
                 this.setState({images, message: images.length ? null : 'Ei kuvia.'});
             })
-            .catch(() => {
+            .catch(err => {
+                env.console.error(err);
                 this.setState({message: 'Jokin meni pieleen.'});
             });
     }
@@ -63,77 +74,111 @@ class PickImageDialog extends preact.Component {
         return <div class="popup-dialog"><div class="box">
             <h2>Valitse kuva</h2>
             <div class="main">
-                <UploadButton/>
-                <div class="item-grid image-grid container">{ !this.state.message
-                    ? this.state.images.map(i => <button onClick={ () => {
-                                    this.props.onSelected(i);
-                                    popupDialog.close();
-                                } }
-                                className={ this.props.selectedImageName !== i.fileName ? '' : 'selected' }
-                                type="button">
-                            <img src={ `${this.props.assetBaseUrl}uploads/${i.fileName}` }/>
-                            <span class="caption">{ i.fileName }</span>
-                        </button> )
-                    : <div>
-                        <span>{ this.state.message }</span>
-                        <button onClick={ () => popupDialog.close() }
-                                class="nice-button small"
-                                type="button">Ok</button>
-                    </div>
+                <Tabs links={ ['Kuvat', 'Lataa'] } onTabChanged={ idx => this.setState({currentTabIdx: idx}) }
+                    ref={ this.tabs }/>
+                <div class={ this.state.currentTabIdx === 0 ? '' : 'hidden' }>{ !this.state.message
+                    ? <div class="item-grid image-grid img-auto mt-10">{ this.state.images.map(image =>
+                        <button
+                            onClick={ () => {
+                                this.props.onSelected(image);
+                                popupDialog.close();
+                            } }
+                            className={ `btn btn-icon ${this.props.selectedImageName !== image.fileName ? '' : ' selected'}` }
+                            type="button">
+                            <img src={ `${this.props.assetBaseUrl}uploads/${image.fileName}` }/>
+                            <span class="caption text-ellipsis">{ image.fileName }</span>
+                        </button>
+                    ) }</div>
+                    : <div class="mt-8">{ this.state.message }</div>
                 }</div>
+                <div class={ this.state.currentTabIdx !== 1 ? 'hidden' : '' }>
+                    <UploadButton onFileUploaded={ this.addImage.bind(this) }/>
+                </div>
                 <button onClick={ () => popupDialog.close() }
-                        class="nice-button small"
+                        class="btn mt-8"
                         type="button">Peruuta</button>
             </div>
         </div></div>;
+    }
+    /**
+     * @access private
+     */
+    addImage(image) {
+        const images = this.state.images;
+        images.push(image);
+        images.sort((a, b) => a.fileName.localeCompare(b.fileName));
+        this.setState({images, message: null});
+        this.tabs.current.changeTab(0);
+    }
+}
+
+class Tabs extends preact.Component {
+    /**
+     * @param {{links: Array<string>; onTabChanged: (idx: number) => any;}} props
+     */
+    constructor(props) {
+        super(props);
+        this.state = {currentIdx: 0};
+    }
+    /**
+     * @access protected
+     */
+    render({links}, {currentIdx}) {
+        return <ul class="pl-0 tab">{ links.map((text, i) =>
+            <li class={ `tab-item${i !== currentIdx ? '' : ' active'}` }>
+                <a onClick={ e => { e.preventDefault(); this.changeTab(i); } }
+                    href="#" class="px-2">{ text }</a>
+            </li>
+        ) }</ul>;
+    }
+    /**
+     * @param {number} toIdx
+     * @access public
+     */
+    changeTab(toIdx) {
+        this.setState({currentIdx: toIdx});
+        this.props.onTabChanged(toIdx);
     }
 }
 
 class UploadButton extends preact.Component {
     /**
-     * @param {Object} props
-     */
-    constructor(props) {
-        super(props);
-        this.hiddenForm = document.getElementById(this.hiddenFormId);
-        this.hiddenFormId = 'hidden-upload-form';
-        this.initHiddenUploadForm();
-    }
-    /**
      * @access protected
      */
     render() {
-        return <div>
-            <InputGroup>
-                <input onChange={ e => { this.handleFileInputChange(e); } }
-                       name="localFile"
-                       type="file"
-                       accept="image/*"
-                       form={ this.hiddenFormId }/>
-            </InputGroup>
-            <input value={ window.location.href }
-                   name="returnTo"
-                   type="hidden"
-                   form={ this.hiddenFormId }/>
+        return <div class="container mt-8">
+            <Toaster id="fileUpload"/>
+            <input onChange={ this.handleFileInputChange.bind(this) }
+                id="image-input"
+                name="localFile"
+                type="file"
+                accept="image/*"
+                style="position:absolute;opacity:0;z-index:-1"/>
+            <label class="columns col-centered" htmlFor="image-input">
+                <FeatherSvg iconId="image"/>
+                <span class="column">Valitse kuva</span>
+            </label>
         </div>;
     }
     /**
      * @access private
      */
-    initHiddenUploadForm() {
-        if (this.hiddenForm) return;
-        this.hiddenForm = document.createElement('form');
-        this.hiddenForm.action = urlUtils.makeUrl('/api/uploads');
-        this.hiddenForm.method = 'post';
-        this.hiddenForm.enctype = 'multipart/form-data';
-        this.hiddenForm.id = this.hiddenFormId;
-        document.body.appendChild(this.hiddenForm);
-    }
-    /**
-     * @access private
-     */
     handleFileInputChange(e) {
-        if (e.target.value) this.hiddenForm.submit();
+        if (!e.target.value) return;
+        //
+        const data = new FormData();
+        data.append('localFile', e.target.files[0]);
+        //
+        myFetch('/api/uploads', {method: 'POST', data: data})
+            .then(res => JSON.parse(res.responseText))
+            .then(info => {
+                if (info.file) this.props.onFileUploaded(info.file);
+                else throw new Error('Unexpected response');
+            })
+            .catch(err => {
+                env.console.error(err);
+                toasters.fileUpload('Kuvan lataus epäonnistui', 'error');
+            });
     }
 }
 

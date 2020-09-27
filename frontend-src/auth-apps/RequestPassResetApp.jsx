@@ -15,16 +15,18 @@ class RequestPassResetApp extends preact.Component {
      */
     render() {
         return <form onSubmit={ e => this.handleSubmit(e) }>
-            <img src={ urlUtils.makeAssetUrl('frontend/assets/logo.png') }/>
-            <div class="container box info">
+            <div class="text-center">
+                <img src={ urlUtils.makeAssetUrl('frontend/rad/assets/rad-logo.png') }/>
+            </div>
+            <div class="box info mb-10">
                 Täytä sähköpostiosoitteesi tai käyttäjätunnuksesi alle, niin lähetämme salasanan palautuslinkin sähköpostilla.
             </div>
             { !this.state.message
                 ? null
-                : <div class={ `container box ${this.state.message.level}` }>{ this.state.message.text }</div>
+                : <div class={ `box ${this.state.message.level} mb-10` }>{ this.state.message.text }</div>
             }
             <InputGroup classes={ this.state.classes.usernameOrEmail }>
-                <label htmlFor="usernameOrEmail">Email tai käyttäjänimi</label>
+                <label htmlFor="usernameOrEmail" class="form-label">Email tai käyttäjänimi</label>
                 <Input vm={ this } name="usernameOrEmail" id="usernameOrEmail"
                     errorLabel="Email tai käyttäjänimi" validations={ [['required']] }/>
                 <InputError error={ this.state.errors.usernameOrEmail }/>

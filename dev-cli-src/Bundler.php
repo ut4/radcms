@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace RadCms\Cli;
 
-use Pike\PikeException;
-use Pike\FileSystemInterface;
+use Pike\{PikeException, FileSystemInterface};
 
 class Bundler {
     private $fs;
@@ -48,6 +47,8 @@ class Bundler {
         // @allow \Pike\PikeException
         $this->copyBackendFiles();
         // @allow \Pike\PikeException
+        $this->copyPlugins();
+        // @allow \Pike\PikeException
         $this->copyFrontendFiles();
         $this->doPrint->__invoke('Done.');
     }
@@ -56,7 +57,7 @@ class Bundler {
      */
     private function createTargetDirectories(): void {
         $targetDirPaths = ["{$this->targetDirPath}backend/assets",
-                           "{$this->targetDirPath}frontend"];
+                           "{$this->targetDirPath}frontend/rad"];
         foreach ($targetDirPaths as $p) {
             if ($this->fs->isDir($p)) {
                 $alreadyContainsEntries = (new \FilesystemIterator($p))->valid();
@@ -77,7 +78,7 @@ class Bundler {
                   'backend/composer.json',
                   'index.php',
                   'install.php',
-                  'LICENSE.txt'] as $f) {
+                  'LICENSE'] as $f) {
             if (!$this->fs->copy($this->radPath . $f, $this->targetDirPath . $f))
                 throw new PikeException('Failed to copy `' . ($this->radPath . $f) .
                                         '` -> `' . ($this->targetDirPath . $f) . '`');
@@ -85,7 +86,7 @@ class Bundler {
         //
         call_user_func($this->shellExecFn, self::makeCpCmd(
             "{$this->radPath}backend/src/",
-            "{$this->targetDirPath}backend/src/"
+            "{$this->targetDirPath}backend/src/",
         ));
         if (!$this->fs->isFile("{$this->targetDirPath}backend/src/App.php"))
             throw new PikeException("Failed to copy `{$this->radPath}backend/src/*`" .
@@ -105,41 +106,45 @@ class Bundler {
     /**
      * @throws \Pike\PikeException
      */
+    private function copyPlugins(): void {
+        call_user_func($this->shellExecFn, self::makeCpCmd(
+            "{$this->radPath}plugins/",
+            "{$this->targetDirPath}plugins/",
+        ));
+        if (!$this->fs->isFile("{$this->targetDirPath}plugins/StaticMenu/README.md"))
+            throw new PikeException("Failed to copy `{$this->radPath}plugins/*`" .
+                                    " -> `{$this->targetDirPath}plugins/`",
+                                    PikeException::FAILED_FS_OP);
+    }
+    /**
+     * @throws \Pike\PikeException
+     */
     private function copyFrontendFiles(): void {
+        call_user_func($this->shellExecFn, self::makeCpCmd(
+            "{$this->radPath}frontend/rad/",
+            "{$this->targetDirPath}frontend/rad/",
+            'tests',
+            'tests-vendor',
+            'common.css',
+            'cpanel-app.css',
+            'install-app.css',
+            'tests.html',
+        ));
+        if (!$this->fs->isFile("{$this->targetDirPath}frontend/rad/assets/LICENSES.txt"))
+            throw new PikeException("Failed to copy `{$this->radPath}frontend/rad/**`" .
+                                    " -> `{$this->targetDirPath}frontend/rad/**`",
+                                    PikeException::FAILED_FS_OP);
         foreach ([
-            ['frontend-src/cpanel-app/cpanel.css', 'frontend/cpanel-app.css'],
-            ['frontend-src/install-app/install-app.css', 'frontend/install-app.css'],
-            ['frontend/rad-auth-apps.js', null],
-            ['frontend/rad-commons.js', null],
-            ['frontend/rad-cpanel-app.js', null],
-            ['frontend/rad-cpanel-commons.js', null],
-            ['frontend/rad-install-app.js', null],
-        ] as [$from, $to]) {
-            if (!$to) $to = $from;
-            if (!$this->fs->copy($this->radPath . $from, $this->targetDirPath . $to))
-                throw new PikeException('Failed to copy `' . ($this->radPath . $from) .
-                                        '` -> `' . ($this->targetDirPath . $to) . '`');
-        }
-        foreach ([
-            ['frontend-src/commons/common.css', 'frontend/common.css'],
+            ['frontend-src/commons/common.css', 'frontend/rad/common.css'],
+            ['frontend-src/cpanel-app/cpanel.css', 'frontend/rad/cpanel-app.css'],
+            ['frontend-src/install-app/install-app.css', 'frontend/rad/install-app.css'],
         ] as [$from, $to]) {
             if (!($contents = $this->fs->read($this->radPath . $from)))
                 throw new PikeException('Failed to read `' . ($this->radPath . $from) . '`');
             if (!$this->fs->write($this->targetDirPath . $to,
-                                  // 'url("../../frontend/assets' -> 'url("assets'
-                                  str_replace('../../frontend/', '', $contents)))
+                                  // 'url("../../frontend/rad/assets' -> 'url("assets'
+                                  str_replace('../../frontend/rad/', '', $contents)))
                 throw new PikeException('Failed to write `' . ($this->targetDirPath . $to) . '`');
-        }
-        //
-        foreach(['assets', 'vendor'] as $p) {
-            call_user_func($this->shellExecFn, self::makeCpCmd(
-                "{$this->radPath}frontend/{$p}/",
-                "{$this->targetDirPath}frontend/{$p}/"
-            ));
-            if (!$this->fs->isFile("{$this->targetDirPath}frontend/{$p}/LICENSES.txt"))
-                throw new PikeException("Failed to copy `{$this->radPath}frontend/{$p}/*`" .
-                                        " -> `{$this->targetDirPath}frontend/{$p}/`",
-                                        PikeException::FAILED_FS_OP);
         }
     }
     /**
@@ -176,7 +181,7 @@ class Bundler {
                             (!$files ? '' : ' /xf ' . implode(' ', $files));
             } else {
                 $excludes = implode(' ', array_map(function ($path) {
-                    return "--exclude \'{$path}\'";
+                    return "--exclude " . (PHP_OS === 'Darwin' ? $path : "\'{$path}\'");
                 }, $exclude)) . ' ';
             }
         }

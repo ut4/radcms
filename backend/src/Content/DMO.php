@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace RadCms\Content;
 
-use RadCms\ContentType\ContentTypeValidator;
 use Pike\PikeException;
-use RadCms\ContentType\FieldCollection;
+use RadCms\ContentType\{ContentTypeValidator, FieldCollection};
 
 /**
  * DataManipulationObject: implementoi sisältötyyppidatan insert-, update-, ja
@@ -31,10 +30,10 @@ class DMO extends DAO {
         if (($errors = ContentTypeValidator::validateInsertData($type, $data)))
             throw new PikeException(implode(PHP_EOL, $errors),
                                     PikeException::BAD_INPUT);
-        $q = (object) ['cols' => [], 'qs' => [], 'vals' => []];
+        $q = (object) ['cols' => [], 'qList' => [], 'vals' => []];
         $appendVal = function ($name) use ($q, $data) {
             $q->cols[] = "`{$name}`";
-            $q->qs[] = '?';
+            $q->qList[] = '?';
             $q->vals[] = $data->$name;
         };
         foreach (['id', 'status'] as $optional) {
@@ -56,7 +55,7 @@ class DMO extends DAO {
         // @allow \Pike\PikeException
         $numRows = $this->db->exec('INSERT INTO `${p}' . $contentTypeName . '`' .
                                    ' (' . implode(', ', $q->cols) . ')' .
-                                   ' VALUES (' . implode(', ', $q->qs) . ')',
+                                   ' VALUES (' . implode(', ', $q->qList) . ')',
                                    $q->vals);
         $this->lastInsertId = $numRows ? (int) $this->db->lastInsertId() : 0;
         return $numRows;
@@ -109,9 +108,9 @@ class DMO extends DAO {
         // @allow \Pike\PikeException
         $numRows = !$data->isRevision
             ? $this->db->exec(...self::makeUpdateMainExec($id, $contentTypeName,
-                                                            $data, $type->fields))
+                                                          $data, $type->fields))
             : $this->db->exec(...self::makeUpdateRevisionExec($id, $contentTypeName,
-                                                                $data, $type->fields));
+                                                              $data, $type->fields));
         // @allow \Pike\PikeException
         if ($doPublish)
             $numRows += $this->db->exec(...self::makeDeleteRevisionExec($id, $contentTypeName));
@@ -137,9 +136,9 @@ class DMO extends DAO {
         $numOps = 1;
         // @allow \Pike\PikeException
         $numRows = $this->db->exec('UPDATE `${p}' . $contentTypeName . '`' .
-                                    ' SET `status` = ?' .
-                                    ' WHERE `id` = ?',
-                                    [DAO::STATUS_DELETED, $id]);
+                                   ' SET `status` = ?' .
+                                   ' WHERE `id` = ?',
+                                   [DAO::STATUS_DELETED, $id]);
         if ($numRows && $cnode->status === DAO::STATUS_DRAFT) {
             $numOps += 1;
             // @allow \Pike\PikeException

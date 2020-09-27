@@ -1,4 +1,0 @@
-/**
- * Tämä on vain devausympäristössä käytettävä proxy-tiedosto, prodissa tämä tie-
- * dosto korvataan alla määritellyn @importin viittamalla tiedostolla. */
-@import '../frontend-src/commons/common.css';

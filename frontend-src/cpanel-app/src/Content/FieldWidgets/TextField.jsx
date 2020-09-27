@@ -1,6 +1,9 @@
-import {hookForm, InputGroup, Input} from '@rad-commons';
+import {hookForm, Input} from '@rad-commons';
 import BaseFieldWidget from './Base.jsx';
 
+/**
+ * Lyhyt tekstikenttä i.e. <input type="text"> -widgetti.
+ */
 class TextFieldFieldWidget extends BaseFieldWidget {
     /**
      * @inheritdoc
@@ -27,14 +30,12 @@ class TextFieldFieldWidget extends BaseFieldWidget {
      * @access protected
      */
     render() {
-        const InputImplClass = this.getInputImplClass();
-        return <InputGroup classes={ this.state.classes[this.inputName] }>
-            <label htmlFor={ this.inputName }>{ this.label }</label>
-            <InputImplClass vm={ this }
-                            myOnChange={ newState => this.emitValueChange(newState) }
-                            name={ this.inputName }
-                            id={ this.inputName }/>
-        </InputGroup>;
+        const InputImplClass = this.getInputImplClass(); // Input, Textarea
+        return <InputImplClass
+            vm={ this }
+            myOnChange={ newState => this.emitValueChange(newState) }
+            name={ this.inputName }
+            id={ this.inputName }/>;
     }
     /**
      * @access private

@@ -1,7 +1,6 @@
 const config = {
-    baseUrl: '',
-    assetBaseUrl: '',
     userPermissions: {},
+    user: null,
 };
 
 export default config;

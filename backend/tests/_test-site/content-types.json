@@ -2,13 +2,17 @@
     {
         "name": "SomeType",
         "friendlyName": "Friendly name",
+        "description": "A description",
         "isInternal": false,
-        "fields": [{"name": "name", "dataType": "text"}]
+        "frontendFormImpl": "Default",
+        "fields": [{"name": "name", "dataType": {"type": "text", "length": null}}]
     },
     {
         "name": "AnotherType",
         "friendlyName": "Friendly eman",
+        "description": "A description",
         "isInternal": false,
-        "fields": [{"name": "title", "dataType": "text"}]
+        "frontendFormImpl": "Default",
+        "fields": [{"name": "title", "dataType": {"type": "text", "length": null}}]
     }
 ]

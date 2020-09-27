@@ -3,8 +3,7 @@
 namespace RadCms\Tests\Website;
 
 use PHPUnit\Framework\TestCase;
-use RadCms\Website\UrlMatcher;
-use RadCms\Website\WebsiteControllers;
+use RadCms\Website\{UrlMatcher, WebsiteControllers};
 
 final class UrlMatchersTest extends TestCase {
     public function testFindLayoutReturnsLayoutName() {

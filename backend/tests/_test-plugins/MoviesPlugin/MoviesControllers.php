@@ -1,15 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RadPlugins\MoviesPlugin;
 
-use Pike\Response;
-use RadCms\Content\DAO;
-use RadCms\Content\DMO;
-use Pike\Request;
-use RadCms\ContentType\ContentTypeCollection;
-use Pike\PikeException;
+use Pike\{ArrayUtils, PikeException, Request, Response};
 use RadCms\Common\LoggerAccess;
-use Pike\ArrayUtils;
+use RadCms\Content\{DAO, DMO};
+use RadCms\ContentType\ContentTypeCollection;
 
 class MoviesControllers {
     /**
@@ -54,7 +52,8 @@ class MoviesControllers {
                                              Response $res,
                                              DMO $dmo) {
         try {
-            $numAffectedRows = $dmo->update($req->params->movieId, 'Movies',
+            $numAffectedRows = $dmo->update((int) $req->params->movieId,
+                                            'Movies',
                                             (object)$req->body);
             $res->json($numAffectedRows > 0
                 ? ['my' => 'response2']

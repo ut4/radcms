@@ -1,19 +1,48 @@
+import FeatherSvg from './FeatherSvg.jsx';
+
+const validationStrings = {
+    required: '{field} vaaditaan',
+    minLength: '{field} tulee ole vähintään {arg0} merkkiä pitkä',
+    maxLength: '{field} tulee ole enintään {arg0} merkkiä pitkä',
+    min: '{field} tulee olla vähintään {arg0}',
+    max: '{field} tulee olla enintään {arg0}',
+};
+
 const validatorImplFactories = {
-    'required':
-        [(value) => !!value, '{field} vaaditaan']
+    'required': messages =>
+        [(value) => !!value, messages.required]
     ,
-    'minLength':
-        [(value, min) => value.length >= min, '{field} tulee ole vähintään {arg0} merkkiä pitkä']
+    'type': () => {
+        throw new Error('Not implemented yet.');
+    },
+    'minLength': messages =>
+        [(value, min) => value.length >= min, messages.minLength]
     ,
-    'min':
-        [(value, min) => value >= min, '{field} tulee olla vähintään {arg0}']
+    'maxLength': messages =>
+        [(value, max) => value.length <= max, messages.maxLength]
+    ,
+    'min': messages =>
+        [(value, min) => value >= min, messages.min]
+    ,
+    'max': messages =>
+        [(value, max) => value <= max, messages.max]
+    ,
+    'in': () => {
+        throw new Error('Not implemented yet.');
+    },
+    'identifier': () => {
+        throw new Error('Not implemented yet.');
+    },
+    'regexp': (_, args) =>
+        [(value, pattern) => (new RegExp(pattern)).test(value),
+         `{field}${args.length < 2 ? ' ei kelpaa' : '{arg1}'}`]
     ,
 };
 function expandRules(rules) {
     return rules.map(([ruleNameOrCustomImpl, ...args]) => {
         // ['ruleName', ...args]
         if (typeof ruleNameOrCustomImpl === 'string') {
-            const ruleImpl = validatorImplFactories[ruleNameOrCustomImpl];
+            const ruleImpl = validatorImplFactories[ruleNameOrCustomImpl](validationStrings, args);
             if (!ruleImpl)
                 throw new Error(`Rule ${ruleNameOrCustomImpl} not implemented`);
             return {ruleImpl, args};
@@ -27,19 +56,19 @@ function expandRules(rules) {
 }
 class Validator {
     /**
-     * @param {{getValue: () => string; getLabel: () => string;}} myInput
-     * @param {Array<[string, ...any]>} ruleSettings
+     * @param {string} errorLabel
+     * @param {Array<[string, ...any]|[[function, string], ...any]>} ruleSettings
      */
-    constructor(myInput, ruleSettings) {
-        this.myInput = myInput;
+    constructor(errorLabel, ruleSettings) {
+        this.errorLabel = errorLabel;
         this.ruleImpls = expandRules(ruleSettings);
     }
     /**
+     * @param {any} value
      * @returns {string|null}
      * @access public
      */
-    checkValidity() {
-        const value = this.myInput.getValue();
+    checkValidity(value) {
         for (const {ruleImpl, args} of this.ruleImpls) {
             const [validationFn, errorTmpl] = ruleImpl;
             if (!validationFn(value, ...args))
@@ -53,18 +82,31 @@ class Validator {
     formatError(errorTmpl, args) {
         return args.reduce((error, arg, i) =>
             error.replace(`{arg${i}}`, arg)
-        , errorTmpl.replace('{field}', this.myInput.getLabel()));
+        , errorTmpl.replace('{field}', this.errorLabel));
+    }
+    /**
+     * @param {{[key: string]: string;}} strings
+     * @access public
+     */
+    static setValidationStrings(strings) {
+        Object.assign(validationStrings, strings);
     }
 }
 class ValidatorRunner {
     /**
-     * @param {{[key: string]: Validator}=} initialValidators
+     * @param {Object} inputs = {}
      */
-    constructor(initialValidators) {
+    constructor(inputs = {}) {
         this.validators = {};
-        if (initialValidators) {
-            for (const name in initialValidators)
-                this.setValidatorForInput(name, initialValidators[name]);
+        for (const name in inputs) {
+            const {validations} = inputs[name];
+            if (!validations)
+                continue;
+            if (!Array.isArray(validations) ||
+                !Array.isArray(validations[0]))
+                throw new TypeError('validations must be an array of arrays');
+            this.setValidatorForInput(name,
+                new Validator(inputs[name].label || name, validations));
         }
     }
     /**
@@ -87,11 +129,12 @@ class ValidatorRunner {
     }
     /**
      * @param {string} inputName
+     * @param {any} value
      * @returns {string|null}
      * @access public
      */
-    validateInput(inputName) {
-        return this.validators[inputName].checkValidity();
+    validateInput(inputName, value) {
+        return this.validators[inputName].checkValidity(value);
     }
     /**
      * @param {(validator: Validator, inputName: string) => false|any} fn
@@ -123,7 +166,7 @@ class Form {
         const {values, errors, classes} = this.vm.state;
         values[name] = e.target.type !== 'checkbox' ? e.target.value : e.target.checked;
         errors[name] = this.validatorRunner.hasValidatorForInput(name)
-            ? this.validatorRunner.validateInput(name)
+            ? this.validatorRunner.validateInput(name, values[name])
             : '';
         classes[name].invalid = !!errors[name];
         classes[name].focused = true;
@@ -163,7 +206,7 @@ class Form {
         const name = e.target.name;
         const {errors, classes} = this.vm.state;
         errors[name] = this.validatorRunner.hasValidatorForInput(name)
-            ? this.validatorRunner.validateInput(name)
+            ? this.validatorRunner.validateInput(name, this.vm.state.values[name])
             : '';
         classes[name].invalid = !!errors[name];
         classes[name].blurredAtLeastOnce = true;
@@ -190,15 +233,15 @@ class Form {
         if (e) e.preventDefault();
         if (this.isSubmitting) return null;
         this.setIsSubmitting();
-        const {errors, classes} = this.vm.state;
+        const {values, errors, classes} = this.vm.state;
         let overall = true;
         this.validatorRunner.each((validator, inputName) => {
-            const error = validator.checkValidity();
+            const error = validator.checkValidity(values[inputName]);
             errors[inputName] = error;
             classes[inputName].invalid = !!error;
-            if (error) overall = false;
-            if (!overall && error && !classes[inputName].blurredAtLeastOnce)
+            if (overall && error && !classes[inputName].blurredAtLeastOnce)
                 classes[inputName].blurredAtLeastOnce = true;
+            if (error) overall = false;
         });
         this.applyState({errors, classes}, myAlterStateFn);
         return overall;
@@ -220,7 +263,11 @@ class Form {
     }
 }
 
-const hookForm = (vm, values, validators = null) => {
+const hookForm = (vm, values = null, inputs = null) => {
+    if (!values) values = Object.keys(inputs).reduce((out, key) => {
+        out[key] = inputs[key].value;
+        return out;
+    }, {});
     const state = {
         values,
         errors: Object.keys(values).reduce((obj, key) =>
@@ -232,7 +279,7 @@ const hookForm = (vm, values, validators = null) => {
                                         focused: false}})
         , {}),
     };
-    Object.assign(vm, {form: new Form(vm, new ValidatorRunner(validators))});
+    Object.assign(vm, {form: new Form(vm, new ValidatorRunner(inputs))});
     return state;
 };
 
@@ -242,23 +289,12 @@ class AbstractInput extends preact.Component {
      */
     constructor(props) {
         super(props);
+        if (props.type === 'radio')
+            throw new Error('type="radio" not supported');
         props.vm.form.validatorRunner.setValidatorForInput(props.name,
-            new Validator(this, props.validations || []));
+            new Validator((props.errorLabel || props.name) || '<name>',
+                          props.validations || []));
         this.inputEl = null;
-    }
-    /**
-     * @returns {string}
-     * @access public
-     */
-    getValue() {
-        return this.inputEl.value;
-    }
-    /**
-     * @returns {string}
-     * @access public
-     */
-    getLabel() {
-        return (this.props.errorLabel || this.props.name) || '<name>';
     }
     /**
      * @returns {string} 'input'|'select' etc.
@@ -275,10 +311,14 @@ class AbstractInput extends preact.Component {
         const name = this.props.name;
         const tagName = this.getTagName();
         const inputType = this.props.type || 'text';
+        const isSelect = tagName === 'select';
         return preact.createElement(tagName, Object.assign({}, this.props, {
             name,
+            className: 'form-input ' +
+                        (!this.props.className ? '' : ` ${this.props.className}`) +
+                        (!isSelect ? '' : ' form-select'),
             value: state.values[name],
-            [!(tagName === 'select' ||
+            [!(isSelect ||
                inputType === 'checkbox' ||
                inputType === 'radio') ? 'onInput' : 'onChange']:
                 e => form.handleChange(e, this.props.myOnChange),
@@ -306,63 +346,76 @@ class Select extends AbstractInput {
  * @returns {string}
  */
 function formatCssClasses(classes) {
-    return (classes.invalid ? ' invalid' : '') +
+    return (classes.invalid ? ' has-error' : '') +
             (classes.focused ? ' focused' : '') +
             (classes.blurredAtLeastOnce ? ' blurred-at-least-once' : '');
 }
 
 class InputGroup extends preact.Component {
     /**
-     * @param {{classes?: {invalid: boolean; focused: boolean; blurredAtLeastOnce: boolean;}; className?: string; inline?: boolean;}} props
-     */
-    constructor(props) {
-        super(props);
-        this.staticCssClassString = 'input-group' +
-                                    (this.props.className || '') +
-                                    (!this.props.inline ? '' : ' inline');
-    }
-    /**
+     * @param {{classes?: {invalid: boolean; focused: boolean; blurredAtLeastOnce: boolean;}; className?: string;}} props
      * @access protected
      */
-    render() {
-        const className = this.staticCssClassString + (this.props.classes
-            ? formatCssClasses(this.props.classes)
-            : '');
-        return preact.createElement('div', {className}, this.props.children);
+    render({children, classes, className}) {
+        return <div
+            className={ 'form-group' +
+                        (!className ? '' : ` ${className}`) +
+                        (classes ? formatCssClasses(classes) : '') }>
+            { children }
+        </div>;
     }
 }
 
 class InputError extends preact.Component {
     /**
-     * @param {{error?: string;}} props
-     */
-    constructor(props) {
-        super(props);
-    }
-    /**
+     * @param {{error?: string; className?: string;}} props
      * @access protected
      */
-    render() {
-        const error = this.props.error;
-        return !error ? null : <p class="error">{ error }</p>;
+    render({error, className}) {
+        return !error ? null : <p class={ 'form-input-hint' + (!className ? '' : ` ${className}`) }>{ error }</p>;
     }
 }
 
 class FormButtons extends preact.Component {
     /**
+     * @param {{buttons?: Array<'submit'|'submitWithAlt'|'cancel'|preact.AnyComponent>; submitButtonText?: string; altSubmitButtonText?: string; cancelButtonText?: string; returnTo?: string; className?: string;}} props
+     */
+    constructor(props) {
+        super(props);
+        this.state = {altMenuIsOpen: false};
+    }
+    /**
      * @access protected
      */
-    render() {
-        return <div class="form-buttons">
-            { (this.props.buttons || ['submit', 'cancel']).map(candidate => {
+    render(props) {
+        return <div class={ `form-buttons${!props.className ? '' : ` ${props.className}`}` }>
+            { (props.buttons || ['submit', 'cancel']).map(candidate => {
                 if (candidate === 'submit')
-                    return <button class="nice-button primary" type="submit">
-                        { this.props.submitButtonText || 'Ok' }
+                    return <button class="btn btn-primary" type="submit">
+                        { props.submitButtonText || 'Ok' }
                     </button>;
+                if (candidate === 'submitWithAlt')
+                    return <div class={ `btn-group p-relative${!this.state.altMenuIsOpen ? '' : ' open'}` }>
+                        <button class="btn btn-primary" type="submit">
+                            { props.submitButtonText || 'Ok' }
+                        </button>
+                        <button
+                            onClick={ () => this.setState({altMenuIsOpen: !this.state.altMenuIsOpen}) }
+                            class="btn btn-primary"
+                            type="button">
+                            <FeatherSvg iconId="chevron-down" className="feather-xs"/>
+                        </button>
+                        <a href="#close" onClick={ e => this.closeAltMenu(e) } class="close-overlay"></a>
+                        <ul class="popup-menu menu">
+                            <li class="menu-item"><a onClick={ e => this.triggerOnSubmit(e) } href="">{ props.altSubmitButtonText || 'Alt' }</a></li>
+                        </ul>
+                    </div>;
                 if (candidate === 'cancel')
-                    return <a href={ `#${this.props.returnTo || '/'}` }
-                                onClick={ e => this.handleCancel(e) }>
-                        { this.props.cancelButtonText || 'Peruuta' }
+                    return <a
+                        href={ `#${props.returnTo || '/'}` }
+                        onClick={ e => this.handleCancel(e) }
+                        class="ml-2">
+                        { props.cancelButtonText || 'Peruuta' }
                     </a>;
                 return candidate;
             }) }
@@ -374,7 +427,24 @@ class FormButtons extends preact.Component {
     handleCancel(e) {
         if (this.props.onCancel) this.props.onCancel(e);
     }
+    /**
+     * @access private
+     */
+    triggerOnSubmit(e) {
+        this.closeAltMenu(e);
+        const form = e.target.closest('form');
+        if (!form) throw new Error('Expected <FormButtons/> to be a child of <form>');
+        const myEvent = new Event('submit', {'bubbles': true, 'cancelable': true});
+        myEvent.altSubmitLinkIndex = 0;
+        form.dispatchEvent(myEvent);
+    }
+    /**
+     * @access private
+     */
+    closeAltMenu(e) {
+        e.preventDefault();
+        this.setState({altMenuIsOpen: false});
+    }
 }
 
-export default hookForm;
-export {InputGroup, Input, Textarea, Select, InputError, FormButtons, Validator};
+export {hookForm, InputGroup, Input, Textarea, Select, InputError, FormButtons};

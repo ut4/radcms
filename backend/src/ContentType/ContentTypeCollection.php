@@ -10,20 +10,26 @@ class ContentTypeCollection extends \ArrayObject {
     /**
      * @param string $name
      * @param string $friendlyName
+     * @param string $description
      * @param array|\RadCms\ContentType\FieldCollection $fields
      * @param bool $isInternal = false
+     * @param string $frontendFormImpl = 'Default'
      * @param string $origin = null 'Website' | 'SomePlugin'
      */
     public function add(string $name,
                         string $friendlyName,
+                        string $description,
                         $fields,
                         bool $isInternal = false,
+                        string $frontendFormImpl = 'Default',
                         string $origin = null): void {
         $this[] = new ContentTypeDef($name,
                                      $friendlyName,
+                                     $description,
                                      $fields,
                                      count($this),
                                      $isInternal,
+                                     $frontendFormImpl,
                                      $origin);
     }
     /**
@@ -48,12 +54,13 @@ class ContentTypeCollection extends \ArrayObject {
     public static function fromCompactForm(array $input): ContentTypeCollection {
         $out = new ContentTypeCollection;
         foreach ($input as $i => $def)
-            $out[] = new ContentTypeDef($def->name,
-                                        $def->friendlyName,
-                                        $def->fields,
-                                        $i,
-                                        $def->isInternal ?? false,
-                                        $def->origin ?? null);
+            $out[] = ContentTypeDef::fromObject($def, $i);
         return $out;
+    }
+    /**
+     * @return \RadCms\ContentType\ContentTypeCollectionBuilder
+     */
+    public static function build(): ContentTypeCollectionBuilder {
+        return new ContentTypeCollectionBuilder;
     }
 }

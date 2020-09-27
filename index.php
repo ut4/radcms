@@ -1,11 +1,11 @@
 <?php
 
-define('RAD_VERSION', '0.3.0-preview');
+define('RAD_VERSION', '0.3.0-preview2');
 
 $config = require 'config.php';
-$loader = require RAD_BASE_PATH . 'vendor/autoload.php';
-$loader->addPsr4('RadSite\\', RAD_PUBLIC_PATH . 'site');
-$loader->addPsr4('RadPlugins\\', RAD_PUBLIC_PATH . 'plugins');
+$loader = require RAD_BACKEND_PATH . 'vendor/autoload.php';
+$loader->addPsr4('RadSite\\', RAD_WORKSPACE_PATH . 'site');
+$loader->addPsr4('RadPlugins\\', RAD_WORKSPACE_PATH . 'plugins');
 
 ////////////////////////////////////////////////////////////////////////////////
 $logger = new \Monolog\Logger('mainLogger');
@@ -32,6 +32,7 @@ if (!(RAD_FLAGS & RAD_DEVMODE)) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-\RadCms\App::create($config, [\Pike\App::SERVICE_DB => \Pike\App::MAKE_AUTOMATICALLY,
-                              \Pike\App::SERVICE_AUTH => \Pike\App::MAKE_AUTOMATICALLY])
-    ->handleRequest(RAD_BASE_URL, $_GET[RAD_QUERY_VAR] ?? null);
+\RadCms\App::create($config, new \RadCms\AppContext([
+    'db' => \Pike\App::MAKE_AUTOMATICALLY,
+    'auth' => \Pike\App::MAKE_AUTOMATICALLY,
+]))->handleRequest(RAD_BASE_URL, $_GET[RAD_QUERY_VAR] ?? null);

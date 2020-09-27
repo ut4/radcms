@@ -2,12 +2,12 @@
 
 namespace RadCms\Installer\Tests;
 
+use Pike\{FileSystem, Request};
 use Pike\TestUtils\HttpTestUtils;
-use RadCms\Tests\_Internal\ContentTestUtils;
-use Pike\Request;
-use Pike\FileSystem;
+use RadCms\AppContext;
 use RadCms\Auth\ACL;
 use RadCms\Installer\Installer;
+use RadCms\Tests\_Internal\ContentTestUtils;
 
 final class InstallerTest extends BaseInstallerTest {
     use HttpTestUtils;
@@ -15,12 +15,6 @@ final class InstallerTest extends BaseInstallerTest {
     const TEST_DB_NAME1 = 'radInstallerTestDb1';
     const TEST_DB_NAME2 = 'radInstallerTestDb2';
     const TEST_DB_NAME3 = 'radInstallerTestDb3';
-    public function setUp(): void {
-        parent::setUp();
-        if (!defined('INDEX_DIR_PATH')) {
-            define('INDEX_DIR_PATH', RAD_PUBLIC_PATH);
-        }
-    }
     public static function tearDownAfterClass(): void {
         parent::tearDownAfterClass();
         self::$db->exec('DROP DATABASE IF EXISTS ' . self::TEST_DB_NAME1 .
@@ -43,7 +37,9 @@ final class InstallerTest extends BaseInstallerTest {
             'firstUserPass must be string',
             'The length of baseUrl must be at least 1',
         ]), 400);
-        $app = $this->makeApp([$this,'createInstallerApp'], $this->getAppConfig());
+        $app = $this->makeApp([$this,'createInstallerApp'],
+                              $this->getAppConfig(),
+                              '\RadCms\AppContext');
         $this->sendRequest(new Request('/', 'POST', $input), $res, $app);
     }
     public function testInstallerValidatesInvalidValues() {
@@ -76,16 +72,16 @@ final class InstallerTest extends BaseInstallerTest {
             'dbPass must be string',
             'The length of dbDatabase must be at least 1',
             'doCreateDb must be bool',
-            'dbTablePrefix must be string',
             'The length of dbTablePrefix must be at least 1',
             'The value of dbCharset was not in the list',
             'The length of firstUserName must be at least 1',
-            'firstUserEmail must be string',
             'The length of firstUserEmail must be at least 3',
             'firstUserPass must be string',
-            'The length of baseUrl must be at least 1'
+            'The length of baseUrl must be at least 1',
         ]), 400);
-        $app = $this->makeApp([$this,'createInstallerApp'], $this->getAppConfig());
+        $app = $this->makeApp([$this,'createInstallerApp'],
+                              $this->getAppConfig(),
+                              '\RadCms\AppContext');
         $this->sendRequest(new Request('/', 'POST', $input), $res, $app);
     }
     public function testInstallerFillsDefaultValues() {
@@ -101,17 +97,17 @@ final class InstallerTest extends BaseInstallerTest {
             'dbDatabase' => 'name',
             'doCreateDb' => false,
             'dbTablePrefix' => 'p_',
-            'dbCharset' => 'utf8',
+            'dbCharset' => 'utf8mb4',
             'firstUserName' => 'user',
             'firstUserPass' => 'pass',
             'baseUrl' => '/',
         ];
         $res = $this->createMockResponse($this->anything());
         $app = $this->makeApp([$this,'createInstallerApp'], $this->getAppConfig(),
-            null, function ($injector) {
+            '\RadCms\AppContext', function ($injector) {
                 $injector->delegate(Installer::class, function() {
                     $m = $this->createMock(Installer::class);
-                    $m->method('doInstall')->willReturn(true);
+                    $m->method('doInstall')->willReturn(RAD_WORKSPACE_PATH);
                     $m->method('getWarnings')->willReturn([]);
                     return $m;
                 });
@@ -156,15 +152,16 @@ final class InstallerTest extends BaseInstallerTest {
                 'dbDatabase' => self::TEST_DB_NAME1,
                 'doCreateDb' => true,
                 'dbTablePrefix' => 'p_',
-                'dbCharset' => 'utf8',
+                'dbCharset' => 'utf8mb4',
                 'firstUserName' => 'user',
                 'firstUserEmail' => 'user@mail.com',
                 'firstUserPass' => 'pass',
                 'baseUrl' => '/foo/',
             ],
-            'backendPath' => RAD_BASE_PATH,
-            'siteDirPath' => INDEX_DIR_PATH,
-            'sampleContentDirPath' => RAD_BASE_PATH . 'installer/sample-content/test-content/',
+            'backendPath' => RAD_BACKEND_PATH,
+            'workspacePath' => RAD_WORKSPACE_PATH,
+            'publicPath' => RAD_PUBLIC_PATH,
+            'sampleContentDirPath' => RAD_BACKEND_PATH . 'installer/sample-content/test-content/',
             'mockFs' => $this->createMock(FileSystem::class)
         ];
     }
@@ -181,8 +178,9 @@ final class InstallerTest extends BaseInstallerTest {
                     file_get_contents("{$s->backendPath}assets/schema.mariadb.sql"),
                     //
                     '[' .
-                        '{"name":"Movies","friendlyName":"Elokuvat","isInternal":false' .
-                        ',"fields":[{"name":"title","dataType":"text"}]}' .
+                        '{"name":"Movies","friendlyName":"Elokuvat"' .
+                        ',"description":"Elokuvat","isInternal":false,"frontendFormImpl":"Default"' .
+                        ',"fields":[{"name":"title","dataType":{"type":"text","length":null}}]}' .
                     ']',
                     //
                     '[' .
@@ -195,15 +193,18 @@ final class InstallerTest extends BaseInstallerTest {
             $s->mockFs->expects($this->exactly(2))
                 ->method('readDirRecursive')
                 ->withConsecutive(
-                    ["{$s->sampleContentDirPath}site/", '/^.*\.tmpl\.php$/'],
-                    ["{$s->sampleContentDirPath}site/", '/^.*\.(css|js)$/']
+                    ["{$s->sampleContentDirPath}site/", '/.*/'],
+                    ["{$s->sampleContentDirPath}frontend/", '/.*/']
                 )
                 ->willReturnOnConsecutiveCalls([
                     "{$s->sampleContentDirPath}site/templates/dir/main.tmpl.php",
-                    "{$s->sampleContentDirPath}site/templates/Another.tmpl.php"
+                    "{$s->sampleContentDirPath}site/templates/Another.tmpl.php",
+                    "{$s->sampleContentDirPath}site/README.md",
+                    "{$s->sampleContentDirPath}site/Site.php",
+                    "{$s->sampleContentDirPath}site/Theme.php",
                 ], [
-                    "{$s->sampleContentDirPath}site/foo.css",
-                    "{$s->sampleContentDirPath}site/dir/bar.js"
+                    "{$s->sampleContentDirPath}frontend/foo.css",
+                    "{$s->sampleContentDirPath}frontend/dir/bar.js"
                 ]);
             return;
         }
@@ -215,37 +216,41 @@ final class InstallerTest extends BaseInstallerTest {
             $s->mockFs->expects($this->atLeastOnce())
                 ->method('mkDir')
                 ->withConsecutive(
-                    ["{$s->siteDirPath}site/templates"],
-                    ["{$s->siteDirPath}uploads"]
+                    ["{$s->workspacePath}site/templates"],
+                    ["{$s->publicPath}uploads"]
                 )
                 ->willReturn(true);
             return;
         }
         if ($expectation === 'clonesTemplateFilesAndSiteCfgFile') {
-            $from = "{$s->sampleContentDirPath}site/";
-            $to = "{$s->siteDirPath}site/";
-            $s->mockFs->expects($this->exactly(6))
+            $siteFrom = "{$s->sampleContentDirPath}site/";
+            $frontendFrom = "{$s->sampleContentDirPath}frontend/";
+            $siteTo = "{$s->workspacePath}site/";
+            $frontendTo = "{$s->publicPath}frontend/";
+            $s->mockFs->expects($this->atLeastOnce())
                 ->method('copy')
                 ->withConsecutive(
-                    ["{$from}Site.php", "{$to}Site.php"],
-                    ["{$from}README.md", "{$to}README.md"],
-                    ["{$from}templates/dir/main.tmpl.php", "{$to}templates/dir/main.tmpl.php"],
-                    ["{$from}templates/Another.tmpl.php", "{$to}templates/Another.tmpl.php"],
-                    ["{$from}foo.css", "{$to}foo.css"],
-                    ["{$from}dir/bar.js", "{$to}dir/bar.js"])
+                    ["{$siteFrom}templates/dir/main.tmpl.php", "{$siteTo}templates/dir/main.tmpl.php"],
+                    ["{$siteFrom}templates/Another.tmpl.php", "{$siteTo}templates/Another.tmpl.php"],
+                    ["{$siteFrom}README.md", "{$siteTo}README.md"],
+                    ["{$siteFrom}Site.php", "{$siteTo}Site.php"],
+                    ["{$siteFrom}Theme.php", "{$siteTo}Theme.php"],
+                    ["{$frontendFrom}foo.css", "{$frontendTo}foo.css"],
+                    ["{$frontendFrom}dir/bar.js", "{$frontendTo}dir/bar.js"])
                 ->willReturn(true);
             return;
         }
         if ($expectation === 'generatesConfigFile') {
             $s->mockFs->expects($this->once())
                 ->method('write')
-                ->with("{$s->siteDirPath}config.php",
+                ->with("{$s->publicPath}config.php",
 "<?php
-if (!defined('RAD_BASE_PATH')) {
+if (!defined('RAD_BASE_URL')) {
     define('RAD_BASE_URL',       '{$s->input->baseUrl}');
     define('RAD_QUERY_VAR',      '{$s->input->mainQueryVar}');
-    define('RAD_BASE_PATH',      '{$s->backendPath}');
-    define('RAD_PUBLIC_PATH',    '{$s->siteDirPath}');
+    define('RAD_BACKEND_PATH',   '{$s->backendPath}');
+    define('RAD_WORKSPACE_PATH', '{$s->publicPath}');
+    define('RAD_PUBLIC_PATH',    '{$s->publicPath}');
     define('RAD_DEVMODE',        1 << 1);
     define('RAD_USE_JS_MODULES', 1 << 2);
     define('RAD_FLAGS',          RAD_DEVMODE);
@@ -256,8 +261,7 @@ return [
     'db.user'        => '{$s->input->dbUser}',
     'db.pass'        => '{$s->input->dbPass}',
     'db.tablePrefix' => '{$s->input->dbTablePrefix}',
-    'db.charset'     => 'utf8',
-    'mail.transport' => 'phpsMailFunction',
+    'db.charset'     => 'utf8mb4',
 ];
 "
 )
@@ -268,9 +272,9 @@ return [
             $s->mockFs->expects($this->exactly(3))
                 ->method('unlink')
                 ->withConsecutive(
-                    ["{$s->siteDirPath}install.php"],
-                    ["{$s->siteDirPath}frontend/install-app.css"],
-                    ["{$s->siteDirPath}frontend/rad-install-app.js"]
+                    ["{$s->publicPath}install.php"],
+                    ["{$s->publicPath}frontend/rad/install-app.css"],
+                    ["{$s->publicPath}frontend/rad/rad-install-app.js"]
                 )
                 ->willReturn(true);
             $s->mockFs->expects($this->exactly(1))
@@ -286,9 +290,14 @@ return [
         throw new \Exception('Shouldn\'t happen');
     }
     private function sendInstallRequest($s) {
-        $res = $this->createMockResponse('{"ok":"ok","warnings":[]}', 200);
-        $app = $this->makeApp([$this,'createInstallerApp'], $this->getAppConfig(),
-            (object) ['db' => '@auto', 'auth' => '@auto', 'fs' => $s->mockFs]);
+        $res = $this->createMockResponse(json_encode([
+            'ok' => 'ok',
+            'siteWasInstalledTo' => $s->workspacePath,
+            'warnings' => [],
+        ]), 200);
+        $ctx = new AppContext(['db' => '@auto', 'auth' => '@auto']);
+        $ctx->fs = $s->mockFs;
+        $app = $this->makeApp([$this,'createInstallerApp'], $this->getAppConfig(), $ctx);
         $this->sendRequest(new Request('/', 'POST', $s->input), $res, $app);
     }
     private function verifyInsertedSampleContent($s) {

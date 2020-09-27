@@ -4,26 +4,33 @@ declare(strict_types=1);
 
 namespace RadCms\Installer;
 
-use Pike\Request;
-use Pike\Response;
-use Pike\Template;
-use Pike\Validation;
-use Pike\FileSystem;
+use Pike\{FileSystemInterface, PikeException, Request, Response, Template, Validation};
+use RadCms\Packager\Packager;
 
 class InstallerControllers {
+    /** @var \Pike\FileSystemInterface */
+    private $fs;
+    /** @var string */
+    private $packageLocationPath;
+    /**
+     * @param \Pike\FileSystemInterface $fs
+     * @param string $packageLocationPath
+     */
+    public function __construct(FileSystemInterface $fs,
+                                string $packageLocationPath = RAD_PUBLIC_PATH) {
+        $this->fs = $fs;
+        $this->packageLocationPath = $packageLocationPath;
+    }
     /**
      * GET /.
      *
      * @param \Pike\Response $res
      */
     public function renderHomeView(Response $res): void {
-        if (!defined('INDEX_DIR_PATH')) {
-            $res->status(400)->html('Corrupt install.php (INDEX_DIR_PATH missing).');
-            return;
-        }
-        $template = new Template(__DIR__ . '/main-view.tmpl.php');
-        $res->html($template->render(['siteDirPath' =>
-            FileSystem::normalizePath(INDEX_DIR_PATH) . '/']));
+        $tmpl = new Template(__DIR__ . '/main-view.tmpl.php');
+        $res->html($tmpl->render([
+            'packageExists' => $this->findPackageFile() !== null
+        ]));
     }
     /**
      * POST /.
@@ -36,8 +43,9 @@ class InstallerControllers {
             return;
         }
         // @allow \Pike\PikeException
-        $installer->doInstall($req->body);
+        $workspaceDirPath = $installer->doInstall($req->body);
         $res->json(json_encode(['ok' => 'ok',
+                                'siteWasInstalledTo' => $workspaceDirPath,
                                 'warnings' => $installer->getWarnings()]));
     }
     /**
@@ -50,10 +58,12 @@ class InstallerControllers {
             $res->status(400)->json($errors);
             return;
         }
+        if (!($filePath = $this->findPackageFile()))
+            throw new PikeException('Bad request', PikeException::BAD_INPUT);
         // @allow \Pike\PikeException
-        $installer->doInstall($req->files->packageFile['tmp_name'],
-                              $req->body);
+        $settings = $installer->doInstall($filePath, $req->body);
         $res->json(json_encode(['ok' => 'ok',
+                                'mainQueryVar' => $settings->mainQueryVar,
                                 'warnings' => $installer->getWarnings()]));
     }
     /**
@@ -63,7 +73,7 @@ class InstallerControllers {
         $errors = (Validation::makeObjectValidator())
             ->rule('siteName', 'type', 'string')
             ->rule('siteLang', 'in', ['en', 'fi'])
-            ->rule('sampleContent', 'in', ['minimal', 'blog', 'test-content'])
+            ->rule('sampleContent', 'in', ['minimal', 'blog', 'basic-site', 'test-content'])
             ->rule('mainQueryVar?', 'identifier')
             ->rule('useDevMode', 'type', 'bool')
             ->rule('dbHost', 'minLength', 1)
@@ -71,11 +81,9 @@ class InstallerControllers {
             ->rule('dbPass', 'type', 'string')
             ->rule('dbDatabase', 'minLength', 1)
             ->rule('doCreateDb', 'type', 'bool')
-            ->rule('dbTablePrefix?', 'type', 'string')
             ->rule('dbTablePrefix?', 'minLength', 1)
-            ->rule('dbCharset', 'in', ['utf8'])
+            ->rule('dbCharset', 'in', ['utf8mb4', 'utf8'])
             ->rule('firstUserName', 'minLength', 1)
-            ->rule('firstUserEmail?', 'type', 'string')
             ->rule('firstUserEmail?', 'minLength', 3)
             ->rule('firstUserPass', 'type', 'string')
             ->rule('baseUrl', 'minLength', 1)
@@ -91,14 +99,16 @@ class InstallerControllers {
      * @return string[]
      */
     private function validateInstallFromPackageInput(Request $req): array {
-        return array_merge(
-            (Validation::makeObjectValidator())
-                ->rule('unlockKey', 'type', 'string')
-                ->rule('unlockKey', 'minLength', 12)
-                ->validate($req->body),
-            (Validation::makeObjectValidator())
-                ->rule('packageFile', 'type', 'array')
-                ->validate($req->files)
-        );
+        return Validation::makeObjectValidator()
+            ->rule('unlockKey', 'minLength', Packager::MIN_SIGNING_KEY_LEN)
+            ->rule('baseUrl', 'minLength', 1)
+            ->validate($req->body);
+    }
+    /**
+     * @return string Ensimmäisen serverin rootista löytyneen .radsite-tiedoston absoluuttinen polku, tai null
+     */
+    private function findPackageFile(): ?string {
+        $files = $this->fs->readDir($this->packageLocationPath, '*.radsite');
+        return $files ? $files[0] : null;
     }
 }

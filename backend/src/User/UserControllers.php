@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RadCms\User;
 
 use Pike\Request;
@@ -19,7 +21,7 @@ class UserControllers {
      */
     public function handleGetCurrentUser(Request $req,
                                          Response $res,
-                                         UserRepository $userRepo) {
+                                         UserRepository $userRepo): void {
         // @allow \Pike\PikeException
         $user = $userRepo->getSingle($req->user->id);
         $res->json($user);

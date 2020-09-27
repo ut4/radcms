@@ -1,8 +1,11 @@
-import {hookForm, InputGroup} from '@rad-commons';
+import {hookForm} from '@rad-commons';
 import BaseFieldWidget from './Base.jsx';
 import QuillEditor from '../../Common/QuillEditor.jsx';
 let counter = 0;
 
+/**
+ * Rikastetekstiwidgetti, käyttää Quill-editoria.
+ */
 class RichTextFieldWidget extends BaseFieldWidget {
     /**
      * @inheritdoc
@@ -23,17 +26,14 @@ class RichTextFieldWidget extends BaseFieldWidget {
      * @access protected
      */
     render() {
-        return <InputGroup classes={ this.state.classes[this.fieldName] }>
-            <label>{ this.label }</label>
-            <QuillEditor
-                name={ this.fieldName }
-                value={ this.fixedInitialValue }
-                onChange={ html => {
-                    this.form.triggerChange(html, this.fieldName);
-                    this.props.onValueChange(html);
-                } }
-                onBlur={ () => this.form.triggerBlur(this.fieldName) }/>
-        </InputGroup>;
+        return <QuillEditor
+            name={ this.fieldName }
+            value={ this.fixedInitialValue }
+            onChange={ html => {
+                this.form.triggerChange(html, this.fieldName);
+                this.props.onValueChange(html);
+            } }
+            onBlur={ () => this.form.triggerBlur(this.fieldName) }/>;
     }
 }
 

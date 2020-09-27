@@ -1,4 +1,4 @@
-import {http, services, toasters, urlUtils, View} from '@rad-commons';
+import {http, env, toasters, urlUtils, View} from '@rad-commons';
 
 /**
  * #/manage-plugins
@@ -28,9 +28,9 @@ class PluginsManageView extends preact.Component {
      * @access protected
      */
     render() {
-        return <View><div>
+        return <View>
             <h2>Lisäosat</h2>
-            { !this.state.message ? <table class="striped">
+            { !this.state.message ? <table class="table">
                 <thead><tr>
                     <th>Nimi</th>
                     <th>Asennettu</th>
@@ -44,16 +44,16 @@ class PluginsManageView extends preact.Component {
                             ? <button onClick={ () => {
                                           this.installPlugin(plugin, i);
                                       } }
-                                      class={ `nice-button small${!plugin.isInstalling ? '' : ' loading'}` }>Asenna</button>
+                                      class={ `btn btn-sm${!plugin.isInstalling ? '' : ' loading'}` }>Asenna</button>
                             : <button onClick={ () => {
                                           this.uninstallPlugin(plugin, i);
                                       } }
-                                      class="nice-button small">Poista asennus</button>
+                                      class="btn btn-sm">Poista asennus</button>
                         }</td>
                     </tr>
                 ) }</tbody>
             </table> : <p>{ this.state.message}</p> }
-        </div></View>;
+        </View>;
     }
     /**
      * @access private
@@ -76,7 +76,7 @@ class PluginsManageView extends preact.Component {
 function sendInstallOrUninstallRequest(plugin, url) {
     http.put(`/api/plugins/${plugin.name}/${url}`, {dum: 'my'})
         .then(() => {
-            services.sessionStorage.radMessage = url === 'install'
+            env.sessionStorage.radMessage = url === 'install'
                 ? JSON.stringify([`Lisäosa ${plugin.name} asennettu.`, 'success'])
                 : JSON.stringify([`Lisäosan ${plugin.name} asennus poistettu.`, 'success']);
             urlUtils.redirect('@current', 'hard');

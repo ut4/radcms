@@ -4,31 +4,57 @@ declare(strict_types=1);
 
 namespace RadCms\ContentType;
 
-use Pike\Validation;
+use Pike\{PikeException, Validation};
 use RadCms\Content\DAO;
 
 abstract class ContentTypeValidator {
-    const MAX_NAME_LEN = 64;
     const FIELD_WIDGETS = ['textField', 'textArea', 'richText', 'imagePicker',
                            'multiField', 'datePicker', 'dateTimePicker',
                            'colorPicker', 'contentSelector', 'hidden'];
     const FIELD_DATA_TYPES = ['text', 'json', 'int', 'uint'];
     const COLLECTION_SIZES = ['tiny', 'small', 'medium', '', 'big'];
+    private const VALIDATION_RULES = ['type', 'minLength', 'maxLength', 'min',
+                                      'max', 'in', 'identifier', 'regexp'];
+    private const MAX_NAME_LEN = 64;
+    private const MAX_DESCRIPTION_LENGTH = 512;
+    private const MAX_FIELD_DEFAULT_VALUE_LENGTH = 2048;
+    private const MAX_FRIENDLY_NAME_LENGTH = 128;
     /**
      * @param \RadCms\ContentType\ContentTypeDef $contentType
+     * @param bool $doValidateFields = true
      * @return string[]
      */
-    public static function validate(ContentTypeDef $contentType): array {
+    public static function validate(ContentTypeDef $contentType,
+                                    $doValidateFields = true): array {
         static $validator = null;
         if (!$validator) $validator = Validation::makeObjectValidator()
-            ->rule('fields', 'minLength', 1)
+            ->rule('name', 'identifier')
+            ->rule('name', 'maxLength', self::MAX_NAME_LEN)
+            ->rule('friendlyName', 'minLength', 1)
+            ->rule('friendlyName', 'maxLength', self::MAX_FRIENDLY_NAME_LENGTH)
+            ->rule('description', 'maxLength', self::MAX_DESCRIPTION_LENGTH)
+            ->rule('isInternal', 'type', 'bool')
+            ->rule('frontendFormImpl', 'identifier')
+            ->rule('frontendFormImpl', 'maxLength', self::MAX_NAME_LEN);
+        static $fieldsValidator = null;
+        if ($doValidateFields &&
+            !$fieldsValidator) $fieldsValidator = Validation::makeObjectValidator()
+            ->rule('fields', 'minLength', 1, 'array')
             ->rule('fields.*.name', 'identifier')
-            ->rule('fields.*.dataType', 'in', self::FIELD_DATA_TYPES)
-            ->rule('fields.*.widget.name', 'in', self::FIELD_WIDGETS);
-        return array_merge(
-            self::validateName($contentType->name),
-            $validator->validate($contentType)
-        );
+            ->rule('fields.*.name', 'maxLength', ContentTypeValidator::MAX_NAME_LEN)
+            ->rule('fields.*.friendlyName', 'minLength', 1)
+            ->rule('fields.*.friendlyName', 'maxLength', self::MAX_FRIENDLY_NAME_LENGTH)
+            ->rule('fields.*.dataType.type', 'in', ContentTypeValidator::FIELD_DATA_TYPES)
+            ->rule('fields.*.dataType.length?', 'type', 'int')
+            ->rule('fields.*.defaultValue', 'maxLength', self::MAX_FIELD_DEFAULT_VALUE_LENGTH)
+            ->rule('fields.*.visibility', 'type', 'int')
+            ->rule('fields.*.widget.name', 'in', ContentTypeValidator::FIELD_WIDGETS)
+            ->rule('fields.*.widget.args?', 'type', 'object')
+            ->rule('fields.*.validationRules?', 'type', 'array');
+        return $doValidateFields
+            ? array_merge($validator->validate($contentType),
+                          $fieldsValidator->validate($contentType))
+            : $validator->validate($contentType);
     }
     /**
      * @param \RadCms\ContentType\ContentTypeCollection $contentTypes
@@ -36,7 +62,7 @@ abstract class ContentTypeValidator {
      */
     public static function validateAll(ContentTypeCollection $contentTypes): array {
         return array_reduce($contentTypes->getArrayCopy(), function ($all, $def) {
-            return array_merge($all, ContentTypeValidator::validate($def));
+            return array_merge($all, self::validate($def));
         }, []);
     }
     /**
@@ -66,11 +92,20 @@ abstract class ContentTypeValidator {
             $rules = [
                 'text' => [['type', 'string']],
                 'json' => [['type', 'string']],
-                'int' => [['type', 'int']],
-                'uint' => [['type', 'int'], ['min', 0]],
-            ][$f->dataType] ?? null;
+                'int' => [['type', 'number']],
+                'uint' => [['type', 'number'], ['min', 0]],
+            ][$f->dataType->type] ?? null;
             if (!$rules)
                 throw new \RuntimeException('Shouldn\'t happen');
+            $userRules = $f->validationRules ?? [];
+            if ($userRules) { // [ ['required'], ['min', 4] ]
+                foreach ($userRules as $ruleParts) {
+                    if (!is_array($ruleParts) || !in_array($ruleParts[0], self::VALIDATION_RULES, true))
+                        throw new PikeException('Invalid validation rule',
+                                                PikeException::BAD_INPUT);
+                }
+                $rules = array_merge($rules, $userRules);
+            }
             foreach ($rules as $ruleArgs)
                 $v->rule("{$f->name}?", ...$ruleArgs);
         }

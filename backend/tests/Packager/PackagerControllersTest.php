@@ -4,16 +4,14 @@ namespace RadCms\Tests\Packager;
 
 use Pike\Auth\Authenticator;
 use Pike\Request;
-use Pike\TestUtils\DbTestCase;
-use Pike\TestUtils\HttpTestUtils;
-use Pike\TestUtils\MockCrypto;
+use Pike\TestUtils\{DbTestCase, HttpTestUtils, MockCrypto};
+use RadCms\AppContext;
+use RadCms\Entities\PluginPackData;
 use RadCms\Installer\Tests\BaseInstallerTest;
-use RadCms\Packager\Packager;
-use RadCms\Packager\ZipPackageStream;
-use RadCms\Tests\_Internal\ContentTestUtils;
-use RadCms\Tests\_Internal\MockPackageStream;
-use RadCms\Tests\_Internal\TestSite;
+use RadCms\Packager\{Packager, ZipPackageStream};
+use RadCms\Tests\_Internal\{ContentTestUtils, MockPackageStream, TestSite};
 use RadCms\Tests\User\UserControllersTest;
+use RadPlugins\MoviesPlugin\MoviesPlugin;
 
 final class PackagerControllersTest extends DbTestCase {
     use HttpTestUtils;
@@ -25,30 +23,45 @@ final class PackagerControllersTest extends DbTestCase {
     }
     protected function tearDown(): void {
         parent::tearDown();
+        MoviesPlugin::setMockPackData(null);
         UserControllersTest::deleteTestUsers();
     }
     public function testPOSTPackagerPacksWebsiteAndReturnsItAsAttachment() {
         $s = $this->setupCreatePackageTest();
+        MoviesPlugin::setMockPackData($s->mockPluginPackData);
         $this->sendCreatePackageRequest($s);
         $this->verifyPackageWasReturned($s);
+        //
         $this->verifyEncryptedMainDataWasIncluded($s);
         $this->verifyDbAndSiteSettingsWereIncludedToMainData($s);
         $this->verifyContentTypesWereIncludedToMainData($s);
         $this->verifyAllContentWasIncludedToMainData($s);
         $this->verifyUserZeroWasIncludedToMainData($s);
-        $this->verifyTemplateFilesWereIncluded($s);
+        //
+        $this->verifyPhpFilesFileListWasIncluded($s);
+        $this->verifyThemeAssetsFileListWasIncluded($s);
+        $this->verifyUploadsFileListWasIncluded($s);
+        //
+        $this->verifyPhpFilesWereIncluded($s);
+        $this->verifyThemeAssetsWereIncluded($s);
+        $this->verifyUploadsWereIncluded($s);
+        //
+        $this->verifyPluginsWereIncluded($s);
     }
     private function setupCreatePackageTest() {
         return (object) [
             'reqBody' => (object) [
-                'templates' => json_encode(TestSite::TEMPLATES),
-                'assets' => json_encode(TestSite::ASSETS),
-                'signingKey' => 'my-encrypt-key'
+                'templates' => TestSite::TEMPLATES,
+                'assets' => TestSite::ASSETS,
+                'uploads' => TestSite::UPLOADS,
+                'plugins' => TestSite::PLUGINS,
+                'signingKey' => 'my-encrypt-key',
             ],
             'actualAttachmentBody' => '',
             'packageCreatedFromResponse' => null,
             'parsedMainDataFromPackage' => null,
             'testUserZero' => UserControllersTest::makeAndInsertTestUser(),
+            'mockPluginPackData' => self::makeMockPluginPackData(),
         ];
     }
     private function sendCreatePackageRequest($s) {
@@ -56,8 +69,10 @@ final class PackagerControllersTest extends DbTestCase {
         $auth->method('getIdentity')
              ->willReturn((object)['id' => $s->testUserZero->id,
                                    'role' => $s->testUserZero->role]);
-        $app = $this->makeApp('\RadCms\App::create', $this->getAppConfig(),
-            ['db' => '@auto', 'crypto' => new MockCrypto(), 'auth' => $auth],
+        $ctx = new AppContext(['db' => '@auto']);
+        $ctx->auth = $auth;
+        $ctx->crypto = new MockCrypto;
+        $app = $this->makeApp('\RadCms\App::create', $this->getAppConfig(), $ctx,
             function ($injector) {
                 $injector->delegate(ZipPackageStream::class, function () {
                     return $this->mockPackageStream;
@@ -74,7 +89,7 @@ final class PackagerControllersTest extends DbTestCase {
     }
     private function verifyPackageWasReturned($s) {
         $s->packageCreatedFromResponse = new MockPackageStream();
-        $s->packageCreatedFromResponse->open('json://'. $s->actualAttachmentBody);
+        $s->packageCreatedFromResponse->open("json://{$s->actualAttachmentBody}");
         $this->assertIsObject($s->packageCreatedFromResponse->getVirtualFiles());
     }
     private function verifyEncryptedMainDataWasIncluded($s) {
@@ -120,16 +135,69 @@ final class PackagerControllersTest extends DbTestCase {
         $this->assertEquals($s->testUserZero,
                             $s->parsedMainDataFromPackage->user);
     }
-    private function verifyTemplateFilesWereIncluded($s) {
+    private function verifyPhpFilesFileListWasIncluded($s) {
         $fileListFileContents = $s->packageCreatedFromResponse
-            ->read(Packager::LOCAL_NAMES_TEMPLATES_FILEMAP);
-        $this->assertEquals(json_encode(TestSite::TEMPLATES),
+            ->read(Packager::LOCAL_NAMES_PHP_FILES_FILE_LIST);
+        $this->assertEquals(json_encode(array_merge(['Site.php'],
+                                                    TestSite::TEMPLATES)),
                             $fileListFileContents);
     }
-    private function verifyIncludedThemeAssetFiles($s) {
+    private function verifyThemeAssetsFileListWasIncluded($s) {
         $fileListFileContents = $s->packageCreatedFromResponse
-            ->read(Packager::LOCAL_NAMES_ASSETS_FILEMAP);
+            ->read(Packager::LOCAL_NAMES_ASSETS_FILE_LIST);
         $this->assertEquals(json_encode(TestSite::ASSETS),
                             $fileListFileContents);
+    }
+    private function verifyUploadsFileListWasIncluded($s) {
+        $fileListFileContents = $s->packageCreatedFromResponse
+            ->read(Packager::LOCAL_NAMES_UPLOADS_FILE_LIST);
+        $this->assertEquals(json_encode(TestSite::UPLOADS),
+                            $fileListFileContents);
+    }
+    private function verifyPhpFilesWereIncluded($s) {
+        $base = RAD_WORKSPACE_PATH . 'site/';
+        $this->assertEquals($this->mockPackageStream->mockReadFile("{$base}Site.php"),
+            $s->packageCreatedFromResponse->read('Site.php'));
+        foreach (TestSite::TEMPLATES as $relativePath) {
+            $this->assertEquals($this->mockPackageStream->mockReadFile("{$base}{$relativePath}"),
+                $s->packageCreatedFromResponse->read($relativePath));
+        }
+    }
+    private function verifyThemeAssetsWereIncluded($s) {
+        $base = RAD_PUBLIC_PATH . 'frontend/';
+        foreach (TestSite::ASSETS as $relativePath) {
+            $this->assertEquals($this->mockPackageStream->mockReadFile("{$base}{$relativePath}"),
+                $s->packageCreatedFromResponse->read($relativePath));
+        }
+    }
+    private function verifyUploadsWereIncluded($s) {
+        $base = RAD_PUBLIC_PATH . 'uploads/';
+        foreach (TestSite::UPLOADS as $relativePath) {
+            $this->assertEquals($this->mockPackageStream->mockReadFile("{$base}{$relativePath}"),
+                $s->packageCreatedFromResponse->read($relativePath));
+        }
+    }
+    private function verifyPluginsWereIncluded($s) {
+        $encodedJson = $s->packageCreatedFromResponse
+            ->read(Packager::LOCAL_NAMES_PLUGINS);
+        $decodedJson = MockCrypto::mockDecrypt($encodedJson);
+        $parsed = json_decode($decodedJson);
+        $this->assertIsObject($parsed);
+        //
+        $actualPluginNames = array_keys(get_object_vars($parsed));
+        $this->assertEquals(TestSite::PLUGINS, $actualPluginNames);
+        //
+        $actualPluginData = $parsed->{TestSite::PLUGINS[0]};
+        $this->assertIsObject($actualPluginData);
+        $this->assertEquals($s->mockPluginPackData->initialContent,
+                            $actualPluginData->initialContent);
+    }
+    public static function makeMockPluginPackData() {
+        $out = new PluginPackData;
+        $out->initialContent = [['Movies', [
+            (object) ['title' => 'Movie1', 'releaseYear' => 2019],
+            (object) ['title' => 'Movie2', 'releaseYear' => 2020],
+        ]]];
+        return $out;
     }
 }

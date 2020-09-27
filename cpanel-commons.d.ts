@@ -9,43 +9,47 @@ declare module "@rad-cpanel-commons" {
             registerImpl(name: string, Impl: any): void;
             getImpl(name: string): Impl?;
         };
-        export const ContentPanelImpl: {
-            DefaultSingle: string;
-            DefaultCollection: string;
-        };
-        export const ContentFormImpl: {
-            Default: string;
-        };
         export class ContentNodeUtils {
             static makeTitle(contentNode: any): string;
+        }
+        export class FieldsFilter {
+            constructor(fieldsToDisplay: Array<string>): FieldsFilter;
+            doFilter(fields: Array<{name: string; [key: any]: any;}>): Array<{name: string; [key: any]: any;}>;
+            fieldShouldBeShown(field: {name: string; [key: any]: any;}): boolean;
+            getFieldsToDisplay(): Array<string>;
         }
     }
     export = radCpanelCommons;
 }
 
+interface FieldWidget {
+    name: string;
+    args: Object;
+}
+
 interface ContentTypeField {
     name: string;
     friendlyName: string;
-    dataType: string;
+    dataType: {type: keyof {"text":1, "json":1, "int":1, "uint":1}; length?: number;};
     defaultValue: string;
     visibility: number;
-    widget: {
-        name: string;
-        args: Object;
-    };
+    widget: FieldWidget;
+    validationRules?: Array<[string, ...any]>;
 }
 
 interface MultiFieldField {
     id: string;
     name: string;
-    widget: {name: string, args: Object|null};
+    widget: FieldWidget;
     value: any;
 }
 
 interface ContentType {
     name: string;
     friendlyName: string;
+    description: string;
     isInternal: boolean;
+    frontendFormImpl: string;
     fields: Array<ContentTypeField>;
 }
 
@@ -67,7 +71,9 @@ interface ContentNode {
 interface FrontendPanelConfig {
     id?: string;
     impl: string; // 'DefaultSingle' | 'DefaultCollection' | 'NameOfMyImpl'
-    implProps?: Object;
+    implProps: Object;
+    formImpl: string;
+    formImplProps?: Object;
     title: string;
     subtitle?: string;
     highlightSelector?: string;

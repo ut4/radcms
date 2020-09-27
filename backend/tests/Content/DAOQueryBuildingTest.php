@@ -3,21 +3,19 @@
 namespace RadCms\Tests\Content;
 
 use PHPUnit\Framework\TestCase;
+use Pike\{Db, PikeException};
 use RadCms\Content\DAO;
-use Pike\Db;
 use RadCms\ContentType\ContentTypeCollection;
-use Pike\PikeException;
 
 final class DAOQueryBuildingTest extends TestCase {
     private function makeDao($useRevisions = false, $alterContentTypesFn = null) {
-        $ctypes = new ContentTypeCollection();
-        $ctypes->add('Games', 'Pelit', [
-            (object) ['name' => 'title', 'dataType' => 'text']
-        ]);
-        $ctypes->add('Platforms', 'Alustat', [
-            (object) ['name' => 'name', 'dataType' => 'text'],
-            (object) ['name' => 'gameTitle', 'dataType' => 'text'],
-        ]);
+        $ctypes = ContentTypeCollection::build()
+        ->add('Games', 'Pelit')
+            ->field('title')
+        ->add('Platforms', 'Alustat')
+            ->field('name')
+            ->field('gameTitle')
+        ->done();
         if ($alterContentTypesFn) $alterContentTypesFn($ctypes);
         return new DAO($this->createMock(Db::class), $ctypes, $useRevisions);
     }
@@ -81,7 +79,7 @@ final class DAOQueryBuildingTest extends TestCase {
             $withRevisions->toSql()
         );
     }
-    public function testFetchOneGeneratesJoinQueriesUsingAliases() {
+    public function testFetchOneGeneratesJoinQueriesWithAliases() {
         $mainQ = 'SELECT `id`, `status`, `title`, \'Games\' AS `contentType` FROM `${p}Games`' .
                  ' WHERE 1=1';
         $joinQ = ' JOIN `${p}Platforms` AS p ON (p.`gameTitle` = g.`title`)';
@@ -143,13 +141,14 @@ final class DAOQueryBuildingTest extends TestCase {
             return $this->makeDao()->fetchOne('Games');
         }));
         $this->assertEquals(
-            'ContentType.name must contain only [a-zA-Z0-9_] and start with [a-zA-Z_]\n'.
-            'The length of ContentType.name must be 64 or less', $runInvalid(function() {
+            'name must contain only [a-zA-Z0-9_] and start with [a-zA-Z_]\n'.
+            'The length of name must be 64 or less\n'.
+            'The length of friendlyName must be at least 1', $runInvalid(function() {
                 $A_LONG_STRING = str_repeat('-', 65);
                 //
                 return $this->makeDao(false, function ($ctypes) use ($A_LONG_STRING) {
-                    $ctypes->add($A_LONG_STRING, '', [
-                        (object) ['name' => 'field', 'dataType' => 'text']
+                    $ctypes->add($A_LONG_STRING, '', 'Kuvaus', [
+                        (object) ['name' => 'field', 'dataType' => (object) ['type' => 'text', 'length' => null]]
                     ]);
                 })->fetchOne($A_LONG_STRING)->where('1=1');
             }));

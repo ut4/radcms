@@ -4,13 +4,9 @@ declare(strict_types=1);
 
 namespace RadCms\ContentType;
 
-use Pike\Request;
-use Pike\Response;
-use Pike\Validation;
-use Pike\ArrayUtils;
-use Pike\ObjectValidator;
+use Pike\{ArrayUtils, PikeException, Request, Response, Validation};
 use RadCms\CmsState;
-use Pike\PikeException;
+use RadCms\ContentType\Internal\ContentTypeRepository;
 
 /**
  * Handlaa /api/content-types -alkuiset pyynnöt.
@@ -21,21 +17,17 @@ class ContentTypeControllers {
      *
      * @param \Pike\Request $req
      * @param \Pike\Response $res
-     * @param \RadCms\ContentType\ContentTypeMigrator $migrator
+     * @param \RadCms\ContentType\ContentTypeRepository $repo
      */
     public function handleCreateContentType(Request $req,
                                             Response $res,
-                                            ContentTypeMigrator $migrator): void {
-        if (($errors = $this->validateInsertInput($req->body))) {
-            $res->status(400)->json($errors);
-            return;
-        }
+                                            ContentTypeRepository $repo): void {
         // @allow \Pike\PikeException
-        $migrator->installSingle($req->body);
+        $repo->installSingle($req->body);
         $res->json(['ok' => 'ok']);
     }
     /**
-     * GET /api/content-type/:name.
+     * GET /api/content-types/:name.
      *
      * @param \Pike\Request $req
      * @param \Pike\Response $res
@@ -46,11 +38,10 @@ class ContentTypeControllers {
                                          CmsState $cmsState): void {
         // @allow \Pike\PikeException
         $contentType = self::getContentTypeOrThrow($req->params->name, $cmsState);
-        if ($contentType) $res->json($contentType);
-        else $res->status(404)->json(['got' => 'nothing']);
+        $res->json($contentType);
     }
     /**
-     * GET /api/content-type/:filter.
+     * GET /api/content-types/:filter.
      *
      * @param \Pike\Request $req
      * @param \Pike\Response $res
@@ -71,15 +62,37 @@ class ContentTypeControllers {
      *
      * @param \Pike\Request $req
      * @param \Pike\Response $res
-     * @param \RadCms\ContentType\ContentTypeMigrator $migrator
+     * @param \RadCms\ContentType\ContentTypeRepository $repo
      * @param \RadCms\CmsState $cmsState
      * @throws \Pike\PikeException
      */
-    public function handleUpdateContentType(Request $req,
-                                            Response $res,
-                                            ContentTypeMigrator $migrator,
-                                            CmsState $cmsState): void {
-        if (($errors = $this->validateUpdateInput($req->body))) {
+    public function handleUpdateBasicInfoOfContentType(Request $req,
+                                                       Response $res,
+                                                       ContentTypeRepository $repo,
+                                                       CmsState $cmsState): void {
+        // @allow \Pike\PikeException
+        $contentType = self::getContentTypeOrThrow($req->params->contentTypeName,
+                                                   $cmsState);
+        // @allow \Pike\PikeException
+        $repo->updateSingle(ContentTypeDef::fromObject($req->body),
+                            $contentType,
+                            $cmsState->getContentTypes());
+        $res->json(['ok' => 'ok']);
+    }
+    /**
+     * PUT /api/content-types/:contentTypeName/reorder-fields.
+     *
+     * @param \Pike\Request $req
+     * @param \Pike\Response $res
+     * @param \RadCms\ContentType\ContentTypeRepository $repo
+     * @param \RadCms\CmsState $cmsState
+     * @throws \Pike\PikeException
+     */
+    public function handleUpdateOrderOfContentTypeFields(Request $req,
+                                                         Response $res,
+                                                         ContentTypeRepository $repo,
+                                                         CmsState $cmsState): void {
+        if (($errors = self::validateUpdateOrderInput($req->body))) {
             $res->status(400)->json($errors);
             return;
         }
@@ -87,13 +100,10 @@ class ContentTypeControllers {
         $contentType = self::getContentTypeOrThrow($req->params->contentTypeName,
                                                    $cmsState);
         // @allow \Pike\PikeException
-        $migrator->updateSingle((object) [
-                                    'name' => $req->body->name,
-                                    'friendlyName' => $req->body->friendlyName,
-                                    'isInternal' => $req->body->isInternal,
-                                ],
-                                $contentType,
-                                $cmsState->getContentTypes());
+        $repo->updateFieldsOrder(array_map(function ($field) {
+                                     return $field->name;
+                                 }, $req->body->fields),
+                                 $contentType);
         $res->json(['ok' => 'ok']);
     }
     /**
@@ -101,19 +111,19 @@ class ContentTypeControllers {
      *
      * @param \Pike\Request $req
      * @param \Pike\Response $res
-     * @param \RadCms\ContentType\ContentTypeMigrator $migrator
+     * @param \RadCms\ContentType\ContentTypeRepository $repo
      * @param \RadCms\CmsState $cmsState
      * @throws \Pike\PikeException
      */
     public function handleDeleteContentType(Request $req,
                                             Response $res,
-                                            ContentTypeMigrator $migrator,
+                                            ContentTypeRepository $repo,
                                             CmsState $cmsState): void {
         // @allow \Pike\PikeException
         $contentType = self::getContentTypeOrThrow($req->params->contentTypeName,
                                                    $cmsState);
         // @allow \Pike\PikeException
-        $migrator->uninstallSingle($contentType);
+        $repo->uninstallSingle($contentType);
         $res->json(['ok' => 'ok']);
     }
     /**
@@ -121,23 +131,19 @@ class ContentTypeControllers {
      *
      * @param \Pike\Request $req
      * @param \Pike\Response $res
-     * @param \RadCms\ContentType\ContentTypeMigrator $migrator
+     * @param \RadCms\ContentType\ContentTypeRepository $repo
      * @param \RadCms\CmsState $cmsState
      * @throws \Pike\PikeException
      */
     public function handleAddFieldToContentType(Request $req,
                                                 Response $res,
-                                                ContentTypeMigrator $migrator,
+                                                ContentTypeRepository $repo,
                                                 CmsState $cmsState): void {
-        if (($errors = $this->validateAddFieldInput($req->body))) {
-            $res->status(400)->json($errors);
-            return;
-        }
         // @allow \Pike\PikeException
         $contentType = self::getContentTypeOrThrow($req->params->contentTypeName,
                                                    $cmsState);
         // @allow \Pike\PikeException
-        $migrator->addField(FieldDef::fromObject($req->body), $contentType);
+        $repo->addField(FieldDef::fromObject($req->body), $contentType);
         $res->json(['ok' => 'ok']);
     }
     /**
@@ -145,27 +151,23 @@ class ContentTypeControllers {
      *
      * @param \Pike\Request $req
      * @param \Pike\Response $res
-     * @param \RadCms\ContentType\ContentTypeMigrator $migrator
+     * @param \RadCms\ContentType\ContentTypeRepository $repo
      * @param \RadCms\CmsState $cmsState
      * @throws \Pike\PikeException
      */
     public function handleUpdateFieldOfContentType(Request $req,
                                                    Response $res,
-                                                   ContentTypeMigrator $migrator,
+                                                   ContentTypeRepository $repo,
                                                    CmsState $cmsState): void {
-        if (($errors = $this->validateAddFieldInput($req->body))) {
-            $res->status(400)->json($errors);
-            return;
-        }
         // @allow \Pike\PikeException
         $contentType = self::getContentTypeOrThrow($req->params->contentTypeName,
                                                    $cmsState);
         // @allow \Pike\PikeException
         $field = self::getFieldOrThrow($req->params->fieldName, $contentType);
         // @allow \Pike\PikeException
-        $migrator->updateField(FieldDef::fromObject($req->body),
-                               $field,
-                               $contentType);
+        $repo->updateField(FieldDef::fromObject($req->body),
+                           $field,
+                           $contentType);
         $res->json(['ok' => 'ok']);
     }
     /**
@@ -173,13 +175,13 @@ class ContentTypeControllers {
      *
      * @param \Pike\Request $req
      * @param \Pike\Response $res
-     * @param \RadCms\ContentType\ContentTypeMigrator $migrator
+     * @param \RadCms\ContentType\ContentTypeRepository $repo
      * @param \RadCms\CmsState $cmsState
      * @throws \Pike\PikeException
      */
     public function handleDeleteFieldFromContentType(Request $req,
                                                      Response $res,
-                                                     ContentTypeMigrator $migrator,
+                                                     ContentTypeRepository $repo,
                                                      CmsState $cmsState): void {
         // @allow \Pike\PikeException
         $contentType = self::getContentTypeOrThrow($req->params->contentTypeName,
@@ -187,54 +189,16 @@ class ContentTypeControllers {
         // @allow \Pike\PikeException
         $field = self::getFieldOrThrow($req->params->fieldName, $contentType);
         // @allow \Pike\PikeException
-        $migrator->removeField($field, $contentType);
+        $repo->removeField($field, $contentType);
         $res->json(['ok' => 'ok']);
     }
     /**
      * @return string[]
      */
-    private static function validateInsertInput(\stdClass $input): array {
-        return self::getBaseValidationRules()
+    private static function validateUpdateOrderInput(\stdClass $input): array {
+        return (Validation::makeObjectValidator())
             ->rule('fields.*.name', 'identifier')
-            ->rule('fields.*.friendlyName', 'minLength', 1)
-            ->rule('fields.*.dataType', 'in', ContentTypeValidator::FIELD_DATA_TYPES)
-            ->rule('fields.*.defaultValue', 'type', 'string')
-            ->rule('fields.*.visibility', 'type', 'int')
-            ->rule('fields.*.widget.name', 'in', ContentTypeValidator::FIELD_WIDGETS)
-            ->rule('fields.*.widget.args?', 'type', 'object')
             ->validate($input);
-    }
-    /**
-     * @return string[]
-     */
-    private static function validateUpdateInput(\stdClass $input): array {
-        return self::getBaseValidationRules()
-            ->validate($input);
-    }
-    /**
-     * @return string[]
-     */
-    private static function validateAddFieldInput(\stdClass $input): array {
-        return (Validation::makeObjectValidator())
-            ->rule('name', 'identifier')
-            ->rule('friendlyName', 'minLength', 1)
-            ->rule('dataType', 'in', ContentTypeValidator::FIELD_DATA_TYPES)
-            ->rule('defaultValue', 'type', 'string')
-            ->rule('visibility', 'type', 'int')
-            ->rule('widget.name', 'in', ContentTypeValidator::FIELD_WIDGETS)
-            ->rule('widget.args?', 'type', 'object')
-            ->validate($input);
-    }
-    /**
-     * @return \Pike\Validation\ObjectValidator
-     */
-    private static function getBaseValidationRules(): ObjectValidator {
-        return (Validation::makeObjectValidator())
-            ->rule('name', 'identifier')
-            ->rule('name', 'maxLength', ContentTypeValidator::MAX_NAME_LEN)
-            ->rule('friendlyName', 'type', 'string')
-            ->rule('friendlyName', 'minLength', 1)
-            ->rule('isInternal', 'type', 'bool');
     }
     /**
      * @return \RadCms\ContentType\ContentTypeDef

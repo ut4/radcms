@@ -1,461 +1,285 @@
-html, body {
-    height: 100%;
-    margin: 0;
+/* -- Components: Grids ---- */
+.item-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: .4rem;
 }
-#root {
-    display: flex;
-    height: 100%;
+.item-grid.two {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
 }
-#root #cpanel-app {
-    flex: initial;
-    width: 160px;
-}
-#root iframe {
-    flex: 1;
-    border: none;
-}
-
-
-/* == Cpanel ================================================================ */
-#cpanel-app > div {
-    height: 1100%;
-    position: fixed;
-}
-#cpanel {
-    background-color: #33393e/* #373644*/;
-    width: 160px;
-    color: #ffffff;
-    height: 100%;
-}
-
-.top-row {
-    position: relative;
-    min-height: 34px;
-}
-.top-row button {
-    float: left;
-    background-color: transparent;
-    padding: 8px 11px;
-}
-.top-row .feather {
-    width: 16px;
-    height: 16px;
-}
-#logo {
-    font: normal 14px/14px "Fira sans heavy";
-    color: #f5f5f5;
-    padding: 9px 16px 8px;
-    text-decoration: none;
-    float: right;
-}
-#logo > span {
-    font-family: "Fira sans light";
-    text-transform: uppercase;
-}
-
-section {
-    margin-bottom: 8px;
-    font-size: 12px;
-    line-height: 14px;
-}
-section h2 {
-    font-size: 13px;
-    line-height: 13px;
-    color: rgba(255,255,255,0.22);
-    margin: 8px 0;
-}
-section > div {
-    padding: 1px 0 0 10px;
-    border-radius: 2px;
-    border-left: 3px solid #e8fbe2;
-}
-section.on-this-page > div {
-    border-color: #a2d0bf;
-}
-section.site-admin > div {
-    border-color: #cab99b;
-}
-section.for-devs > div {
-    border-color: #e69393;
-}
-
-.quick-links > div {
-    padding: 1px 10px 10px 10px;
-}
-section.quick-links .icon-button {
-    background-color: rgba(255,255,255,0.1);
-    color: rgba(255,255,255,0.8);
-    width: 100%;
-    margin-bottom: 6px;
-    padding: 8px;
-}
-section.quick-links .icon-button:last-of-type {
-    margin-bottom: 0;
-}
-section.quick-links .icon-button:hover {
-    background-color: rgba(255,255,255,0.12);
-}
-section.quick-links .icon-button .feather {
-    width: 14px;
-    height: 14px;
-}
-
-.section-row {
-    position: relative;
-}
-.section-row a {
-    display: block;
-    margin: 9px 0;
-    color: rgba(255,255,255,0.4);
-    text-decoration: none;
-    font-size: 12px;
-    line-height: 12px;
-}
-.section-row a:first-of-type {
-    margin-top: 0;
-}
-
-.section-row > div {
-    font-size: inherit;
-    line-height: inherit;
-    color: rgba(255,255,255,0.8);
-    margin-left: -10px;
-    display: flex;
-    align-items: flex-start;
-}
-.section-row > div:hover {
-    background-color: rgba(0,0,0,0.18);
-}
-.section-row > div > a {
-    padding: 12px 3px 12px 10px;
-    margin: 0;
-    flex: 1;
-    color: inherit;
-    font-size: 14px;
-    line-height: 14px;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-    overflow: hidden;
-}
-.section-row > div a .feather {
-    float: left;
-    width: 17px;
-    height: 17px;
-    margin-top: -1px;
-    padding-right: 10px;
-    stroke: rgba(255,255,255,0.5);
-}
-.section-row > div .note {
-    font-size: 10px;
-    margin-left: 2px;
-    vertical-align: top;
-}
-.section-row > div .subtitle {
-    font-size: 11px;
-    color: rgba(255,255,255,0.4);
-}
-.section-row > div .subtitle:before {
-    content: ' ';
-    display: block;
-}
-.section-row > div button {
-    width: 28px;
-    height: 28px;
-    background: none;
-    border: none;
-    padding: 2px 12px 2px 2px;
-    flex: initial;
-    margin-top: 5px;
-}
-.section-row > div button .feather {
-    stroke: rgba(255,255,255,0.2);
-    width: 100%;
-}
-.section-row > div button:hover .feather {
-    stroke: rgba(255,255,255,0.3);
-}
-
-.section-row .sub-nav {
-    position: absolute;
-    top: 0;
-    left: 157px;
-    z-index: 1;
-    display: none;
-}
-.section-row .sub-nav:after {
-    content: "";
-    border-right: 8px solid #444b50;
-    border-top: 8px solid transparent;
-    border-bottom: 8px solid transparent;
-    position: absolute;
-    left: -8px;
-    top: 11px;
-}
-.section-row > div:hover + .sub-nav,
-.section-row .sub-nav:hover {
-    display: block;
-}
-.section-row .sub-nav > div {
-    background-color: #444b50;
-    border-top-right-radius: 2px;
-    border-bottom-right-radius: 2px;
-    min-width: 120px;
-    padding: 14px;
-}
-.section-row .sub-nav h3 {
-    font-weight: normal;
-    margin-top: 0;
-    display: none;
-}
-.section-row .sub-nav h3 + div > * {
-    margin-bottom: 8px;
-}
-.section-row .sub-nav h3 + div > *:last-child,
-.section-row .sub-nav > div > *:last-child {
-    margin-bottom: 0;
-}
-.section-row .sub-nav a:hover {
-    color: rgba(255,255,255,0.5);
-}
-
-#root #cpanel-app.collapsed,
-.collapsed #cpanel {
-    width: 42px;
-}
-.collapsed #logo,
-.collapsed section.quick-links .icon-button span,
-.collapsed .section-row button,
-.collapsed section h2,
-.collapsed a i {
-    display: none;
-}
-.collapsed .quick-links > div {
-    padding: 10px;
-}
-.collapsed .quick-links .icon-button .feather {
-    margin-left: -6px;
-}
-.collapsed .section-row .sub-nav {
-    left: 39px;
-}
-.collapsed .section-row .sub-nav h3 {
-    display: block;
-}
-.collapsed .section-row > div > a {
-    text-indent: -1000px;
-    white-space: nowrap;
-}
-.collapsed #view {
-    left: 42px;
-    width: calc(100% - 42px);
-}
-
-
-/* == View ================================================================== */
-#view, .popup-dialog {
-    left: 160px;
-    width: calc(100% - 160px);
-    background-color: rgba(0,0,0,0.5);
-    color: #282828;
-    height: 100%;
-    overflow-y: auto;
-    overflow-x: hidden;
-    position: fixed;
-    top: 0;
-}
-#view > div {
-    margin: 15px;
-    max-width: 1000px;
-}
-#view > div > button {
-    float: right;
-    margin: -10px -8px 0 0;
-}
-
-
-/* == Components ============================================================ */
-
-/* -- Components: Toaster ---- */
-.toaster {
-    position: fixed;
-    width: calc(100% - 168px);
-    margin: 4px;
-    z-index: 1;
-    left: 160px;
-}
-.collapsed .toaster {
-    width: calc(100% - 50px);
-    left: 42px;
-}
-.toaster-message:not(:only-of-type):not(:last-of-type) {
-    margin-bottom: 4px;
-}
-
-
-/* -- Components: Popup overlay ---- */
-.popup-dialog {
-    width: 100%;
-    left: 0;
-    top: 0;
-    min-width: 200px;
-    min-height: 200px;
-}
-.popup-dialog > div {
-    margin: 20px auto;
-    max-width: 600px;
-    width: 100%;
-}
-
-
-/* -- Components: Selectable item grid ---- */
 .item-grid .full-width {
     grid-column: 1 / -1;
 }
-.item-grid > button {
-    border: none;
-    padding: 12px 24px;
+.image-grid button, .image-grid img {
     border-radius: 2px;
-    cursor: pointer;
-    position: relative;
-    background-color: rgba(0,0,0,0.05);
 }
-.item-grid > button:hover {
-    background-color: rgba(0,0,0,0.08);
+.image-grid button {
+    background-color: var(--bg-light);
+    padding: 0;
+    height: initial;
+    position: relative;
+    padding-bottom: 2rem;
+}
+.image-grid .caption {
+    position: absolute;
+    left: 0;
+    width: 100%;
+    bottom: 0;
+    padding: .34rem;
+}
+.checkbox-grid > div {
+    padding-left: .5rem;
+    border-radius: 2px;
 }
 
-.image-grid > button {
-    padding-bottom: 24px;
+/* -- Components: Popup overlay ---- */
+.popup-dialog {
+    display: flex;
+    justify-content: center;
+    padding: 1rem;
+    align-items: flex-start;
+    z-index: 1;
 }
-.image-grid > button.selected {
-    border: 2px solid #37c1ff;
+.popup-dialog > div {
+    min-width: 600px;
+    max-width: 1280px;
+    overflow-y: auto;
 }
-.image-grid > button .caption {
+.popup-dialog h2 {
+    margin-top: 0;
+    font-size: 1.1rem;
+}
+
+/* -- Components: MultiFieldConfigurer ---- */
+.with-configurable-fields .form-group:not(.form-input-multiField),
+.with-configurable-fields .form-buttons {
+    opacity: 0.3;
+    pointer-events: none;
+}
+.form-input-multiField > label,
+.form-input-hidden {
+    display: none;
+}
+.multi-field-configurer {
+    background-color: var(--bg-light);
+    padding: .8rem;
+    border: 1px dashed #d7dae4;
+    border-radius: 4px;
+    margin-top: .4rem;
+}
+
+/* -- Components: Chips ---- */
+.chip.btn {
+    background-color: transparent;
+    border-style: dashed;
+    padding-right: .6rem;
+    padding-top: 0.13rem;
+}
+
+/* -- Components: Menus ---- */
+.popup-menu {
+    display: none;
     position: absolute;
-    bottom: 8px;
+    top: 32px;
+}
+.close-overlay {
+    display: none;
+    position: fixed;
+    height: 100%;
     width: 100%;
     left: 0;
+    top: 0;
 }
-.image-grid img {
-    width: 100%;
+.open .popup-menu {
+    display: block;
+}
+.open .close-overlay {
+    display: block;
 }
 
+/* -- Components: Buttons groups ---- */
+.btn-group [type="button"] {
+    padding: .4rem .2rem;
+}
 
-/* -- Components: PikaDay datepicker ---- */
-.datepicker-container {
+/* -- Components: Combobox ---- */
+.form-input.combobox {
+    height: auto;
+    padding: 0;
+}
+.form-input.combobox.open {
+    padding: .2rem;
+}
+.combobox .form-input {
+    border: none;
+}
+.combobox.open input.form-input {
+    border-bottom: 1px solid #ccc;
+    margin-bottom: .2rem;
+    box-shadow: none;
+}
+.combobox .form-select {
+    border: none;
+    box-shadow: none;
+}
+
+/* -- Cpanel: commons ---- */
+#cpanel2 h2 {
+    color: rgba(255,255,255,0.22);
+    font-size: .6rem;
+    margin: .4rem .5rem;
+    text-transform: uppercase;
+    letter-spacing: .08rem;
+}
+#cpanel2 a {
+    color: inherit;
+    font-size: .7rem;
+    line-height: .7rem;
+}
+#cpanel2 i.subtitle {
+    display: block;
+}
+
+/* -- Cpanel: elements ---- */
+#cpanel-app {
+    width: 192px;
+    position: fixed;
+    height: 100%;
+    background-color: var(--bg-dark);
+    z-index: 1;
+    overflow-y: auto;
+}
+#cpanel2 {
+    color: rgba(255,255,255,0.8);
+    position: relative;
+    z-index: 1;
+}
+#cpanel2 > section h2, #cpanel2 .entry > a {
+    padding-left: .2rem;
+}
+
+#cpanel2 header {
+    padding: .6rem 0 0 .6rem;
+    margin-bottom: -.5rem;
+}
+#cpanel2 header img {
+    width: 28px;
+}
+
+#cpanel2 > section {
+    padding: .01rem 0;
+    border-left: 3px solid #8fdec4;
+    margin: 1rem 0;
+}
+#cpanel2 > section.site-admin {
+    border-color: #f5ddb6;
+}
+#cpanel2 > section.for-devs {
+    border-color: #f1acac;
+}
+#cpanel2 .entry {
+    position: relative;
+    margin: .4rem 0;
+    padding-left: .6rem;
+    padding-right: .6rem;
+}
+.entry a button {
+    background: none;
+    border: none;
+    padding: 0 .2rem;
+    display: flex;
+    height: 1.3rem;
+}
+.entry a .locate .feather {
+    width: .7rem;
+    height: .7rem;
+}
+#cpanel2 .sub-nav {
+    border-left: 1px dotted rgba(255,255,255,0.3);
+    overflow: hidden;
+    padding: 0 .6rem 0 .4rem;
+    margin: .4rem 0;
+    color: rgba(255,255,255,0.5);
+    display: none;
+    font-size: .6rem;
+}
+#cpanel2 .sub-nav.visible {
+    display: block;
+}
+#cpanel2 .sub-nav a {
+    font-size: .6rem;
+    display: block;
+    margin: .25rem 0;
+}
+
+/* -- View: commons ---- */
+#view h2 {
+    font: normal 1.4rem/1.4rem "Fira sans heavy";
+    margin: -.2rem 0 1rem 0;
+}
+#view .form-input {
+    width: 20rem;
+}
+#view textarea.form-input {
+    width: 28rem;
+    height: 6rem;
+}
+
+/* View: elements */
+#view, .popup-dialog {
+    position: fixed;
+    left: 192px;
+    top: 0;
+    width: calc(100% - 192px);
+    background-color: rgba(0,0,0,0.5);
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+#view {
+    z-index: 0;
+}
+#view.open {
+    display: block;
+}
+#view > div {
+    margin: 15px;
+    max-width: 1280px;
+}
+#view .close {
     position: absolute;
+    top: 1.4rem;
+    right: 1.4rem;
+}
+#toaster-main {
+    position: fixed;
+    top: 0;
+    left: 192px;
+    margin: 1rem;
     z-index: 1;
 }
 
-.pika-table {
-    table-layout: fixed;
-}
-.pika-table th:first-of-type {
-    width: 10%;
-}
-.pika-table .pika-week {
-    vertical-align: middle;
-}
-.pika-table td .pika-button {
-    text-align: center;
-}
-.pika-time-container {
-    margin-bottom: 16px;
-}
-
-table.pika-time {
-    margin: 0 auto;
-    width: auto;
-}
-.pika-time td {
-    padding: 0 1px 0;
-    font-weight: bold;
-    line-height: 25px;
-}
-.pika-time select {
-    padding: 2px;
-    margin-bottom: 0;
-    width: 80px;
-}
-
-.datepicker.large td .pika-button {
-    padding: 10px;
-}
-.datepicker.large .pika-lendar {
-    width: auto;
-    max-width: 330px;
-}
-
-
-/* -- Components: Tree-builder ---- */
-.tree-builder textarea {
-    font: normal 13px/13px Consolas, monospace;
-    color: #333;
-}
-
-
-/* -- Components: .list ---- */
-.list.fields {
-    background-color: rgba(0,0,0,0.04);
-    border-radius: 2px;
-    padding: 18px 12px 8px 12px;
-    margin-top: 8px;
-}
-.fields.no-thead {
-    padding-top: 8px;
-}
-.fields .row {
-    align-items: center;
-}
-.list .configure {
+/* -- Website ---- */
+#rad-site-iframe {
     position: absolute;
-    top: 7px;
-    right: 8px;
-    color: rgba(0,0,0,0.4);
+    width: calc(100% - 192px);
+    left: 192px;
+    height: 100%;
+    border: none;
 }
-.disallow-edit {
+
+/* -- View-specific ---- */
+/* #/manage-content-types */
+.blurred:not(.full-width) {
     opacity: 0.3;
+    pointer-events: none;
 }
-.content-type-card .blurred header,
-.content-type-card .blurred .list,
-.content-type-card .list.blurred,
-.content-type-card tr.blurred {
-    opacity: 0.3;
+/* #/pack-website */
+.checkbox-list .form-checkbox {
+    margin: 0;
+    padding-top: 0;
+    padding-bottom: 0;
 }
-.disallow-edit .fields .buttons {
-    display: none;
-}
-.buttons > button:first-child {
-    margin-right: 4px;
-}
-
-
-/* -- Components: MultiFieldConfigurer ---- */
-.multi-fields.configurable {
-    border-left: 2px solid #2dccc3;
-    padding-left: 10px;
-}
-.multi-fields.configurable .input-group:first-of-type {
-    margin-top: 7px;
-}
-.multi-field-configurer {
-    background-color: #fbfbff;
-    padding: 14px 10px;
-    border: 1px dashed #ccc;
-    border-radius: 2px;
-    margin: 4px 0 18px;
-}
-
-
-/* == Form extensions ======================================================= */
-.form-buttons a {
-    margin-left: 4px;
-    text-decoration: none;
-    color: inherit;
-}
-.input-group label[contenteditable] {
-    border-bottom: 1px dashed #999;
-    padding: 1px 2px;
-}
-.multi-field-builder {
-    margin-bottom: 10px;
+.checkbox-list .form-group {
+    margin: 0;
 }

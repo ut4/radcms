@@ -17,20 +17,22 @@ class FinalizePassResetApp extends preact.Component {
      */
     render() {
         return <form onSubmit={ e => this.handleSubmit(e) }>
-            <img src={ urlUtils.makeAssetUrl('frontend/assets/logo.png') }/>
+            <div class="text-center">
+                <img src={ urlUtils.makeAssetUrl('frontend/rad/assets/rad-logo.png') }/>
+            </div>
             { !this.state.message
                 ? null
                 : <div class={ `container box ${this.state.message.level}` }>{ this.state.message.text }</div>
             }
             <InputGroup classes={ this.state.classes.newPassword }>
-                <label htmlFor="newPassword">Uusi salasana</label>
+                <label htmlFor="newPassword" class="form-label">Uusi salasana</label>
                 <Input vm={ this } name="newPassword" id="newPassword" errorLabel="Uusi salasana"
                        type="password"
                        validations={ [['required']] }/>
                 <InputError error={ this.state.errors.newPassword }/>
             </InputGroup>
             <InputGroup classes={ this.state.classes.email }>
-                <label htmlFor="email">Email</label>
+                <label htmlFor="email" class="form-label">Email</label>
                 <Input vm={ this } name="email" id="email" errorLabel="Email"
                        validations={ [['required']] }/>
                 <InputError error={ this.state.errors.email }/>

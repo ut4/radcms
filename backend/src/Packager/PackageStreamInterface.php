@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RadCms\Packager;
 
 interface PackageStreamInterface {
@@ -8,7 +10,7 @@ interface PackageStreamInterface {
      * @param bool $create = false
      * @throws \Pike\PikeException
      */
-    public function open($filePath, $create = false);
+    public function open(string $filePath, bool $create = false): void;
     /**
      * @param string $filePath
      * @param string $localName = null
@@ -17,30 +19,34 @@ interface PackageStreamInterface {
      * @return bool
      * @throws \Pike\PikeException
      */
-    public function addFile($filePath, $localName = null, $start = 0, $length = 0);
+    public function addFile(string $filePath,
+                            string $localName = null,
+                            int $start = 0,
+                            int $length = 0): bool;
     /**
      * @param string $localName
      * @param string $contents
      * @return bool
      * @throws \Pike\PikeException
      */
-    public function addFromString($localName, $contents);
+    public function addFromString(string $localName, string $contents): bool;
     /**
      * @param string $localName
      * @return string
      * @throws \Pike\PikeException
      */
-    public function read($localName);
+    public function read(string $localName): string;
     /**
      * @param string $destinationPath
      * @param string[]|string $localNames = []
      * @return bool
      * @throws \Pike\PikeException
      */
-    public function extractMany($destinationPath, $localNames = []);
+    public function extractMany(string $destinationPath,
+                                $localNames = []): bool;
     /**
      * @return string
      * @throws \Pike\PikeException
      */
-    public function getResult();
+    public function getResult(): string;
 }

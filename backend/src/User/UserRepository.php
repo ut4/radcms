@@ -16,7 +16,7 @@ class UserRepository {
      * @param string $id Olettaa että validi
      * @return \RadCms\User\User|null
      */
-    public function getSingle($id) {
+    public function getSingle($id): ?User {
         // @allow \Pike\PikeException
         return $this->db->fetchOne('SELECT `id`,`username`,`email`,`role`' .
                                    ' FROM ${p}users' .

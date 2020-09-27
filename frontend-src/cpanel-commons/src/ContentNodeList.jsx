@@ -1,19 +1,19 @@
 import ContentNodeUtils from './ContentNodeUtils.js';
-import {ContentFormImpl} from './content-form-impls.jsx';
 
 /**
- * @param {{contentNodes: Array<ContentNode>; createLinkText: string; contentType?: string; noContentNodesContent: preact.VNode;}} props
+ * @param {{contentNodes: Array<ContentNode>; createLinkText: string; noContentNodesContent: preact.VNode; contentType: string; panelIdx?: string;}} props
  */
-function ContentNodeList(props) {
+function ContentNodeList({contentNodes, createLinkText, noContentNodesContent, contentType, panelIdx}) {
+    panelIdx = panelIdx || 'none';
     return <div>{
-        (props.contentNodes.length ? props.contentNodes.map(c =>
-            <a href={ `#/edit-content/${c.id}/${props.contentType}/${ContentFormImpl.Default}` }>
+        (contentNodes.length ? contentNodes.map(c =>
+            <a href={ `#/edit-content/${c.id}/${contentType}/${panelIdx}` }>
                 <span>{ ContentNodeUtils.makeTitle(c) }: </span>
                 Muokkaa
             </a>
-        ) : [props.noContentNodesContent]).concat(
-            <a href={ '#/add-content' + (!props.contentType ? '' : `/${props.contentType}`) }>
-                { props.createLinkText || 'Luo uusi' }
+        ) : [noContentNodesContent]).concat(
+            <a href={ `#/add-content/${contentType}/${panelIdx}` }>
+                { createLinkText || 'Luo uusi' }
             </a>
         )
     }</div>;

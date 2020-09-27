@@ -1,28 +1,26 @@
-# Blogisivupaketti
+# Blogisivustopaketti
 
 ...
 
 ## Layoutit
 
-Layout-templaatit, jotka tämä paketti sisältää. Pike valitsee layoutin sivupyynnölle urlin perusteella dynaamisesti. Url-sääntöjä voi muokata `site/Site.php` -tiedostossa.
+Layout-templaatit, jotka tämä paketti sisältää. RadCMS valitsee layoutin sivupyynnölle urlin perusteella dynaamisesti. Url-sääntöjä voi muokata `site/Theme.php` -tiedostossa.
 
-### layout.home.tmpl.php
+### templates/layout.home.tmpl.php
 
 Renderöi urlin `/`.
 
-### layout.article.tmpl.php
+### templates/layout.article.tmpl.php
 
 Renderöi kaikki `/artikkeli/` -alkuiset urlit.
 
-### layout.generic.tmpl.php
+### templates/layout.generic.tmpl.php
 
-Renderöi kaikki paitsi `layout.home.tmpl.php`:n , ja `layout.article.tmpl.php`:n renderöimät urlit.
+Renderöi kaikki paitsi `templates/layout.home.tmpl.php`:n , ja `templates/layout.article.tmpl.php`:n renderöimät urlit.
 
 ## Php-tagit
 
-Tagit, jotka tämä paketti sisältää. Tageja voi kutsua layout-templaateista (kuten `layout.home.tmpl.php`).
-
-ks. https://todo/stock-content-types.
+Tagit, jotka tämä paketti sisältää. Tageja voi kutsua layout-templaateista (kuten `templates/layout.home.tmpl.php`).
 
 ### Articles(['frontendPanelTitle?' => string])
 
@@ -47,6 +45,10 @@ Esimerkki:
 </body>
 </html>
 ```
+
+### Oletustagit
+
+ks. https://todo/stock-content-types.
 
 ## Sisältötyypit
 

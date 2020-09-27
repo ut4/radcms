@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace RadCms\Tests\_Internal;
 
 use Pike\ArrayUtils;
-use Pike\DbUtils;
 use RadCms\Content\DAO;
 
 trait ContentTestUtils {
@@ -62,11 +61,11 @@ trait ContentTestUtils {
         $qGroups = [];
         $allVals = [];
         foreach ($nodes as $data) {
-            [$qs, $vals, ] = DbUtils::makeInsertBinders(array_merge([
+            [$qList, $vals, ] = self::$db->makeInsertQParts(array_merge([
                 'id' => $data['id'],
                 'status' => $data['status'] ?? DAO::STATUS_PUBLISHED,
             ], $data));
-            $qGroups[] = "({$qs})";
+            $qGroups[] = "({$qList})";
             $allVals = array_merge($allVals, $vals);
         }
         if (self::$db->exec('INSERT INTO ${p}' . $contentTypeName .
@@ -90,8 +89,7 @@ trait ContentTestUtils {
      * @param string $contentTypeName
      */
     public function deleteContent(string $contentTypeName): void {
-        if (self::$db->exec('DELETE FROM ${p}' . $contentTypeName) < 1)
-            throw new \RuntimeException('Failed to clean test data');
+        self::$db->exec('DELETE FROM ${p}' . $contentTypeName);
     }
     /**
      * @param bool $clearRevisions = true

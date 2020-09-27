@@ -4,13 +4,15 @@ declare(strict_types=1);
 
 namespace RadCms\ContentType;
 
+use RadCms\AppContext;
+
 abstract class ContentTypeModule {
     /**
      * Rekisteröi /api/content-types -alkuiset http-reitit.
      *
-     * @param \stdClass $ctx {\Pike\Router router, \Pike\Db db, \RadCms\Auth\Authenticator auth, \RadCms\Auth\ACL acl, \RadCms\CmsState cmsState, \Pike\Translator translator}
+     * @param \RadCms\AppContext $ctx
      */
-    public static function init(\stdClass $ctx): void {
+    public static function init(AppContext $ctx): void {
         $ctx->router->map('POST', '/api/content-types/field/[w:contentTypeName]',
             [ContentTypeControllers::class, 'handleAddFieldToContentType', 'addField:contentTypes']
         );
@@ -29,8 +31,11 @@ abstract class ContentTypeModule {
         $ctx->router->map('GET', '/api/content-types/[w:name]',
             [ContentTypeControllers::class, 'handleGetContentType', 'view:contentTypes']
         );
+        $ctx->router->map('PUT', '/api/content-types/[w:contentTypeName]/reorder-fields',
+            [ContentTypeControllers::class, 'handleUpdateOrderOfContentTypeFields', 'updateField:contentTypes']
+        );
         $ctx->router->map('PUT', '/api/content-types/[w:contentTypeName]',
-            [ContentTypeControllers::class, 'handleUpdateContentType', 'update:contentTypes']
+            [ContentTypeControllers::class, 'handleUpdateBasicInfoOfContentType', 'update:contentTypes']
         );
         $ctx->router->map('DELETE', '/api/content-types/[w:contentTypeName]',
             [ContentTypeControllers::class, 'handleDeleteContentType', 'delete:contentTypes']

@@ -2,10 +2,8 @@
 
 namespace RadCms\Tests\Upload;
 
-use Pike\TestUtils\DbTestCase;
-use Pike\TestUtils\HttpTestUtils;
 use Pike\Request;
-use Pike\Response;
+use Pike\TestUtils\{DbTestCase, HttpTestUtils};
 use RadCms\Upload\Uploader;
 
 final class UploadControllersTest extends DbTestCase {
@@ -13,24 +11,23 @@ final class UploadControllersTest extends DbTestCase {
     public function testGETUploadsReturnsListOfFiles() {
         $s = $this->setupListUploadsTest();
         $this->sendGetUploadsRequest($s);
-        $this->verifyResponseBodyEquals([(object)['fileName' => 'sample.jpg',
-                                                  'basePath' => TEST_SITE_PUBLIC_PATH . 'uploads/',
-                                                  'mime' => 'image/jpeg']], $s);
+        $this->verifyRespondedSuccesfullyWith([
+            (object)['fileName' => 'sample.jpg',
+                     'basePath' => TEST_SITE_PUBLIC_PATH . 'uploads/',
+                     'mime' => 'image/jpeg']], $s);
     }
     private function setupListUploadsTest() {
-        return (object)[
-            'actualResponseBody' => null,
-            'app' => $this->makeApp('\RadCms\App::create', $this->getAppConfig())
-        ];
+        $state = new \stdClass;
+        $state->spyingResponse = null;
+        return $state;
     }
     private function sendGetUploadsRequest($s) {
         $req = new Request('/api/uploads', 'GET');
-        $res = $this->createMock(Response::class);
-        $this->sendResponseBodyCapturingRequest($req, $res, $s->app, $s);
-    }
-    private function verifyResponseBodyEquals($expected, $s) {
-        $this->assertEquals(json_encode($expected),
-                            $s->actualResponseBody);
+        $s->spyingResponse = $this->makeSpyingResponse();
+        $app = $this->makeApp('\RadCms\App::create',
+                              $this->getAppConfig(),
+                              '\RadCms\AppContext');
+        $this->sendRequest($req, $s->spyingResponse, $app);
     }
 
 
@@ -40,41 +37,47 @@ final class UploadControllersTest extends DbTestCase {
     public function testPOSTUploadsUploadsFile() {
         $s = $this->setupUploadFileTest();
         $this->sendUploadFileRequest($s);
+        $this->verifyRespondedSuccesfullyWith((object) [
+            'file' => (object)['fileName' => $s->uploadFileName,
+                               'basePath' => TEST_SITE_PUBLIC_PATH . 'uploads/',
+                               'mime' => 'image/png']
+        ], $s);
         $this->verifyMovedUploadedFileTo(RAD_PUBLIC_PATH . 'uploads/', $s);
     }
     private function setupUploadFileTest() {
-        $s = (object)[
-            'uploadFileName' => 'file.jpg',
-            'actuallyMovedFileTo' => '',
-            'mockMoveUploadedFileFn' => null,
-        ];
-        $s->mockMoveUploadedFileFn = function ($_tmpFilePath, $targetFilePath) use ($s) {
-            $s->actuallyMovedFileTo = $targetFilePath;
+        $state = new \stdClass;
+        $state->uploadFileName = 'file.jpg';
+        $state->actuallyMovedFileTo = null;
+        $state->spyingResponse = null;
+        $state->mockMoveUploadedFileFn = function ($_tmpFilePath, $targetFilePath) use ($state) {
+            $state->actuallyMovedFileTo = $targetFilePath;
             return true;
         };
-        $s->app = $this->makeApp('\RadCms\App::create', $this->getAppConfig(), null,
-            function ($injector) use ($s) {
-                $injector->delegate(Uploader::class, function () use ($s) {
-                    return new Uploader($s->mockMoveUploadedFileFn);
-                });
-            });
-        return $s;
+        return $state;
     }
     private function sendUploadFileRequest($s) {
-        $reqBody = (object)['returnTo' => 'http://localhost/foo'];
-        $req = new Request('/api/uploads', 'POST',
-                           $reqBody,
+        $req = new Request('/api/uploads', 'POST', null,
                            (object)['localFile' => [
                                'name' => $s->uploadFileName,
                                'tmp_name' => dirname(__DIR__) . '/_Internal/upload-sample.png',
                                'error' => UPLOAD_ERR_OK,
                                'size' => 1
                            ]]);
-        $res = $this->createMockResponse($reqBody->returnTo, 200, 'redirect');
-        $this->sendRequest($req, $res, $s->app);
+        $s->spyingResponse = $this->makeSpyingResponse();
+        $app = $this->makeApp('\RadCms\App::create', $this->getAppConfig(),
+                              '\RadCms\AppContext', function ($injector) use ($s) {
+                                  $injector->delegate(Uploader::class, function () use ($s) {
+                                      return new Uploader($s->mockMoveUploadedFileFn);
+                                  });
+                              });
+        $this->sendRequest($req, $s->spyingResponse, $app);
     }
     private function verifyMovedUploadedFileTo($expectedDir, $s) {
         $this->assertEquals("{$expectedDir}{$s->uploadFileName}",
                             $s->actuallyMovedFileTo);
+    }
+    private function verifyRespondedSuccesfullyWith($expected, $s) {
+        $this->verifyResponseMetaEquals(200, 'application/json', $s->spyingResponse);
+        $this->verifyResponseBodyEquals($expected, $s->spyingResponse);
     }
 }

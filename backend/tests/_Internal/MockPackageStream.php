@@ -9,31 +9,36 @@ class MockPackageStream implements PackageStreamInterface {
     public function __construct(\stdClass $virtualFiles = null) {
         $this->virtualFiles = $virtualFiles;
     }
-    public function open($filePath, $create = false) {
+    public function open(string $filePath, bool $create = false): void {
         if (!$create)
             $this->virtualFiles = json_decode(substr($filePath, strlen('json://')));
         else
             $this->virtualFiles = new \stdClass;
     }
-    public function addFile($filePath, $localName = null, $start = 0, $length = 0) {
-        $this->addFromString($localName ?? $filePath, self::mockReadFile($filePath));
+    public function addFile(string $filePath,
+                            string $localName = null,
+                            int $start = 0,
+                            int $length = 0): bool {
+        return $this->addFromString($localName ?? $filePath, self::mockReadFile($filePath));
     }
     public static function mockReadFile($filePath) {
         return "(file) {$filePath}";
     }
-    public function addFromString($localName, $contents) {
+    public function addFromString(string $localName, string $contents): bool {
         $this->virtualFiles->$localName = $contents;
+        return true;
     }
-    public function read($localName) {
+    public function read(string $localName): string {
         return $this->virtualFiles->$localName;
     }
-    public function extractMany($destinationPath, $localNames = []) {
-        // ...
+    public function extractMany(string $destinationPath,
+                                $localNames = []): bool {
+        return true;
     }
-    public function getResult() {
+    public function getResult(): string {
         return json_encode($this->virtualFiles);
     }
-    public function getVirtualFiles() {
+    public function getVirtualFiles(): \stdClass {
         return $this->virtualFiles;
     }
 }

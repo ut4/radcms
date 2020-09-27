@@ -1,7 +1,13 @@
-import {hookForm, InputGroup, Input, Select, InputError, FormConfirmation, Confirmation, FeatherSvg} from '@rad-commons';
+import {hookForm, InputGroup, Input, InputError, FormConfirmation, Confirmation,
+        Sortable, FeatherSvg} from '@rad-commons';
 import popupDialog from '../../../Common/PopupDialog.jsx';
 import {widgetTypes} from '../all.js';
+import WidgetSelector from '../../WidgetSelector.jsx';
 
+/**
+ * Komponentti, jolla devaaja voi rakentaa multiField-sisällön rakenteen i.e.
+ * sisällön sisältämät kentät, ja niiden järjestyksen.
+ */
 class MultiFieldConfigurer extends preact.Component {
     /**
      * @param {{fields: MultiFieldFieldsStore;}} props
@@ -9,71 +15,95 @@ class MultiFieldConfigurer extends preact.Component {
     constructor(props) {
         super(props);
         this.state = {fields: props.fields.getFields()};
-        props.fields.listen(fields => {
-            this.setState({fields});
-        });
+        props.fields.listen(fields => this.setState({fields}));
+        this.sortable = new Sortable();
     }
     /**
      * @access protected
      */
     render() {
         return <div class="multi-field-configurer">
-            <table>
+            <table class="table mb-2">
                 <thead><tr>
+                    <th class="drag-column"></th>
                     <th>Nimi</th>
                     <th>Widgetti</th>
+                    <th>Widgetin asetukset</th>
                     <th class="buttons"></th>
                 </tr></thead>
-                <tbody></tbody>{ this.state.fields.map(f => <tr key={ f.id }>
+                <tbody ref={ this.activateSorting.bind(this) }>{ this.state.fields.map(f => <tr key={ f.id } data-id={ f.id }>
+                    <td class="drag-column">
+                        <button class="drag-handle" type="button"><FeatherSvg iconId="grid-dots"/></button>
+                    </td>
                     <td>{ f.name }</td>
                     <td>{ widgetTypes.find(w => w.name === f.widget.name).friendlyName }</td>
+                    <td>{ formatWidgetArgs(f.widget.args) }</td>
                     <td class="buttons">
-                        <button class="icon-button"
-                                disabled={ this.props.blur }
-                                onClick={ () => popupDialog.open(MultiFieldFieldEditDialog, {
-                                    field: f,
-                                    onConfirm: newData => {
-                                        this.props.fields.setFieldProps(f.id, newData);
-                                    }
-                                }) }
-                                type="button">
-                            <FeatherSvg iconId="edit-2" className="small"/>
+                        <button
+                            class="btn btn-icon"
+                            disabled={ this.props.blur }
+                            onClick={ () => popupDialog.open(MultiFieldFieldEditDialog, {
+                                field: f,
+                                onConfirm: newData => {
+                                    this.props.fields.setFieldProps(f.id, newData);
+                                }
+                            }) }
+                            type="button">
+                            <FeatherSvg iconId="edit-2" className="feather-sm"/>
                         </button>
-                        <button class="icon-button"
-                                disabled={ this.props.blur }
-                                onClick={ () => popupDialog.open(MultiFieldFieldDeleteDialog, {
-                                    fieldName: f.name,
-                                    onConfirm: () => {
-                                        this.props.fields.removeField(f.id);
-                                    }
-                                }) }
-                                type="button">
-                            <FeatherSvg iconId="x" className="small"/>
+                        <button
+                            class="btn btn-icon"
+                            disabled={ this.props.blur }
+                            onClick={ () => popupDialog.open(MultiFieldFieldDeleteDialog, {
+                                fieldName: f.name,
+                                onConfirm: () => {
+                                    this.props.fields.removeField(f.id);
+                                }
+                            }) }
+                            type="button">
+                            <FeatherSvg iconId="x" className="feather-sm"/>
                         </button>
                     </td>
-                </tr>) }</table>
-            <button onClick={ () => this.props.fields.addField(widgetTypes[0]) }
-                    class="nice-button small"
-                    type="button">Lisää kenttä</button>
+                </tr>) }</tbody>
+            </table>
+            <button
+                onClick={ () => this.props.fields.addField(widgetTypes[0]) }
+                class="btn btn-sm mt-2"
+                type="button">Lisää kenttä</button>
         </div>;
     }
+    /**
+     * @access private
+     */
+    activateSorting(tbodyEl) {
+        this.sortable.register(tbodyEl, {
+            handle: '.drag-handle',
+            onReorder: orderedIds => this.props.fields.reorder(orderedIds),
+        });
+    }
+}
+
+function formatWidgetArgs(args) {
+    const out = [];
+    for (const key in args)
+        out.push(`${key} = ${args[key]}`);
+    const truncated = out.join(',').substr(0, 32);
+    return `${truncated}${truncated.length < 32 ? '' : '...'}`;
 }
 
 class MultiFieldFieldEditDialog extends preact.Component {
     /**
-     * @param {{field: MultiFieldField;}} props
+     * @param {{field: MultiFieldField; onConfirm: (newData: Object) => any;}} props
      */
     constructor(props) {
         super(props);
-        this.state = hookForm(this, {
-            fieldName: props.field.name,
-            widgetName: props.field.widget.name,
-        });
+        this.widgetSelector = preact.createRef();
+        this.state = hookForm(this, {fieldName: props.field.name});
     }
     /**
      * @access protected
      */
-    render() {
+    render({field}) {
         const {classes, errors} = this.state;
         return <div class="popup-dialog"><div class="box">
             <FormConfirmation
@@ -83,18 +113,13 @@ class MultiFieldFieldEditDialog extends preact.Component {
             <h2>Muokkaa kenttää</h2>
             <div class="main">
                 <InputGroup classes={ classes.fieldName }>
-                    <label htmlFor="fieldName">Nimi</label>
+                    <label htmlFor="fieldName" class="form-label">Nimi</label>
                     <Input vm={ this } name="fieldName" id="fieldName"
                         validations={ [['required']] }
                         errorLabel="Nimi"/>
                     <InputError error={ errors.fieldName }/>
                 </InputGroup>
-                <InputGroup>
-                    <label>Widgetti</label>
-                    <Select vm={ this } name="widgetName">{ widgetTypes.map(w =>
-                        <option value={ w.name }>{ w.friendlyName }</option>
-                    ) }</Select>
-                </InputGroup>
+                <WidgetSelector widget={ field.widget } ref={ this.widgetSelector }/>
             </div>
             </FormConfirmation>
         </div></div>;
@@ -105,15 +130,27 @@ class MultiFieldFieldEditDialog extends preact.Component {
     handleConfirm(e) {
         if (!this.form.handleSubmit(e))
             return;
+        const current = this.props.field.widget;
+        const widget = this.widgetSelector.current.getResult();
         this.props.onConfirm({
             name: this.state.values.fieldName,
-            widget: {
-                name: this.state.values.widgetName,
-                args: this.props.field.widget.args,
-            },
+            widget,
+            value: widget.name !== current.name ||
+                (widget.name === 'contentSelector' &&
+                 !objectsEquals(widget.args, current.args))
+                ? ''
+                : this.props.field.value,
         });
         popupDialog.close();
     }
+}
+
+function objectsEquals(a, b) {
+    const sortBeKey = o => Object.keys(o).sort().reduce((s, key) => {
+        s[key] = o[key];
+        return s;
+    }, {});
+    return JSON.stringify(sortBeKey(a)) === JSON.stringify(sortBeKey(b));
 }
 
 class MultiFieldFieldDeleteDialog extends preact.Component {

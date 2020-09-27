@@ -1,121 +1,101 @@
-import {http, View, FeatherSvg, InputGroup, Select, hookForm} from '@rad-commons';
-import {ContentFormImpl, ContentNodeUtils} from '@rad-cpanel-commons';
+import {http, env, toasters, View, FeatherSvg, urlUtils} from '@rad-commons';
+import {ContentNodeUtils} from '@rad-cpanel-commons';
 import openDeleteContentDialog from './ContentDeleteDialog.jsx';
+import ContentTypeDropdown from '../ContentType/ContentTypeDropdown.jsx';
 
 /**
  * #/manage-content/:initialContentTypeName.
  */
 class ContentManageView extends preact.Component {
     /**
-     * @param {Object} props
+     * @param {{initialContentTypeName?: string;}} props
      */
     constructor(props) {
         super(props);
-        this.cache = {};
-        this.contentTypes = [];
-        this.state = {
-            content: null,
-            message: null
-        };
-        let newState = {};
+        this.state = {isFetching: true, contentTypeName: null, content: null};
+        this.contentTypes = null;
+        let contentTypeName = null;
         http.get('/api/content-types')
-            .then(ctypes => {
-                this.contentTypes = ctypes;
-                newState = hookForm(this, {selectedContentTypeName: getInitialContentTypeName(props, ctypes)});
-                return http.get(`/api/content/${newState.values.selectedContentTypeName}`);
+            .then(contentTypes => {
+                this.contentTypes = contentTypes;
+                contentTypeName = props.initialContentTypeName || contentTypes[0].name;
+                return this.fetchContent(contentTypeName);
             })
-            .then(cnodes => {
-                Object.assign(newState, this.collectContent(cnodes, newState.values.selectedContentTypeName));
+            .then(content => {
+                if (!props.initialContentTypeName)
+                    urlUtils.replace(`#/manage-content/${contentTypeName}`);
+                return this.setState({content, isFetching: false, contentTypeName});
             })
-            .catch(() => {
-                newState.message = 'Jokin meni pieleen';
-            })
-            .finally(() => {
-                this.setState(newState);
+            .catch(err => {
+                toasters.main('Jokin meni pieleen', 'error');
+                env.console.error(err);
             });
     }
     /**
      * @access protected
      */
     render() {
-        if (this.state.content === null && !this.state.message)
-            return;
-        return <View><div>
+        if (this.state.isFetching && !this.state.content)
+            return null;
+        return <View>
             <h2>Selaa sisältöä</h2>
-            <div>
-                <InputGroup classes={ this.state.classes.selectedContentTypeName }>
-                    <Select vm={ this } myOnChange={ newState => this.updateContent(newState) }
-                            name="selectedContentTypeName">{
-                        this.contentTypes.map(t =>
-                            <option value={ t.name }>{ t.friendlyName }</option>
-                        )
-                    }</Select>
-                    { this.state.values.selectedContentTypeName
-                        ? <a href={ `#/add-content/${this.state.values.selectedContentTypeName}` }
-                                    title="Luo uusi"
-                                    class="icon-only">
-                            <FeatherSvg iconId="plus-circle" className="medium"/>
-                        </a>
-                        : '' }
-                </InputGroup>
+            <div class="col-centered columns container">
+                <ContentTypeDropdown
+                    initialValue={ this.state.contentTypeName }
+                    contentTypes={ this.contentTypes }
+                    onSelected={ type => this.reFetchContent(type.name) }/>
+                <a href={ `#/add-content/${this.state.contentTypeName}?return-to=/manage-content/${this.state.contentTypeName}` } title="Luo uusi" class="px-2 col-mr-auto">
+                    <FeatherSvg iconId="plus-circle" className="medium"/>
+                </a>
             </div>
-            { !this.state.message ? <table class="striped">
+            { this.state.content.length ? <table class="table">
                 <thead><tr>
                     <th>#</th>
                     <th>Julkaistu</th>
-                    <th></th>
+                    <th class="buttons"></th>
                 </tr></thead>
                 <tbody>{ this.state.content.map(cnode => {
-                    const href = `#/edit-content/${cnode.id}/${cnode.contentType}/${ContentFormImpl.Default}`;
+                    const basePath = `#/edit-content/${cnode.id}/${cnode.contentType}/none`;
+                    const qs = `?return-to=/manage-content/${this.state.contentTypeName}`;
                     return <tr>
                         <td>{ ContentNodeUtils.makeTitle(cnode) }</td>
                         <td>{ !cnode.isRevision
                             ? 'Kyllä'
-                            : ['Ei ', <a href={ `${href}/publish` }>Julkaise</a>]
+                            : ['Ei, ', <a href={ `${basePath}/publish${qs}` }>Julkaise</a>]
                         }</td>
-                        <td>
-                            <a href={ href } class="icon-only" title="Muokkaa">
-                                <FeatherSvg iconId="edit-2" className="medium"/>
-                            </a> | <a onClick={ e => this.openDeleteDialog(e, cnode) }
-                                    href={ `#/delete-content/${cnode.id}` } class="icon-only" title="Poista">
-                                <FeatherSvg iconId="trash-2" className="medium"/>
+                        <td class="buttons">
+                            <a href={ `${basePath}${qs}` } title="Muokkaa">
+                                <FeatherSvg iconId="edit-2" className="feather-md"/>
+                            </a> <a onClick={ e => this.openDeleteDialog(e, cnode) }
+                                    href={ `#/delete-content/${cnode.id}` } class="m-2" title="Poista">
+                                <FeatherSvg iconId="trash-2" className="feather-md"/>
                             </a>
                         </td>
                     </tr>;
                 }) }</tbody>
-            </table> : <p>{ this.state.message }</p> }
-        </div></View>;
+            </table> : <p>Ei sisältöä sisältötyypille { (this.contentTypes.find(t => t.name === this.state.contentTypeName)).friendlyName }</p> }
+        </View>;
     }
     /**
      * @access private
      */
-    updateContent(newState) {
-        const n = newState.values.selectedContentTypeName;
-        if (this.cache[n]) { // {content, message}
-            Object.assign(newState, this.cache[n]);
-            return newState;
-        }
-        //
-        http.get(`/api/content/${n}`)
-            .then(cnodes => {
-                this.setState(
-                    this.collectContent(cnodes, n));
-            })
-            .catch(() => {
-                this.setState({message: 'Jokin meni pieleen'});
+    fetchContent(contentTypeName) {
+        return http.get(`/api/content/${contentTypeName}`)
+            .catch(err => {
+                toasters.main('Jokin meni pieleen', 'error');
+                env.console.error(err);
+                return null;
             });
-        return newState;
     }
     /**
      * @access private
      */
-    collectContent(cnodes, selectedContentTypeName) {
-        const out = {content: cnodes};
-        out.message = cnodes.length ? null : 'Ei sisältöä tyypille ' +
-            this.contentTypes.find(t => t.name === selectedContentTypeName).friendlyName +
-            '.';
-        this.cache[selectedContentTypeName] = out;
-        return out;
+    reFetchContent(contentTypeName) {
+        this.setState({isFetching: true});
+        this.fetchContent(contentTypeName).then(content => {
+            this.setState({content, isFetching: false, contentTypeName});
+            urlUtils.replace(`#/manage-content/${contentTypeName}`);
+        });
     }
     /**
      * @access private
@@ -124,13 +104,6 @@ class ContentManageView extends preact.Component {
         e.preventDefault();
         openDeleteContentDialog(cnode, null);
     }
-}
-
-function getInitialContentTypeName(props, ctypes) {
-    if (!props.initialContentTypeName ||
-        !ctypes.some(t => t.name === props.initialContentTypeName))
-            return ctypes[0].name;
-    return props.initialContentTypeName;
 }
 
 export default ContentManageView;

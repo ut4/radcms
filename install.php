@@ -1,6 +1,7 @@
 <?php
 
-define('RAD_BACKEND_PATH', __DIR__ . '/backend/');
+define('RAD_BACKEND_PATH', __DIR__ . '/backend/'); // /src
+define('RAD_WORKSPACE_PATH', __DIR__ . '/');       // /site, /plugins
 
 // Do not edit below this line -------------------------------------------------
 
@@ -12,11 +13,11 @@ foreach (['pdo_mysql', 'mbstring', 'fileinfo'] as $ext)
     if (!extension_loaded($ext))
         die("{$ext} extension is required by RadCMS.");
 
-define('INDEX_DIR_PATH', __DIR__);
+define('RAD_PUBLIC_PATH', __DIR__ . '/');
 $loader = require RAD_BACKEND_PATH . 'vendor/autoload.php';
 $loader->addPsr4('RadCms\\Installer\\', RAD_BACKEND_PATH . 'installer/src');
+$loader->addPsr4('RadPlugins\\', RAD_WORKSPACE_PATH . 'plugins');
 
-\Pike\App::create([\RadCms\Installer\Module::class],
-                  [],
-                  [\Pike\App::SERVICE_DB => \Pike\App::MAKE_AUTOMATICALLY])
+$ctx = new \RadCms\AppContext(['db' => \Pike\App::MAKE_AUTOMATICALLY]);
+\Pike\App::create([\RadCms\Installer\Module::class], [], $ctx)
     ->handleRequest('', $_GET['q'] ?? '/');
