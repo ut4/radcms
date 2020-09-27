@@ -7,8 +7,7 @@ use Pike\TestUtils\{DbTestCase, HttpTestUtils, MutedResponse};
 use RadCms\{APIConfigsStorage, AppContext, BaseAPI};
 use RadCms\Content\DAO;
 use RadCms\ContentType\ContentTypeMigrator;
-use RadCms\Plugin\MigrationAPI;
-use RadCms\Plugin\Plugin;
+use RadCms\Plugin\{MigrationAPI, Plugin};
 use RadCms\Tests\AppTest;
 use RadCms\Tests\_Internal\ContentTestUtils;
 use RadPlugins\MoviesPlugin\MoviesPlugin;
@@ -64,10 +63,9 @@ final class PluginAPIIntegrationTest extends DbTestCase {
     }
     private function setupInstallCtypeTest($initialMovies = []) {
         $this->setupTestPlugin($initialMovies);
-        return (object) [
-            'actualResponseBody' => null,
-            'testMovieId' => null,
-        ];
+        $state = new \stdClass;
+        $state->testMovieId = null;
+        return $state;
     }
     private function verifyContentTypeWasInstalledToDb() {
         $this->verifyContentTypeIsInstalled('Movies', true);
@@ -84,13 +82,14 @@ final class PluginAPIIntegrationTest extends DbTestCase {
         $s = $this->setupReadTest();
         $this->insertTestMovie();
         $this->sendListMoviesRequest($s);
-        $this->verifyResponseBodyEquals('[{"id":"1"' .
-                                        ',"status":' . DAO::STATUS_PUBLISHED .
-                                        ',"title":"Fus"' .
-                                        ',"releaseYear":"2020"' .
-                                        ',"contentType":"Movies"' .
-                                        ',"isRevision":false' .
-                                        ',"revisions":[]}]', $s);
+        $this->verifyRespondedSuccesfullyWith(
+            [(object) ['id' => '1',
+                       'status' => DAO::STATUS_PUBLISHED,
+                       'title' => 'Fus',
+                       'releaseYear' => '2020',
+                       'contentType' => 'Movies',
+                       'isRevision' => false,
+                       'revisions' => []]], $s);
     }
     private function setupReadTest() {
         return $this->setupInstallCtypeTest();
@@ -101,11 +100,10 @@ final class PluginAPIIntegrationTest extends DbTestCase {
                                         'releaseYear' => 2020]);
     }
     private function sendListMoviesRequest($s) {
-        $res = $this->createBodyCapturingMockResponse($s);
-        $this->sendRequest(new Request('/plugins/movies-plugin', 'GET'), $res, $this->app);
-    }
-    private function verifyResponseBodyEquals($expectedJson, $s) {
-        $this->assertEquals($expectedJson, $s->actualResponseBody);
+        $s->spyingResponse = $this->makeSpyingResponse();
+        $this->sendRequest(new Request('/plugins/movies-plugin', 'GET'),
+                           $s->spyingResponse,
+                           $this->app);
     }
 
 
@@ -115,7 +113,7 @@ final class PluginAPIIntegrationTest extends DbTestCase {
     public function testPluginCanCRUDCreate() {
         $s = $this->setupCreateTest();
         $this->sendInsertMovieRequest($s);
-        $this->verifyResponseBodyEquals('{"my":"response"}', $s);
+        $this->verifyRespondedSuccesfullyWith('{"my":"response"}', $s);
         $this->verifyMovieWasInsertedToDb('A movie');
     }
     private function setupCreateTest() {
@@ -125,8 +123,8 @@ final class PluginAPIIntegrationTest extends DbTestCase {
         $req = new Request('/plugins/movies-plugin', 'POST',
                            (object) ['title' => 'A movie',
                                      'releaseYear' => 2021]);
-        $res = $this->createBodyCapturingMockResponse($s);
-        $this->sendRequest($req, $res, $this->app);
+        $s->spyingResponse = $this->makeSpyingResponse();
+        $this->sendRequest($req, $s->spyingResponse, $this->app);
     }
     private function verifyMovieWasInsertedToDb($title) {
         $this->assertEquals(1, count(self::$db->fetchAll(
@@ -143,23 +141,23 @@ final class PluginAPIIntegrationTest extends DbTestCase {
         $s = $this->setupUpdateTest();
         $newData = (object)['title' => 'Updated', 'releaseYear' => 2022];
         $this->sendUpdateMovieRequest($s, $newData);
-        $this->verifyResponseBodyEquals('{"my":"response2"}', $s);
+        $this->verifyRespondedSuccesfullyWith('{"my":"response2"}', $s);
         $this->verifyMovieWasUpdatedToDb($newData);
     }
     private function setupUpdateTest() {
-        $out = $this->setupInstallCtypeTest();
-        $out->testMovieId = '10';
+        $state = $this->setupInstallCtypeTest();
+        $state->testMovieId = '10';
         // @allow \RuntimeException
-        $this->insertTestMovie($out->testMovieId);
-        return $out;
+        $this->insertTestMovie($state->testMovieId);
+        return $state;
     }
     private function sendUpdateMovieRequest($s, $newData) {
         $req = new Request("/plugins/movies-plugin/{$s->testMovieId}", 'PUT',
                             (object)['title' => $newData->title,
                                      'releaseYear' => $newData->releaseYear,
                                      'isRevision' => false]);
-        $res = $this->createBodyCapturingMockResponse($s);
-        $this->sendRequest($req, $res, $this->app);
+        $s->spyingResponse = $this->makeSpyingResponse();
+        $this->sendRequest($req, $s->spyingResponse, $this->app);
     }
     private function verifyMovieWasUpdatedToDb($newData) {
         $this->assertEquals(1, count(self::$db->fetchAll(
@@ -202,5 +200,9 @@ final class PluginAPIIntegrationTest extends DbTestCase {
             'impl' => 'MoviesAdmin',
             'title' => 'Elokuvat-app',
         ], $actual[0]);
+    }
+    private function verifyRespondedSuccesfullyWith($expected, $s) {
+        $this->verifyResponseMetaEquals(200, 'application/json', $s->spyingResponse);
+        $this->verifyResponseBodyEquals($expected, $s->spyingResponse);
     }
 }

@@ -37,7 +37,7 @@ final class ContentTypeControllersTest extends DbTestCase {
         $s = $this->setupGetContentTypeTest();
         $this->sendGetContentTypeRequest($s);
         $expected = self::$testContentTypes[0];
-        $this->verifyResponseBodyEquals(
+        $this->verifyRespondedSuccesfullyWith(
             ['name' => $expected->name,
              'friendlyName' => $expected->friendlyName,
              'description' => $expected->description,
@@ -61,16 +61,16 @@ final class ContentTypeControllersTest extends DbTestCase {
         );
     }
     private function setupGetContentTypeTest() {
-        return (object)[
-            'contentTypeName' => 'Events',
-            'actualResponseBody' => null,
-        ];
+        $state = new \stdClass;
+        $state->contentTypeName = 'Events';
+        $state->spyingResponse = null;
+        return $state;
     }
     private function sendGetContentTypeRequest($s, $url = null) {
         $req = new Request($url ?? "/api/content-types/{$s->contentTypeName}", 'GET');
-        $res = $this->createBodyCapturingMockResponse($s);
+        $s->spyingResponse = $this->makeSpyingResponse();
         $app = $this->makeTestApp();
-        $this->sendRequest($req, $res, $app, $s);
+        $this->sendRequest($req, $s->spyingResponse, $app);
     }
 
 
@@ -80,7 +80,7 @@ final class ContentTypeControllersTest extends DbTestCase {
     public function testGETContentTypesReturnsAllContentTypes() {
         $s = $this->setupGetContentTypesTest();
         $this->sendGetContentTypesRequest($s);
-        $this->verifyResponseBodyEquals(
+        $this->verifyRespondedSuccesfullyWith(
             [['name' => self::$testContentTypes[0]->name,
               'friendlyName' => self::$testContentTypes[0]->friendlyName,
               'description' => self::$testContentTypes[0]->description,
@@ -112,9 +112,9 @@ final class ContentTypeControllersTest extends DbTestCase {
         );
     }
     private function setupGetContentTypesTest() {
-        return (object)[
-            'actualResponseBody' => null,
-        ];
+        $state = new \stdClass;
+        $state->spyingResponse = null;
+        return $state;
     }
     private function sendGetContentTypesRequest($s) {
         $this->sendGetContentTypeRequest($s, '/api/content-types');
@@ -127,21 +127,21 @@ final class ContentTypeControllersTest extends DbTestCase {
     public function testPUTReorderFieldsSavesNewOrderOfContentTypeFields() {
         $s = $this->setupReorderFieldsTest();
         $this->installTestContentType($s);
-        //
         $this->sendUpdateRequest($s, '/reorder-fields');
+        $this->verifyRespondedSuccesfullyWith(['ok' => 'ok'], $s);
         $this->verifyUpdatedContentTypeFieldsOrder($s);
-        //
         $this->uninstallTestContentType($s);
     }
     private function setupReorderFieldsTest() {
-        return (object) [
-            'contentTypeName' => 'Another',
-            'reqBody' => (object) ['fields' => [
-                (object) ['name' => 'field2',],
-                (object) ['name' => 'field1',],
-            ]],
-            'testContentTypes' => new ContentTypeCollection()
-        ];
+        $state = new \stdClass;
+        $state->contentTypeName = 'Another';
+        $state->reqBody = (object) ['fields' => [
+            (object) ['name' => 'field2',],
+            (object) ['name' => 'field1',],
+        ]];
+        $state->testContentTypes = new ContentTypeCollection();
+        $state->spyingResponse = null;
+        return $state;
     }
     private function verifyUpdatedContentTypeFieldsOrder($s) {
         $parsed = $this->getInternalInstalledContentTypes();
@@ -160,32 +160,30 @@ final class ContentTypeControllersTest extends DbTestCase {
     public function testPUTContentTypesUpdatesBasicInfoOfContentType() {
         $s = $this->setupUpdateTest();
         $this->installTestContentType($s);
-        //
         $this->sendUpdateRequest($s);
+        $this->verifyRespondedSuccesfullyWith(['ok' => 'ok'], $s);
         $this->verifyUpdatedContentType($s);
-        //
         $this->uninstallTestContentType($s);
     }
     private function setupUpdateTest() {
-        return (object) [
-            'contentTypeName' => 'Another',
-            'reqBody' => (object) [
-                'name' => 'Another',
-                'friendlyName' => 'Päivitetty selkonimi',
-                'description' => 'Päivitetty kuvaus',
-                'isInternal' => true,
-                'frontendFormImpl' => 'MyFormImpl',
-            ],
-            'testContentTypes' => new ContentTypeCollection()
+        $state = $this->setupReorderFieldsTest();
+        $state->reqBody = (object) [
+            'name' => 'Another',
+            'friendlyName' => 'Päivitetty selkonimi',
+            'description' => 'Päivitetty kuvaus',
+            'isInternal' => true,
+            'frontendFormImpl' => 'MyFormImpl',
         ];
+        $state->testContentTypes = new ContentTypeCollection();
+        return $state;
     }
     private function sendUpdateRequest($s, $url = '') {
         $req = new Request("/api/content-types/{$s->contentTypeName}{$url}",
                            'PUT',
                            $s->reqBody);
-        $res = $this->createMockResponse(['ok' => 'ok']);
+        $s->spyingResponse = $this->makeSpyingResponse();
         $app = $this->makeTestApp();
-        $this->sendRequest($req, $res, $app);
+        $this->sendRequest($req, $s->spyingResponse, $app);
     }
     private function verifyUpdatedContentType($s, $newName = null) {
         $parsed = $this->getInternalInstalledContentTypes();
@@ -210,11 +208,10 @@ final class ContentTypeControllersTest extends DbTestCase {
     public function testPUTContentTypesRenamesContentType() {
         $s = $this->setupUpdateTest();
         $this->installTestContentType($s);
-        //
         $s->reqBody->name = "Updated{$s->contentTypeName}";
         $this->sendUpdateRequest($s);
+        $this->verifyRespondedSuccesfullyWith(['ok' => 'ok'], $s);
         $this->verifyUpdatedContentType($s, $s->reqBody->name);
-        //
         $s->testContentTypes[0]->name = $s->reqBody->name;
         $this->uninstallTestContentType($s);
     }
@@ -227,21 +224,18 @@ final class ContentTypeControllersTest extends DbTestCase {
         $s = $this->setupDeleteTest();
         $this->installTestContentType($s);
         $this->verifyContentTypeTableExists($s->contentTypeName, true);
-        //
         $this->sendDeleteContentTypeRequest($s);
+        $this->verifyRespondedSuccesfullyWith(['ok' => 'ok'], $s);
         $this->verifyDeletedContentType($s);
     }
     private function setupDeleteTest() {
-        return (object) [
-            'contentTypeName' => 'Another',
-            'testContentTypes' => new ContentTypeCollection()
-        ];
+        return $this->setupReorderFieldsTest();
     }
     private function sendDeleteContentTypeRequest($s) {
         $req = new Request("/api/content-types/{$s->contentTypeName}", 'DELETE');
-        $res = $this->createMockResponse(['ok' => 'ok']);
+        $s->spyingResponse = $this->makeSpyingResponse();
         $app = $this->makeTestApp();
-        $this->sendRequest($req, $res, $app);
+        $this->sendRequest($req, $s->spyingResponse, $app);
     }
     private function verifyDeletedContentType($s) {
         $compactCtypes = $this->getInternalInstalledContentTypes();
@@ -257,35 +251,32 @@ final class ContentTypeControllersTest extends DbTestCase {
     public function testPOSTContentTypeFieldAddsFieldToContentType() {
         $s = $this->setupAddFieldTest();
         $this->installTestContentType($s);
-        //
         $this->sendAddFieldToContentTypeRequest($s);
+        $this->verifyRespondedSuccesfullyWith(['ok' => 'ok'], $s);
         $this->verifyAddedFieldToContentTypeTable($s);
         $this->verifyAddedFieldToInternalTable($s);
-        //
         $this->uninstallTestContentType($s);
     }
     private function setupAddFieldTest() {
-        return (object) [
-            'contentTypeName' => 'Another',
-            'reqBody' => (object) [
-                'name' => 'newField',
-                'dataType' => self::makeDataType('text'),
-                'friendlyName' => 'Uusi kenttä',
-                'isInternal' => false,
-                'defaultValue' => '',
-                'visibility' => 0,
-                'widget' => (object) ['name' => 'textField', 'args' => null]
-            ],
-            'testContentTypes' => new ContentTypeCollection()
+        $state = $this->setupReorderFieldsTest();
+        $state->reqBody = (object) [
+            'name' => 'newField',
+            'dataType' => self::makeDataType('text'),
+            'friendlyName' => 'Uusi kenttä',
+            'isInternal' => false,
+            'defaultValue' => '',
+            'visibility' => 0,
+            'widget' => (object) ['name' => 'textField', 'args' => null]
         ];
+        return $state;
     }
     private function sendAddFieldToContentTypeRequest($s) {
         $req = new Request("/api/content-types/field/{$s->contentTypeName}",
                            'POST',
                            $s->reqBody);
-        $res = $this->createMockResponse(['ok' => 'ok']);
+        $s->spyingResponse = $this->makeSpyingResponse();
         $app = $this->makeTestApp();
-        $this->sendRequest($req, $res, $app);
+        $this->sendRequest($req, $s->spyingResponse, $app);
     }
     private function verifyContentTypeFieldExist($s, $expectedField, $shouldExist) {
         $info = self::$db->fetchOne(
@@ -329,26 +320,23 @@ final class ContentTypeControllersTest extends DbTestCase {
     public function testDELETEContentTypesFieldDeletesFieldFromContentType() {
         $s = $this->setupDeleteFieldTest();
         $this->installTestContentType($s);
-        //
         $this->sendDeleteFieldFromContentTypeRequest($s);
+        $this->verifyRespondedSuccesfullyWith(['ok' => 'ok'], $s);
         $this->verifyDeletedFieldFromContentTypeTable($s);
         $this->verifyDeletedFieldFromInternalTable($s);
-        //
         $this->uninstallTestContentType($s);
     }
     private function setupDeleteFieldTest() {
-        return (object) [
-            'contentTypeName' => 'Another',
-            'fieldName' => 'field1',
-            'testContentTypes' => new ContentTypeCollection()
-        ];
+        $state = $this->setupReorderFieldsTest();
+        $state->fieldName = 'field1';
+        return $state;
     }
     private function sendDeleteFieldFromContentTypeRequest($s) {
         $req = new Request("/api/content-types/field/{$s->contentTypeName}/{$s->fieldName}",
                            'DELETE');
-        $res = $this->createMockResponse(['ok' => 'ok']);
+        $s->spyingResponse = $this->makeSpyingResponse();
         $app = $this->makeTestApp();
-        $this->sendRequest($req, $res, $app, $s);
+        $this->sendRequest($req, $s->spyingResponse, $app, $s);
     }
     private function verifyDeletedFieldFromContentTypeTable($s) {
         $this->verifyContentTypeFieldExist($s,
@@ -396,5 +384,9 @@ final class ContentTypeControllersTest extends DbTestCase {
     }
     private static function makeDataType(string $type, ?int $length = null): \stdClass {
         return (object) ['type' => $type, 'length' => $length];
+    }
+    private function verifyRespondedSuccesfullyWith($expected, $s) {
+        $this->verifyResponseMetaEquals(200, 'application/json', $s->spyingResponse);
+        $this->verifyResponseBodyEquals($expected, $s->spyingResponse);
     }
 }

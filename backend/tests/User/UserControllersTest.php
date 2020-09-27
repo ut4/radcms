@@ -2,15 +2,11 @@
 
 namespace RadCms\Tests\User;
 
-use Pike\TestUtils\DbTestCase;
-use Pike\TestUtils\HttpTestUtils;
-use Pike\Request;
 use Pike\Auth\Authenticator;
-use Pike\DbUtils;
-use Pike\Response;
-use RadCms\Auth\ACL;
-use Pike\TestUtils\MockCrypto;
+use Pike\Request;
+use Pike\TestUtils\{DbTestCase, HttpTestUtils, MockCrypto};
 use RadCms\AppContext;
+use RadCms\Auth\ACL;
 
 final class UserControllersTest extends DbTestCase {
     use HttpTestUtils; // makeApp(), sendRequest()
@@ -31,17 +27,18 @@ final class UserControllersTest extends DbTestCase {
         $out->ctx->auth->method('getIdentity')
             ->willReturn((object)['id' => $out->testUser->id,
                                   'role' => $out->testUser->role]);
-        $out->actualResponseBody = null;
+        $out->spyingResponse = null;
         return $out;
     }
     private function sendHandleGetCurrentUserRequest($s) {
         $req = new Request('/api/users/me', 'GET');
-        $res = $this->createBodyCapturingMockResponse($s);
+        $s->spyingResponse = $this->makeSpyingResponse();
         $app = $this->makeApp('\RadCms\App::create', [], $s->ctx);
-        $this->sendRequest($req, $res, $app);
+        $this->sendRequest($req, $s->spyingResponse, $app);
     }
     private function verifyReturnedCurrentUserDetails($s) {
-        $user = json_decode($s->actualResponseBody);
+        $this->verifyResponseMetaEquals(200, 'application/json', $s->spyingResponse);
+        $user = json_decode($s->spyingResponse->getActualBody());
         $this->assertEquals($s->testUser->id, $user->id);
         $this->assertEquals($s->testUser->username, $user->username);
         $this->assertEquals($s->testUser->email, $user->email);
