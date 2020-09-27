@@ -3,10 +3,9 @@
 namespace RadCms\Tests\Content;
 
 use PHPUnit\Framework\TestCase;
+use Pike\{Db, PikeException};
 use RadCms\Content\DAO;
-use Pike\Db;
 use RadCms\ContentType\ContentTypeCollection;
-use Pike\PikeException;
 
 final class DAOQueryBuildingTest extends TestCase {
     private function makeDao($useRevisions = false, $alterContentTypesFn = null) {

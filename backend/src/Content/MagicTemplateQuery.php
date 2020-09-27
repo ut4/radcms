@@ -63,6 +63,14 @@ class MagicTemplateQuery extends Query {
         return $this->frontendPanels;
     }
     /**
+     * @param string $limitExpr
+     * @return $this
+     */
+    public function limitExpr(string $limitExpr): MagicTemplateQuery {
+        $this->limitExpr = $limitExpr;
+        return $this;
+    }
+    /**
      * @return array|\stdClass|null
      */
     public function exec() {

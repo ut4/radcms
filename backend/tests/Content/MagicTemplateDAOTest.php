@@ -3,11 +3,9 @@
 namespace RadCms\Tests\Content;
 
 use Pike\TestUtils\DbTestCase;
-use RadCms\Content\DAO;
+use RadCms\Content\{DAO, MagicTemplateDAO};
+use RadCms\ContentType\{ContentTypeCollection, ContentTypeMigrator};
 use RadCms\Tests\_Internal\ContentTestUtils;
-use RadCms\Content\MagicTemplateDAO;
-use RadCms\ContentType\ContentTypeCollection;
-use RadCms\ContentType\ContentTypeMigrator;
 
 final class MagicTemplateDAOTest extends DbTestCase {
     use ContentTestUtils;

@@ -89,8 +89,7 @@ trait ContentTestUtils {
      * @param string $contentTypeName
      */
     public function deleteContent(string $contentTypeName): void {
-        if (self::$db->exec('DELETE FROM ${p}' . $contentTypeName) < 1)
-            throw new \RuntimeException('Failed to clean test data');
+        self::$db->exec('DELETE FROM ${p}' . $contentTypeName);
     }
     /**
      * @param bool $clearRevisions = true
