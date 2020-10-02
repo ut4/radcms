@@ -1,5 +1,6 @@
 USE ${database};
 
+DROP TABLE IF EXISTS ${p}files;
 DROP TABLE IF EXISTS ${p}contentRevisions;
 DROP TABLE IF EXISTS ${p}cmsState;
 DROP TABLE IF EXISTS ${p}users;
@@ -39,4 +40,14 @@ CREATE TABLE ${p}contentRevisions (
     `revisionSnapshot` JSON,
     `createdAt` INT(10) UNSIGNED,
     PRIMARY KEY (`contentId`, `contentType`)
+) DEFAULT CHARSET = utf8mb4;
+
+CREATE TABLE ${p}files (
+    `fileName` VARCHAR(127) NOT NULL, -- e.g. 'a-cat.png'
+    `basePath` VARCHAR(260) NOT NULL, -- e.g. '/var/www/html/uploads/'
+    `mime` VARCHAR(255) NOT NULL,
+    `friendlyName` VARCHAR(64) DEFAULT NULL,
+    `createdAt` INT(10) UNSIGNED DEFAULT 0,
+    `updatedAt` INT(10) UNSIGNED DEFAULT 0,
+    PRIMARY KEY (`fileName`, `basePath`)
 ) DEFAULT CHARSET = utf8mb4;

@@ -10,6 +10,9 @@ abstract class TestSite {
     public const ASSET_1_PATH = 'test-style.css';
     public const ASSET_2_PATH = 'my-js/test-script.js';
     public const UPLOAD_ITEM_1_PATH = 'sample.jpg';
+    public const UPLOAD_ITEM_1_MIME = 'image/jpeg';
+    public const UPLOAD_ITEM_1_CTIME = 1590914206;
+    public const UPLOAD_ITEM_1_MTIME = 1590914206;
     public const TEMPLATES = [self::TMPL_1_PATH, self::TMPL_2_PATH];
     public const ASSETS = [self::ASSET_1_PATH, self::ASSET_2_PATH];
     public const UPLOADS = [self::UPLOAD_ITEM_1_PATH];

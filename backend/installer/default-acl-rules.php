@@ -43,7 +43,8 @@ $out->resources = (object) [
     ],
     'uploads' => (object) [
         'view'   => $flag1,
-        'upload' => $flag2
+        'upload' => $flag2,
+        'rebuildIndex' => $flag3,
     ],
     'websites' => (object) [
         'pack'    => $flag1,

@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace RadCms\Upload;
 
-use Pike\FileSystem;
-use Pike\FileSystemInterface;
-use Pike\PikeException;
+use Pike\{FileSystem, FileSystemInterface, PikeException};
+use RadCms\Entities\UploadsEntry;
 
 /**
  * Luokka, joka lukee /uploads-kansion sisältöä (ja mahdollisesti cachettaa
@@ -23,7 +22,7 @@ class UploadFileScanner {
     }
     /**
      * @param string $dirPath
-     * @return array array<{fileName: string, basePath: string, mime: string}>
+     * @return \RadCms\Entities\UploadsEntry[]
      * @throws \Pike\PikeException
      */
     public function scanAll(string $dirPath): array {
@@ -32,9 +31,11 @@ class UploadFileScanner {
         $out = [];
         foreach ($fullPaths as $p) {
             $basePath = FileSystem::normalizePath(dirname($p)) . '/';
-            $out[] = (object)['fileName' => mb_substr($p, mb_strlen($basePath)),
-                              'basePath' => $basePath,
-                              'mime' => self::getMime($p)];
+            $file = new UploadsEntry;
+            $file->fileName = mb_substr($p, mb_strlen($basePath));
+            $file->basePath = $basePath;
+            $file->mime = self::getMime($p);
+            $out[] = $file;
         }
         return $out;
     }
@@ -50,5 +51,12 @@ class UploadFileScanner {
         if (!$finfo && ($finfo = finfo_open(FILEINFO_MIME_TYPE)) === false)
             throw new PikeException('finfo_open() failed', PikeException::FAILED_FS_OP);
         return finfo_file($finfo, $filePath) ?? $fallback;
+    }
+    /**
+     * @param string $mime 'image/jpg' etc.
+     * @return bool
+     */
+    public static function isImage(string $mime): bool {
+        return strpos($mime, 'image/') === 0;
     }
 }

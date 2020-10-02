@@ -13,11 +13,14 @@ abstract class UploadModule {
      * @param \RadCms\AppContext $ctx
      */
     public static function init(AppContext $ctx): void {
-        $ctx->router->map('GET', '/api/uploads',
-            [UploadControllers::class, 'handleGetUploads', 'view:uploads']
+        $ctx->router->map('GET', '/api/uploads/[images:filters]?',
+            [UploadControllers::class, 'getUploads', 'view:uploads']
         );
         $ctx->router->map('POST', '/api/uploads',
-            [UploadControllers::class, 'handleUploadFile', 'upload:uploads']
+            [UploadControllers::class, 'uploadFile', 'upload:uploads']
+        );
+        $ctx->router->map('PUT', '/api/uploads/rebuild-index',
+            [UploadControllers::class, 'rebuildIndex', 'rebuildIndex:uploads']
         );
     }
 }
