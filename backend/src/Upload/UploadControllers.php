@@ -30,15 +30,18 @@ class UploadControllers {
         $res->json($files);
     }
     /**
-     * POST /api/uploads: todo.
+     * POST /api/uploads: validoi sisääntulevan tiedoston $_FILES['localFile'],
+     * siirtää sen uploads-kansioon, ja insertoi sen tiedot tietokantaan.
      *
      * @param \Pike\Request $req
      * @param \Pike\Response $res
      * @param \RadCms\Upload\Uploader $uploader
+     * @param \RadCms\Upload\UploadsRepository $uploadsRepo
      */
     public function uploadFile(Request $req,
                                Response $res,
-                               Uploader $uploader): void {
+                               Uploader $uploader,
+                               UploadsRepository $uploadsRepo): void {
         if (isset($req->files->localFile['error']) &&
             $req->files->localFile['error'] !== UPLOAD_ERR_OK) {
             throw new PikeException('Expected UPLOAD_ERR_OK (0), but got ' .
@@ -50,6 +53,10 @@ class UploadControllers {
         }
         // @allow \Pike\PikeException
         $file = $uploader->upload($req->files->localFile, self::UPLOADS_DIR_PATH);
+        // @allow \Pike\PikeException
+        $file->createdAt = time();
+        $uploadsRepo->insertMany([$file]);
+        //
         $res->json(['file' => $file]);
     }
     /**

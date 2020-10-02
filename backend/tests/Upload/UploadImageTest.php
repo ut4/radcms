@@ -5,21 +5,17 @@ declare(strict_types=1);
 namespace RadCms\Tests\Upload;
 
 use Pike\Request;
-use RadCms\Upload\Uploader;
+use RadCms\Tests\_Internal\TestSite;
+use RadCms\Upload\{Uploader, UploadsRepository};
 
 final class UploadImageTest extends UploadControllersTestCase {
+    private const TEST_FILE_MIME = 'image/png';
     public function testUploadFileUploadsImage(): void {
         $state = $this->setupUploadFileTest();
         $this->sendUploadFileRequest($state);
-        $this->verifyRespondedSuccesfullyWith((object) [
-            'file' => (object)['fileName' => $state->uploadFileName,
-                               'basePath' => TEST_SITE_PUBLIC_PATH . 'uploads/',
-                               'mime' => 'image/png',
-                               'friendlyName' => null,
-                               'createdAt' => null,
-                               'updatedAt' => null]
-        ], $state);
+        $this->verifyRespondedSuccesfullyWithNewFileInfo($state);
         $this->verifyMovedUploadedFileTo(RAD_PUBLIC_PATH . 'uploads/', $state);
+        $this->verifyInsertedFileToDb($state);
     }
     private function setupUploadFileTest(): \stdClass {
         $state = new \stdClass;
@@ -34,7 +30,7 @@ final class UploadImageTest extends UploadControllersTestCase {
     }
     private function sendUploadFileRequest(\stdClass $s): void {
         $req = new Request('/api/uploads', 'POST', null,
-                           (object)['localFile' => [
+                           (object) ['localFile' => [
                                'name' => $s->uploadFileName,
                                'tmp_name' => dirname(__DIR__) . '/_Internal/upload-sample.png',
                                'error' => UPLOAD_ERR_OK,
@@ -49,8 +45,28 @@ final class UploadImageTest extends UploadControllersTestCase {
                               });
         $this->sendRequest($req, $s->spyingResponse, $app);
     }
+    private function verifyRespondedSuccesfullyWithNewFileInfo(\stdClass $s): void {
+        $parsed = json_decode($s->spyingResponse->getActualBody());
+        $actual = $parsed->file;
+        $this->assertEquals($s->uploadFileName, $actual->fileName);
+        $this->assertEquals(TEST_SITE_PUBLIC_PATH . 'uploads/', $actual->basePath);
+        $this->assertEquals(self::TEST_FILE_MIME, $actual->mime);
+        $this->assertEquals(null, $actual->friendlyName);
+        $this->assertTrue($actual->createdAt > time() - 10);
+        $this->assertEquals(null, $actual->updatedAt);
+    }
     private function verifyMovedUploadedFileTo($expectedDir, $s): void {
         $this->assertEquals("{$expectedDir}{$s->uploadFileName}",
                             $s->actuallyMovedFileTo);
+    }
+    private function verifyInsertedFileToDb($s): void {
+        $actual = (new UploadsRepository(self::$db))->getMany(null);
+        $this->assertCount(1, $actual);
+        $this->assertEquals($s->uploadFileName, $actual[0]->fileName);
+        $this->assertEquals(TestSite::PUBLIC_PATH . 'uploads/', $actual[0]->basePath);
+        $this->assertEquals(self::TEST_FILE_MIME, $actual[0]->mime);
+        $this->assertEquals(null, $actual[0]->friendlyName);
+        $this->assertTrue($actual[0]->createdAt > time() - 10);
+        $this->assertEquals(0, $actual[0]->updatedAt);
     }
 }
