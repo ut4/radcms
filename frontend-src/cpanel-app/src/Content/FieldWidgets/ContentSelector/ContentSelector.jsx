@@ -182,7 +182,7 @@ class SingleFieldValueSelector extends preact.Component {
      * @access protected
      */
     render(_, {options, showOptions, searchTerm, committedVal}) {
-        return <div class={ `cc form-input${!showOptions ? '' : ' open'}` }>
+        return <div class={ `combobox form-input${!showOptions ? '' : ' open'}` }>
             <input
                 value={ searchTerm }
                 class="form-input"
@@ -314,7 +314,8 @@ class FieldValueListSelector extends preact.Component {
      */
     confirmAddContentToList() {
         const selectedFieldValue = this.singleFieldSelector.current.getSelection();
-        if (selectedFieldValue !== NO_SELECTION) {
+        if (selectedFieldValue !== NO_SELECTION &&
+            !this.selectedContent.some(fieldValue => fieldValue === selectedFieldValue)) {
             this.selectedContent.push(selectedFieldValue);
             this.tagsWidget.current.addTag(this.getFieldLabelByValue(selectedFieldValue));
             this.props.root.props.onValueChange(JSON.stringify(this.selectedContent));

@@ -1,4 +1,4 @@
-import {FeatherSvg} from '@rad-commons';
+import {FeatherSvg, env} from '@rad-commons';
 import {contentFormRegister, FieldsFilter} from '@rad-cpanel-commons';
 import BaseFieldWidget from '../Base.jsx';
 import MultiFieldConfigurer from './MultiFieldConfigurer.jsx';
@@ -18,7 +18,8 @@ class MultiFieldFieldWidget extends BaseFieldWidget {
     constructor(props) {
         super(props);
         this.isConfigurable = props.settings.showConfigureButton;
-        this.multiFieldFields = new MultiFieldFieldsStore(JSON.parse(this.fixedInitialValue));
+        this.multiFieldFields = new MultiFieldFieldsStore(
+            getValidInitialFieldsOrWarn(this.fixedInitialValue));
         this.multiFieldFields.listen(fields => {
             if (this.state.configModeIsOn) return;
             this.setState({fields});
@@ -119,6 +120,15 @@ function makeVirtualContentNode(fields) {
         obj[f.name] = f.value;
         return obj;
     }, {});
+}
+
+function getValidInitialFieldsOrWarn(initialValue) {
+    const candidate = JSON.parse(initialValue);
+    if (Array.isArray(candidate))
+        return candidate;
+    env.console.error('Initial value of MultiField must be an array, is: ',
+                      candidate);
+    return [];
 }
 
 export default MultiFieldFieldWidget;

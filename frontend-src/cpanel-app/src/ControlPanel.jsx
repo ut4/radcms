@@ -108,7 +108,10 @@ class OnThisPageControlPanelSection extends preact.Component {
                         siteIframe={ this.props.siteIframe }
                         key={ panelBundle.id }/>
                 )
-                : this.props.websiteIframeHasLoadedAtLeastOnce ? 'Ei muokattavaa sisältöä tällä sivulla': null }
+                : this.props.websiteIframeHasLoadedAtLeastOnce
+                    ? <p class="entry" style="font-size: .7rem;">Ei muokattavaa sisältöä tällä sivulla.</p>
+                    : null
+            }
         </section>;
     }
 }

@@ -56,7 +56,7 @@ class ContentAddView extends preact.Component {
      * @access public
      */
     static makeFormCfg(panelIdx, contentType = null) {
-        const panelConfig = !contentType
+        const panelConfig = panelIdx
             ? webPageState.currentContentPanels[panelIdx || -1] || {}
             : {formImpl: contentType.frontendFormImpl};
         return {
