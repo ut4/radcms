@@ -73,6 +73,9 @@ class DefaultImplForFetchAll extends preact.Component {
     getTitle() {
         return this.props.panel.title;
     }
+    getSettings() {
+        return {isInitiallyCollapsed: false};
+    }
     render() {
         return <ContentNodeList
             contentNodes={ this.contentNodes }

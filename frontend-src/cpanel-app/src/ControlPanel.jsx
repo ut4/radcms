@@ -2,6 +2,7 @@ import {http, toasters, urlUtils, FeatherSvg} from '@rad-commons';
 import {contentPanelRegister} from '@rad-cpanel-commons';
 import {genRandomString} from './Website/WebsitePackView.jsx';
 import webPageState from './webPageState.js';
+const UserRole = Object.freeze({SUPER_ADMIN: 1});
 
 class ControlPanel extends preact.Component {
     /**
@@ -87,28 +88,23 @@ class ControlPanel extends preact.Component {
 class OnThisPageControlPanelSection extends preact.Component {
     /**
      * @param {{contentPanels: Array<{ImplClass: Object; panel: Object; id: string;}>; siteIframe: HTMLIFrameElement|null; siteInfo: Object; websiteIframeHasLoadedAtLeastOnce: boolean;}} props
-     */
-    constructor(props) {
-        super(props);
-    }
-    /**
      * @access protected
      */
-    render() {
-        if (!this.props.websiteIframeHasLoadedAtLeastOnce) return null;
+    render({contentPanels, siteIframe, siteInfo, websiteIframeHasLoadedAtLeastOnce}) {
+        if (!websiteIframeHasLoadedAtLeastOnce) return null;
         return <section>
             <h2>Tällä sivulla</h2>
-            { this.props.contentPanels.length
-                ? this.props.contentPanels.map(panelBundle =>
+            { contentPanels.length
+                ? contentPanels.map(panelBundle =>
                     <ContentControlPanelPanel
                         Renderer={ panelBundle.ImplClass }
                         rendererProps={ {settings: panelBundle.panel.implProps,
                                          panel: panelBundle.panel,
-                                         siteInfo: this.props.siteInfo} }
-                        siteIframe={ this.props.siteIframe }
+                                         siteInfo: siteInfo} }
+                        siteIframe={ siteIframe }
                         key={ panelBundle.id }/>
                 )
-                : this.props.websiteIframeHasLoadedAtLeastOnce
+                : websiteIframeHasLoadedAtLeastOnce
                     ? <p class="entry" style="font-size: .7rem;">Ei muokattavaa sisältöä tällä sivulla.</p>
                     : null
             }
@@ -119,25 +115,24 @@ class OnThisPageControlPanelSection extends preact.Component {
 class AdminAndUserControlPanelSection extends preact.Component {
     /**
      * @param {{adminPanels: Array<{ImplClass: any; panel: FrontendPanelConfig; id?: string;}>; siteInfo: Object;}} props
-     */
-    constructor(props) {
-        super(props);
-    }
-    /**
      * @access protected
      */
-    render() {
+    render({adminPanels, siteInfo}) {
         return <section class="site-admin"><div>
             <h2>Hallinta</h2>
-            { this.props.adminPanels.map((panelBundle, i) =>
+            { adminPanels.map((panelBundle, i) =>
                 <AdminControlPanelPanel
                     key={ `admin-panel-${i}` }
                     Renderer={ panelBundle.ImplClass }
                     rendererProps={ {settings: panelBundle.panel.implProps,
                                      panel: panelBundle.panel,
-                                     siteInfo: this.props.siteInfo} }
+                                     siteInfo: siteInfo} }
                     isPlugin={ true }/>
             ).concat(
+                <AdminControlPanelPanel Renderer={ null } title="Lataukset" mainUrl="/manage-uploads">
+                    <a href="#manage-uploads">Hallitse</a>
+                    <a href="#rescan-uploads">Skannaa</a>
+                </AdminControlPanelPanel>,
                 <AdminControlPanelPanel Renderer={ null } title="Käyttäjä" mainUrl="/me">
                     <a href="#/me">Profiili</a>
                     <a href={ urlUtils.makeUrl('/logout') }
@@ -164,15 +159,10 @@ class AdminAndUserControlPanelSection extends preact.Component {
 class ForDevsControlPanelSectionction extends preact.Component {
     /**
      * @param {{userRole: number;}} props
-     */
-    constructor(props) {
-        super(props);
-    }
-    /**
      * @access protected
      */
-    render() {
-        if (this.props.userRole !== 1) return null;
+    render({userRole}) {
+        if (userRole !== UserRole.SUPER_ADMIN) return null;
         return <section class="for-devs"><div>
             <h2>Devaajille</h2>
             <AdminControlPanelPanel Renderer={ null } title="Kaikki sisältö"
@@ -213,12 +203,13 @@ class AdminControlPanelPanel extends preact.Component {
                         const title = cmp.getTitle();
                         this.setState({
                             title: !Array.isArray(title) ? [title] : title,
-                            mainUrl: cmp.getMainUrl ? urlUtils.normalizeUrl(cmp.getMainUrl()) : null
+                            mainUrl: cmp.getMainUrl ? urlUtils.normalizeUrl(cmp.getMainUrl()) : null,
+                            isCollapsed: !cmp.getSettings || cmp.getSettings().isInitiallyCollapsed !== false,
                         });
                     }
                 }});
         }
-        this.state = {title: props.title ? [this.props.title] : [],
+        this.state = {title: props.title ? [props.title] : [],
                       mainUrl: !props.mainUrl ? '' : urlUtils.normalizeUrl(props.mainUrl),
                       highlight: null,
                       isCollapsed: true};
@@ -226,9 +217,9 @@ class AdminControlPanelPanel extends preact.Component {
     /**
      * @access protected
      */
-    render() {
+    render({isPlugin, children}) {
         const title = this.state.title[0];
-        const subtitle = this.state.title[1] || (!this.props.isPlugin ? null : '(Lisäosa)');
+        const subtitle = this.state.title[1] || (!isPlugin ? null : '(Lisäosa)');
         return <div class="entry container">
             <a class="columns col-centered" href={ `#/${this.state.mainUrl}` }>
                 <span class="column text-ellipsis">{ [
@@ -247,7 +238,7 @@ class AdminControlPanelPanel extends preact.Component {
             <div class={ `sub-nav${this.state.isCollapsed ? '' : ' visible'}` }>{
                 this.Renderer
                     ? preact.createElement(this.Renderer, this.rendererProps)
-                    : this.props.children
+                    : children
             }</div>
         </div>;
     }

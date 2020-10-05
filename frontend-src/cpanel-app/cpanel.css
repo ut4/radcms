@@ -1,3 +1,31 @@
+/* -- Globals ---- */
+@keyframes show {
+    0% { visibility: hidden; }
+    100% { visibility: visible; }
+}
+.show-after-05 {
+    visibility: hidden;
+    animation: show 0s .5s forwards;
+}
+/* https://stackoverflow.com/a/40991531 */
+@keyframes dotty {
+    0%   { content: ''; }
+    25%  { content: '.'; }
+    50%  { content: '..'; }
+    75%  { content: '...'; }
+    100% { content: ''; }
+}
+.dots-animation {
+    font-size: 1rem;
+    line-height: 1rem;
+}
+.dots-animation:after {
+    display: inline-block;
+    animation: dotty steps(1,end) 1s infinite;
+    content: '';
+    letter-spacing: 2px;
+}
+
 /* -- Components: Grids ---- */
 .item-grid {
     display: grid;
@@ -217,12 +245,19 @@
     font: normal 1.4rem/1.4rem "Fira sans heavy";
     margin: -.2rem 0 1rem 0;
 }
-#view .form-input {
-    width: 20rem;
+#view .form-input, #view .pseudo-form-input {
+    max-width: 20rem;
 }
 #view textarea.form-input {
     width: 28rem;
     height: 6rem;
+    max-width: initial;
+}
+#view .has-icon-right .form-input {
+    padding-right: 1.6rem;
+}
+#view .has-icon-right .form-icon {
+    margin: -.1rem .6rem 0 0;
 }
 
 /* View: elements */

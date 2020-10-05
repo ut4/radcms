@@ -7,6 +7,8 @@ import ContentEditView from './Content/ContentEditView.jsx';
 import ContentTypesManageView from './ContentType/ContentTypesManageView.jsx';
 import PluginsManageView from './Plugin/PluginsManageView.jsx';
 import WebsitePackView from './Website/WebsitePackView.jsx';
+import UploadsManageView from './Upload/UploadsManageView.jsx';
+import UploadsRescanView from './Upload/UploadsRescanView.jsx';
 import UserProfileView from './User/UserProfileView.jsx';
 const PreactRouter = preactRouter;
 const processedPanel = new Map;
@@ -48,6 +50,8 @@ class ControlPanelApp extends preact.Component {
                 <ContentManageView path="/manage-content/:initialContentTypeName?"/>
                 <ContentEditView path="/edit-content/:id/:contentTypeName/:panelIdx?/:publish?"/>
                 <PluginsManageView path="/manage-plugins"/>
+                <UploadsManageView path="/manage-uploads"/>
+                <UploadsRescanView path="/rescan-uploads"/>
                 <WebsitePackView path="/pack-website"/>
                 <UserProfileView path="/me"/>
                 <ContentTypesManageView path="/manage-content-types"/>
