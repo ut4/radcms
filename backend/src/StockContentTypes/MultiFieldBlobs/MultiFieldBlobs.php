@@ -32,6 +32,8 @@ class MultiFieldBlobs {
     public function init(BaseAPI $api): void {
         $api->registerDirectiveMethod('fetchMultiField', [$this, 'fetchMultiField'],
             'WebsiteLayout');
+        $api->registerDirectiveMethod('fetchMultiFields', [$this, 'fetchMultiFields'],
+            'WebsiteLayout');
     }
     /**
      * Käyttö:
@@ -68,15 +70,46 @@ class MultiFieldBlobs {
             ]);
         }
         //
-        if (($node = $q->exec())) {
-            $out = (object) ['fields' => json_decode($node->fields),
-                             'defaults' => null];
-            foreach ($out->fields as $field)
-                $out->{$field->name} = $field->value;
-            $out->defaults = $node;
+        return ($node = $q->exec()) ? self::toMultiField($node) : null;
+    }
+    /**
+     * Käyttö:
+     * fetchMultiField('nimi', 'Sivusisältö', '.css-selector')
+     * ... tai ...
+     * fetchMultiField('nimi', [
+     *     ['title' => 'Sivusisältö', 'fieldsToDisplay' => ['Otsikko', 'Teksti'], 'highlight' => '.css-selector'],
+     *     ['title' => 'Otsakekuva', 'fieldsToDisplay' => ['Kuva'], 'highlight' => '.css-selector'],
+     * ])
+     *
+     * @param string $name
+     * @param array $args [?string|array $frontendPanelTitleOrArrayOfPanelConfigs, ?string $highlight, ?array $fieldsToDisplay, \RadCms\Templating\MagicTemplate $tmpl]
+     * @return \stdClass|null Sisältönode
+     */
+    public function fetchMultiFields(string $frontendPanelTitle, ...$args): array {
+        $tmpl = array_pop($args);
+        $q = $tmpl->fetchAll('MultiFieldBlobs')->addFrontendPanel([
+            'title' => $frontendPanelTitle,
+            'impl' => StockFrontendPanelImpls::DEFAULT_COLLECTION,
+            'title' => $frontendPanelTitle,
+            'highlight' => $args[1] ?? null
+        ]);
+        call_user_func($args[0], $q);
+        //
+        if (($nodes = $q->exec())) {
+            $out = [];
+            foreach ($nodes as $node)
+                $out[] = self::toMultiField($node);
             return $out;
         }
-        return null;
+        return [];
+    }
+    private static function toMultiField(\stdClass $fromDb) {
+        $out = (object) ['fields' => json_decode($fromDb->fields),
+                         'defaults' => null];
+        foreach ($out->fields as $field)
+            $out->{$field->name} = $field->value;
+        $out->defaults = $fromDb;
+        return $out;
     }
     /**
      * @access private

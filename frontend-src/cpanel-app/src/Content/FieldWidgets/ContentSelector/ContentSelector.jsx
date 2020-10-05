@@ -1,5 +1,6 @@
 import {http, InputGroup, Confirmation} from '@rad-commons';
 import Tags from '../../../Common/Tags.jsx';
+import {timingUtils} from '../../../Common/utils.js';
 import BaseFieldWidget from '../Base.jsx';
 const NO_SELECTION = '0';
 
@@ -142,6 +143,8 @@ class SingleFieldValueSelector extends preact.Component {
                       showOptions: false,
                       searchTerm: (props.options.find(o => o.value === props.initialValue) || {}).label,
                       committedVal: props.initialValue};
+        this.debouncedOnSearchTermTyped = timingUtils.debounce(
+            this.onSearchTermTyped.bind(this), 200);
     }
     /**
      * @returns {string}
@@ -161,14 +164,14 @@ class SingleFieldValueSelector extends preact.Component {
      * @access protected
      */
     componentDidMount() {
-        this.handleEnter = e => {
-            if (this.state.showOptions && e.keyCode == 13) {
+        this.handleEnterOrEsc = e => {
+            if (this.state.showOptions && (e.keyCode === 13 || e.keyCode === 27)) { // enter, esc
                 e.preventDefault();
                 this.setState({showOptions: false});
                 return false;
             }
         };
-        window.addEventListener('keydown', this.handleEnter);
+        window.addEventListener('keydown', this.handleEnterOrEsc);
         this.searchResultCache = new Map();
         this.searchResultCache.set('', this.props.options);
     }
@@ -176,7 +179,7 @@ class SingleFieldValueSelector extends preact.Component {
      * @access protected
      */
     componentWillUnmount() {
-        window.removeEventListener('keydown', this.handleEnter);
+        window.removeEventListener('keydown', this.handleEnterOrEsc);
     }
     /**
      * @access protected
@@ -186,7 +189,7 @@ class SingleFieldValueSelector extends preact.Component {
             <input
                 value={ searchTerm }
                 class="form-input"
-                onInput={ e => this.onSearchTermTyped(e.target.value) }
+                onInput={ this.debouncedOnSearchTermTyped }
                 onClick={ () => {
                     if (!showOptions) this.setState({showOptions: true});
                 } }
@@ -194,6 +197,8 @@ class SingleFieldValueSelector extends preact.Component {
                     if (e.keyCode === 40 || e.keyCode === 38) { // down, up
                         this.setState({showOptions: true});
                         if (this.state.showOptions) e.target.nextElementSibling.focus();
+                    } else if (e.keyCode === 27) { // esc
+                        this.setState({showOptions: false});
                     }
                 }}
                 onBlur={ e => {
@@ -223,7 +228,8 @@ class SingleFieldValueSelector extends preact.Component {
     /**
      * @access private
      */
-    onSearchTermTyped(searchTerm) {
+    onSearchTermTyped(e) {
+        const searchTerm = e.target.value;
         // Note: ''-avain sisältää props.optionsit, ks. componentDidMount()
         if (this.searchResultCache.has(searchTerm)) {
             this.setState(Object.assign(this.makeOptionsState(searchTerm), {searchTerm}));
@@ -240,8 +246,14 @@ class SingleFieldValueSelector extends preact.Component {
      * @access private
      */
     makeOptionsState(searchTerm) {
-        return {options: this.searchResultCache.get(searchTerm),
-                showOptions: true,};
+        const options = this.searchResultCache.get(searchTerm);
+        return {options: options.length > 1
+                    ? options
+                    : [{label: '-', value: NO_SELECTION}].concat(options),
+                committedVal: options.find(({value}) => value === this.state.committedVal)
+                    ? this.state.committedVal
+                    : NO_SELECTION,
+                showOptions: true};
     }
     /**
      * @access private
