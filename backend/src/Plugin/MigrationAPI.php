@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace RadCms\Plugin;
 
-use Pike\FileSystemInterface;
+use Pike\Interfaces\FileSystemInterface;
 use RadCms\ContentType\{ContentTypeCollection, ContentTypeMigrator};
 use RadCms\FileMigrator;
 
@@ -13,12 +13,12 @@ final class MigrationAPI {
     private $pluginName;
     /** @var \RadCms\ContentType\ContentTypeMigrator */
     private $contentTypeMigrator;
-    /** @var \Pike\FileSystemInterface */
+    /** @var \Pike\Interfaces\FileSystemInterface */
     private $fs;
     /**
      * @param \RadCms\Plugin\Plugin $plugin
      * @param \RadCms\ContentType\ContentTypeMigrator $dataMigrator
-     * @param \Pike\FileSystemInterface $fs
+     * @param \Pike\Interfaces\FileSystemInterface $fs
      */
     public function __construct(Plugin $plugin,
                                 ContentTypeMigrator $dataMigrator,

@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace RadCms\Installer;
 
-use Pike\{Db, FileSystemInterface, PikeException};
+use Pike\{Db, PikeException};
+use Pike\Interfaces\FileSystemInterface;
 use RadCms\ContentType\{ContentTypeMigrator, ContentTypeCollection};
 use RadCms\FileMigrator;
 use RadCms\StockContentTypes\MultiFieldBlobs\MultiFieldBlobs;
@@ -18,7 +19,7 @@ class Installer {
     private $commons;
     /**
      * @param \Pike\Db $db
-     * @param \Pike\FileSystemInterface $fs
+     * @param \Pike\Interfaces\FileSystemInterface $fs
      * @param \RadCms\Installer\InstallerCommons $commons
      */
     public function __construct(Db $db,

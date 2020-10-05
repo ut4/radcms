@@ -4,17 +4,18 @@ declare(strict_types=1);
 
 namespace RadCms\Packager;
 
-use Pike\{PikeException, FileSystemInterface};
+use Pike\PikeException;
+use Pike\Interfaces\FileSystemInterface;
 
 class ZipPackageStream implements PackageStreamInterface {
     /** @var \ZipArchive */
     private $zip;
-    /** @var \Pike\FileSystemInterface */
+    /** @var \Pike\Interfaces\FileSystemInterface */
     private $fs;
     /** @var string */
     private $tmpFilePath;
     /**
-     * @param \Pike\FileSystemInterface
+     * @param \Pike\Interfaces\FileSystemInterface
      */
     public function __construct(FileSystemInterface $fs) {
         $this->fs = $fs;

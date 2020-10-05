@@ -22,7 +22,7 @@ use RadCms\Auth\ACL;
 class App {
     /** @var \RadCms\AppContext */
     private static $ctx; // Lainattu \Pike\App:lta
-    /** @var \Pike\FileSystemInterface */
+    /** @var \Pike\Interfaces\FileSystemInterface */
     private static $fs;
     /**
      * @param array $config

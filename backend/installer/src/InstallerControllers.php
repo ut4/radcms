@@ -4,16 +4,17 @@ declare(strict_types=1);
 
 namespace RadCms\Installer;
 
-use Pike\{FileSystemInterface, PikeException, Request, Response, Template, Validation};
+use Pike\{PikeException, Request, Response, Template, Validation};
+use Pike\Interfaces\FileSystemInterface;
 use RadCms\Packager\Packager;
 
 class InstallerControllers {
-    /** @var \Pike\FileSystemInterface */
+    /** @var \Pike\Interfaces\FileSystemInterface */
     private $fs;
     /** @var string */
     private $packageLocationPath;
     /**
-     * @param \Pike\FileSystemInterface $fs
+     * @param \Pike\Interfaces\FileSystemInterface $fs
      * @param string $packageLocationPath
      */
     public function __construct(FileSystemInterface $fs,

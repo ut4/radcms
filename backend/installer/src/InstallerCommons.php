@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace RadCms\Installer;
 
 use Pike\Auth\{Authenticator, Crypto};
-use Pike\{Db, FileSystem, FileSystemInterface, PikeException};
+use Pike\{Db, FileSystem, PikeException};
+use Pike\Interfaces\FileSystemInterface;
 use RadCms\Auth\ACL;
 
 /**
@@ -21,7 +22,7 @@ class InstallerCommons {
     private $warnings;
     /**
      * @param \Pike\Db $db
-     * @param \Pike\FileSystemInterface $fs
+     * @param \Pike\Interfaces\FileSystemInterface $fs
      * @param \Pike\Auth\Crypto
      * @param string $workspaceDirPath = RAD_WORKSPACE_PATH
      * @param string $publicDirPath = RAD_PUBLIC_PATH

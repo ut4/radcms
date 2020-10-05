@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace RadCms\Upload;
 
-use Pike\{FileSystem, FileSystemInterface, PikeException};
+use Pike\{FileSystem, PikeException};
+use Pike\Interfaces\FileSystemInterface;
 use RadCms\Entities\UploadsEntry;
 
 /**
@@ -12,10 +13,10 @@ use RadCms\Entities\UploadsEntry;
  * lukemiaan tietoja jonnekkin).
  */
 class UploadFileScanner {
-    /** @var \Pike\FileSystemInterface */
+    /** @var \Pike\Interfaces\FileSystemInterface */
     private $fs;
     /**
-     * @param \Pike\FileSystemInterface $fs
+     * @param \Pike\Interfaces\FileSystemInterface $fs
      */
     public function __construct(FileSystemInterface $fs) {
         $this->fs = $fs;

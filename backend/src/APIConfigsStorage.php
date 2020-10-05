@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace RadCms;
 
-use Pike\{FileSystemInterface, PikeException};
+use Pike\PikeException;
+use Pike\Interfaces\FileSystemInterface;
 use RadCms\{Templating\MagicTemplate, Website\UrlMatcher};
 
 /**
@@ -28,10 +29,10 @@ class APIConfigsStorage {
     private $urlMatchers;
     /** @var array<string, callable[]> */
     private $eventListeners;
-    /** @var \Pike\FileSystemInterface */
+    /** @var \Pike\Interfaces\FileSystemInterface */
     private $fs;
     /**
-     * @param \Pike\FileSystemInterface $fs
+     * @param \Pike\Interfaces\FileSystemInterface $fs
      */
     public function __construct(FileSystemInterface $fs) {
         $this->templateAliases = [];

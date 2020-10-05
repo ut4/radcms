@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace RadCms\Installer;
 
-use Pike\{Db, FileSystemInterface, PikeException};
 use Pike\Auth\Crypto;
+use Pike\{Db, PikeException};
+use Pike\Interfaces\FileSystemInterface;
 use RadCms\ContentType\{ContentTypeCollection, ContentTypeMigrator};
 use RadCms\Packager\{Packager, PackageStreamInterface};
 use RadCms\Plugin\{Plugin, PluginInstaller};
@@ -21,7 +22,7 @@ class PackageInstaller {
     private $package;
     /**
      * @param \Pike\Db $db
-     * @param \Pike\FileSystemInterface $fs
+     * @param \Pike\Interfaces\FileSystemInterface $fs
      * @param \Pike\Auth\Crypto $crypto
      * @param \RadCms\Installer\InstallerCommons $commons
      * @param \RadCms\Packager\PackageStreamInterface $package

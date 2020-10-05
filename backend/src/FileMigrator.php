@@ -4,17 +4,18 @@ declare(strict_types=1);
 
 namespace RadCms;
 
-use Pike\{FileSystem, FileSystemInterface, PikeException};
+use Pike\{FileSystem, PikeException};
+use Pike\Interfaces\FileSystemInterface;
 
 final class FileMigrator {
-    /** @var \Pike\FileSystemInterface */
+    /** @var \Pike\Interfaces\FileSystemInterface */
     private $fs;
     /** @var string */
     private $sourceBase;
     /** @var string */
     private $targetBase;
     /**
-     * @param \Pike\FileSystemInterface $fs
+     * @param \Pike\Interfaces\FileSystemInterface $fs
      * @param string $sourceBasePath Mistä kopioidaan
      * @param string $targetBasePath Minne kopioidaan
      */

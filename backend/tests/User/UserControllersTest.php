@@ -4,6 +4,7 @@ namespace RadCms\Tests\User;
 
 use Pike\Auth\Authenticator;
 use Pike\Request;
+use Pike\Interfaces\SessionInterface;
 use Pike\TestUtils\{DbTestCase, HttpTestUtils, MockCrypto};
 use RadCms\AppContext;
 use RadCms\Auth\ACL;
@@ -23,10 +24,19 @@ final class UserControllersTest extends DbTestCase {
         $out = new \stdClass;
         $out->testUser = self::makeAndInsertTestUser();
         $out->ctx = new AppContext(['db' => '@auto']);
-        $out->ctx->auth = $this->createMock(Authenticator::class);
-        $out->ctx->auth->method('getIdentity')
-            ->willReturn((object)['id' => $out->testUser->id,
-                                  'role' => $out->testUser->role]);
+        $out->ctx->auth = new Authenticator(
+            function ($_factory) { },
+            function ($_factory) use ($out) {
+                $mockSession = $this->createMock(SessionInterface::class);
+                $mockSession->method('get')->with('user')
+                    ->willReturn((object) ['id' => $out->testUser->id,
+                                           'role' => $out->testUser->role]);
+                return $mockSession;
+            },
+            function ($_factory) { },
+            '',   // $userRoleCookieName
+            false // doUseRememberMe
+        );
         $out->spyingResponse = null;
         return $out;
     }

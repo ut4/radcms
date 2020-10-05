@@ -2,7 +2,8 @@
 
 namespace RadPlugins\RadForms\Internal;
 
-use Pike\{AbstractMailer, PhpMailerMailer};
+use Pike\PhpMailerMailer;
+use Pike\Interfaces\MailerInterface;
 use RadCms\CmsState;
 
 class DefaultServicesFactory {
@@ -18,7 +19,7 @@ class DefaultServicesFactory {
     public function makeSiteInfo(): \stdClass {
         return $this->cmsState->getSiteInfo();
     }
-    public function makeMailer(): AbstractMailer {
+    public function makeMailer(): MailerInterface {
         return !$this->makeMailerFn ? new PhpMailerMailer : call_user_func($this->makeMailerFn);
     }
 }

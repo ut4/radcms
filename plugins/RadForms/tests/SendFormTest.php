@@ -2,7 +2,8 @@
 
 namespace RadPlugins\RadForms\Tests;
 
-use Pike\{AbstractMailer, PikeException, Request};
+use Pike\{PikeException, Request};
+use Pike\Interfaces\MailerInterface;
 use RadCms\Templating\MagicTemplate;
 use RadPlugins\RadForms\Internal\{DefaultServicesFactory};
 
@@ -96,7 +97,7 @@ final class SendFormTest extends RadFormsTestCase {
         $this->sendRequest($req, $state->spyingResponse, $app);
     }
     private function makeSpyingMailer($state) {
-        $mailer = $this->createMock(AbstractMailer::class);
+        $mailer = $this->createMock(MailerInterface::class);
         $mailer->method('sendMail')->with($this->callback(function ($mailSettings) use ($state) {
             $state->sendMailCallArgs[] = $mailSettings;
             return true;

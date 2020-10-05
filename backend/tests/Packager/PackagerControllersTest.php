@@ -4,6 +4,7 @@ namespace RadCms\Tests\Packager;
 
 use Pike\Auth\Authenticator;
 use Pike\Request;
+use Pike\Interfaces\SessionInterface;
 use Pike\TestUtils\{DbTestCase, HttpTestUtils, MockCrypto};
 use RadCms\AppContext;
 use RadCms\Entities\PluginPackData;
@@ -65,12 +66,20 @@ final class PackagerControllersTest extends DbTestCase {
         ];
     }
     private function sendCreatePackageRequest($s) {
-        $auth = $this->createMock(Authenticator::class);
-        $auth->method('getIdentity')
-             ->willReturn((object)['id' => $s->testUserZero->id,
-                                   'role' => $s->testUserZero->role]);
         $ctx = new AppContext(['db' => '@auto']);
-        $ctx->auth = $auth;
+        $ctx->auth = new Authenticator(
+            function ($_factory) { },
+            function ($_factory) use ($s) {
+                $mockSession = $this->createMock(SessionInterface::class);
+                $mockSession->method('get')->with('user')
+                    ->willReturn((object) ['id' => $s->testUserZero->id,
+                                          'role' => $s->testUserZero->role]);
+                return $mockSession;
+            },
+            function ($_factory) { },
+            '',   // $userRoleCookieName
+            false // doUseRememberMe
+        );
         $ctx->crypto = new MockCrypto;
         $app = $this->makeApp('\RadCms\App::create', $this->getAppConfig(), $ctx,
             function ($injector) {

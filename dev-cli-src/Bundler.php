@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace RadCms\Cli;
 
-use Pike\{PikeException, FileSystemInterface};
+use Pike\PikeException;
+use Pike\Interfaces\FileSystemInterface;
 
 class Bundler {
     private $fs;
@@ -13,7 +14,7 @@ class Bundler {
     private $radPath;
     private $targetDirPath;
     /**
-     * @param \Pike\FileSystemInterface
+     * @param \Pike\Interfaces\FileSystemInterface
      */
     public function __construct(FileSystemInterface $fs) {
         $this->fs = $fs;

@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace RadCms\Packager;
 
-use Pike\{AppConfig, ArrayUtils, Auth\Crypto, Db, FileSystemInterface, PikeException};
+use Pike\{AppConfig, ArrayUtils, Auth\Crypto, Db, PikeException};
+use Pike\Interfaces\FileSystemInterface;
 use RadCms\{CmsState, Content\DAO};
 use RadCms\ContentType\{ContentTypeCollection, ContentTypeMigrator};
 use RadCms\Entities\PluginPackData;
@@ -19,7 +20,7 @@ class Packager {
     public const MIN_SIGNING_KEY_LEN = 12;
     /** @var \Pike\Db */
     private $db;
-    /** @var \Pike\FileSystemInterface */
+    /** @var \Pike\Interfaces\FileSystemInterface */
     private $fs;
     /** @var \Pike\Auth\Crypto */
     private $crypto;
@@ -29,7 +30,7 @@ class Packager {
     private $appConfig;
     /**
      * @param \Pike\Db $db
-     * @param \Pike\FileSystemInterface $fs
+     * @param \Pike\Interfaces\FileSystemInterface $fs
      * @param \Pike\Auth\Crypto $crypto
      * @param \RadCms\CmsState $cmsState
      * @param \Pike\AppConfig $appConfig

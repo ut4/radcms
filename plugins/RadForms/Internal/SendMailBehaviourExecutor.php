@@ -2,7 +2,8 @@
 
 namespace RadPlugins\RadForms\Internal;
 
-use Pike\{AbstractMailer, PikeException, Validation};
+use Pike\{PikeException, Validation};
+use Pike\Interfaces\MailerInterface;
 
 /**
  * Validoi ja prosessoi lomakkeen behaviours-jsoniin määritellyn {type: 'SendMail' ...}
@@ -41,15 +42,15 @@ final class SendMailBehaviourExecutor {
 
     //
 
-    /** @var \Pike\AbstractMailer */
+    /** @var \Pike\Interfaces\MailerInterface */
     private $mailer;
     /** @var \stdClass */
     private $siteInfo;
     /**
-     * @param \Pike\AbstractMailer $mailer
+     * @param \Pike\Interfaces\MailerInterface $mailer
      * @param \stdClass $siteInfo
      */
-    public function __construct(AbstractMailer $mailer, \stdClass $siteInfo) {
+    public function __construct(MailerInterface $mailer, \stdClass $siteInfo) {
         $this->mailer = $mailer;
         $this->siteInfo = $siteInfo;
     }

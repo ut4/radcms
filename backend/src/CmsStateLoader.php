@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace RadCms;
 
-use Pike\{Db, FileSystem, FileSystemInterface, PikeException, Router};
+use Pike\{Db, FileSystem, PikeException, Router};
+use Pike\Interfaces\FileSystemInterface;
 use RadCms\Plugin\{Plugin, PluginAPI};
 use RadCms\Website\{WebsiteAPI, WebsiteInterface};
 

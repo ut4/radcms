@@ -4,19 +4,20 @@ declare(strict_types=1);
 
 namespace RadCms\Plugin;
 
-use Pike\{Db, FileSystemInterface, PikeException};
+use Pike\{Db, PikeException};
+use Pike\Interfaces\FileSystemInterface;
 use RadCms\ContentType\ContentTypeMigrator;
 
 final class PluginInstaller {
     /** @var \Pike\Db */
     private $db;
-    /** @var \Pike\FileSystemInterface */
+    /** @var \Pike\Interfaces\FileSystemInterface */
     private $fs;
     /** @var \RadCms\ContentType\ContentTypeMigrator */
     private $contentTypeMigrator;
     /**
      * @param \Pike\Db $db
-     * @param \Pike\FileSystemInterface $fs
+     * @param \Pike\Interfaces\FileSystemInterface $fs
      * @param \RadCms\ContentType\ContentTypeMigrator $contentTypeMigrator
      */
     public function __construct(Db $db,
