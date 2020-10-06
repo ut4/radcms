@@ -59,7 +59,9 @@ class ControlPanel extends preact.Component {
     render() {
         return <div id="cpanel2">
             <header class="container">
-                <img src={ urlUtils.makeAssetUrl('frontend/rad/assets/rad-logo-light.png') }/>
+                <a href={ urlUtils.makeUrl('/_edit') }>
+                    <img src={ urlUtils.makeAssetUrl('frontend/rad/assets/rad-logo-light.png') }/>
+                </a>
             </header>
             <OnThisPageControlPanelSection
                 contentPanels={ this.state.contentPanels }

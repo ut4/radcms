@@ -12,6 +12,8 @@ class TextFieldFieldWidget extends BaseFieldWidget {
         super(props);
         this.inputName = props.field.name;
         this.state = hookForm(this, {[this.inputName]: this.fixedInitialValue});
+        this.inputImplCmp = preact.createRef();
+        this.isAutoresizeInitialized = false;
     }
     /**
      * @returns {string}
@@ -35,7 +37,8 @@ class TextFieldFieldWidget extends BaseFieldWidget {
             vm={ this }
             myOnChange={ newState => this.emitValueChange(newState) }
             name={ this.inputName }
-            id={ this.inputName }/>;
+            id={ this.inputName }
+            ref={ this.onInputImplReferenced.bind(this) }/>;
     }
     /**
      * @access private
@@ -43,6 +46,17 @@ class TextFieldFieldWidget extends BaseFieldWidget {
     emitValueChange(newState) {
         this.props.onValueChange(newState.values[this.inputName]);
         return newState;
+    }
+    /**
+     * @access private
+     */
+    onInputImplReferenced(cmp) {
+        if (!cmp || !this.props.settings.autosize || this.isAutoresizeInitialized)
+            return;
+        this.isAutoresizeInitialized = true;
+        setTimeout(() => {
+            window.autosize(cmp.inputEl);
+        }, 10);
     }
 }
 

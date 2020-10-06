@@ -54,6 +54,8 @@ export default widgetName => {
     } else if (widgetName === 'datePicker') {
         widgetName = 'dateTimePicker';
         props = {showTime: false};
+    } else if (widgetName === 'textArea') {
+        props = {autosize: true};
     }
     const ImplClass = impls[widgetName];
     if (ImplClass) return {ImplClass, props};

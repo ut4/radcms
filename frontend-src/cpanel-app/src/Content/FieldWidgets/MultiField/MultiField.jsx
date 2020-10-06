@@ -63,7 +63,7 @@ class MultiFieldFieldWidget extends BaseFieldWidget {
                 <MultiFieldConfigurer fields={ this.multiFieldFields }/>
             </div>;
         //
-        return <div class={ 'multi-fields indented-content' + (this.isConfigurable ? ' configurable' : '') }>
+        return <div class={ 'multi-fields' + (this.isConfigurable ? ' indented-content configurable' : '') }>
             { this.isConfigurable
                 ? <button onClick={ () => this.beginConfigMode() }
                         class="btn btn-icon btn-sm with-icon"

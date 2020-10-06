@@ -306,7 +306,7 @@ const filterByUserRole = fields =>
  * @return {Array<ContentTypeField>}
  */
 const filterByUserRoleAndNameList = (fields, fieldNames) =>
-    (new FieldsFilter(fieldNames)).doFilter(fields);
+    filterByUserRole((new FieldsFilter(fieldNames)).doFilter(fields));
 
 /**
  * @param {'none'|'edit'|'create'} mode
