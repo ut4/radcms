@@ -13,7 +13,7 @@ abstract class UploadModule {
      * @param \RadCms\AppContext $ctx
      */
     public static function init(AppContext $ctx): void {
-        $ctx->router->map('GET', '/api/uploads/[images:filters]?',
+        $ctx->router->map('GET', '/api/uploads/[*:filters]?',
             [UploadControllers::class, 'getUploads', 'view:uploads']
         );
         $ctx->router->map('POST', '/api/uploads',

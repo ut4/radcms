@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace RadCms\Upload;
 
 use Pike\{PikeException, Request, Response, Validation};
+use RadCms\Api\QueryFilters;
 
 /**
  * Handlaa /api/uploads -alkuiset pyynnöt.
@@ -22,11 +23,17 @@ class UploadControllers {
     public function getUploads(Request $req,
                                Response $res,
                                UploadsRepository $uploadsRepo): void {
-        $filterType = $req->params->filters ?? '';
+        $qFilters = null;
+        if (is_string($req->params->filters ?? null)) {
+            // @allow \Pike\PikeException
+            $filters = QueryFilters::fromString($req->params->filters);
+            $qFilters = !($fileNameFilter = $filters->getFilter('fileName'))
+                ? UploadsQFilters::byMime($filters->getFilter('mime')[1])
+                : UploadsQFilters::byNameContaining($fileNameFilter[1],
+                                                    $filters->getFilter('mime')[1]??null);
+        }
         // @allow \Pike\PikeException
-        $files = $uploadsRepo->getMany($filterType === 'images'
-            ? UploadsQFilters::byMime('image/*')
-            : null);
+        $files = $uploadsRepo->getMany($qFilters);
         $res->json($files);
     }
     /**

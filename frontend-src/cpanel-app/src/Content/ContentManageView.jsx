@@ -47,7 +47,7 @@ class ContentManageView extends preact.Component {
     render(_, {content, isFetching, isChangingContentType, contentTypeName}) {
         if (!content) return <View>
             <h2>Selaa sisältöä</h2>
-            <LoadingSpinner/>;
+            <LoadingSpinner/>
         </View>;
         return <View>
             <h2>Selaa sisältöä</h2>

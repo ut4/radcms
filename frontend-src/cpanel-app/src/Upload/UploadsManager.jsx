@@ -1,5 +1,7 @@
 import {http, myFetch, Toaster, toasters, FeatherSvg, urlUtils, env} from '@rad-commons';
 import LoadingSpinner from '../Common/LoadingSpinner.jsx';
+import {timingUtils} from '../Common/utils.js';
+const INITIAL_CACHE_KEY = '';
 
 class UploadsManager extends preact.Component {
     /**
@@ -10,9 +12,10 @@ class UploadsManager extends preact.Component {
         this.state = {files: null, currentTabIdx: 0};
         this.title = props.onlyImages !== true ? 'Tiedostot' : 'Kuvat';
         this.tabs = preact.createRef();
-        http.get(`/api/uploads${props.onlyImages !== true ? '' : '/images'}`)
-            .then(files => this.setState({files}))
-            .catch(env.console.error);
+        this.searchResultCache = new Map();
+        this.debouncedOnSearchTermTyped = timingUtils.debounce(
+            this.onSearchTermTyped.bind(this), 200);
+        this.fetchFilesAndSetToState(props.onlyImages, INITIAL_CACHE_KEY, true);
     }
     /**
      * @access protected
@@ -24,7 +27,7 @@ class UploadsManager extends preact.Component {
             <div class={ currentTabIdx === 0 ? 'mt-10' : 'hidden' }>{ files
                 ? files.length
                     ? [<div class="pseudo-form-input has-icon-right mb-10">
-                        <input class="form-input" placeholder="Suodata"/>
+                        <input class="form-input" placeholder="Suodata" onInput={ this.debouncedOnSearchTermTyped }/>
                         <i class="form-icon"><FeatherSvg iconId="search" className="feather-md"/></i>
                     </div>,
                     <div class="item-grid image-grid img-auto">{ this.state.files.map(entry =>
@@ -54,7 +57,43 @@ class UploadsManager extends preact.Component {
         files.push(entry);
         files.sort((a, b) => a.fileName.localeCompare(b.fileName));
         this.setState({files, message: null});
+        this.searchResultCache = new Map();
         this.tabs.current.changeTab(0);
+    }
+    /**
+     * @access private
+     */
+    fetchFiles(term, onlyImages) {
+        if (this.searchResultCache.has(term))
+            return Promise.resolve(this.searchResultCache.get(term));
+        //
+        let filters = {};
+        if (onlyImages) filters.mime = {$eq: 'image/*'};
+        if (term) filters.fileName = {$contains: term};
+        //
+        return http.get('/api/uploads' + (filters.mime || filters.fileName
+                                            ? `/${JSON.stringify(filters)}`
+                                            : ''))
+            .then(files => {
+                this.searchResultCache.set(term, files);
+                return this.searchResultCache.get(term);
+            });
+    }
+    /**
+     * @access private
+     */
+    fetchFilesAndSetToState(onlyImages, searchTerm, isInitial = false) {
+        if (!isInitial)
+            this.setState({fetching: true});
+        this.fetchFiles(searchTerm, onlyImages)
+            .then(files => { this.setState({files}); })
+            .catch(env.console.error);
+    }
+    /**
+     * @access private
+     */
+    onSearchTermTyped(e) {
+        this.fetchFilesAndSetToState(this.props.onlyImages, e.target.value);
     }
 }
 

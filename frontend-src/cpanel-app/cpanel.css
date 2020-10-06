@@ -245,7 +245,7 @@
     font: normal 1.4rem/1.4rem "Fira sans heavy";
     margin: -.2rem 0 1rem 0;
 }
-#view .form-input, #view .pseudo-form-input {
+#view .form-input, .pseudo-form-input {
     max-width: 20rem;
 }
 #view textarea.form-input {
@@ -253,10 +253,10 @@
     height: 6rem;
     max-width: initial;
 }
-#view .has-icon-right .form-input {
+.has-icon-right .form-input {
     padding-right: 1.6rem;
 }
-#view .has-icon-right .form-icon {
+.has-icon-right .form-icon {
     margin: -.1rem .6rem 0 0;
 }
 
