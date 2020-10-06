@@ -236,7 +236,7 @@ class SingleFieldValueSelector extends preact.Component {
             return;
         }
         this.setState({searchTerm});
-        this.props.root.reFetchContent({name: {$startsWith: searchTerm}})
+        this.props.root.reFetchContent({name: {$contains: searchTerm}})
             .then(options => {
                 this.searchResultCache.set(searchTerm, options);
                 this.setState(this.makeOptionsState(searchTerm));
@@ -279,9 +279,10 @@ class FieldValueListSelector extends preact.Component {
         super(props);
         this.validateOptions(props.options);
         this.state = {addTagModalIsOpen: false};
-        this.selectedContent = JSON.parse(props.root.fixedInitialValue);
         this.tagsWidget = preact.createRef();
         this.singleFieldSelector = preact.createRef();
+        this.options = props.options.slice(0);
+        this.selectedContent = JSON.parse(props.root.fixedInitialValue);
     }
     /**
      * @access protected
@@ -289,7 +290,7 @@ class FieldValueListSelector extends preact.Component {
     render({options}, {addTagModalIsOpen}) {
         return <>
             <Tags
-                tags={ this.selectedContent.map(fieldValue => this.getFieldLabelByValue(fieldValue)).filter(v => v !== null) }
+                tags={ this.selectedContent.map(fieldValue => this.findOption(fieldValue, 'value').label) }
                 onAddTagButtonClicked={ () => this.setState({addTagModalIsOpen: true}) }
                 onTagRemoved={ fieldLabel => this.removeContentFromListByLabel(fieldLabel) }
                 ref={ this.tagsWidget }/>
@@ -316,10 +317,8 @@ class FieldValueListSelector extends preact.Component {
     /**
      * @access private
      */
-    getFieldLabelByValue(valueToFind) {
-        return this.props.options.concat(this.singleFieldSelector.current
-            ? this.singleFieldSelector.current.getCurrentOptions()
-            : null).find(({value}) => value === valueToFind).label;
+    findOption(prop, propName) {
+        return this.options.find(option => option[propName] === prop) || {};
     }
     /**
      * @access private
@@ -328,8 +327,17 @@ class FieldValueListSelector extends preact.Component {
         const selectedFieldValue = this.singleFieldSelector.current.getSelection();
         if (selectedFieldValue !== NO_SELECTION &&
             !this.selectedContent.some(fieldValue => fieldValue === selectedFieldValue)) {
+            //
+            let option = this.findOption(selectedFieldValue, 'value');
+            if (!option.label) {
+                const optionSearchedInSingleFieldModal = this.singleFieldSelector.current
+                    .getCurrentOptions().find(({value}) => value === selectedFieldValue);
+                this.options.push(optionSearchedInSingleFieldModal);
+                option = optionSearchedInSingleFieldModal;
+            }
+            //
+            this.tagsWidget.current.addTag(option.label);
             this.selectedContent.push(selectedFieldValue);
-            this.tagsWidget.current.addTag(this.getFieldLabelByValue(selectedFieldValue));
             this.props.root.props.onValueChange(JSON.stringify(this.selectedContent));
         }
         this.closeAddContentDialog();
@@ -338,7 +346,7 @@ class FieldValueListSelector extends preact.Component {
      * @access private
      */
     removeContentFromListByLabel(label) {
-        const fieldValueToRemove = this.props.options.find(o => o.label === label).value;
+        const fieldValueToRemove = this.findOption(label, 'label').value;
         this.selectedContent = this.selectedContent.filter(fieldValue => fieldValue !== fieldValueToRemove);
         this.props.root.props.onValueChange(JSON.stringify(this.selectedContent));
     }

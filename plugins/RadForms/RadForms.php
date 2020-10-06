@@ -109,7 +109,7 @@ final class RadForms implements PluginInterface {
                     "Lyhyt kenttä: [myFormInputName1]\n" .
                     "Pitkä kenttä:\n[myFormInputName2]\n\n".
                     "------------\n" .
-                    "(Tämä viesti lähetettiin RadForms-lisäosalla)\n"
+                    "(Tämä viesti lähetettiin RadForms-lisäosalla)"
             ],
         ]]);
     }

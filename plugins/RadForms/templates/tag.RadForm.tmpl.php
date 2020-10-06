@@ -10,7 +10,7 @@ if (($form = $this->radFormsFetchForm((object) $props))): ?>
         <input type="hidden" name="_returnTo" value="<?= is_string($props['returnTo'] ?? null) ? $this->e($props['returnTo']) : '' ?>">
     </form>
     <?php if (!$this->radFormsGetSetIsValidationLibLoaded()): ?>
-        <script src="<?= $this->assetUrl('frontend/plugins/radforms/pristine.js') ?>"></script>
+        <script src="<?= $this->assetUrl('frontend/plugins/rad-forms/pristine.js') ?>"></script>
     <?php endif; ?>
     <script>(function (formEl) {
         var pristine = new window.Pristine(formEl);

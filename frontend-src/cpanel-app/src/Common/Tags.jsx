@@ -17,9 +17,9 @@ class Tags extends preact.Component {
     /**
      * @access protected
      */
-    render() {
+    render({onAddTagButtonClicked}, {tags}) {
         return <div>
-            { this.state.tags.map(text =>
+            { tags.map(text =>
                 <span class="chip">
                     { text }
                     <button
@@ -28,7 +28,7 @@ class Tags extends preact.Component {
                         type="button"></button>
                 </span>
             ) }
-            <button class="chip btn" onClick={ () => this.props.onAddTagButtonClicked() } type="button">
+            <button class="chip btn" onClick={ () => onAddTagButtonClicked() } type="button">
                 <FeatherSvg iconId="plus" className="feather-xs"/>
                 Lisää
             </button>
