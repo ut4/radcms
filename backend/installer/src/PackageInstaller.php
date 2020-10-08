@@ -8,7 +8,7 @@ use Pike\Auth\Crypto;
 use Pike\{Db, PikeException};
 use Pike\Interfaces\FileSystemInterface;
 use RadCms\ContentType\{ContentTypeCollection, ContentTypeMigrator};
-use RadCms\Packager\{Packager, PackageStreamInterface};
+use RadCms\Packager\{Packager, PackageStreamInterface, PackageUtils};
 use RadCms\Plugin\{Plugin, PluginInstaller};
 
 /**
@@ -37,6 +37,7 @@ class PackageInstaller {
         $this->crypto = $crypto;
         $this->commons = $commons;
         $this->package = $package;
+        $this->packageUtils = new PackageUtils($this->package, $this->crypto);
     }
     /**
      * @param string $packageFilePath '/path/to/htdocs/long-random-string.radsite'
@@ -48,8 +49,8 @@ class PackageInstaller {
         // @allow \Pike\PikeException
         $this->package->open($packageFilePath);
         // @allow \Pike\PikeException
-        $mainData = $this->readEncryptedData(Packager::LOCAL_NAMES_MAIN_DATA,
-                                             $input->unlockKey);
+        $mainData = $this->packageUtils->readEncryptedObject(Packager::LOCAL_NAMES_MAIN_DATA,
+                                                             $input->unlockKey);
         $settings = $mainData->settings;
         $settings->baseUrl = $input->baseUrl;
         // @allow \Pike\PikeException
@@ -71,22 +72,6 @@ class PackageInstaller {
      */
     public function getWarnings(): array {
         return $this->commons->getWarnings();
-    }
-    /**
-     * @param string $unlockKey
-     * @return \stdClass
-     * @throws \Pike\PikeException
-     */
-    private function readEncryptedData(string $localName, string $unlockKey): \stdClass {
-        // @allow \Pike\PikeException
-        $encodedJson = $this->package->read($localName);
-        // @allow \Pike\PikeException
-        $decodedJson = $this->crypto->decrypt($encodedJson,
-            Packager::makeFixedLengthKey($unlockKey));
-        if (($parsed = json_decode($decodedJson)) !== null)
-            return $parsed;
-        throw new PikeException("Failed to parse `{$localName}`",
-                                PikeException::BAD_INPUT);
     }
     /**
      * @param array $compactCTypes
@@ -132,8 +117,8 @@ class PackageInstaller {
      */
     private function installPlugins(string $unlockKey): bool {
         // @allow Pike\PikeException
-        $plugins = $this->readEncryptedData(Packager::LOCAL_NAMES_PLUGINS,
-                                            $unlockKey);
+        $plugins = $this->packageUtils->readEncryptedObject(Packager::LOCAL_NAMES_PLUGINS,
+                                                            $unlockKey);
         $installer = new PluginInstaller($this->db,
                                          $this->fs,
                                          new ContentTypeMigrator($this->db));

@@ -15,6 +15,8 @@ $loader = require RAD_BACKEND_PATH . 'vendor/autoload.php';
 $loader->addPsr4('RadCms\\Tests\\', __DIR__);
 $loader->addPsr4('RadCms\\Installer\\', RAD_BACKEND_PATH . 'installer/src');
 $loader->addPsr4('RadCms\\Installer\\Tests\\', RAD_BACKEND_PATH . 'installer/tests');
+$loader->addPsr4('RadCms\\Cli\\', dirname(RAD_BACKEND_PATH) . '/dev-cli/src');
+$loader->addPsr4('RadCms\\Cli\\Tests\\', dirname(RAD_BACKEND_PATH) . '/dev-cli/tests');
 $loader->addPsr4('RadPlugins\\', RAD_BACKEND_PATH . 'tests/_test-plugins');
 $loader->addPsr4('RadSite\\', RAD_WORKSPACE_PATH . 'site');
 

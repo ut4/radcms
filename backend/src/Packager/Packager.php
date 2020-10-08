@@ -6,7 +6,7 @@ namespace RadCms\Packager;
 
 use Pike\{AppConfig, ArrayUtils, Auth\Crypto, Db, PikeException};
 use Pike\Interfaces\FileSystemInterface;
-use RadCms\{CmsState, Content\DAO};
+use RadCms\{CmsState, Content\DAO, FileMigrator};
 use RadCms\ContentType\{ContentTypeCollection, ContentTypeMigrator};
 use RadCms\Entities\PluginPackData;
 use RadCms\Plugin\Plugin;
@@ -17,7 +17,6 @@ class Packager {
     public const LOCAL_NAMES_ASSETS_FILE_LIST = 'theme-asset-files-list.json';
     public const LOCAL_NAMES_UPLOADS_FILE_LIST = 'theme-upload-files-list.json';
     public const LOCAL_NAMES_PLUGINS = 'theme-plugins.data';
-    public const MIN_SIGNING_KEY_LEN = 12;
     /** @var \Pike\Db */
     private $db;
     /** @var \Pike\Interfaces\FileSystemInterface */
@@ -51,26 +50,23 @@ class Packager {
      * @return string[]
      */
     public function getIncludables(string $groupName): array {
-        $makeRelatifier = function ($len) { return function ($fullFilePath) use ($len) {
-            return substr($fullFilePath, $len);
-        }; };
         //
         switch ($groupName) {
         case 'templates';
             $workspaceDirPath = RAD_WORKSPACE_PATH . 'site/';
-            $out = array_map($makeRelatifier(mb_strlen($workspaceDirPath)),
+            $out = array_map(FileMigrator::makeRelatifier($workspaceDirPath),
                 $this->fs->readDirRecursive($workspaceDirPath, '/^.*\.tmpl\.php$/'));
             break;
         case 'assets':
             $frontendDirPath = RAD_PUBLIC_PATH . 'frontend/';
             $f = str_replace('/', '\\/', $frontendDirPath);
-            $out = array_map($makeRelatifier(mb_strlen($frontendDirPath)),
+            $out = array_map(FileMigrator::makeRelatifier($frontendDirPath),
                 $this->fs->readDirRecursive($frontendDirPath, "/^(?!{$f}rad\/).*\.(css|js)$/"));
             break;
         case 'uploads':
             $uploadsDirPath = RAD_PUBLIC_PATH . 'uploads/';
             $flags = \FilesystemIterator::CURRENT_AS_PATHNAME|\FilesystemIterator::SKIP_DOTS;
-            $out = array_map($makeRelatifier(mb_strlen($uploadsDirPath)),
+            $out = array_map(FileMigrator::makeRelatifier($uploadsDirPath),
                 $this->fs->readDirRecursive($uploadsDirPath, '/.*/', $flags));
             break;
         case 'plugins':
@@ -85,35 +81,27 @@ class Packager {
         return $out;
     }
     /**
-     * @param \RadCms\Packager\PackageStreamInterface $package
+     * @param \RadCms\Packager\PackageStreamInterface $output
      * @param \stdClass $input Olettaa että validi
      * @param \stdClass $userIdentity Olettaa että validi
      * @return string
      * @throws \Pike\PikeException
      */
-    public function packSite(PackageStreamInterface $package,
+    public function packSite(PackageStreamInterface $output,
                              \stdClass $input,
                              \stdClass $userIdentity,
                              DAO $dao): string {
         // @allow \Pike\PikeException
-        $package->open('', true);
+        $output->open('', true);
+        $utils = new PackageUtils($output, $this->crypto);
         // @allow \Pike\PikeException
-        $ok = $this->addMainData($package, $input, $userIdentity) &&
-            $this->addPhpFiles($package, $input) &&
-            $this->addAssetFiles($package, $input) &&
-            $this->addUploadFiles($package, $input) &&
-            $this->addPlugins($package, $input, $dao);
+        $ok = $this->addMainData($output, $input, $userIdentity) &&
+            $this->addPhpFiles($utils, $input) &&
+            $this->addAssetFiles($output, $input) &&
+            $this->addUploadFiles($output, $input) &&
+            $this->addPlugins($output, $input, $dao);
         // @allow \Pike\PikeException
-        return $ok ? $package->getResult() : '';
-    }
-    /**
-     * @param string $possiblyShorterOrLongerKey
-     * @return string
-     */
-    public static function makeFixedLengthKey(string $possiblyShorterOrLongerKey): string {
-        // @allow \Pike\PikeException
-        $padded = str_pad($possiblyShorterOrLongerKey, Crypto::SECRETBOX_KEYBYTES, '0');
-        return substr($padded, 0, Crypto::SECRETBOX_KEYBYTES);
+        return $ok ? $output->getResult() : '';
     }
     /**
      * @access private
@@ -128,7 +116,7 @@ class Packager {
     /**
      * @throws \Pike\PikeException
      */
-    private function addMainData(PackageStreamInterface $package,
+    private function addMainData(PackageStreamInterface $output,
                                  \stdClass $input,
                                  \stdClass $userIdentity): bool {
         $themeContentTypes = ArrayUtils::filterByKey($this->cmsState->getContentTypes(),
@@ -141,13 +129,13 @@ class Packager {
             'content' => $this->generateThemeContentData($themeContentTypes),
             'user' => $this->generateUserZero($userIdentity),
         ]);
-        $package->addFromString(self::LOCAL_NAMES_MAIN_DATA, $data);
+        $output->addFromString(self::LOCAL_NAMES_MAIN_DATA, $data);
         return true;
     }
     /**
      * @throws \Pike\PikeException
      */
-    private function addPhpFiles(PackageStreamInterface $package,
+    private function addPhpFiles(PackageUtils $packageUtils,
                                  \stdClass $input): bool {
         $base = RAD_WORKSPACE_PATH . 'site/';
         //
@@ -155,43 +143,42 @@ class Packager {
         if ($this->fs->isFile("{$base}Theme.php"))
             $fileList[] = 'Theme.php';
         $fileList = array_merge($fileList, $input->templates);
-        $package->addFromString(self::LOCAL_NAMES_PHP_FILES_FILE_LIST,
-                                json_encode($fileList, JSON_UNESCAPED_UNICODE));
-        foreach ($fileList as $relativePath)
-            // @allow \Pike\PikeException
-            $package->addFile("{$base}{$relativePath}", $relativePath);
+        // @allow \Pike\PikeException
+        $packageUtils->addFilesAndFilesList($fileList,
+                                            $base,
+                                            self::LOCAL_NAMES_PHP_FILES_FILE_LIST);
         return true;
     }
     /**
      * @throws \Pike\PikeException
      */
-    private function addAssetFiles(PackageStreamInterface $package,
+    private function addAssetFiles(PackageStreamInterface $output,
                                    \stdClass $input): bool {
-        $package->addFromString(self::LOCAL_NAMES_ASSETS_FILE_LIST,
+        $output->addFromString(self::LOCAL_NAMES_ASSETS_FILE_LIST,
                                 json_encode($input->assets));
         $base = RAD_PUBLIC_PATH . 'frontend/';
         foreach ($input->assets as $relativePath)
             // @allow \Pike\PikeException
-            $package->addFile("{$base}{$relativePath}", $relativePath);
+            $output->addFile("{$base}{$relativePath}", $relativePath);
         return true;
     }
     /**
      * @throws \Pike\PikeException
      */
-    private function addUploadFiles(PackageStreamInterface $package,
+    private function addUploadFiles(PackageStreamInterface $output,
                                     \stdClass $input): bool {
-        $package->addFromString(self::LOCAL_NAMES_UPLOADS_FILE_LIST,
+        $output->addFromString(self::LOCAL_NAMES_UPLOADS_FILE_LIST,
                                 json_encode($input->uploads));
         $base = RAD_PUBLIC_PATH . 'uploads/';
         foreach ($input->uploads as $relativePath)
             // @allow \Pike\PikeException
-            $package->addFile("{$base}{$relativePath}", $relativePath);
+            $output->addFile("{$base}{$relativePath}", $relativePath);
         return true;
     }
     /**
      * @throws \Pike\PikeException
      */
-    private function addPlugins(PackageStreamInterface $package,
+    private function addPlugins(PackageStreamInterface $output,
                                 \stdClass $input,
                                 DAO $dao): bool {
         $plugins = new \stdClass;
@@ -210,7 +197,7 @@ class Packager {
         }
         // @allow \Pike\PikeException
         $data = $this->encryptData($input->signingKey, $plugins);
-        $package->addFromString(self::LOCAL_NAMES_PLUGINS, $data);
+        $output->addFromString(self::LOCAL_NAMES_PLUGINS, $data);
         return true;
     }
     /**
@@ -239,7 +226,7 @@ class Packager {
     private function encryptData(string $key, object $data): string {
         // @allow \Pike\PikeException
         return $this->crypto->encrypt(json_encode($data, JSON_UNESCAPED_UNICODE),
-                                      self::makeFixedLengthKey($key));
+                                      PackageUtils::clipSigningKey($key));
     }
     /**
      * @return array [["Articles", ContentNode[]], ...]

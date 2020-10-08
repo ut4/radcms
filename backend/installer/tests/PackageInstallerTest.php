@@ -2,13 +2,13 @@
 
 namespace RadCms\Installer\Tests;
 
-use Pike\{AppConfig, FileSystem, Request, Auth\Crypto};
+use Pike\{AppConfig, FileSystem, Request};
 use Pike\TestUtils\{HttpTestUtils, MockCrypto};
 use RadCms\{APIConfigsStorage, AppContext, CmsState, Auth\ACL};
 use RadCms\Content\DAO;
 use RadCms\ContentType\{ContentTypeCollection, ContentTypeMigrator};
 use RadCms\Installer\{InstallerCommons, InstallerControllers};
-use RadCms\Packager\{Packager, ZipPackageStream};
+use RadCms\Packager\{Packager, PackageUtils, ZipPackageStream};
 use RadCms\Tests\_Internal\{ContentTestUtils, TestSite};
 use RadCms\Tests\Packager\PackagerControllersTest;
 use RadCms\Tests\User\UserControllersTest;
@@ -104,7 +104,7 @@ final class PackageInstallerTest extends BaseInstallerTest {
             ],
             'testUser' => UserControllersTest::makeAndInsertTestUser(),
             'reqBody' => (object) [
-                'unlockKey' => str_pad('my-signing-and-unlock-key', Crypto::SECRETBOX_KEYBYTES, '0'),
+                'unlockKey' => str_pad('my-signing-and-unlock-key', 32, '0'),
                 'baseUrl' => RAD_BASE_URL,
             ],
             'testPackageFilePath' => self::$targetSitePath . 'long-random-string.radsite',

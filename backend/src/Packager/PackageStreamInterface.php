@@ -49,4 +49,8 @@ interface PackageStreamInterface {
      * @throws \Pike\PikeException
      */
     public function getResult(): string;
+    /**
+     * @throws \Pike\PikeException
+     */
+    public function writeToDisk(): void;
 }

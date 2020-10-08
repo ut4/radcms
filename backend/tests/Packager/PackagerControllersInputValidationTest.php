@@ -4,7 +4,7 @@ namespace RadCms\Tests\Packager;
 
 use Pike\Request;
 use Pike\TestUtils\{ConfigProvidingTestCase, HttpTestUtils};
-use RadCms\Packager\Packager;
+use RadCms\Packager\PackageUtils;
 
 final class PackagerControllersInputValidationTest extends ConfigProvidingTestCase {
     use HttpTestUtils;
@@ -24,7 +24,7 @@ final class PackagerControllersInputValidationTest extends ConfigProvidingTestCa
             'plugins' => ['Not v$l!d'],
         ]);
         $res = $this->createMockResponse(
-            ['The length of signingKey must be at least ' . Packager::MIN_SIGNING_KEY_LEN,
+            ['The length of signingKey must be at least ' . PackageUtils::MIN_SIGNING_KEY_LEN,
              'templates.0 is not valid path',
              'assets.0 is not valid path',
              'uploads.0 is not valid path',

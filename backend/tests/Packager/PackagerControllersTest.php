@@ -9,7 +9,7 @@ use Pike\TestUtils\{DbTestCase, HttpTestUtils, MockCrypto};
 use RadCms\AppContext;
 use RadCms\Entities\PluginPackData;
 use RadCms\Installer\Tests\BaseInstallerTest;
-use RadCms\Packager\{Packager, ZipPackageStream};
+use RadCms\Packager\{Packager, PackageUtils, ZipPackageStream};
 use RadCms\Tests\_Internal\{ContentTestUtils, MockPackageStream, TestSite};
 use RadCms\Tests\User\UserControllersTest;
 use RadPlugins\MoviesPlugin\MoviesPlugin;
@@ -56,7 +56,7 @@ final class PackagerControllersTest extends DbTestCase {
                 'assets' => TestSite::ASSETS,
                 'uploads' => TestSite::UPLOADS,
                 'plugins' => TestSite::PLUGINS,
-                'signingKey' => 'my-encrypt-key',
+                'signingKey' => str_pad('my-encrypt-key', 32, '0'),
             ],
             'actualAttachmentBody' => '',
             'packageCreatedFromResponse' => null,
@@ -104,7 +104,7 @@ final class PackagerControllersTest extends DbTestCase {
     private function verifyEncryptedMainDataWasIncluded($s) {
         $encodedJson = $s->packageCreatedFromResponse
             ->read(Packager::LOCAL_NAMES_MAIN_DATA);
-        $decodedJson = MockCrypto::mockDecrypt($encodedJson);
+        $decodedJson = MockCrypto::mockDecrypt($encodedJson, $s->reqBody->signingKey);
         $parsed = json_decode($decodedJson);
         $this->assertIsObject($parsed);
         $this->assertEquals(['settings', 'contentTypes', 'content', 'user'],
@@ -189,7 +189,7 @@ final class PackagerControllersTest extends DbTestCase {
     private function verifyPluginsWereIncluded($s) {
         $encodedJson = $s->packageCreatedFromResponse
             ->read(Packager::LOCAL_NAMES_PLUGINS);
-        $decodedJson = MockCrypto::mockDecrypt($encodedJson);
+        $decodedJson = MockCrypto::mockDecrypt($encodedJson, $s->reqBody->signingKey);
         $parsed = json_decode($decodedJson);
         $this->assertIsObject($parsed);
         //

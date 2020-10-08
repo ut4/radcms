@@ -33,7 +33,7 @@ class UploadFileScanner {
         foreach ($fullPaths as $p) {
             $basePath = FileSystem::normalizePath(dirname($p)) . '/';
             $file = new UploadsEntry;
-            $file->fileName = mb_substr($p, mb_strlen($basePath));
+            $file->fileName = substr($p, strlen($basePath));
             $file->basePath = $basePath;
             $file->mime = self::getMime($p);
             $out[] = $file;

@@ -1,14 +1,17 @@
 #!/usr/bin/php
 <?php
 
-$loader = require __DIR__ . '/backend/vendor/autoload.php';
-$loader->addPsr4('RadCms\\Cli\\', __DIR__ . '/dev-cli-src/');
+define('RAD_WORKSPACE_PATH', str_replace('\\', '/', __DIR__) . '/');
+
+$loader = require RAD_WORKSPACE_PATH . 'backend/vendor/autoload.php';
+$loader->addPsr4('RadCms\\Cli\\', RAD_WORKSPACE_PATH . 'dev-cli/src');
 
 if ($argc < 2) die(
-    'Usage: dev-cli.php make-release [<targetDirRelativeToCwd>]' . PHP_EOL .
-    '       dev-cli.php print-acl-rules' . PHP_EOL
+    "Usage: dev-cli.php make-release <targetDirRelativeToCwd>\n" .
+    "       dev-cli.php print-acl-rules\n" .
+    "       dev-cli.php make-update-package <settingsFileRelativeToCwd> <signingKey>"
 );
 $path = implode('/', array_map('urlencode', array_slice($argv, 1)));
 
-\Pike\App::create([\RadCms\Cli\Module::class], [], new \RadCms\AppContext)
+\RadCms\Cli\App::create([], new \RadCms\AppContext)
     ->handleRequest(new \Pike\Request("/{$path}", 'PSEUDO'));

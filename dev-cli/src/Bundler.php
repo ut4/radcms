@@ -7,11 +7,16 @@ namespace RadCms\Cli;
 use Pike\PikeException;
 use Pike\Interfaces\FileSystemInterface;
 
-class Bundler {
+final class Bundler {
+    /** @var \Pike\Interfaces\FileSystemInterface */
     private $fs;
+    /** @var \Closure */
     private $doPrint;
+    /** @var callable */
     private $shellExecFn;
+    /** @var string */
     private $radPath;
+    /** @var string */
     private $targetDirPath;
     /**
      * @param \Pike\Interfaces\FileSystemInterface

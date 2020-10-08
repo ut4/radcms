@@ -63,7 +63,7 @@ class PackagerControllers {
                 return is_string($value) && strpos($value, './') === false;
             }, '%s is not valid path')
             ->rule('signingKey', 'type', 'string')
-            ->rule('signingKey', 'minLength', Packager::MIN_SIGNING_KEY_LEN);
+            ->rule('signingKey', 'minLength', PackageUtils::MIN_SIGNING_KEY_LEN);
         //
         foreach (['templates', 'assets', 'uploads'] as $fileGroup)
             $v->rule("{$fileGroup}.*", 'nonRelativePath');

@@ -7,6 +7,7 @@ namespace RadCms\Installer;
 use Pike\{PikeException, Request, Response, Template, Validation};
 use Pike\Interfaces\FileSystemInterface;
 use RadCms\Packager\Packager;
+use RadCms\Packager\PackageUtils;
 
 class InstallerControllers {
     /** @var \Pike\Interfaces\FileSystemInterface */
@@ -90,7 +91,7 @@ class InstallerControllers {
             ->rule('baseUrl', 'minLength', 1)
             ->validate($input);
         if (!$errors) {
-            $input->siteName = mb_strlen($input->siteName) ? $input->siteName : 'My Site';
+            $input->siteName = strlen($input->siteName) ? $input->siteName : 'My Site';
             $input->mainQueryVar = $input->mainQueryVar ?? '';
             $input->firstUserEmail = $input->firstUserEmail ?? '';
         }
@@ -101,7 +102,7 @@ class InstallerControllers {
      */
     private function validateInstallFromPackageInput(Request $req): array {
         return Validation::makeObjectValidator()
-            ->rule('unlockKey', 'minLength', Packager::MIN_SIGNING_KEY_LEN)
+            ->rule('unlockKey', 'minLength', PackageUtils::MIN_SIGNING_KEY_LEN)
             ->rule('baseUrl', 'minLength', 1)
             ->validate($req->body);
     }

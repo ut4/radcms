@@ -29,7 +29,7 @@ class FromPackageInstallerView extends preact.Component {
                             vm={ this }
                             name="unlockKey"
                             id="unlockKey"
-                            validations={ [['minLength', 12]] }
+                            validations={ [['minLength', 32]] }
                             errorLabel="Avausavain"/>
                         <InputError error={ this.state.errors.unlockKey }/>
                     </InputGroup>

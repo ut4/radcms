@@ -41,4 +41,7 @@ class MockPackageStream implements PackageStreamInterface {
     public function getVirtualFiles(): \stdClass {
         return $this->virtualFiles;
     }
+    public function writeToDisk(): void {
+        throw new \RuntimeException('Not supported');
+    }
 }

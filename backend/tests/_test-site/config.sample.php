@@ -3,8 +3,8 @@ if (!defined('RAD_BASE_URL')) {
 define('RAD_BASE_URL',       '/rad/');
 define('RAD_QUERY_VAR',      '');
 define('RAD_BACKEND_PATH',   '/path/to/backend/');
-define('RAD_WORKSPACE_PATH', '/path/to/backend/tests/_test-site/');
-define('RAD_PUBLIC_PATH',    '/path/to/backend/tests/_test-site/');
+define('RAD_WORKSPACE_PATH', $workspacePath ?? '/path/to/backend/tests/_test-site/');
+define('RAD_PUBLIC_PATH',    $publicPath ?? '/path/to/backend/tests/_test-site/');
 define('RAD_DEVMODE',        1 << 1);
 define('RAD_USE_JS_MODULES', 1 << 2);
 define('RAD_FLAGS',          RAD_DEVMODE);

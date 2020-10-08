@@ -2,7 +2,8 @@ import {http, View, hookForm, InputGroup, Input, InputError, FeatherSvg, myFetch
         Toaster, toasters} from '@rad-commons';
 
 /**
- * #/pack-website
+ * #/pack-website: näkymä, jolla admin voi luoda tämänhetkisestä sivuston sisäl-
+ * löstä asennettavan paketin.
  */
 class WebsitePackView extends preact.Component {
     constructor(props) {
@@ -102,7 +103,7 @@ class WebsitePackView extends preact.Component {
                         vm={ this }
                         name="signingKey"
                         id="signingKey"
-                        validations={ [['minLength', 12]] }
+                        validations={ [['minLength', 32]] }
                         errorLabel="Salausavain"/>
                     <InputError error={ this.state.errors.signingKey }/>
                 </InputGroup>

@@ -94,7 +94,7 @@ class AuthControllers {
             return;
         }
         try {
-            $this->auth->requestPasswordReset($req->body->usernameOrEmail,
+            $this->auth->getAccountManager()->requestPasswordReset($req->body->usernameOrEmail,
                 function ($user, $resetKey, $settings) use ($cmsState, $appConfig) {
                     $siteName = $cmsState->getSiteInfo()->name;
                     $siteUrl = $_SERVER['SERVER_NAME'];
@@ -112,8 +112,8 @@ class AuthControllers {
                 });
             $res->json(['ok' => 'ok']);
         } catch (PikeException $e) {
-            if ($e->getCode() === Authenticator::INVALID_CREDENTIAL ||
-                $e->getCode() === Authenticator::UNEXPECTED_ACCOUNT_STATUS) {
+            if ($e->getCode() === Authenticator::CREDENTIAL_WAS_INVALID ||
+                $e->getCode() === Authenticator::ACCOUNT_STATUS_WAS_UNEXPECTED) {
                 $res->status(401)->json(['err' => $e->getMessage()]);
             } else {
                 throw $e;
@@ -152,7 +152,7 @@ class AuthControllers {
                                                $req->body->newPassword);
             $res->json(['ok' => 'ok']);
         } catch (PikeException $e) {
-            if ($e->getCode() === Authenticator::INVALID_CREDENTIAL) {
+            if ($e->getCode() === Authenticator::CREDENTIAL_WAS_INVALID) {
                 $res->status(401)->json(['err' => 'Invalid reset key or email']);
             } else {
                 throw $e;

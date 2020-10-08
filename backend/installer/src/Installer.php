@@ -102,18 +102,4 @@ class Installer {
         $fm2->copyFiles($fm->fromTo('frontend', 'frontend'));
         return $workspaceDir;
     }
-    /**
-     * @return string[] ['file.php', 'dir/another.php']
-     * @throws \Pike\PikeException
-     */
-    private function readDirRelPaths(string $dirPath, string $filterRegexp): array {
-        if (($paths = $this->fs->readDirRecursive($dirPath, $filterRegexp,
-            \FilesystemIterator::CURRENT_AS_PATHNAME|\FilesystemIterator::SKIP_DOTS))) {
-            return array_map(function ($fullFilePath) use ($dirPath) {
-                return substr($fullFilePath, mb_strlen($dirPath));
-            }, $paths);
-        }
-        throw new PikeException("Failed to read `{$dirPath} ({$filterRegexp})`",
-                                PikeException::FAILED_FS_OP);
-    }
 }

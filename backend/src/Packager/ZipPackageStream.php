@@ -6,6 +6,7 @@ namespace RadCms\Packager;
 
 use Pike\PikeException;
 use Pike\Interfaces\FileSystemInterface;
+use RadCms\ValidationUtils;
 
 class ZipPackageStream implements PackageStreamInterface {
     /** @var \ZipArchive */
@@ -14,6 +15,8 @@ class ZipPackageStream implements PackageStreamInterface {
     private $fs;
     /** @var string */
     private $tmpFilePath;
+    /** @var string */
+    private $inputFilePath;
     /**
      * @param \Pike\Interfaces\FileSystemInterface
      */
@@ -29,6 +32,10 @@ class ZipPackageStream implements PackageStreamInterface {
         $this->zip = new \ZipArchive();
         $flags = \ZipArchive::CHECKCONS;
         if ($create) {
+            if ($filePath) {
+                ValidationUtils::checkIfValidaPathOrThrow($filePath);
+                $this->inputFilePath = $filePath;
+            }
             if (!($filePath = tempnam(sys_get_temp_dir(), 'zip')))
                 throw new PikeException('Failed to generate temp file name',
                                         PikeException::FAILED_FS_OP);
@@ -109,5 +116,18 @@ class ZipPackageStream implements PackageStreamInterface {
             throw new PikeException('Failed to remove temp file',
                                     PikeException::FAILED_FS_OP);
         return $c;
+    }
+    /**
+     * @throws \Pike\PikeException
+     */
+    public function writeToDisk(): void {
+        if (!$this->zip->close())
+            throw new PikeException('Failed to close zip stream',
+                                    PikeException::FAILED_FS_OP);
+        if ($this->inputFilePath) {
+            if (!$this->fs->move($this->tmpFilePath, $this->inputFilePath))
+            throw new PikeException('Failed to move zip stream output file',
+                                    PikeException::FAILED_FS_OP);
+        }
     }
 }

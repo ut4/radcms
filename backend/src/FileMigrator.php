@@ -63,6 +63,21 @@ final class FileMigrator {
         return [$fromDir, $toDir];
     }
     /**
+     * $stripBase = FileMigrator::makeRelatifier('/var/www/html/');
+     * echo $stripBase('/var/www/html/file.txt'); // 'file.txt';
+     * echo $stripBase('/var/www/html/dir/anoter-file.txt'); // 'dir/anoter-file.txt';
+     *
+     * @param string $basePath
+     * @return \Closure fn(string $fullFilePath): string
+     * @throws \Pike\PikeException
+     */
+    public static function makeRelatifier(string $basePath): \Closure {
+        $after = strlen($basePath);
+        return static function ($fullFilePath) use ($after) {
+            return substr($fullFilePath, $after);
+        };
+    }
+    /**
      * @param array<int, string[]> $relativeFromToDirNamePairs ['fromPathRelativeToSourceBase', 'toPathRelativeToTargetBase'] ...
      */
     public function deleteFiles(...$relativeFromToDirNamePairs) {
@@ -86,9 +101,7 @@ final class FileMigrator {
     private function readDirRelPaths(string $dirPath, string $filterRegexp): array {
         if (($paths = $this->fs->readDirRecursive($dirPath, $filterRegexp,
             \FilesystemIterator::CURRENT_AS_PATHNAME|\FilesystemIterator::SKIP_DOTS))) {
-            return array_map(function ($fullFilePath) use ($dirPath) {
-                return substr($fullFilePath, mb_strlen($dirPath));
-            }, $paths);
+            return array_map(self::makeRelatifier($dirPath), $paths);
         }
         throw new PikeException("Failed to read `{$dirPath} ({$filterRegexp})`",
                                 PikeException::FAILED_FS_OP);

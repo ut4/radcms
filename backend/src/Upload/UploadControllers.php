@@ -55,7 +55,7 @@ class UploadControllers {
                                     $req->files->localFile['error'],
                                     PikeException::FAILED_FS_OP);
         } elseif (($errors = $this->validateUploadInput($req))) {
-            $res->status(400)->json(implode('\n', $errors));
+            $res->status(400)->json($errors);
             return;
         }
         // @allow \Pike\PikeException
