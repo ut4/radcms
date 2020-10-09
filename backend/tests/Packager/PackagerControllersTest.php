@@ -131,6 +131,7 @@ final class PackagerControllersTest extends DbTestCase {
                                           json_decode($row['aclRules'])
                                       )),
             'mainQueryVar' => RAD_QUERY_VAR,
+            'siteSecret' => RAD_SECRET,
             'useDevMode' => boolval(RAD_FLAGS & RAD_DEVMODE),
         ], $s->parsedMainDataFromPackage->settings);
     }

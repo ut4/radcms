@@ -216,6 +216,7 @@ class Packager {
             'siteName' => $this->cmsState->getSiteInfo()->name,
             'siteLang' => $this->cmsState->getSiteInfo()->lang,
             'aclRules' => $this->cmsState->getAclRules(),
+            'siteSecret' => RAD_SECRET,
             'mainQueryVar' => RAD_QUERY_VAR,
             'useDevMode' => boolval(RAD_FLAGS & RAD_DEVMODE),
         ];

@@ -13,12 +13,19 @@ use RadCms\Auth\ACL;
  * Sisältää Installerin ja PackageInstallerin yhteiset toiminnallisuudet.
  */
 class InstallerCommons {
+    /** @var \Pike\Db */
     private $db;
+    /** @var \Pike\Interfaces\FileSystemInterface */
     private $fs;
+    /** @var \Pike\Auth\Crypto */
     private $crypto;
+    /** @var string */
     private $backendDirPath;
+    /** @var string */
     private $workspaceDirPath;
+    /** @var string */
     private $publicDirPath;
+    /** @var string[] */
     private $warnings;
     /**
      * @param \Pike\Db $db
@@ -159,6 +166,7 @@ class InstallerCommons {
      */
     public function generateConfigFile(\stdClass $s): bool {
         $flags = $s->useDevMode ? 'RAD_DEVMODE' : '0';
+        $siteSecret = $s->siteSecret ?? $this->crypto->genRandomToken(32);
         if ($this->fs->write(
             "{$this->publicDirPath}config.php",
 "<?php
@@ -168,6 +176,7 @@ if (!defined('RAD_BASE_URL')) {
     define('RAD_BACKEND_PATH',   '{$this->backendDirPath}');
     define('RAD_WORKSPACE_PATH', '{$this->workspaceDirPath}');
     define('RAD_PUBLIC_PATH',    '{$this->publicDirPath}');
+    define('RAD_SECRET',         '{$siteSecret}');
     define('RAD_DEVMODE',        1 << 1);
     define('RAD_USE_JS_MODULES', 1 << 2);
     define('RAD_FLAGS',          {$flags});

@@ -1,9 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RadCms\Installer\Tests;
 
 use Pike\{FileSystem, Request};
-use Pike\TestUtils\HttpTestUtils;
+use Pike\Auth\Crypto;
+use Pike\TestUtils\{HttpTestUtils, MockCrypto};
 use RadCms\AppContext;
 use RadCms\Auth\ACL;
 use RadCms\Installer\Installer;
@@ -21,7 +24,7 @@ final class InstallerTest extends BaseInstallerTest {
                         ';DROP DATABASE IF EXISTS ' . self::TEST_DB_NAME2 .
                         ';DROP DATABASE IF EXISTS ' . self::TEST_DB_NAME3);
     }
-    public function testInstallerValidatesMissingValues() {
+    public function testInstallerValidatesMissingValues(): void {
         $input = (object)['sampleContent' => 'test-content'];
         $res = $this->createMockResponse(json_encode([
             'siteName must be string',
@@ -42,7 +45,7 @@ final class InstallerTest extends BaseInstallerTest {
                               '\RadCms\AppContext');
         $this->sendRequest(new Request('/', 'POST', $input), $res, $app);
     }
-    public function testInstallerValidatesInvalidValues() {
+    public function testInstallerValidatesInvalidValues(): void {
         $input = (object)[
             'siteName' => new \stdClass,
             'siteLang' => [],
@@ -84,7 +87,7 @@ final class InstallerTest extends BaseInstallerTest {
                               '\RadCms\AppContext');
         $this->sendRequest(new Request('/', 'POST', $input), $res, $app);
     }
-    public function testInstallerFillsDefaultValues() {
+    public function testInstallerFillsDefaultValues(): void {
         $input = (object)[
             'siteName' => '',
             'siteLang' => 'fi',
@@ -117,7 +120,7 @@ final class InstallerTest extends BaseInstallerTest {
         $this->assertEquals('', $input->mainQueryVar);
         $this->assertEquals(false, $input->useDevMode);
     }
-    public function testInstallerCreatesDbSchemaAndInsertsSampleContent() {
+    public function testInstallerCreatesDbSchemaAndInsertsSampleContent(): void {
         $s = $this->setupInstallerTest1();
         $this->addFsExpectation('readsDataFiles', $s);
         $this->addFsExpectation('readsSampleContentFiles', $s);
@@ -133,11 +136,12 @@ final class InstallerTest extends BaseInstallerTest {
                                             "{$s->backendPath}installer/default-acl-rules.php");
         $this->verifyCreatedUserZero($s->input->firstUserName,
                                      $s->input->firstUserEmail,
+                                     MockCrypto::mockHashPass($s->input->firstUserPass),
                                      ACL::ROLE_SUPER_ADMIN);
         $this->verifyContentTypeIsInstalled('Movies', true);
         $this->verifyInsertedSampleContent($s);
     }
-    private function setupInstallerTest1() {
+    private function setupInstallerTest1(): \stdClass {
         $config = require TEST_SITE_PUBLIC_PATH . 'config.php';
         return (object) [
             'input' => (object) [
@@ -165,7 +169,7 @@ final class InstallerTest extends BaseInstallerTest {
             'mockFs' => $this->createMock(FileSystem::class)
         ];
     }
-    private function addFsExpectation($expectation, $s) {
+    private function addFsExpectation(string $expectation, \stdClass $s): void {
         if ($expectation === 'readsDataFiles') {
             $s->mockFs->expects($this->exactly(3))
                 ->method('read')
@@ -251,6 +255,7 @@ if (!defined('RAD_BASE_URL')) {
     define('RAD_BACKEND_PATH',   '{$s->backendPath}');
     define('RAD_WORKSPACE_PATH', '{$s->publicPath}');
     define('RAD_PUBLIC_PATH',    '{$s->publicPath}');
+    define('RAD_SECRET',         '" . MockCrypto::mockGenRandomToken(32) . "');
     define('RAD_DEVMODE',        1 << 1);
     define('RAD_USE_JS_MODULES', 1 << 2);
     define('RAD_FLAGS',          RAD_DEVMODE);
@@ -289,7 +294,7 @@ return [
         }
         throw new \Exception('Shouldn\'t happen');
     }
-    private function sendInstallRequest($s) {
+    private function sendInstallRequest(\stdClass $s): void {
         $res = $this->createMockResponse(json_encode([
             'ok' => 'ok',
             'siteWasInstalledTo' => $s->workspacePath,
@@ -297,10 +302,15 @@ return [
         ]), 200);
         $ctx = new AppContext(['db' => '@auto', 'auth' => '@auto']);
         $ctx->fs = $s->mockFs;
-        $app = $this->makeApp([$this,'createInstallerApp'], $this->getAppConfig(), $ctx);
+        $app = $this->makeApp([$this,'createInstallerApp'], $this->getAppConfig(), $ctx,
+            function ($injector) {
+                $injector->delegate(Crypto::class, function () {
+                    return new MockCrypto;
+                });
+            });
         $this->sendRequest(new Request('/', 'POST', $s->input), $res, $app);
     }
-    private function verifyInsertedSampleContent($s) {
+    private function verifyInsertedSampleContent(\stdClass $s): void {
         $this->assertEquals(2, count(self::$db->fetchAll(
             'SELECT `title` FROM ${p}Movies'
         )));
@@ -310,7 +320,7 @@ return [
     ////////////////////////////////////////////////////////////////////////////
 
 
-    public function testInstallerInstallSiteToExistingDatabase() {
+    public function testInstallerInstallSiteToExistingDatabase(): void {
         $s = $this->setupInstallerTest1();
         $s->input->dbDatabase = self::TEST_DB_NAME2;
         $s->input->doCreateDb = false;
@@ -329,6 +339,7 @@ return [
                                             "{$s->backendPath}installer/default-acl-rules.php");
         $this->verifyCreatedUserZero($s->input->firstUserName,
                                      $s->input->firstUserEmail,
+                                     MockCrypto::mockHashPass($s->input->firstUserPass),
                                      ACL::ROLE_SUPER_ADMIN);
         $this->verifyContentTypeIsInstalled('Movies', true);
         $this->verifyInsertedSampleContent($s);

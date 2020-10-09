@@ -2,8 +2,9 @@
 <?php
 
 define('RAD_WORKSPACE_PATH', str_replace('\\', '/', __DIR__) . '/');
+define('RAD_BACKEND_PATH', RAD_WORKSPACE_PATH . 'backend/');
 
-$loader = require RAD_WORKSPACE_PATH . 'backend/vendor/autoload.php';
+$loader = require RAD_BACKEND_PATH . 'vendor/autoload.php';
 $loader->addPsr4('RadCms\\Cli\\', RAD_WORKSPACE_PATH . 'dev-cli/src');
 
 if ($argc < 2) die(

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RadCms\Installer\Tests;
 
 use Pike\App;
@@ -8,7 +10,8 @@ use Pike\TestUtils\DbTestCase;
 use RadCms\Installer\Module;
 
 abstract class BaseInstallerTest extends DbTestCase {
-    protected function verifyCreatedMainSchema($database, $tablePrefix) {
+    protected function verifyCreatedMainSchema(string $database,
+                                               string $tablePrefix): void {
         self::setCurrentDatabase($database, $tablePrefix);
         $this->assertEquals(1, count(self::$db->fetchAll(
             'SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES' .
@@ -16,9 +19,9 @@ abstract class BaseInstallerTest extends DbTestCase {
             [$database, $tablePrefix . 'cmsState']
         )));
     }
-    protected function verifyInsertedMainSchemaData($siteName,
-                                                    $siteLang,
-                                                    $aclRules) {
+    protected function verifyInsertedMainSchemaData(string $siteName,
+                                                    string $siteLang,
+                                                    $aclRules): void {
         $row = self::$db->fetchOne('SELECT * FROM ${p}cmsState');
         $this->assertArrayHasKey('name', $row);
         $this->assertEquals($siteName, $row['name']);
@@ -33,18 +36,13 @@ abstract class BaseInstallerTest extends DbTestCase {
         $this->assertEquals(self::sortAclRules($expectedAclRules),
                             self::sortAclRules($actual));
     }
-    protected function verifyCreatedUserZero($userName,
-                                             $userEmail,
-                                             $userRole,
-                                             $passwordHash = null) {
+    protected function verifyCreatedUserZero(string $userName,
+                                             string $userEmail,
+                                             string $passwordHash,
+                                             int $userRole): void {
         $row = self::$db->fetchOne('SELECT * FROM ${p}users');
         $this->assertNotNull($row, 'Pitäisi luoda käyttäjä');
-        if (!$passwordHash) {
-            $expectedLen = strlen('xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx');
-            $this->assertEquals($expectedLen, strlen($row['id']));
-        } else {
-            $this->assertEquals($passwordHash, $row['passwordHash']);
-        }
+        $this->assertEquals($passwordHash, $row['passwordHash']);
         $this->assertEquals($userName, $row['username']);
         $this->assertEquals($userEmail, $row['email']);
         $this->assertEquals($userRole, $row['role']);
@@ -55,30 +53,34 @@ abstract class BaseInstallerTest extends DbTestCase {
         $this->assertEquals(Authenticator::ACCOUNT_STATUS_ACTIVATED,
                             $row['accountStatus']);
     }
-    protected static function setCurrentDatabase($database, $tablePrefix) {
+    protected static function setCurrentDatabase(string $database,
+                                                 string $tablePrefix): void {
         self::$db->exec("USE {$database}");
         self::$db->setCurrentDatabaseName($database);
         self::$db->setTablePrefix($tablePrefix);
     }
-    public static function sortAclRules($rules) {
+    public static function sortAclRules(object $rules): object {
         $sortedResources = self::sortByKey($rules->resources);
-        foreach ($sortedResources as $actionName => $actions)
-            $sortedResources->{$actionName} = self::sortByKey($actions);
+        foreach ($sortedResources as $actionName => $actions) {
+            $sortedResources->{$actionName} = is_object($actions)
+                ? self::sortByKey($actions)
+                : $actions;
+        }
         $rules->resources = $sortedResources;
         //
         $sortedPerms = self::sortByKey($rules->userPermissions);
-        foreach ($sortedPerms as $userRole => $permissions)
-            $sortedPerms->{$userRole} = self::sortByKey($permissions);
+        foreach ($sortedPerms as $userRole => $permissions) {
+            $sortedPerms->{$userRole} = self::sortByKey($permissions);}
         $rules->userPermissions = $sortedPerms;
         //
         return $rules;
     }
-    private static function sortByKey($object) {
+    private static function sortByKey(object $object): object {
         $sorted = (array) $object;
         uksort($sorted, function ($a, $b){ return $a <=> $b; });
         return (object) $sorted;
     }
-    public function createInstallerApp($config, $ctx, $makeInjector) {
+    public function createInstallerApp($config, $ctx, $makeInjector): \Pike\App {
         return App::create([Module::class], $config, $ctx, $makeInjector);
     }
 }

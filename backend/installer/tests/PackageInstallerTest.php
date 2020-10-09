@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace RadCms\Installer\Tests;
 
 use Pike\{AppConfig, FileSystem, Request};
@@ -8,7 +10,7 @@ use RadCms\{APIConfigsStorage, AppContext, CmsState, Auth\ACL};
 use RadCms\Content\DAO;
 use RadCms\ContentType\{ContentTypeCollection, ContentTypeMigrator};
 use RadCms\Installer\{InstallerCommons, InstallerControllers};
-use RadCms\Packager\{Packager, PackageUtils, ZipPackageStream};
+use RadCms\Packager\{Packager, ZipPackageStream};
 use RadCms\Tests\_Internal\{ContentTestUtils, TestSite};
 use RadCms\Tests\Packager\PackagerControllersTest;
 use RadCms\Tests\User\UserControllersTest;
@@ -71,8 +73,8 @@ final class PackageInstallerTest extends BaseInstallerTest {
                                             $s->cmsStateData->compactAclRules);
         $this->verifyCreatedUserZero($s->testUser->username,
                                      $s->testUser->email,
-                                     ACL::ROLE_SUPER_ADMIN,
-                                     $s->testUser->passwordHash);
+                                     $s->testUser->passwordHash,
+                                     ACL::ROLE_SUPER_ADMIN);
         $this->verifyContentTypeIsInstalled('Books', true);
         $this->verifyInsertedAllContent();
         $this->verifyWroteFiles($s);
@@ -164,6 +166,7 @@ final class PackageInstallerTest extends BaseInstallerTest {
         $expectedBackendPath = RAD_BACKEND_PATH;
         $expectedPublicPath = self::$targetSitePath;
         $expectedFlags = RAD_FLAGS & RAD_DEVMODE ? 'RAD_DEVMODE' : '0';
+        $expectedSiteSecret = RAD_SECRET;
         $this->assertStringEqualsFile("{$expectedPublicPath}config.php",
 "<?php
 if (!defined('RAD_BASE_URL')) {
@@ -172,6 +175,7 @@ if (!defined('RAD_BASE_URL')) {
     define('RAD_BACKEND_PATH',   '{$expectedBackendPath}');
     define('RAD_WORKSPACE_PATH', '{$expectedPublicPath}');
     define('RAD_PUBLIC_PATH',    '{$expectedPublicPath}');
+    define('RAD_SECRET',         '{$expectedSiteSecret}');
     define('RAD_DEVMODE',        1 << 1);
     define('RAD_USE_JS_MODULES', 1 << 2);
     define('RAD_FLAGS',          {$expectedFlags});

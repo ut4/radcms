@@ -15,10 +15,15 @@ use RadCms\Plugin\{Plugin, PluginInstaller};
  * Asentaa sivuston pakettitiedostosta.
  */
 class PackageInstaller {
+    /** @var \Pike\Db */
     private $db;
+    /** @var \Pike\Interfaces\FileSystemInterface */
     private $fs;
+    /** @var \Pike\Auth\Crypto */
     private $crypto;
+    /** @var \RadCms\Installer\InstallerCommons */
     private $commons;
+    /** @var \RadCms\Packager\PackageStreamInterface */
     private $package;
     /**
      * @param \Pike\Db $db
