@@ -21,7 +21,8 @@ abstract class Module {
         $ctx->router->map('PSEUDO', '/print-acl-rules',
             [MainController::class, 'printAclRules', ACL::NO_IDENTITY]
         );
-        $ctx->router->map('PSEUDO', '/make-update-package/[*:settingsFileName]/[*:signingKey]',
+        $ctx->router->map('PSEUDO', '/make-update-package/[*:settingsFileName]' .
+                                    '/[*:signingKey]/[*:targetSiteSecret]',
             [MainController::class, 'buildUpdatePackage', ACL::NO_IDENTITY]
         );
     }

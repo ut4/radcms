@@ -15,6 +15,8 @@ use RadCms\Plugin\{Plugin, PluginInstaller};
  * Asentaa sivuston pakettitiedostosta.
  */
 class PackageInstaller {
+    /** @var \RadCms\Packager\PackageStreamInterface */
+    private $package;
     /** @var \Pike\Db */
     private $db;
     /** @var \Pike\Interfaces\FileSystemInterface */
@@ -23,25 +25,23 @@ class PackageInstaller {
     private $crypto;
     /** @var \RadCms\Installer\InstallerCommons */
     private $commons;
-    /** @var \RadCms\Packager\PackageStreamInterface */
-    private $package;
     /**
+     * @param \RadCms\Packager\PackageStreamInterface $package
      * @param \Pike\Db $db
      * @param \Pike\Interfaces\FileSystemInterface $fs
      * @param \Pike\Auth\Crypto $crypto
      * @param \RadCms\Installer\InstallerCommons $commons
-     * @param \RadCms\Packager\PackageStreamInterface $package
      */
-    public function __construct(Db $db,
+    public function __construct(PackageStreamInterface $package,
+                                Db $db,
                                 FileSystemInterface $fs,
                                 Crypto $crypto,
-                                InstallerCommons $commons,
-                                PackageStreamInterface $package) {
+                                InstallerCommons $commons) {
+        $this->package = $package;
         $this->db = $db;
         $this->fs = $fs;
         $this->crypto = $crypto;
         $this->commons = $commons;
-        $this->package = $package;
         $this->packageUtils = new PackageUtils($this->package, $this->crypto);
     }
     /**
@@ -54,8 +54,8 @@ class PackageInstaller {
         // @allow \Pike\PikeException
         $this->package->open($packageFilePath);
         // @allow \Pike\PikeException
-        $mainData = $this->packageUtils->readEncryptedObject(Packager::LOCAL_NAMES_MAIN_DATA,
-                                                             $input->unlockKey);
+        $mainData = $this->packageUtils->readJsonAsObject(Packager::LOCAL_NAMES_MAIN_DATA,
+                                                          $input->unlockKey);
         $settings = $mainData->settings;
         $settings->baseUrl = $input->baseUrl;
         // @allow \Pike\PikeException
@@ -122,8 +122,8 @@ class PackageInstaller {
      */
     private function installPlugins(string $unlockKey): bool {
         // @allow Pike\PikeException
-        $plugins = $this->packageUtils->readEncryptedObject(Packager::LOCAL_NAMES_PLUGINS,
-                                                            $unlockKey);
+        $plugins = $this->packageUtils->readJsonAsObject(Packager::LOCAL_NAMES_PLUGINS,
+                                                         $unlockKey);
         $installer = new PluginInstaller($this->db,
                                          $this->fs,
                                          new ContentTypeMigrator($this->db));

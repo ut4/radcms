@@ -8,9 +8,10 @@ interface PackageStreamInterface {
     /**
      * @param string $filePath
      * @param bool $create = false
+     * @return string $tmpFilePath
      * @throws \Pike\PikeException
      */
-    public function open(string $filePath, bool $create = false): void;
+    public function open(string $filePath, bool $create = false): string;
     /**
      * @param string $filePath
      * @param string $localName = null

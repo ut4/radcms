@@ -35,8 +35,8 @@ final class Bundler {
                                 callable $shellExecFn): void {
         $this->doPrint = $printFn;
         $this->shellExecFn = $shellExecFn;
-        $this->radPath = dirname(__DIR__) . '/';
-        $this->targetDirPath = __DIR__ . '/' . rtrim($toDir, '/') . '/';
+        $this->radPath = RAD_WORKSPACE_PATH;
+        $this->targetDirPath = RAD_WORKSPACE_PATH . rtrim($toDir, '/') . '/';
         // @allow \Pike\PikeException
         $this->copySourceFiles();
         // @allow \Pike\PikeException

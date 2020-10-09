@@ -28,7 +28,7 @@ final class MainController {
         echo json_encode($fn());
     }
     /**
-     * `php dev-cli.php make-update-package input.json <väh32MerkkinenSalausavain>`:
+     * `php dev-cli.php make-update-package input.json <väh32MerkkinenSalausavain> <kohdeSivustonSecret>`:
      * luo allekirjoitetun päivityspaketin, jonka cms:n käyttäjä voi asentaa hallin-
      * tapaneelista ladattuaan sen ensin päivitettävän sivuston serverin lähdekoodi-
      * kansioon.
@@ -39,7 +39,8 @@ final class MainController {
             throw new PikeException(implode(' | ', $errors), PikeException::BAD_INPUT);
         // @allow \Pike\PikeException
         $package = $generator->generate($req->params->settingsFileName,
-                                        $req->params->signingKey);
+                                        $req->params->signingKey,
+                                        $req->params->targetSiteSecret);
         // @allow \Pike\PikeException
         $package->writeToDisk();
     }

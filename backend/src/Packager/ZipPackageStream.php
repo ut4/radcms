@@ -9,13 +9,14 @@ use Pike\Interfaces\FileSystemInterface;
 use RadCms\ValidationUtils;
 
 class ZipPackageStream implements PackageStreamInterface {
+    public const CREATE_TEMP_FILE_PATH = '@createTemp';
     /** @var \ZipArchive */
     private $zip;
     /** @var \Pike\Interfaces\FileSystemInterface */
     private $fs;
     /** @var string */
     private $tmpFilePath;
-    /** @var string */
+    /** @var ?string */
     private $inputFilePath;
     /**
      * @param \Pike\Interfaces\FileSystemInterface
@@ -26,13 +27,14 @@ class ZipPackageStream implements PackageStreamInterface {
     /**
      * @param string $filePath
      * @param bool $create = false
+     * @return string $tmpFilePath
      * @throws \Pike\PikeException
      */
-    public function open(string $filePath, bool $create = false): void {
+    public function open(string $filePath, bool $create = false): string {
         $this->zip = new \ZipArchive();
         $flags = \ZipArchive::CHECKCONS;
         if ($create) {
-            if ($filePath) {
+            if ($filePath && $filePath !== self::CREATE_TEMP_FILE_PATH) {
                 ValidationUtils::checkIfValidaPathOrThrow($filePath);
                 $this->inputFilePath = $filePath;
             }
@@ -47,6 +49,7 @@ class ZipPackageStream implements PackageStreamInterface {
             throw new PikeException('Failed to ' . (!$create ? 'open' : 'create') .
                                     ' zip, errcode: ' . $res,
                                     PikeException::FAILED_FS_OP);
+        return $filePath;
     }
     /**
      * @param string $filePath

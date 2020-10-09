@@ -9,9 +9,9 @@ use Pike\Interfaces\FileSystemInterface;
 use Pike\PikeException;
 use RadCms\Packager\PackageStreamInterface;
 use RadCms\Packager\PackageUtils;
+use RadCms\Update\UpdateInstaller;
 
 final class UpdatePackageGenerator {
-    public const LOCAL_NAMES_BACKEND_FILES_LIST = 'backend-files-list.json';
     /** @var \RadCms\Packager\PackageStreamInterface */
     private $output;
     /** @var \Pike\Interfaces\FileSystemInterface */
@@ -33,10 +33,33 @@ final class UpdatePackageGenerator {
     /**
      * @param string $configFileName e.g. 'update-details.json', relatiivinen RAD_WORKSPACE_PATHiin
      * @param string $signingKey Olettaa että validi, 32 merkkiä pitkä
+     * @param string $targetSiteSecret Kohdesivuston RAD_SECRET
      * @return \RadCms\Packager\PackageStreamInterface
      */
     public function generate(string $configFileName,
-                             string $signingKey): PackageStreamInterface {
+                             string $signingKey,
+                             string $targetSiteSecret): PackageStreamInterface {
+        // @allow \Pike\PikeException
+        $settings = $this->readInputSettings($configFileName);
+        // @allow \Pike\PikeException
+        $this->output->open(RAD_WORKSPACE_PATH . $this->crypto->genRandomToken(32) .
+                            '.update', true);
+        $this->output->addFromString(UpdateInstaller::LOCAL_NAMES_SITE_SECRET_HASH,
+                                     $this->crypto->hashPass($targetSiteSecret));
+        $packageUtils = new PackageUtils($this->output, $this->crypto);
+        // @allow \Pike\PikeException
+        $packageUtils->addFilesAndFilesList($settings->backendFilesList,
+                                            RAD_BACKEND_PATH,
+                                            UpdateInstaller::LOCAL_NAMES_BACKEND_FILES_LIST,
+                                            $signingKey);
+        //
+        return $this->output;
+    }
+    /**
+     * @param string $configFileName
+     * @return \stdClass
+     */
+    private function readInputSettings(string $configFileName): \stdClass {
         $configFilePath = RAD_WORKSPACE_PATH . $configFileName;
         // @allow \Pike\PikeException
         if (!($settingsJson = $this->fs->read($configFilePath)))
@@ -51,16 +74,6 @@ final class UpdatePackageGenerator {
         if (!is_array($config->backendFilesList) || !$config->backendFilesList)
             throw new PikeException('config->backendFilesList must exist and mustn\'t be empty',
                                     PikeException::BAD_INPUT);
-        // @allow \Pike\PikeException
-        $this->output->open(RAD_WORKSPACE_PATH . $this->crypto->genRandomToken(32) .
-                            '.update', true);
-        $packageUtils = new PackageUtils($this->output, $this->crypto);
-        // @allow \Pike\PikeException
-        $packageUtils->addFilesAndFilesList($config->backendFilesList,
-                                            RAD_BACKEND_PATH,
-                                            self::LOCAL_NAMES_BACKEND_FILES_LIST,
-                                            $signingKey);
-        //
-        return $this->output;
+        return $config;
     }
 }

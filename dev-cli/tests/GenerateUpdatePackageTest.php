@@ -11,6 +11,7 @@ use Pike\TestUtils\{HttpTestUtils, MockCrypto};
 use RadCms\AppContext;
 use RadCms\Cli\UpdatePackageGenerator;
 use RadCms\Packager\ZipPackageStream;
+use RadCms\Update\UpdateInstaller;
 
 final class GenerateUpdatePackageTest extends TestCase {
     use HttpTestUtils;
@@ -34,8 +35,9 @@ final class GenerateUpdatePackageTest extends TestCase {
         $this->writeTestInputFileToDisk($state);
         $this->invokeGenerateUpdatePackageFeature($state);
         $this->verifyWroteUpdatePackageFileToDisk($state);
+        $this->verifyIncludedSiteSecretToUpdatePackage($state);
+        $this->verifyIncludedEncryptedBackendFilesListToUpdatePackage($state);
         $this->verifyIncludedBackendFilesToUpdatePackage($state);
-        $this->verifyIncludedBackendFilesListToUpdatePackage($state);
     }
     private function setupCreatePackageTest(): \stdClass {
         $state = new \stdClass;
@@ -45,6 +47,7 @@ final class GenerateUpdatePackageTest extends TestCase {
                 'src/Api/QueryFilters.php'
             ],
         ];
+        $state->testTargetSiteSecret = str_repeat('0', 64);
         $state->testSigningKey = '12345678901234567890123456789012';
         $state->actuallyGeneratedPackage = null;
         return $state;
@@ -64,24 +67,31 @@ final class GenerateUpdatePackageTest extends TestCase {
         $spyingResponse = $this->makeSpyingResponse();
         $this->sendRequest(new Request("/make-update-package" .
                                        "/{$this->testInputFileName}" .
-                                       "/{$s->testSigningKey}", 'PSEUDO'), $spyingResponse, $app);
+                                       "/{$s->testSigningKey}" .
+                                       "/{$s->testTargetSiteSecret}", 'PSEUDO'),
+                           $spyingResponse, $app);
     }
     private function verifyWroteUpdatePackageFileToDisk(\stdClass $s): void {
         $expectedOutputFileName = MockCrypto::mockGenRandomToken(32) . '.update';
         $this->assertFileExists(RAD_WORKSPACE_PATH . $expectedOutputFileName);
     }
-    private function verifyIncludedBackendFilesToUpdatePackage(\stdClass $s): void {
+    private function verifyIncludedSiteSecretToUpdatePackage(\stdClass $s): void {
         $actual = new ZipPackageStream($this->fs);
         $actual->open(RAD_WORKSPACE_PATH . MockCrypto::mockGenRandomToken(32) . '.update');
-        $contentFromPackage = $actual->read($s->testInput->backendFilesList[0]);
-        $this->assertEquals($this->fs->read(RAD_BACKEND_PATH . $s->testInput->backendFilesList[0]),
-                            $contentFromPackage);
+        $hashedTargetSiteSecret = $actual->read(UpdateInstaller::LOCAL_NAMES_SITE_SECRET_HASH);
+        $this->assertEquals(MockCrypto::mockHashPass($s->testTargetSiteSecret),
+                            $hashedTargetSiteSecret);
         $s->actuallyGeneratedPackage = $actual;
     }
-    private function verifyIncludedBackendFilesListToUpdatePackage(\stdClass $s): void {
-        $encrypted = $s->actuallyGeneratedPackage->read(UpdatePackageGenerator::LOCAL_NAMES_BACKEND_FILES_LIST);
+    private function verifyIncludedEncryptedBackendFilesListToUpdatePackage(\stdClass $s): void {
+        $encrypted = $s->actuallyGeneratedPackage->read(UpdateInstaller::LOCAL_NAMES_BACKEND_FILES_LIST);
         $decrypted = MockCrypto::mockDecrypt($encrypted, $s->testSigningKey);
         $filesList = json_decode($decrypted);
         $this->assertEquals($s->testInput->backendFilesList, $filesList);
+    }
+    private function verifyIncludedBackendFilesToUpdatePackage(\stdClass $s): void {
+        $contentFromPackage = $s->actuallyGeneratedPackage->read($s->testInput->backendFilesList[0]);
+        $this->assertEquals($this->fs->read(RAD_BACKEND_PATH . $s->testInput->backendFilesList[0]),
+                            $contentFromPackage);
     }
 }

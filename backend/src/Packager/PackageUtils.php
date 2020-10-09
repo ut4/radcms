@@ -11,34 +11,34 @@ final class PackageUtils {
     public const MIN_SIGNING_KEY_LEN = 32;
     /** @var \RadCms\Packager\PackageStreamInterface */
     private $package;
-    /** @var \Pike\Auth\Crypto */
+    /** @var ?\Pike\Auth\Crypto */
     private $crypto;
     /**
      * @param \RadCms\Packager\PackageStreamInterface $package
-     * @param \Pike\Auth\Crypto $crypto
+     * @param ?\Pike\Auth\Crypto $crypto
      */
     public function __construct(PackageStreamInterface $package,
-                                Crypto $crypto) {
+                                ?Crypto $crypto) {
         $this->package = $package;
         $this->crypto = $crypto;
     }
     /**
      * @param string $localName
-     * @param string $unlockKey
+     * @param ?string $unlockKey = null
      * @return array
      * @throws \Pike\PikeException
      */
-    public function readEncryptedArray(string $localName, string $unlockKey): array {
-        return self::readEncryptedData($localName, self::clipSigningKey($unlockKey));
+    public function readJsonAsArray(string $localName, ?string $unlockKey = null): array {
+        return self::readAndParseJson($localName, $unlockKey);
     }
     /**
      * @param string $localName
-     * @param string $unlockKey
+     * @param ?string $unlockKey = null
      * @return \stdClass
      * @throws \Pike\PikeException
      */
-    public function readEncryptedObject(string $localName, string $unlockKey): \stdClass {
-        return self::readEncryptedData($localName, self::clipSigningKey($unlockKey));
+    public function readJsonAsObject(string $localName, ?string $unlockKey = null): \stdClass {
+        return self::readAndParseJson($localName, $unlockKey);
     }
     /**
      * @param string[] $relativeFilePaths
@@ -71,15 +71,17 @@ final class PackageUtils {
     }
     /**
      * @param string $localName
-     * @param string $unlockKey
+     * @param ?string $unlockKey
      * @return array|\stdClass
      * @throws \Pike\PikeException
      */
-    private function readEncryptedData(string $localName, string $unlockKey) {
+    private function readAndParseJson(string $localName, ?string $unlockKey) {
         // @allow \Pike\PikeException
-        $encrypted = $this->package->read($localName);
+        $data = $this->package->read($localName);
         // @allow \Pike\PikeException
-        $json = $this->crypto->decrypt($encrypted, $unlockKey);
+        $json = $unlockKey
+            ? $this->crypto->decrypt($data, self::clipSigningKey($unlockKey))
+            : $data;
         if (($parsed = json_decode($json)) !== null)
             return $parsed;
         throw new PikeException("Failed to parse `{$localName}`",
