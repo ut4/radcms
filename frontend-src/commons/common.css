@@ -1,6 +1,6 @@
 :root {
     --bg-dark: #343940;
-    --bg-light: /*#fbfbff*/#f5f6f9;
+    --bg-light: #f5f6f9;
 }
 
 /* -- Spectre overrides ---- */
@@ -130,6 +130,19 @@ th.buttons, td.buttons {
 }
 .btn.with-icon .feather {
     margin-right: .4rem;
+}
+
+/* -- Elements: Forms ---- */
+.has-error:not(.blurred-at-least-once) .form-input,
+.has-error:not(.blurred-at-least-once) .form-select {
+    background: #fff;
+    border-color: #bcc3ce;
+}
+.form-group:not(.blurred-at-least-once) .form-input-hint {
+    display: none;
+}
+.show-error .form-input-hint {
+    display: block !important;
 }
 
 /* Components: Info boxes & toaster messages */

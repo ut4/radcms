@@ -1,5 +1,6 @@
 import {Toaster, env} from '@rad-commons';
 import ControlPanel from './ControlPanel.jsx';
+import CmsUpdateView from './Cms/CmsUpdateView.jsx';
 import {PopupDialog} from './Common/PopupDialog.jsx';
 import ContentAddView from './Content/ContentAddView.jsx';
 import ContentManageView from './Content/ContentManageView.jsx';
@@ -7,6 +8,7 @@ import ContentEditView from './Content/ContentEditView.jsx';
 import ContentTypesManageView from './ContentType/ContentTypesManageView.jsx';
 import PluginsManageView from './Plugin/PluginsManageView.jsx';
 import WebsitePackView from './Website/WebsitePackView.jsx';
+import WebsiteEditInfoView from './Website/WebsiteEditInfoView.jsx';
 import UploadsManageView from './Upload/UploadsManageView.jsx';
 import UploadsRescanView from './Upload/UploadsRescanView.jsx';
 import UserProfileView from './User/UserProfileView.jsx';
@@ -52,6 +54,8 @@ class ControlPanelApp extends preact.Component {
                 <PluginsManageView path="/manage-plugins"/>
                 <UploadsManageView path="/manage-uploads"/>
                 <UploadsRescanView path="/rescan-uploads"/>
+                <WebsiteEditInfoView path="/edit-website-info"/>
+                <CmsUpdateView path="/self-update"/>
                 <WebsitePackView path="/pack-website"/>
                 <UserProfileView path="/me"/>
                 <ContentTypesManageView path="/manage-content-types"/>

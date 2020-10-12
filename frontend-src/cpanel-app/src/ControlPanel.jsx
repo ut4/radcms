@@ -135,6 +135,10 @@ class AdminAndUserControlPanelSection extends preact.Component {
                     <a href="#manage-uploads">Hallitse</a>
                     <a href="#rescan-uploads">Skannaa</a>
                 </AdminControlPanelPanel>,
+                <AdminControlPanelPanel Renderer={ null } title="Sivusto" mainUrl="/edit-website-info">
+                    <a href="#edit-website-info">Muokkaa tietoja</a>
+                    <a href="#self-update">Päivitä</a>
+                </AdminControlPanelPanel>,
                 <AdminControlPanelPanel Renderer={ null } title="Käyttäjä" mainUrl="/me">
                     <a href="#/me">Profiili</a>
                     <a href={ urlUtils.makeUrl('/logout') }

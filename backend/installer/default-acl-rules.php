@@ -11,6 +11,9 @@ $out->resources = (object) [
         'logout'     => $flag1,
         'updatePass' => $flag2,
     ],
+    'cms' => (object) [
+        'update' => $flag1,
+    ],
     'content' => (object) [
         'create'    => $flag1,
         'view'      => $flag2,
@@ -55,6 +58,7 @@ $out->userPermissions = (object) [
     ACL::ROLE_SUPER_ADMIN => (object) [
         'auth'              => ACL::makePermissions('*', $out->resources->auth),
         'content'           => ACL::makePermissions('*', $out->resources->content),
+        'cms'               => ACL::makePermissions('*', $out->resources->cms),
         'contentTypes'      => ACL::makePermissions('*', $out->resources->contentTypes),
         'editMode'          => ACL::makePermissions('*', $out->resources->editMode),
         'multiFieldContent' => ACL::makePermissions('*', $out->resources->multiFieldContent),
@@ -66,6 +70,7 @@ $out->userPermissions = (object) [
     ACL::ROLE_EDITOR => (object) [
         'auth'              => ACL::makePermissions(['logout'], $out->resources->auth),
         'content'           => ACL::makePermissions(['create','view','update'], $out->resources->content),
+        'cms'               => ACL::makePermissions('*', $out->resources->cms),
         'contentTypes'      => ACL::makePermissions(['view'], $out->resources->contentTypes),
         'editMode'          => ACL::makePermissions(['access'], $out->resources->editMode),
         'multiFieldContent' => ACL::NO_PERMISSIONS,

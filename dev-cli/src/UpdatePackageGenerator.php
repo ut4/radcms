@@ -74,6 +74,15 @@ final class UpdatePackageGenerator {
         if (!is_array($config->backendFilesList) || !$config->backendFilesList)
             throw new PikeException('config->backendFilesList must exist and mustn\'t be empty',
                                     PikeException::BAD_INPUT);
+        $this->validateInputSettings($config);
         return $config;
+    }
+    /**
+     * @param \stdClass $config
+     */
+    private function validateInputSettings(\stdClass $config): void {
+        if (!is_array($config->backendFilesList) || !$config->backendFilesList)
+            throw new PikeException('config->backendFilesList must exist and mustn\'t be empty',
+                                    PikeException::BAD_INPUT);
     }
 }

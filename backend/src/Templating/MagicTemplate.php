@@ -129,8 +129,15 @@ class MagicTemplate extends Template {
      * @return string
      */
     public static function makeUrl(string $url, bool $withIndexFile = true): string {
-        static $indexFile = !RAD_QUERY_VAR ? '' : 'index.php?' . RAD_QUERY_VAR . '=/';
-        return RAD_BASE_URL . ($withIndexFile ? $indexFile : '') . self::e(ltrim($url, '/'));
+        static $indexFile = !RAD_QUERY_VAR ? '' : ('index.php?' . RAD_QUERY_VAR . '=/');
+        if (!$withIndexFile || !$indexFile) return RAD_BASE_URL . self::e(ltrim($url, '/'));
+        // '/path?myvar=val' -> 'index.php?q=/path&myvar=val'
+        $info = parse_url(self::e(ltrim($url, '/')));
+        return RAD_BASE_URL .
+            $indexFile .
+            $info['path'] .
+            (isset($info['query']) ? '&amp;' . $info['query'] : '') .
+            (isset($info['fragment']) ? '#' . $info['fragment'] : '');
     }
     /**
      * @return string

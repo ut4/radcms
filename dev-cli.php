@@ -10,7 +10,7 @@ $loader->addPsr4('RadCms\\Cli\\', RAD_WORKSPACE_PATH . 'dev-cli/src');
 if ($argc < 2) die(
     "Usage: dev-cli.php make-release <targetDirRelativeToCwd>\n" .
     "       dev-cli.php print-acl-rules\n" .
-    "       dev-cli.php make-update-package <settingsFileRelativeToCwd> <signingKey>"
+    "       dev-cli.php make-update-package <settingsFileRelativeToCwd> <signingKey> <targetSiteSecret>"
 );
 $path = implode('/', array_map('urlencode', array_slice($argv, 1)));
 

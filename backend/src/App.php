@@ -6,12 +6,12 @@ namespace RadCms;
 
 use Auryn\Injector;
 use Pike\{App as PikeApp, FileSystem, Translator};
-use RadCms\AppContext;
 use RadCms\Auth\{ACL, AuthModule};
 use RadCms\Content\ContentModule;
 use RadCms\ContentType\ContentTypeModule;
 use RadCms\Packager\{PackagerModule, PackageStreamInterface, ZipPackageStream};
 use RadCms\Plugin\PluginModule;
+use RadCms\Update\UpdateModule;
 use RadCms\Upload\UploadModule;
 use RadCms\User\UserModule;
 use RadCms\Website\WebsiteModule;
@@ -38,6 +38,7 @@ class App {
             ContentTypeModule::class,
             PackagerModule::class,
             PluginModule::class,
+            UpdateModule::class,
             UploadModule::class,
             UserModule::class,
             WebsiteModule::class,
