@@ -14,13 +14,13 @@ abstract class UploadModule {
      */
     public static function init(AppContext $ctx): void {
         $ctx->router->map('GET', '/api/uploads/[*:filters]?',
-            [UploadControllers::class, 'getUploads', 'view:uploads']
+            [UploadControllers::class, 'getUploads', 'view:uploads:']
         );
         $ctx->router->map('POST', '/api/uploads',
-            [UploadControllers::class, 'uploadFile', 'upload:uploads']
+            [UploadControllers::class, 'uploadFile', 'upload:uploads:multiPart']
         );
         $ctx->router->map('PUT', '/api/uploads/rebuild-index',
-            [UploadControllers::class, 'rebuildIndex', 'rebuildIndex:uploads']
+            [UploadControllers::class, 'rebuildIndex', 'rebuildIndex:uploads:json']
         );
     }
 }

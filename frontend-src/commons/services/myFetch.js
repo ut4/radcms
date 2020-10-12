@@ -14,8 +14,11 @@ function myFetch(url, options = {}) {
         }
         req.responseType = options.responseType || '';
         req.open(options.method || 'GET', urlUtils.makeUrl(url), true);
-        Object.keys(options.headers || {}).forEach(key => {
-            req.setRequestHeader(key, options.headers[key]);
+        const headers = Object.assign({}, options.headers, {
+            'X-Requested-With': 'Loving kindness'
+        });
+        Object.keys(headers).forEach(key => {
+            req.setRequestHeader(key, headers[key]);
         });
         req.send(options.data);
     });

@@ -3,14 +3,13 @@
 namespace RadCms\Tests\Packager;
 
 use Pike\Auth\Authenticator;
-use Pike\Request;
 use Pike\Interfaces\SessionInterface;
 use Pike\TestUtils\{DbTestCase, HttpTestUtils, MockCrypto};
 use RadCms\AppContext;
 use RadCms\Entities\PluginPackData;
 use RadCms\Installer\Tests\BaseInstallerTest;
-use RadCms\Packager\{Packager, PackageUtils, ZipPackageStream};
-use RadCms\Tests\_Internal\{ContentTestUtils, MockPackageStream, TestSite};
+use RadCms\Packager\{Packager, ZipPackageStream};
+use RadCms\Tests\_Internal\{ApiRequestFactory, ContentTestUtils, MockPackageStream, TestSite};
 use RadCms\Tests\User\UserControllersTest;
 use RadPlugins\MoviesPlugin\MoviesPlugin;
 
@@ -31,6 +30,7 @@ final class PackagerControllersTest extends DbTestCase {
         $s = $this->setupCreatePackageTest();
         MoviesPlugin::setMockPackData($s->mockPluginPackData);
         $this->sendCreatePackageRequest($s);
+        $this->verifyResponseMetaEquals(200, 'application/octet-stream', $s->spyingResponse);
         $this->verifyPackageWasReturned($s);
         //
         $this->verifyEncryptedMainDataWasIncluded($s);
@@ -63,6 +63,7 @@ final class PackagerControllersTest extends DbTestCase {
             'parsedMainDataFromPackage' => null,
             'testUserZero' => UserControllersTest::makeAndInsertTestUser(),
             'mockPluginPackData' => self::makeMockPluginPackData(),
+            'spyingResponse' => null,
         ];
     }
     private function sendCreatePackageRequest($s) {
@@ -87,18 +88,13 @@ final class PackagerControllersTest extends DbTestCase {
                     return $this->mockPackageStream;
                 });
             });
-        $req = new Request('/api/packager', 'POST', $s->reqBody);
-        $res = $this->createMockResponse($this->callback(function ($body) use ($s) {
-                                            $s->actualAttachmentBody = $body ?? '';
-                                            return true;
-                                         }),
-                                         200,
-                                         'attachment');
-        $this->sendRequest($req, $res, $app);
+        $req = ApiRequestFactory::create('/api/packager', 'POST', $s->reqBody);
+        $s->spyingResponse = $this->makeSpyingResponse();
+        $this->sendRequest($req, $s->spyingResponse, $app);
     }
     private function verifyPackageWasReturned($s) {
         $s->packageCreatedFromResponse = new MockPackageStream();
-        $s->packageCreatedFromResponse->open("json://{$s->actualAttachmentBody}");
+        $s->packageCreatedFromResponse->open("json://{$s->spyingResponse->getActualBody()}");
         $this->assertIsObject($s->packageCreatedFromResponse->getVirtualFiles());
     }
     private function verifyEncryptedMainDataWasIncluded($s) {

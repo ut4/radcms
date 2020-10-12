@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace RadCms\Tests\Upload;
 
-use Pike\Request;
-use RadCms\Tests\_Internal\TestSite;
+use RadCms\Tests\_Internal\{ApiRequestFactory, TestSite};
 use RadCms\Upload\UploadsRepository;
 
 final class SyncUploadsDirTest extends UploadControllersTestCase {
@@ -21,7 +20,7 @@ final class SyncUploadsDirTest extends UploadControllersTestCase {
         return $state;
     }
     private function sendRebuildIndexRequest(\stdClass $s): void {
-        $req = new Request('/api/uploads/rebuild-index', 'PUT',
+        $req = ApiRequestFactory::create('/api/uploads/rebuild-index', 'PUT',
             (object) ['areYouSure' => 'yes, reduild everything']);
         $s->spyingResponse = $this->makeSpyingResponse();
         $app = $this->makeApp('\RadCms\App::create',

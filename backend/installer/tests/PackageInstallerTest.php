@@ -66,6 +66,7 @@ final class PackageInstallerTest extends BaseInstallerTest {
         $s = $this->setupInstallTest();
         $this->createTestPackageAndWriteItToDisk($s);
         $this->sendInstallFromPackageRequest($s);
+        $this->verifyReturnedSuccesfully($s);
         $this->verifyCreatedMainSchema($s->config['db.database'],
                                        $s->config['db.tablePrefix']);
         $this->verifyInsertedMainSchemaData($s->cmsStateData->siteInfo->name,
@@ -110,15 +111,11 @@ final class PackageInstallerTest extends BaseInstallerTest {
                 'baseUrl' => RAD_BASE_URL,
             ],
             'testPackageFilePath' => self::$targetSitePath . 'long-random-string.radsite',
+            'spyingResponse' => '',
         ];
         return $state;
     }
     private function sendInstallFromPackageRequest($s) {
-        $res = $this->createMockResponse(json_encode([
-            'ok' => 'ok',
-            'mainQueryVar' => RAD_QUERY_VAR,
-            'warnings' => [],
-        ]), 200);
         $ctx = new AppContext(['db' => '@auto', 'auth' => '@auto']);
         $ctx->crypto = new MockCrypto;
         $app = $this->makeApp([$this,'createInstallerApp'], $this->getAppConfig(),
@@ -138,9 +135,18 @@ final class PackageInstallerTest extends BaseInstallerTest {
                     return $partiallyMocked;
                 });
             });
+        $s->spyingResponse = $this->makeSpyingResponse();
         $this->sendRequest(new Request('/from-package', 'POST', $s->reqBody),
-                           $res,
+                           $s->spyingResponse,
                            $app);
+    }
+    private function verifyReturnedSuccesfully(\stdClass $s): void {
+        $this->verifyResponseMetaEquals(200, 'application/json', $s->spyingResponse);
+        $this->verifyResponseBodyEquals([
+            'ok' => 'ok',
+            'mainQueryVar' => RAD_QUERY_VAR,
+            'warnings' => [],
+        ], $s->spyingResponse);
     }
     private function verifyInsertedAllContent() {
         $rows = self::$db->fetchAll('SELECT `title` FROM ${p}Books');

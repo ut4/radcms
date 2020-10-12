@@ -5,15 +5,21 @@ namespace RadCms\Tests\_Internal;
 use RadCms\Packager\PackageStreamInterface;
 
 class MockPackageStream implements PackageStreamInterface {
+    /** @var array<int, string[]> */
+    public $actuallyExtracted;
+    /** @var bool */
+    public $actuallyWroteToDisk;
+    /** @var \stdClass */
     private $virtualFiles;
     public function __construct(\stdClass $virtualFiles = null) {
-        $this->virtualFiles = $virtualFiles;
+        $this->actuallyExtracted = [];
+        $this->actuallyWroteToDisk = false;
+        $this->virtualFiles = $virtualFiles ?? new \stdClass;
     }
-    public function open(string $filePath, bool $create = false): void {
-        if (!$create)
+    public function open(string $filePath, bool $create = false): string {
+        if (strpos($filePath, 'json://') === 0)
             $this->virtualFiles = json_decode(substr($filePath, strlen('json://')));
-        else
-            $this->virtualFiles = new \stdClass;
+        return $filePath;
     }
     public function addFile(string $filePath,
                             string $localName = null,
@@ -25,14 +31,15 @@ class MockPackageStream implements PackageStreamInterface {
         return "(file) {$filePath}";
     }
     public function addFromString(string $localName, string $contents): bool {
-        $this->virtualFiles->$localName = $contents;
+        $this->virtualFiles->{$localName} = $contents;
         return true;
     }
     public function read(string $localName): string {
-        return $this->virtualFiles->$localName;
+        return $this->virtualFiles->{$localName};
     }
     public function extractMany(string $destinationPath,
                                 $localNames = []): bool {
+        $this->actuallyExtracted[] = [$destinationPath, $localNames];
         return true;
     }
     public function getResult(): string {
@@ -42,6 +49,6 @@ class MockPackageStream implements PackageStreamInterface {
         return $this->virtualFiles;
     }
     public function writeToDisk(): void {
-        throw new \RuntimeException('Not supported');
+        $this->actuallyWroteToDisk = true;
     }
 }

@@ -26,7 +26,13 @@ final class InstallerTest extends BaseInstallerTest {
     }
     public function testInstallerValidatesMissingValues(): void {
         $input = (object)['sampleContent' => 'test-content'];
-        $res = $this->createMockResponse(json_encode([
+        $app = $this->makeApp([$this,'createInstallerApp'],
+                              $this->getAppConfig(),
+                              '\RadCms\AppContext');
+        $spyingResponse = $this->makeSpyingResponse();
+        $this->sendRequest(new Request('/', 'POST', $input), $spyingResponse, $app);
+        $this->verifyResponseMetaEquals(400, 'application/json', $spyingResponse);
+        $this->verifyResponseBodyEquals([
             'siteName must be string',
             'The value of siteLang was not in the list',
             'useDevMode must be bool',
@@ -39,11 +45,7 @@ final class InstallerTest extends BaseInstallerTest {
             'The length of firstUserName must be at least 1',
             'firstUserPass must be string',
             'The length of baseUrl must be at least 1',
-        ]), 400);
-        $app = $this->makeApp([$this,'createInstallerApp'],
-                              $this->getAppConfig(),
-                              '\RadCms\AppContext');
-        $this->sendRequest(new Request('/', 'POST', $input), $res, $app);
+        ], $spyingResponse);
     }
     public function testInstallerValidatesInvalidValues(): void {
         $input = (object)[
@@ -64,7 +66,13 @@ final class InstallerTest extends BaseInstallerTest {
             'firstUserPass' => [],
             'baseUrl' => [],
         ];
-        $res = $this->createMockResponse(json_encode([
+        $app = $this->makeApp([$this,'createInstallerApp'],
+                              $this->getAppConfig(),
+                              '\RadCms\AppContext');
+        $spyingResponse = $this->makeSpyingResponse();
+        $this->sendRequest(new Request('/', 'POST', $input), $spyingResponse, $app);
+        $this->verifyResponseMetaEquals(400, 'application/json', $spyingResponse);
+        $this->verifyResponseBodyEquals([
             'siteName must be string',
             'The value of siteLang was not in the list',
             'The value of sampleContent was not in the list',
@@ -81,11 +89,7 @@ final class InstallerTest extends BaseInstallerTest {
             'The length of firstUserEmail must be at least 3',
             'firstUserPass must be string',
             'The length of baseUrl must be at least 1',
-        ]), 400);
-        $app = $this->makeApp([$this,'createInstallerApp'],
-                              $this->getAppConfig(),
-                              '\RadCms\AppContext');
-        $this->sendRequest(new Request('/', 'POST', $input), $res, $app);
+        ], $spyingResponse);
     }
     public function testInstallerFillsDefaultValues(): void {
         $input = (object)[
@@ -105,7 +109,6 @@ final class InstallerTest extends BaseInstallerTest {
             'firstUserPass' => 'pass',
             'baseUrl' => '/',
         ];
-        $res = $this->createMockResponse($this->anything());
         $app = $this->makeApp([$this,'createInstallerApp'], $this->getAppConfig(),
             '\RadCms\AppContext', function ($injector) {
                 $injector->delegate(Installer::class, function() {
@@ -115,7 +118,8 @@ final class InstallerTest extends BaseInstallerTest {
                     return $m;
                 });
             });
-        $this->sendRequest(new Request('/', 'POST', $input), $res, $app);
+        $spyingResponse = $this->makeSpyingResponse();
+        $this->sendRequest(new Request('/', 'POST', $input), $spyingResponse, $app);
         $this->assertEquals('My Site', $input->siteName);
         $this->assertEquals('', $input->mainQueryVar);
         $this->assertEquals(false, $input->useDevMode);
@@ -129,6 +133,7 @@ final class InstallerTest extends BaseInstallerTest {
         $this->addFsExpectation('generatesConfigFile', $s);
         $this->addFsExpectation('deletesInstallerFiles', $s);
         $this->sendInstallRequest($s);
+        $this->verifyReturnedSuccesfully($s);
         $this->verifyCreatedMainSchema($s->input->dbDatabase,
                                        $s->input->dbTablePrefix);
         $this->verifyInsertedMainSchemaData($s->input->siteName,
@@ -166,7 +171,8 @@ final class InstallerTest extends BaseInstallerTest {
             'workspacePath' => RAD_WORKSPACE_PATH,
             'publicPath' => RAD_PUBLIC_PATH,
             'sampleContentDirPath' => RAD_BACKEND_PATH . 'installer/sample-content/test-content/',
-            'mockFs' => $this->createMock(FileSystem::class)
+            'mockFs' => $this->createMock(FileSystem::class),
+            'spyingResponse' => null,
         ];
     }
     private function addFsExpectation(string $expectation, \stdClass $s): void {
@@ -295,11 +301,6 @@ return [
         throw new \Exception('Shouldn\'t happen');
     }
     private function sendInstallRequest(\stdClass $s): void {
-        $res = $this->createMockResponse(json_encode([
-            'ok' => 'ok',
-            'siteWasInstalledTo' => $s->workspacePath,
-            'warnings' => [],
-        ]), 200);
         $ctx = new AppContext(['db' => '@auto', 'auth' => '@auto']);
         $ctx->fs = $s->mockFs;
         $app = $this->makeApp([$this,'createInstallerApp'], $this->getAppConfig(), $ctx,
@@ -308,7 +309,16 @@ return [
                     return new MockCrypto;
                 });
             });
-        $this->sendRequest(new Request('/', 'POST', $s->input), $res, $app);
+        $s->spyingResponse = $this->makeSpyingResponse();
+        $this->sendRequest(new Request('/', 'POST', $s->input), $s->spyingResponse, $app);
+    }
+    private function verifyReturnedSuccesfully(\stdClass $s): void {
+        $this->verifyResponseMetaEquals(200, 'application/json', $s->spyingResponse);
+        $this->verifyResponseBodyEquals([
+            'ok' => 'ok',
+            'siteWasInstalledTo' => $s->workspacePath,
+            'warnings' => [],
+        ], $s->spyingResponse);
     }
     private function verifyInsertedSampleContent(\stdClass $s): void {
         $this->assertEquals(2, count(self::$db->fetchAll(
@@ -332,6 +342,7 @@ return [
         $this->addFsExpectation('generatesConfigFile', $s);
         $this->addFsExpectation('deletesInstallerFiles', $s);
         $this->sendInstallRequest($s);
+        $this->verifyReturnedSuccesfully($s);
         $this->verifyCreatedMainSchema($s->input->dbDatabase,
                                        $s->input->dbTablePrefix);
         $this->verifyInsertedMainSchemaData($s->input->siteName,

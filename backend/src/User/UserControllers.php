@@ -23,7 +23,7 @@ class UserControllers {
                                          Response $res,
                                          UserRepository $userRepo): void {
         // @allow \Pike\PikeException
-        $user = $userRepo->getSingle($req->user->id);
+        $user = $userRepo->getSingle($req->myData->user->id);
         $res->json($user);
     }
 }

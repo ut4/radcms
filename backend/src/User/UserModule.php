@@ -14,7 +14,7 @@ abstract class UserModule {
      */
     public static function init(AppContext $ctx): void {
         $ctx->router->map('GET', '/api/users/me',
-            [UserControllers::class, 'handleGetCurrentUser', 'viewItsOwn:profile']
+            [UserControllers::class, 'handleGetCurrentUser', 'viewItsOwn:profile:']
         );
     }
 }

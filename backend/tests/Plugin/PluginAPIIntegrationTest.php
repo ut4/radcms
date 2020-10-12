@@ -2,8 +2,8 @@
 
 namespace RadCms\Tests\Plugin;
 
-use Pike\{FileSystem, Request};
-use Pike\TestUtils\{DbTestCase, HttpTestUtils, MutedResponse};
+use Pike\{FileSystem, Request, Response};
+use Pike\TestUtils\{DbTestCase, HttpTestUtils};
 use RadCms\{APIConfigsStorage, AppContext, BaseAPI};
 use RadCms\Content\DAO;
 use RadCms\ContentType\ContentTypeMigrator;
@@ -172,7 +172,7 @@ final class PluginAPIIntegrationTest extends DbTestCase {
 
     public function testPluginCanEnqueuAdminJsFilesAndAdminPanels() {
         $this->setupFileRegTest();
-        $res = $this->createMock(MutedResponse::class);
+        $res = $this->createMock(Response::class);
         $req = new Request('/noop', 'GET');
         $this->sendRequest($req, $res, $this->app);
         $apiState = $this->app->getAppCtx()->cmsState->getApiConfigs();

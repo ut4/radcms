@@ -88,7 +88,7 @@ class ZipPackageStream implements PackageStreamInterface {
     public function read(string $localName): string {
         if (($str = $this->zip->getFromName($localName)) !== false)
             return $str;
-        throw new PikeException("Failed to read `{$localName}` zip stream",
+        throw new PikeException("Failed to read `{$localName}` from zip stream",
                                 PikeException::FAILED_FS_OP);
     }
     /**

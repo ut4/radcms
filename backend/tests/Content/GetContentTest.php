@@ -2,7 +2,8 @@
 
 namespace RadCms\Tests\Content;
 
-use Pike\{PikeException, Request};
+use Pike\PikeException;
+use RadCms\Tests\_Internal\ApiRequestFactory;
 
 final class GetContentTest extends ContentControllersTestCase {
     public function testGETContentReturnsContentNode() {
@@ -17,7 +18,7 @@ final class GetContentTest extends ContentControllersTestCase {
         return $state;
     }
     private function sendGetContentNodeRequest($s) {
-        $req = new Request('/api/content/' . self::TEST_PRODUCT_1['id'] . '/Products', 'GET');
+        $req = ApiRequestFactory::create('/api/content/' . self::TEST_PRODUCT_1['id'] . '/Products', 'GET');
         $s->spyingResponse = $this->makeSpyingResponse();
         $this->sendRequest($req, $s->spyingResponse, $this->app);
     }
@@ -36,7 +37,7 @@ final class GetContentTest extends ContentControllersTestCase {
                                         $s->spyingResponse);
     }
     private function sendGetContentNodesByTypeRequest($s, $urlTail = 'Brands') {
-        $req = new Request("/api/content/${urlTail}", 'GET');
+        $req = ApiRequestFactory::create("/api/content/${urlTail}", 'GET');
         $s->spyingResponse = $this->makeSpyingResponse();
         $this->sendRequest($req, $s->spyingResponse, $this->app);
     }

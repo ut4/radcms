@@ -26,4 +26,6 @@ register_shutdown_function(function () use ($logger) {
 \RadCms\App::create($config, new \RadCms\AppContext([
     'db' => \Pike\App::MAKE_AUTOMATICALLY,
     'auth' => \Pike\App::MAKE_AUTOMATICALLY,
-]))->handleRequest(RAD_BASE_URL, $_GET[RAD_QUERY_VAR]);
+]))->handleRequest(
+    ...(!RAD_QUERY_VAR ? ['', RAD_BASE_URL] : [$_GET[RAD_QUERY_VAR], null])
+);

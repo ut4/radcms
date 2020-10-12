@@ -1,4 +1,4 @@
-import {http, myFetch, Toaster, toasters, FeatherSvg, urlUtils, env} from '@rad-commons';
+import {http, myFetch, Toaster, toasters, FeatherSvg, urlUtils, env, config} from '@rad-commons';
 import LoadingSpinner from '../Common/LoadingSpinner.jsx';
 import {timingUtils} from '../Common/utils.js';
 const INITIAL_CACHE_KEY = '';
@@ -153,6 +153,7 @@ class UploadButton extends preact.Component {
         //
         const data = new FormData();
         data.append('localFile', e.target.files[0]);
+        data.append('csrfToken', config.csrfToken);
         //
         myFetch('/api/uploads', {method: 'POST', data})
             .then(res => JSON.parse(res.responseText))

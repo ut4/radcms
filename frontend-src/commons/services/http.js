@@ -1,4 +1,5 @@
 import myFetch from './myFetch.js';
+import config from '../config.js';
 
 const defaultHeaders = {'Content-Type': 'application/json'};
 
@@ -20,7 +21,8 @@ const http = {
         return myFetch(url, {
                 method,
                 headers: defaultHeaders,
-                data: typeof data !== 'string' ? JSON.stringify(data) : data
+                data: typeof data !== 'string'
+                    ? JSON.stringify(Object.assign({csrfToken: config.csrfToken}, data)) : data
             })
             .then(res => JSON.parse(res.responseText));
     },

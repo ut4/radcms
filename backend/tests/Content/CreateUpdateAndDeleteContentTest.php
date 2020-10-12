@@ -2,8 +2,8 @@
 
 namespace RadCms\Tests\Content;
 
-use Pike\Request;
 use RadCms\Content\DAO;
+use RadCms\Tests\_Internal\ApiRequestFactory;
 
 final class CreateUpdateAndDeleteContentTest extends ContentControllersTestCase {
     public function testPOSTContentCreatesContentNode() {
@@ -19,9 +19,9 @@ final class CreateUpdateAndDeleteContentTest extends ContentControllersTestCase 
         return $state;
     }
     private function sendCreateContentNodeRequest($s, $urlTail = '') {
-        $req = new Request("/api/content/Products{$urlTail}",
-                           'POST',
-                           $s->newProduct);
+        $req = ApiRequestFactory::create("/api/content/Products{$urlTail}",
+                                         'POST',
+                                         $s->newProduct);
         $s->spyingResponse = $this->makeSpyingResponse();
         $this->sendRequest($req, $s->spyingResponse, $this->app);
     }
@@ -89,9 +89,9 @@ final class CreateUpdateAndDeleteContentTest extends ContentControllersTestCase 
         return $state;
     }
     private function sendUpdateContentNodeRequest($s, $urlTail = '') {
-        $req = new Request("/api/content/" . self::TEST_PRODUCT_1['id'] . "/Products{$urlTail}",
-                           'PUT',
-                           $s->newData);
+        $req = ApiRequestFactory::create("/api/content/" . self::TEST_PRODUCT_1['id'] . "/Products{$urlTail}",
+                                         'PUT',
+                                         $s->newData);
         $s->spyingResponse = $this->makeSpyingResponse();
         $this->sendRequest($req, $s->spyingResponse, $this->app);
     }
@@ -186,7 +186,8 @@ final class CreateUpdateAndDeleteContentTest extends ContentControllersTestCase 
         $this->verifyContentNodeWasMarkedAsDeletedToDb($s);
     }
     private function sendDeleteContentNodeRequest($s) {
-        $req = new Request('/api/content/' . self::TEST_PRODUCT_1['id'] . '/Products', 'DELETE');
+        $req = ApiRequestFactory::create('/api/content/' . self::TEST_PRODUCT_1['id'] . '/Products',
+                                         'DELETE');
         $s->spyingResponse = $this->makeSpyingResponse();
         $this->sendRequest($req, $s->spyingResponse, $this->app);
     }

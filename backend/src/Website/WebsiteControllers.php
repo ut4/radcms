@@ -4,27 +4,26 @@ declare(strict_types=1);
 
 namespace RadCms\Website;
 
-use Pike\Request;
-use Pike\Response;
-use RadCms\Templating\MagicTemplate;
-use RadCms\Content\MagicTemplateDAO as MagicTemplateContentDAO;
-use RadCms\CmsState;
-use Pike\FileSystem;
-use Pike\PikeException;
-use Pike\Translator;
+use Pike\{FileSystem, PikeException, Request, Response, Translator};
+use RadCms\{BaseAPI, CmsState};
+use RadCms\Content\MagicTemplateDAO;
 use RadCms\StockContentTypes\MultiFieldBlobs\MultiFieldBlobs;
-use RadCms\BaseAPI;
-use RadCms\Theme\ThemeAPI;
-use RadCms\Theme\ThemeInterface;
+use RadCms\Templating\MagicTemplate;
+use RadCms\Theme\{ThemeAPI, ThemeInterface};
 
 /**
  * Handlaa sivupyynnöt, (GET '/' tai GET '/sivunnimi').
  */
 class WebsiteControllers {
+    /** @var \RadCms\CmsState */
     private $cmsState;
+    /** @var \RadCms\Content\MagicTemplateDAO */
     private $dao;
+    /** @var \Pike\FileSystem */
     private $fs;
+    /** @var \Pike\Translator */
     private $translator;
+    /** @var array */
     private $stockContentTypes;
     /**
      * @param \RadCms\CmsState $cmsState
@@ -33,7 +32,7 @@ class WebsiteControllers {
      * @param \Pike\Translator $translator
      */
     public function __construct(CmsState $cmsState,
-                                MagicTemplateContentDAO $dao,
+                                MagicTemplateDAO $dao,
                                 FileSystem $fs,
                                 Translator $translator) {
         $apiState = $cmsState->getApiConfigs();

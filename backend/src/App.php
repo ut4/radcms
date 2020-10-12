@@ -4,20 +4,17 @@ declare(strict_types=1);
 
 namespace RadCms;
 
-use RadCms\AppContext;
 use Auryn\Injector;
-use Pike\Translator;
-use Pike\FileSystem;
-use Pike\App as PikeApp;
-use RadCms\Auth\AuthModule;
+use Pike\{App as PikeApp, FileSystem, Translator};
+use RadCms\AppContext;
+use RadCms\Auth\{ACL, AuthModule};
 use RadCms\Content\ContentModule;
 use RadCms\ContentType\ContentTypeModule;
-use RadCms\Packager\PackagerModule;
+use RadCms\Packager\{PackagerModule, PackageStreamInterface, ZipPackageStream};
 use RadCms\Plugin\PluginModule;
 use RadCms\Upload\UploadModule;
 use RadCms\User\UserModule;
 use RadCms\Website\WebsiteModule;
-use RadCms\Auth\ACL;
 
 class App {
     /** @var \RadCms\AppContext */
@@ -82,5 +79,6 @@ class App {
             }
             return $t;
         });
+        $container->alias(PackageStreamInterface::class, ZipPackageStream::class);
     }
 }

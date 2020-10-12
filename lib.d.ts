@@ -13,6 +13,7 @@ declare module "@rad-commons" {
             user: {
                 role: number;
             };
+            csrfToken: string;
         }
         export const http: {
             get(url: string): Promise<Object>;
@@ -132,7 +133,7 @@ declare module "@rad-commons" {
             baseUrl: string;
             assetBaseUrl: string;
             currentPagePath: string;
-            redirect(to: string, full?: boolean);
+            redirect(to: string, type?: string);
             reload();
             makeUrl(url: string): string;
             makeAssetUrl(url: string): string;

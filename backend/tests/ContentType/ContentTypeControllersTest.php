@@ -2,11 +2,11 @@
 
 namespace RadCms\Tests\ContentType;
 
-use Pike\{ArrayUtils, Request};
+use Pike\ArrayUtils;
 use Pike\TestUtils\{DbTestCase, HttpTestUtils};
 use RadCms\Auth\ACL;
 use RadCms\ContentType\{ContentTypeCollection, ContentTypeMigrator, ContentTypeValidator};
-use RadCms\Tests\_Internal\{ContentTestUtils};
+use RadCms\Tests\_Internal\{ApiRequestFactory, ContentTestUtils};
 
 final class ContentTypeControllersTest extends DbTestCase {
     use HttpTestUtils;
@@ -67,7 +67,7 @@ final class ContentTypeControllersTest extends DbTestCase {
         return $state;
     }
     private function sendGetContentTypeRequest($s, $url = null) {
-        $req = new Request($url ?? "/api/content-types/{$s->contentTypeName}", 'GET');
+        $req = ApiRequestFactory::create($url ?? "/api/content-types/{$s->contentTypeName}", 'GET');
         $s->spyingResponse = $this->makeSpyingResponse();
         $app = $this->makeTestApp();
         $this->sendRequest($req, $s->spyingResponse, $app);
@@ -178,9 +178,9 @@ final class ContentTypeControllersTest extends DbTestCase {
         return $state;
     }
     private function sendUpdateRequest($s, $url = '') {
-        $req = new Request("/api/content-types/{$s->contentTypeName}{$url}",
-                           'PUT',
-                           $s->reqBody);
+        $req = ApiRequestFactory::create("/api/content-types/{$s->contentTypeName}{$url}",
+                                         'PUT',
+                                         $s->reqBody);
         $s->spyingResponse = $this->makeSpyingResponse();
         $app = $this->makeTestApp();
         $this->sendRequest($req, $s->spyingResponse, $app);
@@ -232,7 +232,7 @@ final class ContentTypeControllersTest extends DbTestCase {
         return $this->setupReorderFieldsTest();
     }
     private function sendDeleteContentTypeRequest($s) {
-        $req = new Request("/api/content-types/{$s->contentTypeName}", 'DELETE');
+        $req = ApiRequestFactory::create("/api/content-types/{$s->contentTypeName}", 'DELETE');
         $s->spyingResponse = $this->makeSpyingResponse();
         $app = $this->makeTestApp();
         $this->sendRequest($req, $s->spyingResponse, $app);
@@ -271,9 +271,9 @@ final class ContentTypeControllersTest extends DbTestCase {
         return $state;
     }
     private function sendAddFieldToContentTypeRequest($s) {
-        $req = new Request("/api/content-types/field/{$s->contentTypeName}",
-                           'POST',
-                           $s->reqBody);
+        $req = ApiRequestFactory::create("/api/content-types/field/{$s->contentTypeName}",
+                                         'POST',
+                                         $s->reqBody);
         $s->spyingResponse = $this->makeSpyingResponse();
         $app = $this->makeTestApp();
         $this->sendRequest($req, $s->spyingResponse, $app);
@@ -332,8 +332,8 @@ final class ContentTypeControllersTest extends DbTestCase {
         return $state;
     }
     private function sendDeleteFieldFromContentTypeRequest($s) {
-        $req = new Request("/api/content-types/field/{$s->contentTypeName}/{$s->fieldName}",
-                           'DELETE');
+        $req = ApiRequestFactory::create("/api/content-types/field/{$s->contentTypeName}/{$s->fieldName}",
+                                         'DELETE');
         $s->spyingResponse = $this->makeSpyingResponse();
         $app = $this->makeTestApp();
         $this->sendRequest($req, $s->spyingResponse, $app, $s);

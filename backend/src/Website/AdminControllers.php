@@ -4,12 +4,9 @@ declare(strict_types=1);
 
 namespace RadCms\Website;
 
-use Pike\Request;
-use Pike\Response;
-use Pike\Translator;
+use Pike\{Request, Response, Translator};
+use RadCms\{BaseAPI, CmsState};
 use RadCms\Auth\ACL;
-use RadCms\BaseAPI;
-use RadCms\CmsState;
 use RadCms\Templating\MagicTemplate;
 
 class AdminControllers {
@@ -33,7 +30,7 @@ class AdminControllers {
         $tmpl = new MagicTemplate(RAD_BACKEND_PATH . 'src/Website/cpanel.tmpl.php',
                                   null,
                                   $translator);
-        $role = $req->user->role;
+        $role = $req->myData->user->role;
         $res->html($tmpl->render([
             'url' => $req->params->url ?? '',
             'adminJsFiles' => $apiState->getEnqueuedJsFiles(
@@ -51,7 +48,8 @@ class AdminControllers {
                     'canDeleteContent' => $acl->can($role, 'delete', 'content'),
                     'canManageFieldsOfMultiFieldContent' => $acl->can($role,
                         'manageFieldsOf', 'multiFieldContent'),
-                ]
+                ],
+                'csrfToken' => $req->myData->csrfToken ?? ''
             ])
         ]));
     }

@@ -13,7 +13,7 @@ abstract class WebsiteModule {
      */
     public static function init(AppContext $ctx): void {
         $ctx->router->map('GET', '/_edit/[**:url]?',
-            [AdminControllers::class, 'handleEditViewRequest', 'access:editMode']
+            [AdminControllers::class, 'handleEditViewRequest', 'access:editMode:']
         );
         $ctx->router->map('GET', '[*:url]',
             [WebsiteControllers::class, 'handlePageRequest', ACL::NO_IDENTITY]

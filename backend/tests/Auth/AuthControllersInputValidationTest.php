@@ -3,7 +3,7 @@
 namespace RadCms\Tests\Auth;
 
 use Pike\TestUtils\{ConfigProvidingTestCase, HttpTestUtils};
-use Pike\Request;
+use RadCms\Tests\_Internal\ApiRequestFactory;
 
 final class AuthControllersInputValidationTest extends ConfigProvidingTestCase {
     use HttpTestUtils;
@@ -15,7 +15,7 @@ final class AuthControllersInputValidationTest extends ConfigProvidingTestCase {
                                     '\RadCms\AppContext');
     }
     public function testPOSTLoginRejectsEmptyInput() {
-        $req = new Request('/api/login', 'POST', new \stdClass);
+        $req = ApiRequestFactory::create('/api/login', 'POST', new \stdClass);
         $res = $this->makeSpyingResponse();
         $this->sendRequest($req, $res, $this->app);
         $this->verifyResponseMetaEquals(400, 'application/json', $res);
@@ -24,8 +24,9 @@ final class AuthControllersInputValidationTest extends ConfigProvidingTestCase {
                                         $res);
     }
     public function testPOSTLoginRejectsEmptyValues() {
-        $req = new Request('/api/login', 'POST', (object)['username' => '',
-                                                          'password' => '']);
+        $req = ApiRequestFactory::create('/api/login', 'POST',
+            (object)['username' => '',
+                     'password' => '']);
         $res = $this->makeSpyingResponse();
         $this->sendRequest($req, $res, $this->app);
         $this->verifyResponseMetaEquals(400, 'application/json', $res);
@@ -34,8 +35,9 @@ final class AuthControllersInputValidationTest extends ConfigProvidingTestCase {
                                         $res);
     }
     public function testPOSTUpdatePasswordRejectsInvalidValues() {
-        $req = new Request('/api/update-password', 'POST', (object)['userId' => '',
-                                                                    'newPassword' => '']);
+        $req = ApiRequestFactory::create('/api/update-password', 'POST',
+            (object)['userId' => '',
+                     'newPassword' => '']);
         $res = $this->makeSpyingResponse();
         $this->sendRequest($req, $res, $this->app);
         $this->verifyResponseMetaEquals(400, 'application/json', $res);

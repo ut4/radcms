@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace RadCms\Tests\Upload;
 
-use Pike\Request;
+use RadCms\Tests\_Internal\ApiRequestFactory;
 
 final class GetUploadsTest extends UploadControllersTestCase {
     public function testGetUploadsReturnsFilesFromDatabase(): void {
@@ -31,7 +31,7 @@ final class GetUploadsTest extends UploadControllersTestCase {
         return $state;
     }
     private function sendGetUploadsRequest(\stdClass $s, string $filters = null): void {
-        $req = new Request('/api/uploads' . (!$filters ? '' : "/{$filters}"), 'GET');
+        $req = ApiRequestFactory::create('/api/uploads' . (!$filters ? '' : "/{$filters}"), 'GET');
         $s->spyingResponse = $this->makeSpyingResponse();
         $app = $this->makeApp('\RadCms\App::create',
                               $this->getAppConfig(),

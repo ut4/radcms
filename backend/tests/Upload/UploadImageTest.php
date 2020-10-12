@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace RadCms\Tests\Upload;
 
-use Pike\Request;
-use RadCms\Tests\_Internal\TestSite;
+use RadCms\Tests\_Internal\{ApiRequestFactory, TestSite};
 use RadCms\Upload\{Uploader, UploadsRepository};
 
 final class UploadImageTest extends UploadControllersTestCase {
@@ -29,13 +28,13 @@ final class UploadImageTest extends UploadControllersTestCase {
         return $state;
     }
     private function sendUploadFileRequest(\stdClass $s): void {
-        $req = new Request('/api/uploads', 'POST', null,
-                           (object) ['localFile' => [
-                               'name' => $s->uploadFileName,
-                               'tmp_name' => dirname(__DIR__) . '/_Internal/upload-sample.png',
-                               'error' => UPLOAD_ERR_OK,
-                               'size' => 1
-                           ]]);
+        $req = ApiRequestFactory::create('/api/uploads', 'POST', null,
+            (object) ['localFile' => [
+                'name' => $s->uploadFileName,
+                'tmp_name' => dirname(__DIR__) . '/_Internal/upload-sample.png',
+                'error' => UPLOAD_ERR_OK,
+                'size' => 1
+            ]], ['CONTENT_TYPE' => 'multipart/form-data; boundary=----WebKitFormBoundary1234567890123456']);
         $s->spyingResponse = $this->makeSpyingResponse();
         $app = $this->makeApp('\RadCms\App::create', $this->getAppConfig(),
                               '\RadCms\AppContext', function ($injector) use ($s) {

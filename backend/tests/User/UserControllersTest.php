@@ -3,11 +3,11 @@
 namespace RadCms\Tests\User;
 
 use Pike\Auth\Authenticator;
-use Pike\Request;
 use Pike\Interfaces\SessionInterface;
 use Pike\TestUtils\{DbTestCase, HttpTestUtils, MockCrypto};
 use RadCms\AppContext;
 use RadCms\Auth\ACL;
+use RadCms\Tests\_Internal\ApiRequestFactory;
 
 final class UserControllersTest extends DbTestCase {
     use HttpTestUtils; // makeApp(), sendRequest()
@@ -41,7 +41,7 @@ final class UserControllersTest extends DbTestCase {
         return $out;
     }
     private function sendHandleGetCurrentUserRequest($s) {
-        $req = new Request('/api/users/me', 'GET');
+        $req = ApiRequestFactory::create('/api/users/me', 'GET');
         $s->spyingResponse = $this->makeSpyingResponse();
         $app = $this->makeApp('\RadCms\App::create', [], $s->ctx);
         $this->sendRequest($req, $s->spyingResponse, $app);
