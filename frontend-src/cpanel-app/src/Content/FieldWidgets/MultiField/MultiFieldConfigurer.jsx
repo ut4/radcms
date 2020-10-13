@@ -1,7 +1,7 @@
 import {hookForm, InputGroup, Input, InputError, FormConfirmation, Confirmation,
         Sortable, FeatherSvg} from '@rad-commons';
 import popupDialog from '../../../Common/PopupDialog.jsx';
-import {widgetTypes} from '../all.js';
+import getWidgetImpl, {widgetTypes} from '../all.js';
 import WidgetSelector from '../../WidgetSelector.jsx';
 
 /**
@@ -130,27 +130,19 @@ class MultiFieldFieldEditDialog extends preact.Component {
     handleConfirm(e) {
         if (!this.form.handleSubmit(e))
             return;
-        const current = this.props.field.widget;
         const widget = this.widgetSelector.current.getResult();
+        const current = this.props.field.widget;
         this.props.onConfirm({
             name: this.state.values.fieldName,
             widget,
-            value: widget.name !== current.name ||
-                (widget.name === 'contentSelector' &&
-                 !objectsEquals(widget.args, current.args))
-                ? ''
-                : this.props.field.value,
+            value: getWidgetImpl(widget.name).ImplClass.convert(
+                Object.assign({group: widgetTypes.find(w => w.name === current.name).group}, current),
+                widget,
+                this.props.field.value
+            ) || '',
         });
         popupDialog.close();
     }
-}
-
-function objectsEquals(a, b) {
-    const sortBeKey = o => Object.keys(o).sort().reduce((s, key) => {
-        s[key] = o[key];
-        return s;
-    }, {});
-    return JSON.stringify(sortBeKey(a)) === JSON.stringify(sortBeKey(b));
 }
 
 class MultiFieldFieldDeleteDialog extends preact.Component {

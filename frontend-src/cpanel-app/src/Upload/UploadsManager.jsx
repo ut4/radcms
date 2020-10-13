@@ -28,7 +28,7 @@ class UploadsManager extends preact.Component {
                 ? files.length
                     ? [<div class="pseudo-form-input has-icon-right mb-10">
                         <input class="form-input" placeholder="Suodata" onInput={ this.debouncedOnSearchTermTyped }/>
-                        <i class="form-icon"><FeatherSvg iconId="search" className="feather-md"/></i>
+                        <i class="rad-form-icon"><FeatherSvg iconId="search" className="feather-md"/></i>
                     </div>,
                     <div class="item-grid image-grid img-auto">{ this.state.files.map(entry =>
                         <button

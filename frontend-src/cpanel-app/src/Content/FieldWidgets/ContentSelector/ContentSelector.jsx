@@ -29,6 +29,21 @@ class ContentSelectorFieldWidget extends BaseFieldWidget {
         this.state = {contentFetched: false};
     }
     /**
+     * @inheritdoc
+     */
+    static convert(previous, newWidget, value) {
+        if (previous.name !== 'contentSelector' || !value) return null;
+        if (newWidget.args.contentType === previous.args.contentType) {
+            if (newWidget.args.enableMultipleSelections && !previous.args.enableMultipleSelections)
+                return JSON.stringify([value]);
+            else if (!newWidget.args.enableMultipleSelections && previous.args.enableMultipleSelections)
+                return JSON.parse(value)[0].toString();
+            else if (newWidget.args.valueField === previous.args.valueField)
+                return value;
+        }
+        return null;
+    }
+    /**
      * @param {Object} filters
      * @returns {Promise<Array<{label: string; value: string;}>>}
      * @access public
@@ -41,8 +56,7 @@ class ContentSelectorFieldWidget extends BaseFieldWidget {
             });
     }
     /**
-     * @returns {string}
-     * @access protected
+     * @inheritdoc
      */
     getInitialValue() {
         return !this.props.field.widget.args.enableMultipleSelections

@@ -15,5 +15,5 @@ export default widgetName => {
 };
 
 export const widgetTypes = widgetTypesNoMulti.concat(
-    {name: 'multiField', friendlyName: 'Monikenttäsisältö', description: 'Monikenttäsisältö'},
+    {name: 'multiField', friendlyName: 'Monikenttäsisältö', description: 'Monikenttäsisältö', group: null},
 );

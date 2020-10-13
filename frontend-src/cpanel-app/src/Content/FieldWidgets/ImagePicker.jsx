@@ -1,4 +1,4 @@
-import {hookForm, Input} from '@rad-commons';
+import {hookForm, Input, FeatherSvg} from '@rad-commons';
 import popupDialog from '../../Common/PopupDialog.jsx';
 import UploadsManager from '../../Upload/UploadsManager.jsx';
 import BaseFieldWidget from './Base.jsx';
@@ -18,8 +18,13 @@ class ImagePickerFieldWidget extends BaseFieldWidget {
         this.inputElWrap = preact.createRef();
     }
     /**
-     * @returns {string}
-     * @access protected
+     * @inheritdoc
+     */
+    static convert(previous, _newWidget, value) {
+        return previous.name !== 'imagePicker' ? null : value;
+    }
+    /**
+     * @inheritdoc
      */
     getInitialValue() {
         return '';
@@ -27,8 +32,8 @@ class ImagePickerFieldWidget extends BaseFieldWidget {
     /**
      * @access protected
      */
-    render() {
-        return <Input
+    render(_, {values}) {
+        const input = <Input
             vm={ this }
             name={ this.fieldName }
             id={ this.fieldName }
@@ -38,12 +43,26 @@ class ImagePickerFieldWidget extends BaseFieldWidget {
                     PickImageDialog,
                     {selectedImageName: this.state.values[this.fieldName],
                     onSelected: img => {
-                        this.form.triggerChange(img.fileName, this.fieldName);
-                        this.props.onValueChange(img.fileName);
+                        this.emitChange(img.fileName);
                     }}
                 );
                 this.inputElWrap.current.inputEl.blur();
             } }/>;
+        return values[this.fieldName] ? <div class="pseudo-form-input has-icon-right">
+            { input }
+            <button
+                onClick={ () => this.emitChange('') }
+                class="rad-form-icon">
+                <FeatherSvg iconId="x" className="feather-xs"/>
+            </button>
+        </div> : input;
+    }
+    /**
+     * @access private
+     */
+    emitChange(fileName) {
+        this.form.triggerChange(fileName, this.fieldName);
+        this.props.onValueChange(fileName);
     }
 }
 

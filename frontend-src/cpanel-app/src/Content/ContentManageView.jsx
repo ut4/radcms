@@ -68,7 +68,7 @@ class ContentManageView extends preact.Component {
                 <div class="pseudo-form-input has-icon-right mb-10">
                     <input class="form-input" placeholder="Suodata" disabled={ isChangingContentType }
                         onInput={ this.debouncedSearchTermTypedHandler }/>
-                    <i class="form-icon"><FeatherSvg iconId="search" className="feather-md"/></i>
+                    <i class="rad-form-icon"><FeatherSvg iconId="search" className="feather-md"/></i>
                 </div>
             </div>
             { content.length ? <table class="table">
@@ -128,11 +128,11 @@ class ContentManageView extends preact.Component {
      * @access private
      */
     reFetchContent(contentTypeName, filters = null) {
+        const searchTerm = !filters ? null : filters[this.searchFieldName].$contains;
         this.setState({isFetching: true, isChangingContentType: filters === null});
-        this.fetchContent(contentTypeName, filters).then(content => {
+        this.fetchContent(contentTypeName, !searchTerm ? null : filters).then(content => {
             this.setState({content, isFetching: false, isChangingContentType: false,
-                           searchTerm: !filters ? null : filters[this.searchFieldName].$contains,
-                           contentTypeName});
+                           searchTerm, contentTypeName});
             urlUtils.replace(`#/manage-content/${contentTypeName}`);
         });
     }
@@ -149,7 +149,7 @@ class ContentManageView extends preact.Component {
     handleSearchTermTyped(e) {
         const term = e.target.value;
         this.reFetchContent(this.state.contentTypeName,
-                            term ? {[this.searchFieldName]: {$contains: term}} : null);
+                            {[this.searchFieldName]: {$contains: term}});
     }
 }
 

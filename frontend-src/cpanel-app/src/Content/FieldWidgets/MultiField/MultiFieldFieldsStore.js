@@ -43,7 +43,7 @@ class MultiFieldFieldsStore {
         this.store.dispatch({type: 'SET_PROPS', props, fieldId});
     }
     /**
-     * @param {{name: string; friendlyName: string; description: string;}} widgetType
+     * @param {{name: string; friendlyName: string; description: string; group?: string;}} widgetType
      * @access public
      */
     addField(widgetType) {
@@ -73,7 +73,7 @@ class MultiFieldFieldsStore {
         });
     }
     /**
-     * @param {{name: string; friendlyName: string; description: string;}} widgetType
+     * @param {{name: string; friendlyName: string; description: string; group?: string;}} widgetType
      * @param {number=} numFields
      * @returns {MultiFieldField}
      * @access public

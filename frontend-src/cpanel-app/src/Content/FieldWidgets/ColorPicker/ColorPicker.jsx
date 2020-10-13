@@ -14,8 +14,13 @@ class ColorPickerFieldWidget extends BaseFieldWidget {
         this.state = hookForm(this, {[this.fieldName]: this.fixedInitialValue});
     }
     /**
-     * @returns {string}
-     * @access protected
+     * @inheritdoc
+     */
+    static convert(previous, _newWidget, value) {
+        return previous.name !== 'color' ? null : value;
+    }
+    /**
+     * @inheritdoc
      */
     getInitialValue() {
         return '#33393e';

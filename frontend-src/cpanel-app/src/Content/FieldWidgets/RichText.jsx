@@ -16,8 +16,13 @@ class RichTextFieldWidget extends BaseFieldWidget {
         this.state = hookForm(this, {[this.fieldName]: this.fixedInitialValue});
     }
     /**
-     * @returns {string}
-     * @access protected
+     * @inheritdoc
+     */
+    static convert(previous, _newWidget, value) {
+        return previous.group !== 'text' ? null : value;
+    }
+    /**
+     * @inheritdoc
      */
     getInitialValue() {
         return '...';

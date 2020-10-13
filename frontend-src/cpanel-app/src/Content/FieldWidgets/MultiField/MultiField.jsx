@@ -31,6 +31,12 @@ class MultiFieldFieldWidget extends BaseFieldWidget {
                        configModeIsOn: false});
     }
     /**
+     * @inheritdoc
+     */
+    static convert(_previous, _newWidget, _value) {
+        return null;
+    }
+    /**
      * @access protected
      */
     componentWillReceiveProps(props) {

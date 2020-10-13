@@ -6,8 +6,13 @@ import DateTimePicker from '../../Common/DateTimePicker.jsx';
  */
 class DateTimePickerFieldWidget extends BaseFieldWidget {
     /**
-     * @returns {string}
-     * @access protected
+     * @inheritdoc
+     */
+    static convert(previous, _newWidget, value) {
+        return previous.group !== 'date' ? null : value;
+    }
+    /**
+     * @inheritdoc
      */
     getInitialValue() {
         return '';

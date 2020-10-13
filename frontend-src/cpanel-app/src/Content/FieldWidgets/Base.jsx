@@ -17,6 +17,16 @@ class BaseFieldWidget extends preact.Component {
         }
     }
     /**
+     * @param {FieldWidget & {group: string;}} previous
+     * @param {FieldWidget} newWidget
+     * @param {string} value
+     * @returns {string=}
+     * @access public
+     */
+    static convert(previous, newWidget, value) {
+        throw new Error('Abstract method not implemented.');
+    }
+    /**
      * @returns {string}
      * @access protected
      */

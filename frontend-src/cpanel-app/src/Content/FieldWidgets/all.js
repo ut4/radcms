@@ -31,15 +31,15 @@ const settingFormImpls = {
 };
 
 const widgetTypes = [
-    {name: 'textField', friendlyName: 'Lyhyt tekstikenttä', description: 'Lyhyt tekstikenttä'},
-    {name: 'textArea', friendlyName: 'Pitkä tekstikenttä', description: 'Pitkä tekstikenttä'},
-    {name: 'richText', friendlyName: 'Wysiwyg-tekstikenttä', description: 'Wysiwyg-tekstikenttä'},
-    {name: 'imagePicker', friendlyName: 'Kuva', description: 'Kuva'},
-    {name: 'datePicker', friendlyName: 'Päivämäärä', description: 'Päivämäärä'},
-    {name: 'dateTimePicker', friendlyName: 'Päivämäärä ja aika', description: 'Päivämäärä ja aika'},
-    {name: 'colorPicker', friendlyName: 'Väri', description: 'Väri'},
-    {name: 'contentSelector', friendlyName: 'Sisältövalitsin', description: 'Sisällön valitsin'},
-    {name: 'hidden', friendlyName: 'Piilotettu kenttä', description: 'Piilotettu kenttä'},
+    {name: 'textField', friendlyName: 'Lyhyt tekstikenttä', description: 'Lyhyt tekstikenttä', group: 'text'},
+    {name: 'textArea', friendlyName: 'Pitkä tekstikenttä', description: 'Pitkä tekstikenttä', group: 'text'},
+    {name: 'richText', friendlyName: 'Wysiwyg-tekstikenttä', description: 'Wysiwyg-tekstikenttä', group: 'text'},
+    {name: 'imagePicker', friendlyName: 'Kuva', description: 'Kuva', group: 'image'},
+    {name: 'datePicker', friendlyName: 'Päivämäärä', description: 'Päivämäärä', group: 'date'},
+    {name: 'dateTimePicker', friendlyName: 'Päivämäärä ja aika', description: 'Päivämäärä ja aika', group: 'date'},
+    {name: 'colorPicker', friendlyName: 'Väri', description: 'Väri', group: null},
+    {name: 'contentSelector', friendlyName: 'Sisältövalitsin', description: 'Sisällön valitsin', group: null},
+    {name: 'hidden', friendlyName: 'Piilotettu kenttä', description: 'Piilotettu kenttä', group: 'text'},
 ];
 
 /**
