@@ -16,7 +16,7 @@ class DAO {
     public const STATUS_DRAFT = 1;
     public const STATUS_DELETED = 2;
     /** @var bool */
-    public $fetchRevisions;
+    public $fetchDraft;
     /** @var \Pike\Db */
     protected $db;
     /** @var \RadCms\ContentType\ContentTypeCollection */
@@ -24,14 +24,14 @@ class DAO {
     /**
      * @param \Pike\Db $db
      * @param \RadCms\ContentType\ContentTypeCollection $contentTypes
-     * @param bool $fetchRevisions = false
+     * @param bool $fetchDraft = false
      */
     public function __construct(Db $db,
                                 ContentTypeCollection $contentTypes,
-                                $fetchRevisions = false) {
+                                bool $fetchDraft = false) {
         $this->db = $db;
         $this->contentTypes = $contentTypes;
-        $this->fetchRevisions = $fetchRevisions;
+        $this->fetchDraft = $fetchDraft;
     }
     /**
      * @param string $contentTypeName
@@ -68,11 +68,11 @@ class DAO {
                            string $orderDir = null) {
         $out = null;
         // @allow \Pike\PikeException
-        $rows = $this->db->fetchAll($sql, $bindVals);
+        $rows = $this->db->fetchAll($sql, $bindVals, \PDO::FETCH_CLASS, '\stdClass');
         if ($isFetchOne) {
             $out = $rows ? $this->makeContentNode($rows[0], $rows) : null;
         } else {
-            if ($this->fetchRevisions || $joins) {
+            if ($this->fetchDraft || $joins) {
                 if ($orderDir === Query::DIRECTION_DESC) $rows = array_reverse($rows);
                 elseif ($orderDir === Query::DIRECTION_RAND) shuffle($rows);
             }
@@ -102,27 +102,25 @@ class DAO {
     /**
      * @return \stdClass
      */
-    private function makeContentNode(array $row, array $rows): \stdClass {
-        $out = (object) $row;
+    private function makeContentNode(\stdClass $row, array $rows): \stdClass {
+        $out = clone $row;
         unset($out->revisionSnapshot);
+        unset($out->revisionCreatedAt);
         $out->status = (int) $out->status;
-        $out->isRevision = false;
-        $out->revisions = [];
-        if (!$this->fetchRevisions) return $out;
+        $out->isDraft = false;
+        $out->currentDraft = null;
+        if (!$this->fetchDraft) return $out;
         //
         foreach ($rows as $row) {
-            if (!$row['revisionSnapshot'] ||
-                $row['id'] !== $out->id ||
-                $row['contentType'] !== $out->contentType) continue;
-            $out->revisions[] = (object)[
-                'createdAt' => (int)$row['revisionCreatedAt'],
-                'snapshot' => json_decode($row['revisionSnapshot'])
+            if (!$row->revisionSnapshot ||
+                $row->id !== $row->id ||
+                $row->contentType !== $row->contentType) continue;
+            $out->currentDraft = (object) [
+                'createdAt' => (int) $row->revisionCreatedAt,
+                'snapshot' => json_decode($row->revisionSnapshot)
             ];
         }
-        $out->isRevision = !empty($out->revisions);
-        usort($out->revisions, function ($a, $b) {
-            return $b->createdAt - $a->createdAt;
-        });
+        $out->isDraft = $out->currentDraft !== null;
         return $out;
     }
     private function runUserDefinedJoinCollector(\stdClass $join,
@@ -151,15 +149,14 @@ class DAO {
                 $node->{$join->targetFieldName} = [];
                 foreach ($rows as $row) {
                     if (
-                        $row[$joinIdKey] &&
-                        $row['id'] === $node->id &&
-                        $row[$joinContentTypeNameKey] === $join->contentTypeName
+                        $row->{$joinIdKey} &&
+                        $row->id === $node->id &&
+                        $row->{$joinContentTypeNameKey} === $join->contentTypeName
                     ) $fn($node, $row);
                 }
                 $processed[$node->id] = $node;
             }
         }
-        //
         return $isFetchOne ? reset($processed) : array_values($processed);
     }
     /**

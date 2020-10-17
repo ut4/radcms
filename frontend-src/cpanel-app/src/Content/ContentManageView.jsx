@@ -82,7 +82,7 @@ class ContentManageView extends preact.Component {
                     const qs = `?return-to=/manage-content/${contentTypeName}`;
                     return <tr>
                         <td>{ ContentNodeUtils.makeTitle(cnode) }</td>
-                        <td>{ !cnode.isRevision
+                        <td>{ !cnode.isDraft
                             ? 'Kyllä'
                             : ['Ei, ', <a href={ `${basePath}/publish${qs}` }>Julkaise</a>]
                         }</td>

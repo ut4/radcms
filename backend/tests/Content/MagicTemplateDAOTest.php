@@ -28,14 +28,14 @@ final class MagicTemplateDAOTest extends DbTestCase {
         self::$migrator->uninstallMany(self::$testContentTypes);
         self::clearInstalledContentTypesFromDb();
     }
-    private static function makeDao($fetchRevisions) {
-        return new MagicTemplateDAO(self::$db, self::$testContentTypes, $fetchRevisions);
+    private static function makeDao($fetchDraft) {
+        return new MagicTemplateDAO(self::$db, self::$testContentTypes, $fetchDraft);
     }
-    public function testFetchOneReturnsLatestDraftWhenFetchRevisionsIsEnabled() {
+    public function testFetchOneReturnsCurrentDraftWhenDraftFetchingIsEnabled() {
         $this->insertContent('Products', ['id' => 1,
                                           'status' => DAO::STATUS_DRAFT,
                                           'title' => 'Tuote']);
-        $this->insertRevision(1, 'Products', '{"title":"New title"}');
+        $this->insertRevision(1, 'Products', '{"title":"New title"}', true);
         $dao = self::makeDao(true);
         $node = $dao->fetchOne('Products')->where('id=?', 1)->exec();
         $this->assertNotNull($node);
@@ -46,11 +46,11 @@ final class MagicTemplateDAOTest extends DbTestCase {
     ////////////////////////////////////////////////////////////////////////////
 
 
-    public function testFetchOneDoesNotReturnDraftsWhenFetchRevisionsIsDisabled() {
+    public function testFetchOneDoesNotReturnCurrentDraftWhenDraftFetchingIsDisabled() {
         $this->insertContent('Products', ['id' => 2,
                                           'status' => DAO::STATUS_DRAFT,
                                           'title' => 'Tuote2']);
-        $this->insertRevision(2, 'Products', '{"title":"New title"}');
+        $this->insertRevision(2, 'Products', '{"title":"New title"}', true);
         $dao = self::makeDao(false);
         $node = $dao->fetchOne('Products')->where('id=?', 2)->exec();
         $this->assertNull($node);
@@ -72,7 +72,7 @@ final class MagicTemplateDAOTest extends DbTestCase {
         $node = $dao->fetchOne('Products p')
                     ->join('Reviews r', 'r.productId=p.id')
                     ->collectPreviousJoin('reviews', function ($product, $row) {
-                        $product->reviews[] = (object)['content' => $row['rContent']];
+                        $product->reviews[] = (object)['content' => $row->rContent];
                     })
                     ->where('id=?', 3)
                     ->exec();

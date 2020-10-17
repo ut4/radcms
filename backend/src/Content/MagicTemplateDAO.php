@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace RadCms\Content;
 
+use Pike\ArrayUtils;
 use Pike\Db;
 use RadCms\ContentType\ContentTypeCollection;
 
@@ -13,12 +14,12 @@ class MagicTemplateDAO extends DAO {
     /**
      * @param \Pike\Db $db
      * @param \RadCms\ContentType\ContentTypeCollection $contentTypes
-     * @param bool $fetchRevisions = true
+     * @param bool $fetchDraft = true
      */
     public function __construct(Db $db,
                                 ContentTypeCollection $contentTypes,
-                                $fetchRevisions = true) {
-        parent::__construct($db, $contentTypes, $fetchRevisions);
+                                $fetchDraft = true) {
+        parent::__construct($db, $contentTypes, $fetchDraft);
         $this->queries = [];
     }
     /**
@@ -75,19 +76,17 @@ class MagicTemplateDAO extends DAO {
         //
         $res = $isFetchOne ? [$res] : $res;
         $out = [];
-        if (!$this->fetchRevisions) {
-            foreach ($res as $node) {
-                if ($node->status === self::STATUS_PUBLISHED) $out[] = $node;
-            }
+        if (!$this->fetchDraft) {
+            $out = ArrayUtils::filterByKey($res, self::STATUS_PUBLISHED, 'status');
         } else {
             foreach ($res as $node) {
-                if (!$node->revisions) { $out[] = $node; continue; }
-                $latestDraft = $node->revisions[0]->snapshot;
-                $latestDraft->id = $node->id;
-                $latestDraft->contentType = $node->contentType;
-                $latestDraft->status = self::STATUS_PUBLISHED;
-                $latestDraft->isRevision = true;
-                $out[] = $latestDraft;
+                if (!$node->currentDraft) { $out[] = $node; continue; }
+                $draft = $node->currentDraft->snapshot;
+                $draft->id = $node->id;
+                $draft->contentType = $node->contentType;
+                $draft->status = self::STATUS_PUBLISHED;
+                $draft->isDraft = true;
+                $out[] = $draft;
             }
         }
         return $isFetchOne ? $out[0] ?? null : $out;

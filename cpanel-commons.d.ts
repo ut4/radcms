@@ -63,8 +63,8 @@ interface ContentNode {
     id: string;
     contentType: string;
     status: ContentNodePublishStatus;
-    isRevision: boolean;
-    revisions?: Array<Object>;
+    isDraft: boolean;
+    currentDraft?: Object;
     [fieldName: string]: any;
 }
 

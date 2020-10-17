@@ -76,13 +76,17 @@ trait ContentTestUtils {
     /**
      * @param int $contentId
      * @param string $contentTypeName
-     * @param string $dataSnapshot = '{"foo":"bar"}'
+     * @param ?string $dataSnapshot = null
+     * @param bool $isCurrentDraft = false
      */
     public function insertRevision(int $contentId,
                                    string $contentTypeName,
-                                   string $dataSnapshot='{"foo":"bar"}'): void {
-        if (self::$db->exec('INSERT INTO ${p}contentRevisions VALUES (?,?,?,?)',
-                            [$contentId, $contentTypeName, $dataSnapshot, strval(time())]) < 1)
+                                   ?string $dataSnapshot = null,
+                                   bool $isCurrentDraft = false): void {
+        $f = '`contentId`,`contentType`,`snapshot`,`isCurrentDraft`,`createdAt`';
+        if (self::$db->exec('INSERT INTO ${p}contentRevisions ('.$f.') VALUES (?,?,?,?,?)',
+                            [$contentId, $contentTypeName, $dataSnapshot ?? '{"foo":"bar"}',
+                             $isCurrentDraft ? 1 : 0, strval(time())]) < 1)
             throw new \Exception('Failed to insert test data');
     }
     /**

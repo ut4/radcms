@@ -76,7 +76,7 @@ class Query {
     }
     /**
      * @param string|null $toField
-     * @param \Closure $fn
+     * @param \Closure $fn fn(\stdClass $contentNode, \stdClass $currentRow): void
      * @return $this
      */
     public function collectPreviousJoin(?string $toField, \Closure $fn): Query {
@@ -138,8 +138,8 @@ class Query {
         $fields = [];
         foreach ($this->joinDefs as $def)
             $this->addContentTypeJoin($def, $joins, $fields);
-        if ($this->dao->fetchRevisions)
-            $this->addRevisionsJoin($joins, $fields);
+        if ($this->dao->fetchDraft)
+            $this->addCurrentDraftJoin($joins, $fields);
         //
         if (!$joins) {
             return $mainQ;
@@ -193,11 +193,12 @@ class Query {
      * @param string[] &$joins
      * @param string[] &$fields
      */
-    private function addRevisionsJoin(array &$joins, array &$fields): void {
+    private function addCurrentDraftJoin(array &$joins, array &$fields): void {
         $joins[] = 'LEFT JOIN ${p}contentRevisions _r' .
                    ' ON (_r.`contentId` = ' . $this->contentTypeAlias . '.`id`' .
-                   ' AND _r.`contentType` = \'' . $this->contentType->name . '\')';
-        $fields[] = '_r.`revisionSnapshot`, _r.`createdAt` AS `revisionCreatedAt`';
+                        ' AND _r.`contentType` = \'' . $this->contentType->name . '\'' .
+                        ' AND _r.`isCurrentDraft` = 1)';
+        $fields[] = '_r.`snapshot` AS `revisionSnapshot`, _r.`createdAt` AS `revisionCreatedAt`';
     }
     /**
      * @return string

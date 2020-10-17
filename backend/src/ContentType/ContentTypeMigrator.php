@@ -195,7 +195,7 @@ class ContentTypeMigrator {
     private function insertInitialData($data, ContentTypeCollection $contentTypes): bool {
         if (!$data) return true;
         $dmo = new DMO($this->db, $contentTypes,
-                       false // no revisions
+                       false // don't insert drafts
                        );
         foreach ($data as [$contentTypeName, $contentNodes]) {
             foreach ($contentNodes as $data) {

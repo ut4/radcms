@@ -8,7 +8,13 @@ use RadCms\Content\DAO;
 use RadCms\ContentType\ContentTypeCollection;
 
 final class DAOQueryBuildingTest extends TestCase {
-    private function makeDao($useRevisions = false, $alterContentTypesFn = null) {
+    private const REVISION_FIELDS = '_r.`snapshot` AS `revisionSnapshot`' .
+                                    ', _r.`createdAt` AS `revisionCreatedAt`';
+    private const REVISION_JOIN = ' LEFT JOIN ${p}contentRevisions _r ON' .
+                                  ' (_r.`contentId` = _a.`id`' .
+                                  ' AND _r.`contentType` = \'%s\'' .
+                                  ' AND _r.`isCurrentDraft` = 1)';
+    private function makeDao($useDrafts = false, $alterContentTypesFn = null) {
         $ctypes = ContentTypeCollection::build()
         ->add('Games', 'Pelit')
             ->field('title')
@@ -17,20 +23,19 @@ final class DAOQueryBuildingTest extends TestCase {
             ->field('gameTitle')
         ->done();
         if ($alterContentTypesFn) $alterContentTypesFn($ctypes);
-        return new DAO($this->createMock(Db::class), $ctypes, $useRevisions);
+        return new DAO($this->createMock(Db::class), $ctypes, $useDrafts);
     }
     public function testFetchOneGeneratesBasicQueries() {
         $query1 = $this->makeDao()->fetchOne('Games')->where('id=\'1\'');
         $mainQ = 'SELECT `id`, `status`, `title`, \'Games\' AS `contentType` FROM `${p}Games`';
         $this->assertEquals($mainQ . ' WHERE id=\'1\'', $query1->toSql());
         //
-        $withRevisions = $this->makeDao(true)->fetchOne('Games')->where('id=2')->limit(10, 2);
+        $withDrafts = $this->makeDao(true)->fetchOne('Games')->where('id=2')->limit(10, 2);
         $this->assertEquals(
-            'SELECT _a.*, _r.`revisionSnapshot`, _r.`createdAt` AS `revisionCreatedAt`' .
+            'SELECT _a.*, ' . self::REVISION_FIELDS .
             ' FROM (' . $mainQ . ' WHERE id=2 LIMIT 2, 10) AS _a' .
-            ' LEFT JOIN ${p}contentRevisions _r ON (_r.`contentId` = _a.`id`' .
-                                            ' AND _r.`contentType` = \'Games\')',
-            $withRevisions->toSql()
+            sprintf(self::REVISION_JOIN, 'Games'),
+            $withDrafts->toSql()
         );
     }
     public function testFetchOneGeneratesJoinQueries() {
@@ -63,7 +68,7 @@ final class DAOQueryBuildingTest extends TestCase {
             $asLeft->toSql()
         );
         //
-        $withRevisions = $this->makeDao(true)->fetchOne('Games')
+        $withDrafts = $this->makeDao(true)->fetchOne('Games')
             ->join('Platforms', 'b.`gameTitle` = _a.`title`')
             ->where("`title`='Commandos II'")
             ->limit(10)
@@ -71,12 +76,11 @@ final class DAOQueryBuildingTest extends TestCase {
         $this->assertEquals(
             'SELECT _a.*, b.`id` AS `bId`, \'Platforms\' AS `bContentType`'.
                     ', b.`name` AS `bName`, b.`gameTitle` AS `bGameTitle`' .
-                    ', _r.`revisionSnapshot`, _r.`createdAt` AS `revisionCreatedAt`' .
+                    ', ' . self::REVISION_FIELDS .
             ' FROM (' . $mainQ . ') AS _a' .
             $joinQ .
-            ' LEFT JOIN ${p}contentRevisions _r ON (_r.`contentId` = _a.`id`' .
-                                            ' AND _r.`contentType` = \'Games\')',
-            $withRevisions->toSql()
+            sprintf(self::REVISION_JOIN, 'Games'),
+            $withDrafts->toSql()
         );
     }
     public function testFetchOneGeneratesJoinQueriesWithAliases() {
@@ -101,13 +105,12 @@ final class DAOQueryBuildingTest extends TestCase {
                  ' FROM `${p}Platforms`';
         $this->assertEquals($mainQ, $query1->toSql());
         //
-        $withRevisions = $this->makeDao(true)->fetchAll('Platforms');
+        $withDrafts = $this->makeDao(true)->fetchAll('Platforms');
         $this->assertEquals(
-            'SELECT _a.*, _r.`revisionSnapshot`, _r.`createdAt` AS `revisionCreatedAt`' .
+            'SELECT _a.*, ' . self::REVISION_FIELDS .
             ' FROM (' . $mainQ . ') AS _a' .
-            ' LEFT JOIN ${p}contentRevisions _r ON (_r.`contentId` = _a.`id`' .
-                                            ' AND _r.`contentType` = \'Platforms\')',
-            $withRevisions->toSql()
+            sprintf(self::REVISION_JOIN, 'Platforms'),
+            $withDrafts->toSql()
         );
     }
     public function testFetchAllAddsMultipleJoins() {

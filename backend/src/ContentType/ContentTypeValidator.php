@@ -122,7 +122,7 @@ abstract class ContentTypeValidator {
     public static function validateUpdateData(ContentTypeDef $contentType,
                                               \stdClass $input): array {
         return self::validateInsertData($contentType, $input, function ($v) {
-            $v->rule('isRevision', 'type', 'bool');
+            $v->rule('isDraft', 'type', 'bool');
         });
     }
 }

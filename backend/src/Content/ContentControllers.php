@@ -4,17 +4,19 @@ declare(strict_types=1);
 
 namespace RadCms\Content;
 
-use Pike\{Request, Response};
+use Pike\{PikeException, Request, Response};
 use RadCms\Api\QueryFilters;
+use RadCms\Content\Internal\RevisionRepository;
+use RadCms\ContentType\ContentTypeValidator;
 
 /**
  * Handlaa /api/content -alkuiset pyynnöt.
  */
 class ContentControllers {
-    const REV_SETTING_PUBLISH = 'publish';
-    const REV_SETTING_UNPUBLISH = 'unpublish';
+    public const REV_SETTING_PUBLISH = 'publish';
+    public const REV_SETTING_UNPUBLISH = 'unpublish';
     /**
-     * POST /api/content/:contentTypeName.
+     * POST /api/content/:contentTypeName: insertoi uuden sisältönoden tietokantaan.
      *
      * @param \Pike\Request $req
      * @param \Pike\Response $res
@@ -26,12 +28,14 @@ class ContentControllers {
         // @allow \Pike\PikeException
         $numRows = $dmo->insert($req->params->contentTypeName,
                                 $req->body,
-                                property_exists($req->params, 'revisionSettings'));
+                                property_exists($req->params, 'publishSettings'),
+                                true);
         $res->json(['numAffectedRows' => $numRows,
-                    'lastInsertId' => (int) $dmo->lastInsertId]);
+                    'lastInsertId' => $dmo->lastInsertId]);
     }
     /**
-     * GET /api/content/:id/:contentTypeName.
+     * GET /api/content/:id/:contentTypeName: palauttaa yksittäisen sisältönoden
+     * tietokannasta tai `null`.
      *
      * @param \Pike\Request $req
      * @param \Pike\Response $res
@@ -47,7 +51,9 @@ class ContentControllers {
         $res->json($node);
     }
     /**
-     * GET /api/content/:contentTypeName.
+     * GET /api/content/:contentTypeName: palauttaa filttereitä vastaavat (oletuksena
+     * 50), $req->params->contentTypeName-tyyppiset sisältönodet tietokannasta,
+     * tai `[]`.
      *
      * @param \Pike\Request $req
      * @param \Pike\Response $res
@@ -71,7 +77,26 @@ class ContentControllers {
         $res->json($nodes);
     }
     /**
-     * PUT /api/content/:id/:contentTypeName/:revisionSettings?.
+     * GET /api/content/:id/:contentTypeName/revisions: palauttaa yksittäisen
+     * sisältönoden versiohistorian tai `[]`.
+     *
+     * @param \Pike\Request $req
+     * @param \Pike\Response $res
+     * @param \RadCms\Content\Internal\RevisionRepository $revisionsRepo
+     */
+    public function handleGetContentNodeRevisions(Request $req,
+                                                  Response $res,
+                                                  RevisionRepository $revisionsRepo): void {
+        if (ContentTypeValidator::validateName($req->params->contentTypeName))
+            throw new PikeException("`{$req->params->contentTypeName}` is not valid content type name",
+                                    PikeException::BAD_INPUT);
+        // @allow \Pike\PikeException
+        $revs = $revisionsRepo->getMany($req->params->id, $req->params->contentTypeName);
+        $res->json($revs);
+    }
+    /**
+     * PUT /api/content/:id/:contentTypeName/:publishSettings?: päivittää yksit-
+     * täisen sisältönoden tietokantaan.
      *
      * @param \Pike\Request $req
      * @param \Pike\Response $res
@@ -81,14 +106,16 @@ class ContentControllers {
                                             Response $res,
                                             DMO $dmo): void {
         // @allow \Pike\PikeException
-        $numRows = $dmo->update((int) $req->params->id,
+        $numRows = $dmo->update($req->params->id,
                                 $req->params->contentTypeName,
                                 $req->body,
-                                $req->params->revisionSettings ?? '');
+                                $req->params->publishSettings ?? '',
+                                true);
         $res->json(['numAffectedRows' => $numRows]);
     }
     /**
-     * DELETE /api/content/:id/:contentTypeName.
+     * DELETE /api/content/:id/:contentTypeName: poistaa yksittäisen sisältönoden
+     * tietokannasta.
      *
      * @param \Pike\Request $req
      * @param \Pike\Response $res
@@ -98,7 +125,7 @@ class ContentControllers {
                                             Response $res,
                                             DMO $dmo): void {
         // @allow \Pike\PikeException
-        $numRows = $dmo->delete((int) $req->params->id,
+        $numRows = $dmo->delete($req->params->id,
                                 $req->params->contentTypeName);
         $res->json(['numAffectedRows' => $numRows]);
     }

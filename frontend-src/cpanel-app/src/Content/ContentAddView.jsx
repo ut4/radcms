@@ -38,7 +38,7 @@ class ContentAddView extends preact.Component {
                     {contentType},
                     hookForm(this,
                         {contentTypeName: contentType.name,
-                         createRevision: false}
+                         createAsDraft: false}
                     ),
                     !this.state.FormImpl
                         ? ContentAddView.makeFormCfg(props.panelIdx, contentType)
@@ -105,7 +105,7 @@ class ContentAddView extends preact.Component {
                 : null }
             <InputGroup>
                 <label class="form-checkbox">
-                    <Input vm={ this } type="checkbox" name="createRevision" id="createRevision"/>
+                    <Input vm={ this } type="checkbox" name="createAsDraft" id="createAsDraft"/>
                     <i class="form-icon"></i> Lisää luonnoksena
                 </label>
             </InputGroup>
@@ -121,11 +121,11 @@ class ContentAddView extends preact.Component {
         const values = this.contentForm.current.submit(e);
         if (!values)
             return;
-        const revisionSettings = this.state.values.createRevision ? '/with-revision' : '';
-        return http.post(`/api/content/${this.state.contentType.name}${revisionSettings}`,
+        const publishSettings = !this.state.values.createAsDraft ? '' : '/as-draft';
+        return http.post(`/api/content/${this.state.contentType.name}${publishSettings}`,
             Object.assign(this.newContentNode,
                           values,
-                          {status: revisionSettings === '' ? Status.PUBLISHED : Status.DRAFT}))
+                          {status: publishSettings === '' ? Status.PUBLISHED : Status.DRAFT}))
             .then(() => {
                 if (e.altSubmitLinkIndex === 0) urlUtils.reload();
                 else if (this.props.matches['return-to'] !== undefined) urlUtils.redirect(this.props.matches['return-to']);

@@ -35,11 +35,13 @@ CREATE TABLE ${p}cmsState (
 ) DEFAULT CHARSET = utf8mb4;
 
 CREATE TABLE ${p}contentRevisions (
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `contentId` INT UNSIGNED NOT NULL,
     `contentType` VARCHAR(64) NOT NULL,
-    `revisionSnapshot` JSON,
+    `snapshot` JSON,
+    `isCurrentDraft` TINYINT(1) UNSIGNED DEFAULT 0,
     `createdAt` INT(10) UNSIGNED,
-    PRIMARY KEY (`contentId`, `contentType`)
+    PRIMARY KEY (`id`)
 ) DEFAULT CHARSET = utf8mb4;
 
 CREATE TABLE ${p}files (

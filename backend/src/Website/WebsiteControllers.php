@@ -64,7 +64,7 @@ class WebsiteControllers {
             return;
         }
         $isMaybeLoggedIn = $req->cookie('maybeLoggedInUserRole', '-1') !== '-1';
-        $this->dao->fetchRevisions = $isMaybeLoggedIn;
+        $this->dao->fetchDraft = $isMaybeLoggedIn;
         $tmpl = new MagicTemplate(RAD_WORKSPACE_PATH . "site/{$layoutFileName}",
                                   ['_cssFiles' => $apiState->getEnqueuedCssFiles(
                                       BaseAPI::TARGET_WEBSITE_LAYOUT),

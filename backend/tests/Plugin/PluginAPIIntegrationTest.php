@@ -88,8 +88,8 @@ final class PluginAPIIntegrationTest extends DbTestCase {
                        'title' => 'Fus',
                        'releaseYear' => '2020',
                        'contentType' => 'Movies',
-                       'isRevision' => false,
-                       'revisions' => []]], $s);
+                       'isDraft' => false,
+                       'currentDraft' => null]], $s);
     }
     private function setupReadTest() {
         return $this->setupInstallCtypeTest();
@@ -155,7 +155,7 @@ final class PluginAPIIntegrationTest extends DbTestCase {
         $req = new Request("/plugins/movies-plugin/{$s->testMovieId}", 'PUT',
                             (object)['title' => $newData->title,
                                      'releaseYear' => $newData->releaseYear,
-                                     'isRevision' => false]);
+                                     'isDraft' => false]);
         $s->spyingResponse = $this->makeSpyingResponse();
         $this->sendRequest($req, $s->spyingResponse, $this->app);
     }

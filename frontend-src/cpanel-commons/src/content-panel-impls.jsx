@@ -27,7 +27,7 @@ class DefaultImplForFetchOne extends preact.Component {
             : `/add-content/${this.newNodeContentType}/${this.props.panel.idx}`;
     }
     getTitle() {
-        const isDraft = this.node && this.node.isRevision;
+        const isDraft = this.node && this.node.isDraft;
         return [
             `${this.props.panel.title}${!isDraft ? '' : '*'}`,
             this.props.panel.subtitle,
@@ -38,7 +38,7 @@ class DefaultImplForFetchOne extends preact.Component {
         return this.node
             ? <div>
                 <a href={ url }>Muokkaa</a>
-                { this.node.isRevision
+                { this.node.isDraft
                     ? <a href={ `${url}/publish` }>Julkaise</a>
                     : null }
             </div>

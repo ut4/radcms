@@ -5,228 +5,237 @@ declare(strict_types=1);
 namespace RadCms\Content;
 
 use Pike\PikeException;
-use RadCms\ContentType\{ContentTypeValidator, FieldCollection};
+use RadCms\Content\Internal\RevisionRepository;
+use RadCms\ContentType\{ContentTypeDef, ContentTypeValidator, FieldCollection};
 
 /**
  * DataManipulationObject: implementoi sisältötyyppidatan insert-, update-, ja
  * delete -operaatiot.
  */
 class DMO extends DAO {
-    /** @var int */
+    /** @var string */
     public $lastInsertId;
     /** 
      * @param string $contentTypeName
-     * @param \stdClass $data
-     * @param bool $withRevision = false
-     * @return int $db->rowCount()
+     * @param \stdClass $inputData
+     * @param bool $asDraft = false
+     * @param bool $insertRevision = false
+     * @return int $numAffectedRows
      * @throws \Pike\PikeException
      */
     public function insert(string $contentTypeName,
-                           \stdClass $data,
-                           bool $withRevision = false) {
-        $this->lastInsertId = 0;
+                           \stdClass $inputData,
+                           bool $asDraft = false,
+                           bool $insertRevision = false): int {
+        $this->lastInsertId = '0';
         // @allow \Pike\PikeException
         $type = $this->getContentType($contentTypeName);
-        if (($errors = ContentTypeValidator::validateInsertData($type, $data)))
+        if (($errors = ContentTypeValidator::validateInsertData($type, $inputData)))
             throw new PikeException(implode(PHP_EOL, $errors),
                                     PikeException::BAD_INPUT);
-        $q = (object) ['cols' => [], 'qList' => [], 'vals' => []];
-        $appendVal = function ($name) use ($q, $data) {
-            $q->cols[] = "`{$name}`";
-            $q->qList[] = '?';
-            $q->vals[] = $data->$name;
-        };
+        $data = new \stdClass;
         foreach (['id', 'status'] as $optional) {
-            if (($data->{$optional} ?? null) !== null) $appendVal($optional);
+            if (($inputData->{$optional} ?? null) !== null)
+                $data->{$optional} = $inputData->{$optional};
         }
         foreach ($type->fields as $f) {
-            $appendVal($f->name);
+            $data->{$f->name} = $inputData->{$f->name};
         }
+        //
+        [$qList, $values, $columns] = $this->db->makeInsertQParts($data);
         // @allow \Pike\PikeException
-        return !$withRevision
-            ? $this->insertWithoutRevision($contentTypeName, $q)
-            : $this->insertWithRevision($contentTypeName, $q, $data, $type->fields);
-    }
-    /**
-     * @return int $numAffectedRows
-     */
-    private function insertWithoutRevision(string $contentTypeName,
-                                           \stdClass $q): int {
-        // @allow \Pike\PikeException
-        $numRows = $this->db->exec('INSERT INTO `${p}' . $contentTypeName . '`' .
-                                   ' (' . implode(', ', $q->cols) . ')' .
-                                   ' VALUES (' . implode(', ', $q->qList) . ')',
-                                   $q->vals);
-        $this->lastInsertId = $numRows ? (int) $this->db->lastInsertId() : 0;
+        $this->db->beginTransaction();
+        $numRows = $this->db->exec("INSERT INTO `\${p}{$type->name}` ({$columns})" .
+                                   " VALUES ({$qList})", $values);
+        $this->lastInsertId = $numRows ? $this->db->lastInsertId() : '0';
+        if ($this->lastInsertId && $insertRevision)
+            $numRows += $this->insertRevision($this->lastInsertId, $type,
+                self::makeSnapshot($data, $type->fields), $asDraft);
+        $this->db->commit();
         return $numRows;
     }
     /**
-     * @return int $numAffectedRows
-     */
-    private function insertWithRevision(string $contentTypeName,
-                                        \stdClass $q,
-                                        \stdClass $data,
-                                        FieldCollection $fields): int {
-        // @allow \PDOException
-        if ($this->db->beginTransaction() < 0) {
-            throw new PikeException('Failed to start a transaction',
-                                    PikeException::FAILED_DB_OP);
-        }
-        $numRows = 0;
-        $numRows2 = 0;
-        // @allow \Pike\PikeException
-        if (($numRows = $this->insertWithoutRevision($contentTypeName, $q)) === 1 &&
-            ($numRows2 = $this->db->exec(...self::makeCreateRevisionExec(
-                                            $this->lastInsertId, $contentTypeName,
-                                            $data, $fields))) === 1) {
-            $this->db->commit();
-        } else {
-            $this->db->rollback();
-        }
-        return $numRows + $numRows2;
-    }
-    /**
-     * @param int $id
+     * @param string $id
      * @param string $contentTypeName
      * @param \stdClass $data
-     * @param string $revisionSettings = '' 'publish' | 'unpublish' | ''
-     * @return int $db->rowCount()
+     * @param string $publishSettings = '' 'publish' | 'unpublish' | ''
+     * @param bool $insertRevision = false
+     * @return int $numAffectedRows
      * @throws \Pike\PikeException
      */
-    public function update(int $id,
+    public function update(string $id,
                            string $contentTypeName,
                            \stdClass $data,
-                           string $revisionSettings = ''): int {
+                           string $publishSettings = '',
+                           bool $insertRevision = false): int {
         // @allow \Pike\PikeException
         $type = $this->getContentType($contentTypeName);
         if (($errors = ContentTypeValidator::validateUpdateData($type, $data)))
             throw new PikeException(implode(PHP_EOL, $errors),
                                     PikeException::BAD_INPUT);
+        //
         $this->db->beginTransaction();
-        $doPublish = $revisionSettings === ContentControllers::REV_SETTING_PUBLISH;
-        if ($doPublish) $data->isRevision = false;
-        // @allow \Pike\PikeException
-        $numRows = !$data->isRevision
-            ? $this->db->exec(...self::makeUpdateMainExec($id, $contentTypeName,
-                                                          $data, $type->fields))
-            : $this->db->exec(...self::makeUpdateRevisionExec($id, $contentTypeName,
-                                                              $data, $type->fields));
-        // @allow \Pike\PikeException
-        if ($doPublish)
-            $numRows += $this->db->exec(...self::makeDeleteRevisionExec($id, $contentTypeName));
-        elseif ($revisionSettings === ContentControllers::REV_SETTING_UNPUBLISH)
-            $numRows += $this->db->exec(...self::makeCreateRevisionExec($id, $contentTypeName,
-                                                                        $data, $type->fields));
+        //
+        $numRows = !$insertRevision
+            ? $this->updateWithoutInsertingRevision($id, $type, $data, $publishSettings)
+            : $this->updateAndInsertRevision($id, $type, $data, $publishSettings);
         //
         $this->db->commit();
         return $numRows;
-
     }
     /**
-     * @param int $id
-     * @param string $contentTypeName
-     * @return int
-     * @throws \Pike\PikeException
+     * @param string $contentId
+     * @param \RadCms\ContentType\ContentTypeDef $type
+     * @param \stdClass $data
+     * @param string $publishSettings
+     * @return int $numAffectedRows
      */
-    public function delete(int $id, string $contentTypeName): int {
+    private function updateWithoutInsertingRevision(string $contentId,
+                                                    ContentTypeDef $type,
+                                                    \stdClass $data,
+                                                    string $publishSettings): int {
+        /*
+        Luonnos -> Luonnos: päivitä luonnosrevisio */
+        if ($data->isDraft && !$publishSettings)
+            return (int) (new RevisionRepository($this->db))->update(
+                self::makeSnapshot($data, $type->fields), $contentId, $type->name);
+        /*
+        Luonnos -> Julkaistu: päivitä julkaistu, tyhjennä luonnosrevisio */
+        if ($data->isDraft && $publishSettings === ContentControllers::REV_SETTING_PUBLISH) {
+            $numRows = (int) $this->updateContent($contentId, $type->name, $data, $type->fields);
+            $this->clearCurrentDrafts($contentId, $type->name);
+            return $numRows;
+        }
+        /*
+        Julkaistu -> Luonnos: lisää luonnosrevisio (isCurrentDraft = 1) */
+        if (!$data->isDraft && $publishSettings === ContentControllers::REV_SETTING_UNPUBLISH)
+            return $this->insertRevision($contentId, $type,
+                self::makeSnapshot($data, $type->fields),true);
+        /*
+        Julkaistu -> Julkaistu: päivitä julkaistu */
+        return (int) $this->updateContent($contentId, $type->name, $data, $type->fields);
+    }
+    /**
+     * @param string $contentId
+     * @param \RadCms\ContentType\ContentTypeDef $type
+     * @param \stdClass $data
+     * @param string $publishSettings
+     * @return int $numAffectedRows
+     */
+    private function updateAndInsertRevision(string $contentId,
+                                             ContentTypeDef $type,
+                                             \stdClass $data,
+                                             string $publishSettings): int {
+        $insertRevisionAsCurrentDraft = false;
+        /*
+        Luonnos -> Luonnos: tyhjennä nykyinen luonnosrevisio, lisää revisio */
+        if ($data->isDraft && !$publishSettings) {
+            $numRows = (int) $this->clearCurrentDrafts($contentId, $type->name);
+            $insertRevisionAsCurrentDraft = true;
+        /*
+        Luonnos -> Julkaistu: päivitä julkaistu, tyhjennä luonnosrevisio, lisää revisio */
+        } elseif ($data->isDraft && $publishSettings === ContentControllers::REV_SETTING_PUBLISH) {
+            $numRows = (int) $this->updateContent($contentId, $type->name, $data, $type->fields);
+            $this->clearCurrentDrafts($contentId, $type->name);
+        /*
+        Julkaistu -> Luonnos: lisää luonnosrevisio (isCurrentDraft = 1) */
+        } elseif (!$data->isDraft && $publishSettings === ContentControllers::REV_SETTING_UNPUBLISH) {
+            $numRows = 0;
+            $insertRevisionAsCurrentDraft = true;
+        /*
+        Julkaistu -> Julkaistu: päivitä julkaistu, lisää revisio */
+        } else {
+            $numRows = (int) $this->updateContent($contentId, $type->name, $data, $type->fields);
+        }
+        //
+        $numRows += $this->insertRevision($contentId, $type, self::makeSnapshot($data, $type->fields),
+            $insertRevisionAsCurrentDraft);
+        return $numRows;
+    }
+    /**
+     * @param string $contentId
+     * @param \RadCms\ContentType\ContentTypeDef $type
+     * @param string $snapshot
+     * @param bool $insertRevisionAsCurrentDraft
+     * @return int ok = 1, fail = 0
+     */
+    private function insertRevision(string $contentId,
+                                    ContentTypeDef $type,
+                                    string $snapshot,
+                                    bool $insertRevisionAsCurrentDraft): int {
+        return (int) (new RevisionRepository($this->db))
+            ->insert($contentId, $type->name, $snapshot, !$insertRevisionAsCurrentDraft ? 0 : 1);
+    }
+    /**
+     * @param string $id
+     * @param string $contentTypeName
+     * @return int $numAffectedRows
+     */
+    public function delete(string $id, string $contentTypeName): int {
         // @allow \Pike\PikeException
         $cnode = $this->fetchOne($contentTypeName)->where('`id`=?', $id)->exec();
         //
         $this->db->beginTransaction();
-        $numOps = 1;
         // @allow \Pike\PikeException
         $numRows = $this->db->exec('UPDATE `${p}' . $contentTypeName . '`' .
                                    ' SET `status` = ?' .
                                    ' WHERE `id` = ?',
                                    [DAO::STATUS_DELETED, $id]);
-        if ($numRows && $cnode->status === DAO::STATUS_DRAFT) {
-            $numOps += 1;
+        if ($cnode->status === DAO::STATUS_DRAFT)
             // @allow \Pike\PikeException
-            $numRows += $this->db->exec(...self::makeDeleteRevisionExec($id, $contentTypeName));
-        }
-        //
-        if ($numRows < $numOps)
-            throw new PikeException('numAffectedRows < expected',
-                                    PikeException::INEFFECTUAL_DB_OP);
+            $this->clearCurrentDrafts($id, $contentTypeName);
         $this->db->commit();
         return $numRows;
     }
     /**
-     * @return array [<sql>, <bindVals>]
+     * @param string $id
+     * @param string $contentTypeName
+     * @param \stdClass $data
+     * @param \RadCms\ContentType\FieldCollection $fields
+     * @return bool
      */
-    private static function makeUpdateMainExec(int $id,
-                                               string $contentTypeName,
-                                               \stdClass $data,
-                                               FieldCollection $fields): array {
-        $q = (object) ['colQs' => ['`status` = ?'],
-                       'vals' => [(int) $data->status]];
+    private function updateContent(string $id,
+                                   string $contentTypeName,
+                                   \stdClass $data,
+                                   FieldCollection $fields): bool {
+        $colQs = ['`status` = ?'];
+        $vals = [(int) $data->status];
         foreach ($fields as $f) {
-            $q->colQs[] = "`{$f->name}` = ?";
-            $q->vals[] = $data->{$f->name};
+            $colQs[] = "`{$f->name}` = ?";
+            $vals[] = $data->{$f->name};
         }
-        $q->vals[] = $id;
+        $vals[] = $id;
         //
-        return [
-            'UPDATE `${p}' . $contentTypeName . '`' .
-            ' SET ' . implode(', ', $q->colQs) .
-            ' WHERE `id` = ?',
-            $q->vals
-        ];
+        return $this->db->exec('UPDATE `${p}' . $contentTypeName . '`' .
+                               ' SET ' . implode(', ', $colQs) .
+                               ' WHERE `id` = ?',
+                               $vals) > 0;
     }
     /**
-     * @return array [<sql>, <bindVals>]
+     * @param string $contentId
+     * @param string $contentTypeName
+     * @return bool
      */
-    private static function makeUpdateRevisionExec(int $contentNodeId,
-                                                   string $contentTypeName,
-                                                   \stdClass $data,
-                                                   FieldCollection $fields): array {
-        return [
-            'UPDATE ${p}contentRevisions' .
-            ' SET `revisionSnapshot` = ?' .
-            ' WHERE `contentId` = ? AND `contentType` = ?',
-            [
-                self::makeSnapshot($data, $fields),
-                $contentNodeId,
-                $contentTypeName
-            ]
-        ];
+    private function clearCurrentDrafts(string $contentId,
+                                        string $contentTypeName): bool {
+        return $this->db->exec('UPDATE ${p}contentRevisions' .
+                               ' SET `isCurrentDraft` = 0' .
+                               ' WHERE `contentId` = ? AND `contentType` = ? AND `isCurrentDraft` = 1',
+                               [
+                                   $contentId,
+                                   $contentTypeName
+                               ]) > 0;
     }
     /**
-     * @return array [<sql>, <bindVals>]
-     */
-    private static function makeDeleteRevisionExec(int $contentNodeId,
-                                                   string $contentTypeName): array {
-        return [
-            'DELETE FROM ${p}contentRevisions' .
-            ' WHERE `contentId` = ? AND `contentType` = ?',
-            [$contentNodeId, $contentTypeName]
-        ];
-    }
-    /**
-     * @return array [<sql>, <bindVals>]
-     */
-    private static function makeCreateRevisionExec(int $contentNodeId,
-                                                   string $contentTypeName,
-                                                   \stdClass $data,
-                                                   FieldCollection $fields): array {
-        return [
-            'INSERT INTO ${p}contentRevisions VALUES (?,?,?,?)',
-            [
-                $contentNodeId,
-                $contentTypeName,
-                self::makeSnapshot($data, $fields),
-                strval(time())
-            ]
-        ];
-    }
-    /**
+     * @param \stdClass $data
+     * @param \RadCms\ContentType\FieldCollection $fields
      * @return string
      */
     private static function makeSnapshot(\stdClass $data,
                                          FieldCollection $fields): string {
-        $out = [];
+        $out = new \stdClass;
         foreach ($fields as $f)
-            $out[$f->name] = $data->{$f->name};
+            $out->{$f->name} = $data->{$f->name};
         return json_encode($out, JSON_UNESCAPED_UNICODE);
     }
 }

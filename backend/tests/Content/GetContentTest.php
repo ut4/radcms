@@ -136,8 +136,7 @@ final class GetContentTest extends ContentControllersTestCase {
     }
     private static function fillWithDefaults($contentNode) {
         return (object) array_merge((array) $contentNode,
-                                    ['revisionCreatedAt' => null,
-                                     'isRevision' => false,
-                                     'revisions' => []]);
+                                    ['isDraft' => false,
+                                     'currentDraft' => null]);
     }
 }
