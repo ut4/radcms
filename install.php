@@ -20,4 +20,4 @@ $loader->addPsr4('RadPlugins\\', RAD_WORKSPACE_PATH . 'plugins');
 
 $ctx = new \RadCms\AppContext(['db' => \Pike\App::MAKE_AUTOMATICALLY]);
 \Pike\App::create([\RadCms\Installer\Module::class], [], $ctx)
-    ->handleRequest('', $_GET['q'] ?? '/');
+    ->handleRequest($_GET['q'] ?? '/');

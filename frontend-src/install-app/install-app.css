@@ -4,10 +4,11 @@ body {
 .btn-huge {
     height: 2.8rem;
     padding: 0.25rem 1.6rem;
+    line-height: 2.2rem;
 }
 
 h2 {
-    font: normal 26px/26px "Fira sans heavy";
+    font: 800 26px/26px "Fira Sans";
     margin-top: 15px;
 }
 .toaster {

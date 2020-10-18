@@ -1,5 +1,8 @@
 import {http, toasters, InputGroup, Input, Select, InputError, FeatherSvg, hookForm} from '@rad-commons';
 
+/**
+ * #/with-wizard: Näkymä jolla devaaja voi asentaa uuden sivuston.
+ */
 class WizardInstallerView extends preact.Component {
     /**
      * @param {{baseUrl: string;}} props
@@ -10,8 +13,7 @@ class WizardInstallerView extends preact.Component {
         this.lastTyped = l ? JSON.parse(l) : {};
         this.state = {tabs: [{isCurrent: true, isOk: false},
                              {isCurrent: false, isOk: false},
-                             {isCurrent: false, isOk: false}],
-                      installDetails: null};
+                             {isCurrent: false, isOk: false}]};
         this.tabRefs = [preact.createRef(),
                         preact.createRef(),
                         preact.createRef()];
@@ -19,33 +21,40 @@ class WizardInstallerView extends preact.Component {
     /**
      * @access protected
      */
-    render() {
+    render({matches}) {
         return <div>
             <h2>Asenna RadCMS</h2>
-            { this.state.installDetails
-                ? <p class="info-box success">Sivusto asennettiin kansioon <span style="font-weight: bold">{ this.state.installDetails.siteWasInstalledTo }site</span>. Aloita lukemalla site/README.md, siirry <a href={ this.props.makeUrl('', this.state.installDetails) }>sivustolle</a>, tai hallintanäkymän <a href={ this.props.makeUrl('login', this.state.installDetails) }>kirjautumissivulle</a>.</p>
-                : null
+            { matches['installed'] === undefined
+            ? [
+                <nav class="step-indicators">
+                    <div class={ this.state.tabs[0].isCurrent ? 'current' : '' +
+                                (this.state.tabs[0].isOk ? ' checked' : '' ) }>
+                        Sivusto <FeatherSvg iconId="check"/></div>
+                    <div class={ this.state.tabs[1].isCurrent ? 'current' : '' +
+                                (this.state.tabs[1].isOk ? ' checked' : '' ) }>
+                        Tietokanta <FeatherSvg iconId="check"/></div>
+                    <div class={ this.state.tabs[2].isCurrent ? 'current' : '' +
+                                (this.state.tabs[2].isOk ? ' checked' : '' ) }>
+                        Käyttäjä <FeatherSvg iconId="check"/></div>
+                </nav>,
+                <div class={ this.state.tabs[0].isCurrent ? '' : 'hidden' }>
+                    <SiteSettingsTab parent={ this } ref={ this.tabRefs[0] }/>
+                </div>,
+                <div class={ this.state.tabs[1].isCurrent ? '' : 'hidden' }>
+                    <DatabaseSettingsTab parent={ this } ref={ this.tabRefs[1] }/>
+                </div>,
+                <div class={ this.state.tabs[2].isCurrent ? '' : 'hidden' }>
+                    <UserSettingsTab parent={ this } ref={ this.tabRefs[2] }/>
+                </div>
+            ] : [
+                <p class="info-box success">Sivusto asennettiin asennettiin kansioon <i>{ matches['dir'] }site</i>.</p>,
+                <p>Siirry etusivulle &gt; <a href={ this.props.makeUrl('', matches['q']) }>{
+                    window.location.origin + this.props.makeUrl('', matches['q']) }</a></p>,
+                <p>Siirry kirjautumaan &gt; <a href={ this.props.makeUrl('login', matches['q']) }>{
+                    window.location.origin + this.props.makeUrl('login', matches['q']) }</a></p>,
+                <p>Muista myös lukea <code>{ `${matches['dir']}site/README.md` }</code></p>
+                ]
             }
-            <nav class="step-indicators">
-                <div class={ this.state.tabs[0].isCurrent ? 'current' : '' +
-                                (this.state.tabs[0].isOk ? ' checked' : '' ) }>Sivusto
-                                <FeatherSvg iconId="check"/></div>
-                <div class={ this.state.tabs[1].isCurrent ? 'current' : '' +
-                                (this.state.tabs[1].isOk ? ' checked' : '' ) }>Tietokanta
-                                <FeatherSvg iconId="check"/></div>
-                <div class={ this.state.tabs[2].isCurrent ? 'current' : '' +
-                                (this.state.tabs[2].isOk ? ' checked' : '' ) }>Käyttäjä
-                                <FeatherSvg iconId="check"/></div>
-            </nav>
-            <div class={ this.state.tabs[0].isCurrent ? '' : 'hidden' }>
-                <SiteSettingsTab parent={ this } ref={ this.tabRefs[0] }/>
-            </div>
-            <div class={ this.state.tabs[1].isCurrent ? '' : 'hidden' }>
-                <DatabaseSettingsTab parent={ this } ref={ this.tabRefs[1] }/>
-            </div>
-            <div class={ this.state.tabs[2].isCurrent ? '' : 'hidden' }>
-                <UserSettingsTab parent={ this } ref={ this.tabRefs[2] }/>
-            </div>
         </div>;
     }
     /**
@@ -84,9 +93,9 @@ class WizardInstallerView extends preact.Component {
             .then(details => {
                 const tabs = this.state.tabs;
                 tabs[2].isOk = true;
-                this.setState({tabs, installDetails: {siteWasInstalledTo: details.siteWasInstalledTo,
-                                                      mainQueryVar: data.mainQueryVar}});
-                window.scrollTo(0, 0);
+                preactRouter.route('/with-wizard?installed' +
+                                   '&dir=' + details.siteWasInstalledTo +
+                                   '&q=' + data.mainQueryVar);
             })
             .catch(err => {
                 console.error(err);

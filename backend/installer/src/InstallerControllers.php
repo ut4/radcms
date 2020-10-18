@@ -6,7 +6,6 @@ namespace RadCms\Installer;
 
 use Pike\{PikeException, Request, Response, Template, Validation};
 use Pike\Interfaces\FileSystemInterface;
-use RadCms\Packager\Packager;
 use RadCms\Packager\PackageUtils;
 
 class InstallerControllers {
