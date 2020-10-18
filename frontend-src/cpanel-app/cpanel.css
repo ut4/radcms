@@ -245,7 +245,7 @@
 
 /* -- View: commons ---- */
 #view h2 {
-    font: normal 1.4rem/1.4rem "Fira sans heavy";
+    font: 800 1.4rem/1.4rem "Fira Sans";
     margin: -.2rem 0 1rem 0;
 }
 #view .form-input, .pseudo-form-input {
@@ -291,13 +291,14 @@
     display: block;
 }
 #view > div {
-    margin: 15px;
+    position: relative;
+    margin: .8rem;
     max-width: 1280px;
 }
 #view .close {
     position: absolute;
-    top: 1.4rem;
-    right: 1.4rem;
+    top: .8rem;
+    right: .8rem;
 }
 #toaster-main {
     position: fixed;

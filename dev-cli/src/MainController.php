@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace RadCms\Cli;
 
-use Pike\Auth\Crypto;
 use Pike\{PikeException, Request, Validation};
 
 final class MainController {
@@ -24,7 +23,7 @@ final class MainController {
      * `php dev-cli.php print-acl-rules`
      */
     public function printAclRules(): void {
-        $fn = require dirname(__DIR__) . '/backend/installer/default-acl-rules.php';
+        $fn = require RAD_WORKSPACE_PATH . 'backend/installer/default-acl-rules.php';
         echo json_encode($fn());
     }
     /**

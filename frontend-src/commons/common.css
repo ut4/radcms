@@ -19,25 +19,29 @@ sup {
     padding: 0 2px 3px 2px;
     min-width: 8px;
 }
+code {
+    color: #38424c;
+    background: #f3f4f6;
+}
 
 /* -- Globals --- */
 @font-face {
-    font-family: "Fira sans light";
+    font-family: "Fira Sans";
     src: url("../../frontend/rad/assets/fira-sans-light.woff2") format("woff2");
-    font-weight: normal;
+    font-weight: 300; /* light */
     font-style: normal;
 }
 @font-face {
-    font-family: "Fira sans heavy";
+    font-family: "Fira Sans";
     src: url("../../frontend/rad/assets/fira-sans-heavy.woff2") format("woff2");
-    font-weight: normal;
+    font-weight: 800; /* heavy / extra-bold */
     font-style: normal;
 }
 html, body {
     height: 100%;
 }
 body {
-    font: normal .8rem/1rem "Fira sans light";
+    font: 300 .8rem/1rem "Fira Sans";
 }
 
 /* -- Utils ---- */

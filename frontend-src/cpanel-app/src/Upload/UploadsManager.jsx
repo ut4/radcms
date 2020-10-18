@@ -10,7 +10,7 @@ class UploadsManager extends preact.Component {
      */
     constructor(props) {
         super(props);
-        this.state = {files: null, currentTabIdx: 0};
+        this.state = {files: null, currentTabIdx: 0, fetching: true};
         this.title = props.onlyImages !== true ? 'Tiedostot' : 'Kuvat';
         this.tabs = preact.createRef();
         this.searchResultCache = new Map();
@@ -25,13 +25,13 @@ class UploadsManager extends preact.Component {
         return <div>
             <Tabs links={ [this.title, 'Lataa'] } onTabChanged={ idx => this.setState({currentTabIdx: idx}) }
                 ref={ this.tabs }/>
-            <div class={ currentTabIdx === 0 ? 'mt-10' : 'hidden' }>{ files
-                ? files.length
-                    ? [<div class="pseudo-form-input has-icon-right mb-10">
-                        <input class="form-input" placeholder="Suodata" onInput={ this.debouncedOnSearchTermTyped }/>
-                        <i class="rad-form-icon"><FeatherSvg iconId="search" className="feather-md"/></i>
-                    </div>,
-                    <div class="item-grid image-grid img-auto">{ this.state.files.map(entry =>
+            <div class={ currentTabIdx === 0 ? 'mt-10' : 'hidden' }>
+                <div class="pseudo-form-input has-icon-right mb-10">
+                    <input class="form-input" placeholder="Suodata" onInput={ this.debouncedOnSearchTermTyped }/>
+                    <i class="rad-form-icon"><FeatherSvg iconId="search" className="feather-md"/></i>
+                </div>
+                { files ? files.length
+                    ? <div class="item-grid image-grid img-auto">{ this.state.files.map(entry =>
                         <button
                             onClick={ () => { this.props.onEntryClicked(entry); } }
                             className={ `btn btn-icon ${this.props.selectedEntryName !== entry.fileName ? '' : ' selected'}` }
@@ -41,10 +41,9 @@ class UploadsManager extends preact.Component {
                                 : <span>{ entry.mime }</span> }
                             <span class="caption text-ellipsis">{ entry.fileName }</span>
                         </button>
-                    ) }</div>]
-                    : <p class="my-0">Ei vielä latauksia. <i>(i)</i> Mikäli olet lisännyt tiedostoja manuaalisesti lataukset-kansioon, voit synkronoida ne <a href="#/rescan-uploads">Skannaa -näkymässä</a>.</p>
-                : <LoadingSpinner/>
-            }</div>
+                    ) }</div>
+                    : <p class="my-0">{ this.searchTerm !== INITIAL_CACHE_KEY ? `Ei tuloksia hakusanalla "${this.searchTerm}"` : ['Ei vielä latauksia.', <i>(i)</i>, 'Mikäli olet lisännyt tiedostoja manuaalisesti lataukset-kansioon, voit synkronoida ne ', <a href="#/rescan-uploads">Skannaa -näkymässä</a>] }.</p>
+                : <LoadingSpinner/> }</div>
             <div class={ this.state.currentTabIdx !== 1 ? 'hidden' : 'mt-10' }>
                 <UploadButton onFileUploaded={ this.addEntry.bind(this) }/>
             </div>
@@ -64,9 +63,11 @@ class UploadsManager extends preact.Component {
     /**
      * @access private
      */
-    fetchFiles(term, onlyImages) {
+    fetchFiles(term, onlyImages, isInitial) {
         if (this.searchResultCache.has(term))
             return Promise.resolve(this.searchResultCache.get(term));
+        if (!isInitial)
+            this.setState({fetching: true});
         //
         let filters = {};
         if (onlyImages) filters.mime = {$eq: 'image/*'};
@@ -84,17 +85,17 @@ class UploadsManager extends preact.Component {
      * @access private
      */
     fetchFilesAndSetToState(onlyImages, searchTerm, isInitial = false) {
-        if (!isInitial)
-            this.setState({fetching: true});
-        this.fetchFiles(searchTerm, onlyImages)
-            .then(files => { this.setState({files}); })
+        this.searchTerm = searchTerm;
+        this.fetchFiles(searchTerm, onlyImages, isInitial)
+            .then(files => { this.setState({files, fetching: false}); })
             .catch(env.console.error);
     }
     /**
      * @access private
      */
     onSearchTermTyped(e) {
-        this.fetchFilesAndSetToState(this.props.onlyImages, e.target.value);
+        if (!this.state.fetching)
+            this.fetchFilesAndSetToState(this.props.onlyImages, e.target.value);
     }
 }
 

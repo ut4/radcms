@@ -54,6 +54,8 @@ class ContentEditView extends preact.Component {
         else if (props.panelIdx !== this.props.panelIdx)
             this.setState(ContentAddView.makeFormCfg(props.panelIdx,
                                                      this.contentType));
+        else if (props.publish !== this.props.publish)
+            this.setState({doPublish: !!props.publish});
     }
     /**
      * @access protected
