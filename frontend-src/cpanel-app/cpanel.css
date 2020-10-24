@@ -1,4 +1,4 @@
-/* -- Globals ---- */
+/* -- Commons ---- */
 @keyframes show {
     0% { visibility: hidden; }
     100% { visibility: visible; }
@@ -25,6 +25,15 @@
     content: '';
     letter-spacing: 2px;
 }
+.img-ratio {
+    padding-bottom: 56.25%;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+}
+.img-ratio img {
+    position: absolute;
+}
 
 /* -- Components: Grids ---- */
 .item-grid {
@@ -43,10 +52,9 @@
 }
 .image-grid button {
     background-color: var(--bg-light);
-    padding: 0;
+    padding: 0 0 2rem;
     height: initial;
     position: relative;
-    padding-bottom: 2rem;
 }
 .image-grid .caption {
     position: absolute;
@@ -76,6 +84,7 @@
 .popup-dialog h2 {
     margin-top: 0;
     font-size: 1.1rem;
+    font-weight: 300;
 }
 
 /* -- Components: MultiFieldConfigurer ---- */
@@ -151,10 +160,26 @@
     box-shadow: none;
 }
 
+/* -- Components: Quill editor ---- */
+.ql-container {
+    font-family: 'Fira Sans';
+    font-size: .8rem;
+}
+.ql-editor h1,
+.ql-editor h2,
+.ql-editor h3,
+.ql-editor h4,
+.ql-editor h5,
+.ql-editor h6 {
+    /* https://github.com/pmarsceill/just-the-docs/blob/76f8f064ac96e6cd45eed30bfb7e8d8a9e2bedbb/_sass/support/_variables.scss#L5 */
+    font-family: -apple-system, BlinkMacSystemFont, "helvetica neue", helvetica, roboto, noto, "segoe ui", arial, sans-serif;
+}
+
 /* -- Cpanel: commons ---- */
 #cpanel2 h2 {
     color: rgba(255,255,255,0.22);
     font-size: .6rem;
+    font-weight: 300;
     margin: .4rem .5rem;
     text-transform: uppercase;
     letter-spacing: .08rem;
@@ -244,8 +269,7 @@
 }
 
 /* -- View: commons ---- */
-#view h2 {
-    font: 800 1.4rem/1.4rem "Fira Sans";
+#view .box > h2, #view .box form > h2 {
     margin: -.2rem 0 1rem 0;
 }
 #view .form-input, .pseudo-form-input {
@@ -335,6 +359,8 @@
 
 /* -- Media ---- */
 @media (max-width: 960px) {
+    /* -- Globals ---- */
+    .grid-col-lg-three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     /* -- Cpanel: commons ---- */
     #cpanel2 a {
         font-size: .7rem;

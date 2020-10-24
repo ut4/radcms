@@ -35,7 +35,7 @@ class ContentSelectorFieldWidget extends BaseFieldWidget {
         if (previous.name !== 'contentSelector' || !value) return null;
         if (newWidget.args.contentType === previous.args.contentType) {
             if (newWidget.args.enableMultipleSelections && !previous.args.enableMultipleSelections)
-                return JSON.stringify([value]);
+                return value !== NO_SELECTION ? JSON.stringify([value]) : '[]';
             else if (!newWidget.args.enableMultipleSelections && previous.args.enableMultipleSelections)
                 return JSON.parse(value)[0].toString();
             else if (newWidget.args.valueField === previous.args.valueField)

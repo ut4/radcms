@@ -59,7 +59,7 @@ class DAO {
      * @param array $bindVals = null
      * @param \stdClass[] $joins = [] {contentTypeName: string, alias: string, expr: string, bindVals: array, isLeft: bool, collectFn: \Closure, targetFieldName: string|null}[]
      * @param string $orderDir = null
-     * @return array|\stdClass|null
+     * @return \stdClass[]|\stdClass|null
      */
     public function doExec(string $sql,
                            bool $isFetchOne,

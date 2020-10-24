@@ -68,7 +68,7 @@ class DefaultImplForFetchAll extends preact.Component {
         return 'DefaultCollection';
     }
     getMainUrl() {
-        return `/manage-content/${this.contentTypeName || (this.contentNodes[0] || {}).contentType}`;
+        return `/manage-content/${this.contentTypeName || (this.contentNodes[0] || {}).contentType}/${this.props.panel.idx}`;
     }
     getTitle() {
         return this.props.panel.title;

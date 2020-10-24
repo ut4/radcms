@@ -49,7 +49,7 @@ class ControlPanelApp extends preact.Component {
                 } } }/>
             <PreactRouter history={ History.createHashHistory() }>
                 <ContentAddView path="/add-content/:initialContentTypeName?/:panelIdx?"/>
-                <ContentManageView path="/manage-content/:initialContentTypeName?"/>
+                <ContentManageView path="/manage-content/:initialContentTypeName?/:panelIdx?"/>
                 <ContentEditView path="/edit-content/:id/:contentTypeName/:panelIdx?/:publish?"/>
                 <PluginsManageView path="/manage-plugins"/>
                 <UploadsManageView path="/manage-uploads"/>

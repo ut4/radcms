@@ -39,8 +39,6 @@ class ControlPanel extends preact.Component {
         const newState = {contentPanels: [], websiteIframeHasLoadedAtLeastOnce: true};
         const uniqueHighlighSelectors = {};
         newState.contentPanels = dataFromWebpageIframe.contentPanels.map(p => {
-            if (!Array.isArray(p.contentNodes)) p.contentNodes = [p.contentNodes];
-            if (!p.contentNodes[0]) p.contentNodes = [];
             if (p.highlightSelector) {
                 const s = p.highlightSelector;
                 if (uniqueHighlighSelectors[s] === undefined)

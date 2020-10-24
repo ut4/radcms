@@ -31,13 +31,13 @@ class UploadsManager extends preact.Component {
                     <i class="rad-form-icon"><FeatherSvg iconId="search" className="feather-md"/></i>
                 </div>
                 { files ? files.length
-                    ? <div class="item-grid image-grid img-auto">{ this.state.files.map(entry =>
+                    ? <div class="item-grid image-grid img-auto grid-col-lg-three">{ this.state.files.map(entry =>
                         <button
                             onClick={ () => { this.props.onEntryClicked(entry); } }
                             className={ `btn btn-icon ${this.props.selectedEntryName !== entry.fileName ? '' : ' selected'}` }
                             type="button">
                             { entry.mime.startsWith('image/')
-                                ? <img src={ `${urlUtils.assetBaseUrl}uploads/${entry.fileName}` }/>
+                                ? <div class="img-ratio"><img src={ `${urlUtils.assetBaseUrl}uploads/${entry.fileName}` }/></div>
                                 : <span>{ entry.mime }</span> }
                             <span class="caption text-ellipsis">{ entry.fileName }</span>
                         </button>

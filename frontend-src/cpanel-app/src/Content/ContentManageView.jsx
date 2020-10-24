@@ -4,10 +4,12 @@ import openDeleteContentDialog from './ContentDeleteDialog.jsx';
 import ContentTypeDropdown from '../ContentType/ContentTypeDropdown.jsx';
 import LoadingSpinner from '../Common/LoadingSpinner.jsx';
 import {timingUtils} from '../Common/utils.js';
+import webPageState from '../webPageState.js';
 
 /**
- * #/manage-content/:initialContentTypeName: näkymä jolla admin voi selata
- * kaikkea cms:ään tallennettua sisältöä.
+ * #/manage-content/:initialContentTypeName?/:panelIdx?: näkymä jolla admin voi
+ * selata kaikkea cms:ään tallennettua sisältöä, ja käyttäjä yksittäisen fetchAll-
+ * kokoelman sisältöä.
  */
 class ContentManageView extends preact.Component {
     /**
@@ -27,12 +29,7 @@ class ContentManageView extends preact.Component {
                 const fieldName = this.getSearchFieldName(contentTypeName);
                 if (fieldName) this.searchFieldName = fieldName;
                 else throw new Error(`${contentTypeName} not found.`);
-                return this.fetchContent(contentTypeName);
-            })
-            .then(content => {
-                if (!props.initialContentTypeName)
-                    urlUtils.replace(`#/manage-content/${contentTypeName}`);
-                return this.setState({content, isFetching: false, contentTypeName});
+                return this.fetchInitialContent(props, contentTypeName);
             })
             .catch(err => {
                 toasters.main('Jokin meni pieleen', 'error');
@@ -40,6 +37,15 @@ class ContentManageView extends preact.Component {
             });
         this.debouncedSearchTermTypedHandler = timingUtils.debounce(
             this.handleSearchTermTyped.bind(this), 200);
+    }
+    /**
+     * @access protected
+     */
+    componentWillReceiveProps(props) {
+        if (props.panelIdx !== this.props.panelIdx) {
+            this.setState({isFetching: true, contentTypeName: props.initialContentTypeName});
+            this.fetchInitialContent(props, props.initialContentTypeName);
+        }
     }
     /**
      * @access protected
@@ -127,13 +133,28 @@ class ContentManageView extends preact.Component {
     /**
      * @access private
      */
+    fetchInitialContent(props, contentTypeName) {
+        const p = webPageState.currentContentPanels[props.panelIdx || -1];
+        const filters = !p || !p.contentNodes.length ? null : {id: {$in: p.contentNodes.map(n => n.id)}};
+        return this.fetchContent(contentTypeName, filters)
+            .then(content => {
+                if (!props.initialContentTypeName)
+                    urlUtils.replace(`#/manage-content/${contentTypeName}`);
+                this.setState({content, isFetching: false, contentTypeName});
+            });
+    }
+    /**
+     * @access private
+     */
     reFetchContent(contentTypeName, filters = null) {
         const searchTerm = !filters ? null : filters[this.searchFieldName].$contains;
-        this.setState({isFetching: true, isChangingContentType: filters === null});
+        const newState = {isFetching: true, isChangingContentType: filters === null};
+        this.setState(newState);
         this.fetchContent(contentTypeName, !searchTerm ? null : filters).then(content => {
             this.setState({content, isFetching: false, isChangingContentType: false,
                            searchTerm, contentTypeName});
-            urlUtils.replace(`#/manage-content/${contentTypeName}`);
+            if (newState.isChangingContentType)
+                urlUtils.replace(`#/manage-content/${contentTypeName}`);
         });
     }
     /**

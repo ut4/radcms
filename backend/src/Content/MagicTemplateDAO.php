@@ -49,10 +49,8 @@ class MagicTemplateDAO extends DAO {
      */
     public function getFrontendPanels(): array {
         $out = [];
-        foreach ($this->queries as $q) {
-            if (($panels = $q->getFrontendPanels()))
-                $out = array_merge($out, $panels);
-        }
+        foreach ($this->queries as $q)
+            $out = array_merge($out, $q->getFrontendPanels());
         return $out;
     }
     /**
@@ -61,25 +59,26 @@ class MagicTemplateDAO extends DAO {
      * @param array $bindVals = null
      * @param \stdClass[] $joins = [] {contentTypeName: string, alias: string, expr: string, bindVals: array, isLeft: bool, collectFn: \Closure, targetFieldName: string|null}[]
      * @param string $orderDir = null
-     * @param \stdClass[] $frontendPanels = []
-     * @return array|\stdClass|null
+     * @param \Closure $receiveData = null fn(array<int, \stdClass|null> $fetchedContent): void
+     * @return array<int, \stdClass>|\stdClass|null
      */
     public function doExec(string $sql,
                            bool $isFetchOne,
                            array $bindVals = null,
                            array $joins = [],
                            string $orderDir = null,
-                           array $frontendPanels = []) {
+                           \Closure $receiveData = null) {
         $res = parent::doExec($sql, $isFetchOne, $bindVals, $joins, $orderDir);
-        foreach ($frontendPanels as $def) $def->contentNodes = $res;
+        if ($isFetchOne) $normalized = $res ? [$res] : [];
+        else $normalized = $res;
+        $receiveData($normalized);
         if (!$res) return $res;
         //
-        $res = $isFetchOne ? [$res] : $res;
         $out = [];
         if (!$this->fetchDraft) {
-            $out = ArrayUtils::filterByKey($res, self::STATUS_PUBLISHED, 'status');
+            $out = ArrayUtils::filterByKey($normalized, self::STATUS_PUBLISHED, 'status');
         } else {
-            foreach ($res as $node) {
+            foreach ($normalized as $node) {
                 if (!$node->currentDraft) { $out[] = $node; continue; }
                 $draft = $node->currentDraft->snapshot;
                 $draft->id = $node->id;
