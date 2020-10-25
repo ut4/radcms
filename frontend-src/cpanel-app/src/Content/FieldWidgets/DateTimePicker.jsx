@@ -8,22 +8,24 @@ class DateTimePickerFieldWidget extends BaseFieldWidget {
     /**
      * @inheritdoc
      */
-    static convert(previous, _newWidget, value) {
-        return previous.group !== 'date' ? null : value;
+    static getInitialValue() {
+        return Math.floor(Date.now() / 1000);
     }
     /**
      * @inheritdoc
      */
-    getInitialValue() {
-        return '';
+    static convert(previous, _newWidget, value) {
+        return previous.group !== 'date'
+            ? DateTimePickerFieldWidget.getInitialValue()
+            : value;
     }
     /**
      * @access protected
      */
-    render({field, settings, onValueChange}) {
+    render({field, initialValue, settings, onValueChange}) {
         return <DateTimePicker
             inputName={ field.name }
-            defaultDate={ this.fixedInitialValue ? new Date(this.fixedInitialValue * 1000) : null }
+            defaultDate={ new Date(initialValue * 1000) }
             onSelect={ date => {
                 const unixTime = Math.floor(date.getTime() / 1000);
                 onValueChange(!field.dataType || field.dataType.type.endsWith('int')

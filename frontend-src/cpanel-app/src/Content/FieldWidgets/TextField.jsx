@@ -11,21 +11,23 @@ class TextFieldFieldWidget extends BaseFieldWidget {
     constructor(props) {
         super(props);
         this.inputName = props.field.name;
-        this.state = hookForm(this, {[this.inputName]: this.fixedInitialValue});
+        this.state = hookForm(this, {[this.inputName]: props.initialValue});
         this.inputImplCmp = preact.createRef();
         this.isAutoresizeInitialized = false;
     }
     /**
      * @inheritdoc
      */
-    static convert(previous, _newWidget, value) {
-        return previous.group !== 'text' ? null : value;
+    static getInitialValue() {
+        return '...';
     }
     /**
      * @inheritdoc
      */
-    getInitialValue() {
-        return '...';
+    static convert(previous, _newWidget, value) {
+        return previous.group !== 'text'
+            ? TextFieldFieldWidget.getInitialValue()
+            : value;
     }
     /**
      * @access protected

@@ -19,7 +19,7 @@ class MultiFieldFieldWidget extends BaseFieldWidget {
         super(props);
         this.isConfigurable = props.settings.showConfigureButton;
         this.multiFieldFields = new MultiFieldFieldsStore(
-            getValidInitialFieldsOrWarn(this.fixedInitialValue));
+            getValidInitialFieldsOrWarn(props.initialValue));
         this.multiFieldFields.listen(fields => {
             if (this.state.configModeIsOn) return;
             this.setState({fields});
@@ -29,6 +29,13 @@ class MultiFieldFieldWidget extends BaseFieldWidget {
         this.values = makeVirtualContentNode(fields);
         this.setState({fields, visibleFields: this.makeVisibleFields(fields),
                        configModeIsOn: false});
+    }
+    /**
+     * @returns {string}
+     * @access protected
+     */
+    static getInitialValue() {
+        return JSON.stringify([MultiFieldFieldsStore.makeField(widgetTypes[0])]);
     }
     /**
      * @inheritdoc
@@ -45,13 +52,6 @@ class MultiFieldFieldWidget extends BaseFieldWidget {
             this.fieldsFilter = new FieldsFilter(fieldsToDisplay);
             this.setState({visibleFields: this.makeVisibleFields(this.state.fields)});
         }
-    }
-    /**
-     * @returns {string}
-     * @access protected
-     */
-    getInitialValue() {
-        return JSON.stringify([MultiFieldFieldsStore.makeField(widgetTypes[0])]);
     }
     /**
      * @access protected

@@ -14,20 +14,22 @@ class ImagePickerFieldWidget extends BaseFieldWidget {
     constructor(props) {
         super(props);
         this.fieldName = props.field.name;
-        this.state = hookForm(this, {[this.fieldName]: this.fixedInitialValue});
+        this.state = hookForm(this, {[this.fieldName]: props.initialValue});
         this.inputElWrap = preact.createRef();
     }
     /**
      * @inheritdoc
      */
-    static convert(previous, _newWidget, value) {
-        return previous.name !== 'imagePicker' ? null : value;
+    static getInitialValue() {
+        return '';
     }
     /**
      * @inheritdoc
      */
-    getInitialValue() {
-        return '';
+    static convert(previous, _newWidget, value) {
+        return previous.name !== 'imagePicker'
+            ? ImagePickerFieldWidget.getInitialValue()
+            : value;
     }
     /**
      * @access protected

@@ -10,11 +10,13 @@ class BaseFieldWidget extends preact.Component {
             throw new Error('props.onValueChange is required');
         this.label = [props.field.friendlyName || props.field.name,
                       !props.labelHint ? null : <span class="note">{ props.labelHint }</span>];
-        this.fixedInitialValue = props.initialValue;
-        if (this.fixedInitialValue === '') {
-            this.fixedInitialValue = this.getInitialValue();
-            props.onValueChange(this.fixedInitialValue);
-        }
+    }
+    /**
+     * @returns {string}
+     * @access public
+     */
+    static getInitialValue() {
+        throw new Error('Abstract method not implemented.');
     }
     /**
      * @param {FieldWidget & {group: string;}} previous
@@ -24,13 +26,6 @@ class BaseFieldWidget extends preact.Component {
      * @access public
      */
     static convert(previous, newWidget, value) {
-        throw new Error('Abstract method not implemented.');
-    }
-    /**
-     * @returns {string}
-     * @access protected
-     */
-    getInitialValue() {
         throw new Error('Abstract method not implemented.');
     }
     /**

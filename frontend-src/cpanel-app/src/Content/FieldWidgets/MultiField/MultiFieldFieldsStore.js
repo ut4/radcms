@@ -1,4 +1,4 @@
-import {widgetTypes} from '../all.js';
+import getWidgetImpl, {widgetTypes} from '../all.js';
 const {createStore} = window.Redux;
 
 let counter = 0;
@@ -13,11 +13,10 @@ class MultiFieldFieldsStore {
                 return state.concat(MultiFieldFieldsStore.makeField(action.widgetType, state.length));
             if (action.type === 'REMOVE_FIELD')
                 return state.filter(field => field.id !== action.fieldId);
-            if (action.type === 'SET_PROPS') {
+            if (action.type === 'SET_PROPS')
                 return state.map(field => field.id === action.fieldId
                     ? Object.assign({}, field, action.props)
                     : field);
-            }
             if (action.type === 'REORDER')
                 return action.orderedIds.map(fieldId => state.find(f => f.id === fieldId));
             return state;
@@ -81,8 +80,8 @@ class MultiFieldFieldsStore {
     static makeField(widgetType, numFields) {
         return {id: (++counter).toString(),
                 name: `field${(numFields || 0) + 1}`,
-                widget: {name: widgetType.name, args: {}},
-                value: ''};
+                widget: {name: widgetType.name, args: {}}, // @todo default args?
+                value: getWidgetImpl(widgetType.name).ImplClass.getInitialValue()};
     }
 }
 

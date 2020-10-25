@@ -5,6 +5,7 @@
 
 /* -- Spectre overrides ---- */
 .form-label {
+    display: inline-block;
     line-height: 1rem;
 }
 .form-input-hint {

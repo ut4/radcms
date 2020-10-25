@@ -13,19 +13,21 @@ class RichTextFieldWidget extends BaseFieldWidget {
     constructor(props) {
         super(props);
         this.fieldName = `field-${++counter}`;
-        this.state = hookForm(this, {[this.fieldName]: this.fixedInitialValue});
+        this.state = hookForm(this, {[this.fieldName]: props.initialValue});
+    }
+    /**
+     * @inheritdoc
+     */
+    static getInitialValue() {
+        return '...';
     }
     /**
      * @inheritdoc
      */
     static convert(previous, _newWidget, value) {
-        return previous.group !== 'text' ? null : value;
-    }
-    /**
-     * @inheritdoc
-     */
-    getInitialValue() {
-        return '...';
+        return previous.group !== 'text'
+            ? RichTextFieldWidget.getInitialValue()
+            : value;
     }
     /**
      * @access protected
@@ -33,7 +35,7 @@ class RichTextFieldWidget extends BaseFieldWidget {
     render() {
         return <QuillEditor
             name={ this.fieldName }
-            value={ this.fixedInitialValue }
+            value={ this.props.initialValue }
             onChange={ html => {
                 this.form.triggerChange(html, this.fieldName);
                 this.props.onValueChange(html);

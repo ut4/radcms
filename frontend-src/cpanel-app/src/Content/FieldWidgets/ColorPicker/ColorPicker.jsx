@@ -11,19 +11,21 @@ class ColorPickerFieldWidget extends BaseFieldWidget {
     constructor(props) {
         super(props);
         this.fieldName = props.field.name;
-        this.state = hookForm(this, {[this.fieldName]: this.fixedInitialValue});
+        this.state = hookForm(this, {[this.fieldName]: props.initialValue});
+    }
+    /**
+     * @inheritdoc
+     */
+    static getInitialValue() {
+        return '#637286';
     }
     /**
      * @inheritdoc
      */
     static convert(previous, _newWidget, value) {
-        return previous.name !== 'color' ? null : value;
-    }
-    /**
-     * @inheritdoc
-     */
-    getInitialValue() {
-        return '#33393e';
+        return previous.name !== 'color'
+            ? ColorPickerFieldWidget.getInitialValue()
+            : value;
     }
     /**
      * @access protected

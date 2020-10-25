@@ -29,10 +29,21 @@ class ContentSelectorFieldWidget extends BaseFieldWidget {
         this.state = {contentFetched: false};
     }
     /**
+     * @param {Object?} widgetArgs
+     * @returns {string}
+     * @access public
+     */
+    static getInitialValue(widgetArgs = null) {
+        return !widgetArgs.enableMultipleSelections
+            ? NO_SELECTION
+            : '[]';
+    }
+    /**
      * @inheritdoc
      */
     static convert(previous, newWidget, value) {
-        if (previous.name !== 'contentSelector' || !value) return null;
+        if (previous.name !== 'contentSelector' || !value)
+            return ContentSelectorFieldWidget.getInitialValue(newWidget.args);
         if (newWidget.args.contentType === previous.args.contentType) {
             if (newWidget.args.enableMultipleSelections && !previous.args.enableMultipleSelections)
                 return value !== NO_SELECTION ? JSON.stringify([value]) : '[]';
@@ -54,14 +65,6 @@ class ContentSelectorFieldWidget extends BaseFieldWidget {
             .catch(err => {
                 window.console.error(err);
             });
-    }
-    /**
-     * @inheritdoc
-     */
-    getInitialValue() {
-        return !this.props.field.widget.args.enableMultipleSelections
-            ? NO_SELECTION
-            : '[]';
     }
     /**
      * @access protected
@@ -98,7 +101,7 @@ class ContentSelectorFieldWidget extends BaseFieldWidget {
             return <SingleFieldValueSelector
                 options={ this.initialOptions }
                 label={ this.label }
-                initialValue={ this.fixedInitialValue }
+                initialValue={ this.props.initialValue }
                 onValueChange={ this.props.onValueChange }
                 root={ this }/>;
         return <FieldValueListSelector
@@ -110,8 +113,8 @@ class ContentSelectorFieldWidget extends BaseFieldWidget {
      */
     fetchMissing(initialOptions) {
         const atLeastThese = !this.props.field.widget.args.enableMultipleSelections
-            ? this.fixedInitialValue !== NO_SELECTION ? [this.fixedInitialValue] : []
-            : JSON.parse(this.fixedInitialValue);
+            ? this.props.initialValue !== NO_SELECTION ? [this.props.initialValue] : []
+            : JSON.parse(this.props.initialValue);
         const needsToBeFetched = atLeastThese.filter(value => {
             return !initialOptions.some(n => n[this.valueField] === value);
         });
@@ -296,7 +299,7 @@ class FieldValueListSelector extends preact.Component {
         this.tagsWidget = preact.createRef();
         this.singleFieldSelector = preact.createRef();
         this.options = props.options.slice(0);
-        this.selectedContent = JSON.parse(props.root.fixedInitialValue);
+        this.selectedContent = JSON.parse(props.root.props.initialValue);
     }
     /**
      * @access protected
