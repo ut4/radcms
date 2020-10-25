@@ -71,7 +71,7 @@ class PickImageDialog extends preact.Component {
      * @access protected
      */
     render({selectedImageName}) {
-        return <div class="popup-dialog"><div class="box">
+        return <div class="popup-dialog image-picker-dialog"><div class="box">
             <h2>Valitse kuva</h2>
             <div class="main">
                 <UploadsManager

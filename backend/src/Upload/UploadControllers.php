@@ -49,17 +49,21 @@ class UploadControllers {
                                Response $res,
                                Uploader $uploader,
                                UploadsRepository $uploadsRepo): void {
-        if (isset($req->files->localFile['error']) &&
+        if (!isset($req->files->localFile['error']) ||
             $req->files->localFile['error'] !== UPLOAD_ERR_OK) {
             throw new PikeException('Expected UPLOAD_ERR_OK (0), but got ' .
-                                    $req->files->localFile['error'],
+                                    isset($req->files->localFile['error'])
+                                        ? $req->files->localFile['error']
+                                        : '<nothing>',
                                     PikeException::FAILED_FS_OP);
-        } elseif (($errors = $this->validateUploadInput($req))) {
+        } elseif (($errors = $this->validateUploadInput($req->body))) {
             $res->status(400)->json($errors);
             return;
         }
         // @allow \Pike\PikeException
-        $file = $uploader->upload($req->files->localFile, self::UPLOADS_DIR_PATH);
+        $file = $uploader->upload($req->files->localFile,
+                                  self::UPLOADS_DIR_PATH,
+                                  $req->body->fileName);
         // @allow \Pike\PikeException
         $file->createdAt = time();
         $uploadsRepo->insertMany([$file]);
@@ -114,11 +118,13 @@ class UploadControllers {
         return $info;
     }
     /**
+     * @param \stdClass $reqBody
      * @return string[]
      */
-    private function validateUploadInput($req): array {
+    private function validateUploadInput(\stdClass $reqBody): array {
         return (Validation::makeObjectValidator())
-            ->rule('files.localFile', 'type', 'array')
-            ->validate($req);
+            ->rule('fileName', 'type', 'string')
+            ->rule('fileName', 'maxLength', 255)
+            ->validate($reqBody);
     }
 }

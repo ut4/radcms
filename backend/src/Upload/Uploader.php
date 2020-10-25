@@ -6,6 +6,7 @@ namespace RadCms\Upload;
 
 use Pike\{FileSystem, PikeException};
 use RadCms\Entities\UploadsEntry;
+use RadCms\ValidationUtils;
 
 /**
  * Luokka, joka vastaa käyttäjän lataamien tiedostojen validoinnista, ja siirtä-
@@ -25,12 +26,14 @@ class Uploader {
     /**
      * @param array<string, mixed> $file ['size' => int, 'tmp_name' => string, 'name' => string]
      * @param string $toDir Absoluuttinen polku kohdekansioon, tulisi olla olemassa
+     * @param ?string $targetFileName Kohdetiedoston nimi
      * @param int $maxSize Tiedoston koko maksimissaan, tavua
      * @return \RadCms\Entities\UploadsEntry
      * @throws \Pike\PikeException
      */
     public function upload(array $file,
                            string $toDir,
+                           ?string $targetFileName = null,
                            int $maxSize = self::DEFAULT_MAX_SIZE_B): UploadsEntry {
         if (($file['size'] ?? -1) < 0 ||
             !strlen($file['tmp_name'] ?? '') ||
@@ -40,19 +43,20 @@ class Uploader {
         if ($file['size'] > $maxSize)
             throw new PikeException("Uploaded file larger than allowed {$maxSize}B",
                                     PikeException::BAD_INPUT);
+        if ($targetFileName)
+            ValidationUtils::checkIfValidaPathOrThrow($targetFileName, true);
         // @allow \Pike\PikeException
         $mime = UploadFileScanner::getMime($file['tmp_name'], '?');
         if (!UploadFileScanner::isImage($mime))
             throw new PikeException("`{$mime}` is not valid mime",
                                     PikeException::BAD_INPUT);
         //
-        $toDirPath = FileSystem::normalizePath($toDir) . '/';
+        $out = new UploadsEntry;
+        $out->fileName = $targetFileName ?: $file['name'];
+        $out->basePath = FileSystem::normalizePath($toDir) . '/';
         if (call_user_func($this->moveUploadedFileFn,
                            $file['tmp_name'],
-                           "{$toDirPath}{$file['name']}")) {
-            $out = new UploadsEntry;
-            $out->fileName = $file['name'];
-            $out->basePath = $toDirPath;
+                           "{$out->basePath}{$out->fileName}")) {
             $out->mime = $mime;
             return $out;
         }

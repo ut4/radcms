@@ -175,6 +175,18 @@
     font-family: -apple-system, BlinkMacSystemFont, "helvetica neue", helvetica, roboto, noto, "segoe ui", arial, sans-serif;
 }
 
+/* -- Components: File upload ---- */
+.image-selected img {
+    min-width: 160px;
+    min-height: 160px;
+    max-width: 320px;
+    max-height: 320px;
+}
+.image-picker-dialog .image-selected .form-buttons {
+    border-bottom: 1px solid #d5dbe0;
+    padding-bottom: 1rem;
+}
+
 /* -- Cpanel: commons ---- */
 #cpanel2 h2 {
     color: rgba(255,255,255,0.22);
@@ -297,7 +309,7 @@
     cursor: pointer;
 }
 
-/* View: elements */
+/* -- View: elements ---- */
 #view, .popup-dialog {
     position: fixed;
     left: 242px;

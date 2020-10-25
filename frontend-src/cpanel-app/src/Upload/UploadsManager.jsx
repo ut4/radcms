@@ -1,4 +1,5 @@
-import {http, myFetch, Toaster, toasters, FeatherSvg, urlUtils, env, config} from '@rad-commons';
+import {http, myFetch, Toaster, toasters, FeatherSvg, urlUtils, env, config,
+        InputGroup, Input, InputError, hookForm} from '@rad-commons';
 import LoadingSpinner from '../Common/LoadingSpinner.jsx';
 import Tabs from '../Common/Tabs.jsx';
 import {timingUtils} from '../Common/utils.js';
@@ -101,10 +102,18 @@ class UploadsManager extends preact.Component {
 
 class UploadButton extends preact.Component {
     /**
+     * @param {{onFileUploaded: (image: {fileName: string; basePath: string; mime: string; friendlyName?: string;}) => any;}} props
+     */
+    constructor(props) {
+        super(props);
+        this.selectedImage = null;
+        this.state = {selectedImageSrc: null};
+    }
+    /**
      * @access protected
      */
-    render() {
-        return <div class="container">
+    render(_, {selectedImageSrc}) {
+        return <div class={ !selectedImageSrc ? 'container' : 'image-selected' }>
             <Toaster id="fileUpload"/>
             <input onChange={ this.handleFileInputChange.bind(this) }
                 id="image-input"
@@ -112,10 +121,23 @@ class UploadButton extends preact.Component {
                 type="file"
                 accept="image/*"
                 style="position:absolute;opacity:0;z-index:-1"/>
-            <label class="columns col-centered" htmlFor="image-input">
-                <FeatherSvg iconId="image"/>
-                <span class="column">Valitse kuva</span>
+            <label class={ !selectedImageSrc ? 'columns col-centered' : '' } htmlFor="image-input">
+                { !selectedImageSrc ? [
+                    <FeatherSvg iconId="image"/>,
+                    <span class="column">Valitse kuva</span>
+                ] : <img src={ selectedImageSrc }/> }
             </label>
+            { !selectedImageSrc || [
+                <InputGroup classes={ this.state.classes.fileName }>
+                    <label htmlFor="fileName" class="form-label">Tiedostonimi</label>
+                    <Input vm={ this } name="fileName" id="fileName" errorLabel="Tiedostonimi"
+                        validations={ [['regexp', '^[^/]*$', ' ei kelpaa'], ['maxLength', 255]] }/>
+                    <InputError error={ this.state.errors.fileName }/>
+                </InputGroup>,
+                <div class="form-buttons mt-8">
+                    <button onClick={ this.uploadSelectedImage.bind(this) } class="btn btn-primary" type="button">Lataa kuva</button>
+                </div>
+            ] }
         </div>;
     }
     /**
@@ -123,16 +145,35 @@ class UploadButton extends preact.Component {
      */
     handleFileInputChange(e) {
         if (!e.target.value) return;
+        const reader = new FileReader();
+        reader.onload = e => {
+            this.setState(Object.assign(
+                {selectedImageSrc: e.target.result},
+                hookForm(this, {fileName: this.selectedImage.name})
+            ));
+        };
+        this.selectedImage = e.target.files[0];
+        reader.readAsDataURL(this.selectedImage);
+    }
+    /**
+     * @access private
+     */
+    uploadSelectedImage() {
+        if (!this.form.handleSubmit())
+            return;
         //
         const data = new FormData();
-        data.append('localFile', e.target.files[0]);
+        data.append('localFile', this.selectedImage);
+        data.append('fileName', this.state.values.fileName);
         data.append('csrfToken', config.csrfToken);
         //
         myFetch('/api/uploads', {method: 'POST', data})
             .then(res => JSON.parse(res.responseText))
             .then(info => {
-                if (info.file) this.props.onFileUploaded(info.file);
-                else throw new Error('Unexpected response');
+                if (!info.file) throw new Error('Unexpected response');
+                this.selectedImage = null;
+                this.setState({selectedImageSrc: null});
+                this.props.onFileUploaded(info.file);
             })
             .catch(err => {
                 env.console.error(err);
