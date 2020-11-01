@@ -21,6 +21,9 @@ final class DAOQueryBuildingTest extends TestCase {
         ->add('Platforms', 'Alustat')
             ->field('name')
             ->field('gameTitle')
+        ->add('JsonBlobs', '')
+            ->field('name')
+            ->field('data')->dataType('json')
         ->done();
         if ($alterContentTypesFn) $alterContentTypesFn($ctypes);
         return new DAO($this->createMock(Db::class), $ctypes, $useDrafts);
@@ -81,6 +84,19 @@ final class DAOQueryBuildingTest extends TestCase {
             $joinQ .
             sprintf(self::REVISION_JOIN, 'Games'),
             $withDrafts->toSql()
+        );
+        //
+        $usingJsonFields = $this->makeDao()->fetchOne('Games g', 'j.data.prop AS myProp')
+            ->join('JsonBlobs j', 'j.`name` = CONCAT(_a.`title`, \'-info\')')
+            ->where("`title`='Commandos II'")
+            ->limit(10);
+        $this->assertEquals(
+            'SELECT g.*, j.`id` AS `jId`, \'JsonBlobs\' AS `jContentType`'.
+                    ', j.`name` AS `jName`, j.`data` AS `jData`' .
+                    ', JSON_EXTRACT(j.`data`, "$.prop") AS `myProp`' .
+            ' FROM (' . $mainQ . ') AS g' .
+            ' JOIN `${p}JsonBlobs` AS j ON (j.`name` = CONCAT(_a.`title`, \'-info\'))',
+            $usingJsonFields->toSql()
         );
     }
     public function testFetchOneGeneratesJoinQueriesWithAliases() {

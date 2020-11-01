@@ -14,8 +14,8 @@ class MultiFieldConfigurer extends preact.Component {
      */
     constructor(props) {
         super(props);
-        this.state = {fields: props.fields.getFields()};
-        props.fields.listen(fields => this.setState({fields}));
+        this.state = {fieldsBundle: props.fields.getFields()};
+        props.fields.listen(fieldsBundle => this.setState({fieldsBundle}));
         this.sortable = new Sortable();
     }
     /**
@@ -31,7 +31,7 @@ class MultiFieldConfigurer extends preact.Component {
                     <th>Widgetin asetukset</th>
                     <th class="buttons"></th>
                 </tr></thead>
-                <tbody ref={ this.activateSorting.bind(this) }>{ this.state.fields.map(f => <tr key={ f.id } data-id={ f.id }>
+                <tbody ref={ this.activateSorting.bind(this) }>{ this.state.fieldsBundle.__fields.map(f => <tr key={ f.id } data-id={ f.id }>
                     <td class="drag-column">
                         <button class="drag-handle" type="button"><FeatherSvg iconId="grid-dots"/></button>
                     </td>
@@ -44,6 +44,7 @@ class MultiFieldConfigurer extends preact.Component {
                             disabled={ this.props.blur }
                             onClick={ () => popupDialog.open(MultiFieldFieldEditDialog, {
                                 field: f,
+                                fieldValue: this.state.fieldsBundle[f.name],
                                 onConfirm: newData => {
                                     this.props.fields.setFieldProps(f.id, newData);
                                 }
@@ -93,17 +94,17 @@ function formatWidgetArgs(args) {
 
 class MultiFieldFieldEditDialog extends preact.Component {
     /**
-     * @param {{field: MultiFieldField; onConfirm: (newData: Object) => any;}} props
+     * @param {{fieldMeta: MultiFieldMeta; fieldValue: string; onConfirm: (newData: Object) => any;}} props
      */
     constructor(props) {
         super(props);
         this.widgetSelector = preact.createRef();
-        this.state = hookForm(this, {fieldName: props.field.name});
+        this.state = hookForm(this, {fieldName: props.fieldMeta.name});
     }
     /**
      * @access protected
      */
-    render({field}) {
+    render({fieldMeta}) {
         const {classes, errors} = this.state;
         return <div class="popup-dialog"><div class="box">
             <FormConfirmation
@@ -119,7 +120,7 @@ class MultiFieldFieldEditDialog extends preact.Component {
                         errorLabel="Nimi"/>
                     <InputError error={ errors.fieldName }/>
                 </InputGroup>
-                <WidgetSelector widget={ field.widget } ref={ this.widgetSelector }/>
+                <WidgetSelector widget={ fieldMeta.widget } ref={ this.widgetSelector }/>
             </div>
             </FormConfirmation>
         </div></div>;
@@ -131,14 +132,14 @@ class MultiFieldFieldEditDialog extends preact.Component {
         if (!this.form.handleSubmit(e))
             return;
         const widget = this.widgetSelector.current.getResult();
-        const current = this.props.field.widget;
+        const current = this.props.fieldMeta.widget;
         this.props.onConfirm({
             name: this.state.values.fieldName,
             widget,
             value: getWidgetImpl(widget.name).ImplClass.convert(
                 Object.assign({group: widgetTypes.find(w => w.name === current.name).group}, current),
                 widget,
-                this.props.field.value
+                this.props.fieldValue
             ) || '',
         });
         popupDialog.close();

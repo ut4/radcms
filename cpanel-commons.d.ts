@@ -37,11 +37,15 @@ interface ContentTypeField {
     validationRules?: Array<[string, ...any]>;
 }
 
-interface MultiFieldField {
+interface MultiFieldMeta {
     id: string;
     name: string;
     widget: FieldWidget;
-    value: any;
+}
+
+interface MultiFieldsBundle {
+    __fields: Array<MultiFieldMeta>;
+    [string: key]: string;
 }
 
 interface ContentType {

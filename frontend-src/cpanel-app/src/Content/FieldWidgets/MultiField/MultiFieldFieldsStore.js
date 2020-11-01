@@ -5,29 +5,48 @@ let counter = 0;
 
 class MultiFieldFieldsStore {
     /**
-     * @param {Array<MultiFieldField>} initialFields
+     * @param {MultiFieldsBundle} initialFields
      */
     constructor(initialFields) {
         this.store = createStore((state, action) => {
-            if (action.type === 'ADD_FIELD')
-                return state.concat(MultiFieldFieldsStore.makeField(action.widgetType, state.length));
-            if (action.type === 'REMOVE_FIELD')
-                return state.filter(field => field.id !== action.fieldId);
-            if (action.type === 'SET_PROPS')
-                return state.map(field => field.id === action.fieldId
-                    ? Object.assign({}, field, action.props)
-                    : field);
+            if (action.type === 'ADD_FIELD') {
+                const parts = MultiFieldFieldsStore.makeNewField(action.widgetType, state.__fields.length);
+                return Object.assign({}, state, {
+                    [parts.meta.name]: parts.value,
+                    __fields: state.__fields.concat(parts.meta),
+                });
+            } if (action.type === 'REMOVE_FIELD') {
+                return Object.assign(state.__fields.reduce((filtered, field) => {
+                    if (field.id !== action.fieldId)
+                        filtered[field.name] = state[field.name];
+                    return filtered;
+                }, {}), {
+                    __fields: state.__fields.filter(field => field.id !== action.fieldId),
+                });
+            } if (action.type === 'SET_PROPS') {
+                const copy = Object.assign({}, state);
+                Object.keys(action.props).forEach(key => {
+                    const __field = copy.__fields.find(f => f.id === action.fieldId);
+                    if (key !== 'value') // name, widget
+                        __field[key] = action.props[key];
+                    else
+                        copy[__field.name] = action.props[key];
+                });
+                return copy;
+            }
             if (action.type === 'REORDER')
-                return action.orderedIds.map(fieldId => state.find(f => f.id === fieldId));
+                return Object.assign({}, state, {
+                    __fields: action.orderedIds.map(fieldId => state.__fields.find(f => f.id === fieldId))
+                });
             return state;
         }, initialFields);
         if (initialFields)
-            counter = initialFields.reduce((max, f) => f.id > max ? f.id : max, 0);
+            counter = initialFields.__fields.reduce((max, f) => f.id > max ? f.id : max, 0);
         else
             this.addField(widgetTypes[0]);
     }
     /**
-     * @returns {Array<MultiFieldField>}
+     * @returns {MultiFieldsBundle}
      * @access public
      */
     getFields() {
@@ -63,7 +82,7 @@ class MultiFieldFieldsStore {
         this.store.dispatch({type: 'REORDER', orderedIds});
     }
     /**
-     * @param {(fields: Array<MultiFieldField>) => any} fn
+     * @param {(fieldsBundle: MultiFieldsBundle) => any} fn
      * @access public
      */
     listen(fn) {
@@ -74,14 +93,18 @@ class MultiFieldFieldsStore {
     /**
      * @param {{name: string; friendlyName: string; description: string; group?: string;}} widgetType
      * @param {number=} numFields
-     * @returns {MultiFieldField}
+     * @returns {{meta: MultiFieldMeta; value: string;}}
      * @access public
      */
-    static makeField(widgetType, numFields) {
-        return {id: (++counter).toString(),
+    static makeNewField(widgetType, numFields) {
+        return {
+            meta: {
+                id: (++counter).toString(),
                 name: `field${(numFields || 0) + 1}`,
-                widget: {name: widgetType.name, args: {}}, // @todo default args?
-                value: getWidgetImpl(widgetType.name).ImplClass.getInitialValue()};
+                widget: {name: widgetType.name, args: {}} // @todo default args?
+            },
+            value: getWidgetImpl(widgetType.name).ImplClass.getInitialValue()
+        };
     }
 }
 

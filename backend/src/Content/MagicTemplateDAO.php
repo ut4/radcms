@@ -26,22 +26,22 @@ class MagicTemplateDAO extends DAO {
      * @param string $contentTypeName
      * @return \RadCms\Content\MagicTemplateQuery
      */
-    public function fetchOne(string $contentTypeName): MagicTemplateQuery {
+    public function fetchOne(string $contentTypeName, ...$fields): MagicTemplateQuery {
         [$contentTypeName, $alias] = parent::parseContentTypeNameAndAlias($contentTypeName);
         // @allow \Pike\PikeException
         $type = $this->getContentType($contentTypeName);
-        $this->queries[] = new MagicTemplateQuery($type, $alias, true, $this);
+        $this->queries[] = new MagicTemplateQuery($type, $alias, $fields, true, $this);
         return $this->queries[count($this->queries) - 1];
     }
     /**
      * @param string $contentTypeName eg. 'Article', 'Product', 'Movie', 'Employee'
      * @return \RadCms\Content\MagicTemplateQuery
      */
-    public function fetchAll(string $contentTypeName): MagicTemplateQuery {
+    public function fetchAll(string $contentTypeName, ...$fields): MagicTemplateQuery {
         [$contentTypeName, $alias] = parent::parseContentTypeNameAndAlias($contentTypeName);
         // @allow \Pike\PikeException
         $type = $this->getContentType($contentTypeName);
-        $this->queries[] = new MagicTemplateQuery($type, $alias, false, $this);
+        $this->queries[] = new MagicTemplateQuery($type, $alias, $fields, false, $this);
         return $this->queries[count($this->queries) - 1];
     }
     /**

@@ -7,17 +7,20 @@ namespace RadCms\ContentType;
 use Pike\Translator;
 
 /**
- * ContentTypeDef->fields.
+ * ContentTypeDef->fields, ArrayObject<\RadCms\ContentType\FieldDef>.
  */
 class FieldCollection extends \ArrayObject implements \JsonSerializable {
     /**
      * @param \Closure $formatterFn = null fn(\RadCms\ContentType\FieldDef $field): string
      * @return string '`name`, `name2`'
      */
-    public function toSqlCols(\Closure $formatterFn = null): string {
+    public function toSqlCols(\Closure $formatterFn = null,
+                              array $onlyThese = []): string {
         $names = [];
-        foreach ($this as $f)
+        foreach ($this as $f) {
+            if ($onlyThese && !in_array($f->name, $onlyThese, true)) continue;
             $names[] = $f->toSqlCol($formatterFn);
+        }
         return implode(', ', $names);
     }
     /**

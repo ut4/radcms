@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace RadCms\Content;
 
-use Pike\{PikeException, Validation};
+use Pike\{ArrayUtils, PikeException, Validation};
 use RadCms\ContentType\{ContentTypeDef, ContentTypeValidator};
 
 /**
@@ -19,6 +19,8 @@ class Query {
     protected $contentType;
     /** @var string */
     protected $contentTypeAlias;
+    /** @var string[] */
+    protected $fields;
     /** @var bool */
     protected $isFetchOne;
     /** @var \RadCms\Content\DAO */
@@ -34,15 +36,18 @@ class Query {
     /**
      * $param \RadCms\ContentType\ContentTypeDef $contentType
      * $param string $contentTypeAlias
+     * $param string[] $fields
      * $param bool $isFetchOne
      * $param \RadCms\Content\DAO $dao
      */
     public function __construct(ContentTypeDef $contentType,
                                 string $contentTypeAlias,
+                                array $fields,
                                 bool $isFetchOne,
                                 DAO $dao) {
         $this->contentType = $contentType;
         $this->contentTypeAlias = $contentTypeAlias;
+        $this->fields = $fields;
         $this->isFetchOne = $isFetchOne;
         $this->dao = $dao;
         $this->joinDefs = [];
@@ -126,8 +131,9 @@ class Query {
             throw new PikeException($errors, PikeException::BAD_INPUT);
         }
         //
+        [$mainFields, $joinsFields] = $this->makeFields();
         $mainQ = 'SELECT `id`, `status`, ' .
-                 $this->contentType->fields->toSqlCols() .
+                 $mainFields .
                  ', \'' . $this->contentType->name . '\' AS `contentType`' .
                  ' FROM `${p}' . $this->contentType->name . '`' .
                  (!$this->whereDef ? '' : ' WHERE ' . $this->whereDef->expr) .
@@ -136,8 +142,8 @@ class Query {
         //
         $joins = [];
         $fields = [];
-        foreach ($this->joinDefs as $def)
-            $this->addContentTypeJoin($def, $joins, $fields);
+        foreach ($this->joinDefs as $i => $def)
+            $this->addContentTypeJoin($def, $joinsFields[$i], $joins, $fields);
         if ($this->dao->fetchDraft)
             $this->addCurrentDraftJoin($joins, $fields);
         //
@@ -159,9 +165,10 @@ class Query {
     private function doJoin(string $contentTypeExpr,
                             string $expr,
                             array $bindVals,
-                            bool $isLeft): Query {
+                            bool $isLeft): Query {;
         [$contentTypeName, $alias] = DAO::parseContentTypeNameAndAlias($contentTypeExpr, 'b');
-        $this->joinDefs[] = (object)['contentTypeName' => $contentTypeName,
+        $this->joinDefs[] = (object)[// @allow \Pike\PikeException
+                                     'contentType' => $this->dao->getContentType($contentTypeName),
                                      'alias' => $alias,
                                      'expr' => $expr,
                                      'bindVals' => $bindVals,
@@ -172,13 +179,15 @@ class Query {
     }
     /**
      * @param \stdClass $joinDef
+     * @param string $myFields
      * @param string[] &$joins
      * @param string[] &$fields
      */
     private function addContentTypeJoin(\stdClass $joinDef,
+                                        string $myFields,
                                         array &$joins,
                                         array &$fields): void {
-        $ctypeName = $joinDef->contentTypeName;
+        $ctypeName = $joinDef->contentType->name;
         $a = $joinDef->alias;
         $joins[] = (!$joinDef->isLeft ? '' : 'LEFT ') . 'JOIN' .
                     ' `${p}' . $ctypeName . '` AS ' . $joinDef->alias .
@@ -187,7 +196,8 @@ class Query {
                     $this->dao->getContentType($ctypeName)->fields
                               ->toSqlCols(function ($f) use ($a) {
                                   return $a.'.`'.$f->name.'` AS `'.$a.ucfirst($f->name).'`';
-                              });
+                              }) .
+                    ($myFields ? ", {$myFields}" : '');
     }
     /**
      * @param string[] &$joins
@@ -210,8 +220,6 @@ class Query {
         $seenAliases = [];
         $seenTargetFields = [];
         foreach ($this->joinDefs as $d) {
-            $errors = array_merge($errors,
-                ContentTypeValidator::validateName($d->contentTypeName));
             if (!Validation::isIdentifier($d->alias))
                 $errors[] = "join alias ({$d->alias}) is not valid";
             elseif ($d->alias === $this->contentTypeAlias ||
@@ -243,6 +251,37 @@ class Query {
                 $errors[] = "limit expression ({$this->limitExpr}) not valid";
         //
         return $errors ? implode('\n', $errors) : '';
+    }
+    /**
+     * @return array<int, string|string[]> [$mainFieldsString, $arrayOfJoinsFieldsStrings]
+     */
+    private function makeFields(): array {
+        $mainContentTypeFields = [];
+        $joinsFields = array_fill(0, count($this->joinDefs), []);
+        foreach ($this->fields as $field) {
+            if ($field === '*') {
+                continue;
+            }
+            $pathAndAlias = explode(' AS ', trim($field)); // alias.fields.prop AS foo
+            if (count($pathAndAlias) !== 2)
+                throw new PikeException('Expected `alias.fields.prop AS foo`, got `' . $field . '`');
+            $pathParts = explode('.', $pathAndAlias[0]);
+            if (count($pathParts) !== 3)
+                throw new PikeException('Not implemented yet');
+            [$joinTableAlias, $jsonField, $jsonProp] = $pathParts;
+            $join = ArrayUtils::findByKey($this->joinDefs, $joinTableAlias, 'alias');
+            if (!$join)
+                throw new PikeException("Unknown join `{$joinTableAlias}`");
+            if (!ArrayUtils::findIndexByKey($join->contentType->fields, $jsonField, 'name') < 0)
+                throw new PikeException("`{$join->contentType->name}` has no field `{$jsonField}`");
+            // @todo how to validate jsonProp ?
+            if (!Validation::isIdentifier($pathAndAlias[1]))
+                throw new PikeException("field alias ({$pathAndAlias[1]}) is not valid");
+            $joinsFields[array_search($join, $this->joinDefs)][] =
+                "JSON_UNQUOTE(JSON_EXTRACT({$join->alias}.`{$jsonField}`, \"$.{$jsonProp}\")) AS `{$pathAndAlias[1]}`";
+        }
+        return [$this->contentType->fields->toSqlCols(null, $mainContentTypeFields),
+                array_map(function($f) { return implode(', ', $f); }, $joinsFields)];
     }
     /**
      * @access private

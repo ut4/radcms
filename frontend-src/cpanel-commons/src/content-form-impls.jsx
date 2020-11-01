@@ -3,7 +3,7 @@ import FieldsFilter from './FieldsFilter.js';
 
 class ValidatingFormImpl extends preact.Component {
     /**
-     * @param {{fields: Array<ContentTypeField|MultiFieldField>; values: Array<any>; getWidgetImpl: (name: string) => {ImplClass: Object; props: ?Object;}|null; settings: Object; fieldHints: Array<string|null>; setFormClasses?: (classes: string) => any; onValueChange?: (value: any, field: ContentTypeField|MultiFieldField) => any;}} props
+     * @param {{fields: Array<ContentTypeField|MultiFieldMeta>; values: Array<any>; getWidgetImpl: (name: string) => {ImplClass: Object; props: ?Object;}|null; settings: Object; fieldHints: Array<string|null>; setFormClasses?: (classes: string) => any; onValueChange?: (value: any, field: ContentTypeField|MultiFieldMeta) => any;}} props
      */
     constructor(props) {
         super(props);

@@ -20,14 +20,14 @@ class MultiFieldFieldWidget extends BaseFieldWidget {
         this.isConfigurable = props.settings.showConfigureButton;
         this.multiFieldFields = new MultiFieldFieldsStore(
             getValidInitialFieldsOrWarn(props.initialValue));
-        this.multiFieldFields.listen(fields => {
+        this.multiFieldFields.listen(fieldsBundle => {
             if (this.state.configModeIsOn) return;
-            this.setState({fields});
+            this.setState({fieldsBundle});
         });
         this.fieldsFilter = new FieldsFilter(props.settings.fieldsToDisplay);
-        const fields = this.multiFieldFields.getFields();
-        this.values = makeVirtualContentNode(fields);
-        this.setState({fields, visibleFields: this.makeVisibleFields(fields),
+        const fieldsBundle = this.multiFieldFields.getFields();
+        this.values = makeVirtualContentNode(fieldsBundle);
+        this.setState({fieldsBundle, visibleFieldMetas: this.makeVisibleFieldMetas(fieldsBundle),
                        configModeIsOn: false});
     }
     /**
@@ -35,7 +35,8 @@ class MultiFieldFieldWidget extends BaseFieldWidget {
      * @access protected
      */
     static getInitialValue() {
-        return JSON.stringify([MultiFieldFieldsStore.makeField(widgetTypes[0])]);
+        const parts = MultiFieldFieldsStore.makeNewField(widgetTypes[0]);
+        return JSON.stringify({__fields: [parts.meta], [parts.meta.name]: parts.value});
     }
     /**
      * @inheritdoc
@@ -50,7 +51,7 @@ class MultiFieldFieldWidget extends BaseFieldWidget {
         const fieldsToDisplay = props.settings.fieldsToDisplay || [];
         if (fieldsToDisplay.join() !== this.fieldsFilter.getFieldsToDisplay().join()) {
             this.fieldsFilter = new FieldsFilter(fieldsToDisplay);
-            this.setState({visibleFields: this.makeVisibleFields(this.state.fields)});
+            this.setState({visibleFieldMetas: this.makeVisibleFieldMetas(this.state.fieldsBundle)});
         }
     }
     /**
@@ -81,13 +82,13 @@ class MultiFieldFieldWidget extends BaseFieldWidget {
                 : null
             }
             <DefaultFormImpl
-                fields={ this.state.visibleFields }
+                fields={ this.state.visibleFieldMetas }
                 values={ this.values }
                 onValueChange={ (value, f) => {
                     this.multiFieldFields.setFieldProps(f.id, {value});
                     this.props.onValueChange(JSON.stringify(this.multiFieldFields.getFields()));
                 } }
-                fieldHints={ this.state.visibleFields.map(f =>
+                fieldHints={ this.state.visibleFieldMetas.map(f =>
                     !this.isConfigurable || this.fieldsFilter.fieldShouldBeShown(f) ? null : '  Ei näytetä'
                 ) }
                 getWidgetImpl={ getWidgetImpl }
@@ -105,34 +106,33 @@ class MultiFieldFieldWidget extends BaseFieldWidget {
      * @access private
      */
     endConfigMode() {
-        const fields = this.multiFieldFields.getFields();
-        this.values = makeVirtualContentNode(fields);
-        this.setState({fields,
-                       visibleFields: this.makeVisibleFields(fields),
+        const fieldsBundle = this.multiFieldFields.getFields();
+        this.values = makeVirtualContentNode(fieldsBundle);
+        this.setState({fieldsBundle,
+                       visibleFieldMetas: this.makeVisibleFieldMetas(fieldsBundle),
                        configModeIsOn: false});
-        this.props.onValueChange(JSON.stringify(fields));
+        this.props.onValueChange(JSON.stringify(fieldsBundle));
         this.props.setFormClasses('');
     }
     /**
      * @access private
      */
-    makeVisibleFields(fields) {
-        return this.isConfigurable ? fields : this.fieldsFilter.doFilter(fields);
+    makeVisibleFieldMetas(fieldsBundle) {
+        return this.isConfigurable ? fieldsBundle.__fields : this.fieldsFilter.doFilter(fieldsBundle.__fields);
     }
 }
 
-function makeVirtualContentNode(fields) {
-    return fields.reduce((obj, f) => {
-        obj[f.name] = f.value;
-        return obj;
-    }, {});
+function makeVirtualContentNode(fieldsBundle) {
+    const copy = Object.assign({}, fieldsBundle);
+    delete copy.__fields;
+    return copy;
 }
 
 function getValidInitialFieldsOrWarn(initialValue) {
     const candidate = JSON.parse(initialValue);
-    if (Array.isArray(candidate))
+    if (candidate && typeof candidate === 'object' && Array.isArray(candidate.__fields))
         return candidate;
-    env.console.error('Initial value of MultiField must be an array, is: ',
+    env.console.error('Initial value of MultiField must be {__fields: Array, [key: string]: any}, is: ',
                       candidate);
     return [];
 }

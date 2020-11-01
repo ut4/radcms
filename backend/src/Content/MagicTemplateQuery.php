@@ -21,14 +21,16 @@ class MagicTemplateQuery extends Query {
     /**
      * $param \RadCms\ContentType\ContentTypeDef $contentType
      * $param string $contentTypeAlias
+     * $param string[] $fields
      * $param bool $isFetchOne
      * $param \RadCms\Content\DAO $dao
      */
     public function __construct(ContentTypeDef $contentType,
                                 string $contentTypeAlias,
+                                array $fields,
                                 bool $isFetchOne,
                                 DAO $dao) {
-        parent::__construct($contentType, $contentTypeAlias, $isFetchOne, $dao);
+        parent::__construct($contentType, $contentTypeAlias, $fields, $isFetchOne, $dao);
         $this->frontendPanels = [];
         $this->frontendPanelForEachFns = [];
         $this->fetchedContent = [];

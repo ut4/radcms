@@ -37,21 +37,21 @@ class DAO {
      * @param string $contentTypeName
      * @return \RadCms\Content\Query
      */
-    public function fetchOne(string $contentTypeName): Query {
+    public function fetchOne(string $contentTypeName, ...$fields): Query {
         [$contentTypeName, $alias] = self::parseContentTypeNameAndAlias($contentTypeName);
         // @allow \Pike\PikeException
         $type = $this->getContentType($contentTypeName);
-        return new Query($type, $alias, true, $this);
+        return new Query($type, $alias, $fields, true, $this);
     }
     /**
      * @param string $contentTypeName eg. 'Article', 'Product', 'Movie', 'Employee'
      * @return \RadCms\Content\Query
      */
-    public function fetchAll(string $contentTypeName): Query {
+    public function fetchAll(string $contentTypeName, ...$fields): Query {
         [$contentTypeName, $alias] = self::parseContentTypeNameAndAlias($contentTypeName);
         // @allow \Pike\PikeException
         $type = $this->getContentType($contentTypeName);
-        return new Query($type, $alias, false, $this);
+        return new Query($type, $alias, $fields, false, $this);
     }
     /**
      * @param string $sql
@@ -151,7 +151,7 @@ class DAO {
                     if (
                         $row->{$joinIdKey} &&
                         $row->id === $node->id &&
-                        $row->{$joinContentTypeNameKey} === $join->contentTypeName
+                        $row->{$joinContentTypeNameKey} === $join->contentType->name
                     ) $fn($node, $row);
                 }
                 $processed[$node->id] = $node;

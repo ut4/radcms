@@ -77,21 +77,23 @@ class MagicTemplate extends Template {
     }
     /**
      * @param string $contentTypeName
+     * @param string[] $fields
      * @return \RadCms\Content\Query
      * @throws \Pike\PikeException
      */
-    public function fetchAll(string $contentTypeName): MagicTemplateQuery {
+    public function fetchAll(string $contentTypeName, ...$fields): MagicTemplateQuery {
         // @allow \Pike\PikeException
-        return $this->__contentDao->fetchAll($contentTypeName);
+        return $this->__contentDao->fetchAll($contentTypeName, ...$fields);
     }
     /**
      * @param string $contentTypeName
+     * @param string[] $fields
      * @return \RadCms\Content\Query
      * @throws \Pike\PikeException
      */
-    public function fetchOne(string $contentTypeName): MagicTemplateQuery {
+    public function fetchOne(string $contentTypeName, ...$fields): MagicTemplateQuery {
         // @allow \Pike\PikeException
-        return $this->__contentDao->fetchOne($contentTypeName);
+        return $this->__contentDao->fetchOne($contentTypeName, ...$fields);
     }
     /**
      * @param string $key

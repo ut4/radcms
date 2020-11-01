@@ -1,6 +1,6 @@
 class BaseFieldWidget extends preact.Component {
     /**
-     * @param {{field: ContentTypeField|MultiFieldField; initialValue: string; onValueChange: (newValue: any) => any; settings?: Object; labelHint?: string;}} props
+     * @param {{field: ContentTypeField|MultiFieldMeta; initialValue: string; onValueChange: (newValue: any) => any; settings?: Object; labelHint?: string;}} props
      */
     constructor(props) {
         super(props);
