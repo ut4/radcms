@@ -43,7 +43,7 @@ class MultiFieldConfigurer extends preact.Component {
                             class="btn btn-icon"
                             disabled={ this.props.blur }
                             onClick={ () => popupDialog.open(MultiFieldFieldEditDialog, {
-                                field: f,
+                                fieldMeta: f,
                                 fieldValue: this.state.fieldsBundle[f.name],
                                 onConfirm: newData => {
                                     this.props.fields.setFieldProps(f.id, newData);
@@ -99,6 +99,7 @@ class MultiFieldFieldEditDialog extends preact.Component {
     constructor(props) {
         super(props);
         this.widgetSelector = preact.createRef();
+
         this.state = hookForm(this, {fieldName: props.fieldMeta.name});
     }
     /**

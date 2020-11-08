@@ -164,4 +164,5 @@ interface ControlPanelLoadArgs {
 interface PageLoadArgs {
     contentPanels: Array<FrontendPanelConfig>;
     currentPagePath: string;
+    currentPageTemplateMatch?: {pattern: string; layoutFileName: string;};
 }

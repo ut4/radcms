@@ -15,6 +15,7 @@ class ControlPanel extends preact.Component {
         this.siteInfo = {baseUrl: props.dataFromAdminBackend.baseUrl,
                          assetBaseUrl: props.dataFromAdminBackend.assetBaseUrl};
         this.state = {contentPanels: [],
+                      dataFromWebpageIframe: {},
                       collapsed: localStorage.radNavIsCollapsed === 'true',
                       websiteIframeHasLoadedAtLeastOnce: false};
         if (this.state.collapsed)
@@ -36,7 +37,8 @@ class ControlPanel extends preact.Component {
      */
     handleWebpageLoaded(dataFromWebpageIframe) {
         webPageState.update(dataFromWebpageIframe);
-        const newState = {contentPanels: [], websiteIframeHasLoadedAtLeastOnce: true};
+        const newState = {contentPanels: [], websiteIframeHasLoadedAtLeastOnce: true,
+            dataFromWebpageIframe};
         const uniqueHighlighSelectors = {};
         newState.contentPanels = dataFromWebpageIframe.contentPanels.map(p => {
             if (p.highlightSelector) {
@@ -63,13 +65,16 @@ class ControlPanel extends preact.Component {
             </header>
             <OnThisPageControlPanelSection
                 contentPanels={ this.state.contentPanels }
+                templateMatch={ this.state.dataFromWebpageIframe.currentPageTemplateMatch }
+                pagePath={ this.state.dataFromWebpageIframe.currentPagePath }
+                userRole={ this.dataFromAdminBackend.user.role }
                 siteIframe={ this.siteIframe }
                 siteInfo={ this.siteInfo }
                 websiteIframeHasLoadedAtLeastOnce={ this.state.websiteIframeHasLoadedAtLeastOnce }/>
             <AdminAndUserControlPanelSection
                 adminPanels={ this.props.adminPanelBundles }
                 siteInfo={ this.siteInfo }/>
-            <ForDevsControlPanelSectionction
+            <ForDevsControlPanelSection
                 userRole={ this.dataFromAdminBackend.user.role }/>
             <footer>&nbsp;</footer>
         </div>;
@@ -87,13 +92,25 @@ class ControlPanel extends preact.Component {
 
 class OnThisPageControlPanelSection extends preact.Component {
     /**
-     * @param {{contentPanels: Array<{ImplClass: Object; panel: Object; id: string;}>; siteIframe: HTMLIFrameElement|null; siteInfo: Object; websiteIframeHasLoadedAtLeastOnce: boolean;}} props
+     * @param {{contentPanels: Array<{ImplClass: Object; panel: Object; id: string;}>; templateMatch?: {pattern: string; layoutFileName: string;}; pagePath?: string; userRole: number; siteIframe: HTMLIFrameElement|null; siteInfo: Object; websiteIframeHasLoadedAtLeastOnce: boolean;}} props
      * @access protected
      */
-    render({contentPanels, siteIframe, siteInfo, websiteIframeHasLoadedAtLeastOnce}) {
+    render({contentPanels, templateMatch, userRole, siteIframe, siteInfo, websiteIframeHasLoadedAtLeastOnce}) {
         if (!websiteIframeHasLoadedAtLeastOnce) return null;
-        return <section>
-            <h2>Tällä sivulla</h2>
+        return <section class="on-this-page">
+            <h2>Tällä sivulla{ userRole === UserRole.SUPER_ADMIN ? [
+                <FeatherSvg iconId="help-circle" className="feather-sm"/>,
+                <span class="hover-bridge" style="left: 5.2rem;margin-top:-1.4rem;"></span>,
+                <span class="info">{ templateMatch
+                    ? [
+                        <span class="d-flex col-centered">Täsmännyt url-sääntö:</span>,
+                        <code class="text-break p-0">{ templateMatch.pattern }</code>,
+                        <span class="d-flex mt-2 col-centered">Templaatti:</span>,
+                        <code class="text-break p-0">{ templateMatch.layoutFileName }</code>
+                    ]
+                    : <span>Yksikään url-sääntö ei täsmännyt tämän sivun urliin <code>{ this.props.pagePath }</code>. Voit muokata url-sääntöjä <code>site/Theme.php</code> ja <code>site/Site.php</code> -tiedostoissa.</span>
+                }</span>
+            ] : null }</h2>
             { contentPanels.length
                 ? contentPanels.map(panelBundle =>
                     <ContentControlPanelPanel
@@ -104,9 +121,7 @@ class OnThisPageControlPanelSection extends preact.Component {
                         siteIframe={ siteIframe }
                         key={ panelBundle.id }/>
                 )
-                : websiteIframeHasLoadedAtLeastOnce
-                    ? <p class="entry" style="font-size: .7rem;">Ei muokattavaa sisältöä tällä sivulla.</p>
-                    : null
+                : <p class="entry" style="font-size: .7rem;">Ei muokattavaa sisältöä tällä sivulla.</p>
             }
         </section>;
     }
@@ -160,7 +175,7 @@ class AdminAndUserControlPanelSection extends preact.Component {
     }
 }
 
-class ForDevsControlPanelSectionction extends preact.Component {
+class ForDevsControlPanelSection extends preact.Component {
     /**
      * @param {{userRole: number;}} props
      * @access protected

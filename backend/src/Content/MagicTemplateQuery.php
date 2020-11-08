@@ -53,6 +53,12 @@ class MagicTemplateQuery extends Query {
         return $this;
     }
     /**
+     * @return bool
+     */
+    public function hasFrontendPanels(): bool {
+        return $this->frontendPanels || $this->frontendPanelForEachFns;
+    }
+    /**
      * @return \stdClass[]
      */
     public function getFrontendPanels(): array {

@@ -57,30 +57,27 @@ class WebsiteControllers {
         $apiState = $this->cmsState->getApiConfigs();
         // @allow \Exception
         $apiState->triggerEvent(BaseAPI::ON_PAGE_LOADED, false, $req);
-        $layoutFileName = self::findLayout($apiState->getRegisteredUrlLayouts(),
-                                           $req->path);
-        if (!$layoutFileName) {
-            $res->html('404');
-            return;
-        }
+        $match = self::findLayout($apiState->getRegisteredUrlLayouts(), $req->path);
         $isMaybeLoggedIn = $req->cookie('maybeLoggedInUserRole', '-1') !== '-1';
-        $this->dao->fetchDraft = $isMaybeLoggedIn;
-        $tmpl = new MagicTemplate(RAD_WORKSPACE_PATH . "site/{$layoutFileName}",
-                                  ['_cssFiles' => $apiState->getEnqueuedCssFiles(
-                                      BaseAPI::TARGET_WEBSITE_LAYOUT),
-                                   '_jsFiles' => $apiState->getEnqueuedJsFiles(
-                                       BaseAPI::TARGET_WEBSITE_LAYOUT)],
-                                  $this->translator,
-                                  $this->dao,
-                                  $this->fs);
-        $apiState->applyRegisteredTemplateStuff($tmpl, BaseAPI::TARGET_WEBSITE_LAYOUT);
-        $url = $req->params->url;
-        $html = $tmpl->render(['url' => explode('/', substr($url, 1)),
-                               'urlStr' => $url,
-                               'site' => $this->cmsState->getSiteInfo()]);
+        if ($match) {
+            $this->dao->fetchDraft = $isMaybeLoggedIn;
+            $tmpl = new MagicTemplate(RAD_WORKSPACE_PATH . "site/{$match->layoutFileName}",
+                ['_cssFiles' => $apiState->getEnqueuedCssFiles(BaseAPI::TARGET_WEBSITE_LAYOUT),
+                '_jsFiles' => $apiState->getEnqueuedJsFiles(BaseAPI::TARGET_WEBSITE_LAYOUT)],
+                $this->translator,
+                $this->dao,
+                $this->fs);
+            $apiState->applyRegisteredTemplateStuff($tmpl, BaseAPI::TARGET_WEBSITE_LAYOUT);
+            $url = $req->params->url;
+            $html = $tmpl->render(['url' => explode('/', substr($url, 1)),
+                                   'urlStr' => $url,
+                                   'site' => $this->cmsState->getSiteInfo()]);
+        } else {
+            $html = '<!DOCTYPE html><html><head><title></title></head><body>404</body></html>';
+        }
         $res->html(!$isMaybeLoggedIn || ($bodyEnd = strpos($html, '</body>')) === false
             ? $html
-            : $this->injectParentWindowCpanelSetupScript($html, $bodyEnd, $req)
+            : $this->injectParentWindowCpanelSetupScript($html, $bodyEnd, $match, $req)
         );
     }
     /**
@@ -95,10 +92,12 @@ class WebsiteControllers {
      */
     private function injectParentWindowCpanelSetupScript(string $html,
                                                          int $bodyEnd,
+                                                         ?UrlMatcher $templateMatch,
                                                          Request $req): string {
         $dataToFrontendApp = json_encode([
             'contentPanels' => $this->dao->getFrontendPanels(),
             'currentPagePath' => $req->path,
+            'currentPageTemplateMatch' => $templateMatch,
         ]);
         return substr($html, 0, $bodyEnd) .
             "<script>(function () {
@@ -117,13 +116,13 @@ class WebsiteControllers {
     /**
      * @param \RadCms\Website\UrlMatcher[] $urlMatchers
      * @param string $url
-     * @return string
+     * @return ?UrlMatcher
      */
-    public static function findLayout(array $urlMatchers, string $url): string {
+    public static function findLayout(array $urlMatchers, string $url): ?UrlMatcher {
         foreach ($urlMatchers as $rule) {
-            if (preg_match($rule->pattern, $url)) return $rule->layoutFileName;
+            if (preg_match($rule->pattern, $url)) return $rule;
         }
-        return '';
+        return null;
     }
     /**
      * Palauttaa uuden instanssin luokasta RAD_WORKSPACE_PATH . 'site/Theme.php', tai

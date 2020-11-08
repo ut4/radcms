@@ -204,6 +204,10 @@
 #cpanel2 i.subtitle {
     display: block;
 }
+#cpanel2 code {
+    background-color: transparent;
+    color: #9ec3b7;
+}
 
 /* -- Cpanel: elements ---- */
 #cpanel-app {
@@ -278,6 +282,40 @@
     font-size: .7rem;
     display: block;
     margin: .45rem 0;
+}
+
+.on-this-page .feather {
+    margin: 0 0 -0.18rem 0.2rem;
+}
+.hover-bridge {
+    width: 2.4rem;
+    display: block;
+    position: absolute;
+    height: 1.6rem;
+}
+.hover-bridge:hover + .info,
+.info:hover {
+    display: block;
+}
+.info {
+    z-index: 1;
+    position: absolute;
+    background-color: rgba(63,68,76,0.98);
+    padding: .4rem;
+    font-size: .7rem;
+    text-transform: none;
+    line-height: 1rem;
+    display: none;
+    margin: .2rem .3rem 0 -.4rem;
+    letter-spacing: initial;
+}
+.info:before {
+    content: "";
+    position: absolute;
+    border-bottom: 6px solid rgba(63,68,76,0.98);
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    margin: -14px 0 0 .6rem;
 }
 
 /* -- View: commons ---- */
