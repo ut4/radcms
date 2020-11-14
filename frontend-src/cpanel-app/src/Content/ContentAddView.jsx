@@ -123,15 +123,14 @@ class ContentAddView extends preact.Component {
             return;
         const publishSettings = !this.state.values.createAsDraft ? '' : '/as-draft';
         return http.post(`/api/content/${this.state.contentType.name}${publishSettings}`,
-            Object.assign(this.newContentNode,
-                          values,
-                          {status: publishSettings === '' ? Status.PUBLISHED : Status.DRAFT}))
+            Object.assign(values, {status: publishSettings === '' ? Status.PUBLISHED : Status.DRAFT}))
             .then(() => {
                 if (e.altSubmitLinkIndex === 0) urlUtils.reload();
                 else if (this.props.matches['return-to'] !== undefined) urlUtils.redirect(this.props.matches['return-to']);
                 else urlUtils.redirect('@current', 'hard');
             })
-            .catch(() => {
+            .catch(err => {
+                env.console.error(err);
                 toasters.main('Sisällön luonti epäonnistui.', 'error');
             });
     }

@@ -1,4 +1,4 @@
-import {http, urlUtils, toasters, Confirmation} from '@rad-commons';
+import {http, urlUtils, toasters, Confirmation, env} from '@rad-commons';
 import {ContentNodeUtils} from '@rad-cpanel-commons';
 import popupDialog from '../Common/PopupDialog.jsx';
 
@@ -52,7 +52,8 @@ function openDialog(contentNode, returnTo = '@current') {
                     else
                         urlUtils.redirect(returnTo, 'hard');
                 })
-                .catch(() => {
+                .catch(err => {
+                    env.console.error(err);
                     toasters.main('Sisällön poistaminen epäonnistui.', 'error');
                 });
         }

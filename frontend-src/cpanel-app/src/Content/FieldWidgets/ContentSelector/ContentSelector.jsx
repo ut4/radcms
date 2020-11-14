@@ -1,4 +1,4 @@
-import {http, InputGroup, Confirmation} from '@rad-commons';
+import {http, InputGroup, Confirmation, env} from '@rad-commons';
 import Tags from '../../../Common/Tags.jsx';
 import {timingUtils} from '../../../Common/utils.js';
 import BaseFieldWidget from '../Base.jsx';
@@ -62,9 +62,7 @@ class ContentSelectorFieldWidget extends BaseFieldWidget {
     reFetchContent(filters) {
         return http.get(`/api/content/${this.contentTypeName}/${makeFiltersJson(filters)}`)
             .then(this.toOptions.bind(this))
-            .catch(err => {
-                window.console.error(err);
-            });
+            .catch(env.console.error);
     }
     /**
      * @access protected
@@ -87,9 +85,7 @@ class ContentSelectorFieldWidget extends BaseFieldWidget {
                 this.initialOptions = this.toOptions(contentNodes);
                 this.setState({contentFetched: true});
             })
-            .catch(err => {
-                window.console.error(err);
-            });
+            .catch(env.console.error);
     }
     /**
      * @access protected

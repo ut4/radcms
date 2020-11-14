@@ -20,7 +20,8 @@ class PluginsManageView extends preact.Component {
                 else
                     this.setState({plugins: [], message: 'Ei lisäosia.'});
             })
-            .catch(() => {
+            .catch(err => {
+                env.console.error(err);
                 this.setState({message: 'Jokin meni pieleen.'});
             });
     }
@@ -81,7 +82,8 @@ function sendInstallOrUninstallRequest(plugin, url) {
                 : JSON.stringify([`Lisäosan ${plugin.name} asennus poistettu.`, 'success']);
             urlUtils.redirect('@current', 'hard');
         })
-        .catch(() => {
+        .catch(err => {
+            env.console.error(err);
             toasters.main(`Lisäosan ${url === 'install' ? 'asennus' : 'poisto'} epäonnistui`, 'error');
         });
 }

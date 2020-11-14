@@ -32,8 +32,8 @@ class ContentManageView extends preact.Component {
                 return this.fetchInitialContent(props, contentTypeName);
             })
             .catch(err => {
-                toasters.main('Jokin meni pieleen', 'error');
                 env.console.error(err);
+                toasters.main('Jokin meni pieleen', 'error');
             });
         this.debouncedSearchTermTypedHandler = timingUtils.debounce(
             this.handleSearchTermTyped.bind(this), 200);
@@ -125,8 +125,8 @@ class ContentManageView extends preact.Component {
         const filtersUrl = !filters ? '' : `/${JSON.stringify(filters)}`;
         return http.get(`/api/content/${contentTypeName}${filtersUrl}`)
             .catch(err => {
-                toasters.main('Jokin meni pieleen', 'error');
                 env.console.error(err);
+                toasters.main('Jokin meni pieleen', 'error');
                 return null;
             });
     }

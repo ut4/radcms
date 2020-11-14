@@ -27,9 +27,11 @@ class MultiFieldFieldsStore {
                 const copy = Object.assign({}, state);
                 Object.keys(action.props).forEach(key => {
                     const __field = copy.__fields.find(f => f.id === action.fieldId);
-                    if (key !== 'value') // name, widget
+                    if (key !== 'value') { // name, widget
+                        if (key === 'name')
+                            delete copy[__field.name];
                         __field[key] = action.props[key];
-                    else
+                    } else
                         copy[__field.name] = action.props[key];
                 });
                 return copy;

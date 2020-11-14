@@ -1,4 +1,4 @@
-import {http, toasters, hookForm, InputGroup, Input, InputError} from '@rad-commons';
+import {http, toasters, hookForm, InputGroup, Input, InputError, env} from '@rad-commons';
 
 /**
  * #/from-package: Näkymä jolla sivuston omistaja voi asentaa sivuston sivuston
@@ -59,7 +59,8 @@ class FromPackageInstallerView extends preact.Component {
             .then(details => {
                 preactRouter.route(`/from-package?installed&q=${details.mainQueryVar}`);
             })
-            .catch(() => {
+            .catch(err => {
+                env.console.error(err);
                 toasters.main('Asennus epäonnistui', 'error');
             });
     }

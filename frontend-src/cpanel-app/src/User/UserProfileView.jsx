@@ -1,4 +1,4 @@
-import {http, View} from '@rad-commons';
+import {http, View, env} from '@rad-commons';
 
 /**
  * #/me
@@ -15,7 +15,8 @@ class UserProfileView extends preact.Component {
                 if (user) this.setState({user});
                 else this.setState({message: 'Käyttäjää ei löytynyt'});
             })
-            .catch(() => {
+            .catch(err => {
+                env.console.error(err);
                 this.setState({message: 'Jokin meni pieleen'});
             });
     }

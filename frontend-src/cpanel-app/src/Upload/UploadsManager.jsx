@@ -127,7 +127,8 @@ class UploadsManager extends preact.Component {
                     this.searchResultCache = new Map();
                 } else throw new Error(info);
             })
-            .catch(() => {
+            .catch(err => {
+                env.console.error(err);
                 toasters.main('Tiedoston poistaminen ei onnistunut.', 'error');
             });
     }

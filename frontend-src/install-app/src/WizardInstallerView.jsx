@@ -1,4 +1,4 @@
-import {http, toasters, InputGroup, Input, Select, InputError, FeatherSvg, hookForm} from '@rad-commons';
+import {http, toasters, InputGroup, Input, Select, InputError, FeatherSvg, hookForm, env} from '@rad-commons';
 
 /**
  * #/with-wizard: Näkymä jolla devaaja voi asentaa uuden sivuston.
@@ -98,7 +98,7 @@ class WizardInstallerView extends preact.Component {
                                    '&q=' + data.mainQueryVar);
             })
             .catch(err => {
-                console.error(err);
+                env.console.error(err);
                 toasters.main('Asennus epäonnistui', 'error');
                 window.scrollTo(0, 0);
             });

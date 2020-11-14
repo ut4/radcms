@@ -32,9 +32,7 @@ class ContentSelectorSettingsEditForm extends AbstractSettingEditForm {
                     [this.inputIds.valueField]: settings.valueField,
                 })));
             })
-            .catch(err => {
-                env.console.error(err);
-            });
+            .catch(env.console.error);
     }
     /**
      * @returns {{contentType: string; enableMultipleSelections: boolean; labelField: string; valueField: string;}}

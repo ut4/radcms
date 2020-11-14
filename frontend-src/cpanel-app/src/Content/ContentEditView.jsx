@@ -41,7 +41,8 @@ class ContentEditView extends preact.Component {
                 else if (this.props.matches['return-to'] !== undefined) urlUtils.redirect(this.props.matches['return-to']);
                 else urlUtils.redirect('@current', 'hard');
             })
-            .catch(() => {
+            .catch(err => {
+                env.console.error(err);
                 toasters.main('Sisällön tallennus epäonnistui.', 'error');
             });
     }
@@ -134,7 +135,8 @@ class ContentEditView extends preact.Component {
             .then(ctype => {
                 this.contentType = ctype;
             })
-            .catch(() => {
+            .catch(err => {
+                env.console.error(err);
                 toasters.main('Jokin meni pieleen', 'error');
             })
             .finally(() => {
