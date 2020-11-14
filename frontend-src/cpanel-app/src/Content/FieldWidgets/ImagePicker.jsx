@@ -82,6 +82,7 @@ class PickImageDialog extends preact.Component {
                         popupDialog.close();
                     }}
                     selectedEntryName={ selectedImageName }
+                    disableEditing
                     onlyImages/>
                 <button onClick={ () => popupDialog.close() }
                         class="btn mt-8"

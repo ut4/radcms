@@ -9,7 +9,7 @@ use RadCms\Content\DAO;
 use RadCms\ContentType\ContentTypeMigrator;
 use RadCms\Plugin\{MigrationAPI, Plugin};
 use RadCms\Tests\AppTest;
-use RadCms\Tests\_Internal\ContentTestUtils;
+use RadCms\Tests\_Internal\{ContentTestUtils, TestSite};
 use RadPlugins\MoviesPlugin\MoviesPlugin;
 
 final class PluginAPIIntegrationTest extends DbTestCase {
@@ -36,7 +36,7 @@ final class PluginAPIIntegrationTest extends DbTestCase {
             ->getMock();
         $ctx->fs->method('readDir')
             ->with($this->stringEndsWith('plugins'))
-            ->willReturn([dirname(RAD_PUBLIC_PATH) . '/_test-plugins/MoviesPlugin']);
+            ->willReturn([dirname(TestSite::PUBLIC_PATH) . '/_test-plugins/MoviesPlugin']);
         $this->app = $this->makeApp('\RadCms\App::create', $this->getAppConfig(),
             $ctx);
     }

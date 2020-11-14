@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace RadCms\Upload;
 
-use Pike\{PikeException, Request, Response, Validation};
+use Pike\{FileSystem, ObjectValidator, PikeException, Request, Response, Validation};
 use RadCms\Api\QueryFilters;
 
 /**
@@ -56,7 +56,7 @@ class UploadControllers {
                                         ? $req->files->localFile['error']
                                         : '<nothing>',
                                     PikeException::FAILED_FS_OP);
-        } elseif (($errors = $this->validateUploadInput($req->body))) {
+        } elseif (($errors = self::validateUploadInput($req->body))) {
             $res->status(400)->json($errors);
             return;
         }
@@ -69,6 +69,32 @@ class UploadControllers {
         $uploadsRepo->insertMany([$file]);
         //
         $res->json(['file' => $file]);
+    }
+    /**
+     * DELETE /api/uploads/:fileName/:basePath: poistaa tiedoston concat($req->params->fileName,
+     * $req->params->basePath) tietokannasta ja uploads-kansiosta.
+     *
+     * @param \Pike\Request $req
+     * @param \Pike\Response $res
+     * @param \Pike\FileSystem $fs
+     * @param \RadCms\Upload\UploadsRepository $uploadsRepo
+     */
+    public function deleteFile(Request $req,
+                               Response $res,
+                               FileSystem $fs,
+                               UploadsRepository $uploadsRepo): void {
+        if (($errors = self::validateAndNormalizeDeleteInput($req->params))) {
+            $res->status(400)->json($errors);
+            return;
+        }
+        // @allow \Pike\PikeException
+        $uploadsRepo->delete(UploadsQFilters::byNameAndBasePath($req->params->fileName,
+                                                                $req->params->basePath));
+        $filePath = "{$req->params->basePath}{$req->params->fileName}";
+        if ($fs->isFile($filePath))
+            $fs->unlink($filePath);
+        //
+        $res->json(['ok' => 'ok']);
     }
     /**
      * PUT /api/uploads/rebuild-index: synkronoi uploads-kansion tämänhetkisen
@@ -121,10 +147,28 @@ class UploadControllers {
      * @param \stdClass $reqBody
      * @return string[]
      */
-    private function validateUploadInput(\stdClass $reqBody): array {
+    private static function validateUploadInput(\stdClass $reqBody): array {
+        return self::makeCommonValidator()->validate($reqBody);
+    }
+    /**
+     * @param \stdClass $reqParams
+     * @return string[]
+     */
+    private static function validateAndNormalizeDeleteInput(\stdClass $reqParams): array {
+        if (is_string($reqParams->fileName ?? null))
+            $reqParams->fileName = urldecode($reqParams->fileName);
+        if (is_string($reqParams->basePath ?? null))
+            $reqParams->basePath = urldecode($reqParams->basePath);
+        return self::makeCommonValidator()
+            ->rule('basePath', 'maxLength', 260)
+            ->validate($reqParams);
+    }
+    /**
+     * @return ObjectValidator
+     */
+    private static function makeCommonValidator(): ObjectValidator {
         return (Validation::makeObjectValidator())
             ->rule('fileName', 'type', 'string')
-            ->rule('fileName', 'maxLength', 255)
-            ->validate($reqBody);
+            ->rule('fileName', 'maxLength', 255);
     }
 }

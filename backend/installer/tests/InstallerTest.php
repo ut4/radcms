@@ -10,7 +10,7 @@ use Pike\TestUtils\{HttpTestUtils, MockCrypto};
 use RadCms\AppContext;
 use RadCms\Auth\ACL;
 use RadCms\Installer\Installer;
-use RadCms\Tests\_Internal\ContentTestUtils;
+use RadCms\Tests\_Internal\{ContentTestUtils, TestSite};
 
 final class InstallerTest extends BaseInstallerTest {
     use HttpTestUtils;
@@ -147,7 +147,7 @@ final class InstallerTest extends BaseInstallerTest {
         $this->verifyInsertedSampleContent($s);
     }
     private function setupInstallerTest1(): \stdClass {
-        $config = require TEST_SITE_PUBLIC_PATH . 'config.php';
+        $config = require TestSite::PUBLIC_PATH . 'config.php';
         return (object) [
             'input' => (object) [
                 'siteName' => '',
@@ -169,7 +169,7 @@ final class InstallerTest extends BaseInstallerTest {
             ],
             'backendPath' => RAD_BACKEND_PATH,
             'workspacePath' => RAD_WORKSPACE_PATH,
-            'publicPath' => RAD_PUBLIC_PATH,
+            'publicPath' => TestSite::PUBLIC_PATH,
             'sampleContentDirPath' => RAD_BACKEND_PATH . 'installer/sample-content/test-content/',
             'mockFs' => $this->createMock(FileSystem::class),
             'spyingResponse' => null,

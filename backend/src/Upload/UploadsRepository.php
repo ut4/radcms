@@ -42,6 +42,16 @@ class UploadsRepository {
         return $rows;
     }
     /**
+     * @param \RadCms\Upload\UploadsQFilters $filters
+     * @return int $numAffectedRows
+     */
+    public function delete(UploadsQFilters $filters): int {
+        [$whereSql, $whereVals] = $filters->toQParts();
+        // @allow \Pike\PikeException
+        return $this->db->exec("DELETE FROM `\${p}files` WHERE {$whereSql}",
+                               $whereVals);
+    }
+    /**
      * @return int $numAffectedRows
      */
     public function deleteAll(): int {

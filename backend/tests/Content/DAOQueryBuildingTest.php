@@ -93,7 +93,7 @@ final class DAOQueryBuildingTest extends TestCase {
         $this->assertEquals(
             'SELECT g.*, j.`id` AS `jId`, \'JsonBlobs\' AS `jContentType`'.
                     ', j.`name` AS `jName`, j.`data` AS `jData`' .
-                    ', JSON_EXTRACT(j.`data`, "$.prop") AS `myProp`' .
+                    ', JSON_UNQUOTE(JSON_EXTRACT(j.`data`, "$.prop")) AS `myProp`' .
             ' FROM (' . $mainQ . ') AS g' .
             ' JOIN `${p}JsonBlobs` AS j ON (j.`name` = CONCAT(_a.`title`, \'-info\'))',
             $usingJsonFields->toSql()

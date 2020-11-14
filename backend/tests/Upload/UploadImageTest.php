@@ -52,7 +52,7 @@ final class UploadImageTest extends UploadControllersTestCase {
         $state = $this->setupUploadFileTest();
         $this->sendUploadFileRequest($state);
         $this->verifyRespondedSuccesfullyWithNewFileInfo(self::TEST_FILE_NAME, $state);
-        $this->verifyMovedUploadedFileTo(RAD_PUBLIC_PATH . 'uploads/' . self::TEST_FILE_NAME,
+        $this->verifyMovedUploadedFileTo(TestSite::PUBLIC_PATH . 'uploads/' . self::TEST_FILE_NAME,
                                          $state);
         $this->verifyInsertedFileToDb(self::TEST_FILE_NAME, $state);
     }
@@ -72,7 +72,7 @@ final class UploadImageTest extends UploadControllersTestCase {
         $parsed = json_decode($s->spyingResponse->getActualBody());
         $actual = $parsed->file;
         $this->assertEquals($expectedFileName, $actual->fileName);
-        $this->assertEquals(TEST_SITE_PUBLIC_PATH . 'uploads/', $actual->basePath);
+        $this->assertEquals(TestSite::PUBLIC_PATH . 'uploads/', $actual->basePath);
         $this->assertEquals(self::TEST_FILE_MIME, $actual->mime);
         $this->assertEquals(null, $actual->friendlyName);
         $this->assertTrue($actual->createdAt > time() - 10);
@@ -102,7 +102,7 @@ final class UploadImageTest extends UploadControllersTestCase {
         $this->sendUploadFileRequest($state);
         $this->verifyRespondedSuccesfullyWithNewFileInfo($state->reqBody->fileName,
                                                          $state);
-        $this->verifyMovedUploadedFileTo(RAD_PUBLIC_PATH . "uploads/{$state->reqBody->fileName}",
+        $this->verifyMovedUploadedFileTo(TestSite::PUBLIC_PATH . "uploads/{$state->reqBody->fileName}",
                                          $state);
         $this->verifyInsertedFileToDb($state->reqBody->fileName, $state);
     }

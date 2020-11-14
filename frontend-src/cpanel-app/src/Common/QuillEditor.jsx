@@ -16,6 +16,7 @@ class QuillEditor extends preact.Component {
                 [{'list': 'ordered'}, {'list': 'bullet'}],
                 [{'indent': '-1'}, {'indent': '+1'}, {'align': [] }],
                 [{'header': [1, 2, 3, 4, 5, 6, false]}],
+                [{'size': ['small', false, 'large', 'huge'] }],
                 ['link', 'image', 'video', 'code-block'],
                 ['clean']
             ]},

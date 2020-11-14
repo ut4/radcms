@@ -19,6 +19,9 @@ abstract class UploadModule {
         $ctx->router->map('POST', '/api/uploads',
             [UploadControllers::class, 'uploadFile', 'upload:uploads:multiPart']
         );
+        $ctx->router->map('DELETE', '/api/uploads/[*:fileName]/[*:basePath]',
+            [UploadControllers::class, 'deleteFile', 'delete:uploads:json']
+        );
         $ctx->router->map('PUT', '/api/uploads/rebuild-index',
             [UploadControllers::class, 'rebuildIndex', 'rebuildIndex:uploads:json']
         );

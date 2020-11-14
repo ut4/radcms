@@ -35,6 +35,15 @@
     position: absolute;
 }
 
+/* -- Elements: buttons ---- */
+.btn.opaque-white {
+    background-color: rgba(255, 255, 255, 0.69);
+}
+.item-grid .close {
+    padding: .34rem;
+    height: 1.68rem;
+}
+
 /* -- Components: Grids ---- */
 .item-grid {
     display: grid;
@@ -50,7 +59,7 @@
 .image-grid button, .image-grid img {
     border-radius: 2px;
 }
-.image-grid button {
+.image-grid > button {
     background-color: var(--bg-light);
     padding: 0 0 2rem;
     height: initial;
@@ -370,6 +379,11 @@
     max-width: 1280px;
 }
 #view .close {
+    position: absolute;
+    top: 0;
+    right: 0;
+}
+#view > .box > .close {
     position: absolute;
     top: .8rem;
     right: .8rem;

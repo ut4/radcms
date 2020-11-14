@@ -17,7 +17,7 @@ class DbDataHelper {
     }
     /**
      * @param object[] $data
-     * @param string $tableName
+     * @param string $tableName @allow raw sql
      */
     public function insertData(array $data, string $tableName): void {
         [$qGroups, $vals, $cols] = $this->db->makeBatchInsertQParts($data);
@@ -30,5 +30,16 @@ class DbDataHelper {
                                             $tableName,
                                             $numRows),
                                     PikeException::FAILED_DB_OP);
+    }
+    /**
+     * @param string $tableName @allow raw sql
+     * @param string $whereExpr @allow raw sql
+     * @param array<int, mixed> $whereVals
+     * @return ?array<string, mixed>
+     */
+    public function getRow(string $tableName, string $whereExpr, array $whereVals): ?array {
+        return $this->db->fetchOne("SELECT * FROM `\${p}{$tableName}` WHERE {$whereExpr}",
+                                   $whereVals,
+                                   \PDO::FETCH_ASSOC);
     }
 }

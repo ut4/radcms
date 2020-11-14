@@ -3,15 +3,16 @@ import {http, myFetch, Toaster, toasters, FeatherSvg, urlUtils, env, config,
 import LoadingSpinner from '../Common/LoadingSpinner.jsx';
 import Tabs from '../Common/Tabs.jsx';
 import {timingUtils} from '../Common/utils.js';
+import ImageDeleteDialog from './ImageDeleteDialog.jsx';
 const INITIAL_CACHE_KEY = '';
 
 class UploadsManager extends preact.Component {
     /**
-     * @param {{onEntryClicked: (image: Object) => any; onlyImages?: boolean; selectedEntryName?: string;}} props
+     * @param {{onEntryClicked: (image: Object) => any; onlyImages?: boolean; selectedEntryName?: string; disableEditing?: boolean;}} props
      */
     constructor(props) {
         super(props);
-        this.state = {files: null, currentTabIdx: 0, fetching: true};
+        this.state = {files: null, currentTabIdx: 0, fetching: true, showEditButtons: false};
         this.title = props.onlyImages !== true ? 'Tiedostot' : 'Kuvat';
         this.tabs = preact.createRef();
         this.searchResultCache = new Map();
@@ -22,15 +23,20 @@ class UploadsManager extends preact.Component {
     /**
      * @access protected
      */
-    render(_, {files, currentTabIdx}) {
+    render({disableEditing}, {files, currentTabIdx, showEditButtons}) {
         return <div>
             <Tabs links={ [this.title, 'Lataa'] } onTabChanged={ idx => this.setState({currentTabIdx: idx}) }
                 ref={ this.tabs }/>
             <div class={ currentTabIdx === 0 ? 'mt-10' : 'hidden' }>
-                <div class="pseudo-form-input has-icon-right mb-10">
-                    <input class="form-input" placeholder="Suodata" onInput={ this.debouncedOnSearchTermTyped }/>
-                    <i class="rad-form-icon"><FeatherSvg iconId="search" className="feather-md"/></i>
-                </div>
+                <div class="container"><div class="columns">
+                    <div class="pseudo-form-input has-icon-right col-10 mb-10">
+                        <input class="form-input" placeholder="Suodata" onInput={ this.debouncedOnSearchTermTyped }/>
+                        <i class="rad-form-icon"><FeatherSvg iconId="search" className="feather-md"/></i>
+                    </div>
+                    { !disableEditing && files && files.length ? <button class="btn d-flex col-ml-auto btn-icon" onClick={ () => this.setState({showEditButtons: !showEditButtons}) }>
+                        <FeatherSvg iconId={ !showEditButtons ? 'lock' : 'unlock' } className="feather-md"/>
+                    </button> : null}
+                </div></div>
                 { files ? files.length
                     ? <div class="item-grid image-grid img-auto grid-col-lg-three">{ this.state.files.map(entry =>
                         <button
@@ -41,9 +47,18 @@ class UploadsManager extends preact.Component {
                                 ? <div class="img-ratio"><img src={ `${urlUtils.assetBaseUrl}uploads/${entry.fileName}` }/></div>
                                 : <span>{ entry.mime }</span> }
                             <span class="caption text-ellipsis">{ entry.fileName }</span>
+                            <button
+                                onClick={ () => ImageDeleteDialog.open({
+                                    fileName: entry.fileName,
+                                    onConfirm: () => this.deleteFile(entry)
+                                }) }
+                                class={ `btn btn-icon close opaque-white${!showEditButtons ? ' d-none' : ''}` }
+                                type="button">
+                                <FeatherSvg iconId="trash" className="feather-sm"/>
+                            </button>
                         </button>
                     ) }</div>
-                    : <p class="my-0">{ this.searchTerm !== INITIAL_CACHE_KEY ? `Ei tuloksia hakusanalla "${this.searchTerm}"` : ['Ei vielä latauksia.', <i>(i)</i>, 'Mikäli olet lisännyt tiedostoja manuaalisesti lataukset-kansioon, voit synkronoida ne ', <a href="#/rescan-uploads">Skannaa -näkymässä</a>] }.</p>
+                    : <p class="my-0">{ this.searchTerm !== INITIAL_CACHE_KEY || this.searchedAtLeastOnce ? `Ei tuloksia hakusanalla "${this.searchTerm}"` : ['Ei vielä latauksia.', <i>(i)</i>, 'Mikäli olet lisännyt tiedostoja manuaalisesti lataukset-kansioon, voit synkronoida ne ', <a href="#/rescan-uploads">Skannaa -näkymässä</a>] }.</p>
                 : <LoadingSpinner/> }</div>
             <div class={ this.state.currentTabIdx !== 1 ? 'hidden' : 'mt-10' }>
                 <UploadButton onFileUploaded={ this.addEntry.bind(this) }/>
@@ -87,6 +102,7 @@ class UploadsManager extends preact.Component {
      */
     fetchFilesAndSetToState(onlyImages, searchTerm, isInitial = false) {
         this.searchTerm = searchTerm;
+        this.searchedAtLeastOnce = !isInitial;
         this.fetchFiles(searchTerm, onlyImages, isInitial)
             .then(files => { this.setState({files, fetching: false}); })
             .catch(env.console.error);
@@ -97,6 +113,23 @@ class UploadsManager extends preact.Component {
     onSearchTermTyped(e) {
         if (!this.state.fetching)
             this.fetchFilesAndSetToState(this.props.onlyImages, e.target.value);
+    }
+    /**
+     * @access private
+     */
+    deleteFile(file) {
+        http.delete('/api/uploads/' +
+                    encodeURIComponent(file.fileName) + '/' +
+                    encodeURIComponent(file.basePath))
+            .then(info => {
+                if (info.ok) {
+                    this.setState({files: this.state.files.filter(file2 => file2 !== file)});
+                    this.searchResultCache = new Map();
+                } else throw new Error(info);
+            })
+            .catch(() => {
+                toasters.main('Tiedoston poistaminen ei onnistunut.', 'error');
+            });
     }
 }
 

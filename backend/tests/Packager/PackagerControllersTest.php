@@ -170,14 +170,14 @@ final class PackagerControllersTest extends DbTestCase {
         }
     }
     private function verifyThemeAssetsWereIncluded($s) {
-        $base = RAD_PUBLIC_PATH . 'frontend/';
+        $base = TestSite::PUBLIC_PATH . 'frontend/';
         foreach (TestSite::ASSETS as $relativePath) {
             $this->assertEquals($this->mockPackageStream->mockReadFile("{$base}{$relativePath}"),
                 $s->packageCreatedFromResponse->read($relativePath));
         }
     }
     private function verifyUploadsWereIncluded($s) {
-        $base = RAD_PUBLIC_PATH . 'uploads/';
+        $base = TestSite::PUBLIC_PATH . 'uploads/';
         foreach (TestSite::UPLOADS as $relativePath) {
             $this->assertEquals($this->mockPackageStream->mockReadFile("{$base}{$relativePath}"),
                 $s->packageCreatedFromResponse->read($relativePath));

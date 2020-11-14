@@ -2,56 +2,54 @@
 use RadCms\Auth\ACL;
 //
 return function () {
-$flag1 = 1 << 1;
-$flag2 = 1 << 2;
-$flag3 = 1 << 3;
 $out = new \stdClass;
 $out->resources = (object) [
     'auth' => (object) [
-        'logout'     => $flag1,
-        'updatePass' => $flag2,
+        'logout'     => 0b00000010,
+        'updatePass' => 0b00000100,
     ],
     'cms' => (object) [
-        'update' => $flag1,
+        'update' => 0b00000010,
     ],
     'content' => (object) [
-        'create'    => $flag1,
-        'view'      => $flag2,
-        'update'    => $flag3,
-        'delete'    => 1 << 4,
-        'configure' => 1 << 5,
+        'create'    => 0b00000010,
+        'view'      => 0b00000100,
+        'update'    => 0b00001000,
+        'delete'    => 0b00010000,
+        'configure' => 0b00100000,
     ],
     'contentTypes' => (object) [
-        'create'      => $flag1,
-        'view'        => $flag2,
-        'update'      => $flag3,
-        'delete'      => 1 << 4,
-        'addField'    => 1 << 5,
-        'updateField' => 1 << 6,
-        'deleteField' => 1 << 7,
+        'create'      => 0b00000010,
+        'view'        => 0b00000100,
+        'update'      => 0b00001000,
+        'delete'      => 0b00010000,
+        'addField'    => 0b00100000,
+        'updateField' => 0b01000000,
+        'deleteField' => 0b10000000,
     ],
     'editMode' => (object) [
-        'access' => $flag1
+        'access' => 0b00000010
     ],
     'multiFieldContent' => (object) [
-        'manageFieldsOf' => $flag1
+        'manageFieldsOf' => 0b00000010
     ],
     'plugins' => (object) [
-        'view'      => $flag1,
-        'install'   => $flag2,
-        'uninstall' => $flag3
+        'view'      => 0b00000010,
+        'install'   => 0b00000100,
+        'uninstall' => 0b00001000
     ],
     'profile' => (object) [
-        'viewItsOwn' => $flag1,
+        'viewItsOwn' => 0b00000010,
     ],
     'uploads' => (object) [
-        'view'   => $flag1,
-        'upload' => $flag2,
-        'rebuildIndex' => $flag3,
+        'view'         => 0b00000010,
+        'upload'       => 0b00000100,
+        'delete'       => 0b00001000,
+        'rebuildIndex' => 0b00010000,
     ],
     'websites' => (object) [
-        'pack'    => $flag1,
-        'prePack' => $flag2,
+        'pack'    => 0b00000010,
+        'prePack' => 0b00000100,
     ]
 ];
 $out->userPermissions = (object) [
@@ -76,7 +74,7 @@ $out->userPermissions = (object) [
         'multiFieldContent' => ACL::NO_PERMISSIONS,
         'plugins'           => ACL::NO_PERMISSIONS,
         'profile'           => ACL::makePermissions(['viewItsOwn'], $out->resources->profile),
-        'uploads'           => ACL::makePermissions(['view','upload'], $out->resources->uploads),
+        'uploads'           => ACL::makePermissions(['view','upload','delete'], $out->resources->uploads),
         'websites'          => ACL::NO_PERMISSIONS
     ],
     ACL::ROLE_VIEWER => (object) [

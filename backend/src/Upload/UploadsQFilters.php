@@ -11,6 +11,8 @@ final class UploadsQFilters {
     private $byMimeFilterVals;
     /** @var ?array<int, string> */
     private $byNameContainingFilterVals;
+    /** @var ?array<int, string> */
+    private $byNameAndBasePathFilterVals;
     /**
      * @param string $mime 'image/*'
      * @return \RadCms\Upload\UploadsQFilters
@@ -32,6 +34,16 @@ final class UploadsQFilters {
         return $out;
     }
     /**
+     * @param string $name
+     * @param string $basePath
+     * @return \RadCms\Upload\UploadsQFilters
+     */
+    public static function byNameAndBasePath(string $name, string $basePath): UploadsQFilters {
+        $out = new self();
+        $out->byNameAndBasePathFilterVals = [$name, $basePath];
+        return $out;
+    }
+    /**
      * @return array{0: string, 1: string[]}
      */
     public function toQParts(): array {
@@ -43,6 +55,8 @@ final class UploadsQFilters {
         }
         if ($this->byMimeFilterVals)
             return ['`mime` LIKE ?', $this->byMimeFilterVals];
+        if ($this->byNameAndBasePathFilterVals)
+            return ['`fileName` = ? AND `basePath` = ?', $this->byNameAndBasePathFilterVals];
         throw new PikeException('No filters set',
                                 PikeException::BAD_INPUT);
     }
