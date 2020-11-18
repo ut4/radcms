@@ -31,7 +31,7 @@ class MultiFieldConfigurer extends preact.Component {
                     <th>Widgetin asetukset</th>
                     <th class="buttons"></th>
                 </tr></thead>
-                <tbody ref={ this.activateSorting.bind(this) }>{ this.state.fieldsBundle.__fields.map(f => <tr key={ f.id } data-id={ f.id }>
+                <tbody ref={ this.activateSorting.bind(this) }>{ this.state.fieldsBundle.__fields.map(f => <tr key={ f.name } data-id={ f.name }>
                     <td class="drag-column">
                         <button class="drag-handle" type="button"><FeatherSvg iconId="grid-dots"/></button>
                     </td>
@@ -45,8 +45,9 @@ class MultiFieldConfigurer extends preact.Component {
                             onClick={ () => popupDialog.open(MultiFieldFieldEditDialog, {
                                 fieldMeta: f,
                                 fieldValue: this.state.fieldsBundle[f.name],
+                                currentFieldNames: this.state.fieldsBundle.__fields.map(f => f.name).filter(name => name !== f.name),
                                 onConfirm: newData => {
-                                    this.props.fields.setFieldProps(f.id, newData);
+                                    this.props.fields.setFieldProps(f.name, newData);
                                 }
                             }) }
                             type="button">
@@ -58,7 +59,7 @@ class MultiFieldConfigurer extends preact.Component {
                             onClick={ () => popupDialog.open(MultiFieldFieldDeleteDialog, {
                                 fieldName: f.name,
                                 onConfirm: () => {
-                                    this.props.fields.removeField(f.id);
+                                    this.props.fields.removeField(f.name);
                                 }
                             }) }
                             type="button">
@@ -68,7 +69,8 @@ class MultiFieldConfigurer extends preact.Component {
                 </tr>) }</tbody>
             </table>
             <button
-                onClick={ () => this.props.fields.addField(widgetTypes[0]) }
+                onClick={ () => this.props.fields.addField(widgetTypes[0],
+                    this.state.fieldsBundle.__fields.length) }
                 class="btn btn-sm mt-2"
                 type="button">Lisää kenttä</button>
         </div>;
@@ -94,22 +96,21 @@ function formatWidgetArgs(args) {
 
 class MultiFieldFieldEditDialog extends preact.Component {
     /**
-     * @param {{fieldMeta: MultiFieldMeta; fieldValue: string; onConfirm: (newData: Object) => any;}} props
+     * @param {{fieldMeta: MultiFieldMeta; fieldValue: string; currentFieldNames: Array<string>; onConfirm: (newData: Object) => any;}} props
      */
     constructor(props) {
         super(props);
         this.widgetSelector = preact.createRef();
-
         this.state = hookForm(this, {fieldName: props.fieldMeta.name});
     }
     /**
      * @access protected
      */
-    render({fieldMeta}) {
+    render({fieldMeta, currentFieldNames}) {
         const {classes, errors} = this.state;
         return <div class="popup-dialog"><div class="box">
             <FormConfirmation
-                onConfirm={ e => this.handleConfirm(e) }
+                onConfirm={ e => { this.handleConfirm(e); } }
                 onCancel={ () => { popupDialog.close(); } }
                 confirmButtonText="Tallenna">
             <h2>Muokkaa kenttää</h2>
@@ -117,7 +118,7 @@ class MultiFieldFieldEditDialog extends preact.Component {
                 <InputGroup classes={ classes.fieldName }>
                     <label htmlFor="fieldName" class="form-label">Nimi</label>
                     <Input vm={ this } name="fieldName" id="fieldName"
-                        validations={ [['required']] }
+                        validations={ [['required'], ['notIn', currentFieldNames]] }
                         errorLabel="Nimi"/>
                     <InputError error={ errors.fieldName }/>
                 </InputGroup>

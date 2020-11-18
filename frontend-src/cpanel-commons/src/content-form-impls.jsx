@@ -25,6 +25,7 @@ class ValidatingFormImpl extends preact.Component {
      */
     render({fields, values, getWidgetImpl, settings, fieldHints, setFormClasses}) {
         return <div>{ fields.map((f, i) => {
+            if (f.widget.name === 'hidden') return null;
             // TextFieldFieldWidget, TextAreaFieldWidget etc...
             const {ImplClass, props} = getWidgetImpl(f.widget.name);
             const validationRule = f.validationRules || null;
@@ -48,7 +49,7 @@ class ValidatingFormImpl extends preact.Component {
                     ) }
                     labelHint={ hint }
                     setFormClasses={ setFormClasses }
-                    key={ (f.id || f.name) }/>
+                    key={ f.name }/>
                 { validationRule
                     ? <InputError error={ this.state.errors[f.name] }/>
                     : null }

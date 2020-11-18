@@ -2,7 +2,6 @@ import {http, toasters, urlUtils, View, Select, hookForm, InputGroup, Input, For
 import {contentFormRegister} from '@rad-cpanel-commons';
 import {filterByUserRoleAndNameList} from '../ContentType/FieldLists.jsx';
 import getWidgetImpl from './FieldWidgets/all-with-multi.js';
-import {genRandomString} from '../Website/WebsitePackView.jsx';
 const Status = Object.freeze({PUBLISHED: 0, DRAFT: 1, DELETED: 2});
 import webPageState from '../webPageState.js';
 
@@ -26,11 +25,7 @@ class ContentAddView extends preact.Component {
         this.contentForm = preact.createRef();
         http.get('/api/content-types/no-internals')
             .then(contentTypes => {
-                this.contentTypes = contentTypes.map(t =>
-                    Object.assign(t, {fields: t.fields.map(f =>
-                        Object.assign(f, {id: genRandomString(16)})
-                    )})
-                );
+                this.contentTypes = contentTypes;
                 const contentType = this.findContentType(props.initialContentTypeName,
                                                          contentTypes);
                 this.newContentNode = this.makeNewContentNode(contentType);

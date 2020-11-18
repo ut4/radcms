@@ -85,7 +85,7 @@ class MultiFieldFieldWidget extends BaseFieldWidget {
                 fields={ this.state.visibleFieldMetas }
                 values={ this.values }
                 onValueChange={ (value, f) => {
-                    this.multiFieldFields.setFieldProps(f.id, {value});
+                    this.multiFieldFields.setFieldProps(f.name, {value});
                     this.props.onValueChange(JSON.stringify(this.multiFieldFields.getFields()));
                 } }
                 fieldHints={ this.state.visibleFieldMetas.map(f =>

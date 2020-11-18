@@ -27,10 +27,7 @@ class ContentTypesManageView extends preact.Component {
                         this.basicInfoEditModes.push('none');
                         this.fieldEditModes.push('none');
                         this.fieldLists.push(preact.createRef());
-                        Object.assign(t, {
-                            key: ++counter,
-                            fields: t.fields.map(f => Object.assign(f, {key: makeField().key}))
-                        });
+                        t.key = ++counter;
                     });
                     this.setState({contentTypes});
                     if (props.matches['auto-open-create-form'] !== undefined) {

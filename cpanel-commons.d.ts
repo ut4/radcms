@@ -38,7 +38,6 @@ interface ContentTypeField {
 }
 
 interface MultiFieldMeta {
-    id: string;
     name: string;
     widget: FieldWidget;
 }

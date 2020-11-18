@@ -1,8 +1,6 @@
 import getWidgetImpl, {widgetTypes} from '../all.js';
 const {createStore} = window.Redux;
 
-let counter = 0;
-
 class MultiFieldFieldsStore {
     /**
      * @param {MultiFieldsBundle} initialFields
@@ -17,34 +15,32 @@ class MultiFieldFieldsStore {
                 });
             } if (action.type === 'REMOVE_FIELD') {
                 return Object.assign(state.__fields.reduce((filtered, field) => {
-                    if (field.id !== action.fieldId)
+                    if (field.name !== action.fieldName)
                         filtered[field.name] = state[field.name];
                     return filtered;
                 }, {}), {
-                    __fields: state.__fields.filter(field => field.id !== action.fieldId),
+                    __fields: state.__fields.filter(field => field.name !== action.fieldName),
                 });
             } if (action.type === 'SET_PROPS') {
                 const copy = Object.assign({}, state);
+                const __field = copy.__fields.find(f => f.name === action.fieldName);
                 Object.keys(action.props).forEach(key => {
-                    const __field = copy.__fields.find(f => f.id === action.fieldId);
                     if (key !== 'value') { // name, widget
                         if (key === 'name')
-                            delete copy[__field.name];
+                            delete copy[action.fieldName];
                         __field[key] = action.props[key];
                     } else
-                        copy[__field.name] = action.props[key];
+                        copy[action.props.name || __field.name] = action.props[key];
                 });
                 return copy;
             }
             if (action.type === 'REORDER')
                 return Object.assign({}, state, {
-                    __fields: action.orderedIds.map(fieldId => state.__fields.find(f => f.id === fieldId))
+                    __fields: action.orderedNames.map(fieldName => state.__fields.find(f => f.name === fieldName))
                 });
             return state;
         }, initialFields);
-        if (initialFields)
-            counter = initialFields.__fields.reduce((max, f) => f.id > max ? f.id : max, 0);
-        else
+        if (!initialFields)
             this.addField(widgetTypes[0]);
     }
     /**
@@ -55,12 +51,12 @@ class MultiFieldFieldsStore {
         return this.store.getState();
     }
     /**
-     * @param {string} fieldId
+     * @param {string} fieldName
      * @param {Object} props
      * @access public
      */
-    setFieldProps(fieldId, props) {
-        this.store.dispatch({type: 'SET_PROPS', props, fieldId});
+    setFieldProps(fieldName, props) {
+        this.store.dispatch({type: 'SET_PROPS', props, fieldName});
     }
     /**
      * @param {{name: string; friendlyName: string; description: string; group?: string;}} widgetType
@@ -70,18 +66,18 @@ class MultiFieldFieldsStore {
         this.store.dispatch({type: 'ADD_FIELD', widgetType});
     }
     /**
-     * @param {string} fieldId
+     * @param {string} fieldName
      * @access public
      */
-    removeField(fieldId) {
-        this.store.dispatch({type: 'REMOVE_FIELD', fieldId});
+    removeField(fieldName) {
+        this.store.dispatch({type: 'REMOVE_FIELD', fieldName});
     }
     /**
-     * @param {Array<string>} orderedIds
+     * @param {Array<string>} orderedNames
      * @access public
      */
-    reorder(orderedIds) {
-        this.store.dispatch({type: 'REORDER', orderedIds});
+    reorder(orderedNames) {
+        this.store.dispatch({type: 'REORDER', orderedNames});
     }
     /**
      * @param {(fieldsBundle: MultiFieldsBundle) => any} fn
@@ -101,7 +97,6 @@ class MultiFieldFieldsStore {
     static makeNewField(widgetType, numFields) {
         return {
             meta: {
-                id: (++counter).toString(),
                 name: `field${(numFields || 0) + 1}`,
                 widget: {name: widgetType.name, args: {}} // @todo default args?
             },

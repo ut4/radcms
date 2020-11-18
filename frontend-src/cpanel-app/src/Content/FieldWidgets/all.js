@@ -16,7 +16,14 @@ const impls = {
     dateTimePicker: DateTimePickerFieldWidget,
     colorPicker: ColorPickerFieldWidget,
     contentSelector: ContentSelectorFieldWidget,
-    hidden: () => null,
+    hidden: class HiddenFieldWidget {
+        static getInitialValue() {
+            return '';
+        }
+        static convert(previous, _newWidget, value) {
+            return previous.group !== 'text' ? '' : value;
+        }
+    },
 };
 
 const settingFormImpls = {

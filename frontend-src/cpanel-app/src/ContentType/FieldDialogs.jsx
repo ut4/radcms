@@ -8,7 +8,7 @@ import WidgetSelector from '../Content/WidgetSelector.jsx';
  */
 class CreateFieldDialog extends preact.Component {
     /**
-     * @param {{field: ContentTypeField;}} props
+     * @param {{field: ContentTypeField; currentFieldNames: Array<string>;}} props
      */
     constructor(props) {
         super(props);
@@ -17,13 +17,16 @@ class CreateFieldDialog extends preact.Component {
     /**
      * @access protected
      */
-    render({field}) {
+    render({field, currentFieldNames}) {
         return <div class="popup-dialog"><div class="box">
             <Confirmation onConfirm={ () => this.handleConfirm() }
                 confirmButtonText="Lisää kenttä"
                 onCancel={ () => this.handleCancel() }>
             <h2>Lisää kenttä</h2>
-            <FieldInputs field={ field } ref={ this.fieldInputs }/>
+            <FieldInputs
+                field={ field }
+                ref={ this.fieldInputs }
+                currentFieldNames={ currentFieldNames }/>
         </Confirmation></div></div>;
     }
     /**
@@ -47,7 +50,7 @@ class CreateFieldDialog extends preact.Component {
  */
 class EditFieldDialog extends preact.Component {
     /**
-     * @param {{field: ContentTypeField;}} props
+     * @param {{field: ContentTypeField; currentFieldNames: Array<string>;}} props
      */
     constructor(props) {
         super(props);
@@ -56,13 +59,16 @@ class EditFieldDialog extends preact.Component {
     /**
      * @access protected
      */
-    render({field}) {
+    render({field, currentFieldNames}) {
         return <div class="popup-dialog"><div class="box">
             <Confirmation onConfirm={ () => this.handleConfirm() }
                 confirmButtonText="Tallenna kenttä"
                 onCancel={ () => this.handleCancel() }>
             <h2>Muokkaa kenttää</h2>
-            <FieldInputs field={ field } ref={ this.fieldInputs }/>
+            <FieldInputs
+                field={ field }
+                ref={ this.fieldInputs }
+                currentFieldNames={ currentFieldNames }/>
         </Confirmation></div></div>;
     }
     /**
@@ -137,7 +143,7 @@ const VISIBILITY_ALL = roles.reduce((mask, role) => mask | role.flag, 0);
 
 class FieldInputs extends preact.Component {
     /**
-     * @param {{field: ContentTypeField;}} props
+     * @param {{field: ContentTypeField; currentFieldNames: Array<string>;}} props
      */
     constructor(props) {
         super(props);
@@ -179,12 +185,12 @@ class FieldInputs extends preact.Component {
     /**
      * @access protected
      */
-    render() {
+    render({currentFieldNames}) {
         const {classes, errors} = this.state;
         return <div class="main">
             <InputGroup classes={ classes.name }>
                 <label htmlFor="name" class="form-label">Nimi</label>
-                <Input vm={ this } name="name" id="name" validations={ [['required']] }
+                <Input vm={ this } name="name" id="name" validations={ [['required'], ['notIn', currentFieldNames]] }
                     errorLabel="Nimi"/>
                 <InputError error={ errors.name }/>
             </InputGroup>

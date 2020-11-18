@@ -52,6 +52,7 @@ class FreelyEditableFieldList extends preact.Component {
             onAddButtonClicked={ () => this.addField() }
             onEditButtonClicked={ f => popupDialog.open(EditFieldDialog, {
                 field: f,
+                currentFieldNames: fields.map(f => f.name).filter(name => name !== f.name),
                 onConfirm: newData => {
                     this.updateField(f, newData);
                 }
@@ -70,7 +71,7 @@ class FreelyEditableFieldList extends preact.Component {
      * @access private
      */
     updateField(field, data) {
-        this.setState({fields: this.state.fields.map(field2 => field2.key !== field.key
+        this.setState({fields: this.state.fields.map(field2 => field2.name !== field.name
             ? field2
             : Object.assign({}, field2, data))
         });
@@ -142,6 +143,7 @@ class OneByOneEditableFieldList extends preact.Component {
     openCreateFieldDialog() {
         popupDialog.open(CreateFieldDialog, {
             field: makeField(),
+            currentFieldNames: this.state.fields.map(f => f.name),
             onConfirm: (newData, field) => {
                 this.saveFieldToBackend(newData, field, 'create');
             }
@@ -153,6 +155,7 @@ class OneByOneEditableFieldList extends preact.Component {
     openEditFieldDialog(field) {
         popupDialog.open(EditFieldDialog, {
             field,
+            currentFieldNames: this.state.fields.map(f => f.name).filter(name => name !== field.name),
             onConfirm: (newData, field) => {
                 this.saveFieldToBackend(newData, field, 'edit');
             }
@@ -222,7 +225,7 @@ class FieldsTable extends preact.Component {
             </tr></thead>
             <tbody
                 class={ !this.state.loading ? '' : ' no-drag' }
-                ref={ this.activateSorting.bind(this) }>{ fields.map(f => <tr key={ f.key } data-id={ f.key }>
+                ref={ this.activateSorting.bind(this) }>{ fields.map(f => <tr key={ f.name } data-id={ f.name }>
                 <td class="drag-column">
                     <button class="drag-handle" type="button"><FeatherSvg iconId="grid-dots"/></button>
                 </td>
@@ -262,8 +265,8 @@ class FieldsTable extends preact.Component {
         this.sortable.register(tbodyEl, {
             handle: '.drag-handle',
             onReorder: orderedIds => {
-                this.props.onFieldsReordered(orderedIds.map(key =>
-                    this.props.fields.find(f => f.key === key)
+                this.props.onFieldsReordered(orderedIds.map(fieldName =>
+                    this.props.fields.find(f => f.name === fieldName)
                 ), this);
             },
         });
@@ -286,8 +289,7 @@ function makeField() {
         widget: {
             name: 'textField',
             args: {}
-        },
-        key: counter.toString()
+        }
     };
 }
 

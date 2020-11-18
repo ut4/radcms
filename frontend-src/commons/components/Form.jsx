@@ -6,6 +6,7 @@ const validationStrings = {
     maxLength: '{field} tulee ole enintään {arg0} merkkiä pitkä',
     min: '{field} tulee olla vähintään {arg0}',
     max: '{field} tulee olla enintään {arg0}',
+    notIn: '{field} on jo käytössä',
 };
 
 const validatorImplFactories = {
@@ -30,6 +31,9 @@ const validatorImplFactories = {
     'in': () => {
         throw new Error('Not implemented yet.');
     },
+    'notIn': messages =>
+        [(value, noNos) => noNos.indexOf(value) < 0, messages.notIn]
+    ,
     'identifier': () => {
         throw new Error('Not implemented yet.');
     },

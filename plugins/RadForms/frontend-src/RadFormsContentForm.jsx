@@ -60,16 +60,16 @@ class RadFormsContentForm extends ValidatingFormImpl {
 
 function behaviourDataToMultiFields(data) {
     return [
-        {id: 2, name: 'Aihetemplaatti', value: data.subjectTemplate,
+        {name: 'Aihetemplaatti', value: data.subjectTemplate,
          validationRules: [['required']],
          widget: {name: 'textField', args: {}}},
-        {id: 3, name: 'Vastaanottaja', value: data.toAddress,
+        {name: 'Vastaanottaja', value: data.toAddress,
          validationRules: [['required']],
          widget: {name: 'textField', args: {}}},
-        {id: 4, name: 'Lähettäjä', value: data.fromAddress,
+        {name: 'Lähettäjä', value: data.fromAddress,
          validationRules: [['required']],
          widget: {name: 'textField', args: {}}},
-        {id: 5, name: 'Sisältötemplaatti', value: data.bodyTemplate,
+        {name: 'Sisältötemplaatti', value: data.bodyTemplate,
          validationRules: [['required']],
          widget: {name: 'textArea', args: {}}},
     ];
