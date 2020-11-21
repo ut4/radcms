@@ -2,8 +2,10 @@
 
 namespace RadPlugins\RadForms\Internal;
 
-use Pike\{PikeException, Validation};
+use Pike\{ArrayUtils, PikeException, Validation};
 use Pike\Interfaces\MailerInterface;
+use RadCms\CmsState;
+use RadPlugins\RadForms\RadForms;
 
 /**
  * Validoi ja prosessoi lomakkeen behaviours-jsoniin määritellyn {type: 'SendMail' ...}
@@ -14,15 +16,17 @@ final class SendMailBehaviourExecutor {
      * @param object $behaviourFromDb
      * @param object $reqBody
      * @param \RadPlugins\RadForms\Internal\DefaultServicesFactory $services
+     * @param string $formId
      */
     public static function validateAndApply(object $behaviourFromDb,
                                             object $reqBody,
-                                            DefaultServicesFactory $services): void {
+                                            DefaultServicesFactory $services,
+                                            string $formId): void {
         if (($errors = self::validateBehaviour($behaviourFromDb)))
             throw new PikeException(implode("\n", $errors), PikeException::BAD_INPUT);
         // @allow \Pike\PikeException
-        (new self($services->makeMailer(), $services->makeSiteInfo()))
-            ->process($behaviourFromDb, $reqBody);
+        (new self($services->makeMailer(), $services->getCmsState()))
+            ->process($behaviourFromDb, $reqBody, $formId);
     }
     /**
      * @param object $behaviourFromDb
@@ -44,21 +48,23 @@ final class SendMailBehaviourExecutor {
 
     /** @var \Pike\Interfaces\MailerInterface */
     private $mailer;
-    /** @var \stdClass */
-    private $siteInfo;
+    /** @var \RadCms\CmsState */
+    private $cmsState;
     /**
      * @param \Pike\Interfaces\MailerInterface $mailer
-     * @param \stdClass $siteInfo
+     * @param \RadCms\CmsState $cmsState
      */
-    public function __construct(MailerInterface $mailer, \stdClass $siteInfo) {
+    public function __construct(MailerInterface $mailer, CmsState $cmsState) {
         $this->mailer = $mailer;
-        $this->siteInfo = $siteInfo;
+        $this->cmsState = $cmsState;
     }
     /**
      * @param object $behaviour Validoitu behaviour tietokannasta
      * @param object $reqBody Devaajan määrittelemän lomakkeen lähettämä data
+     * @param string $formId Tietokannasta palautetun lähetettävän lomake-entiteetin id
      */
-    public function process(object $behaviour, object $reqBody): void {
+    public function process(object $behaviour, object $reqBody, string $formId): void {
+        $errors = [];
         if (($errors = self::validateReqBodyForTemplate($reqBody)))
             throw new PikeException(implode("\n", $errors), PikeException::BAD_INPUT);
         $vars = $this->makeTemplateVars($reqBody);
@@ -70,6 +76,12 @@ final class SendMailBehaviourExecutor {
             'toName' => is_string($behaviour->toName ?? null) ? $behaviour->toName : '',
             'subject' => self::renderTemplate($behaviour->subjectTemplate, $vars),
             'body' => self::renderTemplate($behaviour->bodyTemplate, $vars),
+            'configureMailer' => function ($phpMailer) use($formId) {
+                $this->cmsState->getApiConfigs()->triggerEvent(
+                    RadForms::ON_MAILER_CONFIGURE,
+                    $phpMailer,
+                    $formId);
+            },
         ]);
     }
     /**
@@ -97,8 +109,8 @@ final class SendMailBehaviourExecutor {
      */
     private function makeTemplateVars(object $reqBody): object {
         $combined = (object) [
-            'siteName' => $this->siteInfo->name,
-            'siteLang' => $this->siteInfo->lang,
+            'siteName' => $this->cmsState->getSiteInfo()->name,
+            'siteLang' => $this->cmsState->getSiteInfo()->lang,
         ];
         foreach ($reqBody as $key => $val) {
             if ($key[0] !== '_') $combined->{$key} = $val;

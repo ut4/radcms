@@ -6,7 +6,6 @@ use Pike\{FileSystem, Request, Response, Translator};
 use RadCms\{BaseAPI, CmsState};
 use RadCms\Content\MagicTemplateDAO;
 use RadCms\Templating\MagicTemplate;
-use RadCms\Tests\_Internal\TestSite;
 
 final class PluginTestSiteTemplateRenderer {
     /**
@@ -23,7 +22,7 @@ final class PluginTestSiteTemplateRenderer {
                                    Translator $translator,
                                    MagicTemplateDAO $dao,
                                    FileSystem $fs): void {
-        $filePath = TestSite::PUBLIC_PATH .
+        $filePath = TEST_SITE_PUBLIC_PATH . // viittaa lisäosatestin kansioon
                     'my-mock-site/' .
                     urldecode($req->params->relativeTemplateFilePath);
         $tmpl = new MagicTemplate($filePath, [], $translator, $dao, $fs);

@@ -6,7 +6,6 @@ if (($form = $this->radFormsFetchForm((object) $props))): ?>
           id="rad-form-<?= $form->id ?>"
           novalidate>
         <?= $this->{$props['template']}(['formTagId' => "rad-form-{$form->id}"]) ?>
-        <input type="hidden" name="_sendMailHandler" value="<?= is_string($props['sendMailHandler'] ?? null) ? $this->e($props['sendMailHandler']) : '' ?>">
         <input type="hidden" name="_returnTo" value="<?= is_string($props['returnTo'] ?? null) ? $this->e($props['returnTo']) : '' ?>">
     </form>
     <?php if (!$this->radFormsGetSetIsValidationLibLoaded()): ?>

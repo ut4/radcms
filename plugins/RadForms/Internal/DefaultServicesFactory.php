@@ -16,8 +16,8 @@ class DefaultServicesFactory {
         $this->cmsState = $cmsState;
         $this->makeMailerFn = $makeMailerFn;
     }
-    public function makeSiteInfo(): \stdClass {
-        return $this->cmsState->getSiteInfo();
+    public function getCmsState(): CmsState {
+        return $this->cmsState;
     }
     public function makeMailer(): MailerInterface {
         return !$this->makeMailerFn ? new PhpMailerMailer : call_user_func($this->makeMailerFn);

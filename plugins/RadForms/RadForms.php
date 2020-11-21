@@ -10,6 +10,8 @@ use RadCms\Entities\PluginPackData;
 use RadCms\Templating\MagicTemplate;
 
 final class RadForms implements PluginInterface {
+    /* fn(\PhpMailer\PhpMailer\PhpMailer $mailer, string $formId): void */
+    public const ON_MAILER_CONFIGURE = 'radFormsOnMailerConfigure';
     /** @var ?bool */
     private $isValidationLibIncluded;
     /**

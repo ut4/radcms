@@ -4,14 +4,14 @@
 
 ## Sisällysluettelo
 
-1. [Tutoriaali - Mailin lähetys](#tutoriaali---mailin-lähetys)
+1. [Tutoriaali](#tutoriaali)
 1. [Php-tagit](#php-tagit)
 1. [Devaus](#devaus)
 1. [Lisenssi](#lisenssi)
 
-## Tutoriaali - Mailin lähetys
+## Tutoriaali
 
-### 1. Lisää tagikutsu haluasi sivun sivutemplaattiin
+### 1. Lisää tagikutsu haluamasi sivun sivutemplaattiin
 
 ```php
 <html>
@@ -21,7 +21,7 @@
                     'template' => 'my-form-file-name',
                     // $urlStr on ladatun sivun urlipolku (esim. '/yhteys'),
                     // käytettävissä kaikissa templaateissa
-                    'returnTo' => "{$urlStr}#/?form-sent"
+                    'returnTo' => "{$urlStr}#my-form-sent"
                     ]) ?>
 ...
 </html>
@@ -32,12 +32,13 @@
 Luo edellisen stepin tagikutsun `template`-propertyyn määritelty tiedosto samaan kansioon sivutemplaatin kanssa käyttäen `.tmpl.php`-päätettä (esim. `site/templates/my-form-file-name.tmpl.php`), ja lisää sinne esim.
 
 ```php
-<script>(function () { if (location.hash === '#/?form-sent') {
+<script>(function () { if (location.hash === '#my-form-sent') {
     var formEl = document.getElementById('<?= $props['formTagId'] ?>');
     var messageEl = document.createElement('div');
     messageEl.textContent = 'Kiitos viestistäsi!';
     formEl.parentElement.insertBefore(messageEl, formEl); // tai formEl.replaceWith(messageEl)
-    history.replaceState(null, null, '');
+    formEl.scrollIntoView(true);
+    history.replaceState(null, null, location.href.replace('#my-form-sent', ''));
 } }())</script>
 <div class="form-group">
     <label>Sähköposti</label>
@@ -56,6 +57,31 @@ Huomaa, että inputien name-attribuutit saa sisältää ainoastaan a-zA-Z0-9_ ks
 
 Lataa sivu selaimessa jonka templaattiin lisäsit `RadForm()`-tagikutsun, ja luo lomake hallintapaneelin valikosta (Tällä sivulla > Lomake, Yhteyslomake) avautuvasta näkymästä. Anna lomakkeen nimeksi stepin 1. tagikutsussa määritelty nimi (esim. `Yhteyslomake`). Lomakkeen viesti-, ja aihe-templaateissa voit viitata tageilla (esim. [myFormMessage]) edellisen stepin lomakedataan sekä oletusmuuttujiin (ks. [Lomaketemplaattien oletusmuuttujat](#lomaketemplaattien-oletusmuuttujat)). Lisäosa sanitoi automaattisesti inputien arvot (esim. lomakkeesta lähetetty `<img onerror="xss()"/>` renderöityy emailiin lähetettävään templaattiin muodossa `&lt;img onerror=&quot;xss()&quot;&gt;`).
 
+### 4. (vapaaehtoinen) Lisää mailerin konfiguroija
+
+Jos haluat käyttää mailin lähetykseen jotain muuta kuin oletus [mail()](https://www.php.net/manual/en/function.mail.php)-funktiota, voit tehdä sen lisäämällä `RadForms::ON_MAILER_CONFIGURE`-signaalille kuuntelijan, jota RadForms kutsuu aina juuri ennen mailin lähettämistä. Lisää kuuntelija Theme tai Site.php:hen:
+
+```php
+<?php declare(strict_types=1);
+
+namespace RadSite;
+
+use RadPlugins\RadForms\RadForms;
+use PhpMailer\PhpMailer\PhpMailer;
+
+class Site implements WebsiteInterface {
+    public function init(WebsiteAPI $api): void {
+        $api->on(RadForms::ON_MAILER_CONFIGURE, function (PhpMailer $mailer,
+                                                          string $formId) {
+            $mailer->isSMTP();
+            $mailer->Host = 'smtp.foo.com';
+            // ... jne.
+        });
+    }
+}
+
+```
+
 #### Lomaketemplaattien oletusmuuttujat
 
 - [siteName: string]: sivuston nimi
@@ -65,7 +91,7 @@ Lataa sivu selaimessa jonka templaattiin lisäsit `RadForm()`-tagikutsun, ja luo
 
 Tagit, jotka tämä lisäosa rekisteröi.
 
-### RadForm(['name' => string, 'template' => string, '?returnTo' => string])
+### RadForm(['name' => string, 'template' => string, 'returnTo' => string])
 
 - name: Tietokannasta haettavan lomakkeen nimi
 - template: Lomaketemplaattitiedoston nimi. Templaattiin passautuvat propsit: `['formId' => 'lomake-elementin-id']`

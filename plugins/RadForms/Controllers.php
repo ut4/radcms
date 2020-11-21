@@ -35,7 +35,8 @@ final class Controllers {
         //
         foreach ($form->behaviours as $behaviour) {
             if ($behaviour->name === 'SendMail')
-                SendMailBehaviourExecutor::validateAndApply($behaviour->data, $req->body, $services);
+                SendMailBehaviourExecutor::validateAndApply($behaviour->data, $req->body,
+                    $services, $form->id);
             elseif ($behaviour->name === 'NotifyUser' && is_string($req->body->_todo))
                 'todo';
         }

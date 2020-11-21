@@ -110,6 +110,8 @@ final class SendFormTest extends RadFormsTestCase {
         $actualSiteInfo = $this->getSiteInfo();
         $expectedTemplateVars = array_merge((array) $state->reqBody,
                                             ['siteName' => $actualSiteInfo->name]);
+        $actual = $state->sendMailCallArgs[0];
+        unset($actual->configureMailer);
         $this->assertEquals((object) [
             'fromAddress' => 'foo@foo.foo',
             'fromName' => '',
@@ -119,7 +121,7 @@ final class SendFormTest extends RadFormsTestCase {
                                                   $expectedTemplateVars),
             'body' => self::renderMailTemplate($behaviourData->bodyTemplate,
                                                $expectedTemplateVars),
-        ], $state->sendMailCallArgs[0]);
+        ], $actual);
     }
     private function verifyRedirectedToReturnUrl(object $state): void {
         $actual = $state->spyingResponse->getActualHeader('Location');
