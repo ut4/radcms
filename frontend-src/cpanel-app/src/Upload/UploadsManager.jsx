@@ -5,6 +5,7 @@ import Tabs from '../Common/Tabs.jsx';
 import {timingUtils} from '../Common/utils.js';
 import ImageDeleteDialog from './ImageDeleteDialog.jsx';
 const INITIAL_CACHE_KEY = '';
+const MAX_FILE_SIZE_MB = 8;
 
 class UploadsManager extends preact.Component {
     /**
@@ -141,12 +142,12 @@ class UploadButton extends preact.Component {
     constructor(props) {
         super(props);
         this.selectedImage = null;
-        this.state = {selectedImageSrc: null};
+        this.state = {selectedImageSrc: null, validationError: null};
     }
     /**
      * @access protected
      */
-    render(_, {selectedImageSrc}) {
+    render(_, {selectedImageSrc, validationError}) {
         return <div class={ !selectedImageSrc ? 'container' : 'image-selected' }>
             <Toaster id="fileUpload"/>
             <input onChange={ this.handleFileInputChange.bind(this) }
@@ -161,6 +162,7 @@ class UploadButton extends preact.Component {
                     <span class="column">Valitse kuva</span>
                 ] : <img src={ selectedImageSrc }/> }
             </label>
+            <div class="has-error"><InputError error={ validationError }/></div>
             { !selectedImageSrc || [
                 <InputGroup classes={ this.state.classes.fileName }>
                     <label htmlFor="fileName" class="form-label">Tiedostonimi</label>
@@ -179,6 +181,16 @@ class UploadButton extends preact.Component {
      */
     handleFileInputChange(e) {
         if (!e.target.value) return;
+        const file = e.target.files[0];
+        if (!file.type.startsWith('image/')) {
+            this.setState({validationError: 'Tiedostopääte ei kelpaa'});
+            return;
+        }
+        if (file.size >= MAX_FILE_SIZE_MB * 1024 * 1024) {
+            this.setState({validationError: `Tiedosto saa olla enintään ${MAX_FILE_SIZE_MB}MB`});
+            return;
+        }
+        if (this.state.validationError) this.setState({validationError: null});
         const reader = new FileReader();
         reader.onload = e => {
             this.setState(Object.assign(
